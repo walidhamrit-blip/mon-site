@@ -22,16 +22,6 @@ export default function Home() {
       <Testimonials />
       <FAQ />
       <CTAForm />
-
-      {/* Analytics placeholder */}
-      <script
-        dangerouslySetInnerHTML={{
-          __html: `
-            // Plausible / GA placeholder - replace with real ID
-            // window.plausible = window.plausible || function(){(plausible.q = plausible.q || []).push(arguments)}
-          `,
-        }}
-      />
     </>
   );
 }
