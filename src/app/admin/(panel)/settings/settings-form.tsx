@@ -210,7 +210,7 @@ export function SettingsForm({ initial }: { initial: SiteConfigData }) {
           <Field label="Nom (arabe)" value={c.nameAr} dir="rtl" onChange={(v) => set("nameAr", v)} />
           <Field label="Nom (latin)" value={c.name} dir="ltr" onChange={(v) => set("name", v)} />
           <Field label="Signature / tagline" value={c.tagline} onChange={(v) => set("tagline", v)} />
-          <Field label="Domaine" value={c.domain} dir="ltr" hint="ex. nukhba.ly" onChange={(v) => set("domain", v)} />
+          <Field label="Domaine" value={c.domain} dir="ltr" hint="ex. nokhba.net.ly" onChange={(v) => set("domain", v)} />
           <Field label="URL complète" value={c.url} dir="ltr" hint="https://…" onChange={(v) => set("url", v)} />
           <Field label="Email" value={c.email} dir="ltr" type="email" onChange={(v) => set("email", v)} />
           <Field label="Téléphone" value={c.phone} dir="ltr" onChange={(v) => set("phone", v)} />

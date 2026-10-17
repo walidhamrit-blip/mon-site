@@ -34,6 +34,18 @@ export function mergeConfig(override: unknown): typeof siteConfig {
     const value = o[key];
     if (value === undefined) continue;
     const baseValue = base[key];
+
+    // Remplace les anciennes valeurs par défaut persistées, sans modifier
+    // un domaine personnalisé configuré par le propriétaire du site.
+    const normalized = typeof value === "string" ? value.trim().toLowerCase() : "";
+    const isOldDefaultDomain = key === "domain" && normalized === "nukhba.ly";
+    const isOldDefaultUrl =
+      key === "url" && normalized.replace(/\/+$/, "") === "https://nukhba.ly";
+    if (isOldDefaultDomain || isOldDefaultUrl) {
+      merged[key] = baseValue;
+      continue;
+    }
+
     if (
       value !== null &&
       typeof value === "object" &&
