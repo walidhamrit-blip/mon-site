@@ -24,7 +24,7 @@ Editez `src/lib/config.ts`:
 Remplacez les URLs Unsplash par vos images dans `content.ts` et sections. Placez mockups dans `public/images/` et référencez `/images/...`.
 
 ## Déploiement
-- **Vercel** : `vercel --prod` — SSG automatique, 90+ Lighthouse
+- **Vercel** : `vercel --prod` — SSG automatique, 90+ Lighthouse. Ajoutez `nokhba.net.ly` dans Settings → Domains et configurez les DNS chez votre registrar.
 - **VPS** : `npm run build` + `npm start` derrière Nginx + PM2. Ajoutez `DATABASE_URL` si vous activez formulaire DB.
 
 ## Formulaire
@@ -44,7 +44,7 @@ Actuellement log console + confirmation. Pour envoi réel:
 3. Adresse/email/horaires
 4. Images réelles (remplacer Unsplash)
 5. Logos clients (bande de confiance)
-6. Domaine dans config.url + metadataBase
+6. Domaine officiel (`nokhba.net.ly`) dans `src/lib/config.ts` (`domain` et `url`), utilisé aussi pour les métadonnées SEO.
 7. GA/Plausible ID
 8. Favicon/OG image dans public/
 9. Textes légaux si besoin

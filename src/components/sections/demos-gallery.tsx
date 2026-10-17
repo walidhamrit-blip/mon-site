@@ -14,7 +14,7 @@ import {
 } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import { sectors } from "@/lib/content";
-import { useSiteContent } from "@/components/site-provider";
+import { useSiteConfig, useSiteContent } from "@/components/site-provider";
 import type { Demo } from "@/lib/site-types";
 import {
   isRealUrl,
@@ -24,8 +24,8 @@ import {
 import Link from "next/link";
 import { ProjectPreview } from "@/components/project-preview";
 
-function formatHost(url: string, fallbackSlug: string): string {
-  if (!isRealUrl(url)) return `nukhba.ly/${fallbackSlug}`;
+function formatHost(url: string, fallbackSlug: string, domain: string): string {
+  if (!isRealUrl(url)) return `${domain}/${fallbackSlug}`;
   try {
     const parsed = new URL(url);
     return parsed.host + (parsed.pathname !== "/" ? parsed.pathname : "");
@@ -35,6 +35,7 @@ function formatHost(url: string, fallbackSlug: string): string {
 }
 
 export function DemosGallery() {
+  const siteConfig = useSiteConfig();
   const { demos } = useSiteContent();
   const { locale, t } = useI18n();
   const [filter, setFilter] = useState("all");
@@ -145,7 +146,7 @@ export function DemosGallery() {
                     <Globe className="h-3.5 w-3.5 opacity-50 flex-shrink-0" />
                   )}
                   <span className="opacity-70 truncate" dir="ltr">
-                    {formatHost(activeDemo.previewUrl, activeDemo.slug)}
+                    {formatHost(activeDemo.previewUrl, activeDemo.slug, siteConfig.domain)}
                   </span>
                 </div>
               </div>

@@ -2,8 +2,8 @@ export const siteConfig = {
   name: "Nukhba",
   nameAr: "نخبة",
   tagline: "Agence Web Premium — Tripoli",
-  domain: "nukhba.ly",
-  url: "https://nukhba.ly",
+  domain: "nokhba.net.ly",
+  url: "https://nokhba.net.ly",
   email: "hello@nukhba.ly",
   phone: "+218 91 234 5678",
   whatsapp: "218912345678", // sans +

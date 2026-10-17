@@ -5,9 +5,10 @@ import { I18nProvider } from "@/lib/i18n";
 import { ThemeProvider } from "@/components/theme-provider";
 import { SiteProvider } from "@/components/site-provider";
 import { getSiteData } from "@/lib/store";
+import { siteConfig } from "@/lib/config";
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://nukhba.ly"),
+  metadataBase: new URL(siteConfig.url),
   title: {
     default: "نخبة — مواقع فاخرة لشركات طرابلس | Nukhba — Premium Sites Tripoli",
     template: "%s | نخبة Nukhba",
@@ -16,14 +17,14 @@ export const metadata: Metadata = {
     "نصمم مواقع فاخرة وسريعة لشركات طرابلس — تسليم في 7 أيام، Next.js 90+ Lighthouse، تخصيص كامل، ودعم واتساب. اطلب عرضك المجاني.",
   alternates: {
     languages: {
-      ar: "https://nukhba.ly/ar",
-      en: "https://nukhba.ly/en",
+      ar: `${siteConfig.url}/ar`,
+      en: `${siteConfig.url}/en`,
     },
   },
   openGraph: {
     title: "نخبة — مواقع فاخرة لشركات طرابلس",
     description: "موقعك الاحترافي جاهز في أيام — تصميم نخبوي، سرعة تذهل، وتخصيص بلا حدود.",
-    url: "https://nukhba.ly",
+    url: siteConfig.url,
     siteName: "نخبة Nukhba",
     locale: "ar_LY",
     type: "website",
