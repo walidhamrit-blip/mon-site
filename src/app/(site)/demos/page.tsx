@@ -148,8 +148,8 @@ export default function DemosPage() {
                     >
                       {hasLive
                         ? locale === "ar"
-                          ? "تصفح تفاعلي مباشر"
-                          : "Interactive Live Visit"
+                          ? "ملء الشاشة (حاسوب / هاتف)"
+                          : "Fullscreen (Desktop / Mobile)"
                         : locale === "ar"
                           ? "معاينة تفاصيل المعرض"
                           : "View Demo Details"}

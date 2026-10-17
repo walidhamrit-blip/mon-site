@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Smartphone,
@@ -8,21 +8,19 @@ import {
   Sparkles,
   ExternalLink,
   Maximize2,
-  Minimize2,
   RotateCw,
   Globe,
-  Eye,
-  Image as ImageIcon,
 } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import { sectors } from "@/lib/content";
 import { useSiteContent } from "@/components/site-provider";
 import type { Demo } from "@/lib/site-types";
+import {
+  isRealUrl,
+  ScaledLiveIframe,
+  FullscreenLiveViewer,
+} from "@/components/live-site-frames";
 import Link from "next/link";
-
-function isRealUrl(url?: string): boolean {
-  return Boolean(url && url !== "#" && /^https?:\/\//i.test(url.trim()));
-}
 
 function formatHost(url: string, fallbackSlug: string): string {
   if (!isRealUrl(url)) return `nukhba.ly/${fallbackSlug}`;
@@ -40,8 +38,6 @@ export function DemosGallery() {
   const [filter, setFilter] = useState("all");
   const [mode, setMode] = useState<"mobile" | "desktop">("desktop");
   const [active, setActive] = useState<string | null>(demos[0]?.slug ?? null);
-  const [previewMode, setPreviewMode] = useState<"live" | "cover">("live");
-  const [iframeLoading, setIframeLoading] = useState(true);
   const [iframeKey, setIframeKey] = useState(0);
   const [fullscreen, setFullscreen] = useState(false);
 
@@ -49,15 +45,9 @@ export function DemosGallery() {
   const activeDemo: Demo = demos.find((d) => d.slug === active) || demos[0];
   const hasLiveUrl = isRealUrl(activeDemo?.previewUrl);
 
-  useEffect(() => {
-    setIframeLoading(true);
-    setPreviewMode(isRealUrl(activeDemo?.previewUrl) ? "live" : "cover");
-  }, [activeDemo?.slug, activeDemo?.previewUrl]);
-
   if (!activeDemo) return null;
 
   const reloadIframe = () => {
-    setIframeLoading(true);
     setIframeKey((k) => k + 1);
   };
 
@@ -75,13 +65,14 @@ export function DemosGallery() {
             </h2>
             <p className="mt-3 opacity-60 max-w-[54ch]">
               {locale === "ar"
-                ? "تصفّح مواقع عملائنا الحقيقية مباشرةً من داخل المتصفح أو افتحها بالكامل لتعيش التجربة الفعلية"
-                : "Browse our real client websites live inside the interactive preview or open them in full to experience our work firsthand"}
+                ? "تصفّح مواقع عملائنا الحقيقية مباشرةً أو افتحها بملء الشاشة مع إمكانية التبديل بين عرض الحاسوب والهاتف"
+                : "Browse our real client websites live or open them in fullscreen with Desktop and Mobile view options"}
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-3">
             <div className="flex items-center gap-1 p-1 rounded-full bg-[var(--secondary)] border border-[var(--border)]">
               <button
+                type="button"
                 onClick={() => setMode("desktop")}
                 className={`h-8 px-4 rounded-full text-sm font-medium flex items-center gap-1.5 transition-colors cursor-pointer ${
                   mode === "desktop"
@@ -92,6 +83,7 @@ export function DemosGallery() {
                 <Monitor className="h-3.5 w-3.5" /> {locale === "ar" ? "حاسوب" : "Desktop"}
               </button>
               <button
+                type="button"
                 onClick={() => setMode("mobile")}
                 className={`h-8 px-4 rounded-full text-sm font-medium flex items-center gap-1.5 transition-colors cursor-pointer ${
                   mode === "mobile"
@@ -116,6 +108,7 @@ export function DemosGallery() {
           {sectors.map((s) => (
             <button
               key={s.id}
+              type="button"
               onClick={() => setFilter(s.id)}
               className={`px-4 py-2 rounded-full text-sm font-medium border transition-colors cursor-pointer ${
                 filter === s.id
@@ -128,9 +121,9 @@ export function DemosGallery() {
           ))}
         </div>
 
-        <div className="grid lg:grid-cols-[1.35fr_0.75fr] gap-6">
+        <div className="grid lg:grid-cols-[1.35fr_0.75fr] gap-6 items-start">
           {/* Preview Stage */}
-          <div className="rounded-[24px] bg-[var(--card)] border border-[var(--border)] overflow-hidden p-4 sm:p-6 flex flex-col justify-between">
+          <div className="rounded-[24px] bg-[var(--card)] border border-[var(--border)] overflow-hidden p-4 sm:p-6">
             {/* Browser Top Toolbar */}
             <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
               <div className="flex items-center gap-2 min-w-0 flex-1">
@@ -156,106 +149,55 @@ export function DemosGallery() {
               <div className="flex items-center gap-1.5 flex-wrap">
                 {hasLiveUrl && (
                   <>
-                    <div className="inline-flex items-center rounded-full bg-[var(--secondary)] border border-[var(--border)] p-0.5 text-xs">
-                      <button
-                        type="button"
-                        onClick={() => setPreviewMode("live")}
-                        className={`px-2.5 py-1 rounded-full font-bold inline-flex items-center gap-1 transition-colors cursor-pointer ${
-                          previewMode === "live"
-                            ? "bg-[var(--accent)] text-black"
-                            : "opacity-70 hover:opacity-100"
-                        }`}
-                      >
-                        <Eye className="h-3 w-3" />
-                        {locale === "ar" ? "تصفح تفاعلي" : "Interactive"}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setPreviewMode("cover")}
-                        className={`px-2.5 py-1 rounded-full font-bold inline-flex items-center gap-1 transition-colors cursor-pointer ${
-                          previewMode === "cover"
-                            ? "bg-[var(--accent)] text-black"
-                            : "opacity-70 hover:opacity-100"
-                        }`}
-                      >
-                        <ImageIcon className="h-3 w-3" />
-                        {locale === "ar" ? "بطاقة" : "Card"}
-                      </button>
-                    </div>
-                    {previewMode === "live" && (
-                      <button
-                        type="button"
-                        onClick={reloadIframe}
-                        title={locale === "ar" ? "إعادة تحميل الموقع" : "Reload website"}
-                        className="h-7 w-7 rounded-full bg-[var(--secondary)] border border-[var(--border)] grid place-items-center hover:border-[var(--accent)] transition-colors cursor-pointer"
-                      >
-                        <RotateCw className={`h-3.5 w-3.5 ${iframeLoading ? "animate-spin" : ""}`} />
-                      </button>
-                    )}
+                    <button
+                      type="button"
+                      onClick={reloadIframe}
+                      title={locale === "ar" ? "إعادة تحميل الموقع" : "Reload website"}
+                      className="h-8 w-8 rounded-full bg-[var(--secondary)] border border-[var(--border)] grid place-items-center hover:border-[var(--accent)] transition-colors cursor-pointer"
+                    >
+                      <RotateCw className="h-3.5 w-3.5" />
+                    </button>
                     <button
                       type="button"
                       onClick={() => setFullscreen(true)}
-                      title={locale === "ar" ? "تكبير الشاشة" : "Fullscreen preview"}
-                      className="h-7 px-2.5 rounded-full bg-[var(--secondary)] border border-[var(--border)] inline-flex items-center gap-1 text-xs font-semibold hover:border-[var(--accent)] transition-colors cursor-pointer"
+                      className="h-8 px-3.5 rounded-full bg-[var(--accent)] text-[var(--accent-foreground)] inline-flex items-center gap-1.5 text-xs font-black hover:bg-[var(--accent-hover)] transition-colors cursor-pointer shadow-sm"
                     >
-                      <Maximize2 className="h-3 w-3" />
-                      <span className="hidden sm:inline">
-                        {locale === "ar" ? "ملء الشاشة" : "Fullscreen"}
+                      <Maximize2 className="h-3.5 w-3.5" />
+                      <span>
+                        {locale === "ar"
+                          ? "ملء الشاشة (حاسوب / هاتف)"
+                          : "Fullscreen (Desktop / Mobile)"}
                       </span>
                     </button>
                   </>
                 )}
-                <span className="text-xs px-2.5 py-1 rounded-full bg-[var(--accent)] text-[var(--accent-foreground)] font-bold">
+                <span className="text-xs px-2.5 py-1 rounded-full bg-[var(--secondary)] border border-[var(--border)] font-bold">
                   {locale === "ar" ? activeDemo.sectorAr : activeDemo.sectorEn}
                 </span>
               </div>
             </div>
 
-            {/* Device Frame */}
+            {/* Device Frame — géométrie exacte 16:10 (Desktop 1440x900) ou 9:16 (Mobile 390x693) */}
             <div
-              className={`mx-auto w-full bg-black rounded-[18px] p-2 sm:p-3 shadow-xl transition-all duration-500 ${
-                mode === "mobile" ? "max-w-[360px]" : "max-w-full"
+              dir="ltr"
+              className={`mx-auto w-full bg-zinc-950 rounded-[18px] p-2 sm:p-3 shadow-xl transition-all duration-300 ${
+                mode === "mobile" ? "max-w-[320px]" : "max-w-full"
               }`}
             >
               <div
-                className={`bg-white rounded-[14px] overflow-hidden relative ${
-                  mode === "mobile" ? "aspect-[9/16] max-h-[580px]" : "aspect-[16/10] min-h-[360px] sm:min-h-[460px]"
+                className={`w-full bg-white rounded-[12px] overflow-hidden relative ${
+                  mode === "mobile" ? "aspect-[9/16]" : "aspect-[16/10]"
                 }`}
               >
-                {hasLiveUrl && previewMode === "live" ? (
-                  <>
-                    {iframeLoading && (
-                      <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-zinc-950/90 text-white p-6 text-center">
-                        <img
-                          src={activeDemo.image}
-                          alt=""
-                          className="absolute inset-0 w-full h-full object-cover opacity-25 blur-sm"
-                        />
-                        <div className="relative z-10 flex flex-col items-center">
-                          <div className="h-10 w-10 rounded-full border-3 border-[var(--accent)] border-t-transparent animate-spin mb-3" />
-                          <div className="text-sm font-bold">
-                            {locale === "ar"
-                              ? `جارٍ فتح الموقع الحقيقي: ${activeDemo.title}...`
-                              : `Loading live website: ${activeDemo.titleEn}...`}
-                          </div>
-                          <div className="text-xs opacity-70 mt-1" dir="ltr">
-                            {activeDemo.previewUrl}
-                          </div>
-                        </div>
-                      </div>
-                    )}
-                    <iframe
-                      key={`${activeDemo.slug}-${iframeKey}`}
-                      src={activeDemo.previewUrl}
-                      title={locale === "ar" ? activeDemo.title : activeDemo.titleEn}
-                      className="w-full h-full border-0 bg-white"
-                      loading="eager"
-                      onLoad={() => setIframeLoading(false)}
-                      allow="clipboard-write; fullscreen"
-                    />
-                  </>
+                {hasLiveUrl ? (
+                  <ScaledLiveIframe
+                    url={activeDemo.previewUrl}
+                    title={locale === "ar" ? activeDemo.title : activeDemo.titleEn}
+                    mode={mode}
+                    reloadKey={iframeKey}
+                  />
                 ) : (
-                  <>
+                  <div dir={locale === "ar" ? "rtl" : "ltr"} className="w-full h-full relative">
                     <AnimatePresence mode="wait">
                       <motion.img
                         key={activeDemo.slug + mode}
@@ -290,10 +232,7 @@ export function DemosGallery() {
                         ))}
                       </div>
                     </div>
-                  </>
-                )}
-                {mode === "mobile" && (
-                  <div className="pointer-events-none absolute top-2 left-1/2 -translate-x-1/2 h-1 w-10 bg-black/50 rounded-full z-20" />
+                  </div>
                 )}
               </div>
             </div>
@@ -317,24 +256,34 @@ export function DemosGallery() {
               </div>
 
               <div className="flex items-center gap-2 flex-shrink-0 flex-wrap">
-                {hasLiveUrl && (
-                  <a
-                    href={activeDemo.previewUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="h-9 px-4 rounded-full bg-[var(--accent)] text-[var(--accent-foreground)] inline-flex items-center gap-1.5 text-xs sm:text-sm font-black hover:bg-[var(--accent-hover)] transition-colors shadow-sm"
+                {hasLiveUrl ? (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => setFullscreen(true)}
+                      className="h-9 px-4 rounded-full bg-[var(--primary)] text-[var(--primary-foreground)] inline-flex items-center gap-1.5 text-xs sm:text-sm font-bold hover:opacity-90 transition-opacity cursor-pointer"
+                    >
+                      <Maximize2 className="h-3.5 w-3.5" />
+                      {locale === "ar" ? "فتح بملء الشاشة (2 عرض)" : "Fullscreen (2 Views)"}
+                    </button>
+                    <a
+                      href={activeDemo.previewUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="h-9 px-4 rounded-full bg-[var(--accent)] text-[var(--accent-foreground)] inline-flex items-center gap-1.5 text-xs sm:text-sm font-black hover:bg-[var(--accent-hover)] transition-colors shadow-sm"
+                    >
+                      {locale === "ar" ? "زيارة الموقع الكامل" : "Visit Real Website"}
+                      <ExternalLink className="h-3.5 w-3.5" />
+                    </a>
+                  </>
+                ) : (
+                  <Link
+                    href={`/demos/${activeDemo.slug}`}
+                    className="h-9 px-4 rounded-full bg-[var(--primary)] text-[var(--primary-foreground)] inline-flex items-center gap-1 text-xs sm:text-sm font-semibold hover:opacity-90 transition-opacity"
                   >
-                    {locale === "ar" ? "زيارة الموقع الكامل" : "Visit Real Website"}
-                    <ExternalLink className="h-3.5 w-3.5" />
-                  </a>
+                    {t.demos.viewDemo} <ArrowUpRight className="h-3.5 w-3.5" />
+                  </Link>
                 )}
-                <Link
-                  href={`/demos/${activeDemo.slug}`}
-                  className="h-9 px-4 rounded-full bg-[var(--primary)] text-[var(--primary-foreground)] inline-flex items-center gap-1 text-xs sm:text-sm font-semibold hover:opacity-90 transition-opacity"
-                >
-                  {locale === "ar" ? "تفاصيل المشروع" : t.demos.viewDemo}
-                  <ArrowUpRight className="h-3.5 w-3.5" />
-                </Link>
               </div>
             </div>
           </div>
@@ -346,6 +295,7 @@ export function DemosGallery() {
               return (
                 <button
                   key={d.slug}
+                  type="button"
                   onClick={() => setActive(d.slug)}
                   className={`group text-start rounded-[20px] overflow-hidden border-2 bg-[var(--card)] transition-all cursor-pointer ${
                     active === d.slug
@@ -394,81 +344,13 @@ export function DemosGallery() {
         </div>
       </div>
 
-      {/* Fullscreen Live Browser Modal */}
+      {/* Plein écran 100% dédié avec choix des 2 vues (Desktop / Mobile) */}
       {fullscreen && hasLiveUrl && (
-        <div className="fixed inset-0 z-50 bg-black/95 flex flex-col">
-          <div className="h-14 px-4 border-b border-white/10 flex items-center justify-between gap-3 bg-zinc-950 text-white">
-            <div className="flex items-center gap-3 min-w-0">
-              <button
-                type="button"
-                onClick={() => setFullscreen(false)}
-                className="h-9 px-3.5 rounded-full bg-white/10 hover:bg-white/20 text-xs font-bold inline-flex items-center gap-1.5 cursor-pointer"
-              >
-                <Minimize2 className="h-3.5 w-3.5" />
-                {locale === "ar" ? "إغلاق ملء الشاشة" : "Exit Fullscreen"}
-              </button>
-              <span className="font-bold text-sm truncate hidden sm:inline">
-                {locale === "ar" ? activeDemo.title : activeDemo.titleEn}
-              </span>
-              <span
-                className="text-xs px-3 py-1 rounded-full bg-white/5 border border-white/10 text-zinc-400 truncate hidden md:inline"
-                dir="ltr"
-              >
-                {activeDemo.previewUrl}
-              </span>
-            </div>
-
-            <div className="flex items-center gap-2">
-              <div className="hidden sm:flex items-center gap-1 p-1 rounded-full bg-white/5 border border-white/10">
-                <button
-                  type="button"
-                  onClick={() => setMode("desktop")}
-                  className={`h-7 px-3 rounded-full text-xs font-semibold flex items-center gap-1 cursor-pointer ${
-                    mode === "desktop" ? "bg-[var(--accent)] text-black" : "text-zinc-300"
-                  }`}
-                >
-                  <Monitor className="h-3.5 w-3.5" /> {locale === "ar" ? "حاسوب" : "Desktop"}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setMode("mobile")}
-                  className={`h-7 px-3 rounded-full text-xs font-semibold flex items-center gap-1 cursor-pointer ${
-                    mode === "mobile" ? "bg-[var(--accent)] text-black" : "text-zinc-300"
-                  }`}
-                >
-                  <Smartphone className="h-3.5 w-3.5" /> {locale === "ar" ? "هاتف" : "Mobile"}
-                </button>
-              </div>
-
-              <a
-                href={activeDemo.previewUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="h-9 px-4 rounded-full bg-[var(--accent)] text-black text-xs font-black inline-flex items-center gap-1.5 hover:opacity-90"
-              >
-                {locale === "ar" ? "فتح في نافذة جديدة" : "Open in New Tab"}
-                <ExternalLink className="h-3.5 w-3.5" />
-              </a>
-            </div>
-          </div>
-
-          <div className="flex-1 flex items-center justify-center p-0 sm:p-4 overflow-hidden">
-            <div
-              className={`bg-white h-full overflow-hidden shadow-2xl transition-all duration-300 ${
-                mode === "mobile"
-                  ? "w-[390px] max-w-full rounded-[24px] border-4 border-zinc-800"
-                  : "w-full rounded-none sm:rounded-[16px]"
-              }`}
-            >
-              <iframe
-                src={activeDemo.previewUrl}
-                title={locale === "ar" ? activeDemo.title : activeDemo.titleEn}
-                className="w-full h-full border-0 bg-white"
-                allow="clipboard-write; fullscreen"
-              />
-            </div>
-          </div>
-        </div>
+        <FullscreenLiveViewer
+          demo={activeDemo}
+          initialMode={mode}
+          onClose={() => setFullscreen(false)}
+        />
       )}
     </section>
   );
