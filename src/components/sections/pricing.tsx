@@ -1,0 +1,97 @@
+"use client";
+import { motion } from "framer-motion";
+import { Check, Sparkles, ArrowUpRight } from "lucide-react";
+import { useI18n } from "@/lib/i18n";
+import { siteConfig } from "@/lib/config";
+
+export function Pricing() {
+  const { locale, t } = useI18n();
+  const plans = siteConfig.pricing.plans;
+
+  return (
+    <section id="pricing" className="py-16 lg:py-24 bg-[var(--secondary)]/40">
+      <div className="mx-auto max-w-[1280px] px-4 sm:px-6 lg:px-8">
+        <div className="max-w-[760px] mx-auto text-center">
+          <div className="inline-flex items-center gap-2 text-sm font-semibold tracking-[0.12em] text-[var(--accent)]">
+            <span className="h-px w-8 bg-[var(--accent)]" />
+            {locale === "ar" ? "الباقات" : "PRICING"}
+            <span className="h-px w-8 bg-[var(--accent)]" />
+          </div>
+          <h2 className="mt-3 text-[30px] lg:text-[42px] font-black tracking-tight leading-none">{t.pricing.title}</h2>
+          <p className="mt-3 opacity-60">{t.pricing.subtitle}</p>
+          <p className="mt-2 text-xs opacity-50">{t.pricing.perMonthNote}</p>
+        </div>
+
+        <div className="mt-10 grid lg:grid-cols-3 gap-6 max-w-[1100px] mx-auto items-start">
+          {plans.map((plan, idx) => (
+            <motion.div
+              key={plan.id}
+              initial={{ opacity: 0, y: 16 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: idx * 0.08 }}
+              className={`relative rounded-[24px] border p-6 lg:p-7 flex flex-col ${plan.featured ? "bg-[var(--primary)] text-[var(--primary-foreground)] border-[var(--primary)] shadow-[0_20px_50px_rgba(0,0,0,0.15)] lg:scale-[1.03] lg:-mt-2" : "bg-[var(--card)] border-[var(--border)]"}`}
+            >
+              {plan.featured && (
+                <div className="absolute -top-3 start-1/2 -translate-x-1/2 px-4 py-1.5 rounded-full bg-[var(--accent)] text-[var(--accent-foreground)] text-xs font-black flex items-center gap-1.5 shadow">
+                  <Sparkles className="h-3.5 w-3.5" />
+                  {locale === "ar" ? plan.badge : plan.badgeEn}
+                </div>
+              )}
+
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <h3 className="text-lg font-black">{locale === "ar" ? plan.name : plan.nameEn}</h3>
+                  <p className={`text-sm mt-1 ${plan.featured ? "opacity-70" : "opacity-60"}`}>{locale === "ar" ? plan.description : plan.descriptionEn}</p>
+                </div>
+                {plan.featured && <span className="h-8 w-8 rounded-full bg-[var(--accent)] grid place-items-center">✦</span>}
+              </div>
+
+              <div className="mt-6 flex items-baseline gap-2">
+                <span className="text-[36px] font-black tracking-tight leading-none">{plan.price.toLocaleString("en-LY")}</span>
+                <span className="text-sm opacity-60">{locale === "ar" ? siteConfig.pricing.currency : siteConfig.pricing.currencyEn}{plan.periodEn ?? plan.period}</span>
+                {plan.originalPrice && (
+                  <span className="ms-2 text-sm line-through opacity-40">{plan.originalPrice.toLocaleString()}</span>
+                )}
+              </div>
+
+              <button
+                onClick={() => document.getElementById("lead-form")?.scrollIntoView({ behavior: "smooth" })}
+                className={`mt-6 h-11 rounded-full font-bold inline-flex items-center justify-center gap-2 w-full cursor-pointer transition ${plan.featured ? "bg-[var(--accent)] text-[var(--accent-foreground)] hover:bg-[var(--accent-hover)]" : "bg-[var(--primary)] text-[var(--primary-foreground)] hover:opacity-90"}`}
+              >
+                {locale === "ar" ? plan.cta : plan.ctaEn}
+                <ArrowUpRight className="h-4 w-4" />
+              </button>
+
+              <ul className="mt-6 space-y-2.5">
+                {(locale === "ar" ? plan.features : plan.featuresEn).map((f) => (
+                  <li key={f} className="flex gap-2.5 text-sm leading-6">
+                    <span className={`mt-0.5 h-5 w-5 rounded-full grid place-items-center flex-shrink-0 ${plan.featured ? "bg-white/15 text-white" : "bg-[var(--accent)] text-white"}`}>
+                      <Check className="h-3.5 w-3.5" />
+                    </span>
+                    <span className={plan.featured ? "opacity-90" : "opacity-80"}>{f}</span>
+                  </li>
+                ))}
+              </ul>
+
+              <div className={`mt-6 text-xs pt-4 border-t ${plan.featured ? "opacity-60 border-white/10" : "opacity-50 border-[var(--border)]"}`}>
+                {locale === "ar" ? "سنة استضافة + شهادة SSL مجاناً" : "1 year hosting + SSL free"}
+              </div>
+            </motion.div>
+          ))}
+        </div>
+
+        <div className="mt-8 text-center">
+          <p className="text-sm opacity-60">
+            {locale === "ar" ? "تحتاج شيئاً مخصصاً؟ " : "Need something custom? "}
+            <a href="/contact" className="font-bold underline decoration-[var(--accent)] underline-offset-4">
+              {locale === "ar" ? "تحدث معنا" : "Talk to us"}
+            </a>
+            {" — "}
+            {locale === "ar" ? "نصمم باقة على مقاسك" : "we tailor a plan"}
+          </p>
+        </div>
+      </div>
+    </section>
+  );
+}
