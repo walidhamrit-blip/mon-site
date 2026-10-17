@@ -3,10 +3,6 @@ import { Pool } from "pg";
 
 const databaseUrl = process.env.DATABASE_URL;
 
-if (!databaseUrl) {
-  throw new Error("DATABASE_URL is required");
-}
-
 const globalForDb = globalThis as typeof globalThis & {
   __arenaNextJsPostgresqlPool?: Pool;
 };
@@ -14,7 +10,7 @@ const globalForDb = globalThis as typeof globalThis & {
 export const pool =
   globalForDb.__arenaNextJsPostgresqlPool ??
   new Pool({
-    connectionString: databaseUrl,
+    connectionString: databaseUrl || "postgresql://localhost:5432/postgres",
   });
 
 if (process.env.NODE_ENV !== "production") {
@@ -27,6 +23,9 @@ if (process.env.NODE_ENV !== "production") {
 let schemaReady: Promise<void> | null = null;
 
 export function ensureSchema(): Promise<void> {
+  if (!databaseUrl) {
+    return Promise.reject(new Error("DATABASE_URL is required"));
+  }
   if (!schemaReady) {
     schemaReady = (async () => {
       await pool.query(`

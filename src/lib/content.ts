@@ -1,5 +1,22 @@
 export const demos = [
   {
+    slug: "al-manhaj-company",
+    sector: "boutique",
+    sectorAr: "متجر إلكتروني وجملة",
+    sectorEn: "E-Commerce & B2B",
+    title: "شركة المنهج للقرطاسية والتقنية",
+    titleEn: "Al-Manhaj Stationery & Tech",
+    description:
+      "متجر إلكتروني حقيقي للتجزئة والجملة في طرابلس — كتالوج شامل، سلة تسوق، حاسبة جملة للمدارس والشركات، وتتبع الطلبات",
+    descriptionEn:
+      "Live retail & B2B wholesale store in Tripoli — full catalog, cart, wholesale calculator & order tracking",
+    image: "https://al-manhaj-company.vercel.app/images/new/landscape-01.jpg",
+    color: "#C6A664",
+    features: ["تجزئة وجملة B2B", "سلة وتتبع طلبات", "حاسبة خصومات الجملة", "عربي + إنجليزي"],
+    featuresEn: ["Retail & B2B Store", "Cart & Order Tracking", "Wholesale Calculator", "Arabic + English"],
+    previewUrl: "https://al-manhaj-company.vercel.app/",
+  },
+  {
     slug: "al-diwan-restaurant",
     sector: "restaurant",
     sectorAr: "مطاعم ومقاهي",

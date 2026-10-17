@@ -55,6 +55,27 @@ function asList<T>(value: unknown, fallback: readonly unknown[]): T[] {
   return fallback as T[];
 }
 
+function resolveDemos(value: unknown, fallback: readonly unknown[]): Demo[] {
+  const defaults = fallback as Demo[];
+  if (!Array.isArray(value) || value.length === 0) return defaults;
+  const stored = value as Demo[];
+  const hasAnyLiveStored = stored.some(
+    (d) => d.previewUrl && d.previewUrl !== "#" && /^https?:\/\//i.test(d.previewUrl),
+  );
+  if (!hasAnyLiveStored) {
+    const missingLiveDefaults = defaults.filter(
+      (def) =>
+        def.previewUrl &&
+        def.previewUrl !== "#" &&
+        !stored.some((s) => s.slug === def.slug),
+    );
+    if (missingLiveDefaults.length > 0) {
+      return [...missingLiveDefaults, ...stored];
+    }
+  }
+  return stored;
+}
+
 /** Lit configuration + contenu depuis la base (avec repli sur les défauts). */
 export async function getSiteData(): Promise<SiteData> {
   try {
@@ -66,7 +87,7 @@ export async function getSiteData(): Promise<SiteData> {
     return {
       config: mergeConfig(map.get(KEY_CONFIG)),
       content: {
-        demos: asList<Demo>(map.get(KEY_DEMOS), defaultDemos),
+        demos: resolveDemos(map.get(KEY_DEMOS), defaultDemos),
         faqs: asList<Faq>(map.get(KEY_FAQS), defaultFaqs),
         testimonials: asList<Testimonial>(
           map.get(KEY_TESTIMONIALS),

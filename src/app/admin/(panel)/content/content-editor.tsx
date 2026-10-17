@@ -398,7 +398,13 @@ export function ContentEditor({ initial }: { initial: SiteContent }) {
                     />
                   </div>
                 </label>
-                <Field label="Lien aperçu" dir="ltr" value={demo.previewUrl} onChange={(v) => setDemo(i, { previewUrl: v })} />
+                <Field
+                  label="URL du site réel (https://… pour visite interactive en direct, ou #)"
+                  dir="ltr"
+                  placeholder="https://mon-site-client.vercel.app/"
+                  value={demo.previewUrl}
+                  onChange={(v) => setDemo(i, { previewUrl: v })}
+                />
               </div>
               <div className="mt-4 grid lg:grid-cols-2 gap-4">
                 <Area label="Description (arabe)" dir="rtl" value={demo.description} onChange={(v) => setDemo(i, { description: v })} />
