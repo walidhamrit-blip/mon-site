@@ -82,7 +82,7 @@ export function DemoViewer({ demo, allDemos }: { demo: Demo; allDemos: Demo[] })
                 <img loading="lazy" decoding="async" src={demo.image} alt={title} className="w-full h-full object-cover" />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/65 via-transparent to-transparent" />
                 <div className="absolute bottom-0 p-6 text-white">
-                  <span className="px-3 py-1 rounded-full bg-[var(--accent)] text-black text-xs font-bold">
+                  <span className="px-3 py-1 rounded-full bg-[var(--accent)] text-[var(--accent-foreground)] text-xs font-bold">
                     {sectorLabel}
                   </span>
                   <h1 className="mt-2 text-2xl sm:text-3xl font-black">{title}</h1>
@@ -100,7 +100,7 @@ export function DemoViewer({ demo, allDemos }: { demo: Demo; allDemos: Demo[] })
 
             <div className="space-y-6">
               <div className="rounded-[24px] bg-[var(--card)] border border-[var(--border)] p-6">
-                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[var(--accent)] text-black text-xs font-bold">
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[var(--accent)] text-[var(--accent-foreground)] text-xs font-bold">
                   <Sparkles className="h-3.5 w-3.5" />
                   {locale === "ar" ? "معرض حي — قابل للتخصيص" : "Live Demo — Customizable"}
                 </div>

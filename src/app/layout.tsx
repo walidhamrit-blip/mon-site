@@ -6,6 +6,7 @@ import { ThemeProvider } from "@/components/theme-provider";
 import { SiteProvider } from "@/components/site-provider";
 import { getSiteData } from "@/lib/store";
 import { siteConfig } from "@/lib/config";
+import { THEME_BOOT_SCRIPT, themeCss } from "@/lib/themes";
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteConfig.url),
@@ -63,6 +64,10 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
           rel="stylesheet"
           href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800;900&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@400;600;700&display=swap"
         />
+        {/* Palettes des 8 thèmes (clair + sombre) — générées depuis src/lib/themes.ts */}
+        <style dangerouslySetInnerHTML={{ __html: themeCss() }} />
+        {/* Applique thème + mode avant le premier rendu (aucun clignotement) */}
+        <script dangerouslySetInnerHTML={{ __html: THEME_BOOT_SCRIPT }} />
       </head>
       <body
         className="antialiased"

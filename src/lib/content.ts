@@ -135,6 +135,40 @@ export const demos = [
     featuresEn: ["LEGO, Barbie & Scooters", "Cart & Cash on Delivery", "Tripoli Branch Locator", "Arabic + English"],
     previewUrl: "https://demo-jouets.vercel.app/",
   },
+  {
+    slug: "al-bay-family-restaurant",
+    sector: "restaurant",
+    sectorAr: "مطاعم وطبخ ليبية",
+    sectorEn: "Restaurants & Libyan Cuisine",
+    title: "مطعم العيلة — مطبخ طرابلس الأصيل",
+    titleEn: "Al-Bay — Family Restaurant, Tripoli",
+    description:
+      "مطعم عائلي في قلب طرابلس — قائمة ليبية أصيلة (كسكس، بازين، مشاوي، رشتة، مبخبقة) بأسعار واضحة، سلة طلب، وقائمة رقمية للتصفح والمشاركة",
+    descriptionEn:
+      "Family restaurant in the heart of Tripoli — authentic Libyan menu (couscous, bazin, grills, rishta, mbakbaka) with clear prices, a basket and a shareable digital menu",
+    image: "https://al-bay.vercel.app/assets/family-table.jpg",
+    color: "#C2410C",
+    features: ["قائمة ليبية أصيلة", "سلة طلب + واتساب", "قائمة رقمية للمشاركة", "هوية دافئة بلمسة عصرية"],
+    featuresEn: ["Authentic Libyan menu", "Basket & WhatsApp", "Shareable digital menu", "Warm modern identity"],
+    previewUrl: "https://al-bay.vercel.app/",
+  },
+  {
+    slug: "alssadaka-sanitary",
+    sector: "sanitary",
+    sectorAr: "أطقم صحية وصنابير نحاس",
+    sectorEn: "Sanitary & Brassware",
+    title: "الصداقة — أطقم صحية ونحاس فاخر",
+    titleEn: "Alssadaka — Premium Sanitary & Brassware",
+    description:
+      "مصنّع وموزّع أطقم صحية وصنابير نحاسية — كتالوج منتجات مع فلترة فورية (حمام، مطبخ، صمامات)، ضمان 5 سنوات، ونموذج تواصل ثنائي اللغة",
+    descriptionEn:
+      "Manufacturer & distributor of sanitary fixtures, brass valves and premium mixers — instantly filtered catalog (bathroom, kitchen, valves), 5-year warranty and a bilingual contact form",
+    image: "https://images.unsplash.com/photo-1584622650111-993a426fbf0a?auto=format&fit=crop&w=1200&q=80",
+    color: "#0F766E",
+    features: ["كتالوج مع فلترة فورية", "أطقم + صنابير + صمامات", "ضمان 5 سنوات", "عربي + إنجليزي"],
+    featuresEn: ["Instantly filtered catalog", "Fixtures, mixers & valves", "5-year warranty", "Arabic + English"],
+    previewUrl: "https://alssadaka-sanitary.vercel.app/",
+  },
 ] as const;
 
 export const sectors = [
@@ -146,6 +180,7 @@ export const sectors = [
   { id: "appliances", labelAr: "أجهزة ومنزل", labelEn: "Home & Appliances" },
   { id: "hardware", labelAr: "مواد بناء وعدد", labelEn: "Tools & Construction" },
   { id: "stationery", labelAr: "قرطاسية وتقنية", labelEn: "Stationery & Tech" },
+  { id: "sanitary", labelAr: "أطقم صحية وصنابير", labelEn: "Sanitary & Brassware" },
 ] as const;
 
 export const whyUs = [

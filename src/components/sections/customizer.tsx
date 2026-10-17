@@ -1,6 +1,6 @@
 "use client";
 import { useState } from "react";
-import { Maximize2, ExternalLink, Eye, Sliders } from "lucide-react";
+import { Maximize2, ExternalLink, Eye, Sliders, Palette } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import { ScaledLiveIframe, FullscreenLiveViewer } from "@/components/live-site-frames";
 import type { Demo } from "@/lib/site-types";
@@ -86,6 +86,16 @@ export function Customizer() {
                 ? "فتح موقع الماسة بملء الشاشة (حاسوب / هاتف)"
                 : "Open Al-Massa Fullscreen (Desktop / Mobile)"}
             </button>
+            <button
+              type="button"
+              onClick={() =>
+                document.getElementById("themes")?.scrollIntoView({ behavior: "smooth" })
+              }
+              className="h-9 px-4 rounded-full text-xs font-black bg-white/10 border border-white/20 text-white inline-flex items-center gap-1.5 cursor-pointer hover:bg-white/20 transition-colors"
+            >
+              <Palette className="h-3.5 w-3.5" />
+              {locale === "ar" ? "ثيمات الموقع (8 ثيمات)" : "Site themes (8 themes)"}
+            </button>
           </div>
         </div>
 
@@ -113,6 +123,11 @@ export function Customizer() {
                   />
                 ))}
               </div>
+              <p className="mt-2 text-[11px] opacity-55 leading-relaxed">
+                {locale === "ar"
+                  ? "معاينة العميل فقط — لتغيير ألوان موقعك بالكامل استخدم ثيمات الموقع بالأسفل."
+                  : "Client preview only — to recolor the whole site, use the site themes below."}
+              </p>
             </div>
 
             <div>

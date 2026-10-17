@@ -50,6 +50,12 @@ const translations = {
       previewDesc: "فخامة تُعاش، تفاصيل تُروى — الوكيل المعتمد لشركة الفراشة للمراتب الطبية والمفروشات الأصلية في طرابلس",
       previewBtn: "تصفّح المجموعة",
     },
+    themes: {
+      title: "ثيمات جاهزة… اختر هوية موقعك",
+      subtitle:
+        "8 ثيمات فاخرة — الأكثر طلباً في مواقع الشركات الفاخرة. كل ثيم يعمل بنسخة فاتحة وأخرى داكنة، والتبديل بينهما يتم بزر مستقل تماماً عن اختيار الثيم.",
+      note: "كل ثيم متاح في الوضعين الفاتح والداكن — زر الوضع مستقل في الشريط العلوي أعلى الصفحة.",
+    },
     process: {
       title: "من الفكرة إلى الإطلاق",
       subtitle: "5 خطوات واضحة — تعرف أين نحن كل يوم",
@@ -140,6 +146,12 @@ const translations = {
       previewTitle: "Al-Massa Blue Diamond — Luxury Mattresses",
       previewDesc: "Luxury lived, details told — Authorized Al-Farasha dealer for orthopedic mattresses & bespoke bedding in Tripoli",
       previewBtn: "Explore Collection",
+    },
+    themes: {
+      title: "Ready-made themes… pick your identity",
+      subtitle:
+        "8 premium themes — the most requested palettes on luxury business websites. Each one runs in a light and a dark version, switched by a button of its own.",
+      note: "Every theme ships in both light and dark — the mode has its own button in the top bar.",
     },
     process: {
       title: "From idea to launch",
