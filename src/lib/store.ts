@@ -59,19 +59,15 @@ function resolveDemos(value: unknown, fallback: readonly unknown[]): Demo[] {
   const defaults = fallback as Demo[];
   if (!Array.isArray(value) || value.length === 0) return defaults;
   const stored = value as Demo[];
-  const hasAnyLiveStored = stored.some(
-    (d) => d.previewUrl && d.previewUrl !== "#" && /^https?:\/\//i.test(d.previewUrl),
+  const missingLiveDefaults = defaults.filter(
+    (def) =>
+      def.previewUrl &&
+      def.previewUrl !== "#" &&
+      /^https?:\/\//i.test(def.previewUrl) &&
+      !stored.some((s) => s.slug === def.slug || s.previewUrl === def.previewUrl),
   );
-  if (!hasAnyLiveStored) {
-    const missingLiveDefaults = defaults.filter(
-      (def) =>
-        def.previewUrl &&
-        def.previewUrl !== "#" &&
-        !stored.some((s) => s.slug === def.slug),
-    );
-    if (missingLiveDefaults.length > 0) {
-      return [...missingLiveDefaults, ...stored];
-    }
+  if (missingLiveDefaults.length > 0) {
+    return [...missingLiveDefaults, ...stored];
   }
   return stored;
 }

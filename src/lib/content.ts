@@ -17,6 +17,23 @@ export const demos = [
     previewUrl: "https://al-manhaj-company.vercel.app/",
   },
   {
+    slug: "tripo-teck-outillage",
+    sector: "boutique",
+    sectorAr: "مواد البناء والعدد",
+    sectorEn: "Hardware & Construction",
+    title: "تريبو-تيك — مواد البناء والعدد الاحترافية",
+    titleEn: "TRIPO-TECK — Hardware & Construction",
+    description:
+      "متجر متكامل للعدد الكهربائية واليدوية ومواد البناء والدهانات ومعدات السلامة في طرابلس — سلة تسوق وعروض أسعار للمقاولين والورشات",
+    descriptionEn:
+      "Power tools, construction materials, paints & safety equipment store in Tripoli — online cart & B2B contractor quotes",
+    image: "https://m-et-outillage-modele-3.vercel.app/images/hero1.jpg",
+    color: "#D97706",
+    features: ["عدد ومواد بناء", "سلة وطلب فوري", "عروض أسعار للمقاولين", "8 أقسام متخصصة"],
+    featuresEn: ["Tools & Construction", "Instant Cart & Order", "Contractor B2B Quotes", "8 Pro Categories"],
+    previewUrl: "https://m-et-outillage-modele-3.vercel.app/",
+  },
+  {
     slug: "al-diwan-restaurant",
     sector: "restaurant",
     sectorAr: "مطاعم ومقاهي",
