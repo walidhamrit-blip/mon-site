@@ -17,7 +17,14 @@ import type { Demo } from "@/lib/site-types";
 import { useI18n } from "@/lib/i18n";
 
 export function isRealUrl(url?: string): boolean {
-  return Boolean(url && url !== "#" && /^https?:\/\//i.test(url.trim()));
+  return Boolean(url && url !== "#" && (/^https?:\/\//i.test(url.trim()) || url.trim().startsWith("/")));
+}
+
+export function getIframeSrc(url: string): string {
+  if (/tulin-magazin\.vercel\.app/i.test(url)) {
+    return "/live-demos/tulin-magazin/index.html";
+  }
+  return url;
 }
 
 /**
@@ -96,7 +103,7 @@ export function ScaledLiveIframe({
       >
         <iframe
           key={`${url}-${reloadKey}-${mode}`}
-          src={url}
+          src={getIframeSrc(url)}
           title={title}
           className="w-full h-full border-0 bg-white block"
           loading="eager"
@@ -285,7 +292,7 @@ export function FullscreenLiveViewer({
           )}
           <iframe
             key={`${demo.slug}-${reloadKey}`}
-            src={demo.previewUrl}
+            src={getIframeSrc(demo.previewUrl)}
             title={title}
             className="w-full flex-1 h-full border-0 bg-white block"
             loading="eager"
