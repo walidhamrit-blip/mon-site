@@ -55,10 +55,22 @@ function asList<T>(value: unknown, fallback: readonly unknown[]): T[] {
   return fallback as T[];
 }
 
+const LEGACY_PLACEHOLDER_SLUGS = new Set([
+  "al-diwan-restaurant",
+  "noor-clinic",
+  "dar-property",
+  "zay-boutique",
+  "itqan-academy",
+  "safir-hotel",
+]);
+
 function resolveDemos(value: unknown, fallback: readonly unknown[]): Demo[] {
   const defaults = fallback as Demo[];
   if (!Array.isArray(value) || value.length === 0) return defaults;
-  const stored = value as Demo[];
+  const stored = (value as Demo[]).filter(
+    (d) => !(LEGACY_PLACEHOLDER_SLUGS.has(d.slug) && (!d.previewUrl || d.previewUrl === "#")),
+  );
+  if (stored.length === 0) return defaults;
   const missingLiveDefaults = defaults.filter(
     (def) =>
       def.previewUrl &&
