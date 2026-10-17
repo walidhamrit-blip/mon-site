@@ -59,7 +59,7 @@ export function Customizer() {
           style={{ background: accent.hex }}
         />
       </div>
-      <div className="mx-auto max-w-[1280px] px-4 sm:px-6 lg:px-8 relative">
+      <div className="site-container px-4 sm:px-6 lg:px-8 relative">
         <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6 mb-8">
           <div>
             <div
@@ -257,7 +257,7 @@ export function Customizer() {
             ) : (
               <>
                 <div className="relative">
-                  <img
+                  <img loading="lazy" decoding="async"
                     src="https://al-massa.vercel.app/images/product-diamond-mattress.jpg"
                     alt={t.customizer.previewTitle}
                     className="w-full aspect-[16/9] object-cover"

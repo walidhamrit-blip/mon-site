@@ -8,7 +8,7 @@ export default function PricingPage() {
   return (
     <div className="pt-[96px]">
       <section className="py-10 bg-[var(--secondary)]/30 border-b border-[var(--border)]">
-        <div className="mx-auto max-w-[1280px] px-4 sm:px-6 lg:px-8 text-center max-w-[720px]">
+        <div className="mx-auto px-4 sm:px-6 lg:px-8 text-center max-w-[720px]">
           <h1 className="text-[38px] lg:text-[52px] font-black leading-none tracking-tight">
             {locale === "ar" ? "باقات واضحة — بلا مفاجآت" : "Clear plans — no surprises"}
           </h1>

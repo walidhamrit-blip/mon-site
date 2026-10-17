@@ -11,7 +11,7 @@ export function Pricing() {
 
   return (
     <section id="pricing" className="py-16 lg:py-24 bg-[var(--secondary)]/40">
-      <div className="mx-auto max-w-[1280px] px-4 sm:px-6 lg:px-8">
+      <div className="site-container px-4 sm:px-6 lg:px-8">
         <div className="max-w-[760px] mx-auto text-center">
           <div className="inline-flex items-center gap-2 text-sm font-semibold tracking-[0.12em] text-[var(--accent)]">
             <span className="h-px w-8 bg-[var(--accent)]" />
@@ -34,7 +34,7 @@ export function Pricing() {
               className={`relative rounded-[24px] border p-6 lg:p-7 flex flex-col ${plan.featured ? "bg-[var(--primary)] text-[var(--primary-foreground)] border-[var(--primary)] shadow-[0_20px_50px_rgba(0,0,0,0.15)] lg:scale-[1.03] lg:-mt-2" : "bg-[var(--card)] border-[var(--border)]"}`}
             >
               {plan.featured && (
-                <div className="absolute -top-3 start-1/2 -translate-x-1/2 px-4 py-1.5 rounded-full bg-[var(--accent)] text-[var(--accent-foreground)] text-xs font-black flex items-center gap-1.5 shadow">
+                <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-4 py-1.5 rounded-full bg-[var(--accent)] text-[var(--accent-foreground)] text-xs font-black flex items-center gap-1.5 shadow">
                   <Sparkles className="h-3.5 w-3.5" />
                   {locale === "ar" ? plan.badge : plan.badgeEn}
                 </div>

@@ -1,15 +1,17 @@
 "use client";
-import { motion, useScroll, useTransform } from "framer-motion";
-import { ArrowUpRight, Play, Sparkles, Star, Check } from "lucide-react";
+import { motion, useScroll, useTransform, useReducedMotion } from "framer-motion";
+import { ArrowUpRight, Play, Star } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import { useSiteConfig } from "@/components/site-provider";
 import { whatsappLink } from "@/lib/utils";
 import { useRef } from "react";
+import { HeroShowcase } from "@/components/sections/hero-showcase";
 
 export function Hero() {
   const siteConfig = useSiteConfig();
-  const { locale, t, dir } = useI18n();
+  const { locale, t } = useI18n();
   const ref = useRef<HTMLDivElement>(null);
+  const reducedMotion = useReducedMotion();
   const { scrollYProgress } = useScroll({ target: ref, offset: ["start start", "end start"] });
   const y = useTransform(scrollYProgress, [0, 1], ["0%", "20%"]);
   const opacity = useTransform(scrollYProgress, [0, 0.8], [1, 0]);
@@ -27,10 +29,10 @@ export function Hero() {
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[1200px] h-[600px] bg-gradient-to-b from-[var(--accent)]/10 via-transparent to-transparent blur-[80px] rounded-full pointer-events-none" />
       </div>
 
-      <div className="mx-auto max-w-[1280px] px-4 sm:px-6 lg:px-8">
-        <div className="grid lg:grid-cols-[1.1fr_0.9fr] gap-10 lg:gap-6 items-center py-10 lg:py-16">
+      <div className="site-container px-4 sm:px-6 lg:px-8">
+        <div className="grid lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] gap-10 lg:gap-10 xl:gap-14 items-center py-10 lg:py-16">
           {/* Left */}
-          <motion.div style={{ opacity }} className="relative">
+          <motion.div style={{ opacity: reducedMotion ? 1 : opacity }} className="relative min-w-0">
             <motion.div
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
@@ -50,7 +52,7 @@ export function Hero() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.1, duration: 0.6 }}
-                className="block"
+                className="block hero-gold-shine"
               >
                 {t.hero.title1}
               </motion.span>
@@ -60,11 +62,11 @@ export function Hero() {
                 transition={{ delay: 0.2, duration: 0.6 }}
                 className="block"
               >
-                <span className="relative inline-block">
+                <span className="relative inline-block hero-gold-shine">
                   {t.hero.title2}
                   <span className="absolute -bottom-2 start-0 end-0 h-[8px] bg-[var(--accent)]/30 -z-10 rounded-full hidden sm:block" />
                 </span>{" "}
-                <span className="font-light italic opacity-80">{t.hero.title3}</span>
+                <span className="hero-gold-shine font-light italic">{t.hero.title3}</span>
               </motion.span>
             </h1>
 
@@ -145,104 +147,8 @@ export function Hero() {
             </div>
           </motion.div>
 
-          {/* Right — Device mockups */}
-          <motion.div style={{ y }} className="relative lg:h-[560px] flex items-center justify-center">
-            {/* Glow */}
-            <div className="absolute inset-0 -z-10 flex items-center justify-center">
-              <div className="w-[420px] h-[420px] rounded-full bg-[var(--accent)]/15 blur-[60px]" />
-            </div>
-
-            {/* Desktop mockup */}
-            <motion.div
-              initial={{ opacity: 0, y: 30, rotate: -2 }}
-              animate={{ opacity: 1, y: 0, rotate: -1 }}
-              transition={{ duration: 0.8, delay: 0.2 }}
-              className="relative w-full max-w-[520px] hidden sm:block"
-            >
-              <div className="rounded-[20px] bg-[var(--card)] border border-[var(--border)] shadow-[0_24px_64px_rgba(0,0,0,0.12)] overflow-hidden">
-                <div className="h-9 flex items-center gap-1.5 px-4 border-b border-[var(--border)] bg-[var(--secondary)]/50">
-                  <span className="h-3 w-3 rounded-full bg-red-400" />
-                  <span className="h-3 w-3 rounded-full bg-yellow-400" />
-                  <span className="h-3 w-3 rounded-full bg-green-400" />
-                  <div className="ms-3 flex-1 max-w-[320px] h-6 rounded-full bg-[var(--card)] border border-[var(--border)] flex items-center px-3 text-xs opacity-60">
-                    <span className="truncate">nukhba.ly — {locale === "ar" ? "معاينة حية" : "Live preview"}</span>
-                  </div>
-                </div>
-                <div className="relative aspect-[16/10] overflow-hidden bg-white">
-                  <img
-                    src="https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=1200&q=80&auto=format&fit=crop"
-                    alt="Preview"
-                    className="w-full h-full object-cover"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
-                  <div className="absolute bottom-0 inset-x-0 p-5 text-white">
-                    <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/20 backdrop-blur text-xs font-semibold">
-                      <Sparkles className="h-3 w-3" />
-                      {locale === "ar" ? "تصميم فاخر • سريع • متجاوب" : "Luxury • Fast • Responsive"}
-                    </div>
-                    <h3 className="mt-2 text-xl font-black">{locale === "ar" ? "مطعم الديوان — طرابلس" : "Al-Diwan — Tripoli"}</h3>
-                    <p className="text-sm opacity-80">{locale === "ar" ? "قائمة • حجز • طلب واتساب" : "Menu • Booking • WhatsApp order"}</p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Floating card */}
-              <motion.div
-                animate={{ y: [0, -8, 0] }}
-                transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-                className="absolute -bottom-6 -start-6 bg-[var(--card)] rounded-2xl border border-[var(--border)] shadow-xl p-4 flex items-center gap-3"
-              >
-                <div className="h-10 w-10 rounded-full bg-green-500 grid place-items-center text-white">
-                  <Check className="h-5 w-5" />
-                </div>
-                <div>
-                  <div className="text-sm font-bold">{locale === "ar" ? "تم الحجز بنجاح ✓" : "Booking confirmed ✓"}</div>
-                  <div className="text-xs opacity-60">{locale === "ar" ? "طاولة لشخصين — 8 مساءً" : "Table for 2 — 8 PM"}</div>
-                </div>
-              </motion.div>
-            </motion.div>
-
-            {/* Phone mockup */}
-            <motion.div
-              initial={{ opacity: 0, y: 30, rotate: 3 }}
-              animate={{ opacity: 1, y: 0, rotate: 2 }}
-              transition={{ duration: 0.8, delay: 0.4 }}
-              className="absolute -end-2 bottom-6 sm:bottom-0 sm:end-2 w-[150px] sm:w-[180px] hidden sm:block"
-            >
-              <div className="rounded-[28px] bg-black p-2 shadow-[0_20px_50px_rgba(0,0,0,0.3)]">
-                <div className="rounded-[22px] overflow-hidden bg-white relative aspect-[9/19]">
-                  <img
-                    src="https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=600&q=80&auto=format&fit=crop"
-                    alt="Mobile"
-                    className="w-full h-full object-cover"
-                  />
-                  <div className="absolute bottom-0 inset-x-0 p-3 bg-gradient-to-t from-black/70 to-transparent text-white">
-                    <div className="text-xs font-bold">{locale === "ar" ? "اطلب الآن" : "Order now"}</div>
-                    <div className="mt-1 h-7 rounded-full bg-[var(--accent)] grid place-items-center text-xs font-bold text-black">
-                      {locale === "ar" ? "واتساب" : "WhatsApp"}
-                    </div>
-                  </div>
-                  <div className="absolute top-2 left-1/2 -translate-x-1/2 h-1.5 w-12 bg-black rounded-full" />
-                </div>
-              </div>
-              <motion.div
-                animate={{ y: [0, -6, 0] }}
-                transition={{ duration: 3, repeat: Infinity, delay: 1 }}
-                className="absolute -start-10 top-10 bg-[var(--card)] rounded-full shadow-lg px-3 py-2 flex items-center gap-2 border border-[var(--border)]"
-              >
-                <span className="h-2 w-2 bg-green-500 rounded-full animate-pulse" />
-                <span className="text-xs font-bold">{locale === "ar" ? "متصل" : "Online"}</span>
-              </motion.div>
-            </motion.div>
-
-            {/* Mobile fallback */}
-            <div className="sm:hidden w-full max-w-[360px] rounded-[20px] bg-[var(--card)] border border-[var(--border)] shadow-xl overflow-hidden">
-              <img src="https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=800&q=80&auto=format&fit=crop" alt="" className="w-full aspect-[4/3] object-cover" />
-              <div className="p-4">
-                <div className="text-sm font-bold">{locale === "ar" ? "تصميم يبيع — جاهز للهاتف أولاً" : "Design that sells — mobile first"}</div>
-                <div className="text-xs opacity-60 mt-1">{locale === "ar" ? "سريع، أنيق، ومحسّن لجوجل" : "Fast, elegant, Google-optimized"}</div>
-              </div>
-            </div>
+          <motion.div style={{ y: reducedMotion ? 0 : y }} className="relative min-w-0">
+            <HeroShowcase />
           </motion.div>
         </div>
 

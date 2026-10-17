@@ -16,7 +16,7 @@ export function WhyUs() {
   const { locale, t } = useI18n();
   return (
     <section className="py-16 lg:py-20 bg-[var(--secondary)]/50">
-      <div className="mx-auto max-w-[1280px] px-4 sm:px-6 lg:px-8">
+      <div className="site-container px-4 sm:px-6 lg:px-8">
         <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6 mb-10">
           <div>
             <div className="inline-flex items-center gap-2 text-sm font-semibold tracking-[0.12em] text-[var(--accent)]">

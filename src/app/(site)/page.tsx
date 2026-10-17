@@ -1,3 +1,4 @@
+import { ServicesRibbon } from "@/components/sections/services-ribbon";
 import { Hero } from "@/components/sections/hero";
 import { WhyUs } from "@/components/sections/why-us";
 import { DemosGallery } from "@/components/sections/demos-gallery";
@@ -12,6 +13,7 @@ export default function Home() {
   return (
     <>
       <Hero />
+      <ServicesRibbon />
       <WhyUs />
       <DemosGallery />
       <Customizer />

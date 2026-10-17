@@ -11,7 +11,7 @@ export default function ContactPage() {
   return (
     <div className="pt-[96px]">
       <section className="py-10 bg-[var(--secondary)]/30 border-b border-[var(--border)]">
-        <div className="mx-auto max-w-[1280px] px-4 sm:px-6 lg:px-8">
+        <div className="site-container px-4 sm:px-6 lg:px-8">
           <div className="grid lg:grid-cols-2 gap-8 items-center">
             <div>
               <h1 className="text-[36px] lg:text-[48px] font-black leading-none tracking-tight">{t.contactPage.title}</h1>
@@ -36,7 +36,7 @@ export default function ContactPage() {
 
             <div className="rounded-[24px] overflow-hidden border border-[var(--border)] bg-[var(--card)] p-2">
               <div className="rounded-[18px] overflow-hidden aspect-[4/3] bg-[var(--secondary)] relative">
-                <img src="https://images.unsplash.com/photo-1497366216548-37526070297c?w=1200&q=80&auto=format&fit=crop" alt="Map" className="w-full h-full object-cover" />
+                <img loading="lazy" decoding="async" src="https://images.unsplash.com/photo-1497366216548-37526070297c?w=1200&q=80&auto=format&fit=crop" alt="Map" className="w-full h-full object-cover" />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
                 <div className="absolute bottom-4 start-4 end-4 bg-[var(--card)] rounded-2xl p-4 flex items-center gap-3 shadow-xl">
                   <div className="h-10 w-10 rounded-full bg-[var(--accent)] grid place-items-center">📍</div>
