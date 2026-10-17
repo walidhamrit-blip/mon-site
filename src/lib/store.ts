@@ -55,6 +55,35 @@ function asList<T>(value: unknown, fallback: readonly unknown[]): T[] {
   return fallback as T[];
 }
 
+const LEGACY_PLACEHOLDER_SLUGS = new Set([
+  "al-diwan-restaurant",
+  "noor-clinic",
+  "dar-property",
+  "zay-boutique",
+  "itqan-academy",
+  "safir-hotel",
+]);
+
+function resolveDemos(value: unknown, fallback: readonly unknown[]): Demo[] {
+  const defaults = fallback as Demo[];
+  if (!Array.isArray(value) || value.length === 0) return defaults;
+  const stored = (value as Demo[]).filter(
+    (d) => !(LEGACY_PLACEHOLDER_SLUGS.has(d.slug) && (!d.previewUrl || d.previewUrl === "#")),
+  );
+  if (stored.length === 0) return defaults;
+  const missingLiveDefaults = defaults.filter(
+    (def) =>
+      def.previewUrl &&
+      def.previewUrl !== "#" &&
+      /^https?:\/\//i.test(def.previewUrl) &&
+      !stored.some((s) => s.slug === def.slug || s.previewUrl === def.previewUrl),
+  );
+  if (missingLiveDefaults.length > 0) {
+    return [...missingLiveDefaults, ...stored];
+  }
+  return stored;
+}
+
 /** Lit configuration + contenu depuis la base (avec repli sur les défauts). */
 export async function getSiteData(): Promise<SiteData> {
   try {
@@ -66,7 +95,7 @@ export async function getSiteData(): Promise<SiteData> {
     return {
       config: mergeConfig(map.get(KEY_CONFIG)),
       content: {
-        demos: asList<Demo>(map.get(KEY_DEMOS), defaultDemos),
+        demos: resolveDemos(map.get(KEY_DEMOS), defaultDemos),
         faqs: asList<Faq>(map.get(KEY_FAQS), defaultFaqs),
         testimonials: asList<Testimonial>(
           map.get(KEY_TESTIMONIALS),

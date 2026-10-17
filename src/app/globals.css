@@ -3,6 +3,10 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
+  --font-cairo: "Cairo", system-ui, sans-serif;
+  --font-plex-ar: "IBM Plex Sans Arabic", system-ui, sans-serif;
+  --font-playfair: "Playfair Display", Georgia, serif;
+  --font-inter: "Inter", system-ui, sans-serif;
   --background: #FCFCF9;
   --foreground: #0C0C0F;
   --card: #FFFFFF;

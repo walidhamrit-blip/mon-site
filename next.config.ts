@@ -4,7 +4,16 @@ const nextConfig: NextConfig = {
   images: {
     remotePatterns: [
       { protocol: "https", hostname: "images.unsplash.com" },
+      { protocol: "https", hostname: "images.pexels.com" },
       { protocol: "https", hostname: "i.pravatar.cc" },
+      { protocol: "https", hostname: "al-manhaj-company.vercel.app" },
+      { protocol: "https", hostname: "m-et-outillage-modele-3.vercel.app" },
+      { protocol: "https", hostname: "tulin-magazin.vercel.app" },
+      { protocol: "https", hostname: "pizzeria-demo1.vercel.app" },
+      { protocol: "https", hostname: "demo-meubles.vercel.app" },
+      { protocol: "https", hostname: "hala-dun.vercel.app" },
+      { protocol: "https", hostname: "demo-jouets.vercel.app" },
+      { protocol: "https", hostname: "al-massa.vercel.app" },
     ],
   },
   async redirects() {

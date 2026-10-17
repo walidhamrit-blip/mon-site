@@ -1,39 +1,10 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
-import { Cairo, IBM_Plex_Sans_Arabic, Playfair_Display, Inter } from "next/font/google";
 import "./globals.css";
 import { I18nProvider } from "@/lib/i18n";
 import { ThemeProvider } from "@/components/theme-provider";
 import { SiteProvider } from "@/components/site-provider";
 import { getSiteData } from "@/lib/store";
-
-const cairo = Cairo({
-  subsets: ["arabic", "latin"],
-  weight: ["400", "500", "600", "700", "800", "900"],
-  variable: "--font-cairo",
-  display: "swap",
-});
-
-const plexArabic = IBM_Plex_Sans_Arabic({
-  subsets: ["arabic"],
-  weight: ["400", "500", "600", "700"],
-  variable: "--font-plex-ar",
-  display: "swap",
-});
-
-const playfair = Playfair_Display({
-  subsets: ["latin"],
-  weight: ["400", "600", "700"],
-  variable: "--font-playfair",
-  display: "swap",
-});
-
-const inter = Inter({
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
-  variable: "--font-inter",
-  display: "swap",
-});
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://nukhba.ly"),
@@ -84,8 +55,16 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
 
   return (
     <html lang="ar" dir="rtl" suppressHydrationWarning>
+      <head>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link
+          rel="stylesheet"
+          href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800;900&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@400;600;700&display=swap"
+        />
+      </head>
       <body
-        className={`${cairo.variable} ${plexArabic.variable} ${playfair.variable} ${inter.variable} antialiased`}
+        className="antialiased"
         style={{ fontFamily: "var(--font-cairo), var(--font-inter), system-ui" }}
       >
         <ThemeProvider>

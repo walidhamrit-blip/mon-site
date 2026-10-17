@@ -1,21 +1,55 @@
 "use client";
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Smartphone, Monitor, ArrowUpRight, Sparkles } from "lucide-react";
+import {
+  Smartphone,
+  Monitor,
+  ArrowUpRight,
+  Sparkles,
+  ExternalLink,
+  Maximize2,
+  RotateCw,
+  Globe,
+} from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import { sectors } from "@/lib/content";
 import { useSiteContent } from "@/components/site-provider";
+import type { Demo } from "@/lib/site-types";
+import {
+  isRealUrl,
+  ScaledLiveIframe,
+  FullscreenLiveViewer,
+} from "@/components/live-site-frames";
 import Link from "next/link";
+
+function formatHost(url: string, fallbackSlug: string): string {
+  if (!isRealUrl(url)) return `nukhba.ly/${fallbackSlug}`;
+  try {
+    const parsed = new URL(url);
+    return parsed.host + (parsed.pathname !== "/" ? parsed.pathname : "");
+  } catch {
+    return url;
+  }
+}
 
 export function DemosGallery() {
   const { demos } = useSiteContent();
   const { locale, t } = useI18n();
   const [filter, setFilter] = useState("all");
   const [mode, setMode] = useState<"mobile" | "desktop">("desktop");
-  const [active, setActive] = useState<string | null>(demos[0].slug);
+  const [active, setActive] = useState<string | null>(demos[0]?.slug ?? null);
+  const [iframeKey, setIframeKey] = useState(0);
+  const [fullscreen, setFullscreen] = useState(false);
 
   const filtered = filter === "all" ? demos : demos.filter((d) => d.sector === filter);
-  const activeDemo = demos.find((d) => d.slug === active) || demos[0];
+  const activeDemo: Demo = demos.find((d) => d.slug === active) || demos[0];
+  const hasLiveUrl = isRealUrl(activeDemo?.previewUrl);
+
+  if (!activeDemo) return null;
+
+  const reloadIframe = () => {
+    setIframeKey((k) => k + 1);
+  };
 
   return (
     <section id="demos" className="py-16 lg:py-24">
@@ -24,27 +58,46 @@ export function DemosGallery() {
           <div>
             <div className="inline-flex items-center gap-2 text-sm font-semibold tracking-[0.12em] text-[var(--accent)]">
               <span className="h-px w-8 bg-[var(--accent)]" />
-              {locale === "ar" ? "المعارض الحية" : "LIVE DEMOS"}
+              {locale === "ar" ? "المعارض والأعمال الحية" : "LIVE SHOWCASES & REAL WORK"}
             </div>
-            <h2 className="mt-3 text-[32px] lg:text-[44px] font-black tracking-tight leading-none">{t.demos.title}</h2>
-            <p className="mt-3 opacity-60 max-w-[48ch]">{t.demos.subtitle}</p>
+            <h2 className="mt-3 text-[32px] lg:text-[44px] font-black tracking-tight leading-none">
+              {t.demos.title}
+            </h2>
+            <p className="mt-3 opacity-60 max-w-[54ch]">
+              {locale === "ar"
+                ? "تصفّح مواقع عملائنا الحقيقية مباشرةً أو افتحها بملء الشاشة مع إمكانية التبديل بين عرض الحاسوب والهاتف"
+                : "Browse our real client websites live or open them in fullscreen with Desktop and Mobile view options"}
+            </p>
           </div>
           <div className="flex flex-wrap items-center gap-3">
             <div className="flex items-center gap-1 p-1 rounded-full bg-[var(--secondary)] border border-[var(--border)]">
               <button
+                type="button"
                 onClick={() => setMode("desktop")}
-                className={`h-8 px-4 rounded-full text-sm font-medium flex items-center gap-1.5 transition-colors cursor-pointer ${mode === "desktop" ? "bg-[var(--primary)] text-[var(--primary-foreground)]" : "hover:bg-[var(--card)]"}`}
+                className={`h-8 px-4 rounded-full text-sm font-medium flex items-center gap-1.5 transition-colors cursor-pointer ${
+                  mode === "desktop"
+                    ? "bg-[var(--primary)] text-[var(--primary-foreground)]"
+                    : "hover:bg-[var(--card)]"
+                }`}
               >
                 <Monitor className="h-3.5 w-3.5" /> {locale === "ar" ? "حاسوب" : "Desktop"}
               </button>
               <button
+                type="button"
                 onClick={() => setMode("mobile")}
-                className={`h-8 px-4 rounded-full text-sm font-medium flex items-center gap-1.5 transition-colors cursor-pointer ${mode === "mobile" ? "bg-[var(--primary)] text-[var(--primary-foreground)]" : "hover:bg-[var(--card)]"}`}
+                className={`h-8 px-4 rounded-full text-sm font-medium flex items-center gap-1.5 transition-colors cursor-pointer ${
+                  mode === "mobile"
+                    ? "bg-[var(--primary)] text-[var(--primary-foreground)]"
+                    : "hover:bg-[var(--card)]"
+                }`}
               >
                 <Smartphone className="h-3.5 w-3.5" /> {locale === "ar" ? "هاتف" : "Mobile"}
               </button>
             </div>
-            <Link href="/demos" className="h-9 px-5 rounded-full bg-[var(--accent)] text-[var(--accent-foreground)] inline-flex items-center gap-1.5 text-sm font-bold hover:bg-[var(--accent-hover)]">
+            <Link
+              href="/demos"
+              className="h-9 px-5 rounded-full bg-[var(--accent)] text-[var(--accent-foreground)] inline-flex items-center gap-1.5 text-sm font-bold hover:bg-[var(--accent-hover)]"
+            >
               {t.demos.all} <ArrowUpRight className="h-3.5 w-3.5" />
             </Link>
           </div>
@@ -55,100 +108,250 @@ export function DemosGallery() {
           {sectors.map((s) => (
             <button
               key={s.id}
+              type="button"
               onClick={() => setFilter(s.id)}
-              className={`px-4 py-2 rounded-full text-sm font-medium border transition-colors cursor-pointer ${filter === s.id ? "bg-[var(--primary)] text-[var(--primary-foreground)] border-[var(--primary)]" : "bg-[var(--card)] border-[var(--border)] hover:bg-[var(--secondary)]"}`}
+              className={`px-4 py-2 rounded-full text-sm font-medium border transition-colors cursor-pointer ${
+                filter === s.id
+                  ? "bg-[var(--primary)] text-[var(--primary-foreground)] border-[var(--primary)]"
+                  : "bg-[var(--card)] border-[var(--border)] hover:bg-[var(--secondary)]"
+              }`}
             >
               {locale === "ar" ? s.labelAr : s.labelEn}
             </button>
           ))}
         </div>
 
-        <div className="grid lg:grid-cols-[1.35fr_0.75fr] gap-6">
+        <div className="grid lg:grid-cols-[1.35fr_0.75fr] gap-6 items-start">
           {/* Preview Stage */}
-          <div className="rounded-[24px] bg-[var(--card)] border border-[var(--border)] overflow-hidden p-4 sm:p-6">
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-2">
-                <span className="h-2.5 w-2.5 rounded-full bg-red-400" />
-                <span className="h-2.5 w-2.5 rounded-full bg-yellow-400" />
-                <span className="h-2.5 w-2.5 rounded-full bg-green-400" />
-                <span className="ms-2 text-xs opacity-60 hidden sm:inline">{activeDemo.title}{locale === "ar" ? "" : ""} • nukhba.ly/{activeDemo.slug}</span>
-              </div>
-              <span className="text-xs px-2.5 py-1 rounded-full bg-[var(--accent)] text-[var(--accent-foreground)] font-bold">
-                {locale === "ar" ? activeDemo.sectorAr : activeDemo.sectorEn}
-              </span>
-            </div>
+          <div className="rounded-[24px] bg-[var(--card)] border border-[var(--border)] overflow-hidden p-4 sm:p-6 lg:sticky lg:top-24">
+            {/* Browser Top Toolbar */}
+            <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
+              <div className="flex items-center gap-2 min-w-0 flex-1">
+                <span className="h-2.5 w-2.5 rounded-full bg-red-400 flex-shrink-0" />
+                <span className="h-2.5 w-2.5 rounded-full bg-yellow-400 flex-shrink-0" />
+                <span className="h-2.5 w-2.5 rounded-full bg-green-400 flex-shrink-0" />
 
-            <div className={`mx-auto bg-black rounded-[18px] p-2 sm:p-3 shadow-xl transition-all duration-500 ${mode === "mobile" ? "max-w-[340px]" : "max-w-full"}`}>
-              <div className={`bg-white rounded-[14px] overflow-hidden relative ${mode === "mobile" ? "aspect-[9/16] max-h-[560px]" : "aspect-[16/10]"}`}>
-                <AnimatePresence mode="wait">
-                  <motion.img
-                    key={activeDemo.slug + mode}
-                    initial={{ opacity: 0, scale: 1.02 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    exit={{ opacity: 0 }}
-                    transition={{ duration: 0.4 }}
-                    src={activeDemo.image}
-                    alt={locale === "ar" ? activeDemo.title : activeDemo.titleEn}
-                    className="w-full h-full object-cover"
-                  />
-                </AnimatePresence>
-                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
-                <div className="absolute bottom-0 inset-x-0 p-4 sm:p-6 text-white">
-                  <div className="inline-flex px-3 py-1 rounded-full bg-white/20 backdrop-blur text-xs font-semibold">
-                    {locale === "ar" ? activeDemo.sectorAr : activeDemo.sectorEn}
-                  </div>
-                  <h3 className="mt-2 text-xl sm:text-2xl font-black">{locale === "ar" ? activeDemo.title : activeDemo.titleEn}</h3>
-                  <p className="text-sm opacity-80 line-clamp-1">{locale === "ar" ? activeDemo.description : activeDemo.descriptionEn}</p>
-                  <div className="mt-3 flex gap-2 flex-wrap">
-                    {(locale === "ar" ? activeDemo.features : activeDemo.featuresEn).map((f) => (
-                      <span key={f} className="px-2.5 py-1 rounded-full bg-white text-black text-xs font-bold">
-                        {f}
-                      </span>
-                    ))}
-                  </div>
+                <div className="ms-2 flex items-center gap-2 px-3 py-1 rounded-full bg-[var(--secondary)] border border-[var(--border)] text-xs min-w-0 max-w-full">
+                  {hasLiveUrl ? (
+                    <span className="inline-flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400 font-bold flex-shrink-0">
+                      <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+                      {locale === "ar" ? "موقع حقيقي حي" : "LIVE SITE"}
+                    </span>
+                  ) : (
+                    <Globe className="h-3.5 w-3.5 opacity-50 flex-shrink-0" />
+                  )}
+                  <span className="opacity-70 truncate" dir="ltr">
+                    {formatHost(activeDemo.previewUrl, activeDemo.slug)}
+                  </span>
                 </div>
-                {mode === "mobile" && <div className="absolute top-2 left-1/2 -translate-x-1/2 h-1 w-10 bg-black rounded-full" />}
+              </div>
+
+              <div className="flex items-center gap-1.5 flex-wrap">
+                {hasLiveUrl && (
+                  <>
+                    <button
+                      type="button"
+                      onClick={reloadIframe}
+                      title={locale === "ar" ? "إعادة تحميل الموقع" : "Reload website"}
+                      className="h-8 w-8 rounded-full bg-[var(--secondary)] border border-[var(--border)] grid place-items-center hover:border-[var(--accent)] transition-colors cursor-pointer"
+                    >
+                      <RotateCw className="h-3.5 w-3.5" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setFullscreen(true)}
+                      className="h-8 px-3.5 rounded-full bg-[var(--accent)] text-[var(--accent-foreground)] inline-flex items-center gap-1.5 text-xs font-black hover:bg-[var(--accent-hover)] transition-colors cursor-pointer shadow-sm"
+                    >
+                      <Maximize2 className="h-3.5 w-3.5" />
+                      <span>
+                        {locale === "ar"
+                          ? "ملء الشاشة (حاسوب / هاتف)"
+                          : "Fullscreen (Desktop / Mobile)"}
+                      </span>
+                    </button>
+                  </>
+                )}
+                <span className="text-xs px-2.5 py-1 rounded-full bg-[var(--secondary)] border border-[var(--border)] font-bold">
+                  {locale === "ar" ? activeDemo.sectorAr : activeDemo.sectorEn}
+                </span>
               </div>
             </div>
 
-            <div className="mt-4 flex items-center justify-between">
-              <div className="text-sm">
-                <span className="font-bold">{locale === "ar" ? activeDemo.title : activeDemo.titleEn}</span>
-                <span className="opacity-60"> — {locale === "ar" ? activeDemo.description : activeDemo.descriptionEn}</span>
+            {/* Device Frame — géométrie exacte 16:10 (Desktop 1440x900) ou 9:16 (Mobile 390x693) */}
+            <div
+              dir="ltr"
+              className={`mx-auto w-full bg-zinc-950 rounded-[18px] p-2 sm:p-3 shadow-xl transition-all duration-300 ${
+                mode === "mobile" ? "max-w-[320px]" : "max-w-full"
+              }`}
+            >
+              <div
+                className={`w-full bg-white rounded-[12px] overflow-hidden relative ${
+                  mode === "mobile" ? "aspect-[9/16]" : "aspect-[16/10]"
+                }`}
+              >
+                {hasLiveUrl ? (
+                  <ScaledLiveIframe
+                    url={activeDemo.previewUrl}
+                    title={locale === "ar" ? activeDemo.title : activeDemo.titleEn}
+                    mode={mode}
+                    reloadKey={iframeKey}
+                  />
+                ) : (
+                  <div dir={locale === "ar" ? "rtl" : "ltr"} className="w-full h-full relative">
+                    <AnimatePresence mode="wait">
+                      <motion.img
+                        key={activeDemo.slug + mode}
+                        initial={{ opacity: 0, scale: 1.02 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0 }}
+                        transition={{ duration: 0.4 }}
+                        src={activeDemo.image}
+                        alt={locale === "ar" ? activeDemo.title : activeDemo.titleEn}
+                        className="w-full h-full object-cover"
+                      />
+                    </AnimatePresence>
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/20 to-transparent" />
+                    <div className="absolute bottom-0 inset-x-0 p-4 sm:p-6 text-white">
+                      <div className="inline-flex px-3 py-1 rounded-full bg-white/20 backdrop-blur text-xs font-semibold">
+                        {locale === "ar" ? activeDemo.sectorAr : activeDemo.sectorEn}
+                      </div>
+                      <h3 className="mt-2 text-xl sm:text-2xl font-black">
+                        {locale === "ar" ? activeDemo.title : activeDemo.titleEn}
+                      </h3>
+                      <p className="text-sm opacity-85 line-clamp-2">
+                        {locale === "ar" ? activeDemo.description : activeDemo.descriptionEn}
+                      </p>
+                      <div className="mt-3 flex gap-2 flex-wrap">
+                        {(locale === "ar" ? activeDemo.features : activeDemo.featuresEn).map((f) => (
+                          <span
+                            key={f}
+                            className="px-2.5 py-1 rounded-full bg-white text-black text-xs font-bold"
+                          >
+                            {f}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
-              <Link href={`/demos/${activeDemo.slug}`} className="hidden sm:inline-flex h-8 px-4 rounded-full bg-[var(--primary)] text-[var(--primary-foreground)] items-center gap-1 text-sm font-semibold">
-                {t.demos.viewDemo} <ArrowUpRight className="h-3.5 w-3.5" />
-              </Link>
+            </div>
+
+            {/* Stage Footer Actions */}
+            <div className="mt-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div className="text-sm min-w-0">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="font-bold">
+                    {locale === "ar" ? activeDemo.title : activeDemo.titleEn}
+                  </span>
+                  {hasLiveUrl && (
+                    <span className="text-[11px] px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 font-bold">
+                      {locale === "ar" ? "✓ تصفح حقيقي مباشر" : "✓ Real Interactive Site"}
+                    </span>
+                  )}
+                </div>
+                <p className="opacity-60 text-xs sm:text-sm line-clamp-1 mt-0.5">
+                  {locale === "ar" ? activeDemo.description : activeDemo.descriptionEn}
+                </p>
+              </div>
+
+              <div className="flex items-center gap-2 flex-shrink-0 flex-wrap">
+                {hasLiveUrl ? (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => setFullscreen(true)}
+                      className="h-9 px-4 rounded-full bg-[var(--primary)] text-[var(--primary-foreground)] inline-flex items-center gap-1.5 text-xs sm:text-sm font-bold hover:opacity-90 transition-opacity cursor-pointer"
+                    >
+                      <Maximize2 className="h-3.5 w-3.5" />
+                      {locale === "ar" ? "فتح بملء الشاشة (2 عرض)" : "Fullscreen (2 Views)"}
+                    </button>
+                    <a
+                      href={activeDemo.previewUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="h-9 px-4 rounded-full bg-[var(--accent)] text-[var(--accent-foreground)] inline-flex items-center gap-1.5 text-xs sm:text-sm font-black hover:bg-[var(--accent-hover)] transition-colors shadow-sm"
+                    >
+                      {locale === "ar" ? "زيارة الموقع الكامل" : "Visit Real Website"}
+                      <ExternalLink className="h-3.5 w-3.5" />
+                    </a>
+                  </>
+                ) : (
+                  <Link
+                    href={`/demos/${activeDemo.slug}`}
+                    className="h-9 px-4 rounded-full bg-[var(--primary)] text-[var(--primary-foreground)] inline-flex items-center gap-1 text-xs sm:text-sm font-semibold hover:opacity-90 transition-opacity"
+                  >
+                    {t.demos.viewDemo} <ArrowUpRight className="h-3.5 w-3.5" />
+                  </Link>
+                )}
+              </div>
             </div>
           </div>
 
           {/* Grid */}
           <div className="grid grid-cols-2 gap-4 auto-rows-max">
-            {filtered.map((d) => (
-              <button
-                key={d.slug}
-                onClick={() => setActive(d.slug)}
-                className={`group text-start rounded-[20px] overflow-hidden border-2 bg-[var(--card)] transition-all cursor-pointer ${active === d.slug ? "border-[var(--accent)] shadow-lg" : "border-[var(--border)] hover:border-[var(--accent)]/50"}`}
-              >
-                <div className="relative aspect-[4/3] overflow-hidden">
-                  <img src={d.image} alt="" className="w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-500" />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
-                  <div className="absolute bottom-2 start-2 end-2 flex items-center justify-between">
-                    <span className="px-2 py-1 rounded-full bg-white text-black text-[11px] font-bold">
-                      {locale === "ar" ? d.sectorAr : d.sectorEn}
-                    </span>
-                    {active === d.slug && <span className="h-6 w-6 rounded-full bg-[var(--accent)] grid place-items-center"><Sparkles className="h-3 w-3" /></span>}
+            {filtered.map((d) => {
+              const dIsLive = isRealUrl(d.previewUrl);
+              return (
+                <button
+                  key={d.slug}
+                  type="button"
+                  onClick={() => setActive(d.slug)}
+                  className={`group text-start rounded-[20px] overflow-hidden border-2 bg-[var(--card)] transition-all cursor-pointer ${
+                    active === d.slug
+                      ? "border-[var(--accent)] shadow-lg"
+                      : "border-[var(--border)] hover:border-[var(--accent)]/50"
+                  }`}
+                >
+                  <div className="relative aspect-[4/3] overflow-hidden">
+                    <img
+                      src={d.image}
+                      alt=""
+                      className="w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-500"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/15 to-transparent" />
+                    {dIsLive && (
+                      <div className="absolute top-2 start-2">
+                        <span className="px-2.5 py-1 rounded-full bg-emerald-500 text-white text-[10px] font-black inline-flex items-center gap-1 shadow">
+                          <span className="h-1.5 w-1.5 rounded-full bg-white animate-pulse" />
+                          {locale === "ar" ? "موقع حقيقي حي" : "LIVE SITE"}
+                        </span>
+                      </div>
+                    )}
+                    <div className="absolute bottom-2 start-2 end-2 flex items-center justify-between">
+                      <span className="px-2 py-1 rounded-full bg-white text-black text-[11px] font-bold">
+                        {locale === "ar" ? d.sectorAr : d.sectorEn}
+                      </span>
+                      {active === d.slug && (
+                        <span className="h-6 w-6 rounded-full bg-[var(--accent)] text-black grid place-items-center">
+                          <Sparkles className="h-3 w-3" />
+                        </span>
+                      )}
+                    </div>
                   </div>
-                </div>
-                <div className="p-3">
-                  <div className="text-sm font-bold leading-tight">{locale === "ar" ? d.title : d.titleEn}</div>
-                  <div className="text-xs opacity-60 line-clamp-1">{locale === "ar" ? d.description : d.descriptionEn}</div>
-                </div>
-              </button>
-            ))}
+                  <div className="p-3">
+                    <div className="text-sm font-bold leading-tight">
+                      {locale === "ar" ? d.title : d.titleEn}
+                    </div>
+                    <div className="text-xs opacity-60 line-clamp-1 mt-0.5">
+                      {locale === "ar" ? d.description : d.descriptionEn}
+                    </div>
+                  </div>
+                </button>
+              );
+            })}
           </div>
         </div>
       </div>
+
+      {/* Plein écran 100% dédié avec choix des 2 vues (Desktop / Mobile) */}
+      {fullscreen && hasLiveUrl && (
+        <FullscreenLiveViewer
+          demo={activeDemo}
+          initialMode={mode}
+          onClose={() => setFullscreen(false)}
+        />
+      )}
     </section>
   );
 }
