@@ -1,13 +1,13 @@
 import type { MetadataRoute } from "next";
-import { demos } from "@/lib/content";
-import { siteConfig } from "@/lib/config";
+import { getSiteData } from "@/lib/store";
 
-export default function sitemap(): MetadataRoute.Sitemap {
-  const base = siteConfig.url;
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+  const { config, content } = await getSiteData();
+  const base = config.url;
   const routes = ["", "/demos", "/pricing", "/contact"];
   const now = new Date();
 
-  const demoRoutes = demos.map((d) => ({
+  const demoRoutes = content.demos.map((d) => ({
     url: `${base}/demos/${d.slug}`,
     lastModified: now,
     changeFrequency: "weekly" as const,

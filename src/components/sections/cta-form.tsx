@@ -6,7 +6,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { ArrowUpRight, Send, CheckCircle2, ShieldCheck, Clock, Headset } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
-import { siteConfig } from "@/lib/config";
+import { useSiteConfig } from "@/components/site-provider";
 import { whatsappLink } from "@/lib/utils";
 
 const schema = z.object({
@@ -24,9 +24,11 @@ const schema = z.object({
 type FormData = z.infer<typeof schema>;
 
 export function CTAForm() {
+  const siteConfig = useSiteConfig();
   const { locale, t } = useI18n();
   const [step, setStep] = useState(1);
   const [submitted, setSubmitted] = useState(false);
+  const [submitError, setSubmitError] = useState(false);
   const totalSteps = 3;
 
   const { register, handleSubmit, watch, trigger, formState: { errors } } = useForm<FormData>({
@@ -35,14 +37,23 @@ export function CTAForm() {
   });
 
   const onSubmit = async (data: FormData) => {
-    // Store UTM
+    // Stocke les UTM et envoie la demande en base (visible dans /admin)
     const utm = typeof window !== "undefined" ? window.location.search : "";
-    console.log("Lead", { ...data, utm, locale });
-    // Simulate send
-    await new Promise((r) => setTimeout(r, 600));
-    setSubmitted(true);
-    // Reset after
-    setTimeout(() => setStep(1), 2000);
+    setSubmitError(false);
+    try {
+      const res = await fetch("/api/lead", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...data, utm, locale }),
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      setSubmitted(true);
+      // Reset after
+      setTimeout(() => setStep(1), 2000);
+    } catch (error) {
+      console.error("Envoi de la demande impossible :", error);
+      setSubmitError(true);
+    }
   };
 
   const next = async () => {
@@ -200,7 +211,19 @@ export function CTAForm() {
                     </motion.div>
                   )}
 
-                  <div className="flex gap-3 pt-2">
+                  <div className="flex flex-wrap gap-3 pt-2">
+                    {submitError && (
+                      <div className="w-full rounded-2xl border border-red-500/40 bg-red-500/10 px-4 py-2.5 text-xs text-red-500 text-center">
+                        Échec de l’envoi — réessayez ou{" "}
+                        <a
+                          href={whatsappLink(siteConfig.whatsapp, whatsappMsg)}
+                          target="_blank"
+                          className="underline font-bold"
+                        >
+                          contactez-nous sur WhatsApp
+                        </a>
+                      </div>
+                    )}
                     {step > 1 && (
                       <button type="button" onClick={() => setStep(s => s - 1)} className="h-11 px-6 rounded-full border border-[var(--border)] bg-[var(--card)] font-semibold hover:bg-[var(--secondary)] cursor-pointer">
                         {locale === "ar" ? "رجوع" : "Back"}

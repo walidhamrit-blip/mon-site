@@ -2,9 +2,10 @@
 import { motion } from "framer-motion";
 import { Check, Sparkles, ArrowUpRight } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
-import { siteConfig } from "@/lib/config";
+import { useSiteConfig } from "@/components/site-provider";
 
 export function Pricing() {
+  const siteConfig = useSiteConfig();
   const { locale, t } = useI18n();
   const plans = siteConfig.pricing.plans;
 

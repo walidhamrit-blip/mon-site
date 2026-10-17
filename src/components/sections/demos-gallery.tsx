@@ -3,10 +3,12 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Smartphone, Monitor, ArrowUpRight, Sparkles } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
-import { demos, sectors } from "@/lib/content";
+import { sectors } from "@/lib/content";
+import { useSiteContent } from "@/components/site-provider";
 import Link from "next/link";
 
 export function DemosGallery() {
+  const { demos } = useSiteContent();
   const { locale, t } = useI18n();
   const [filter, setFilter] = useState("all");
   const [mode, setMode] = useState<"mobile" | "desktop">("desktop");

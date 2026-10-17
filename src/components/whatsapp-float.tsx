@@ -2,11 +2,12 @@
 import { useEffect, useState } from "react";
 import { MessageCircle, X } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
-import { siteConfig } from "@/lib/config";
+import { useSiteConfig } from "@/components/site-provider";
 import { whatsappLink } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 
 export function WhatsAppFloat() {
+  const siteConfig = useSiteConfig();
   const { locale } = useI18n();
   const [showTip, setShowTip] = useState(false);
 

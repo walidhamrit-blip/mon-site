@@ -1,10 +1,11 @@
 "use client";
 import Link from "next/link";
 import { useI18n } from "@/lib/i18n";
-import { siteConfig } from "@/lib/config";
+import { useSiteConfig } from "@/components/site-provider";
 import { MessageCircle } from "lucide-react";
 
 export function Footer() {
+  const siteConfig = useSiteConfig();
   const { locale, t } = useI18n();
   return (
     <footer className="bg-[var(--primary)] text-[var(--primary-foreground)]">

@@ -55,3 +55,15 @@ Actuellement log console + confirmation. Pour envoi réel:
 
 ## RTL parfait
 - dir dynamique, icônes directionnelles, animations inversées via `dir` context
+
+## Panneau d'administration
+- **URL** : `/admin` (connexion) — interface en français, accès protégé par session signée (7 jours)
+- **Variable obligatoire** : `ADMIN_PASSWORD` (Settings → Environment Variables sur Vercel). Optionnel : `SESSION_SECRET` (sinon la session est signée avec ADMIN_PASSWORD)
+- **Modules** :
+  - **Tableau de bord** — statistiques (total, nouveaux, en cours, traités), activité 14 jours, dernières demandes
+  - **Demandes** — les formulaires du site sont enregistrés en base (table `leads`, créée automatiquement) : filtres, recherche, statuts, notes internes, contact WhatsApp/email, export CSV
+  - **Configuration** — coordonnées, réseaux sociaux, chiffres et tarifs éditables, visibles immédiatement sur le site
+  - **Contenu** — démos, témoignages et FAQ éditables (réordonner, ajouter, supprimer) avec bouton « Réinitialiser »
+- Les réglages sont stockés dans la table `settings` ; par défaut le site utilise les valeurs de `src/lib/config.ts` et `src/lib/content.ts`
+- Après chaque enregistrement, le site public est régénéré automatiquement (revalidation Next.js)
+- **Optionnel** : `WEBHOOK_URL` — si définie, chaque demande du formulaire est aussi envoyée vers ce webhook (Formspree, Make, Zapier…)

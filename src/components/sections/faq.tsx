@@ -3,9 +3,10 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Plus, Minus } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
-import { faqs } from "@/lib/content";
+import { useSiteContent } from "@/components/site-provider";
 
 export function FAQ() {
+  const { faqs } = useSiteContent();
   const { locale, t } = useI18n();
   const [open, setOpen] = useState<number | null>(0);
 

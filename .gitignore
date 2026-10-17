@@ -1,0 +1,22 @@
+# Dépendances
+/node_modules
+
+# Next.js
+/.next
+/out
+/build
+
+# Environnement / secrets
+.env
+.env.*
+!.env.example
+
+# Scripts de test locaux
+.scratch/
+
+# Divers
+*.tsbuildinfo
+next-env.d.ts
+.DS_Store
+.vercel
+npm-debug.log*

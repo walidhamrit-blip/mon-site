@@ -1,11 +1,12 @@
 "use client";
 import { useI18n } from "@/lib/i18n";
 import { CTAForm } from "@/components/sections/cta-form";
-import { siteConfig } from "@/lib/config";
+import { useSiteConfig } from "@/components/site-provider";
 import { MapPin, Phone, Mail, Clock, MessageCircle } from "lucide-react";
 import { whatsappLink } from "@/lib/utils";
 
 export default function ContactPage() {
+  const siteConfig = useSiteConfig();
   const { locale, t } = useI18n();
   return (
     <div className="pt-[96px]">

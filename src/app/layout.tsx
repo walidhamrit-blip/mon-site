@@ -4,9 +4,8 @@ import { Cairo, IBM_Plex_Sans_Arabic, Playfair_Display, Inter } from "next/font/
 import "./globals.css";
 import { I18nProvider } from "@/lib/i18n";
 import { ThemeProvider } from "@/components/theme-provider";
-import { Navbar } from "@/components/navbar";
-import { Footer } from "@/components/footer";
-import { WhatsAppFloat } from "@/components/whatsapp-float";
+import { SiteProvider } from "@/components/site-provider";
+import { getSiteData } from "@/lib/store";
 
 const cairo = Cairo({
   subsets: ["arabic", "latin"],
@@ -24,14 +23,14 @@ const plexArabic = IBM_Plex_Sans_Arabic({
 
 const playfair = Playfair_Display({
   subsets: ["latin"],
-  weight: ["400", "600", "700", "800", "900"],
+  weight: ["400", "600", "700"],
   variable: "--font-playfair",
   display: "swap",
 });
 
 const inter = Inter({
   subsets: ["latin"],
-  weight: ["400", "500", "600", "700", "800"],
+  weight: ["400", "500", "600", "700"],
   variable: "--font-inter",
   display: "swap",
 });
@@ -63,7 +62,26 @@ export const metadata: Metadata = {
   verification: { google: "placeholder" },
 };
 
-export default function RootLayout({ children }: { children: ReactNode }) {
+export default async function RootLayout({ children }: { children: ReactNode }) {
+  const { config, content } = await getSiteData();
+
+  const localBusiness = {
+    "@context": "https://schema.org",
+    "@type": "LocalBusiness",
+    name: "نخبة - Nukhba Premium Web Agency",
+    url: config.url,
+    telephone: config.phone,
+    address: {
+      "@type": "PostalAddress",
+      streetAddress: config.address,
+      addressLocality: "Tripoli",
+      addressCountry: "LY",
+    },
+    description: "وكالة تصميم مواقع فاخرة في طرابلس - تسليم 7 أيام",
+    priceRange: "$$",
+    areaServed: "Tripoli",
+  };
+
   return (
     <html lang="ar" dir="rtl" suppressHydrationWarning>
       <body
@@ -72,33 +90,15 @@ export default function RootLayout({ children }: { children: ReactNode }) {
       >
         <ThemeProvider>
           <I18nProvider>
-            <Navbar />
-            <main className="min-h-screen">{children}</main>
-            <Footer />
-            <WhatsAppFloat />
+            <SiteProvider config={config} content={content}>
+              {children}
+            </SiteProvider>
           </I18nProvider>
         </ThemeProvider>
 
         <script
           type="application/ld+json"
-          dangerouslySetInnerHTML={{
-            __html: JSON.stringify({
-              "@context": "https://schema.org",
-              "@type": "LocalBusiness",
-              name: "نخبة - Nukhba Premium Web Agency",
-              url: "https://nukhba.ly",
-              telephone: "+218912345678",
-              address: {
-                "@type": "PostalAddress",
-                streetAddress: "شارع الجمهورية",
-                addressLocality: "Tripoli",
-                addressCountry: "LY",
-              },
-              description: "وكالة تصميم مواقع فاخرة في طرابلس - تسليم 7 أيام",
-              priceRange: "$$",
-              areaServed: "Tripoli",
-            }),
-          }}
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(localBusiness) }}
         />
       </body>
     </html>

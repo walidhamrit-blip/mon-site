@@ -5,11 +5,12 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Menu, X, Moon, Sun, Globe, ArrowUpRight } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import { useTheme } from "./theme-provider";
-import { siteConfig } from "@/lib/config";
+import { useSiteConfig } from "@/components/site-provider";
 import { Button } from "./ui/button";
 import { whatsappLink } from "@/lib/utils";
 
 export function Navbar() {
+  const siteConfig = useSiteConfig();
   const { locale, t, toggleLocale, dir } = useI18n();
   const { theme, toggle } = useTheme();
   const [open, setOpen] = useState(false);

@@ -2,9 +2,10 @@
 import { motion } from "framer-motion";
 import { Star, Quote } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
-import { testimonials } from "@/lib/content";
+import { useSiteContent } from "@/components/site-provider";
 
 export function Testimonials() {
+  const { testimonials } = useSiteContent();
   const { locale, t } = useI18n();
   return (
     <section className="py-16 lg:py-20">
