@@ -1,5 +1,22 @@
 export const demos = [
   {
+    slug: "cabinet-sante-medecin",
+    sector: "medical",
+    sectorAr: "عيادات وخدمات صحية",
+    sectorEn: "Clinics & Healthcare",
+    title: "عيادة سانتي — طبيبك القريب منك",
+    titleEn: "Cabinet Santé — Your Local Doctor",
+    description:
+      "موقع أنيق لعيادة طبية عامة — حجز موعد حسب نوع الاستشارة والتاريخ مع عرض أقرب موعد متاح، تعريف بالطبيب والخدمات، تقييم 4.9/5، وتواصل مباشر عبر واتساب",
+    descriptionEn:
+      "Elegant general practice site — appointment booking by consultation type & date with next availability shown, doctor & services showcase, 4.9/5 trust rating and direct WhatsApp contact",
+    image: "https://demo-cabinet-medecin.vercel.app/images/doctor.jpg",
+    color: "#059669",
+    features: ["حجز مواعيد واختيار التاريخ", "تقييم 4.9/5 وشارة ثقة", "تواصل واتساب مباشر", "فرنسي + عربي + إنجليزي"],
+    featuresEn: ["Appointment & Date Booking", "4.9/5 Trust Rating", "Direct WhatsApp Contact", "FR + AR + EN Trilingual"],
+    previewUrl: "https://demo-cabinet-medecin.vercel.app/",
+  },
+  {
     slug: "al-manhaj-company",
     sector: "stationery",
     sectorAr: "قرطاسية وتقنية وجملة",
@@ -173,6 +190,7 @@ export const demos = [
 
 export const sectors = [
   { id: "all", labelAr: "الكل", labelEn: "All" },
+  { id: "medical", labelAr: "عيادات وصحة", labelEn: "Clinics & Health" },
   { id: "restaurant", labelAr: "مطاعم", labelEn: "Restaurants" },
   { id: "beauty", labelAr: "عطور وتجميل", labelEn: "Perfumes & Beauty" },
   { id: "furniture", labelAr: "مفروشات ومراتب", labelEn: "Furniture & Bedding" },
