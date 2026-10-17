@@ -101,13 +101,48 @@ export const demos = [
     featuresEn: ["Mix & Match Bundles", "Perfumes & Beauty", "Promo Codes & Smart Cart", "Arabic + English"],
     previewUrl: "https://hala-dun.vercel.app/",
   },
+  {
+    slug: "al-massa-mattresses",
+    sector: "furniture",
+    sectorAr: "مراتب ومفروشات فاخرة",
+    sectorEn: "Mattresses & Bedding",
+    title: "الماسة الزرقاء — للمراتب والمفروشات الفاخرة",
+    titleEn: "Al-Massa Blue Diamond — Luxury Mattresses",
+    description:
+      "معرض الماسة الزرقاء في طرابلس (الوكيل المعتمد لشركة الفراشة) — مراتب طبية وفندقية، أسرّة حسب المقاس، وأطقم مفروشات فندقية مع طلب مباشر عبر واتساب",
+    descriptionEn:
+      "Blue Diamond showroom in Tripoli (Al-Farasha authorized dealer) — orthopedic & hotel mattresses, custom velvet beds & WhatsApp cart ordering",
+    image: "https://al-massa.vercel.app/images/product-diamond-mattress.jpg",
+    color: "#1E3A8A",
+    features: ["مراتب طبية وأسرّة حسب المقاس", "سلة مرتبطة بواتساب", "معرض صور حقيقي ومدونة", "ضمان الوكيل المعتمد"],
+    featuresEn: ["Custom Beds & Mattresses", "WhatsApp Smart Cart", "Real Showroom & Blog", "Authorized Dealer Warranty"],
+    previewUrl: "https://al-massa.vercel.app/",
+  },
+  {
+    slug: "toy-store-tripoly",
+    sector: "toys",
+    sectorAr: "ألعاب وهدايا أطفال",
+    sectorEn: "Kids & Toys Store",
+    title: "توي ستور طرابلس — عالم ألعاب الأطفال",
+    titleEn: "Toy Store Tripoly — Kids & Toys Mega-Store",
+    description:
+      "متجر ألعاب أطفال متكامل في طرابلس — تشكيلات ليغو، دمى باربي، سكوترات ودراجات وألعاب ذكاء مع الدفع عند الاستلام وفروع متعددة",
+    descriptionEn:
+      "Mega toy store in Tripoli — LEGO, Barbie, electric scooters, bikes & educational games with Cash-on-Delivery and multi-branch locator",
+    image: "https://images.unsplash.com/photo-1596461404969-9ae70f2830c1?q=80&w=1200&auto=format&fit=crop",
+    color: "#E11D48",
+    features: ["ليغو وباربي وسكوترات", "سلة ودفع عند الاستلام", "فروع طرابلس التفاعلية", "عربي + إنجليزي"],
+    featuresEn: ["LEGO, Barbie & Scooters", "Cart & Cash on Delivery", "Tripoli Branch Locator", "Arabic + English"],
+    previewUrl: "https://demo-jouets.vercel.app/",
+  },
 ] as const;
 
 export const sectors = [
   { id: "all", labelAr: "الكل", labelEn: "All" },
   { id: "restaurant", labelAr: "مطاعم", labelEn: "Restaurants" },
   { id: "beauty", labelAr: "عطور وتجميل", labelEn: "Perfumes & Beauty" },
-  { id: "furniture", labelAr: "مفروشات وديكور", labelEn: "Furniture & Decor" },
+  { id: "furniture", labelAr: "مفروشات ومراتب", labelEn: "Furniture & Bedding" },
+  { id: "toys", labelAr: "ألعاب أطفال", labelEn: "Kids & Toys" },
   { id: "appliances", labelAr: "أجهزة ومنزل", labelEn: "Home & Appliances" },
   { id: "hardware", labelAr: "مواد بناء وعدد", labelEn: "Tools & Construction" },
   { id: "stationery", labelAr: "قرطاسية وتقنية", labelEn: "Stationery & Tech" },

@@ -12,6 +12,8 @@ const nextConfig: NextConfig = {
       { protocol: "https", hostname: "pizzeria-demo1.vercel.app" },
       { protocol: "https", hostname: "demo-meubles.vercel.app" },
       { protocol: "https", hostname: "hala-dun.vercel.app" },
+      { protocol: "https", hostname: "demo-jouets.vercel.app" },
+      { protocol: "https", hostname: "al-massa.vercel.app" },
     ],
   },
   async redirects() {
