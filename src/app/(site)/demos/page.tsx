@@ -113,7 +113,7 @@ export default function DemosPage() {
                             <Smartphone className="h-3.5 w-3.5" />
                           </span>
                         </div>
-                        <span className="h-8 w-8 rounded-full bg-[var(--accent)] grid place-items-center text-black">
+                        <span className="h-8 w-8 rounded-full bg-[var(--accent)] grid place-items-center text-[var(--accent-foreground)]">
                           <ArrowUpRight className="h-4 w-4" />
                         </span>
                       </div>

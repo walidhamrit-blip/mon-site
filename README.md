@@ -16,6 +16,26 @@ Editez `src/lib/config.ts`:
 - `social` : liens Instagram/Facebook
 - `email`, `phone`, `address`
 
+## Thèmes du site (8 thèmes, clair + sombre)
+`src/lib/themes.ts` contient le catalogue des thèmes. Chaque thème définit **sa palette claire ET sa palette sombre** : le mode clair/sombre reste donc un réglage totalement indépendant (un bouton dédié ☀/☾ dans la barre supérieure), et n'importe quel thème se voit dans les deux modes.
+
+| Thème | ID | Ambiance |
+|---|---|---|
+| نخبة الذهبي — Nukhba Gold | `nukhba` | noir profond & doré (thème d'origine) |
+| أزرق ملكي — Royal Blue | `royal` | confiance, agencies & services |
+| زمردي أخضر — Emerald | `emerald` | clinics & produits naturels |
+| خمري أنيق — Burgundy | `burgundy` | restaurants, mode & hôtellerie |
+| فحمي مينيمال — Graphite | `graphite` | minimalisme haut de gamme |
+| نحاسي دافئ — Copper | `copper` | cafés, restaurants & chaleur |
+| تركوازي بحري — Ocean Teal | `teal` | cabinets médicaux & tourisme |
+| بنفسجي نبيل — Violet | `violet` | tech, studios & marques créatives |
+
+- Les palettes sont converties en CSS (`html[data-theme="x"]` / `html.dark[data-theme="x"]`) et injectées dans le `<head>` par `src/app/layout.tsx` (`themeCss()`).
+- Un script inline (`THEME_BOOT_SCRIPT`) applique thème + mode **avant le premier rendu** : aucun clignotement de couleurs.
+- Sélection : bouton palette dans la barre supérieure (desktop), liste dans le menu mobile, ou la section « ثيمات الموقع » de la page d'accueil.
+- Le choix est mémorisé dans `localStorage` (`nukhba-palette` et `nukhba-mode`).
+- `src/app/globals.css` conserve `:root` / `.dark` comme repli (thème par défaut) si le JavaScript est désactivé.
+
 ## Contenu modifiable
 `src/lib/content.ts` : démos, secteurs, pourquoi nous, étapes, témoignages, FAQ
 `src/lib/i18n.tsx` : traductions AR/EN

@@ -336,7 +336,7 @@ export function DemosGallery() {
                         {locale === "ar" ? d.sectorAr : d.sectorEn}
                       </span>
                       {active === d.slug && (
-                        <span className="h-6 w-6 rounded-full bg-[var(--accent)] text-black grid place-items-center">
+                        <span className="h-6 w-6 rounded-full bg-[var(--accent)] text-[var(--accent-foreground)] grid place-items-center">
                           <Sparkles className="h-3 w-3" />
                         </span>
                       )}

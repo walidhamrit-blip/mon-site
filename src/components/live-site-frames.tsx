@@ -85,7 +85,7 @@ export function ScaledLiveIframe({
     >
       {loading && (
         <div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-white text-zinc-900 p-6 text-center">
-          <div className="h-10 w-10 rounded-full border-3 border-[#C6A664] border-t-transparent animate-spin mb-3" />
+          <div className="h-10 w-10 rounded-full border-3 border-[var(--accent)] border-t-transparent animate-spin mb-3" />
           <div className="text-sm font-bold">{title}</div>
           <div className="text-xs text-zinc-500 mt-1 truncate max-w-full" dir="ltr">
             {url}
@@ -208,7 +208,7 @@ export function FullscreenLiveViewer({
             onClick={() => setMode("desktop")}
             className={`h-8 px-4 rounded-full text-xs sm:text-sm font-black inline-flex items-center gap-1.5 transition-all cursor-pointer ${
               mode === "desktop"
-                ? "bg-[#C6A664] text-black shadow"
+                ? "bg-[var(--accent)] text-[var(--accent-foreground)] shadow"
                 : "text-zinc-300 hover:text-white"
             }`}
           >
@@ -220,7 +220,7 @@ export function FullscreenLiveViewer({
             onClick={() => setMode("mobile")}
             className={`h-8 px-4 rounded-full text-xs sm:text-sm font-black inline-flex items-center gap-1.5 transition-all cursor-pointer ${
               mode === "mobile"
-                ? "bg-[#C6A664] text-black shadow"
+                ? "bg-[var(--accent)] text-[var(--accent-foreground)] shadow"
                 : "text-zinc-300 hover:text-white"
             }`}
           >
@@ -248,7 +248,7 @@ export function FullscreenLiveViewer({
             onClick={() => onClose?.()}
             className="hidden lg:inline-flex h-9 px-4 rounded-full bg-white/10 hover:bg-white/20 text-xs font-bold items-center gap-1.5 transition-colors"
           >
-            <Sparkles className="h-3.5 w-3.5 text-[#C6A664]" />
+            <Sparkles className="h-3.5 w-3.5 text-[var(--accent)]" />
             <span>{locale === "ar" ? "اطلب موقعاً مماثلاً" : "Order Similar Site"}</span>
           </Link>
 
@@ -256,7 +256,7 @@ export function FullscreenLiveViewer({
             href={demo.previewUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="h-9 px-4 rounded-full bg-[#C6A664] hover:bg-[#B89652] text-black text-xs font-black inline-flex items-center gap-1.5 transition-colors"
+            className="h-9 px-4 rounded-full bg-[var(--accent)] hover:bg-[var(--accent-hover)] text-[var(--accent-foreground)] text-xs font-black inline-flex items-center gap-1.5 transition-colors"
           >
             <span className="hidden sm:inline">
               {locale === "ar" ? "فتح في نافذة جديدة" : "Open in New Tab"}
@@ -275,7 +275,7 @@ export function FullscreenLiveViewer({
       >
         {loading && (
           <div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-[#0B0B0E] text-white p-6 text-center">
-            <div className="h-11 w-11 rounded-full border-3 border-[#C6A664] border-t-transparent animate-spin mb-3" />
+            <div className="h-11 w-11 rounded-full border-3 border-[var(--accent)] border-t-transparent animate-spin mb-3" />
             <div className="text-base font-bold">{title}</div>
             <div className="text-xs text-zinc-400 mt-1" dir="ltr">
               {demo.previewUrl}

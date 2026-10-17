@@ -52,7 +52,7 @@ export function Hero() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.1, duration: 0.6 }}
-                className="block hero-gold-shine"
+                className="block hero-shine"
               >
                 {t.hero.title1}
               </motion.span>
@@ -62,11 +62,11 @@ export function Hero() {
                 transition={{ delay: 0.2, duration: 0.6 }}
                 className="block"
               >
-                <span className="relative inline-block hero-gold-shine">
+                <span className="relative inline-block hero-shine">
                   {t.hero.title2}
                   <span className="absolute -bottom-2 start-0 end-0 h-[8px] bg-[var(--accent)]/30 -z-10 rounded-full hidden sm:block" />
                 </span>{" "}
-                <span className="hero-gold-shine font-light italic">{t.hero.title3}</span>
+                <span className="hero-shine font-light italic">{t.hero.title3}</span>
               </motion.span>
             </h1>
 

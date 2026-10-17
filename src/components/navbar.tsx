@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Menu, X, Moon, Sun, Globe, ArrowUpRight } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import { useTheme } from "./theme-provider";
+import { ThemeSwitcher, ThemeList } from "./theme-switcher";
 import { useSiteConfig } from "@/components/site-provider";
 import { Button } from "./ui/button";
 import { whatsappLink } from "@/lib/utils";
@@ -12,7 +13,7 @@ import { whatsappLink } from "@/lib/utils";
 export function Navbar() {
   const siteConfig = useSiteConfig();
   const { locale, t, toggleLocale, dir } = useI18n();
-  const { theme, toggle } = useTheme();
+  const { mode, toggle } = useTheme();
   const [open, setOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
 
@@ -86,13 +87,19 @@ export function Navbar() {
                 <Globe className="h-3.5 w-3.5" />
                 {locale === "ar" ? "EN" : "عربي"}
               </button>
+              {/* Bouton dédié au mode clair / sombre (indépendant du thème) */}
               <button
                 onClick={toggle}
-                aria-label="Toggle theme"
+                aria-label={locale === "ar" ? "تبديل الوضع الفاتح والداكن" : "Toggle light / dark mode"}
+                title={locale === "ar" ? "فاتح / داكن" : "Light / dark"}
                 className="h-9 w-9 rounded-full bg-[var(--secondary)] grid place-items-center hover:bg-[var(--muted)] transition-colors cursor-pointer"
               >
-                {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+                {mode === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
               </button>
+              {/* Bouton dédié au thème de couleurs */}
+              <div className="hidden sm:block">
+                <ThemeSwitcher />
+              </div>
               <a
                 href={whatsappLink(siteConfig.whatsapp, whatsappMsg)}
                 target="_blank"
@@ -142,6 +149,12 @@ export function Navbar() {
                   </Link>
                 ))}
               </nav>
+              <div className="mt-6">
+                <div className="mb-2 text-xs font-black opacity-60">
+                  {locale === "ar" ? "ثيمات الموقع" : "Site themes"}
+                </div>
+                <ThemeList />
+              </div>
               <div className="mt-6 grid grid-cols-2 gap-3">
                 <a
                   href={whatsappLink(siteConfig.whatsapp, whatsappMsg)}

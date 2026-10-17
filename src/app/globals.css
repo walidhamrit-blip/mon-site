@@ -144,13 +144,18 @@ body {
   margin-inline: auto;
 }
 
-/* A narrow gold highlight passes over the actual lettering, not a rectangle. */
-.hero-gold-shine {
+/* A narrow highlight passes over the actual lettering, not a rectangle.
+   The shine follows the accent color of the active theme. */
+.hero-shine {
   color: var(--foreground);
   background-image: linear-gradient(110deg,
     var(--foreground) 0%, var(--foreground) 40%,
-    #aa7d32 46%, #d9b668 49%, #fff0be 50%, #d9b668 51%,
-    #aa7d32 54%, var(--foreground) 60%, var(--foreground) 100%);
+    color-mix(in srgb, var(--accent) 65%, black) 46%,
+    var(--accent) 49%,
+    color-mix(in srgb, var(--accent) 45%, white) 50%,
+    var(--accent) 51%,
+    color-mix(in srgb, var(--accent) 65%, black) 54%,
+    var(--foreground) 60%, var(--foreground) 100%);
   background-size: 300% 100%;
   background-position: 100% 50%;
   -webkit-background-clip: text;
@@ -203,7 +208,7 @@ body {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .hero-gold-shine { animation: none; background-position: 50% 50%; }
+  .hero-shine { animation: none; background-position: 50% 50%; }
   .ribbon-track { animation: none; width: 100%; }
   .ribbon-group { flex-wrap: wrap; justify-content: center; gap: 20px; width: 100%; padding-inline: 20px; }
   .ribbon-group li { padding-inline-end: 0; }

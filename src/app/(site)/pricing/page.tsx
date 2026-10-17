@@ -28,7 +28,7 @@ export default function PricingPage() {
                   <tr>
                     <th className="text-start p-4">{locale === "ar" ? "الميزة" : "Feature"}</th>
                     <th className="p-4 text-center">الواجهة</th>
-                    <th className="p-4 text-center bg-[var(--accent)] text-black">الواجهة بلس</th>
+                    <th className="p-4 text-center bg-[var(--accent)] text-[var(--accent-foreground)]">الواجهة بلس</th>
                     <th className="p-4 text-center">المتجر</th>
                   </tr>
                 </thead>
