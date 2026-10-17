@@ -7,7 +7,7 @@ export function Process() {
   const { locale, t } = useI18n();
   return (
     <section className="py-16 lg:py-20">
-      <div className="mx-auto max-w-[1280px] px-4 sm:px-6 lg:px-8">
+      <div className="site-container px-4 sm:px-6 lg:px-8">
         <div className="max-w-[720px] mx-auto text-center">
           <div className="inline-flex items-center gap-2 text-sm font-semibold tracking-[0.12em] text-[var(--accent)]">
             <span className="h-px w-8 bg-[var(--accent)]" />

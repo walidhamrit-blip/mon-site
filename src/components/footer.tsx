@@ -9,7 +9,7 @@ export function Footer() {
   const { locale, t } = useI18n();
   return (
     <footer className="bg-[var(--primary)] text-[var(--primary-foreground)]">
-      <div className="mx-auto max-w-[1280px] px-4 sm:px-6 lg:px-8">
+      <div className="site-container px-4 sm:px-6 lg:px-8">
         <div className="py-10 grid lg:grid-cols-[1.2fr_0.8fr_0.8fr_1fr] gap-8">
           <div>
             <div className="flex items-center gap-3">

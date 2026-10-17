@@ -9,7 +9,7 @@ export function Testimonials() {
   const { locale, t } = useI18n();
   return (
     <section className="py-16 lg:py-20">
-      <div className="mx-auto max-w-[1280px] px-4 sm:px-6 lg:px-8">
+      <div className="site-container px-4 sm:px-6 lg:px-8">
         <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6 mb-8">
           <div>
             <div className="inline-flex items-center gap-2 text-sm font-semibold tracking-[0.12em] text-[var(--accent)]">
@@ -39,7 +39,7 @@ export function Testimonials() {
               className="rounded-[24px] bg-[var(--card)] border border-[var(--border)] p-6 flex flex-col hover:shadow-lg transition-shadow"
             >
               <div className="flex items-center gap-3">
-                <img src={item.image} alt="" className="h-12 w-12 rounded-full object-cover" />
+                <img loading="lazy" decoding="async" src={item.image} alt="" className="h-12 w-12 rounded-full object-cover" />
                 <div>
                   <div className="font-bold text-sm leading-none">{locale === "ar" ? item.name : item.nameEn}</div>
                   <div className="text-xs opacity-60 mt-1">{locale === "ar" ? item.role : item.roleEn}</div>

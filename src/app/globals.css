@@ -135,3 +135,78 @@ body {
               radial-gradient(at 80% 0%, #1A1A1E 0px, transparent 50%),
               radial-gradient(at 0% 50%, #121214 0px, transparent 50%);
 }
+
+/* Recover half of the space outside the former 1280px shell on each side.
+   1920px viewport => 1600px shell; below 1280px it remains full width. */
+.site-container {
+  width: 100%;
+  max-width: calc(50% + 640px);
+  margin-inline: auto;
+}
+
+/* A narrow gold highlight passes over the actual lettering, not a rectangle. */
+.hero-gold-shine {
+  color: var(--foreground);
+  background-image: linear-gradient(110deg,
+    var(--foreground) 0%, var(--foreground) 40%,
+    #aa7d32 46%, #d9b668 49%, #fff0be 50%, #d9b668 51%,
+    #aa7d32 54%, var(--foreground) 60%, var(--foreground) 100%);
+  background-size: 300% 100%;
+  background-position: 100% 50%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: hero-gold-pass 6s ease-in-out infinite;
+  /* Prevent Arabic diacritics and italic overhang from clipping. */
+  padding-block: 0.12em;
+  margin-block: -0.12em;
+}
+
+@keyframes hero-gold-pass {
+  0%, 15% { background-position: 100% 50%; }
+  65%, 100% { background-position: 0% 50%; }
+}
+
+.showcase-control {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  background: var(--card);
+  cursor: pointer;
+  transition: border-color 180ms, background-color 180ms;
+}
+.showcase-control:hover {
+  border-color: var(--accent);
+  background: var(--secondary);
+}
+
+.services-ribbon {
+  background: #111113;
+  color: #f5f3ee;
+}
+.ribbon-window {
+  mask-image: linear-gradient(to right, transparent, black 5%, black 95%, transparent);
+}
+.ribbon-track {
+  animation: services-scroll 40s linear infinite;
+}
+@keyframes services-scroll {
+  to { transform: translateX(-50%); }
+}
+.services-ribbon:hover .ribbon-track,
+.services-ribbon:focus-within .ribbon-track,
+.services-ribbon[data-paused="true"] .ribbon-track {
+  animation-play-state: paused;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-gold-shine { animation: none; background-position: 50% 50%; }
+  .ribbon-track { animation: none; width: 100%; }
+  .ribbon-group { flex-wrap: wrap; justify-content: center; gap: 20px; width: 100%; padding-inline: 20px; }
+  .ribbon-group li { padding-inline-end: 0; }
+  .ribbon-group[aria-hidden="true"], .ribbon-pause { display: none; }
+  .ribbon-window { mask-image: none; }
+}

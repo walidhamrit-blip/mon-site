@@ -72,7 +72,7 @@ export function CTAForm() {
 
   return (
     <section id="lead-form" className="py-16 lg:py-20">
-      <div className="mx-auto max-w-[1280px] px-4 sm:px-6 lg:px-8">
+      <div className="site-container px-4 sm:px-6 lg:px-8">
         <div className="rounded-[28px] bg-[var(--primary)] text-[var(--primary-foreground)] overflow-hidden grid lg:grid-cols-[1.05fr_1.15fr] gap-0">
           {/* Left copy */}
           <div className="p-8 lg:p-10 relative overflow-hidden">

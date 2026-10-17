@@ -39,12 +39,15 @@ export function ScaledLiveIframe({
   mode,
   reloadKey = 0,
   onLoaded,
+  interactive = true,
 }: {
   url: string;
   title: string;
   mode: "desktop" | "mobile";
   reloadKey?: number;
   onLoaded?: () => void;
+  /** Hero slides are visual previews; the Visit site link handles navigation. */
+  interactive?: boolean;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(0.5);
@@ -107,6 +110,8 @@ export function ScaledLiveIframe({
           title={title}
           className="w-full h-full border-0 bg-white block"
           loading="eager"
+          tabIndex={interactive ? undefined : -1}
+          aria-hidden={interactive ? undefined : true}
           onLoad={() => {
             setLoading(false);
             onLoaded?.();

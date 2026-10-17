@@ -10,6 +10,7 @@ import {
   Maximize2,
   RotateCw,
   Globe,
+  Play,
 } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import { sectors } from "@/lib/content";
@@ -21,6 +22,7 @@ import {
   FullscreenLiveViewer,
 } from "@/components/live-site-frames";
 import Link from "next/link";
+import { ProjectPreview } from "@/components/project-preview";
 
 function formatHost(url: string, fallbackSlug: string): string {
   if (!isRealUrl(url)) return `nukhba.ly/${fallbackSlug}`;
@@ -39,6 +41,7 @@ export function DemosGallery() {
   const [mode, setMode] = useState<"mobile" | "desktop">("desktop");
   const [active, setActive] = useState<string | null>(demos[0]?.slug ?? null);
   const [iframeKey, setIframeKey] = useState(0);
+  const [liveSlug, setLiveSlug] = useState<string | null>(null);
   const [fullscreen, setFullscreen] = useState(false);
 
   const filtered = filter === "all" ? demos : demos.filter((d) => d.sector === filter);
@@ -48,12 +51,13 @@ export function DemosGallery() {
   if (!activeDemo) return null;
 
   const reloadIframe = () => {
+    setLiveSlug(activeDemo.slug);
     setIframeKey((k) => k + 1);
   };
 
   return (
     <section id="demos" className="py-16 lg:py-24">
-      <div className="mx-auto max-w-[1280px] px-4 sm:px-6 lg:px-8">
+      <div className="site-container px-4 sm:px-6 lg:px-8">
         <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6 mb-8">
           <div>
             <div className="inline-flex items-center gap-2 text-sm font-semibold tracking-[0.12em] text-[var(--accent)]">
@@ -190,12 +194,24 @@ export function DemosGallery() {
                 }`}
               >
                 {hasLiveUrl ? (
-                  <ScaledLiveIframe
-                    url={activeDemo.previewUrl}
-                    title={locale === "ar" ? activeDemo.title : activeDemo.titleEn}
-                    mode={mode}
-                    reloadKey={iframeKey}
-                  />
+                  liveSlug === activeDemo.slug ? (
+                    <ScaledLiveIframe
+                      url={activeDemo.previewUrl}
+                      title={locale === "ar" ? activeDemo.title : activeDemo.titleEn}
+                      mode={mode}
+                      reloadKey={iframeKey}
+                    />
+                  ) : (
+                    <div className="absolute inset-0">
+                      <ProjectPreview demo={activeDemo} mode={mode} />
+                      <div className="absolute inset-0 flex items-center justify-center bg-black/15">
+                        <button type="button" onClick={() => setLiveSlug(activeDemo.slug)} className="inline-flex items-center gap-2 rounded-full bg-[var(--card)] px-5 py-3 text-sm font-bold shadow-xl cursor-pointer hover:bg-[var(--secondary)]">
+                          <Play className="h-4 w-4" />
+                          {locale === "ar" ? "تشغيل المعاينة التفاعلية" : "Load interactive preview"}
+                        </button>
+                      </div>
+                    </div>
+                  )
                 ) : (
                   <div dir={locale === "ar" ? "rtl" : "ltr"} className="w-full h-full relative">
                     <AnimatePresence mode="wait">
@@ -304,11 +320,7 @@ export function DemosGallery() {
                   }`}
                 >
                   <div className="relative aspect-[4/3] overflow-hidden">
-                    <img
-                      src={d.image}
-                      alt=""
-                      className="w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-500"
-                    />
+                    <ProjectPreview demo={d} />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/15 to-transparent" />
                     {dIsLive && (
                       <div className="absolute top-2 start-2">

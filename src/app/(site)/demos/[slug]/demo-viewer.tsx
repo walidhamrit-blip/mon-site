@@ -37,7 +37,7 @@ export function DemoViewer({ demo, allDemos }: { demo: Demo; allDemos: Demo[] })
   return (
     <div className="pt-[96px]">
       <section className="py-8">
-        <div className="mx-auto max-w-[1280px] px-4 sm:px-6 lg:px-8">
+        <div className="site-container px-4 sm:px-6 lg:px-8">
           <div className="flex flex-wrap items-center justify-between gap-4">
             <Link
               href="/demos"
@@ -79,7 +79,7 @@ export function DemoViewer({ demo, allDemos }: { demo: Demo; allDemos: Demo[] })
                   mode === "mobile" ? "max-w-[340px] aspect-[9/16]" : "w-full aspect-[16/11]"
                 }`}
               >
-                <img src={demo.image} alt={title} className="w-full h-full object-cover" />
+                <img loading="lazy" decoding="async" src={demo.image} alt={title} className="w-full h-full object-cover" />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/65 via-transparent to-transparent" />
                 <div className="absolute bottom-0 p-6 text-white">
                   <span className="px-3 py-1 rounded-full bg-[var(--accent)] text-black text-xs font-bold">
@@ -152,7 +152,7 @@ export function DemoViewer({ demo, allDemos }: { demo: Demo; allDemos: Demo[] })
                         href={`/demos/${item.slug}`}
                         className="flex items-center gap-3 p-2 rounded-xl hover:bg-[var(--secondary)] transition-colors"
                       >
-                        <img
+                        <img loading="lazy" decoding="async"
                           src={item.image}
                           alt=""
                           className="h-12 w-16 rounded-lg object-cover flex-shrink-0"

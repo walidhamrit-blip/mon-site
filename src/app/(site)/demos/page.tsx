@@ -28,7 +28,7 @@ export default function DemosPage() {
   return (
     <div className="pt-[96px]">
       <section className="py-10 bg-[var(--secondary)]/30 border-b border-[var(--border)]">
-        <div className="mx-auto max-w-[1280px] px-4 sm:px-6 lg:px-8">
+        <div className="site-container px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6">
             <div>
               <h1 className="text-[36px] lg:text-[48px] font-black tracking-tight leading-none">
@@ -76,7 +76,7 @@ export default function DemosPage() {
       </section>
 
       <section className="py-10">
-        <div className="mx-auto max-w-[1280px] px-4 sm:px-6 lg:px-8">
+        <div className="site-container px-4 sm:px-6 lg:px-8">
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {filtered.map((d) => {
               const hasLive = isRealUrl(d.previewUrl);
@@ -87,7 +87,7 @@ export default function DemosPage() {
                 >
                   <div>
                     <Link href={`/demos/${d.slug}`} className="block relative aspect-[16/11] overflow-hidden">
-                      <img
+                      <img loading="lazy" decoding="async"
                         src={d.image}
                         alt={locale === "ar" ? d.title : d.titleEn}
                         className="w-full h-full object-cover group-hover:scale-[1.04] transition-transform duration-500"
