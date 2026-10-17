@@ -1,11 +1,13 @@
 "use client";
 import { useState } from "react";
 import Link from "next/link";
-import { demos, sectors } from "@/lib/content";
+import { sectors } from "@/lib/content";
+import { useSiteContent } from "@/components/site-provider";
 import { useI18n } from "@/lib/i18n";
 import { ArrowUpRight, Search, Monitor, Smartphone } from "lucide-react";
 
 export default function DemosPage() {
+  const { demos } = useSiteContent();
   const { locale } = useI18n();
   const [filter, setFilter] = useState("all");
   const [q, setQ] = useState("");

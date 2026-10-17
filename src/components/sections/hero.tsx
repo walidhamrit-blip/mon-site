@@ -2,11 +2,12 @@
 import { motion, useScroll, useTransform } from "framer-motion";
 import { ArrowUpRight, Play, Sparkles, Star, Check } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
-import { siteConfig } from "@/lib/config";
+import { useSiteConfig } from "@/components/site-provider";
 import { whatsappLink } from "@/lib/utils";
 import { useRef } from "react";
 
 export function Hero() {
+  const siteConfig = useSiteConfig();
   const { locale, t, dir } = useI18n();
   const ref = useRef<HTMLDivElement>(null);
   const { scrollYProgress } = useScroll({ target: ref, offset: ["start start", "end start"] });
