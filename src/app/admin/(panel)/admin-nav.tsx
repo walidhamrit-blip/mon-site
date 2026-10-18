@@ -6,6 +6,7 @@ import {
   Inbox,
   Settings2,
   FileText,
+  CreditCard,
   LogOut,
   ExternalLink,
 } from "lucide-react";
@@ -14,6 +15,7 @@ import { logout } from "@/app/admin/actions";
 const links = [
   { href: "/admin", label: "Tableau de bord", icon: LayoutDashboard },
   { href: "/admin/leads", label: "Demandes", icon: Inbox },
+  { href: "/admin/orders", label: "Paiements crypto", icon: CreditCard },
   { href: "/admin/settings", label: "Configuration", icon: Settings2 },
   { href: "/admin/content", label: "Contenu", icon: FileText },
 ];

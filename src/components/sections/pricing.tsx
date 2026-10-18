@@ -1,13 +1,17 @@
 "use client";
+import { useState } from "react";
 import { motion } from "framer-motion";
-import { Check, Sparkles, ArrowUpRight } from "lucide-react";
+import { Check, Sparkles, ArrowUpRight, Bitcoin } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import { useSiteConfig } from "@/components/site-provider";
+import { CheckoutDialog } from "@/components/checkout-dialog";
+import type { PricingPlan } from "@/lib/config";
 
 export function Pricing() {
   const siteConfig = useSiteConfig();
   const { locale, t } = useI18n();
   const plans = siteConfig.pricing.plans;
+  const [checkoutPlan, setCheckoutPlan] = useState<PricingPlan | null>(null);
 
   return (
     <section id="pricing" className="py-16 lg:py-24 bg-[var(--secondary)]/40">
@@ -56,13 +60,32 @@ export function Pricing() {
                 )}
               </div>
 
-              <button
-                onClick={() => document.getElementById("lead-form")?.scrollIntoView({ behavior: "smooth" })}
-                className={`mt-6 h-11 rounded-full font-bold inline-flex items-center justify-center gap-2 w-full cursor-pointer transition ${plan.featured ? "bg-[var(--accent)] text-[var(--accent-foreground)] hover:bg-[var(--accent-hover)]" : "bg-[var(--primary)] text-[var(--primary-foreground)] hover:opacity-90"}`}
-              >
-                {locale === "ar" ? plan.cta : plan.ctaEn}
-                <ArrowUpRight className="h-4 w-4" />
-              </button>
+              {(plan.priceUsd ?? 0) > 0 ? (
+                <button
+                  onClick={() => setCheckoutPlan(plan)}
+                  className={`mt-6 h-11 rounded-full font-bold inline-flex items-center justify-center gap-2 w-full cursor-pointer transition ${plan.featured ? "bg-[var(--accent)] text-[var(--accent-foreground)] hover:bg-[var(--accent-hover)]" : "bg-[var(--primary)] text-[var(--primary-foreground)] hover:opacity-90"}`}
+                >
+                  <Bitcoin className="h-4 w-4" />
+                  {locale === "ar" ? t.crypto.payWithCrypto : t.crypto.payWithCrypto}
+                </button>
+              ) : (
+                <button
+                  onClick={() => document.getElementById("lead-form")?.scrollIntoView({ behavior: "smooth" })}
+                  className={`mt-6 h-11 rounded-full font-bold inline-flex items-center justify-center gap-2 w-full cursor-pointer transition ${plan.featured ? "bg-[var(--accent)] text-[var(--accent-foreground)] hover:bg-[var(--accent-hover)]" : "bg-[var(--primary)] text-[var(--primary-foreground)] hover:opacity-90"}`}
+                >
+                  {locale === "ar" ? plan.cta : plan.ctaEn}
+                  <ArrowUpRight className="h-4 w-4" />
+                </button>
+              )}
+
+              {(plan.priceUsd ?? 0) > 0 && (
+                <button
+                  onClick={() => document.getElementById("lead-form")?.scrollIntoView({ behavior: "smooth" })}
+                  className="mt-3 w-full text-xs opacity-60 hover:opacity-100 underline underline-offset-4 decoration-[var(--accent)] transition cursor-pointer"
+                >
+                  {locale === "ar" ? t.crypto.orQuote : t.crypto.orQuote}
+                </button>
+              )}
 
               <ul className="mt-6 space-y-2.5">
                 {(locale === "ar" ? plan.features : plan.featuresEn).map((f) => (
@@ -93,6 +116,12 @@ export function Pricing() {
           </p>
         </div>
       </div>
+
+      {/* Monté conditionnellement : l'état du dialogue
+          repart à zéro à chaque ouverture. */}
+      {checkoutPlan && (
+        <CheckoutDialog plan={checkoutPlan} onClose={() => setCheckoutPlan(null)} />
+      )}
     </section>
   );
 }

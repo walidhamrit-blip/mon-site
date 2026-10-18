@@ -71,6 +71,46 @@ Aucun fournisseur d'e-mail n'est obligatoire : sans configuration, le formulaire
 - Webhook: POST vers `https://formspree.io` ou Make/Zapier via `WEBHOOK_URL`
 - UTM conservé via `window.location.search`
 
+## Paiements crypto (NOWPayments)
+
+Le site intègre NOWPayments : bouton « ادفع بالعملات الرقمية / Pay with crypto »
+sur les cartes tarifaires, paiement sur la page hébergée NOWPayments, confirmation
+automatique par IPN (webhook) et suivi dans `/admin/orders`.
+
+### 1) Côté NOWPayments (une fois, dans votre tableau de bord)
+
+1. Confirmez votre e-mail d'inscription.
+2. **Settings → API keys** : créez une clé API (gardez-la secrète).
+3. **Settings → Payouts / Crypto accounts** : ajoutez les adresses de
+   réception (BTC, USDT-TRC20, ETH…) — sans wallet, aucun paiement ne peut
+   être crédité.
+4. **Settings → IPN** : ajoutez `https://nokhba.net.ly/api/payments/ipn`
+   (l'URL est aussi envoyée à chaque paiement, ce double la fiabilité).
+5. Si votre compte est en mode test, activez le sandbox (voir `NOWPAYMENTS_SANDBOX`).
+
+### 2) Côté site (variables d'environnement)
+
+| Variable | Effet |
+| --- | --- |
+| `NOWPAYMENTS_API_KEY` | **Requise** — clé API du marchand |
+| `NOWPAYMENTS_IPN_SECRET` | Secret IPN — par défaut = clé API |
+| `NOWPAYMENTS_EMAIL` / `NOWPAYMENTS_PASSWORD` | Optionnel — permet d'interroger le statut en direct (sinon : IPN seul) |
+| `NOWPAYMENTS_SANDBOX` | `true` pour tester sur api-sandbox.nowpayments.io |
+| `NOWPAYMENTS_CURRENCY` | Devise de facturation — `usd` par défaut (la LYD n'est pas supportée par NOWPayments) |
+| `NEXT_PUBLIC_SITE_URL` | URL publique pour les retours succès/annulation et l'IPN |
+
+### Notes
+
+- Les prix s'affichent en د.ل mais sont facturés en USD : chaque formule a un
+  `priceUsd` dans `src/lib/config.ts` (éditable aussi dans
+  Admin → Configuration). Ajustez-le selon votre taux de change.
+- **Seul l'IPN (ou le statut `finished`/`confirmed`) confirme un paiement** —
+  la redirection `success_url` n'est qu'une indication visuelle.
+- La clé API ne quitte jamais le serveur : création du paiement, IPN et
+  consultation du statut sont tous des appels serveur-à-serveur.
+- Commandes visibles dans `/admin/orders` (nav « Paiements crypto ») avec
+  filtres par statut et détails (adresse, montant crypto, IPN brut).
+
 ## SEO
 - sitemap.ts, robots.ts, metadata, hreflang, Open Graph, LocalBusiness JSON-LD déjà inclus
 - Ajoutez Google Analytics ID dans `src/app/page.tsx` placeholder
