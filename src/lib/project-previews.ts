@@ -18,6 +18,13 @@ const previews: Record<string, { desktop: string; mobile: string; screenshot: bo
     mobile: "/previews/tripo-teck-visual.webp",
     screenshot: false,
   },
+  // MyPhone : visuels du projet (photos produits), pas des captures d'écran —
+  // l'interface les étiquette « Project visual / صورة من المشروع ».
+  "https://smartphine-demo.vercel.app": {
+    desktop: "/previews/myphone-visual-desktop.webp",
+    mobile: "/previews/myphone-visual-mobile.webp",
+    screenshot: false,
+  },
 };
 
 export function getProjectPreview(demo: Demo, mode: "desktop" | "mobile") {

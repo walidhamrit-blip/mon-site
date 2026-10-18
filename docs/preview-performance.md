@@ -17,8 +17,11 @@ Captures effectuées le 17 octobre 2026 à partir du rendu local des sources des
 | `al-manhaj-company-{desktop,mobile}.webp` | `walidhamrit-blip/Al-manhaj-company-` | `64cbfc066d339f666747388d10117c18edddf693` |
 | `hala-perfumes-{desktop,mobile}.webp` | `walidhamrit-blip/hala` | `ce4b861b745ffe1d8f901d43fb4079837cc2e6f7` |
 | `tripo-teck-visual.webp` | `public/images/hero1.jpg` de `walidhamrit-blip/M-ET-OUTILLAGE-MODELE-3` | `3efc49d5a37fb141e88fc2b9ffba554e0ff10244` |
+| `myphone-visual-{desktop,mobile}.webp` | `public/images/hero-phone.jpg` et `public/images/phone.jpg` de `walidhamrit-blip/smartphine-demo` | `e9d8a3faf4077087bf697dabcebc6587e7056983` |
 
 Les captures ordinateur sont rendues à 1440 × 900 puis réduites à 960 × 600 ; les captures mobiles sont rendues à 390 × 693. Compression WebP qualité 78. Le visuel Tripo-Teck est une photo du projet, **pas une capture**.
+
+Les visuels MyPhone (démo smartphone) sont eux aussi des **photos du projet**, pas des captures : `hero-phone.jpg` recadré en 960 × 600 pour le cadre ordinateur, `phone.jpg` recadré au ratio 9/16 en 390 × 693 pour le cadre téléphone (environ 14 Ko chacun). Le site réel reste accessible en vue téléphone dans la visionneuse plein écran et dans la galerie.
 
 Pour les projets sans capture locale, le visuel déjà enregistré dans la galerie est utilisé et identifié comme « Project visual » / « صورة من المشروع » dans le carrousel. Ces images restent dépendantes de leur hébergeur externe. Ne pas présenter ces photos comme des captures d’écran.
 
