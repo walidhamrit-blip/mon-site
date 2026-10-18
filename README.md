@@ -48,9 +48,27 @@ Remplacez les URLs Unsplash par vos images dans `content.ts` et sections. Placez
 - **VPS** : `npm run build` + `npm start` derrière Nginx + PM2. Ajoutez `DATABASE_URL` si vous activez formulaire DB.
 
 ## Formulaire
-Actuellement log console + confirmation. Pour envoi réel:
-- Webhook: POST vers `https://formspree.io` ou Make/Zapier dans `cta-form.tsx` handleSubmit
-- Email: API route `/api/lead` avec Resend/Nodemailer
+La demande est enregistrée en base (table `leads`, visible dans `/admin`), transmise au webhook optionnel, et déclenche **deux e-mails** :
+
+- **notification à l'agence** — tous les champs de la demande, un lien WhatsApp pré-rempli et l'accès direct à la demande dans l'administration (répondre à l'e-mail écrit au client) ;
+- **accusé de réception client** — en arabe ou en anglais selon la langue du formulaire, avec le récapitulatif de la demande et les prochaines étapes.
+
+Aucun fournisseur d'e-mail n'est obligatoire : sans configuration, le formulaire fonctionne exactement comme avant (la demande reste enregistrée et consultable dans `/admin`), et l'absence d'e-mail est signalée dans les journaux du serveur.
+
+### Variables d'environnement (e-mails)
+| Variable | Effet |
+| --- | --- |
+| `RESEND_API_KEY` | Envoi via l'API Resend (appel REST, aucune dépendance supplémentaire) |
+| `EMAIL_FROM` | Expéditeur — par défaut `Nukhba <no-reply@nokhba.net.ly>` (domaine à vérifier chez Resend) |
+| `EMAIL_DOMAIN` | Domaine de l'expéditeur par défaut — `nokhba.net.ly` |
+| `SMTP_HOST` | Serveur SMTP — utilisé à la place de Resend si défini |
+| `SMTP_PORT` | Port SMTP — `587` par défaut |
+| `SMTP_USER` / `SMTP_PASS` | Authentification SMTP |
+| `SMTP_SECURE` | `true` pour une connexion SSL directe (port 465) |
+| `SMTP_TLS_REJECT_UNAUTHORIZED` | `false` pour accepter un certificat auto-signé |
+| `LEAD_NOTIFICATION_EMAIL` | Adresse qui reçoit les notifications — par défaut l'e-mail du site |
+
+- Webhook: POST vers `https://formspree.io` ou Make/Zapier via `WEBHOOK_URL`
 - UTM conservé via `window.location.search`
 
 ## SEO
@@ -68,6 +86,7 @@ Actuellement log console + confirmation. Pour envoi réel:
 7. GA/Plausible ID
 8. Favicon/OG image dans public/
 9. Textes légaux si besoin
+10. Fournisseur d'e-mail (`RESEND_API_KEY` ou `SMTP_HOST`) pour les demandes de devis
 
 ## Performance
 - next/image lazy, SSG, CSS variables, pas de gros JS
@@ -87,3 +106,4 @@ Actuellement log console + confirmation. Pour envoi réel:
 - Les réglages sont stockés dans la table `settings` ; par défaut le site utilise les valeurs de `src/lib/config.ts` et `src/lib/content.ts`
 - Après chaque enregistrement, le site public est régénéré automatiquement (revalidation Next.js)
 - **Optionnel** : `WEBHOOK_URL` — si définie, chaque demande du formulaire est aussi envoyée vers ce webhook (Formspree, Make, Zapier…)
+- **Optionnel** : `RESEND_API_KEY` ou `SMTP_HOST` — si un fournisseur d'e-mail est défini, chaque nouvelle demande déclenche une notification à l'agence et un accusé de réception au client

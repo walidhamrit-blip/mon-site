@@ -1,5 +1,22 @@
 export const demos = [
   {
+    slug: "myphone-tripoli",
+    sector: "electronics",
+    sectorAr: "هواتف ذكية وإلكترونيات",
+    sectorEn: "Smartphones & Electronics",
+    title: "ماي فون — متجر الهواتف الذكية في طرابلس",
+    titleEn: "MyPhone — Smartphone Store in Tripoli",
+    description:
+      "متجر إلكتروني متكامل للهواتف الذكية والأجهزة اللوحية والسماعات في طرابلس — كتالوج بالعلامات، سلة ودفع عبر واتساب، وتتبّع الطلب برقم مرجعي مع توصيل لكل ليبيا",
+    descriptionEn:
+      "Full smartphone, tablet & audio store in Tripoli — branded catalog, cart with WhatsApp checkout, order tracking by reference and delivery across Libya",
+    image: "https://smartphine-demo.vercel.app/images/hero-phone.jpg",
+    color: "#0EA5E9",
+    features: ["هواتف ذكية وأجهزة لوحية", "تتبّع الطلب برقم مرجعي", "سلة + دفع عبر واتساب", "عربي + إنجليزي"],
+    featuresEn: ["Phones, tablets & audio", "Order tracking by reference", "Cart & WhatsApp checkout", "Arabic + English"],
+    previewUrl: "https://smartphine-demo.vercel.app/",
+  },
+  {
     slug: "cabinet-sante-medecin",
     sector: "medical",
     sectorAr: "عيادات وخدمات صحية",
@@ -196,6 +213,7 @@ export const sectors = [
   { id: "furniture", labelAr: "مفروشات ومراتب", labelEn: "Furniture & Bedding" },
   { id: "toys", labelAr: "ألعاب أطفال", labelEn: "Kids & Toys" },
   { id: "appliances", labelAr: "أجهزة ومنزل", labelEn: "Home & Appliances" },
+  { id: "electronics", labelAr: "هواتف ذكية وإلكترونيات", labelEn: "Smartphones & Electronics" },
   { id: "hardware", labelAr: "مواد بناء وعدد", labelEn: "Tools & Construction" },
   { id: "stationery", labelAr: "قرطاسية وتقنية", labelEn: "Stationery & Tech" },
   { id: "sanitary", labelAr: "أطقم صحية وصنابير", labelEn: "Sanitary & Brassware" },
