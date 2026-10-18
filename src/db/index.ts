@@ -60,6 +60,37 @@ export function ensureSchema(): Promise<void> {
       await pool.query(
         "CREATE INDEX IF NOT EXISTS leads_status_idx ON leads (status)",
       );
+      await pool.query(`
+        CREATE TABLE IF NOT EXISTS orders (
+          id serial PRIMARY KEY,
+          created_at timestamptz NOT NULL DEFAULT now(),
+          updated_at timestamptz NOT NULL DEFAULT now(),
+          ref text NOT NULL UNIQUE,
+          plan_id text NOT NULL,
+          plan_name text NOT NULL,
+          amount_lyd text NOT NULL,
+          amount_usd text NOT NULL,
+          currency text NOT NULL DEFAULT 'usd',
+          client_name text,
+          email text,
+          phone text,
+          payment_id text UNIQUE,
+          pay_address text,
+          pay_currency text,
+          pay_amount text,
+          payment_url text,
+          status text NOT NULL DEFAULT 'pending',
+          ipn_status text,
+          utm text,
+          locale text
+        )
+      `);
+      await pool.query(
+        "CREATE INDEX IF NOT EXISTS orders_created_at_idx ON orders (created_at DESC)",
+      );
+      await pool.query(
+        "CREATE INDEX IF NOT EXISTS orders_status_idx ON orders (status)",
+      );
     })().catch((error) => {
       schemaReady = null; // permet de réessayer au prochain accès
       throw error;

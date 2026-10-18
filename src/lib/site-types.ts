@@ -42,6 +42,8 @@ export interface PricingPlanData {
   name: string;
   nameEn: string;
   price: number;
+  /** Équivalent en devise fiat (USD par défaut) pour le paiement crypto. */
+  priceUsd?: number;
   originalPrice: number | null;
   period: string;
   periodEn: string;
@@ -130,4 +132,40 @@ export interface LeadRow {
   locale: string | null;
   status: LeadStatus;
   notes: string | null;
+}
+
+/* ---------- Commandes (paiements crypto) ---------- */
+
+export const ORDER_STATUSES = ["pending", "paid", "failed", "expired"] as const;
+export type OrderStatus = (typeof ORDER_STATUSES)[number];
+
+export const ORDER_STATUS_LABELS: Record<OrderStatus, string> = {
+  pending: "En attente",
+  paid: "Payé",
+  failed: "Échoué",
+  expired: "Expiré",
+};
+
+export interface OrderRow {
+  id: number;
+  createdAt: string;
+  dateFr: string;
+  ref: string;
+  planId: string;
+  planName: string;
+  amountLyd: string;
+  amountUsd: string;
+  currency: string;
+  clientName: string | null;
+  email: string | null;
+  phone: string | null;
+  paymentId: string | null;
+  payAddress: string | null;
+  payCurrency: string | null;
+  payAmount: string | null;
+  paymentUrl: string | null;
+  status: OrderStatus;
+  ipnStatus: string | null;
+  utm: string | null;
+  locale: string | null;
 }

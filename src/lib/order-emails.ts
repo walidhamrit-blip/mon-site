@@ -1,0 +1,92 @@
+// Notification e-mail envoyée à l'agence lorsqu'un paiement
+// crypto est confirmé (IPN NOWPayments). L'envoi est « au mieux »
+// : un échec de messagerie ne change jamais le statut de la
+// commande, déjà enregistré en base.
+
+import { sendEmail } from "@/lib/mailer";
+import { ORDER_STATUS_LABELS } from "@/lib/nowpayments";
+import type { Order } from "@/db/schema";
+
+function frDate(value: Date | string): string {
+  const d = typeof value === "string" ? new Date(value) : value;
+  try {
+    return d.toLocaleString("fr-FR", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+      timeZone: "Africa/Tripoli",
+    });
+  } catch {
+    return d.toLocaleString("fr-FR");
+  }
+}
+
+/** Destinataire des notifications de paiement. */
+function paymentNotificationRecipient(): string {
+  const explicit = process.env.LEAD_NOTIFICATION_EMAIL?.trim();
+  return explicit || process.env.EMAIL_FROM?.split("<")[1]?.replace(">", "").trim() || "";
+}
+
+export interface PaymentEmailResult {
+  ok: boolean;
+  provider: string;
+  error?: string;
+}
+
+/** Envoie la notification « paiement confirmé » à l'agence. */
+export async function sendPaymentConfirmedEmail(
+  order: Order,
+  siteName: string,
+  siteUrl: string,
+): Promise<PaymentEmailResult> {
+  const to = paymentNotificationRecipient();
+  if (!to) {
+    return { ok: false, provider: "none", error: "destinataire absent" };
+  }
+
+  const adminUrl = `${siteUrl.replace(/\/+$/, "")}/admin/orders`;
+  const payInfo = order.payCurrency
+    ? `${order.payAmount ?? "?"} ${order.payCurrency.toUpperCase()} vers ${order.payAddress ?? "—"}`
+    : "—";
+
+  const subject = `✓ Paiement crypto confirmé — ${order.ref} (${order.planName})`;
+
+  const text = [
+    `Paiement confirmé via NOWPayments`,
+    ``,
+    `Commande : ${order.ref}`,
+    `Boutique : ${order.planName}`,
+    `Montant : ${order.amountLyd} LYD / ${order.amountUsd} ${order.currency.toUpperCase()}`,
+    `Client : ${order.clientName || "—"} <${order.email || "—"}>`,
+    `Téléphone : ${order.phone || "—"}`,
+    `Crypto : ${payInfo}`,
+    `Date : ${frDate(order.createdAt)}`,
+    ``,
+    `Suivi : ${adminUrl}`,
+  ].join("\n");
+
+  const html = `
+    <div style="font-family:system-ui,Arial,sans-serif;max-width:560px;margin:0 auto;padding:24px;color:#1a1a1e">
+      <div style="font-size:13px;letter-spacing:.12em;color:#C6A664;font-weight:700">${siteName.toUpperCase()} — PAIEMENT CRYPTO</div>
+      <h1 style="font-size:22px;font-weight:900;margin:8px 0 4px">Paiement confirmé ✓</h1>
+      <p style="color:#666;font-size:14px;margin:0 0 20px">Le client a réglé sa commande en cryptomonnaie.</p>
+      <table style="width:100%;border-collapse:collapse;font-size:14px" cellpadding="0" cellspacing="0">
+        <tr><td style="padding:8px 12px;background:#f6f3ec;font-weight:700;width:140px">Commande</td><td style="padding:8px 12px;border-bottom:1px solid #eee">${order.ref}</td></tr>
+        <tr><td style="padding:8px 12px;background:#f6f3ec;font-weight:700">Boutique</td><td style="padding:8px 12px;border-bottom:1px solid #eee">${order.planName}</td></tr>
+        <tr><td style="padding:8px 12px;background:#f6f3ec;font-weight:700">Montant</td><td style="padding:8px 12px;border-bottom:1px solid #eee"><strong>${order.amountLyd} LYD</strong> / ${order.amountUsd} ${order.currency.toUpperCase()}</td></tr>
+        <tr><td style="padding:8px 12px;background:#f6f3ec;font-weight:700">Client</td><td style="padding:8px 12px;border-bottom:1px solid #eee">${order.clientName || "—"} &lt;${order.email || "—"}&gt;</td></tr>
+        <tr><td style="padding:8px 12px;background:#f6f3ec;font-weight:700">Téléphone</td><td style="padding:8px 12px;border-bottom:1px solid #eee">${order.phone || "—"}</td></tr>
+        <tr><td style="padding:8px 12px;background:#f6f3ec;font-weight:700">Crypto</td><td style="padding:8px 12px;border-bottom:1px solid #eee">${payInfo}</td></tr>
+        <tr><td style="padding:8px 12px;background:#f6f3ec;font-weight:700">Date</td><td style="padding:8px 12px">${frDate(order.createdAt)}</td></tr>
+      </table>
+      <p style="margin:24px 0 0">
+        <a href="${adminUrl}" style="display:inline-block;background:#C6A664;color:#111;font-weight:700;padding:12px 22px;border-radius:999px;text-decoration:none">Voir la commande dans l'admin</a>
+      </p>
+      <p style="color:#999;font-size:12px;margin-top:20px">Statut : ${ORDER_STATUS_LABELS[order.status as keyof typeof ORDER_STATUS_LABELS] ?? order.status} — envoyé automatiquement par le site.</p>
+    </div>`;
+
+  const result = await sendEmail({ to, subject, text, html });
+  return { ok: result.ok, provider: result.provider, error: result.error };
+}
