@@ -5,6 +5,7 @@ import { Check, Sparkles, ArrowUpRight, Bitcoin } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import { useSiteConfig } from "@/components/site-provider";
 import { CheckoutDialog } from "@/components/checkout-dialog";
+import { formatUsd } from "@/lib/installments";
 import type { PricingPlan } from "@/lib/config";
 
 export function Pricing() {
@@ -54,11 +55,27 @@ export function Pricing() {
 
               <div className="mt-6 flex items-baseline gap-2">
                 <span className="text-[36px] font-black tracking-tight leading-none">{plan.price.toLocaleString("en-LY")}</span>
-                <span className="text-sm opacity-60">{locale === "ar" ? siteConfig.pricing.currency : siteConfig.pricing.currencyEn}{plan.periodEn ?? plan.period}</span>
+                <span className="text-sm opacity-60">{locale === "ar" ? siteConfig.pricing.currency : siteConfig.pricing.currencyEn}</span>
                 {plan.originalPrice && (
                   <span className="ms-2 text-sm line-through opacity-40">{plan.originalPrice.toLocaleString()}</span>
                 )}
               </div>
+              <div className="text-xs opacity-60">{locale === "ar" ? plan.period : plan.periodEn}</div>
+
+              {(plan.priceUsd ?? 0) > 0 && (
+                <div
+                  className={`mt-2.5 self-start inline-flex items-baseline gap-1.5 rounded-full px-3 py-1 ${
+                    plan.featured ? "bg-white/10" : "bg-[var(--accent)]/10"
+                  }`}
+                >
+                  <span className="text-lg font-black text-[var(--accent)]" dir="ltr">
+                    ≈ ${formatUsd(plan.priceUsd ?? 0)}
+                  </span>
+                  <span className="text-[11px] opacity-70">
+                    {locale === "ar" ? t.crypto.usdNoteAr : t.crypto.usdNoteEn}
+                  </span>
+                </div>
+              )}
 
               {(plan.priceUsd ?? 0) > 0 ? (
                 <button
@@ -79,9 +96,15 @@ export function Pricing() {
               )}
 
               {(plan.priceUsd ?? 0) > 0 && (
+                <p className="mt-2 text-center text-[11px] opacity-60">
+                  {locale === "ar" ? t.crypto.installmentNoteAr : t.crypto.installmentNoteEn}
+                </p>
+              )}
+
+              {(plan.priceUsd ?? 0) > 0 && (
                 <button
                   onClick={() => document.getElementById("lead-form")?.scrollIntoView({ behavior: "smooth" })}
-                  className="mt-3 w-full text-xs opacity-60 hover:opacity-100 underline underline-offset-4 decoration-[var(--accent)] transition cursor-pointer"
+                  className="mt-2 w-full text-xs opacity-60 hover:opacity-100 underline underline-offset-4 decoration-[var(--accent)] transition cursor-pointer"
                 >
                   {locale === "ar" ? t.crypto.orQuote : t.crypto.orQuote}
                 </button>

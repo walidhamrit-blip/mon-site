@@ -10,11 +10,20 @@ import {
 } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import { siteConfig, type PricingPlan } from "@/lib/config";
+import {
+  formatUsd,
+  INSTALLMENT_COUNTS,
+  splitAmount,
+  type InstallmentCount,
+} from "@/lib/installments";
 
 interface CreatePaymentResponse {
   ok: boolean;
   error?: string;
   orderRef?: string;
+  installments?: number;
+  installmentIndex?: number;
+  trancheAmountUsd?: number;
   paymentUrl?: string;
   payAddress?: string;
   payCurrency?: string;
@@ -44,6 +53,7 @@ export function CheckoutDialog({
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
+  const [installments, setInstallments] = useState<InstallmentCount>(1);
   const [error, setError] = useState("");
   const [countdown, setCountdown] = useState(3);
   const [payment, setPayment] = useState<CreatePaymentResponse | null>(null);
@@ -72,6 +82,10 @@ export function CheckoutDialog({
 
   if (!plan || !plan.priceUsd) return null;
 
+  const totalUsd = plan.priceUsd;
+  const trancheAmounts = splitAmount(totalUsd, installments);
+  const dueNow = trancheAmounts[0] ?? totalUsd;
+
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email.includes("@")) {
@@ -86,6 +100,7 @@ export function CheckoutDialog({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           planId: plan.id,
+          installments,
           name: name.trim() || undefined,
           email: email.trim() || undefined,
           phone: phone.trim() || undefined,
@@ -166,14 +181,76 @@ export function CheckoutDialog({
                 <span className="font-bold text-sm">
                   {ar ? plan.name : plan.nameEn}
                 </span>
-                <span className="text-sm opacity-70">
+                <span className="text-xs opacity-60">
                   {plan.price.toLocaleString("en-LY")} {ar ? siteConfig.pricing.currency : siteConfig.pricing.currencyEn}
                 </span>
               </div>
-              <div className="mt-1 text-xs opacity-60">
-                ≈ ${plan.priceUsd} {ar ? "— تُحوَّل تلقائياً للعملة الرقمية" : "— auto-converted to crypto"}
+              <div className="mt-1.5 flex items-baseline justify-between gap-2">
+                <span className="text-2xl font-black text-[var(--accent)]" dir="ltr">
+                  ${formatUsd(totalUsd)}
+                </span>
+                <span className="text-[11px] opacity-50">
+                  {ar ? t.checkout.totalUsdAr : t.checkout.totalUsdEn}
+                </span>
               </div>
             </div>
+
+            <div>
+              <div className="mb-1.5 text-[11px] font-semibold uppercase tracking-wider opacity-50">
+                {ar ? t.checkout.modeAr : t.checkout.modeEn}
+              </div>
+              <div className="grid grid-cols-3 gap-2">
+                {INSTALLMENT_COUNTS.map((count) => {
+                  const per = splitAmount(totalUsd, count)[0] ?? totalUsd;
+                  const active = installments === count;
+                  return (
+                    <button
+                      key={count}
+                      type="button"
+                      onClick={() => setInstallments(count)}
+                      aria-pressed={active}
+                      className={`rounded-xl border px-2 py-2.5 text-center transition-colors cursor-pointer ${
+                        active
+                          ? "border-[var(--accent)] bg-[var(--accent)]/15"
+                          : "border-[var(--border)] hover:border-[var(--accent)]/60"
+                      }`}
+                    >
+                      <span
+                        className={`block text-sm font-black ${active ? "text-[var(--accent)]" : ""}`}
+                        dir="ltr"
+                      >
+                        {count === 1
+                          ? `$${formatUsd(totalUsd)}`
+                          : `${count} × $${formatUsd(per)}`}
+                      </span>
+                      <span className="mt-0.5 block text-[10px] opacity-60">
+                        {count === 1
+                          ? ar
+                            ? t.checkout.fullAr
+                            : t.checkout.fullEn
+                          : ar
+                            ? t.checkout.tranchesAr
+                            : t.checkout.tranchesEn}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between rounded-xl bg-[var(--accent)]/10 border border-[var(--accent)]/30 px-3 py-2 text-sm">
+              <span className="opacity-70">
+                {ar ? t.checkout.dueTodayAr : t.checkout.dueTodayEn}
+              </span>
+              <strong className="text-[var(--accent)]" dir="ltr">
+                ${formatUsd(dueNow)}
+              </strong>
+            </div>
+            {installments > 1 && (
+              <p className="text-[11px] opacity-50 -mt-1 leading-relaxed">
+                {ar ? t.checkout.trancheNoteAr : t.checkout.trancheNoteEn}
+              </p>
+            )}
 
             <input
               className={inputCls}
@@ -215,6 +292,7 @@ export function CheckoutDialog({
             >
               <Bitcoin className="h-4 w-4" />
               {ar ? t.checkout.continueAr : t.checkout.continueEn}
+              {" — "}${formatUsd(dueNow)}
             </button>
             <p className="text-center text-[11px] opacity-50">
               {ar ? t.checkout.secureAr : t.checkout.secureEn}
@@ -240,6 +318,18 @@ export function CheckoutDialog({
                 <strong>{countdown}</strong>
               </p>
             </div>
+
+            {payment.installments != null && payment.installments > 1 && (
+              <div className="flex items-center justify-between gap-3 rounded-2xl border border-[var(--border)] px-4 py-3 text-sm">
+                <span className="opacity-60">
+                  {ar ? t.checkout.trancheAr : t.checkout.trancheEn}
+                </span>
+                <strong dir="ltr">
+                  {payment.installmentIndex ?? 1}/{payment.installments}
+                  {" — "}${formatUsd(payment.trancheAmountUsd ?? dueNow)}
+                </strong>
+              </div>
+            )}
 
             <button
               type="button"

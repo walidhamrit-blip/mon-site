@@ -98,6 +98,11 @@ export function OrdersTable({ orders }: { orders: OrderRow[] }) {
                     </td>
                     <td className="px-4 py-3.5 text-zinc-300">
                       {order.planName}
+                      {order.installments > 1 && (
+                        <span className="ms-2 inline-flex items-center rounded-full border border-[#C6A664]/30 bg-[#C6A664]/10 px-2 py-0.5 text-[10px] font-bold text-[#E8D5A9] whitespace-nowrap align-middle">
+                          Tranche {order.installmentIndex}/{order.installments}
+                        </span>
+                      )}
                     </td>
                     <td className="px-4 py-3.5 whitespace-nowrap">
                       <span className="font-bold text-white">
@@ -162,6 +167,14 @@ export function OrdersTable({ orders }: { orders: OrderRow[] }) {
                             label="ID paiement NOWPayments"
                             value={order.paymentId}
                             mono
+                          />
+                          <Detail
+                            label="Plan de paiement"
+                            value={
+                              order.installments > 1
+                                ? `Tranche ${order.installmentIndex}/${order.installments} — groupe ${order.groupRef ?? order.ref}`
+                                : "Paiement unique"
+                            }
                           />
                           <div className="md:col-span-2">
                             <Detail

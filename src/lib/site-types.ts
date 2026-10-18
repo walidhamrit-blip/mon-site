@@ -156,6 +156,12 @@ export interface OrderRow {
   amountLyd: string;
   amountUsd: string;
   currency: string;
+  /** Nombre total de tranches (1 = paiement en une fois). */
+  installments: number;
+  /** Numéro de la tranche (1…installments). */
+  installmentIndex: number;
+  /** Référence commune aux tranches d'un même paiement. */
+  groupRef: string | null;
   clientName: string | null;
   email: string | null;
   phone: string | null;

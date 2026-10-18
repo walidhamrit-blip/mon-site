@@ -1,4 +1,4 @@
-import { pgTable, serial, text, timestamp, jsonb } from "drizzle-orm/pg-core";
+import { pgTable, serial, text, timestamp, jsonb, integer } from "drizzle-orm/pg-core";
 
 // Tables du panneau d'administration.
 // Note : `src/db/index.ts` crée aussi ces tables automatiquement
@@ -56,6 +56,12 @@ export const orders = pgTable("orders", {
   /** Montant facturé à NOWPayments (devise fiat, ex. USD). */
   amountUsd: text("amount_usd").notNull(),
   currency: text("currency").notNull().default("usd"),
+  /** Nombre total de tranches du plan de paiement (1 = paiement total). */
+  installments: integer("installments").notNull().default(1),
+  /** Numéro de la tranche que représente cette commande (1…installments). */
+  installmentIndex: integer("installment_index").notNull().default(1),
+  /** Référence commune à toutes les tranches d'un même plan. */
+  groupRef: text("group_ref"),
   clientName: text("client_name"),
   email: text("email"),
   phone: text("phone"),

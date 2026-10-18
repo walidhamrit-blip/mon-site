@@ -51,7 +51,14 @@ export async function sendPaymentConfirmedEmail(
     ? `${order.payAmount ?? "?"} ${order.payCurrency.toUpperCase()} vers ${order.payAddress ?? "—"}`
     : "—";
 
-  const subject = `✓ Paiement crypto confirmé — ${order.ref} (${order.planName})`;
+  const trancheInfo =
+    order.installments > 1
+      ? `Tranche ${order.installmentIndex}/${order.installments} — plan ${order.groupRef ?? order.ref}`
+      : null;
+
+  const subject = `✓ Paiement crypto confirmé — ${order.ref} (${order.planName}${
+    trancheInfo ? ` — ${trancheInfo}` : ""
+  })`;
 
   const text = [
     `Paiement confirmé via NOWPayments`,
@@ -59,6 +66,7 @@ export async function sendPaymentConfirmedEmail(
     `Commande : ${order.ref}`,
     `Boutique : ${order.planName}`,
     `Montant : ${order.amountLyd} LYD / ${order.amountUsd} ${order.currency.toUpperCase()}`,
+    ...(trancheInfo ? [`Tranche : ${trancheInfo}`] : []),
     `Client : ${order.clientName || "—"} <${order.email || "—"}>`,
     `Téléphone : ${order.phone || "—"}`,
     `Crypto : ${payInfo}`,
@@ -76,6 +84,7 @@ export async function sendPaymentConfirmedEmail(
         <tr><td style="padding:8px 12px;background:#f6f3ec;font-weight:700;width:140px">Commande</td><td style="padding:8px 12px;border-bottom:1px solid #eee">${order.ref}</td></tr>
         <tr><td style="padding:8px 12px;background:#f6f3ec;font-weight:700">Boutique</td><td style="padding:8px 12px;border-bottom:1px solid #eee">${order.planName}</td></tr>
         <tr><td style="padding:8px 12px;background:#f6f3ec;font-weight:700">Montant</td><td style="padding:8px 12px;border-bottom:1px solid #eee"><strong>${order.amountLyd} LYD</strong> / ${order.amountUsd} ${order.currency.toUpperCase()}</td></tr>
+        ${trancheInfo ? `<tr><td style="padding:8px 12px;background:#f6f3ec;font-weight:700">Tranche</td><td style="padding:8px 12px;border-bottom:1px solid #eee">${trancheInfo}</td></tr>` : ""}
         <tr><td style="padding:8px 12px;background:#f6f3ec;font-weight:700">Client</td><td style="padding:8px 12px;border-bottom:1px solid #eee">${order.clientName || "—"} &lt;${order.email || "—"}&gt;</td></tr>
         <tr><td style="padding:8px 12px;background:#f6f3ec;font-weight:700">Téléphone</td><td style="padding:8px 12px;border-bottom:1px solid #eee">${order.phone || "—"}</td></tr>
         <tr><td style="padding:8px 12px;background:#f6f3ec;font-weight:700">Crypto</td><td style="padding:8px 12px;border-bottom:1px solid #eee">${payInfo}</td></tr>

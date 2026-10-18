@@ -71,6 +71,9 @@ export function ensureSchema(): Promise<void> {
           amount_lyd text NOT NULL,
           amount_usd text NOT NULL,
           currency text NOT NULL DEFAULT 'usd',
+          installments integer NOT NULL DEFAULT 1,
+          installment_index integer NOT NULL DEFAULT 1,
+          group_ref text,
           client_name text,
           email text,
           phone text,
@@ -90,6 +93,20 @@ export function ensureSchema(): Promise<void> {
       );
       await pool.query(
         "CREATE INDEX IF NOT EXISTS orders_status_idx ON orders (status)",
+      );
+      // Colonnes ajoutées pour le paiement en tranches — ALTER ... IF NOT
+      // EXISTS met à niveau les bases créées par une version antérieure.
+      await pool.query(
+        "ALTER TABLE orders ADD COLUMN IF NOT EXISTS installments integer NOT NULL DEFAULT 1",
+      );
+      await pool.query(
+        "ALTER TABLE orders ADD COLUMN IF NOT EXISTS installment_index integer NOT NULL DEFAULT 1",
+      );
+      await pool.query(
+        "ALTER TABLE orders ADD COLUMN IF NOT EXISTS group_ref text",
+      );
+      await pool.query(
+        "CREATE INDEX IF NOT EXISTS orders_group_ref_idx ON orders (group_ref)",
       );
     })().catch((error) => {
       schemaReady = null; // permet de réessayer au prochain accès
