@@ -47,6 +47,46 @@ export function mergeConfig(override: unknown): typeof siteConfig {
     }
 
     if (
+      key === "pricing" &&
+      value !== null &&
+      typeof value === "object" &&
+      !Array.isArray(value) &&
+      baseValue !== null &&
+      typeof baseValue === "object" &&
+      !Array.isArray(baseValue)
+    ) {
+      const basePricing = baseValue as Record<string, unknown>;
+      const storedPricing = value as Record<string, unknown>;
+      const defaultPlans = Array.isArray(basePricing.plans) ? basePricing.plans : [];
+      const storedPlans = Array.isArray(storedPricing.plans) ? storedPricing.plans : [];
+      const mergedPlans = storedPlans.map((storedPlan, index) => {
+        if (!storedPlan || typeof storedPlan !== "object" || Array.isArray(storedPlan)) {
+          return storedPlan;
+        }
+        const plan = storedPlan as Record<string, unknown>;
+        const fallback = defaultPlans.find(
+          (candidate) =>
+            candidate &&
+            typeof candidate === "object" &&
+            !Array.isArray(candidate) &&
+            (candidate as Record<string, unknown>).id === plan.id,
+        ) ?? defaultPlans[index];
+        if (!fallback || typeof fallback !== "object" || Array.isArray(fallback)) return plan;
+        const defaults = fallback as Record<string, unknown>;
+        return {
+          ...defaults,
+          ...plan,
+          // Legacy saved plans have no crypto price; null means the new field
+          // has not yet been configured either, so preserve the code default.
+          priceUsd: plan.priceUsd ?? defaults.priceUsd,
+        };
+      });
+      merged[key] = {
+        ...(basePricing as object),
+        ...(storedPricing as object),
+        plans: storedPlans.length > 0 ? mergedPlans : defaultPlans,
+      };
+    } else if (
       value !== null &&
       typeof value === "object" &&
       !Array.isArray(value) &&
