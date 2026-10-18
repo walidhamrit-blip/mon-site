@@ -28,7 +28,11 @@ const createPaymentSchema = z.object({
 
 /** URL de base du site (succès/annulation/IPN). */
 function siteBaseUrl(): string {
-  const explicit = process.env.NEXT_PUBLIC_SITE_URL?.trim();
+  // Variable privée (jamais exposée au navigateur) — en repli,
+  // NEXT_PUBLIC_SITE_URL puis l'URL codée dans config.ts.
+  const explicit =
+    process.env.SITE_URL?.trim() ||
+    process.env.NEXT_PUBLIC_SITE_URL?.trim();
   if (explicit) return explicit.replace(/\/+$/, "");
   return siteConfig.url.replace(/\/+$/, "");
 }

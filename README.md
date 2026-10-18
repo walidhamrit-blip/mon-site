@@ -97,7 +97,7 @@ automatique par IPN (webhook) et suivi dans `/admin/orders`.
 | `NOWPAYMENTS_EMAIL` / `NOWPAYMENTS_PASSWORD` | Optionnel — permet d'interroger le statut en direct (sinon : IPN seul) |
 | `NOWPAYMENTS_SANDBOX` | `true` pour tester sur api-sandbox.nowpayments.io |
 | `NOWPAYMENTS_CURRENCY` | Devise de facturation — `usd` par défaut (la LYD n'est pas supportée par NOWPayments) |
-| `NEXT_PUBLIC_SITE_URL` | URL publique pour les retours succès/annulation et l'IPN |
+| `SITE_URL` | URL publique pour les retours succès/annulation et l'IPN (variable serveur, non exposée au navigateur) |
 
 ### Notes
 
