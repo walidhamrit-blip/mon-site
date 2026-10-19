@@ -301,6 +301,11 @@ NOWPayments pour prendre une place en avance dans le planning.
 - Les fiches démos « live » exposent un h1 + une description `sr-only` dans le
   HTML initial (`standalone` de `FullscreenLiveViewer`) car le portail plein
   écran ne se monte qu'après hydratation.
+- **Champs SEO éditables par projet** : dans /admin → Contenu → Démos, chaque
+  réalisation propose `metaTitle` (≤ 60) et `metaDescription` (≤ 160) avec
+  compteurs en direct. Un champ vide retombe automatiquement sur le titre et la
+  description du projet (validation Zod, typage `Demo`, fallback dans
+  `generateMetadata`).
 
 ## A personnaliser avant mise en ligne
 1. Prix réels dans config.ts
