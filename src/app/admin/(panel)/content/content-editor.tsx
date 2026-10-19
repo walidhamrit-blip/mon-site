@@ -17,6 +17,7 @@ import { resetContentSection, saveContentSection } from "@/app/admin/actions";
 import { sectors } from "@/lib/content";
 import { formatLyd, resolveDemoClassification } from "@/lib/classification";
 import { formatUsd } from "@/lib/installments";
+import type { SeoEngine, SeoWarningCode } from "@/lib/ai/seo-generator";
 import {
   Plus,
   Trash2,
@@ -420,7 +421,9 @@ export function ContentEditor({
   const [aiIndex, setAiIndex] = useState<number | null>(null);
   const [aiMsg, setAiMsg] = useState<{
     index: number;
-    kind: "ok" | "err";
+    // "warn" = clé présente mais appel LLM en échec : gabarit appliqué,
+    // action requise côté Vercel, sans bloquer l'enregistrement.
+    kind: "ok" | "warn" | "err";
     text: string;
   } | null>(null);
 
@@ -465,8 +468,10 @@ export function ContentEditor({
   /**
    * Demande à l'assistant SEO IA (route /api/admin/ai/seo) un jeu de champs
    * SEO bilingues pour la démo `i` : titre/description AR + EN et textes
-   * alternatifs d'image. Sans OPENAI_API_KEY (ou en cas d'erreur réseau),
-   * l'API renvoie un gabarit local et `engine: "template"`.
+   * alternatifs d'image. `copy` est toujours renvoyé ; `engine` distingue :
+   * - "llm"      → champs générés par le modèle ;
+   * - "template" → aucune clé OpenAI configurée (gabarit local) ;
+   * - "error"    → clé configurée mais refusée/indisponible (gabarit + code).
    */
   const generateSeo = async (i: number) => {
     const demo = draft.demos[i];
@@ -488,7 +493,8 @@ export function ContentEditor({
       });
       const data = (await res.json().catch(() => null)) as {
         copy?: Partial<Demo>;
-        engine?: "llm" | "template";
+        engine?: SeoEngine;
+        warning?: SeoWarningCode;
         error?: string;
       } | null;
       if (!res.ok || !data?.copy) {
@@ -500,14 +506,30 @@ export function ContentEditor({
         return;
       }
       setDemo(i, data.copy);
-      setAiMsg({
-        index: i,
-        kind: "ok",
-        text:
-          data.engine === "llm"
-            ? "Champs SEO générés par l'IA — relisez puis enregistrez."
-            : "IA non configurée : un gabarit optimisé a été appliqué.",
-      });
+      if (data.engine === "llm") {
+        setAiMsg({
+          index: i,
+          kind: "ok",
+          text: "Champs SEO générés par l'IA — relisez puis enregistrez.",
+        });
+      } else if (data.engine === "error") {
+        const code = data.warning
+          ? data.warning.startsWith("http_")
+            ? `HTTP ${data.warning.slice("http_".length)}`
+            : data.warning
+          : "inconnu";
+        setAiMsg({
+          index: i,
+          kind: "warn",
+          text: `Clé OpenAI refusée ou service indisponible (code ${code}) : gabarit appliqué, vérifiez les variables Vercel.`,
+        });
+      } else {
+        setAiMsg({
+          index: i,
+          kind: "ok",
+          text: "Aucune clé OpenAI configurée : gabarit optimisé appliqué.",
+        });
+      }
     } catch {
       setAiMsg({ index: i, kind: "err", text: "Requête impossible." });
     } finally {
@@ -1387,7 +1409,11 @@ export function ContentEditor({
                 {aiMsg?.index === i && (
                   <p
                     className={`mt-3 flex items-center gap-1.5 text-[11px] font-semibold ${
-                      aiMsg.kind === "ok" ? "text-emerald-400" : "text-red-400"
+                      aiMsg.kind === "ok"
+                        ? "text-emerald-400"
+                        : aiMsg.kind === "warn"
+                          ? "text-amber-400"
+                          : "text-red-400"
                     }`}
                   >
                     {aiMsg.kind === "ok" ? (

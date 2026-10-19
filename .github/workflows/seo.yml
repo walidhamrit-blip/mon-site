@@ -28,6 +28,9 @@ jobs:
       - name: Vérification TypeScript
         run: npm run typecheck
 
+      - name: Tests de l'assistant SEO IA (node:test, sans dépendance)
+        run: npm run test:seo
+
       - name: Build de production
         run: npm run build
         env:
