@@ -10,6 +10,7 @@ import { isThemeId, themeBootScript, themeCss } from "@/lib/themes";
 import { JsonLd } from "@/components/json-ld";
 import {
   DEFAULT_META_DESCRIPTION,
+  GOOGLE_SITE_VERIFICATION,
   localBusinessJsonLd,
   offerCatalogJsonLd,
   organizationJsonLd,
@@ -87,11 +88,11 @@ export const metadata: Metadata = {
       "max-video-preview": -1,
     },
   },
-  // La vérification fichier (public/googleaf….html) reste active ; ce meta
-  // n'est émis que si un code est fourni via variable d'environnement.
-  verification: process.env.GOOGLE_SITE_VERIFICATION
-    ? { google: process.env.GOOGLE_SITE_VERIFICATION }
-    : undefined,
+  // Vérification Google Search Console : balise meta émise sur toutes les
+  // pages (code par défaut en dur — cf. src/lib/seo.ts — surchargeable via
+  // GOOGLE_SITE_VERIFICATION). La vérification fichier historique
+  // (public/googleaf….html) reste active en complément.
+  verification: { google: GOOGLE_SITE_VERIFICATION },
 };
 
 export const viewport: Viewport = {
