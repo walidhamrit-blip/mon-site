@@ -156,9 +156,9 @@ const translations = {
       hintKeyAr: "مفتاح NOWPayments API غير موجود على الخادم — افتح /api/health وتحقق من NOWPAYMENTS_API_KEY على Vercel (بيئة Production) ثم أعد النشر.",
       hintKeyEn:
         "The NOWPayments API key is missing on the server — open /api/health and check NOWPAYMENTS_API_KEY on Vercel (Production environment), then redeploy.",
-      hintKeyRejectedAr: "الخادم وصل إلى NOWPayments لكن المفتاح مرفوض (401/403) — تأكد أن المفتاح مفتاح إنتاج (أو استخدم مفتاح اختبار مع NOWPAYMENTS_SANDBOX=true).",
+      hintKeyRejectedAr: "وصل الخادم إلى NOWPayments لكن مفتاح API مرفوض (401/403) — انسخ المفتاح من Settings → API keys (وليس سرّ IPN)، وطابِق البيئة: مفتاح إنتاج مع NOWPAYMENTS_SANDBOX=false أو مفتاح اختبار مع =true، ثم أكّد apiKeyValid:true عبر /api/health.",
       hintKeyRejectedEn:
-        "The server reached NOWPayments but the API key was rejected (401/403) — use a production key (or a sandbox key with NOWPAYMENTS_SANDBOX=true).",
+        "The server reached NOWPayments but the API key was rejected (401/403) — copy the key from Settings → API keys (not the IPN secret) and match the environment: production key with NOWPAYMENTS_SANDBOX=false, or sandbox key with =true. Then confirm apiKeyValid:true via /api/health.",
       hintGatewayAr: "NOWPayments رفض إنشاء الفاتورة — الرسالة الدقيقة أدناه.",
       hintGatewayEn: "NOWPayments refused to create the invoice — exact message below.",
       hintDbAr: "خطأ في قاعدة البيانات — تحقق من DATABASE_URL عبر /api/health.",
@@ -396,9 +396,9 @@ const translations = {
       hintKeyAr: "The NOWPayments API key is missing on the server — open /api/health and check NOWPAYMENTS_API_KEY on Vercel (Production environment), then redeploy.",
       hintKeyEn:
         "The NOWPayments API key is missing on the server — open /api/health and check NOWPAYMENTS_API_KEY on Vercel (Production environment), then redeploy.",
-      hintKeyRejectedAr: "The server reached NOWPayments but the API key was rejected (401/403) — use a production key (or a sandbox key with NOWPAYMENTS_SANDBOX=true).",
+      hintKeyRejectedAr: "The server reached NOWPayments but the API key was rejected (401/403) — copy the key from Settings → API keys (not the IPN secret) and match the environment: production key with NOWPAYMENTS_SANDBOX=false, or sandbox key with =true. Then confirm apiKeyValid:true via /api/health.",
       hintKeyRejectedEn:
-        "The server reached NOWPayments but the API key was rejected (401/403) — use a production key (or a sandbox key with NOWPAYMENTS_SANDBOX=true).",
+        "The server reached NOWPayments but the API key was rejected (401/403) — copy the key from Settings → API keys (not the IPN secret) and match the environment: production key with NOWPAYMENTS_SANDBOX=false, or sandbox key with =true. Then confirm apiKeyValid:true via /api/health.",
       hintGatewayAr: "NOWPayments refused to create the invoice — exact message below.",
       hintGatewayEn: "NOWPayments refused to create the invoice — exact message below.",
       hintDbAr: "Database error — check DATABASE_URL via /api/health.",

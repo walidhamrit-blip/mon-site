@@ -2,10 +2,12 @@ import { db } from "@/db";
 import { sql } from "drizzle-orm";
 import { siteConfig } from "@/lib/config";
 import {
+  checkNowPaymentsApiKey,
   nowPaymentsApiBase,
   nowPaymentsApiKey,
   nowPaymentsFiatCurrency,
   nowPaymentsIpnSecret,
+  nowPaymentsSandbox,
 } from "@/lib/nowpayments";
 
 export const dynamic = "force-dynamic";
@@ -24,6 +26,11 @@ function errorMessage(error: unknown): string {
  *    de l'environnement qui sert cette route (Vercel : vérifier
  *    l'environnement « Production » puis redéployer) ;
  *  - `nowpayments.reachable:false` → sortie réseau vers NOWPayments bloquée ;
+ *  - `nowpayments.apiKeyValid:false` → la clé est refusée par
+ *    l'environnement visé (`apiKeyError` = corps exact du refus) : clé
+ *    sandbox contre API production ou inversement (les deux environnements
+ *    sont séparés), secret IPN collé à la place de la clé API, ou clé
+ *    tronquée/régénérée. `apiKeyValid:true` = paiements réellement possibles ;
  *  - `vercel.env` / `vercel.commit` → quel déploiement sert la réponse.
  */
 export async function GET() {
@@ -54,34 +61,47 @@ export async function GET() {
     };
   }
 
-  // ── Passerelle NOWPayments (atteignable ? — GET /status est public) ──
+  // ── Passerelle NOWPayments ──
+  // Deux sondes en parallèle : `GET /status` (public — dit seulement si la
+  // passerelle répond) et `GET /currencies` avec la clé (dit si la clé est
+  // acceptée par l'environnement visé). La première seule a déjà fait
+  // croire à tort que « tout allait bien » alors que la clé était refusée.
   const apiBase = nowPaymentsApiBase();
-  let reachable: boolean | null = null;
-  let gatewayError: string | null = null;
-  try {
-    const response = await fetch(`${apiBase}/status`, {
-      method: "GET",
-      cache: "no-store",
-      signal: AbortSignal.timeout(5000),
-    });
-    reachable = response.ok;
-    if (!response.ok) gatewayError = `HTTP ${response.status}`;
-  } catch (error) {
-    reachable = false;
-    gatewayError = errorMessage(error);
-  }
+  const [statusProbe, apiKeyCheck] = await Promise.all([
+    (async () => {
+      try {
+        const response = await fetch(`${apiBase}/status`, {
+          method: "GET",
+          cache: "no-store",
+          signal: AbortSignal.timeout(5000),
+        });
+        return {
+          reachable: response.ok,
+          error: response.ok ? null : `HTTP ${response.status}`,
+        };
+      } catch (error) {
+        return { reachable: false, error: errorMessage(error) };
+      }
+    })(),
+    checkNowPaymentsApiKey(),
+  ]);
 
   const nowpayments = {
     apiKeyConfigured: nowPaymentsApiKey().length > 0,
+    apiKeyValid: apiKeyCheck.valid,
+    apiKeyStatus: apiKeyCheck.status,
+    apiKeyError: apiKeyCheck.error,
     ipnSecretConfigured: Boolean(nowPaymentsIpnSecret()),
-    sandbox: process.env.NOWPAYMENTS_SANDBOX === "true",
+    sandbox: nowPaymentsSandbox(),
     apiBase,
     currency: nowPaymentsFiatCurrency(),
-    reachable,
-    error: gatewayError,
+    reachable: statusProbe.reachable,
+    error: statusProbe.error,
   };
 
-  const ok = database.connected && nowpayments.apiKeyConfigured && reachable !== false;
+  // `ok` n'est vrai que si un paiement peut réellement être créé :
+  // base connectée ET clé acceptée (pas seulement présente/joignable).
+  const ok = database.connected && nowpayments.apiKeyValid === true;
 
   return Response.json(
     {

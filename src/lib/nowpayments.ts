@@ -10,9 +10,28 @@ import { Buffer } from "node:buffer";
 const PROD_API = "https://api.nowpayments.io/v1";
 const SANDBOX_API = "https://api-sandbox.nowpayments.io/v1";
 
+/**
+ * Assainit un secret copié-collé depuis un tableau de bord : retire les
+ * guillemets englobants (« "… », « '… »), les espaces et les retours à la
+ * ligne. Une clé NOWPayments ne contient aucun de ces caractères — ils ne
+ * peuvent provenir que d'un copier-coller malpropre, cause classique d'un
+ * refus « Invalid api key » (403) alors que la clé semble correcte.
+ */
+export function sanitizeSecret(value: string | undefined | null): string {
+  let cleaned = (value ?? "").trim();
+  while (
+    cleaned.length >= 2 &&
+    ((cleaned.startsWith('"') && cleaned.endsWith('"')) ||
+      (cleaned.startsWith("'") && cleaned.endsWith("'")))
+  ) {
+    cleaned = cleaned.slice(1, -1).trim();
+  }
+  return cleaned.replace(/\s+/g, "");
+}
+
 /** Clé API du marchand (Settings → API keys dans le tableau NOWPayments). */
 export function nowPaymentsApiKey(): string {
-  return process.env.NOWPAYMENTS_API_KEY?.trim() ?? "";
+  return sanitizeSecret(process.env.NOWPAYMENTS_API_KEY);
 }
 
 /** Vrai si l'intégration est prête (clé API renseignée). */
@@ -22,9 +41,19 @@ export function nowPaymentsConfigured(): boolean {
 
 /** Clé secrète utilisée pour vérifier les signatures IPN. */
 export function nowPaymentsIpnSecret(): string {
-  return (
-    process.env.NOWPAYMENTS_IPN_SECRET?.trim() || nowPaymentsApiKey()
-  );
+  return sanitizeSecret(process.env.NOWPAYMENTS_IPN_SECRET) || nowPaymentsApiKey();
+}
+
+/**
+ * Vrai si l'API sandbox est visée. Valeur assainie : « true », « 1 » et
+ * « yes » (casse et guillemets indifférents) activent le bac à sable.
+ * ⚠️ Les clés sandbox et production sont séparées et NON interchangeables :
+ * une clé de production envoyée à l'API sandbox (et inversement) est
+ * refusée avec `403 · INVALID_API_KEY`.
+ */
+export function nowPaymentsSandbox(): boolean {
+  const raw = sanitizeSecret(process.env.NOWPAYMENTS_SANDBOX).toLowerCase();
+  return raw === "true" || raw === "1" || raw === "yes";
 }
 
 export function nowPaymentsApiBase(): string {
@@ -32,14 +61,57 @@ export function nowPaymentsApiBase(): string {
   // au navigateur ; jamais renseignée en production.
   const override = process.env.NOWPAYMENTS_API_BASE?.trim();
   if (override) return override.replace(/\/+$/, "");
-  return process.env.NOWPAYMENTS_SANDBOX === "true"
-    ? SANDBOX_API
-    : PROD_API;
+  return nowPaymentsSandbox() ? SANDBOX_API : PROD_API;
 }
 
 /** Devise fiat de facturation (NOWPayments ne supporte pas la Livre libyenne). */
 export function nowPaymentsFiatCurrency(): string {
   return (process.env.NOWPAYMENTS_CURRENCY?.trim() || "usd").toLowerCase();
+}
+
+/* ------------- Validation réelle de la clé API ------------- */
+
+export interface NowPaymentsApiKeyCheck {
+  /** true = clé acceptée ; false = clé refusée/absente ; null = injoignable. */
+  valid: boolean | null;
+  /** Code HTTP renvoyé par NOWPayments (null si non applicable). */
+  status: number | null;
+  /** Corps exact du refus NOWPayments (ou erreur réseau), sans aucun secret. */
+  error: string | null;
+}
+
+/**
+ * Teste la clé API en réel via `GET /currencies` (endpoint authentifié,
+ * sans créer de facture ni de paiement). C'est le seul moyen de distinguer
+ * « passerelle joignable » (`GET /status` est public et ne dit rien sur la
+ * clé) de « clé acceptée par CET environnement » (sandbox ou production).
+ */
+export async function checkNowPaymentsApiKey(): Promise<NowPaymentsApiKeyCheck> {
+  const apiKey = nowPaymentsApiKey();
+  if (!apiKey) {
+    return { valid: false, status: null, error: "NOWPAYMENTS_API_KEY manquant" };
+  }
+  try {
+    const response = await fetch(`${nowPaymentsApiBase()}/currencies`, {
+      method: "GET",
+      headers: { "x-api-key": apiKey },
+      cache: "no-store",
+      signal: AbortSignal.timeout(7000),
+    });
+    if (response.ok) return { valid: true, status: response.status, error: null };
+    const body = (await response.text().catch(() => "")).slice(0, 300);
+    return {
+      valid: false,
+      status: response.status,
+      error: body || `HTTP ${response.status}`,
+    };
+  } catch (error) {
+    return {
+      valid: null,
+      status: null,
+      error: error instanceof Error ? error.message : String(error),
+    };
+  }
 }
 
 /* ------------- Erreurs structurées (cause exacte) ------------- */

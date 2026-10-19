@@ -118,7 +118,7 @@ Le dialogue de paiement propose trois modes, reflétés dans le prix affiché :
 | `NOWPAYMENTS_API_KEY` | **Requise** — clé API du marchand |
 | `NOWPAYMENTS_IPN_SECRET` | Secret IPN — par défaut = clé API |
 | `NOWPAYMENTS_EMAIL` / `NOWPAYMENTS_PASSWORD` | Optionnel — permet d'interroger le statut en direct (sinon : IPN seul) |
-| `NOWPAYMENTS_SANDBOX` | `true` pour tester sur api-sandbox.nowpayments.io |
+| `NOWPAYMENTS_SANDBOX` | `true` pour tester sur api-sandbox.nowpayments.io — environnements séparés et non interchangeables : clé sandbox ⇔ `true`, clé de production ⇔ vide/`false` (sinon `403 · INVALID_API_KEY`) |
 | `NOWPAYMENTS_CURRENCY` | Devise de facturation — `usd` par défaut (la LYD n'est pas supportée par NOWPayments) |
 | `SITE_URL` | URL publique pour les retours succès/annulation et l'IPN (variable serveur, non exposée au navigateur) |
 
@@ -130,8 +130,13 @@ Le dialogue de paiement propose trois modes, reflétés dans le prix affiché :
   Le `payment_id` est enregistré sur la commande dès le premier IPN, qui
   retrouve la commande par son `order_id` (référence `NKH-…`).
 - Si le dialogue affiche « échec de création du paiement » à la validation :
-  vérifiez que `NOWPAYMENTS_API_KEY` est bien définie (Settings → API keys)
-  et que le compte n'est pas en mode test sans `NOWPAYMENTS_SANDBOX=true`.
+  ouvrez `/api/health` — `nowpayments.apiKeyValid` teste la clé en réel
+  (`GET /currencies`, sans créer de facture). `apiKeyValid:false` +
+  `apiKeyError` donne le refus exact : vérifiez que la clé vient de
+  Settings → API keys (et non du secret IPN) et qu'elle correspond à
+  l'environnement visé (production ⇔ `NOWPAYMENTS_SANDBOX` vide/`false`,
+  sandbox ⇔ `true`). `reachable:true` seul ne prouve rien : `GET /status`
+  est public et ne contrôle pas la clé.
 - Les prix s'affichent en د.ل mais sont facturés en USD : chaque formule a un
   `priceUsd` dans `src/lib/config.ts` (éditable aussi dans
   Admin → Configuration — laissé vide, la formule n'est plus payable en
