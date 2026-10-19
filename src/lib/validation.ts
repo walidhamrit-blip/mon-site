@@ -81,6 +81,20 @@ const planSchema = z.object({
   name: z.string().min(1).max(200),
   nameEn: z.string().min(1).max(200),
   price: z.coerce.number().int().min(0).max(10_000_000),
+  /**
+   * Équivalent USD pour le paiement crypto (NOWPayments ne facture
+   * pas en LYD). `null` / absent = formule non payable en crypto
+   * (le bouton « Pay with crypto » et les paiements en tranches
+   * ne s'affichent pas). Sans ce champ, l'enregistrement supprimait
+   * silencieusement le prix USD saisi dans l'admin.
+   */
+  priceUsd: z.coerce
+    .number()
+    .int()
+    .min(0)
+    .max(1_000_000)
+    .nullable()
+    .optional(),
   originalPrice: z.coerce.number().int().min(0).max(10_000_000).nullable(),
   period: z.string().max(100),
   periodEn: z.string().max(100),

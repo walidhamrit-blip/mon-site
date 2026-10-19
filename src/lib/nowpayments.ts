@@ -28,6 +28,10 @@ export function nowPaymentsIpnSecret(): string {
 }
 
 export function nowPaymentsApiBase(): string {
+  // Repli serveur (tests d'intégration / proxy interne) — non exposée
+  // au navigateur ; jamais renseignée en production.
+  const override = process.env.NOWPAYMENTS_API_BASE?.trim();
+  if (override) return override.replace(/\/+$/, "");
   return process.env.NOWPAYMENTS_SANDBOX === "true"
     ? SANDBOX_API
     : PROD_API;
@@ -38,9 +42,9 @@ export function nowPaymentsFiatCurrency(): string {
   return (process.env.NOWPAYMENTS_CURRENCY?.trim() || "usd").toLowerCase();
 }
 
-/* ---------------- Création de paiement ---------------- */
+/* ------------- Création de facture (page de paiement hébergée) ------------- */
 
-export interface CreatePaymentInput {
+export interface CreateInvoiceInput {
   /** Montant dans la devise fiat (ex. 310 pour 310 USD). */
   priceAmount: number;
   priceCurrency?: string;
@@ -52,31 +56,44 @@ export interface CreatePaymentInput {
   cancelUrl?: string;
 }
 
-export interface CreatedPayment {
-  payment_id: string;
-  payment_status: string;
-  payment_url: string;
-  pay_address: string;
-  pay_currency: string;
-  pay_amount: number;
-  price_amount: number;
-  price_currency: string;
-  order_id: string;
+export interface CreatedInvoice {
+  /** Identifiant NOWPayments de la facture (le « iid » de l'URL). */
+  id: string | number;
+  order_id?: string;
   order_description?: string;
-  purchase_id?: string;
+  price_amount?: number;
+  price_currency?: string;
+  /** URL de la page de paiement hébergée par NOWPayments. */
+  invoice_url: string;
+  ipn_callback_url?: string;
+  success_url?: string;
+  cancel_url?: string;
+  created_at?: string;
+  updated_at?: string;
 }
 
 /**
- * Crée un paiement et renvoie la page de paiement hébergée par
- * NOWPayments (payment_url) vers laquelle le client est redirigé.
+ * Crée une facture NOWPayments : le client est redirigé vers la page
+ * hébergée `invoice_url`, y choisit sa cryptomonnaie et paie.
+ *
+ * C'est volontairement l'endpoint `/invoice` (et non `/payment`) :
+ *  - `/payment` exige une `pay_currency` fixée d'avance et ne fournit
+ *    AUCUNE page hébergée ni URL de retour — la création échouait avec
+ *    un simple montant fiat + URLs de succès ;
+ *  - `/invoice` accepte `success_url`/`cancel_url`/`ipn_callback_url`
+ *    et renvoie `invoice_url`, la page où le client paie.
+ *
+ * Le `payment_id` proprement dit n'existe qu'une fois le paiement
+ * engagé par le client : il nous parvient via l'IPN (voir
+ * /api/payments/ipn), qui l'enregistre sur la commande.
  */
-export async function createPayment(
-  input: CreatePaymentInput,
-): Promise<CreatedPayment> {
+export async function createInvoice(
+  input: CreateInvoiceInput,
+): Promise<CreatedInvoice> {
   const apiKey = nowPaymentsApiKey();
   if (!apiKey) throw new Error("NOWPAYMENTS_API_KEY manquant");
 
-  const response = await fetch(`${nowPaymentsApiBase()}/payment`, {
+  const response = await fetch(`${nowPaymentsApiBase()}/invoice`, {
     method: "POST",
     headers: {
       "x-api-key": apiKey,
@@ -97,11 +114,15 @@ export async function createPayment(
   if (!response.ok) {
     const detail = await response.text().catch(() => "");
     throw new Error(
-      `NOWPayments create payment ${response.status} — ${detail.slice(0, 300)}`,
+      `NOWPayments create invoice ${response.status} — ${detail.slice(0, 300)}`,
     );
   }
 
-  return (await response.json()) as CreatedPayment;
+  const invoice = (await response.json()) as CreatedInvoice;
+  if (!invoice.invoice_url) {
+    throw new Error("NOWPayments n'a pas renvoyé invoice_url");
+  }
+  return invoice;
 }
 
 /* ---------------- Statut d'un paiement ---------------- */

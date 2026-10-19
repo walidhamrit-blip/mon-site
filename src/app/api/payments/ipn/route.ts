@@ -1,13 +1,14 @@
 import { NextResponse } from "next/server";
-import { eq } from "drizzle-orm";
+import { eq, inArray } from "drizzle-orm";
 import { db, ensureSchema } from "@/db";
-import { orders } from "@/db/schema";
+import { orders, type Order } from "@/db/schema";
 import { getSiteData } from "@/lib/store";
 import {
   isPaidStatus,
   orderStatusFromIpn,
   verifyIpnSignature,
 } from "@/lib/nowpayments";
+import { orderRefCandidates } from "@/lib/installments";
 import { sendPaymentConfirmedEmail } from "@/lib/order-emails";
 
 /**
@@ -43,6 +44,7 @@ export async function POST(req: Request) {
   }
 
   const paymentId = payload.payment_id != null ? String(payload.payment_id) : "";
+  const orderId = payload.order_id != null ? String(payload.order_id) : "";
   const ipnStatus = payload.payment_status != null ? String(payload.payment_status) : "";
 
   if (!paymentId || !ipnStatus) {
@@ -51,18 +53,36 @@ export async function POST(req: Request) {
 
   try {
     await ensureSchema();
-    const rows = await db
+
+    // 1) La commande est d'abord cherchée par payment_id (paiements
+    //    déjà réconciliés par un IPN précédent).
+    let order: Order | undefined;
+    const byPayment = await db
       .select()
       .from(orders)
       .where(eq(orders.paymentId, paymentId))
       .limit(1);
-    const order = rows[0];
+    order = byPayment[0];
+
+    // 2) Sinon par la référence de facture (order_id) : c'est le seul
+    //    identifiant connu lors du premier IPN d'une nouvelle facture.
+    if (!order && orderId) {
+      const candidates = orderRefCandidates(orderId);
+      const byRef = await db
+        .select()
+        .from(orders)
+        .where(inArray(orders.ref, candidates));
+      order =
+        byRef.find((row) => row.ref === candidates[0]) ??
+        byRef.find((row) => row.ref === candidates[1]) ??
+        byRef[0];
+    }
 
     if (!order) {
       // Paiement inconnu (ex. commande créée sur un autre
       // environnement) : on accepte la notification sans rien
       // modifier, pour que NOWPayments ne la renvoie pas.
-      console.warn("[ipn] paiement inconnu :", paymentId);
+      console.warn("[ipn] paiement inconnu :", paymentId, orderId);
       return NextResponse.json({ ok: true, ignored: true });
     }
 
@@ -74,6 +94,9 @@ export async function POST(req: Request) {
       .set({
         status: newStatus,
         ipnStatus,
+        // Mémorise le payment_id le plus récent : le polling direct
+        // (page de suivi) interroge alors le bon paiement.
+        paymentId,
         payAddress:
           (payload.pay_address as string | undefined) ?? order.payAddress,
         payCurrency:

@@ -42,8 +42,11 @@ export interface PricingPlanData {
   name: string;
   nameEn: string;
   price: number;
-  /** Équivalent en devise fiat (USD par défaut) pour le paiement crypto. */
-  priceUsd?: number;
+  /**
+   * Équivalent en devise fiat (USD par défaut) pour le paiement crypto.
+   * `null` (champ vidé dans l'admin) = formule non payable en crypto.
+   */
+  priceUsd?: number | null;
   originalPrice: number | null;
   period: string;
   periodEn: string;
