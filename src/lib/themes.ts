@@ -473,19 +473,31 @@ export function themeCss(): string {
 
 /**
  * Script inline exécuté avant le premier rendu : applique le thème et le mode
- * du visiteur (localStorage) ou, à défaut, l'apparence principale choisie dans
- * l'admin (`/admin` → Réglages), ce qui évite tout clignotement de couleurs.
- * Les clés doivent rester synchronisées avec `theme-provider.tsx`.
+ * choisis explicitement par le visiteur (localStorage) ou, à défaut,
+ * l'apparence principale choisie dans l'admin (`/admin` → Réglages), ce qui
+ * évite tout clignotement de couleurs.
+ * Les clés doivent rester synchronisées avec `theme-provider.tsx` : seules
+ * les clés `-choice` (écrites uniquement lors d'un clic du visiteur sur les
+ * boutons thème / mode) sont lues. Les anciennes clés (`nukhba-mode`,
+ * `nukhba-palette`, `nukhba-theme`) étaient écrites automatiquement à chaque
+ * visite — même pour le simple défaut admin — et figeaient donc l'ancien
+ * défaut à vie ; elles sont ignorées et supprimées.
  */
 export function themeBootScript(
   defaults: { mode?: "light" | "dark" | ""; palette?: string } = {},
 ): string {
   const mode = defaults.mode === "dark" || defaults.mode === "light" ? defaults.mode : "";
   const palette = isThemeId(defaults.palette) ? defaults.palette : "";
+  const validIds = THEMES.map((t) => t.id);
   return `(function(){try{
 var d=document.documentElement;
-var m=localStorage.getItem("nukhba-mode")||localStorage.getItem("nukhba-theme");
-var p=localStorage.getItem("nukhba-palette");
+localStorage.removeItem("nukhba-mode");
+localStorage.removeItem("nukhba-palette");
+localStorage.removeItem("nukhba-theme");
+var m=localStorage.getItem("nukhba-mode-choice");
+var p=localStorage.getItem("nukhba-palette-choice");
+var valid=${JSON.stringify(validIds)};
+if(valid.indexOf(p)===-1)p="";
 var defM=${JSON.stringify(mode)};
 var defP=${JSON.stringify(palette)};
 if(m!=="dark"&&m!=="light")m=defM;

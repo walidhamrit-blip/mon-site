@@ -4,6 +4,7 @@ import type { SiteConfigData, PricingPlanData } from "@/lib/site-types";
 import { resetSiteConfig, saveSiteConfig } from "@/app/admin/actions";
 import { DEFAULT_THEME_ID, THEMES } from "@/lib/themes";
 import { ThemePreview } from "@/components/theme-switcher";
+import { useTheme } from "@/components/theme-provider";
 import {
   Save,
   RotateCcw,
@@ -183,6 +184,7 @@ function newStandaloneService(): SiteConfigData["standaloneServices"][number] {
 /* ---------- formulaire ---------- */
 
 export function SettingsForm({ initial }: { initial: SiteConfigData }) {
+  const { resetToSiteDefaults } = useTheme();
   const [draft, setDraft] = useState<SiteConfigData>(() => structuredClone(initial));
   const [busy, setBusy] = useState<"" | "save" | "reset">("");
   const [msg, setMsg] = useState<{ kind: "ok" | "err"; text: string } | null>(null);
@@ -280,8 +282,18 @@ export function SettingsForm({ initial }: { initial: SiteConfigData }) {
     e.preventDefault();
     setBusy("save");
     setMsg(null);
-    const res = await saveSiteConfig(buildPayload());
+    const payload = buildPayload();
+    const res = await saveSiteConfig(payload);
     setBusy("");
+    if (res.ok) {
+      // Ce navigateur doit refléter immédiatement le nouveau défaut :
+      // on oublie son éventuel choix personnel thème / mode (mémorisé via
+      // les boutons du site public), sinon l'admin continuerait de voir
+      // l'ancienne apparence et croirait l'enregistrement sans effet.
+      // Les autres visiteurs gardent leur choix explicite ; ceux qui n'en
+      // ont pas fait reçoivent ce nouveau défaut.
+      resetToSiteDefaults(payload.appearance.mode, payload.appearance.themeId);
+    }
     setMsg(
       res.ok
         ? { kind: "ok", text: res.message ?? "Enregistré." }
