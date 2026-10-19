@@ -16,6 +16,7 @@ import {
   splitAmount,
   trancheRef,
 } from "@/lib/installments";
+import { siteBaseUrl } from "@/lib/site-url";
 
 /**
  * Crée une commande + une facture NOWPayments (page de paiement
@@ -33,6 +34,15 @@ import {
 
 const createPaymentSchema = z
   .object({
+    /**
+     * « flex » = paiement flexible « 1 $ ou plus » : le client choisit
+     * son montant (borné par la configuration serveur).
+     */
+    kind: z.enum(["plan", "flex"]).optional(),
+    /** Montant libre en USD (mode flex uniquement). */
+    amountUsd: z.number().positive().optional(),
+    /** Description libre du paiement flexible (acompte, solde…). */
+    description: z.string().max(120).optional(),
     planId: z.string().min(1).max(64).optional(),
     /** Référence d'une tranche existante à régler (2e, 3e versement…). */
     orderRef: z.string().min(3).max(80).optional(),
@@ -44,9 +54,14 @@ const createPaymentSchema = z
     locale: z.enum(["ar", "en"]).optional(),
     utm: z.string().max(500).optional(),
   })
-  .refine((data) => Boolean(data.planId || data.orderRef), {
-    message: "planId ou orderRef requis",
-  });
+  .refine(
+    (data) =>
+      Boolean(data.planId || data.orderRef) ||
+      (data.kind === "flex" && data.amountUsd != null),
+    {
+      message: "planId, orderRef ou (kind=flex + amountUsd) requis",
+    },
+  );
 
 /** Cause exacte d'un échec, remontée telle quelle au dialogue de paiement. */
 interface ErrorDetail {
@@ -85,16 +100,7 @@ function databaseDetail(error: unknown): ErrorDetail {
   };
 }
 
-/** URL de base du site (succès/annulation/IPN). */
-function siteBaseUrl(): string {
-  // Variable privée (jamais exposée au navigateur) — en repli,
-  // NEXT_PUBLIC_SITE_URL puis l'URL codée dans config.ts.
-  const explicit =
-    process.env.SITE_URL?.trim() ||
-    process.env.NEXT_PUBLIC_SITE_URL?.trim();
-  if (explicit) return explicit.replace(/\/+$/, "");
-  return siteConfig.url.replace(/\/+$/, "");
-}
+/** URL de base du site (succès/annulation/IPN) — voir src/lib/site-url.ts. */
 
 function newOrderRef(): string {
   const stamp = Date.now().toString(36).toUpperCase();
@@ -103,8 +109,8 @@ function newOrderRef(): string {
 }
 
 /** Paramètres de paiement communs (retour NOWPayments → nos pages). */
-function paymentUrls(ref: string) {
-  const baseUrl = siteBaseUrl();
+function paymentUrls(req: Request, ref: string) {
+  const baseUrl = siteBaseUrl(req);
   return {
     ipnCallbackUrl: `${baseUrl}/api/payments/ipn`,
     successUrl: `${baseUrl}/pay/success?ref=${encodeURIComponent(ref)}`,
@@ -116,7 +122,7 @@ function paymentUrls(ref: string) {
  * Facture une tranche existante (2e/3e versement) et met à jour
  * les informations de paiement de la commande.
  */
-async function payExistingOrder(orderRef: string) {
+async function payExistingOrder(orderRef: string, req: Request) {
   await ensureSchema();
   const wanted = orderRef.trim().toUpperCase();
   const rows = await db
@@ -165,7 +171,7 @@ async function payExistingOrder(orderRef: string) {
       // notre `ref` (voir refCandidates dans ipn/route.ts).
       orderId: `${order.ref}-R${Date.now().toString(36).toUpperCase()}`,
       orderDescription: label,
-      ...paymentUrls(order.ref),
+      ...paymentUrls(req, order.ref),
     });
   } catch (error) {
     console.error(
@@ -214,6 +220,147 @@ async function payExistingOrder(orderRef: string) {
   });
 }
 
+/**
+ * Paiement flexible « 1 $ ou plus » : le client choisit son montant —
+ * utile pour un acompte, un solde, un soutien, et pour contourner les
+ * limites minimales imposées par certaines plateformes de crypto (si
+ * une pièce refuse un montant trop bas, il suffit d'augmenter).
+ *
+ * Le montant reste borné côté serveur (configuration « vivante » :
+ * `flexiblePayment.minUsd` / `maxUsd`) — le navigateur ne peut ni
+ * payer 0 $, ni dépasser le maximum autorisé.
+ */
+async function createFlexibleOrder(
+  req: Request,
+  data: {
+    amountUsd: number;
+    description?: string;
+    name?: string;
+    email?: string;
+    phone?: string;
+    locale?: "ar" | "en";
+    utm?: string;
+  },
+) {
+  const { config } = await getSiteData();
+
+  // Type lâche : la configuration « vivante » vient de la base (valeurs
+  // admin) et n'a pas les types littéraux de `as const`.
+  const flex = (config.flexiblePayment ??
+    siteConfig.flexiblePayment) as unknown as {
+    enabled: boolean;
+    minUsd: number;
+    maxUsd: number;
+    suggested: readonly number[];
+  };
+
+  if (flex.enabled === false) {
+    return errorResponse("flex_disabled", 403, {
+      source: "config",
+      status: null,
+      message: "Le paiement flexible est désactivé (Configuration → site).",
+    });
+  }
+
+  const minUsd = Number(flex.minUsd) > 0 ? Number(flex.minUsd) : 1;
+  const maxUsd = Number(flex.maxUsd) > 0 ? Number(flex.maxUsd) : 5000;
+
+  const amount = Math.round(Number(data.amountUsd) * 100) / 100;
+  if (!Number.isFinite(amount) || amount < minUsd || amount > maxUsd) {
+    return errorResponse("invalid_amount", 400, {
+      source: "input",
+      status: null,
+      message: `Montant flexible hors limites : ${data.amountUsd} (attendu ${minUsd}–${maxUsd} USD)`,
+    });
+  }
+
+  // Taux implicite USD → LYD d'après les prix affichés (pour la colonne
+  // « montant LYD » des commandes admin) — NOWPayments facture en USD.
+  const ratePlan = config.pricing.plans.find((p) => p.priceUsd && p.priceUsd > 0);
+  const usdToLyd =
+    ratePlan && ratePlan.priceUsd ? ratePlan.price / ratePlan.priceUsd : 4.97;
+
+  const ref = newOrderRef();
+  const label = data.description?.trim() || "Flexible payment";
+
+  // 1) Commande en attente — trace immédiate dans /admin/orders.
+  let orderId: number;
+  try {
+    await ensureSchema();
+    const inserted = await db
+      .insert(orders)
+      .values({
+        ref,
+        groupRef: ref,
+        kind: "flex",
+        planId: "flexible",
+        planName: label.slice(0, 190),
+        amountLyd: (amount * usdToLyd).toFixed(2),
+        amountUsd: String(amount),
+        currency: "usd",
+        installments: 1,
+        installmentIndex: 1,
+        clientName: data.name?.trim() || null,
+        email: data.email?.trim() || null,
+        phone: data.phone?.trim() || null,
+        utm: data.utm || null,
+        locale: data.locale ?? null,
+      })
+      .returning({ id: orders.id });
+    orderId = inserted[0]?.id ?? 0;
+  } catch (error) {
+    console.error(
+      "[payments] création commande flexible impossible :",
+      errorMessage(error),
+    );
+    return errorResponse("save_failed", 500, databaseDetail(error));
+  }
+
+  // 2) Facture NOWPayments (page de paiement hébergée).
+  let invoice: CreatedInvoice;
+  try {
+    invoice = await createInvoice({
+      priceAmount: amount,
+      orderId: ref,
+      orderDescription: `${config.name} — ${label}`.slice(0, 190),
+      ...paymentUrls(req, ref),
+    });
+  } catch (error) {
+    console.error(
+      "[payments] NOWPayments refusé (flexible) :",
+      errorMessage(error),
+    );
+    // Aucune facture → on retire la ligne orpheline.
+    await db.delete(orders).where(eq(orders.id, orderId)).catch(() => null);
+    return errorResponse("gateway_error", 502, gatewayDetail(error));
+  }
+
+  // 3) Lien facture ↔ commande (le payment_id arrivera via l'IPN).
+  try {
+    await db
+      .update(orders)
+      .set({ paymentUrl: invoice.invoice_url, updatedAt: new Date() })
+      .where(eq(orders.id, orderId));
+  } catch (error) {
+    console.error(
+      "[payments] lien commande flexible impossible :",
+      error instanceof Error ? error.message : error,
+    );
+  }
+
+  return NextResponse.json({
+    ok: true,
+    orderRef: ref,
+    groupRef: ref,
+    installments: 1,
+    installmentIndex: 1,
+    trancheAmountUsd: amount,
+    paymentUrl: invoice.invoice_url,
+    priceAmount: invoice.price_amount,
+    priceCurrency: invoice.price_currency,
+  });
+}
+
 export async function POST(req: Request) {
   if (!nowPaymentsConfigured()) {
     return errorResponse("gateway_not_configured", 503, {
@@ -251,10 +398,31 @@ export async function POST(req: Request) {
   // ── Mode « tranche suivante » : commande déjà planifiée ──
   if (data.orderRef) {
     try {
-      return await payExistingOrder(data.orderRef);
+      return await payExistingOrder(data.orderRef, req);
     } catch (error) {
       console.error(
         "[payments] paiement d'une tranche impossible :",
+        errorMessage(error),
+      );
+      return errorResponse("save_failed", 500, databaseDetail(error));
+    }
+  }
+
+  // ── Mode « paiement flexible » : montant libre 1 $ ou plus ──
+  if (data.kind === "flex") {
+    try {
+      return await createFlexibleOrder(req, {
+        amountUsd: data.amountUsd ?? 0,
+        description: data.description,
+        name: data.name,
+        email: data.email,
+        phone: data.phone,
+        locale: data.locale,
+        utm: data.utm,
+      });
+    } catch (error) {
+      console.error(
+        "[payments] paiement flexible impossible :",
         errorMessage(error),
       );
       return errorResponse("save_failed", 500, databaseDetail(error));
@@ -331,7 +499,7 @@ export async function POST(req: Request) {
         count > 1
           ? `${config.name} — ${plan.nameEn} (1/${count})`
           : `${config.name} — ${plan.nameEn} plan`,
-      ...paymentUrls(baseRef),
+      ...paymentUrls(req, baseRef),
     });
   } catch (error) {
     console.error("[payments] NOWPayments refusé :", errorMessage(error));

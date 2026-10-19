@@ -121,6 +121,45 @@ export interface SiteConfigData {
     /** Équivalent affiché en Livre libyenne. */
     depositLyd: number;
   };
+  /**
+   * Paiement flexible « 1 $ ou plus » : le client choisit son montant
+   * (borné min/max) — pratique face aux limites minimales imposées par
+   * certaines plateformes de crypto.
+   */
+  flexiblePayment: FlexiblePaymentConfig;
+  /** Services libres / à la carte (restylage, diapositives, design…). */
+  standaloneServices: StandaloneService[];
+}
+
+export interface FlexiblePaymentConfig {
+  enabled: boolean;
+  /** Montant minimal facturable en USD (1 $ par défaut). */
+  minUsd: number;
+  /** Montant maximal facturable en USD (garde-fou anti-abus). */
+  maxUsd: number;
+  /** Montants suggérés affichés en boutons rapides. */
+  suggested: number[];
+  /** Note affichée (limites minimales des réseaux crypto…). */
+  noteAr: string;
+  noteEn: string;
+}
+
+/** Service à la carte vendu au forfait (section « services libres »). */
+export interface StandaloneService {
+  id: string;
+  /** Nom d'icône lucide (Palette, LayoutGrid, Presentation, PenTool, Rocket, Wrench). */
+  icon: string;
+  titleAr: string;
+  titleEn: string;
+  descAr: string;
+  descEn: string;
+  /** Prix de départ affiché (USD / LYD). */
+  priceFromUsd: number;
+  priceFromLyd: number;
+  badgeAr?: string;
+  badgeEn?: string;
+  featuresAr: string[];
+  featuresEn: string[];
 }
 
 export interface SiteContent {
@@ -164,13 +203,14 @@ export interface LeadRow {
 
 /* ---------- Commandes (paiements crypto) ---------- */
 
-/** Nature de la commande : formule complète ou réservation prioritaire. */
-export const ORDER_KINDS = ["plan", "reservation"] as const;
+/** Nature de la commande : formule complète, réservation ou paiement flexible. */
+export const ORDER_KINDS = ["plan", "reservation", "flex"] as const;
 export type OrderKind = (typeof ORDER_KINDS)[number];
 
 export const ORDER_KIND_LABELS: Record<OrderKind, string> = {
   plan: "Formule",
   reservation: "Réservation",
+  flex: "Paiement flexible",
 };
 
 export const ORDER_STATUSES = ["pending", "paid", "failed", "expired"] as const;

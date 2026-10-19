@@ -6,6 +6,8 @@ import { Customizer } from "@/components/sections/customizer";
 import { ThemeGallery } from "@/components/sections/theme-gallery";
 import { Process } from "@/components/sections/process";
 import { Pricing } from "@/components/sections/pricing";
+import { FlexiblePayment } from "@/components/sections/flexible-payment";
+import { Services } from "@/components/sections/services";
 import { Testimonials } from "@/components/sections/testimonials";
 import { FAQ } from "@/components/sections/faq";
 import { CTAForm } from "@/components/sections/cta-form";
@@ -21,6 +23,8 @@ export default function Home() {
       <ThemeGallery />
       <Process />
       <Pricing />
+      <FlexiblePayment />
+      <Services />
       <Testimonials />
       <FAQ />
       <CTAForm />

@@ -26,6 +26,7 @@ export function Navbar() {
   const links = [
     { href: "#demos", label: t.nav.demos },
     { href: "#pricing", label: t.nav.pricing },
+    { href: "#services", label: t.nav.services },
     { href: "/demos", label: locale === "ar" ? "كل المعارض" : "All demos" },
     { href: "/contact", label: t.nav.contact },
   ];

@@ -60,16 +60,24 @@ export async function sendPaymentConfirmedEmail(
   const isReservation = order.kind === "reservation";
   const kindLabel = isReservation
     ? ORDER_KIND_LABELS.reservation
-    : ORDER_KIND_LABELS.plan;
+    : order.kind === "flex"
+      ? ORDER_KIND_LABELS.flex
+      : ORDER_KIND_LABELS.plan;
 
   const subject = `✓ ${
-    isReservation ? "Réservation prioritaire confirmée" : "Paiement crypto confirmé"
+    isReservation
+      ? "Réservation prioritaire confirmée"
+      : order.kind === "flex"
+        ? "Paiement flexible confirmé"
+        : "Paiement crypto confirmé"
   } — ${order.ref} (${order.planName}${trancheInfo ? ` — ${trancheInfo}` : ""})`;
 
   const text = [
     isReservation
       ? `Réservation prioritaire confirmée via NOWPayments (acompte)`
-      : `Paiement confirmé via NOWPayments`,
+      : order.kind === "flex"
+        ? `Paiement flexible confirmé via NOWPayments (montant libre)`
+        : `Paiement confirmé via NOWPayments`,
     ``,
     `Commande : ${order.ref}`,
     `Type : ${kindLabel}${isReservation ? " — acompte prioritaire" : ""}`,
