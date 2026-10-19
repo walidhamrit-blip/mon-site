@@ -63,6 +63,17 @@ export const DEFAULT_META_DESCRIPTION =
   "وكالة نخبة لتصميم المواقع في طرابلس: مواقع واجهة، متاجر إلكترونية وأنظمة حجز — تسليم في 7 أيام، سرعة 90+، تحسين SEO لمحركات البحث والذكاء الاصطناعي، ودعم واتساب.";
 
 /**
+ * Code de vérification Google Search Console (méthode balise HTML meta).
+ * Émis par le layout racine (<meta name="google-site-verification">) et
+ * contrôlé par l'audit SEO admin. Le code par défaut est celui de la
+ * propriété https://nokhba.net.ly/ ; la variable d'environnement
+ * GOOGLE_SITE_VERIFICATION permet de le remplacer sans redéployer de code
+ * (même motif que DEFAULT_INDEXNOW_KEY dans src/lib/indexnow.ts).
+ */
+export const GOOGLE_SITE_VERIFICATION =
+  process.env.GOOGLE_SITE_VERIFICATION?.trim() || "POB624EdzYiqxSgcA5PYaLyZDBbjBVx3mnAgEeUjKcg";
+
+/**
  * Tronque une description dynamique (ex. fiche réalisation venue de la base)
  * pour rester dans la fourchette d'affichage Google, sans couper un mot.
  */

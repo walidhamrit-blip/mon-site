@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/auth";
 import { getSiteDataCached } from "@/lib/store";
 import { runSeoAudit } from "@/lib/seo-audit";
+import { GOOGLE_SITE_VERIFICATION } from "@/lib/seo";
 
 export const dynamic = "force-dynamic";
 
@@ -16,7 +17,7 @@ export async function GET() {
   const report = runSeoAudit(content, config, {
     openAiConfigured: Boolean(process.env.OPENAI_API_KEY?.trim()),
     indexNowConfigured: true,
-    googleVerificationConfigured: Boolean(process.env.GOOGLE_SITE_VERIFICATION?.trim()),
+    googleVerificationConfigured: Boolean(GOOGLE_SITE_VERIFICATION),
   });
 
   return NextResponse.json(report);
