@@ -2,8 +2,7 @@ import { ServicesRibbon } from "@/components/sections/services-ribbon";
 import { Hero } from "@/components/sections/hero";
 import { WhyUs } from "@/components/sections/why-us";
 import { DemosGallery } from "@/components/sections/demos-gallery";
-import { Customizer } from "@/components/sections/customizer";
-import { ThemeGallery } from "@/components/sections/theme-gallery";
+import { IdentityStudio } from "@/components/sections/identity-studio";
 import { Process } from "@/components/sections/process";
 import { Pricing } from "@/components/sections/pricing";
 import { FlexiblePayment } from "@/components/sections/flexible-payment";
@@ -19,8 +18,7 @@ export default function Home() {
       <ServicesRibbon />
       <WhyUs />
       <DemosGallery />
-      <Customizer />
-      <ThemeGallery />
+      <IdentityStudio />
       <Process />
       <Pricing />
       <FlexiblePayment />
