@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 /**
- * Garde-fou SEO automatique — exécuté en CI (voir .github/workflows/seo.yml)
- * et lançable localement après `npm run build && npm run start` :
+ * Garde-fou SEO & GEO (Référencement IA) automatique — exécuté en CI
+ * (voir .github/workflows/seo.yml) et lançable localement après
+ * `npm run build && npm run start` :
  *
  *   BASE_URL=http://localhost:3100 node scripts/seo-check.mjs
  *
@@ -10,11 +11,16 @@
  *   - <title> présent, unique, longueur raisonnable
  *   - meta description présente et longueur raisonnable
  *   - canonical absolu en https
+ *   - balises Open Graph (og:title, og:description, og:url) et Twitter Card
+ *   - balises <link rel="alternate" type="text/markdown"> vers /llms.txt et /llms-full.txt
  *   - un seul <h1>
- *   - blocs JSON-LD tous parsables
+ *   - blocs JSON-LD tous parsables + conformité Google (FAQPage uniquement sur / et /pricing,
+ *     HowTo sur /, ProfessionalService avec geo + review, CreativeWork avec offers sur /demos/[slug])
+ *   - maillage interne serveur sur chaque fiche /demos/[slug]
  *   - absence de noindex accidentel sur une page indexable
  *   - aucune image sans attribut alt
- * Vérifie aussi robots.txt, sitemap.xml, llms.txt et le manifest.
+ * Vérifie aussi robots.txt, sitemap.xml, llms.txt, llms-full.txt (et la présence de
+ * toutes les réalisations du sitemap dans llms.txt & llms-full.txt) et le manifest.
  *
  * Code de sortie 1 si au moins une erreur bloquante (les warnings ne font
  * pas échouer la CI).
@@ -86,6 +92,22 @@ function checkPage(pathname, html) {
     record(page, "error", `canonical non absolu/https : ${canonicalMatch[1]}`);
   }
 
+  // ── Open Graph & Twitter Card ──
+  if (!/<meta\s+property=["']og:title["']/i.test(html)) {
+    record(page, "error", "meta og:title absente");
+  }
+  if (!/<meta\s+property=["']og:description["']/i.test(html)) {
+    record(page, "error", "meta og:description absente");
+  }
+  if (!/<meta\s+name=["']twitter:card["']/i.test(html)) {
+    record(page, "error", "meta twitter:card absente");
+  }
+
+  // ── Découverte IA (alternate markdown vers /llms.txt & /llms-full.txt) ──
+  if (!/href=["']\/llms\.txt["']/i.test(html) || !/href=["']\/llms-full\.txt["']/i.test(html)) {
+    record(page, "error", "liens alternate vers /llms.txt ou /llms-full.txt absents du <head>");
+  }
+
   // ── Un seul H1 ──
   const h1Count = countMatches(/<h1[\s>]/gi, html);
   if (h1Count === 0) record(page, "error", "aucun <h1>");
@@ -96,18 +118,61 @@ function checkPage(pathname, html) {
     record(page, "error", "page indexable mais marquée noindex");
   }
 
-  // ── JSON-LD valide ──
+  // ── JSON-LD valide & conformité des schémas ──
   const ldBlocks = [...html.matchAll(
     /<script[^>]+type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi,
   )];
   if (ldBlocks.length === 0) {
     record(page, "warn", "aucun bloc JSON-LD");
   }
+  const parsedSchemas = [];
   for (const block of ldBlocks) {
     try {
-      JSON.parse(block[1]);
+      const parsed = JSON.parse(block[1]);
+      if (Array.isArray(parsed)) parsedSchemas.push(...parsed);
+      else parsedSchemas.push(parsed);
     } catch (err) {
       record(page, "error", `JSON-LD invalide : ${err.message.slice(0, 80)}`);
+    }
+  }
+
+  const schemaTypes = new Set(parsedSchemas.map((s) => s && s["@type"]).filter(Boolean));
+  const hasFaqSchema = schemaTypes.has("FAQPage");
+  if (page === "/" || page === "/pricing") {
+    if (!hasFaqSchema) {
+      record(page, "error", "schéma FAQPage attendu sur cette page mais absent");
+    }
+  } else if (hasFaqSchema) {
+    record(page, "error", "schéma FAQPage présent sur une page sans section FAQ visible (non-conformité Google)");
+  }
+
+  if (page === "/" && !schemaTypes.has("HowTo")) {
+    record(page, "error", "schéma HowTo attendu sur la page d'accueil mais absent");
+  }
+
+  const proService = parsedSchemas.find((s) => s && s["@type"] === "ProfessionalService");
+  if (proService) {
+    if (!proService.geo || proService.geo["@type"] !== "GeoCoordinates") {
+      record(page, "error", "ProfessionalService sans coordonnées GPS (geo)");
+    }
+    if (!Array.isArray(proService.review) || proService.review.length === 0) {
+      record(page, "error", "ProfessionalService sans avis structurés (review)");
+    }
+  }
+
+  if (page.startsWith("/demos/") && page !== "/demos") {
+    const work = parsedSchemas.find((s) => s && s["@type"] === "CreativeWork");
+    if (!work) {
+      record(page, "error", "schéma CreativeWork absent sur la fiche réalisation");
+    } else if (!work.offers || work.offers["@type"] !== "Offer") {
+      record(page, "warn", "schéma CreativeWork sans bloc Offer tarifaire");
+    }
+    // Maillage interne serveur vers d'autres démos
+    const internalDemoLinks = [...html.matchAll(/href=["']\/demos\/([a-z0-9-]+)["']/gi)]
+      .map((m) => `/demos/${m[1]}`)
+      .filter((href) => href !== page);
+    if (internalDemoLinks.length === 0) {
+      record(page, "error", "aucun lien de maillage interne vers d'autres réalisations dans le HTML serveur");
     }
   }
 
@@ -121,22 +186,25 @@ function checkPage(pathname, html) {
 }
 
 async function main() {
-  console.log(`\n🔍 Audit SEO — ${BASE}\n`);
+  console.log(`\n🔍 Audit SEO & Référencement IA (GEO) — ${BASE}\n`);
 
   // 1. Ressources globales
   const globalResources = [
     { path: "/robots.txt", mustContain: "Sitemap:" },
     { path: "/sitemap.xml", mustContain: "<loc>" },
-    { path: "/llms.txt", mustContain: "#" },
+    { path: "/llms.txt", mustContain: "/llms-full.txt" },
+    { path: "/llms-full.txt", mustContain: "Complete Portfolio of Live Showcases" },
     { path: "/manifest.webmanifest", mustContain: "name" },
   ];
+  const resourceBodies = new Map();
   for (const resource of globalResources) {
     try {
       const { status, body } = await fetchText(`${BASE}${resource.path}`);
+      resourceBodies.set(resource.path, body);
       if (status !== 200) {
         record(resource.path, "error", `HTTP ${status}`);
       } else if (!body.includes(resource.mustContain)) {
-        record(resource.path, "warn", `contenu inattendu (« ${resource.mustContain} » absent)`);
+        record(resource.path, "error", `contenu inattendu (« ${resource.mustContain} » absent)`);
       } else {
         record(resource.path, "pass", `HTTP 200`);
       }
@@ -148,7 +216,7 @@ async function main() {
   // 2. URLs du sitemap
   let paths = [];
   try {
-    const { body } = await fetchText(`${BASE}/sitemap.xml`);
+    const body = resourceBodies.get("/sitemap.xml") || (await fetchText(`${BASE}/sitemap.xml`)).body;
     const urls = [...body.matchAll(/<loc>([^<]+)<\/loc>/g)].map((m) => m[1].trim());
     // Le sitemap contient les URLs canoniques (domaine de production) : on
     // n'extrait que le chemin pour le tester contre le serveur courant,
@@ -166,6 +234,20 @@ async function main() {
 
   if (paths.length === 0) {
     record("sitemap.xml", "error", "aucune URL découverte dans le sitemap");
+  }
+
+  // Vérifie que chaque réalisation du sitemap est bien synchronisée dans /llms.txt et /llms-full.txt
+  const llmsBody = resourceBodies.get("/llms.txt") || "";
+  const llmsFullBody = resourceBodies.get("/llms-full.txt") || "";
+  for (const pathname of paths) {
+    if (pathname.startsWith("/demos/") && pathname !== "/demos") {
+      if (!llmsBody.includes(pathname)) {
+        record("/llms.txt", "error", `réalisation ${pathname} absente de /llms.txt`);
+      }
+      if (!llmsFullBody.includes(pathname)) {
+        record("/llms-full.txt", "error", `réalisation ${pathname} absente de /llms-full.txt`);
+      }
+    }
   }
 
   for (const pathname of paths) {
@@ -196,10 +278,10 @@ async function main() {
   console.log(`\n${passes.length} pages/ressources validées · ${warnings.length} avertissement(s) · ${errors.length} erreur(s)\n`);
 
   if (errors.length > 0) {
-    console.log("❌ Audit SEO échoué — corrigez les erreurs ci-dessus.");
+    console.log("❌ Audit SEO & GEO échoué — corrigez les erreurs ci-dessus.");
     process.exit(1);
   }
-  console.log("✅ Audit SEO réussi.");
+  console.log("✅ Audit SEO & GEO réussi.");
 }
 
 main().catch((err) => {

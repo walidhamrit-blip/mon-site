@@ -58,6 +58,29 @@ export function templateSeoCopy(demo: SeoDemoInput): SeoCopy {
   };
 }
 
+/**
+ * Complète automatiquement tout champ SEO bilingue vide d'une réalisation
+ * avec le gabarit optimisé local, sans jamais écraser un champ déjà saisi.
+ */
+export function ensureDemoSeoFields<T extends SeoDemoInput & Partial<SeoCopy>>(
+  demo: T,
+): T & SeoCopy {
+  const fallback = templateSeoCopy(demo);
+  return {
+    ...demo,
+    metaTitle: demo.metaTitle?.trim() ? clamp(demo.metaTitle.trim(), LIMITS.title) : fallback.metaTitle,
+    metaDescription: demo.metaDescription?.trim()
+      ? clamp(demo.metaDescription.trim(), LIMITS.description)
+      : fallback.metaDescription,
+    metaTitleEn: demo.metaTitleEn?.trim() ? clamp(demo.metaTitleEn.trim(), LIMITS.title) : fallback.metaTitleEn,
+    metaDescriptionEn: demo.metaDescriptionEn?.trim()
+      ? clamp(demo.metaDescriptionEn.trim(), LIMITS.description)
+      : fallback.metaDescriptionEn,
+    imageAltAr: demo.imageAltAr?.trim() ? clamp(demo.imageAltAr.trim(), LIMITS.alt) : fallback.imageAltAr,
+    imageAltEn: demo.imageAltEn?.trim() ? clamp(demo.imageAltEn.trim(), LIMITS.alt) : fallback.imageAltEn,
+  };
+}
+
 function buildPrompt(demo: SeoDemoInput): string {
   return [
     "You are an SEO copywriter for a premium web agency in Tripoli, Libya.",
@@ -181,4 +204,34 @@ export async function generateSeoCopy(demo: SeoDemoInput): Promise<SeoGeneration
     if (typeof value === "string" && value.trim().length > 0) copy[key] = clamp(value.trim(), MAX_BY_KEY[key]);
   }
   return { copy, engine: "llm" };
+}
+
+export interface SeoBatchGenerationResult {
+  items: SeoGenerationResult[];
+  engine: SeoEngine;
+  warning?: SeoWarningCode;
+}
+
+/**
+ * Génère en lot les champs SEO bilingues pour plusieurs réalisations.
+ * Exécute par vagues de 3 requêtes max pour préserver les quotas OpenAI.
+ */
+export async function generateSeoCopyBatch(
+  demos: readonly SeoDemoInput[],
+): Promise<SeoBatchGenerationResult> {
+  if (demos.length === 0) {
+    return { items: [], engine: process.env.OPENAI_API_KEY?.trim() ? "llm" : "template" };
+  }
+  const items: SeoGenerationResult[] = [];
+  const chunkSize = 3;
+  for (let i = 0; i < demos.length; i += chunkSize) {
+    const slice = demos.slice(i, i + chunkSize);
+    const batch = await Promise.all(slice.map((d) => generateSeoCopy(d)));
+    items.push(...batch);
+  }
+  const errorItem = items.find((r) => r.engine === "error");
+  const llmItem = items.find((r) => r.engine === "llm");
+  const engine: SeoEngine = errorItem ? "error" : llmItem ? "llm" : "template";
+  const warning = errorItem?.warning ?? items.find((r) => r.warning)?.warning;
+  return { items, engine, ...(warning ? { warning } : {}) };
 }

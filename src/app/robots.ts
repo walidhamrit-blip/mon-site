@@ -15,9 +15,12 @@ const AI_CRAWLERS = [
   "ChatGPT-User",
   "ClaudeBot",
   "Claude-Web",
+  "anthropic-ai",
   "PerplexityBot",
   "Perplexity-User",
   "Google-Extended",
+  "GoogleOther",
+  "Google-CloudVertexBot",
   "CCBot",
   "Amazonbot",
   "Applebot-Extended",
@@ -26,6 +29,15 @@ const AI_CRAWLERS = [
   "ImagesiftBot",
   "cohere-ai",
   "Meta-ExternalAgent",
+  "Meta-ExternalFetcher",
+  "FacebookBot",
+  "DuckAssistBot",
+  "YouBot",
+  "MistralAI-User",
+  "PhindBot",
+  "AI2Bot",
+  "Timpibot",
+  "Webzio-Extended",
 ];
 
 export default async function robots(): Promise<MetadataRoute.Robots> {

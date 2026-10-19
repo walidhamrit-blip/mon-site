@@ -3,6 +3,7 @@ import { eq } from "drizzle-orm";
 import { db, ensureSchema } from "@/db";
 import { settings } from "@/db/schema";
 import { siteConfig } from "@/lib/config";
+import { ensureDemoSeoFields } from "@/lib/ai/seo-generator";
 import {
   demos as defaultDemos,
   faqs as defaultFaqs,
@@ -209,7 +210,7 @@ function backfillClassification(base: Demo, stored: Demo): Demo {
 }
 
 function resolveDemos(value: unknown, fallback: readonly unknown[]): Demo[] {
-  const defaults = fallback as Demo[];
+  const defaults = (fallback as Demo[]).map((d) => ensureDemoSeoFields(d));
   if (!Array.isArray(value) || value.length === 0) return defaults;
   const stored = (value as Demo[]).filter(
     (d) => !(LEGACY_PLACEHOLDER_SLUGS.has(d.slug) && (!d.previewUrl || d.previewUrl === "#")),
@@ -222,7 +223,8 @@ function resolveDemos(value: unknown, fallback: readonly unknown[]): Demo[] {
         def.slug === item.slug ||
         (Boolean(def.previewUrl) && def.previewUrl === item.previewUrl),
     );
-    return base ? backfillClassification(base, item) : item;
+    const merged = base ? backfillClassification(base, item) : item;
+    return ensureDemoSeoFields(merged);
   });
 
   const missingLiveDefaults = defaults.filter(
@@ -270,7 +272,7 @@ export async function getSiteData(): Promise<SiteData> {
     return {
       config: siteConfig,
       content: {
-        demos: defaultDemos as unknown as Demo[],
+        demos: (defaultDemos as unknown as Demo[]).map((d) => ensureDemoSeoFields(d)),
         faqs: defaultFaqs as unknown as Faq[],
         testimonials: defaultTestimonials as unknown as Testimonial[],
         hero: defaultHero,

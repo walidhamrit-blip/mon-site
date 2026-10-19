@@ -10,7 +10,6 @@ import { isThemeId, themeBootScript, themeCss } from "@/lib/themes";
 import { JsonLd } from "@/components/json-ld";
 import {
   DEFAULT_META_DESCRIPTION,
-  faqJsonLd,
   localBusinessJsonLd,
   offerCatalogJsonLd,
   organizationJsonLd,
@@ -123,14 +122,14 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
     ? appearance.themeId
     : siteConfig.appearance.themeId;
 
-  // Données structurées servies dans le HTML initial (sans JS requis) :
-  // Organization + WebSite + ProfessionalService (SEO local) + FAQ (rich
-  // results et réponses IA) + catalogue d'offres tarifaires.
+  // Données structurées globales servies dans le HTML initial (sans JS requis) :
+  // Organization + WebSite + ProfessionalService (SEO local + avis) +
+  // catalogue d'offres tarifaires. Le schéma FAQPage n'est injecté que sur
+  // les pages qui affichent réellement <FAQ /> (/ et /pricing).
   const structuredData = [
     organizationJsonLd(config),
     websiteJsonLd(config),
-    localBusinessJsonLd(config),
-    faqJsonLd(content.faqs),
+    localBusinessJsonLd(config, content.testimonials),
     offerCatalogJsonLd(config),
   ];
 
@@ -146,6 +145,19 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
           rel="preconnect"
           href="https://fonts.gstatic.com"
           crossOrigin="anonymous"
+        />
+        {/* Découverte automatique pour les moteurs et agents IA (llmstxt.org) */}
+        <link
+          rel="alternate"
+          type="text/markdown"
+          href="/llms.txt"
+          title="Nukhba AI summary (llmstxt.org)"
+        />
+        <link
+          rel="alternate"
+          type="text/markdown"
+          href="/llms-full.txt"
+          title="Nukhba full AI knowledge base (AR/EN)"
         />
         {/* Polices : uniquement les graisses réellement utilisées.
             Playfair Display (jamais utilisé) a été retiré ; Tajawal ajouté

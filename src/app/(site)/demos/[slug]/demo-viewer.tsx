@@ -31,6 +31,7 @@ export function DemoViewer({ demo, allDemos }: { demo: Demo; allDemos: Demo[] })
     return (
       <FullscreenLiveViewer
         demo={demo}
+        allDemos={allDemos}
         initialMode="desktop"
         backHref="/demos"
         standalone
@@ -45,7 +46,16 @@ export function DemoViewer({ demo, allDemos }: { demo: Demo; allDemos: Demo[] })
   const classification = resolveDemoClassification(demo, config.pricing.plans);
   const depositUsd = config.reservation?.depositUsd ?? 1;
   const whatsappNumber = (config.whatsapp || "218912345678").replace(/\D/g, "");
-  const otherDemos = allDemos.filter((d) => d.slug !== demo.slug).slice(0, 3);
+  const otherDemos = allDemos
+    .filter((d) => d.slug !== demo.slug)
+    .sort((a, b) => {
+      const aScore =
+        (a.sector === demo.sector ? 2 : 0) + (a.planId === demo.planId ? 1 : 0);
+      const bScore =
+        (b.sector === demo.sector ? 2 : 0) + (b.planId === demo.planId ? 1 : 0);
+      return bScore - aScore;
+    })
+    .slice(0, 3);
 
   return (
     <div className="pt-[96px]">

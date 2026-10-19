@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { getSiteDataCached } from "@/lib/store";
 import {
   breadcrumbJsonLd,
+  faqJsonLd,
   offerCatalogJsonLd,
   pageMetadata,
 } from "@/lib/seo";
@@ -25,7 +26,7 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function PricingPage() {
-  const { config } = await getSiteDataCached();
+  const { config, content } = await getSiteDataCached();
   return (
     <>
       <JsonLd
@@ -35,6 +36,7 @@ export default async function PricingPage() {
             { name: "الباقات والأسعار", path: "/pricing" },
           ]),
           offerCatalogJsonLd(config),
+          faqJsonLd(content.faqs),
         ]}
       />
       <PricingClient />
