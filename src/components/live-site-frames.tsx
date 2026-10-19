@@ -12,9 +12,15 @@ import {
   ArrowLeft,
   ArrowRight,
   Sparkles,
+  Tag,
+  X,
 } from "lucide-react";
 import type { Demo } from "@/lib/site-types";
 import { useI18n } from "@/lib/i18n";
+import { useSiteConfig } from "@/components/site-provider";
+import { ReservationButton } from "@/components/reservation-dialog";
+import { formatLyd, resolveDemoClassification } from "@/lib/classification";
+import { formatUsd } from "@/lib/installments";
 
 export function isRealUrl(url?: string): boolean {
   return Boolean(url && url !== "#" && (/^https?:\/\//i.test(url.trim()) || url.trim().startsWith("/")));
@@ -140,10 +146,16 @@ export function FullscreenLiveViewer({
   backHref?: string;
 }) {
   const { locale } = useI18n();
+  const config = useSiteConfig();
+  const classification = resolveDemoClassification(demo, config.pricing.plans);
+  const depositUsd = config.reservation?.depositUsd ?? 1;
   const [mode, setMode] = useState<"desktop" | "mobile">(initialMode);
   const [reloadKey, setReloadKey] = useState(0);
   const [loading, setLoading] = useState(true);
   const [mounted, setMounted] = useState(false);
+  // Proposition de réservation : visible à l'ouverture, masquable pour
+  // laisser toute la place au site en démonstration.
+  const [offerVisible, setOfferVisible] = useState(true);
 
   useEffect(() => {
     setMounted(true);
@@ -166,7 +178,7 @@ export function FullscreenLiveViewer({
       style={{ isolation: "isolate" }}
     >
       {/* Barre supérieure de contrôle plein écran */}
-      <div className="h-14 px-3 sm:px-5 border-b border-white/10 bg-[#111116] flex items-center justify-between gap-2 flex-shrink-0">
+      <div className="min-h-14 h-auto py-2 px-3 sm:px-5 border-b border-white/10 bg-[#111116] flex flex-wrap items-center justify-between gap-2 flex-shrink-0">
         {/* Gauche : Retour / Fermer + Titre */}
         <div className="flex items-center gap-2.5 min-w-0">
           {onClose ? (
@@ -176,7 +188,9 @@ export function FullscreenLiveViewer({
               className="h-9 px-3.5 rounded-full bg-white/10 hover:bg-white/20 text-xs font-bold inline-flex items-center gap-1.5 transition-colors cursor-pointer flex-shrink-0"
             >
               <Minimize2 className="h-3.5 w-3.5" />
-              <span>{locale === "ar" ? "إغلاق العرض الكامل" : "Exit Fullscreen"}</span>
+              <span className="hidden sm:inline">
+                {locale === "ar" ? "إغلاق العرض الكامل" : "Exit Fullscreen"}
+              </span>
             </button>
           ) : backHref ? (
             <Link
@@ -188,7 +202,9 @@ export function FullscreenLiveViewer({
               ) : (
                 <ArrowLeft className="h-3.5 w-3.5" />
               )}
-              <span>{locale === "ar" ? "الرجوع للمعارض" : "Back to Demos"}</span>
+              <span className="hidden sm:inline">
+                {locale === "ar" ? "الرجوع للمعارض" : "Back to Demos"}
+              </span>
             </Link>
           ) : null}
 
@@ -202,7 +218,7 @@ export function FullscreenLiveViewer({
         </div>
 
         {/* Centre : Choix des 2 vues (Desktop ou Mobile) */}
-        <div className="flex items-center gap-1 p-1 rounded-full bg-white/10 border border-white/15">
+        <div className="order-3 w-full justify-center sm:order-none sm:w-auto flex items-center gap-1 p-1 rounded-full bg-white/10 border border-white/15">
           <button
             type="button"
             onClick={() => setMode("desktop")}
@@ -229,8 +245,35 @@ export function FullscreenLiveViewer({
           </button>
         </div>
 
-        {/* Droite : Actualiser + Commander + Ouvrir dans un nouvel onglet */}
+        {/* Droite : Classification + Réservation + Actualiser + Ouvrir */}
         <div className="flex items-center gap-2 flex-shrink-0">
+          {classification && (
+            <span
+              className="hidden xl:inline-flex items-center gap-1.5 h-9 px-3 rounded-full bg-white/10 border border-white/15 text-[11px] font-bold text-zinc-200"
+              dir="ltr"
+              title={locale === "ar" ? "فئة الموقع وسعره" : "Site category & price"}
+            >
+              <Tag className="h-3.5 w-3.5 text-[var(--accent)]" />
+              {locale === "ar" ? "الفئة" : "Cat."} {classification.tier}
+              <span className="text-white/30">·</span>
+              {classification.priceUsd != null
+                ? `$${formatUsd(classification.priceUsd)}`
+                : `${formatLyd(classification.priceLyd)} LYD`}
+            </span>
+          )}
+
+          {config.reservation?.enabled && (
+            <ReservationButton
+              demo={demo}
+              label={
+                locale === "ar"
+                  ? `احجز — ${formatUsd(depositUsd)} $`
+                  : `Reserve — $${formatUsd(depositUsd)}`
+              }
+              className="h-9 px-3.5 sm:px-4 rounded-full bg-[var(--accent)] hover:bg-[var(--accent-hover)] text-[var(--accent-foreground)] text-xs font-black inline-flex items-center gap-1.5 transition-colors cursor-pointer"
+            />
+          )}
+
           <button
             type="button"
             onClick={() => {
@@ -256,7 +299,7 @@ export function FullscreenLiveViewer({
             href={demo.previewUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="h-9 px-4 rounded-full bg-[var(--accent)] hover:bg-[var(--accent-hover)] text-[var(--accent-foreground)] text-xs font-black inline-flex items-center gap-1.5 transition-colors"
+            className="h-9 px-4 rounded-full bg-white/10 hover:bg-white/20 text-xs font-bold inline-flex items-center gap-1.5 transition-colors"
           >
             <span className="hidden sm:inline">
               {locale === "ar" ? "فتح في نافذة جديدة" : "Open in New Tab"}
@@ -306,6 +349,67 @@ export function FullscreenLiveViewer({
           />
         </div>
       </div>
+
+      {/* Proposition de réservation prioritaire — classification + prix + acompte */}
+      {config.reservation?.enabled && offerVisible && (
+        <div
+          dir={locale === "ar" ? "rtl" : "ltr"}
+          className="absolute bottom-3 start-3 end-3 sm:end-auto sm:w-[330px] z-30 rounded-2xl border border-white/15 bg-[#111116]/95 backdrop-blur-md p-4 text-white shadow-[0_18px_50px_rgba(0,0,0,0.55)]"
+        >
+          <div className="flex items-start justify-between gap-3">
+            <span className="inline-flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wider text-[var(--accent)]">
+              <Sparkles className="h-3 w-3" />
+              {locale === "ar" ? "حجز أولوية" : "Priority booking"}
+            </span>
+            <button
+              type="button"
+              onClick={() => setOfferVisible(false)}
+              className="h-6 w-6 -mt-1 -me-1 grid place-items-center rounded-full text-zinc-500 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
+              aria-label={locale === "ar" ? "إخفاء العرض" : "Dismiss offer"}
+            >
+              <X className="h-3.5 w-3.5" />
+            </button>
+          </div>
+
+          {classification && (
+            <div className="mt-2 flex items-end justify-between gap-3">
+              <div className="min-w-0">
+                <div className="text-[10px] uppercase tracking-wider text-zinc-500">
+                  {locale === "ar" ? "الفئة" : "Category"} {classification.tier}
+                </div>
+                <div className="text-sm font-bold truncate">
+                  {locale === "ar" ? classification.name : classification.nameEn}
+                </div>
+              </div>
+              <div className="text-end flex-shrink-0">
+                {classification.priceUsd != null && (
+                  <div className="text-xl font-black text-[var(--accent)]" dir="ltr">
+                    ${formatUsd(classification.priceUsd)}
+                  </div>
+                )}
+                <div className="text-[10px] text-zinc-500" dir="ltr">
+                  {formatLyd(classification.priceLyd)}{" "}
+                  {locale === "ar" ? config.pricing.currency : config.pricing.currencyEn}
+                </div>
+              </div>
+            </div>
+          )}
+
+          <ReservationButton
+            demo={demo}
+            className="mt-3 h-10 w-full rounded-full bg-[var(--accent)] text-[var(--accent-foreground)] text-xs font-black inline-flex items-center justify-center gap-1.5 hover:bg-[var(--accent-hover)] transition-colors cursor-pointer"
+          />
+          <p className="mt-2 text-[10px] text-zinc-500 leading-relaxed">
+            {locale === "ar"
+              ? `عربون ${formatUsd(depositUsd)} $ (${formatLyd(
+                  config.reservation?.depositLyd ?? 0,
+                )} د.ل) يُخصم من سعر المشروع — أولوية في جدول العمل.`
+              : `$${formatUsd(depositUsd)} deposit (${formatLyd(
+                  config.reservation?.depositLyd ?? 0,
+                )} LYD) deducted from the project price — priority in our schedule.`}
+          </p>
+        </div>
+      )}
     </div>
   );
 

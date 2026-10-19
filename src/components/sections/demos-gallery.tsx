@@ -23,6 +23,9 @@ import {
 } from "@/components/live-site-frames";
 import Link from "next/link";
 import { ProjectPreview } from "@/components/project-preview";
+import { ReservationButton } from "@/components/reservation-dialog";
+import { formatLyd, resolveDemoClassification } from "@/lib/classification";
+import { formatUsd } from "@/lib/installments";
 
 function formatHost(url: string, fallbackSlug: string, domain: string): string {
   if (!isRealUrl(url)) return `${domain}/${fallbackSlug}`;
@@ -50,6 +53,12 @@ export function DemosGallery() {
   const hasLiveUrl = isRealUrl(activeDemo?.previewUrl);
 
   if (!activeDemo) return null;
+
+  const activeClassification = resolveDemoClassification(
+    activeDemo,
+    siteConfig.pricing.plans,
+  );
+  const depositUsd = siteConfig.reservation?.depositUsd ?? 1;
 
   const reloadIframe = () => {
     setLiveSlug(activeDemo.slug);
@@ -270,9 +279,41 @@ export function DemosGallery() {
                 <p className="opacity-60 text-xs sm:text-sm line-clamp-1 mt-0.5">
                   {locale === "ar" ? activeDemo.description : activeDemo.descriptionEn}
                 </p>
+                {activeClassification && (
+                  <div className="mt-1.5 flex flex-wrap items-center gap-2 text-xs">
+                    <span className="px-2 py-0.5 rounded-full bg-[var(--accent)]/15 text-[var(--accent)] font-black">
+                      {locale === "ar"
+                        ? `الفئة ${activeClassification.tier}`
+                        : `Category ${activeClassification.tier}`}
+                    </span>
+                    <span className="opacity-70">
+                      {locale === "ar"
+                        ? activeClassification.name
+                        : activeClassification.nameEn}
+                    </span>
+                    {activeClassification.priceUsd != null && (
+                      <span className="font-black text-[var(--accent)]" dir="ltr">
+                        ${formatUsd(activeClassification.priceUsd)}
+                      </span>
+                    )}
+                    <span className="opacity-50" dir="ltr">
+                      {formatLyd(activeClassification.priceLyd)}{" "}
+                      {locale === "ar" ? siteConfig.pricing.currency : siteConfig.pricing.currencyEn}
+                    </span>
+                  </div>
+                )}
               </div>
 
               <div className="flex items-center gap-2 flex-shrink-0 flex-wrap">
+                <ReservationButton
+                  demo={activeDemo}
+                  label={
+                    locale === "ar"
+                      ? `احجز مكانك — ${formatUsd(depositUsd)} $`
+                      : `Reserve — $${formatUsd(depositUsd)}`
+                  }
+                  className="h-9 px-4 rounded-full bg-[var(--accent)] text-[var(--accent-foreground)] inline-flex items-center gap-1.5 text-xs sm:text-sm font-black hover:bg-[var(--accent-hover)] transition-colors shadow-sm cursor-pointer"
+                />
                 {hasLiveUrl ? (
                   <>
                     <button
@@ -287,7 +328,7 @@ export function DemosGallery() {
                       href={activeDemo.previewUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="h-9 px-4 rounded-full bg-[var(--accent)] text-[var(--accent-foreground)] inline-flex items-center gap-1.5 text-xs sm:text-sm font-black hover:bg-[var(--accent-hover)] transition-colors shadow-sm"
+                      className="h-9 px-4 rounded-full border border-[var(--border)] bg-[var(--card)] text-[var(--foreground)] inline-flex items-center gap-1.5 text-xs sm:text-sm font-bold hover:border-[var(--accent)] transition-colors shadow-sm"
                     >
                       {locale === "ar" ? "زيارة الموقع الكامل" : "Visit Real Website"}
                       <ExternalLink className="h-3.5 w-3.5" />
@@ -309,6 +350,10 @@ export function DemosGallery() {
           <div className="grid grid-cols-2 gap-4 auto-rows-max">
             {filtered.map((d) => {
               const dIsLive = isRealUrl(d.previewUrl);
+              const dClassification = resolveDemoClassification(
+                d,
+                siteConfig.pricing.plans,
+              );
               return (
                 <button
                   key={d.slug}
@@ -331,12 +376,21 @@ export function DemosGallery() {
                         </span>
                       </div>
                     )}
-                    <div className="absolute bottom-2 start-2 end-2 flex items-center justify-between">
-                      <span className="px-2 py-1 rounded-full bg-white text-black text-[11px] font-bold">
-                        {locale === "ar" ? d.sectorAr : d.sectorEn}
-                      </span>
+                    <div className="absolute bottom-2 start-2 end-2 flex items-center justify-between gap-1">
+                      <div className="flex items-center gap-1 min-w-0">
+                        <span className="px-2 py-1 rounded-full bg-white text-black text-[11px] font-bold truncate">
+                          {locale === "ar" ? d.sectorAr : d.sectorEn}
+                        </span>
+                        {dClassification && (
+                          <span className="px-2 py-1 rounded-full bg-[var(--accent)] text-[var(--accent-foreground)] text-[10px] font-black whitespace-nowrap">
+                            {locale === "ar"
+                              ? `فئة ${dClassification.tier}`
+                              : `Cat. ${dClassification.tier}`}
+                          </span>
+                        )}
+                      </div>
                       {active === d.slug && (
-                        <span className="h-6 w-6 rounded-full bg-[var(--accent)] text-[var(--accent-foreground)] grid place-items-center">
+                        <span className="h-6 w-6 rounded-full bg-[var(--accent)] text-[var(--accent-foreground)] grid place-items-center flex-shrink-0">
                           <Sparkles className="h-3 w-3" />
                         </span>
                       )}

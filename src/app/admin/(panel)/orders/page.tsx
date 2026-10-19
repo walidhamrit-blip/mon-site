@@ -3,8 +3,10 @@ import { and, desc, eq, ilike, or, sql } from "drizzle-orm";
 import { db, ensureSchema } from "@/db";
 import { orders } from "@/db/schema";
 import {
+  ORDER_KINDS,
   ORDER_STATUSES,
   ORDER_STATUS_LABELS,
+  type OrderKind,
   type OrderRow,
   type OrderStatus,
 } from "@/lib/site-types";
@@ -32,6 +34,7 @@ function frDate(value: Date | string): string {
 interface SearchParams {
   status?: string;
   q?: string;
+  type?: string;
 }
 
 export default async function OrdersPage({
@@ -39,10 +42,14 @@ export default async function OrdersPage({
 }: {
   searchParams: Promise<SearchParams>;
 }) {
-  const { status, q } = await searchParams;
+  const { status, q, type } = await searchParams;
   const activeStatus =
     status && (ORDER_STATUSES as readonly string[]).includes(status)
       ? (status as OrderStatus)
+      : undefined;
+  const activeKind =
+    type && (ORDER_KINDS as readonly string[]).includes(type)
+      ? (type as OrderKind)
       : undefined;
   const query = (q ?? "").trim();
 
@@ -51,12 +58,14 @@ export default async function OrdersPage({
   const counts: Partial<Record<OrderStatus, number>> = {};
   let total = 0;
   let paidTotalUsd = 0;
+  let reservationCount = 0;
 
   try {
     await ensureSchema();
 
     const conditions = [];
     if (activeStatus) conditions.push(eq(orders.status, activeStatus));
+    if (activeKind) conditions.push(eq(orders.kind, activeKind));
     if (query) {
       const pattern = `%${query}%`;
       conditions.push(
@@ -66,6 +75,7 @@ export default async function OrdersPage({
           ilike(orders.email, pattern),
           ilike(orders.phone, pattern),
           ilike(orders.planName, pattern),
+          ilike(orders.demoSlug, pattern),
         ),
       );
     }
@@ -91,6 +101,7 @@ export default async function OrdersPage({
     }
 
     total = rows.length;
+    reservationCount = rows.filter((r) => r.kind === "reservation").length;
     paidTotalUsd = rows
       .filter((r) => r.status === "paid")
       .reduce((sum, r) => sum + (Number(r.amountUsd) || 0), 0);
@@ -104,6 +115,10 @@ export default async function OrdersPage({
     createdAt: o.createdAt instanceof Date ? o.createdAt.toISOString() : String(o.createdAt),
     dateFr: frDate(o.createdAt),
     ref: o.ref,
+    kind: (ORDER_KINDS as readonly string[]).includes(o.kind)
+      ? (o.kind as OrderKind)
+      : "plan",
+    demoSlug: o.demoSlug,
     planId: o.planId,
     planName: o.planName,
     amountLyd: o.amountLyd,
@@ -132,6 +147,16 @@ export default async function OrdersPage({
     const params = new URLSearchParams();
     if (value) params.set("status", value);
     if (query) params.set("q", query);
+    if (activeKind) params.set("type", activeKind);
+    const s = params.toString();
+    return s ? `/admin/orders?${s}` : "/admin/orders";
+  };
+
+  const kindHref = (value?: OrderKind) => {
+    const params = new URLSearchParams();
+    if (activeStatus) params.set("status", activeStatus);
+    if (query) params.set("q", query);
+    if (value) params.set("type", value);
     const s = params.toString();
     return s ? `/admin/orders?${s}` : "/admin/orders";
   };
@@ -151,14 +176,17 @@ export default async function OrdersPage({
         <div>
           <h1 className="text-2xl sm:text-3xl font-black text-white flex items-center gap-2">
             <CreditCard className="h-6 w-6 text-[#C6A664]" />
-            Paiements crypto
+            Paiements &amp; réservations
           </h1>
           <p className="mt-1 text-sm text-zinc-500">
             {total} commande{total > 1 ? "s" : ""} ·{" "}
             <span className="text-emerald-300 font-bold">
               ${paidTotalUsd.toLocaleString("en-US")}
             </span>{" "}
-            encaissés via NOWPayments
+            encaissés via NOWPayments ·{" "}
+            <span className="text-[#E8D5A9] font-bold">{reservationCount}</span>{" "}
+            réservation{reservationCount > 1 ? "s" : ""} prioritaire
+            {reservationCount > 1 ? "s" : ""}
           </p>
         </div>
         <Link
@@ -176,6 +204,33 @@ export default async function OrdersPage({
           <div className="mt-1 text-red-400/70 text-xs">{dbError}</div>
         </div>
       )}
+
+      {/* Type de commande */}
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="text-[11px] font-bold uppercase tracking-wider text-zinc-600 me-1">
+          Type
+        </span>
+        <Link
+          href={kindHref(undefined)}
+          className={`h-8 px-4 rounded-full text-xs font-bold inline-flex items-center gap-1.5 border transition-colors ${
+            !activeKind
+              ? "bg-white/10 border-white/20 text-white"
+              : "bg-white/5 border-white/10 text-zinc-400 hover:text-white"
+          }`}
+        >
+          Toutes les commandes
+        </Link>
+        <Link
+          href={kindHref("reservation")}
+          className={`h-8 px-4 rounded-full text-xs font-bold inline-flex items-center gap-1.5 border transition-colors ${
+            activeKind === "reservation"
+              ? "bg-[#C6A664]/15 border-[#C6A664]/40 text-[#E8D5A9]"
+              : "bg-white/5 border-white/10 text-zinc-400 hover:text-white"
+          }`}
+        >
+          Réservations prioritaires
+        </Link>
+      </div>
 
       {/* Filtres */}
       <div className="flex flex-wrap items-center gap-2">
@@ -199,6 +254,7 @@ export default async function OrdersPage({
 
         <form action="/admin/orders" method="get" className="ms-auto flex items-center gap-2">
           {activeStatus && <input type="hidden" name="status" value={activeStatus} />}
+          {activeKind && <input type="hidden" name="type" value={activeKind} />}
           <div className="relative">
             <Search className="absolute start-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-500" />
             <input

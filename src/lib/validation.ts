@@ -44,6 +44,17 @@ export const demoSchema = z.object({
   features: z.array(z.string().max(200)).max(20),
   featuresEn: z.array(z.string().max(200)).max(20),
   previewUrl: z.string().max(1000),
+  /** Formule utilisée pour classer le site (catégorie + prix). */
+  planId: z.string().max(60).optional(),
+  /** Numéro de catégorie affiché (1, 2, 3…). */
+  categoryTier: z.coerce.number().int().min(1).max(99).optional(),
+  /** Prix USD propre au projet (null / absent = prix de la catégorie). */
+  priceUsd: z.coerce
+    .number()
+    .min(0)
+    .max(1_000_000)
+    .nullable()
+    .optional(),
 });
 
 export const faqSchema = z.object({
@@ -139,6 +150,11 @@ export const siteConfigSchema = z.object({
     sitesDelivered: z.string().max(50),
     satisfaction: z.string().max(50),
     support: z.string().max(50),
+  }),
+  reservation: z.object({
+    enabled: z.boolean(),
+    depositUsd: z.coerce.number().min(0).max(10_000),
+    depositLyd: z.coerce.number().min(0).max(1_000_000),
   }),
 });
 

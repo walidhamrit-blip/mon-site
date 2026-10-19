@@ -246,7 +246,7 @@ export function SettingsForm({ initial }: { initial: SiteConfigData }) {
 
       <Card
         title="Tarifs"
-        description="Les prix et formules de la section tarifs. L’identifiant (id) de chaque formule est technique : ne le modifiez pas."
+        description="Les prix et formules de la section tarifs. L’ordre de cette liste définit le numéro de catégorie (1, 2, 3…) utilisé pour classer chaque site du portfolio. L’identifiant (id) de chaque formule est technique : ne le modifiez pas."
       >
         <div className="grid sm:grid-cols-2 gap-4 max-w-[420px]">
           <Field label="Devise (arabe)" value={c.pricing.currency} dir="rtl" onChange={(v) => setDraft((d) => ({ ...d, pricing: { ...d.pricing, currency: v } }))} />
@@ -260,7 +260,10 @@ export function SettingsForm({ initial }: { initial: SiteConfigData }) {
               className="rounded-3xl border border-white/10 bg-black/30 p-5"
             >
               <div className="flex flex-wrap items-center justify-between gap-3">
-                <div className="flex items-center gap-2.5">
+                <div className="flex flex-wrap items-center gap-2.5">
+                  <span className="px-2.5 py-1 rounded-lg bg-white/10 text-zinc-300 text-xs font-black border border-white/15">
+                    Catégorie {index + 1}
+                  </span>
                   <span className="px-2.5 py-1 rounded-lg bg-[#C6A664]/15 text-[#E8D5A9] text-xs font-black border border-[#C6A664]/30">
                     {plan.id}
                   </span>
@@ -325,6 +328,57 @@ export function SettingsForm({ initial }: { initial: SiteConfigData }) {
             </div>
           ))}
         </div>
+      </Card>
+
+      <Card
+        title="Réservation prioritaire"
+        description="Petit acompte pour prendre une place en avance dans le planning. La proposition apparaît sur chaque site consulté (galerie, fiche et visionneuse plein écran) et l’acompte est déduit du prix final."
+      >
+        <div className="grid sm:grid-cols-3 gap-4 items-start">
+          <label className="flex items-center gap-3 rounded-2xl border border-white/10 bg-black/30 px-4 py-3 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={c.reservation.enabled}
+              onChange={(event) =>
+                set("reservation", {
+                  ...c.reservation,
+                  enabled: event.target.checked,
+                })
+              }
+              className="h-4 w-4 accent-[#C6A664]"
+            />
+            <span>
+              <span className="block text-sm font-bold text-white">
+                Activer la réservation
+              </span>
+              <span className="block text-[11px] text-zinc-500">
+                Bouton et dialogue visible sur le site public
+              </span>
+            </span>
+          </label>
+          <NumberField
+            label="Acompte (USD)"
+            value={c.reservation.depositUsd}
+            hint="Facturé via NOWPayments (1 $ par défaut)"
+            onChange={(v) =>
+              set("reservation", { ...c.reservation, depositUsd: v ?? 0 })
+            }
+          />
+          <NumberField
+            label={`Équivalent affiché (${c.pricing.currencyEn})`}
+            value={c.reservation.depositLyd}
+            hint="Montant indicatif en Livre libyenne"
+            onChange={(v) =>
+              set("reservation", { ...c.reservation, depositLyd: v ?? 0 })
+            }
+          />
+        </div>
+        <p className="mt-4 text-[11px] leading-relaxed text-zinc-600">
+          Les catégories et leurs prix se règlent dans la carte « Tarifs »
+          ci-dessus (l’ordre = numéro de catégorie). Le rattachement d’un site à
+          une catégorie, et son éventuel prix propre, se modifient dans
+          « Contenu » → onglet « Démos ».
+        </p>
       </Card>
 
       {/* Barre d'enregistrement */}

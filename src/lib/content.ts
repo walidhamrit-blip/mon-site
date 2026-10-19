@@ -15,6 +15,8 @@ export const demos = [
     features: ["هواتف ذكية وأجهزة لوحية", "تتبّع الطلب برقم مرجعي", "سلة + دفع عبر واتساب", "عربي + إنجليزي"],
     featuresEn: ["Phones, tablets & audio", "Order tracking by reference", "Cart & WhatsApp checkout", "Arabic + English"],
     previewUrl: "https://smartphine-demo.vercel.app/",
+    planId: "boutique",
+    categoryTier: 3,
   },
   {
     slug: "cabinet-sante-medecin",
@@ -32,6 +34,8 @@ export const demos = [
     features: ["حجز مواعيد واختيار التاريخ", "تقييم 4.9/5 وشارة ثقة", "تواصل واتساب مباشر", "فرنسي + عربي + إنجليزي"],
     featuresEn: ["Appointment & Date Booking", "4.9/5 Trust Rating", "Direct WhatsApp Contact", "FR + AR + EN Trilingual"],
     previewUrl: "https://demo-cabinet-medecin.vercel.app/",
+    planId: "vitrine-plus",
+    categoryTier: 2,
   },
   {
     slug: "al-manhaj-company",
@@ -49,6 +53,8 @@ export const demos = [
     features: ["تجزئة وجملة B2B", "سلة وتتبع طلبات", "حاسبة خصومات الجملة", "عربي + إنجليزي"],
     featuresEn: ["Retail & B2B Store", "Cart & Order Tracking", "Wholesale Calculator", "Arabic + English"],
     previewUrl: "https://al-manhaj-company.vercel.app/",
+    planId: "boutique",
+    categoryTier: 3,
   },
   {
     slug: "tripo-teck-outillage",
@@ -66,6 +72,8 @@ export const demos = [
     features: ["عدد ومواد بناء", "سلة وطلب فوري", "عروض أسعار للمقاولين", "8 أقسام متخصصة"],
     featuresEn: ["Tools & Construction", "Instant Cart & Order", "Contractor B2B Quotes", "8 Pro Categories"],
     previewUrl: "https://m-et-outillage-modele-3.vercel.app/",
+    planId: "boutique",
+    categoryTier: 3,
   },
   {
     slug: "tulin-magazin",
@@ -83,6 +91,8 @@ export const demos = [
     features: ["8 أقسام منزلية", "عروض بعدّاد تنازلي", "سلة وطلب واتساب", "توصيل 22 مدينة"],
     featuresEn: ["8 Home Categories", "Countdown Deals", "Cart & WhatsApp Order", "22-City Delivery"],
     previewUrl: "https://tulin-magazin.vercel.app/",
+    planId: "boutique",
+    categoryTier: 3,
   },
   {
     slug: "pizzeria-forno-tripoli",
@@ -100,6 +110,8 @@ export const demos = [
     features: ["استوديو تخصيص البيتزا", "قائمة تفاعلية بالفلترة", "باقات عائلية وعروض", "طلب وتوصيل فوري"],
     featuresEn: ["Custom Pizza Studio", "Interactive Menu", "Family Packs & Deals", "Instant Delivery Order"],
     previewUrl: "https://pizzeria-demo1.vercel.app/",
+    planId: "boutique",
+    categoryTier: 3,
   },
   {
     slug: "maison-tripoli-meubles",
@@ -117,6 +129,8 @@ export const demos = [
     features: ["تخصيص الأخشاب والرخام", "طلب تسعير ومقاسات خاصة", "حجز زيارة خاصة للمعرض", "معرض أعمال القصور والفلل"],
     featuresEn: ["Material & Wood Selector", "Custom Quote Builder", "Private Showroom Booking", "Luxury Villa Portfolio"],
     previewUrl: "https://demo-meubles.vercel.app/",
+    planId: "vitrine-plus",
+    categoryTier: 2,
   },
   {
     slug: "hala-perfumes",
@@ -134,6 +148,8 @@ export const demos = [
     features: ["عروض Mix & Match", "عطور ومكياج وعناية", "أكواد خصم وسلة ذكية", "عربي + إنجليزي"],
     featuresEn: ["Mix & Match Bundles", "Perfumes & Beauty", "Promo Codes & Smart Cart", "Arabic + English"],
     previewUrl: "https://hala-dun.vercel.app/",
+    planId: "boutique",
+    categoryTier: 3,
   },
   {
     slug: "al-massa-mattresses",
@@ -151,6 +167,8 @@ export const demos = [
     features: ["مراتب طبية وأسرّة حسب المقاس", "سلة مرتبطة بواتساب", "معرض صور حقيقي ومدونة", "ضمان الوكيل المعتمد"],
     featuresEn: ["Custom Beds & Mattresses", "WhatsApp Smart Cart", "Real Showroom & Blog", "Authorized Dealer Warranty"],
     previewUrl: "https://al-massa.vercel.app/",
+    planId: "boutique",
+    categoryTier: 3,
   },
   {
     slug: "toy-store-tripoly",
@@ -168,6 +186,8 @@ export const demos = [
     features: ["ليغو وباربي وسكوترات", "سلة ودفع عند الاستلام", "فروع طرابلس التفاعلية", "عربي + إنجليزي"],
     featuresEn: ["LEGO, Barbie & Scooters", "Cart & Cash on Delivery", "Tripoli Branch Locator", "Arabic + English"],
     previewUrl: "https://demo-jouets.vercel.app/",
+    planId: "boutique",
+    categoryTier: 3,
   },
   {
     slug: "al-bay-family-restaurant",
@@ -185,6 +205,8 @@ export const demos = [
     features: ["قائمة ليبية أصيلة", "سلة طلب + واتساب", "قائمة رقمية للمشاركة", "هوية دافئة بلمسة عصرية"],
     featuresEn: ["Authentic Libyan menu", "Basket & WhatsApp", "Shareable digital menu", "Warm modern identity"],
     previewUrl: "https://al-bay.vercel.app/",
+    planId: "vitrine-plus",
+    categoryTier: 2,
   },
   {
     slug: "alssadaka-sanitary",
@@ -202,6 +224,8 @@ export const demos = [
     features: ["كتالوج مع فلترة فورية", "أطقم + صنابير + صمامات", "ضمان 5 سنوات", "عربي + إنجليزي"],
     featuresEn: ["Instantly filtered catalog", "Fixtures, mixers & valves", "5-year warranty", "Arabic + English"],
     previewUrl: "https://alssadaka-sanitary.vercel.app/",
+    planId: "vitrine",
+    categoryTier: 1,
   },
 ] as const;
 
@@ -366,8 +390,8 @@ export const faqs = [
   {
     qAr: "ماذا عن الدفع؟ تقسيط؟",
     qEn: "Payment? Installments?",
-    aAr: "50% مقدم لحجز الموعد، 50% عند التسليم. نقبل تحويل مصرفي، دفع كاش، وحتى تقسيط على دفعتين للباقات العليا.",
-    aEn: "50% upfront to book, 50% on delivery. Bank transfer, cash, or 2 installments for higher plans.",
+    aAr: "يمكنك أولاً حجز مكانك بعربون 1 $ (يُخصم من سعر المشروع). ثم 50% عند التعاقد و50% عند التسليم. نقبل تحويل مصرفي، دفع كاش، وحتى تقسيط على دفعتين للباقات العليا.",
+    aEn: "You can first reserve your slot with a $1 deposit (deducted from the project price). Then 50% at signing and 50% on delivery. Bank transfer, cash, or 2 installments for higher plans.",
   },
   {
     qAr: "ماذا لو لم يعجبني التصميم؟",

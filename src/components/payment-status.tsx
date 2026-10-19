@@ -7,6 +7,8 @@ import { formatUsd } from "@/lib/installments";
 
 interface OrderStatus {
   ref: string;
+  kind?: "plan" | "reservation";
+  demoSlug?: string | null;
   planName: string;
   amountLyd: string;
   amountUsd: string;
@@ -208,6 +210,16 @@ export function PaymentStatus({ ref }: { ref: string }) {
             <dt className="opacity-60">{ar ? t.pay.orderAr : t.pay.orderEn}</dt>
             <dd className="font-bold" dir="ltr">{order.ref}</dd>
           </div>
+          {order.kind === "reservation" && (
+            <div className="flex justify-between gap-4">
+              <dt className="opacity-60">
+                {ar ? "نوع الطلب" : "Order type"}
+              </dt>
+              <dd className="font-bold text-emerald-400">
+                {ar ? "حجز أولوية — عربون" : "Priority reservation — deposit"}
+              </dd>
+            </div>
+          )}
           <div className="flex justify-between gap-4">
             <dt className="opacity-60">{ar ? t.pay.planAr : t.pay.planEn}</dt>
             <dd className="font-bold">{order.planName}</dd>

@@ -6,6 +6,9 @@ import type { Demo } from "@/lib/site-types";
 import { useI18n } from "@/lib/i18n";
 import { useSiteConfig } from "@/components/site-provider";
 import { isRealUrl, FullscreenLiveViewer } from "@/components/live-site-frames";
+import { ReservationButton } from "@/components/reservation-dialog";
+import { formatLyd, resolveDemoClassification } from "@/lib/classification";
+import { formatUsd } from "@/lib/installments";
 import {
   ArrowUpRight,
   Check,
@@ -31,6 +34,8 @@ export function DemoViewer({ demo, allDemos }: { demo: Demo; allDemos: Demo[] })
   const sectorLabel = locale === "ar" ? demo.sectorAr : demo.sectorEn;
   const description = locale === "ar" ? demo.description : demo.descriptionEn;
   const features = locale === "ar" ? demo.features : demo.featuresEn;
+  const classification = resolveDemoClassification(demo, config.pricing.plans);
+  const depositUsd = config.reservation?.depositUsd ?? 1;
   const whatsappNumber = (config.whatsapp || "218912345678").replace(/\D/g, "");
   const otherDemos = allDemos.filter((d) => d.slug !== demo.slug).slice(0, 3);
 
@@ -119,6 +124,50 @@ export function DemoViewer({ demo, allDemos }: { demo: Demo; allDemos: Demo[] })
                     </li>
                   ))}
                 </ul>
+
+                {classification && (
+                  <div className="mt-5 rounded-2xl border border-[var(--accent)]/30 bg-[var(--accent)]/5 p-4">
+                    <div className="flex items-end justify-between gap-3">
+                      <div className="min-w-0">
+                        <div className="text-[10px] font-bold uppercase tracking-wider opacity-50">
+                          {locale === "ar"
+                            ? `الفئة ${classification.tier}`
+                            : `Category ${classification.tier}`}
+                        </div>
+                        <div className="font-black">
+                          {locale === "ar"
+                            ? classification.name
+                            : classification.nameEn}
+                        </div>
+                      </div>
+                      <div className="text-end flex-shrink-0">
+                        {classification.priceUsd != null && (
+                          <div
+                            className="text-2xl font-black text-[var(--accent)] leading-none"
+                            dir="ltr"
+                          >
+                            ${formatUsd(classification.priceUsd)}
+                          </div>
+                        )}
+                        <div className="mt-1 text-[11px] opacity-60" dir="ltr">
+                          {formatLyd(classification.priceLyd)}{" "}
+                          {locale === "ar"
+                            ? config.pricing.currency
+                            : config.pricing.currencyEn}
+                        </div>
+                      </div>
+                    </div>
+                    <ReservationButton
+                      demo={demo}
+                      className="mt-3 h-10 w-full rounded-full bg-[var(--accent)] text-[var(--accent-foreground)] text-xs font-black inline-flex items-center justify-center gap-1.5 hover:bg-[var(--accent-hover)] transition-colors cursor-pointer"
+                    />
+                    <p className="mt-2 text-[10px] opacity-50 leading-relaxed">
+                      {locale === "ar"
+                        ? `عربون ${formatUsd(depositUsd)} $ يُخصم من سعر المشروع — أولوية في جدول العمل.`
+                        : `$${formatUsd(depositUsd)} deposit deducted from the project price — priority in our schedule.`}
+                    </p>
+                  </div>
+                )}
 
                 <div className="mt-6 grid grid-cols-2 gap-3">
                   <Link

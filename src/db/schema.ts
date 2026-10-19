@@ -49,6 +49,10 @@ export const orders = pgTable("orders", {
     .defaultNow(),
   /** Référence interne affichée au client (ex. NKH-LZ3K9XAB12CD). */
   ref: text("ref").notNull().unique(),
+  /** « plan » = formule complète ; « reservation » = acompte prioritaire 1 $. */
+  kind: text("kind").notNull().default("plan"),
+  /** Site du portfolio concerné par une réservation. */
+  demoSlug: text("demo_slug"),
   planId: text("plan_id").notNull(),
   planName: text("plan_name").notNull(),
   /** Montant affiché sur le site (Livre libyenne, texte pour éviter les arrondis). */

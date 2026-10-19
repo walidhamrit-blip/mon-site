@@ -1,6 +1,7 @@
 "use client";
 import { Fragment, useState } from "react";
 import {
+  ORDER_KIND_LABELS,
   ORDER_STATUS_LABELS,
   type OrderRow,
 } from "@/lib/site-types";
@@ -97,11 +98,23 @@ export function OrdersTable({ orders }: { orders: OrderRow[] }) {
                       )}
                     </td>
                     <td className="px-4 py-3.5 text-zinc-300">
-                      {order.planName}
-                      {order.installments > 1 && (
-                        <span className="ms-2 inline-flex items-center rounded-full border border-[#C6A664]/30 bg-[#C6A664]/10 px-2 py-0.5 text-[10px] font-bold text-[#E8D5A9] whitespace-nowrap align-middle">
-                          Tranche {order.installmentIndex}/{order.installments}
-                        </span>
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        <span>{order.planName}</span>
+                        {order.kind === "reservation" && (
+                          <span className="inline-flex items-center rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 text-[10px] font-bold text-emerald-300 whitespace-nowrap">
+                            {ORDER_KIND_LABELS.reservation}
+                          </span>
+                        )}
+                        {order.installments > 1 && (
+                          <span className="inline-flex items-center rounded-full border border-[#C6A664]/30 bg-[#C6A664]/10 px-2 py-0.5 text-[10px] font-bold text-[#E8D5A9] whitespace-nowrap">
+                            Tranche {order.installmentIndex}/{order.installments}
+                          </span>
+                        )}
+                      </div>
+                      {order.demoSlug && (
+                        <div className="mt-0.5 text-[11px] text-zinc-600 font-mono">
+                          /demos/{order.demoSlug}
+                        </div>
                       )}
                     </td>
                     <td className="px-4 py-3.5 whitespace-nowrap">
@@ -158,6 +171,21 @@ export function OrdersTable({ orders }: { orders: OrderRow[] }) {
                     <tr className="border-b border-white/10 bg-black/40">
                       <td colSpan={8} className="px-4 py-5">
                         <dl className="grid md:grid-cols-2 gap-x-6 gap-y-3.5 content-start">
+                          <Detail
+                            label="Type de commande"
+                            value={
+                              order.kind === "reservation"
+                                ? "Réservation prioritaire (acompte)"
+                                : "Formule complète"
+                            }
+                          />
+                          <Detail label="Site du portfolio" value={order.demoSlug} />
+                          {order.kind === "reservation" && (
+                            <Detail
+                              label="Acompte"
+                              value="À déduire du prix final du projet"
+                            />
+                          )}
                           <Detail label="Téléphone" value={order.phone} />
                           <Detail label="E-mail" value={order.email} />
                           <Detail label="IPN (brut)" value={order.ipnStatus} />

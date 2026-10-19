@@ -3,10 +3,12 @@
 import { useEffect, useRef, useState } from "react";
 import { motion, useInView, useReducedMotion } from "framer-motion";
 import { ArrowLeft, ArrowRight, ExternalLink, Pause, Play } from "lucide-react";
-import { useSiteContent } from "@/components/site-provider";
+import { useSiteConfig, useSiteContent } from "@/components/site-provider";
 import { isRealUrl } from "@/components/live-site-frames";
 import { ProjectPreview } from "@/components/project-preview";
 import { getProjectPreview } from "@/lib/project-previews";
+import { formatLyd, resolveDemoClassification } from "@/lib/classification";
+import { formatUsd } from "@/lib/installments";
 import { useI18n } from "@/lib/i18n";
 
 const SLIDE_DURATION = 8000;
@@ -14,6 +16,7 @@ const SLIDE_DURATION = 8000;
 /** Synchronized lightweight previews. Live websites only open on request. */
 export function HeroShowcase() {
   const { demos } = useSiteContent();
+  const config = useSiteConfig();
   const { locale } = useI18n();
   const ar = locale === "ar";
   const projects = demos.filter((demo) => isRealUrl(demo.previewUrl));
@@ -66,6 +69,7 @@ export function HeroShowcase() {
 
   if (!project) return null;
   const title = ar ? project.title : project.titleEn;
+  const classification = resolveDemoClassification(project, config.pricing.plans);
   const step = (direction: number) => {
     setPaused(true);
     setIndex((currentIndex + direction + projects.length) % projects.length);
@@ -159,6 +163,23 @@ export function HeroShowcase() {
         <div className="min-w-0" aria-live={playing ? "off" : "polite"} aria-atomic="true">
           <p className="mb-1 text-[10px] font-bold uppercase tracking-wider text-[var(--accent)]">{ar ? project.sectorAr : project.sectorEn}</p>
           <p className="truncate text-sm font-bold sm:text-base">{title}</p>
+          {classification && (
+            <p className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px] text-[var(--muted-foreground)]">
+              <span className="font-bold text-[var(--accent)]">
+                {ar ? `الفئة ${classification.tier}` : `Category ${classification.tier}`}
+              </span>
+              <span>{ar ? classification.name : classification.nameEn}</span>
+              {classification.priceUsd != null && (
+                <span className="font-black text-[var(--foreground)]" dir="ltr">
+                  ${formatUsd(classification.priceUsd)}
+                </span>
+              )}
+              <span dir="ltr">
+                {formatLyd(classification.priceLyd)}{" "}
+                {ar ? config.pricing.currency : config.pricing.currencyEn}
+              </span>
+            </p>
+          )}
         </div>
         <a href={project.previewUrl} target="_blank" rel="noopener noreferrer" className="inline-flex shrink-0 items-center gap-2 rounded-full border border-[var(--border)] bg-[var(--card)] px-3 py-2.5 text-xs font-bold transition-colors hover:border-[var(--accent)]">
           {ar ? "زيارة الموقع" : "Visit site"}<ExternalLink className="h-3.5 w-3.5" />
