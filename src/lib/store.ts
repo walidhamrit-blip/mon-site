@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { eq } from "drizzle-orm";
 import { db, ensureSchema } from "@/db";
 import { settings } from "@/db/schema";
@@ -281,6 +282,14 @@ export async function getSiteData(): Promise<SiteData> {
     };
   }
 }
+
+/**
+ * Version dédupliquée par requête de getSiteData (React `cache`).
+ * Une page qui appelle les données dans generateMetadata PUIS dans son
+ * composant ne déclenche qu'une seule lecture base — important pour les
+ * pages SEO (layout, sitemap, robots, pages internes).
+ */
+export const getSiteDataCached = cache(getSiteData);
 
 /** Enregistre (ou remplace) une valeur de réglage en base. */
 export async function upsertSetting(key: string, value: unknown): Promise<void> {

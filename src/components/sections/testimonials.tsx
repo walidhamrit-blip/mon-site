@@ -1,4 +1,5 @@
 "use client";
+import Image from "next/image";
 import { motion } from "framer-motion";
 import { Star, Quote } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
@@ -42,7 +43,16 @@ export function Testimonials() {
               className="rounded-[24px] bg-[var(--card)] border border-[var(--border)] p-6 flex flex-col hover:shadow-lg transition-shadow"
             >
               <div className="flex items-center gap-3">
-                <img loading="lazy" decoding="async" src={item.image} alt="" className="h-12 w-12 rounded-full object-cover" />
+                <Image
+                  loading="lazy"
+                  decoding="async"
+                  src={item.image}
+                  alt={locale === "ar" ? `صورة ${item.name}` : `${item.nameEn} photo`}
+                  width={48}
+                  height={48}
+                  sizes="48px"
+                  className="h-12 w-12 rounded-full object-cover"
+                />
                 <div>
                   <div className="font-bold text-sm leading-none">{locale === "ar" ? item.name : item.nameEn}</div>
                   <div className="text-xs opacity-60 mt-1">{locale === "ar" ? item.role : item.roleEn}</div>

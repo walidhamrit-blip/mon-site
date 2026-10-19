@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import type { Demo } from "@/lib/site-types";
 import { useI18n } from "@/lib/i18n";
@@ -84,7 +85,15 @@ export function DemoViewer({ demo, allDemos }: { demo: Demo; allDemos: Demo[] })
                   mode === "mobile" ? "max-w-[340px] aspect-[9/16]" : "w-full aspect-[16/11]"
                 }`}
               >
-                <img loading="lazy" decoding="async" src={demo.image} alt={title} className="w-full h-full object-cover" />
+                <Image
+                  src={demo.image}
+                  alt={title}
+                  fill
+                  sizes="(max-width: 1024px) 100vw, 60vw"
+                  loading="lazy"
+                  decoding="async"
+                  className="object-cover"
+                />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/65 via-transparent to-transparent" />
                 <div className="absolute bottom-0 p-6 text-white">
                   <span className="px-3 py-1 rounded-full bg-[var(--accent)] text-[var(--accent-foreground)] text-xs font-bold">
@@ -204,9 +213,13 @@ export function DemoViewer({ demo, allDemos }: { demo: Demo; allDemos: Demo[] })
                         href={`/demos/${item.slug}`}
                         className="flex items-center gap-3 p-2 rounded-xl hover:bg-[var(--secondary)] transition-colors"
                       >
-                        <img loading="lazy" decoding="async"
+                        <Image
+                          loading="lazy"
+                          decoding="async"
                           src={item.image}
-                          alt=""
+                          alt={locale === "ar" ? item.title : item.titleEn}
+                          width={64}
+                          height={48}
                           className="h-12 w-16 rounded-lg object-cover flex-shrink-0"
                         />
                         <div className="min-w-0 flex-1">

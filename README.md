@@ -263,10 +263,24 @@ NOWPayments pour prendre une place en avance dans le planning.
 - Colonnes ajoutées automatiquement à la table `orders` : `kind`
   (`plan` | `reservation`) et `demo_slug`.
 
-## SEO
-- sitemap.ts, robots.ts, metadata, hreflang, Open Graph, LocalBusiness JSON-LD déjà inclus
-- Ajoutez Google Analytics ID dans `src/app/page.tsx` placeholder
-- respects `prefers-reduced-motion` via Framer Motion
+## SEO et référencement IA
+- Métadonnées complètes par page (title, description, canonical, Open Graph
+  ar_LY + alternate en_US, Twitter Card) générées via `src/lib/seo.ts`
+- Données structurées JSON-LD servies dans le HTML initial : Organization,
+  WebSite, ProfessionalService (SEO local, horaires, avis agrégé), FAQPage
+  (7 Q/R), OfferCatalog (prix USD), BreadcrumbList, CollectionPage,
+  CreativeWork pour chaque réalisation
+- `robots.ts` : accès public ouvert, `/api`, `/admin`, `/pay` fermés,
+  crawlers IA explicitement autorisés (GPTBot, ClaudeBot, PerplexityBot,
+  Google-Extended, CCBot…) ; `sitemap.ts` avec images des réalisations
+- `public/llms.txt` : présentation machine-lisible pour les assistants IA
+- `manifest.ts` (PWA), `not-found.tsx` (404 noindex), pages de paiement noindex
+- Les langues sont gérées côté client (pas d'URL /ar /en réelles) : aucun
+  hreflang invalide n'est émis ; les redirections /ar et /en restent en place
+- Vérification Google : fichier `public/googleaf….html` actif, ou meta-tag via
+  la variable `GOOGLE_SITE_VERIFICATION`
+- Détail complet de l'audit : `docs/seo-audit.md`
+- Respect de `prefers-reduced-motion` via Framer Motion
 
 ## A personnaliser avant mise en ligne
 1. Prix réels dans config.ts
