@@ -9,6 +9,7 @@ import { db, ensureSchema } from "@/db";
 import { leads } from "@/db/schema";
 import { ADMIN_COOKIE, checkPassword, createSessionToken, requireAdmin } from "@/lib/auth";
 import { deleteSetting, upsertSetting, SETTINGS_KEYS } from "@/lib/store";
+import { ensureDemoSeoFields } from "@/lib/ai/seo-generator";
 import { pingAllPublicPages } from "@/lib/indexnow";
 import {
   contentSchemas,
@@ -205,8 +206,9 @@ export async function saveContentSection(
     return { ok: false, error: `Contenu invalide — ${firstIssue(parsed.error)}` };
   }
 
+  let dataToStore: unknown = parsed.data;
   if (section === "demos") {
-    const items = parsed.data as { slug: string }[];
+    const items = parsed.data as ( { slug: string } & Parameters<typeof ensureDemoSeoFields>[0] )[];
     const slugs = new Set<string>();
     for (const item of items) {
       if (slugs.has(item.slug)) {
@@ -214,10 +216,13 @@ export async function saveContentSection(
       }
       slugs.add(item.slug);
     }
+    // Automatisation SEO : complète automatiquement tout champ SEO vide
+    // avec le gabarit optimisé bilingue avant l'enregistrement en base.
+    dataToStore = items.map((item) => ensureDemoSeoFields(item));
   }
 
   try {
-    await upsertSetting(CONTENT_KEYS[section], parsed.data);
+    await upsertSetting(CONTENT_KEYS[section], dataToStore);
     revalidatePath("/", "layout");
     void pingAllPublicPages();
     return { ok: true, message: "Contenu enregistré — le site public est à jour." };

@@ -83,7 +83,7 @@ export async function notifyIndexNow(
   }
 }
 
-/** URLs publiques principales + toutes les fiches réalisations. */
+/** URLs publiques principales + fichiers IA/sitemap + toutes les fiches réalisations. */
 export async function pingAllPublicPages(): Promise<void> {
   // Import différé pour éviter tout cycle au chargement du module.
   const { getSiteDataCached } = await import("@/lib/store");
@@ -94,6 +94,9 @@ export async function pingAllPublicPages(): Promise<void> {
     `${base}/demos`,
     `${base}/pricing`,
     `${base}/contact`,
+    `${base}/llms.txt`,
+    `${base}/llms-full.txt`,
+    `${base}/sitemap.xml`,
     ...content.demos.map((d) => `${base}/demos/${d.slug}`),
   ];
   await notifyIndexNow(urls, config.url);

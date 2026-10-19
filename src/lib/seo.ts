@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
-import type { Demo, Faq } from "@/lib/site-types";
+import { resolveDemoClassification } from "@/lib/classification";
+import type { Demo, Faq, ProcessStep, Testimonial } from "@/lib/site-types";
 
 /**
  * Central SEO + structured-data (JSON-LD) helpers.
@@ -32,11 +33,21 @@ type SiteConfig = {
       id: string;
       name: string;
       nameEn: string;
+      price?: number;
       description: string;
       descriptionEn: string;
       priceUsd?: number | null;
     }>;
   };
+  standaloneServices?: ReadonlyArray<{
+    id: string;
+    titleAr: string;
+    titleEn: string;
+    descAr: string;
+    descEn: string;
+    priceFromUsd: number;
+    priceFromLyd: number;
+  }>;
 };
 
 const ORG_ID = "#organization";
@@ -113,9 +124,13 @@ export function websiteJsonLd(config: SiteConfig) {
 
 /**
  * Schéma ProfessionalService (sous-type de LocalBusiness) — riche pour le
- * SEO local (Tripoli) et les réponses IA : horaires, contact, avis, réseaux.
+ * SEO local (Tripoli) et les réponses IA : coordonnées GPS, horaires,
+ * contact, avis individuels synchronisés depuis l'admin, réseaux et expertises.
  */
-export function localBusinessJsonLd(config: SiteConfig) {
+export function localBusinessJsonLd(
+  config: SiteConfig,
+  testimonials?: ReadonlyArray<Testimonial>,
+) {
   return {
     "@context": "https://schema.org",
     "@type": "ProfessionalService",
@@ -129,6 +144,7 @@ export function localBusinessJsonLd(config: SiteConfig) {
     email: config.email,
     priceRange: "$$",
     currenciesAccepted: "USD, LYD",
+    paymentAccepted: "Cash, Bank Transfer, Cryptocurrency",
     address: {
       "@type": "PostalAddress",
       streetAddress: config.address,
@@ -136,9 +152,25 @@ export function localBusinessJsonLd(config: SiteConfig) {
       addressRegion: "Tripoli",
       addressCountry: "LY",
     },
+    geo: {
+      "@type": "GeoCoordinates",
+      latitude: 32.8872,
+      longitude: 13.1913,
+    },
+    hasMap: "https://www.google.com/maps/search/?api=1&query=32.8872,13.1913",
     areaServed: [
       { "@type": "City", name: "Tripoli" },
       { "@type": "Country", name: "Libya" },
+    ],
+    knowsAbout: [
+      "تصميم مواقع الإنترنت",
+      "تطوير متاجر إلكترونية",
+      "أنظمة الحجز والمواعيد",
+      "تحسين محركات البحث SEO",
+      "تحسين الظهور في الذكاء الاصطناعي GEO",
+      "Web Design Tripoli Libya",
+      "E-Commerce Development",
+      "Next.js Web Development",
     ],
     openingHoursSpecification: [
       {
@@ -175,14 +207,34 @@ export function localBusinessJsonLd(config: SiteConfig) {
       worstRating: "1",
       reviewCount: "86",
     },
+    ...(testimonials && testimonials.length > 0
+      ? {
+          review: testimonials.map((t) => ({
+            "@type": "Review",
+            author: {
+              "@type": "Person",
+              name: t.name,
+              alternateName: t.nameEn,
+              jobTitle: t.role,
+            },
+            reviewBody: `${t.text} (${t.textEn})`,
+            reviewRating: {
+              "@type": "Rating",
+              ratingValue: String(t.rating),
+              bestRating: "5",
+              worstRating: "1",
+            },
+          })),
+        }
+      : {}),
     parentOrganization: { "@id": absoluteUrl(config, ORG_ID) },
   };
 }
 
 /**
  * Schéma FAQPage — contenu identique à la section FAQ visible (obligation
- * Google : le Q/R doit être présent dans la page). L'arabe est la langue
- * servie par défaut au HTML, c'est donc lui qui est structuré.
+ * Google : le Q/R doit être présent dans la page). Ne doit être injecté que
+ * sur les pages qui affichent réellement le composant <FAQ /> (/ et /pricing).
  */
 export function faqJsonLd(faqs: ReadonlyArray<Faq>) {
   return {
@@ -197,26 +249,72 @@ export function faqJsonLd(faqs: ReadonlyArray<Faq>) {
   };
 }
 
-/** Catalogue d'offres (formules tarifaires) avec prix USD machine-lisible. */
+/**
+ * Catalogue d'offres (formules tarifaires principales + services à la carte)
+ * avec prix USD machine-lisibles. Synchronisé automatiquement depuis /admin.
+ */
 export function offerCatalogJsonLd(config: SiteConfig) {
+  const planOffers = config.pricing.plans
+    .filter((p) => typeof p.priceUsd === "number")
+    .map((plan) => ({
+      "@type": "Offer",
+      name: plan.name,
+      alternateName: plan.nameEn,
+      description: plan.description,
+      url: absoluteUrl(config, "/pricing"),
+      priceCurrency: "USD",
+      price: String(plan.priceUsd),
+      availability: "https://schema.org/InStock",
+      seller: { "@id": absoluteUrl(config, ORG_ID) },
+    }));
+
+  const serviceOffers = (config.standaloneServices ?? [])
+    .filter((s) => typeof s.priceFromUsd === "number" && s.priceFromUsd > 0)
+    .map((srv) => ({
+      "@type": "Offer",
+      name: srv.titleAr,
+      alternateName: srv.titleEn,
+      description: srv.descAr,
+      url: `${absoluteUrl(config, "/")}#services`,
+      priceCurrency: "USD",
+      price: String(srv.priceFromUsd),
+      availability: "https://schema.org/InStock",
+      seller: { "@id": absoluteUrl(config, ORG_ID) },
+    }));
+
   return {
     "@context": "https://schema.org",
     "@type": "OfferCatalog",
-    name: "باقات تصميم وتطوير المواقع — Nukhba pricing plans",
+    name: "باقات وخدمات تصميم وتطوير المواقع — Nukhba pricing & services",
     url: absoluteUrl(config, "/pricing"),
-    itemListElement: config.pricing.plans
-      .filter((p) => typeof p.priceUsd === "number")
-      .map((plan) => ({
-        "@type": "Offer",
-        name: plan.name,
-        alternateName: plan.nameEn,
-        description: plan.description,
-        url: absoluteUrl(config, "/pricing"),
-        priceCurrency: "USD",
-        price: String(plan.priceUsd),
-        availability: "https://schema.org/InStock",
-        seller: { "@id": absoluteUrl(config, ORG_ID) },
-      })),
+    itemListElement: [...planOffers, ...serviceOffers],
+  };
+}
+
+/**
+ * Schéma HowTo — structure les étapes du processus de création de site
+ * (content.process) pour les rich results et les moteurs de réponse IA.
+ */
+export function howToJsonLd(
+  config: Pick<SiteConfig, "url">,
+  steps: ReadonlyArray<ProcessStep>,
+) {
+  return {
+    "@context": "https://schema.org",
+    "@type": "HowTo",
+    "@id": `${absoluteUrl(config, "/")}#howto`,
+    name: "كيف نصمم ونطلق موقعك الاحترافي في 7 إلى 14 يوماً — How Nukhba builds your website",
+    description:
+      "5 خطوات واضحة من جلسة الاكتشاف والتصميم الحي إلى الإطلاق والتدريب.",
+    inLanguage: ["ar-LY", "en"],
+    totalTime: "P14D",
+    step: steps.map((s, idx) => ({
+      "@type": "HowToStep",
+      position: idx + 1,
+      name: `${s.titleAr} — ${s.titleEn}`,
+      text: `${s.descAr} (${s.durationAr}) — ${s.descEn} (${s.durationEn})`,
+      url: `${absoluteUrl(config, "/")}#process`,
+    })),
   };
 }
 
@@ -239,21 +337,51 @@ export function breadcrumbJsonLd(
 
 /** Schéma d'une réalisation du portfolio (page /demos/[slug]). */
 export function demoJsonLd(config: SiteConfig, demo: Demo) {
+  const normalizedPlans = config.pricing.plans.map((p) => ({
+    ...p,
+    price: typeof p.price === "number" ? p.price : 0,
+  }));
+  const cls = resolveDemoClassification(demo, normalizedPlans);
+  const canonicalUrl = absoluteUrl(config, `/demos/${demo.slug}`);
+  const hasLivePreview =
+    Boolean(demo.previewUrl) && /^https?:\/\//i.test(demo.previewUrl.trim());
+
   return {
     "@context": "https://schema.org",
     "@type": "CreativeWork",
-    "@id": `${absoluteUrl(config, `/demos/${demo.slug}`)}#work`,
+    "@id": `${canonicalUrl}#work`,
     name: demo.title,
     alternateName: demo.titleEn,
     description: demo.description,
     genre: demo.sectorAr,
     image: demo.image,
-    url: absoluteUrl(config, `/demos/${demo.slug}`),
+    url: canonicalUrl,
     inLanguage: ["ar-LY", "en"],
     datePublished: "2025-01-01",
     author: { "@id": absoluteUrl(config, ORG_ID) },
     publisher: { "@id": absoluteUrl(config, ORG_ID) },
-    keywords: [demo.sectorAr, demo.sectorEn, "تصميم مواقع", "web design Tripoli"],
+    ...(hasLivePreview ? { workExample: demo.previewUrl } : {}),
+    ...(cls && cls.priceUsd != null
+      ? {
+          offers: {
+            "@type": "Offer",
+            name: `${cls.name} — ${cls.nameEn}`,
+            priceCurrency: "USD",
+            price: String(cls.priceUsd),
+            availability: "https://schema.org/InStock",
+            url: canonicalUrl,
+            seller: { "@id": absoluteUrl(config, ORG_ID) },
+          },
+        }
+      : {}),
+    keywords: [
+      demo.sectorAr,
+      demo.sectorEn,
+      ...(demo.features ?? []),
+      ...(demo.featuresEn ?? []),
+      "تصميم مواقع",
+      "web design Tripoli",
+    ],
   };
 }
 

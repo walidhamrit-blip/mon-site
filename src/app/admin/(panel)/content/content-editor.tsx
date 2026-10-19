@@ -18,6 +18,7 @@ import { sectors } from "@/lib/content";
 import { formatLyd, resolveDemoClassification } from "@/lib/classification";
 import { formatUsd } from "@/lib/installments";
 import type { SeoEngine, SeoWarningCode } from "@/lib/ai/seo-generator";
+import { runSeoAudit } from "@/lib/seo-audit";
 import {
   Plus,
   Trash2,
@@ -419,6 +420,11 @@ export function ContentEditor({
   const [msg, setMsg] = useState<{ kind: "ok" | "err"; text: string } | null>(null);
   // Assistant SEO IA : index de la démo en cours de génération + retour.
   const [aiIndex, setAiIndex] = useState<number | null>(null);
+  const [aiBatchBusy, setAiBatchBusy] = useState(false);
+  const [aiBatchMsg, setAiBatchMsg] = useState<{
+    kind: "ok" | "warn" | "err";
+    text: string;
+  } | null>(null);
   const [aiMsg, setAiMsg] = useState<{
     index: number;
     // "warn" = clé présente mais appel LLM en échec : gabarit appliqué,
@@ -426,6 +432,8 @@ export function ContentEditor({
     kind: "ok" | "warn" | "err";
     text: string;
   } | null>(null);
+
+  const seoAudit = runSeoAudit(draft, { pricing: { plans } });
 
   const setHero = (patch: Partial<HeroContent>) =>
     setDraft((d) => ({ ...d, hero: { ...d.hero, ...patch } }));
@@ -534,6 +542,73 @@ export function ContentEditor({
       setAiMsg({ index: i, kind: "err", text: "Requête impossible." });
     } finally {
       setAiIndex(null);
+    }
+  };
+
+  /**
+   * Génère en un seul clic les 6 champs SEO bilingues de toutes les
+   * réalisations du portfolio (appel batch vers /api/admin/ai/seo).
+   */
+  const generateAllSeo = async () => {
+    if (draft.demos.length === 0) return;
+    setAiBatchBusy(true);
+    setAiBatchMsg(null);
+    try {
+      const res = await fetch("/api/admin/ai/seo", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          demos: draft.demos.map((d) => ({
+            title: d.title,
+            titleEn: d.titleEn,
+            description: d.description,
+            descriptionEn: d.descriptionEn,
+            sectorAr: d.sectorAr,
+            sectorEn: d.sectorEn,
+          })),
+        }),
+      });
+      const data = (await res.json().catch(() => null)) as {
+        copies?: Partial<Demo>[];
+        engine?: SeoEngine;
+        warning?: SeoWarningCode;
+        error?: string;
+      } | null;
+      if (!res.ok || !Array.isArray(data?.copies)) {
+        setAiBatchMsg({
+          kind: "err",
+          text: data?.error ?? "Génération en lot impossible.",
+        });
+        return;
+      }
+      setDraft((d) => ({
+        ...d,
+        demos: d.demos.map((demo, idx) => ({
+          ...demo,
+          ...(data.copies?.[idx] ?? {}),
+        })),
+      }));
+      if (data.engine === "llm") {
+        setAiBatchMsg({
+          kind: "ok",
+          text: `SEO bilingue généré par l'IA pour les ${data.copies.length} réalisations — cliquez sur Enregistrer.`,
+        });
+      } else if (data.engine === "error") {
+        const code = data.warning ?? "inconnu";
+        setAiBatchMsg({
+          kind: "warn",
+          text: `Clé OpenAI indisponible (${code}) : gabarits SEO appliqués aux ${data.copies.length} réalisations.`,
+        });
+      } else {
+        setAiBatchMsg({
+          kind: "ok",
+          text: `Gabarits SEO bilingues appliqués aux ${data.copies.length} réalisations — cliquez sur Enregistrer.`,
+        });
+      }
+    } catch {
+      setAiBatchMsg({ kind: "err", text: "Requête en lot impossible." });
+    } finally {
+      setAiBatchBusy(false);
     }
   };
   const setFaq = (i: number, patch: Partial<Faq>) =>
@@ -1128,6 +1203,65 @@ export function ContentEditor({
       {/* ---------- DÉMOS ---------- */}
       {tab === "demos" && (
         <div className="space-y-4">
+          <div className="rounded-3xl border border-sky-400/25 bg-sky-400/5 p-5">
+            <div className="flex flex-wrap items-center justify-between gap-4">
+              <div>
+                <div className="flex items-center gap-2.5">
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-sky-400/15 border border-sky-400/30 px-3 py-1 text-xs font-black text-sky-200">
+                    <Sparkles className="h-3.5 w-3.5" />
+                    Score SEO &amp; IA : {seoAudit.score}/100
+                  </span>
+                  <span className="text-xs font-semibold text-zinc-400">
+                    {seoAudit.summary.demosWithCompleteSeo}/{seoAudit.summary.totalDemos} réalisations avec 6/6 champs SEO bilingues
+                  </span>
+                </div>
+                <p className="mt-1.5 text-xs text-zinc-400 leading-5">
+                  Chaque enregistrement met à jour automatiquement les schémas JSON-LD, le{" "}
+                  <a href="/sitemap.xml" target="_blank" rel="noopener noreferrer" className="text-sky-300 underline">
+                    sitemap.xml
+                  </a>
+                  , les flux IA{" "}
+                  <a href="/llms.txt" target="_blank" rel="noopener noreferrer" className="text-sky-300 underline">
+                    /llms.txt
+                  </a>{" "}
+                  et{" "}
+                  <a href="/llms-full.txt" target="_blank" rel="noopener noreferrer" className="text-sky-300 underline">
+                    /llms-full.txt
+                  </a>
+                  , et notifie IndexNow.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={generateAllSeo}
+                disabled={aiBatchBusy}
+                className="h-10 px-4 rounded-2xl border border-sky-400/40 bg-sky-400/15 text-xs font-black text-sky-100 hover:bg-sky-400/25 disabled:opacity-60 inline-flex items-center gap-2 transition-colors cursor-pointer"
+              >
+                {aiBatchBusy ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Sparkles className="h-4 w-4" />
+                )}
+                {aiBatchBusy
+                  ? "Génération en lot…"
+                  : `Générer tout le SEO avec l'IA (${draft.demos.length})`}
+              </button>
+            </div>
+            {aiBatchMsg && (
+              <p
+                className={`mt-3 text-xs font-semibold ${
+                  aiBatchMsg.kind === "ok"
+                    ? "text-emerald-300"
+                    : aiBatchMsg.kind === "warn"
+                      ? "text-amber-300"
+                      : "text-red-300"
+                }`}
+              >
+                {aiBatchMsg.text}
+              </p>
+            )}
+          </div>
+
           <datalist id="sector-ids">
             {sectorOptions.map((s) => (
               <option key={s.id} value={s.id}>

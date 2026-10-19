@@ -1,6 +1,12 @@
 import type { Metadata } from "next";
 import { getSiteDataCached } from "@/lib/store";
-import { DEFAULT_META_DESCRIPTION, pageMetadata } from "@/lib/seo";
+import {
+  DEFAULT_META_DESCRIPTION,
+  faqJsonLd,
+  howToJsonLd,
+  pageMetadata,
+} from "@/lib/seo";
+import { JsonLd } from "@/components/json-ld";
 import { ServicesRibbon } from "@/components/sections/services-ribbon";
 import { Hero } from "@/components/sections/hero";
 import { WhyUs } from "@/components/sections/why-us";
@@ -29,9 +35,16 @@ export async function generateMetadata(): Promise<Metadata> {
   });
 }
 
-export default function Home() {
+export default async function Home() {
+  const { config, content } = await getSiteDataCached();
   return (
     <>
+      <JsonLd
+        data={[
+          faqJsonLd(content.faqs),
+          howToJsonLd(config, content.process),
+        ]}
+      />
       <Hero />
       <ServicesRibbon />
       <WhyUs />

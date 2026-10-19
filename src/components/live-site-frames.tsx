@@ -136,21 +136,24 @@ export function ScaledLiveIframe({
  */
 export function FullscreenLiveViewer({
   demo,
+  allDemos = [],
   initialMode = "desktop",
   onClose,
   backHref,
   standalone = false,
 }: {
   demo: Demo;
+  allDemos?: Demo[];
   initialMode?: "desktop" | "mobile";
   onClose?: () => void;
   backHref?: string;
   /**
    * Page dédiée (/demos/[slug]) : le viewer est alors le contenu principal.
-   * On émet un bloc sémantique (h1 + description) rendu côté serveur, donc
-   * présent dans le HTML initial — sinon la page serait vide pour les
-   * crawlers (le portail ne se monte qu'après hydratation). En usage modale
-   * (page d'accueil), on reste sans h1 pour ne pas doubler celui du hero.
+   * On émet un bloc sémantique complet (h1, description bilingue, h2
+   * fonctionnalités, prix/catégorie et maillage interne vers les projets
+   * liés) rendu côté serveur, donc présent dans le HTML initial pour
+   * Googlebot et les crawlers IA. En usage modale (page d'accueil), on
+   * reste sans h1 pour ne pas doubler celui du hero.
    */
   standalone?: boolean;
 }) {
@@ -428,13 +431,85 @@ export function FullscreenLiveViewer({
     </div>
   );
 
+  const relatedDemos = allDemos
+    .filter((d) => d.slug !== demo.slug)
+    .sort((a, b) => {
+      const aScore =
+        (a.sector === demo.sector ? 2 : 0) + (a.planId === demo.planId ? 1 : 0);
+      const bScore =
+        (b.sector === demo.sector ? 2 : 0) + (b.planId === demo.planId ? 1 : 0);
+      return bScore - aScore;
+    })
+    .slice(0, 4);
+
   return (
     <>
       {standalone && (
-        <section className="sr-only" aria-label={title}>
+        <article className="sr-only" aria-label={title}>
           <h1>{title}</h1>
-          <p>{locale === "ar" ? demo.description : demo.descriptionEn}</p>
-        </section>
+          <p>{demo.description}</p>
+          <p lang="en" dir="ltr">
+            {demo.titleEn} — {demo.descriptionEn}
+          </p>
+
+          <section>
+            <h2>القطاع والباقة — Sector &amp; Package</h2>
+            <p>
+              {demo.sectorAr} ({demo.sectorEn})
+              {classification
+                ? ` — الفئة ${classification.tier}: ${classification.name} (${classification.nameEn})${
+                    classification.priceUsd != null
+                      ? ` · $${formatUsd(classification.priceUsd)} USD (≈ ${formatLyd(classification.priceLyd)} LYD)`
+                      : ""
+                  }`
+                : ""}
+            </p>
+          </section>
+
+          {(demo.features.length > 0 || demo.featuresEn.length > 0) && (
+            <section>
+              <h2>المميزات الرئيسية — Key Features</h2>
+              <ul>
+                {demo.features.map((feat, idx) => (
+                  <li key={feat}>
+                    {feat}
+                    {demo.featuresEn[idx] ? ` — ${demo.featuresEn[idx]}` : ""}
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
+
+          {isRealUrl(demo.previewUrl) && (
+            <p>
+              <a href={demo.previewUrl} rel="noopener noreferrer">
+                معاينة الموقع الحي — Live Preview: {demo.titleEn}
+              </a>
+            </p>
+          )}
+
+          <nav aria-label="مشاريع مشابهة وروابط داخلية — Related portfolio projects">
+            <h2>معارض أعمال أخرى — Related Showcases</h2>
+            <ul>
+              {relatedDemos.map((item) => (
+                <li key={item.slug}>
+                  <Link href={`/demos/${item.slug}`}>
+                    {item.title} — {item.titleEn} ({item.sectorAr})
+                  </Link>
+                </li>
+              ))}
+              <li>
+                <Link href="/demos">كل المعارض الحية — All Live Demos</Link>
+              </li>
+              <li>
+                <Link href="/pricing">الباقات والأسعار — Pricing Plans</Link>
+              </li>
+              <li>
+                <Link href="/contact">تواصل معنا — Contact Nukhba</Link>
+              </li>
+            </ul>
+          </nav>
+        </article>
       )}
       {mounted && createPortal(content, document.body)}
     </>

@@ -1,23 +1,13 @@
 #!/usr/bin/env node
 /**
- * Tests légers de l'assistant SEO IA — `node:test`, aucune dépendance de test.
+ * Tests légers des automatisations SEO & GEO (Référencement IA) — `node:test`.
  *
  *   npm run test:seo
  *   (ou) node scripts/seo-generator.test.mjs
  *
- * Le module TypeScript `src/lib/ai/seo-generator.ts` est d'abord compilé à la
- * volée avec esbuild (déjà présent : dépendance de drizzle-kit/Next), alias
- * `@/` résolu comme dans tsconfig, puis importé. Aucun accès réseau réel :
- * `fetch` et `process.env.OPENAI_API_KEY` sont simulés pour chaque cas.
- *
- * Couverture :
- *   1. clé absente                → engine "template" + warning "missing_key" ;
- *   2. clé présente + HTTP 401    → engine "error"    + warning "http_401" ;
- *   3. endpoint OK                → engine "llm", valeurs appliquées ;
- *   4. valeurs trop longues       → troncature 60 / 160 / 125 ;
- *   5. timeout / réponses cassées → codes "timeout", "invalid_json",
- *      "empty_response" ;
- *   6. aucun secret ni corps brut ne fuit dans le résultat.
+ * Les modules TypeScript sont compilés à la volée avec esbuild (déjà présent :
+ * dépendance de drizzle-kit/Next), alias `@/` résolu comme dans tsconfig.
+ * Aucun accès réseau réel : `fetch` et `process.env.OPENAI_API_KEY` sont simulés.
  */
 import { test } from "node:test";
 import assert from "node:assert/strict";
@@ -30,7 +20,6 @@ import { build } from "esbuild";
 const root = fileURLToPath(new URL("..", import.meta.url));
 const srcRoot = join(root, "src");
 const outDir = mkdtempSync(join(tmpdir(), "seo-generator-"));
-const outFile = join(outDir, "seo-generator.mjs");
 
 /** Résout l'alias TypeScript `@/…` → `src/…` comme Next/tsconfig. */
 const aliasPlugin = {
@@ -54,20 +43,57 @@ const aliasPlugin = {
   },
 };
 
-await build({
-  entryPoints: [join(srcRoot, "lib/ai/seo-generator.ts")],
-  outfile: outFile,
-  bundle: true,
-  format: "esm",
-  platform: "node",
-  target: "node22",
-  plugins: [aliasPlugin],
-  logLevel: "silent",
-});
+async function compileModule(relPath, outName) {
+  const outfile = join(outDir, outName);
+  await build({
+    entryPoints: [join(srcRoot, relPath)],
+    outfile,
+    bundle: true,
+    format: "esm",
+    platform: "node",
+    target: "node22",
+    plugins: [aliasPlugin],
+    logLevel: "silent",
+  });
+  return import(pathToFileURL(outfile).href);
+}
 
-const { generateSeoCopy, templateSeoCopy, LIMITS } = await import(
-  pathToFileURL(outFile).href
+const {
+  generateSeoCopy,
+  generateSeoCopyBatch,
+  ensureDemoSeoFields,
+  templateSeoCopy,
+  LIMITS,
+} = await compileModule("lib/ai/seo-generator.ts", "seo-generator.mjs");
+
+const { buildLlmsTxt, buildLlmsFullTxt } = await compileModule(
+  "lib/llms-txt.ts",
+  "llms-txt.mjs",
 );
+
+const { runSeoAudit } = await compileModule(
+  "lib/seo-audit.ts",
+  "seo-audit.mjs",
+);
+
+const {
+  localBusinessJsonLd,
+  offerCatalogJsonLd,
+  howToJsonLd,
+  demoJsonLd,
+} = await compileModule("lib/seo.ts", "seo.mjs");
+
+const { siteConfig } = await compileModule("lib/config.ts", "config.mjs");
+const {
+  demos: defaultDemos,
+  faqs: defaultFaqs,
+  testimonials: defaultTestimonials,
+  heroContent: defaultHero,
+  servicesRibbonContent: defaultRibbon,
+  defaultWhyUs,
+  defaultProcess,
+  defaultSectionHeadings,
+} = await compileModule("lib/content.ts", "content.mjs");
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 const DEMO = {
@@ -224,4 +250,92 @@ test("objet JSON sans aucun champ exploitable → warning empty_response", async
   const result = await generateSeoCopy(DEMO);
   assert.equal(result.engine, "error");
   assert.equal(result.warning, "empty_response");
+});
+
+// ── 6. Auto-complétion & Batch SEO ────────────────────────────────────────
+test("ensureDemoSeoFields complète les champs vides sans écraser les champs personnalisés", () => {
+  const custom = ensureDemoSeoFields({
+    ...DEMO,
+    metaTitle: "Titre personnalisé AR",
+    metaDescription: "",
+  });
+  assert.equal(custom.metaTitle, "Titre personnalisé AR");
+  assert.ok(custom.metaDescription.length > 10);
+  assert.ok(custom.metaTitleEn.length > 5);
+  assert.ok(custom.imageAltAr.length > 5);
+  assert.ok(custom.imageAltEn.length > 5);
+});
+
+test("generateSeoCopyBatch traite plusieurs démos en un appel", async () => {
+  useKey(undefined);
+  const batch = await generateSeoCopyBatch([DEMO, { ...DEMO, titleEn: "Second Project" }]);
+  assert.equal(batch.engine, "template");
+  assert.equal(batch.items.length, 2);
+  assert.ok(batch.items[1].copy.metaTitleEn.includes("Second Project"));
+});
+
+// ── 7. Flux IA dynamiques /llms.txt et /llms-full.txt ─────────────────────
+test("buildLlmsTxt et buildLlmsFullTxt synchronisent dynamiquement toutes les réalisations et tarifs", () => {
+  const content = {
+    demos: defaultDemos.map((d) => ensureDemoSeoFields(d)),
+    faqs: defaultFaqs,
+    testimonials: defaultTestimonials,
+    hero: defaultHero,
+    ribbon: defaultRibbon,
+    whyUs: defaultWhyUs,
+    process: defaultProcess,
+    headings: defaultSectionHeadings,
+  };
+  const llms = buildLlmsTxt({ config: siteConfig, content });
+  const llmsFull = buildLlmsFullTxt({ config: siteConfig, content });
+
+  assert.ok(llms.includes("/llms-full.txt"));
+  for (const demo of defaultDemos) {
+    assert.ok(llms.includes(`/demos/${demo.slug}`), `llms.txt doit contenir /demos/${demo.slug}`);
+    assert.ok(
+      llmsFull.includes(`/demos/${demo.slug}`),
+      `llms-full.txt doit contenir /demos/${demo.slug}`,
+    );
+  }
+  for (const srv of siteConfig.standaloneServices) {
+    assert.ok(llms.includes(srv.titleEn));
+    assert.ok(llmsFull.includes(srv.titleAr));
+  }
+});
+
+// ── 8. Schémas JSON-LD enrichis & Moteur d'audit SEO/GEO ──────────────────
+test("schémas JSON-LD incluent geo, review, services à la carte, HowTo et Offer par démo", () => {
+  const lb = localBusinessJsonLd(siteConfig, defaultTestimonials);
+  assert.equal(lb.geo["@type"], "GeoCoordinates");
+  assert.equal(lb.review.length, defaultTestimonials.length);
+
+  const catalog = offerCatalogJsonLd(siteConfig);
+  const expectedCount =
+    siteConfig.pricing.plans.length + siteConfig.standaloneServices.length;
+  assert.equal(catalog.itemListElement.length, expectedCount);
+
+  const howTo = howToJsonLd(siteConfig, defaultProcess);
+  assert.equal(howTo["@type"], "HowTo");
+  assert.equal(howTo.step.length, defaultProcess.length);
+
+  const work = demoJsonLd(siteConfig, defaultDemos[0]);
+  assert.equal(work["@type"], "CreativeWork");
+  assert.equal(work.offers["@type"], "Offer");
+  assert.ok(Number(work.offers.price) > 0);
+});
+
+test("runSeoAudit calcule un score 100/100 quand les réalisations sont auto-complétées", () => {
+  const report = runSeoAudit(
+    {
+      demos: defaultDemos.map((d) => ensureDemoSeoFields(d)),
+      faqs: defaultFaqs,
+      testimonials: defaultTestimonials,
+      process: defaultProcess,
+    },
+    siteConfig,
+    { openAiConfigured: false, indexNowConfigured: true },
+  );
+  assert.equal(report.score, 100);
+  assert.equal(report.summary.error, 0);
+  assert.equal(report.summary.demosWithCompleteSeo, defaultDemos.length);
 });

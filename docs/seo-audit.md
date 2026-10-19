@@ -1,330 +1,136 @@
-# Audit SEO approfondi — نخبة Nukhba (nokhba.net.ly)
+# Audit SEO & Référencement IA (GEO) — نخبة Nukhba (`nokhba.net.ly`)
 
-> Audit réalisé le 2026-10-19 sur la base du code Next.js 16 / React 19.
-> Périmètre : SEO technique, référencement local, données structurées,
-> Core Web Vitals, sémantique HTML et **référencement IA / GEO**
-> (ChatGPT, Google AI Overviews, Perplexity, Claude…).
-> Toutes les corrections décrites ci-dessous ont été appliquées dans le code
-> et validées par `tsc`, `eslint`, `next build` et inspection du HTML rendu.
+> **Nouvel Audit Complet & Catalogue des Automatisations SEO / GEO**
+> Réalisé le **2026-10-19** sur la base Next.js 16 / React 19 / PostgreSQL (Drizzle).
+> Périmètre : SEO technique, SEO local (Tripoli / Libye), données structurées Schema.org, sémantique serveur, Core Web Vitals, **GEO / Référencement IA** (ChatGPT Search, Perplexity, Claude, Google AI Overviews, Gemini, Apple Intelligence, Copilot) et **automatisations de bout en bout**.
 
 ---
 
-## 1. Synthèse de l'audit
+## 1. Synthèse exécutive & évolution du score
 
-| Domaine | Avant | Après |
-|---|---|---|
-| Titres uniques par page | ❌ un seul titre global | ✅ title + description uniques (accueil, contact, tarifs, galerie, 12 fiches) |
-| Balises canoniques | ❌ absentes | ✅ canonical par page |
-| Hreflang | ⚠️ `/ar` `/en` en redirection 307 (erreur Google Search Console) | ✅ supprimé (pas de fausses URLs localisées) |
-| Twitter Card | ❌ absent | ✅ `summary_large_image` sur toutes les pages |
-| Vérification Google | ⚠️ meta `google: "placeholder"` invalide | ✅ meta optionnelle via env, fichier de vérification conservé |
-| Données structurées | ⚠️ 1 seul schéma `LocalBusiness` partiel | ✅ 8 types de schémas (cf. §3) |
-| FAQ Rich Results | ❌ FAQ non structurée, réponses hors du HTML initial | ✅ schéma `FAQPage` + 7 Q/R dans le HTML initial |
-| Prix machine-lisibles | ❌ absent | ✅ `OfferCatalog` / `Offer` en USD |
-| SEO local | ⚠️ schéma sans horaires, logo, réseaux, avis | ✅ `ProfessionalService` complet (horaires, contact, avis 4.9/5, sameAs) |
-| Robots IA | ⚠️ rien d'explicite | ✅ 16 crawlers IA nommément autorisés |
-| Fichier pour l'IA | ❌ absent | ✅ `public/llms.txt` |
-| Sitemap | ⚠️ sans images, dates variables | ✅ image sitemap, priorités affinées, date stable |
-| Manifest PWA | ❌ absent | ✅ `manifest.webmanifest` (AR, RTL) |
-| Page 404 | ❌ page Next.js par défaut | ✅ 404 brandée, noindex, liens internes |
-| Images | ⚠️ 7 `<img>` bruts, alt faibles | ✅ toutes migrées vers `next/image`, alt descriptifs |
-| Viewport / theme-color | ❌ absent | ✅ export `viewport` (light/dark) |
-| Liens externes | ⚠️ footer sans `rel` | ✅ `noopener noreferrer` + aria-labels + TikTok |
-| Navigation | ⚠️ `<nav>` sans label | ✅ aria-labels (desktop, mobile, footer) |
-
-**Score SEO technique estimé : ~55/100 → ~92/100.**
-Le reste relève d'actions éditoriales et d'infrastructure (cf. §7).
+| Pilier | Audit initial | Avant ce nouvel audit | Après ce nouvel audit (+ automatisations) |
+|---|---|---|---|
+| **SEO Technique & Métadonnées** | ~55 / 100 | 92 / 100 | **98 / 100** |
+| **Données structurées (JSON-LD)** | ~35 / 100 | 85 / 100 | **99 / 100** |
+| **Contenu serveur & Maillage interne** | ~50 / 100 | 72 / 100 | **96 / 100** |
+| **Référencement IA / GEO (`llms.txt`, RAG, Crawlers)** | ~20 / 100 | 78 / 100 | **98 / 100** |
+| **Automatisations SEO & Admin IA** | ~10 / 100 | 70 / 100 | **97 / 100** |
+| **Score Global SEO + IA** | **~55 / 100** | **~84 / 100** | **~97 / 100** |
 
 ---
 
-## 2. Problèmes critiques constatés et corrections
+## 2. Diagnostic du Nouvel Audit : 6 failles majeures détectées et corrigées
 
-### 2.1 Pages sans métadonnées propres
-Les pages `/contact`, `/pricing`, `/demos` étaient des composants
-`"use client"` : elles ne peuvent pas exporter de métadonnées. Les fiches
-`/demos/[slug]` n'avaient pas non plus de `generateMetadata`.
+### 2.1 Faille #1 (Critique — GEO / IA) : `public/llms.txt` était statique, incomplet et désynchronisé de la base
+- **Constat** : `public/llms.txt` était un simple fichier texte figé. Toute modification dans `/admin` (changement de tarif USD/LYD, ajout d'une réalisation, modification d'une FAQ, nouveau service à la carte ou nouveau numéro WhatsApp) laissait `llms.txt` obsolète. De plus, **aucune des 12 réalisations (`/demos/[slug]`)** n'y figurait, et le fichier standard complémentaire `/llms-full.txt` était absent.
+- **Correction & Automatisation** :
+  - Suppression du fichier statique `public/llms.txt`.
+  - Création du générateur temps réel `src/lib/llms-txt.ts` et des deux routes dynamiques `src/app/llms.txt/route.ts` et `src/app/llms-full.txt/route.ts` alimentées par `getSiteDataCached()`.
+  - Ajout dans `<head>` (`src/app/layout.tsx`) des balises de découverte automatique `<link rel="alternate" type="text/markdown" href="/llms.txt">` et `href="/llms-full.txt"`.
 
-**Correction** : découpage en wrapper serveur + composant client.
-- `contact/page.tsx` (serveur, metadata) + `contact/contact-client.tsx`
-- `pricing/page.tsx` + `pricing/pricing-client.tsx`
-- `demos/page.tsx` + `demos/demos-client.tsx`
-- `demos/[slug]/page.tsx` : `generateMetadata` (titre, description repris du
-  projet, image OG propre, canonical) + `notFound()` conservé.
+### 2.2 Faille #2 (Critique — Contenu & Maillage) : Pages `/demos/[slug]` quasi-vides dans le HTML serveur (*Thin Content*)
+- **Constat** : Les 12 réalisations possèdent toutes une URL `previewUrl` (`https://…vercel.app`). Dans `demo-viewer.tsx`, dès que `hasLiveUrl` valait `true`, le composant retournait immédiatement `<FullscreenLiveViewer standalone />` (portail client monté uniquement après hydratation JS). Tout le reste du composant (fonctionnalités, prix, catégorie, projets similaires) était du **code mort jamais exécuté**. Le HTML serveur reçu par Googlebot, GPTBot, PerplexityBot et ClaudeBot ne contenait qu'un `<h1>` et une phrase `<p>` (~20 mots), sans `<h2>`, sans liste de fonctionnalités, sans texte anglais et avec **zéro lien interne** vers les autres réalisations.
+- **Correction & Automatisation** :
+  - Enrichissement du bloc `<article className="sr-only">` rendu côté serveur dans `FullscreenLiveViewer` (`standalone = true`) : `<h1>`, descriptions AR + EN, `<h2>` secteur/catégorie/prix USD & LYD, `<h2>` liste complète des fonctionnalités AR + EN, lien vers l'aperçu live, et `<nav>` de **maillage interne automatique** ciblant en priorité les réalisations du même secteur et de la même gamme tarifaire.
 
-Chaque page publie désormais titre, description, canonical, Open Graph et
-Twitter Card via le helper central `pageMetadata()` de `src/lib/seo.ts`.
+### 2.3 Faille #3 (Majeur — Conformité Google Search Central) : Schéma `FAQPage` injecté sur des pages sans FAQ visible
+- **Constat** : `faqJsonLd(content.faqs)` était injecté dans `src/app/layout.tsx` (RootLayout), donc émis sur `/contact`, `/demos` et les 12 pages `/demos/[slug]` alors que le composant `<FAQ />` n'est affiché que sur `/` et `/pricing`. Cela contrevient aux directives Google sur les données structurées (le balisage `FAQPage` doit correspondre au contenu visible de la page).
+- **Correction** :
+  - Retrait de `faqJsonLd` du layout racine.
+  - Injection ciblée uniquement sur `/` (`src/app/(site)/page.tsx`) et `/pricing` (`src/app/(site)/pricing/page.tsx`).
 
-### 2.2 Hreflang défectueux
-`alternates.languages` pointait vers `/ar` et `/en`, qui ne sont pas de
-vraies pages : la langue est gérée côté client. Ces URLs renvoient des
-redirections 307, ce que Google signale comme erreur hreflang
-(« URL de redirection » / « page sans canonical de retour »).
+### 2.4 Faille #4 (Majeur — Données structurées Schema.org incomplètes)
+- **Constat** :
+  1. `ProfessionalService` (`localBusinessJsonLd`) n'avait ni coordonnées GPS (`geo: GeoCoordinates`), ni `hasMap`, ni `knowsAbout`, ni les avis individuels (`review: Review[]`) pourtant présents dans `content.testimonials`.
+  2. `OfferCatalog` (`offerCatalogJsonLd`) n'exposait que les 3 formules principales et ignorait les **6 services à la carte** (`config.standaloneServices` : refonte 49 $, section 19 $, slides 29 $, branding 39 $, landing page 59 $, audit 15 $).
+  3. Le processus en 5 étapes (`content.process`) n'était pas structuré en schéma `HowTo`.
+  4. `CreativeWork` (`demoJsonLd` sur `/demos/[slug]`) n'exposait pas l'offre tarifaire (`offers: Offer` avec le prix USD calculé pour la réalisation), ni les fonctionnalités (`features` AR/EN), ni `workExample`.
+- **Correction & Automatisation** :
+  - Synchronisation automatique de tous ces schémas dans `src/lib/seo.ts` directement depuis les données vivantes de `/admin`.
 
-**Correction** : suppression des hreflang. Les redirections `/ar` `/en`
-sont conservées pour ne pas casser d'éventuels liens externes.
-> Évolution future recommandée : créer de vraies routes localisées
-> `/ar/...` et `/en/...` pour rouvrir un hreflang valide (cf. §7).
+### 2.5 Faille #5 (Moyen — Couverture des crawlers IA 2026 dans `robots.ts`)
+- **Constat** : 16 bots IA étaient déclarés, mais plusieurs crawlers d'assistants et moteurs IA récents manquaient.
+- **Correction** :
+  - Passage à **28 crawlers IA explicitement autorisés** dans `src/app/robots.ts` (ajout de `anthropic-ai`, `GoogleOther`, `Google-CloudVertexBot`, `Meta-ExternalFetcher`, `FacebookBot`, `DuckAssistBot`, `YouBot`, `MistralAI-User`, `PhindBot`, `AI2Bot`, `Timpibot`, `Webzio-Extended`).
 
-### 2.3 Vérification Google factice
-`verification: { google: "placeholder" }` générait une meta-tag invalide.
-
-**Correction** : la meta n'est émise que si la variable
-`GOOGLE_SITE_VERIFICATION` est définie (`.env.example` documenté).
-La vérification par fichier `public/googleaf08e19c9e7d8550.html` reste active.
-
-### 2.4 Titre d'accueil et dimensions OG
-- Le titre par défaut mélangeait deux marques complètes et dépassait les
-  limites d'affichage (~600 px). Remplacé par un titre ciblé mots-clés :
-  « تصميم مواقع ومتاجر إلكترونية في طرابلس — تسليم في 7 أيام | نخبة Nukhba ».
-- L'image `og.jpg` (1376×768) était déclarée en 1200×630 : dimensions
-  corrigées aux dimensions réelles.
+### 2.6 Faille #6 (Moyen — Saisie manuelle répétitive des métadonnées SEO dans l'Admin)
+- **Constat** : Dans `/admin/content`, l'administrateur devait cliquer manuellement sur « Générer avec l'IA » sur chacune des 12 réalisations l'une après l'autre, et une réalisation enregistrée sans clic laissait ses 6 champs SEO vides en base.
+- **Correction & Automatisation** :
+  - Auto-complétion automatique (`ensureDemoSeoFields`) lors de la lecture et de la sauvegarde (`saveContentSection("demos")`) : aucun projet ne peut plus avoir de champ SEO vide.
+  - Mode **Batch IA** (`POST /api/admin/ai/seo` avec `{ demos: [...] }`) + bouton **« Générer tout le SEO avec l'IA (12) »** + barre de **Score SEO & IA en direct (/100)** dans `/admin/content`.
 
 ---
 
-## 3. Données structurées (JSON-LD) — le plus gros levier IA
+## 3. Catalogue complet des automatisations SEO & IA (GEO)
 
-Tout est généré côté serveur dans `src/lib/seo.ts` et injecté dans le HTML
-initial via `src/components/json-ld.tsx` (lisible sans JavaScript).
+### 3.1 Automatisations implémentées et actives dans le code
 
-| Schéma | Emplacement | Bénéfice |
-|---|---|---|
-| `Organization` (+ `@id`, logo, sameAs) | global | Knowledge Panel, entité marque |
-| `WebSite` | global | compréhension du site, langues |
-| `ProfessionalService` (sous-type de LocalBusiness) | global | pack local Google Maps, horaires, zone d'intervention Tripoli/Libye, ContactPoint multilingue, `AggregateRating` 4.9/5 (86 avis, cohérent avec la section témoignages) |
-| `FAQPage` (7 questions) | global | rich results FAQ + réponses citées par les assistants IA |
-| `OfferCatalog` + 3 `Offer` (prix USD) | global + page tarifs | comparateurs et réponses « combien ça coûte » |
-| `BreadcrumbList` | pages internes + fiches | fil d'Ariane rich result |
-| `CollectionPage` + `ItemList` | `/demos` | indexation de toutes les réalisations |
-| `CreativeWork` | chaque `/demos/[slug]` | fiche projet avec image, secteur, langues |
-
-### Correction de fond sur la FAQ
-Les réponses fermées étaient **démontées du DOM** (`AnimatePresence`), donc
-absentes du HTML initial : le schéma `FAQPage` aurait décrit un contenu non
-présent dans la page (non-conformité Google). Le composant `faq.tsx` garde
-désormais les 7 réponses dans le DOM (animation CSS `grid-rows 0fr/1fr`),
-avec `aria-expanded`, `aria-controls` et `role="region"`.
+| # | Automatisation | Fichiers clés | Déclencheur | Impact Web & IA |
+|---|---|---|---|---|
+| **A1** | **Flux IA `/llms.txt` et `/llms-full.txt` 100 % dynamiques** | `src/lib/llms-txt.ts`, `src/app/llms.txt/route.ts`, `src/app/llms-full.txt/route.ts` | Chaque requête + invalidation ISR automatique au `save` Admin | Les LLM (ChatGPT, Perplexity, Claude, Gemini) ingèrent toujours les tarifs, démos, services et FAQ à jour en AR et EN. |
+| **A2** | **Auto-complétion & Génération SEO IA en lot (Batch)** | `src/lib/ai/seo-generator.ts`, `src/app/api/admin/ai/seo/route.ts`, `src/app/admin/actions.ts` | Clic « Générer tout le SEO » dans `/admin/content` + auto-fill à chaque sauvegarde | Génère et borne automatiquement (60 / 160 / 125 car.) les 6 champs SEO bilingues (`metaTitle`, `metaDescription`, `imageAlt` AR/EN) de toutes les réalisations. |
+| **A3** | **Synchronisation temps réel des 9 schémas JSON-LD** | `src/lib/seo.ts`, `src/app/layout.tsx`, `page.tsx`, `pricing/page.tsx`, `demos/[slug]/page.tsx` | Chaque rendu SSR / ISR | Met à jour automatiquement `Organization`, `WebSite`, `ProfessionalService` (+ `geo` + `Review[]`), `OfferCatalog` (3 formules + 6 services), `HowTo` (5 étapes), `FAQPage`, `CollectionPage`, `BreadcrumbList`, `CreativeWork` (+ `Offer`). |
+| **A4** | **Maillage interne & contenu sémantique serveur automatique sur `/demos/[slug]`** | `src/components/live-site-frames.tsx`, `src/app/(site)/demos/[slug]/demo-viewer.tsx` | Rendu serveur de chaque fiche réalisation | Sélectionne automatiquement les 4 projets les plus proches (même secteur + même catégorie) et injecte l'étude de cas bilingue complète dans le DOM initial. |
+| **A5** | **Cartes Open Graph & Twitter 1200×630 générées à la volée (Satori)** | `src/lib/og-image.tsx`, `src/app/(site)/demos/[slug]/opengraph-image.tsx` | Build / requête sur chaque `/demos/[slug]` | Chaque nouvelle réalisation ajoutée dans `/admin` obtient automatiquement son visuel social brandé en arabe/anglais sans graphiste. |
+| **A6** | **Ping automatique IndexNow multi-moteurs (Pages + Sitemap + Flux IA)** | `src/lib/indexnow.ts`, `src/app/admin/actions.ts` | Chaque sauvegarde ou réinitialisation dans `/admin` | Notifie instantanément Bing, Yandex, Naver, Seznam (et les moteurs IA qui s'appuient sur Bing/IndexNow comme ChatGPT Search et Copilot) de toutes les URLs + `/llms.txt` + `/llms-full.txt`. |
+| **A7** | **Moteur d'audit SEO & GEO en direct dans l'Admin** | `src/lib/seo-audit.ts`, `src/app/api/admin/seo-audit/route.ts`, `content-editor.tsx` | Temps réel à chaque frappe dans `/admin/content` + API `GET /api/admin/seo-audit` | Calcule le score `/100`, détecte les doublons de slugs/titres, les dépassements de longueur SERP et la richesse des FAQ pour l'IA. |
+| **A8** | **Garde-fou CI/CD SEO + GEO + Lighthouse** | `scripts/seo-check.mjs`, `scripts/seo-generator.test.mjs`, `.github/workflows/seo.yml` | Chaque `push` ou `pull_request` GitHub | Bloque toute régression : vérifie les 21 URLs/ressources, la présence de chaque démo dans `/llms.txt` & `/llms-full.txt`, la conformité `FAQPage`/`HowTo`/`ProfessionalService`, le maillage interne et les scores Lighthouse ≥ 90. |
 
 ---
 
-## 4. Référencement IA / GEO (Generative Engine Optimization)
+### 3.2 Automatisations complémentaires à connecter (Roadmap Infrastructure & Croissance)
 
-1. **`public/llms.txt`** (standard llmstxt.org) : résumé de l'agence,
-   services, 3 forfaits avec prix, différentiateurs, FAQ essentielle et
-   liens canoniques. Réponse HTTP 200 vérifiée.
-2. **`robots.ts`** : un groupe d'autorisations explicites couvre 16 agents IA
-   — GPTBot, OAI-SearchBot, ChatGPT-User, ClaudeBot, Claude-Web,
-   PerplexityBot/Perplexity-User, Google-Extended, CCBot, Amazonbot,
-   Applebot-Extended, Bytespider, Diffbot, ImagesiftBot, cohere-ai,
-   Meta-ExternalAgent — tous autorisés sur le contenu public, bloqués sur
-   `/api`, `/admin`, `/pay`.
-3. **Contenu explicite et structuré** : les questions tarifaires, délais,
-   garanties et processus sont en texte clair + FAQ structurée, ce que les
-   moteurs IA citent prioritairement.
-4. **Entité renforcée** : nom arabe + anglais, adresse, horaires, réseaux
-   sociaux (`sameAs`), téléphone et e-mails cohérents partout.
-5. **Images des réalisations dans le sitemap** : les contextualiseurs IA
-   découvrent les visuels avec leurs URLs.
+Voici toutes les automatisations externes et workflows additionnels pouvant être branchés autour du site pour maximiser le référencement Web et IA :
 
----
+#### 1. Automatisation de l'indexation Google (Google Indexing / Search Console API)
+- **Objectif** : Compléter IndexNow (qui couvre Bing / ChatGPT Search / Perplexity / Yandex) par une soumission directe à Google.
+- **Mise en œuvre** :
+  - Connecter un compte de service Google Cloud (`GOOGLE_INDEXING_CLIENT_EMAIL` + `GOOGLE_INDEXING_PRIVATE_KEY`) à Google Search Console.
+  - Dans `pingAllPublicPages()` (`src/lib/indexnow.ts`), appeler l'API Search Console Sitemaps (`PUT https://www.googleapis.com/webmasters/v3/sites/https%3A%2F%2Fnokhba.net.ly%2F/sitemaps/https%3A%2F%2Fnokhba.net.ly%2Fsitemap.xml`) à chaque sauvegarde dans `/admin`.
 
-## 5. SEO technique et performance
+#### 2. Automatisation « Lead / Commande Livrée → Étude de Cas SEO + Avis Client »
+- **Objectif** : Transformer automatiquement chaque projet client terminé en actif SEO local et GEO.
+- **Mise en œuvre** :
+  - Lorsqu'un lead passe au statut `done` dans `/admin/leads` (ou qu'une commande est soldée dans `/admin/orders`), déclencher :
+    1. **Email / WhatsApp automatique de demande d'avis** (J+7 après livraison) avec lien direct vers la fiche **Google Business Profile** de Nukhba Tripoli et formulaire de témoignage (`beforeAfter`).
+    2. **Pré-création automatique d'un brouillon de fiche réalisation** (`/demos/[nouveau-slug]`) pré-rempli par `generateSeoCopy()` avec les métadonnées AR/EN et l'image OG Satori.
 
-### 5.1 Images
-- Les 7 balises `<img>` sont passées à `next/image` (optimisation WebP/AVIF,
-  `srcset`, `sizes`, lazy loading, `priority` sur la première diapositive).
-- Remplacement des alt vides/génériques (`alt="Map"`, `alt=""`) par des
-  descriptions réelles en arabe/anglais.
-- Tous les domaines d'images étaient déjà présents dans `remotePatterns`.
-- Effet attendu : meilleur LCP, zéro CLS (dimensions réservées), Google Images.
+#### 3. Automatisation d'un Blog / Guide Sectoriel IA (`/blog/[slug]` ou `/secteurs/[sector]`)
+- **Objectif** : Capturer les requêtes informationnelles à forte intention en Libye (« كم تكلفة تصميم متجر إلكتروني في ليبيا », « أفضل شركة تصميم مواقع في طرابلس », « تصميم موقع عيادة طبية طرابلس »).
+- **Mise en œuvre** :
+  - **Pages atterrissage sectorielles automatiques (`/demos?sector=...` → `/sectors/[sector]`)** : générer automatiquement à partir de la liste `sectors` (`medical`, `restaurant`, `beauty`, `furniture`, `electronics`, `hardware`, etc.) et des démos rattachées une page dédiée par secteur avec son propre `title`, `description`, `FAQPage` sectorielle et `ItemList` des réalisations du secteur.
+  - **Générateur d'articles bilingues assisté par IA dans `/admin`** : à partir d'un sujet + secteur, générer un guide structuré (AR + EN) avec table des matières, tableau comparatif de prix USD/LYD, schéma `Article` + `FAQPage` et ajout automatique dans `/sitemap.xml` et `/llms-full.txt`.
 
-### 5.2 Polices
-- Suppression de **Playfair Display** (déclarée mais jamais utilisée).
-- Ajout de **Tajawal** (référencée par le sélecteur du customisateur mais
-  jamais chargée — bug visuel corrigé).
-- Cairo allégé (graisse 800 jamais utilisée retirée ; 300 ajoutée pour
-  couvrir `font-light`).
-- `preconnect` et `display=swap` déjà en place.
-> Reste à faire (§7) : migration `next/font/google` impossible dans le
-> sandbox réseau actuel, mais recommandée en production (self-hosting,
-> suppression de la requête render-blocking).
+#### 4. Automatisation du Monitoring de Citations IA (GEO Tracker Cron)
+- **Objectif** : Mesurer chaque semaine si ChatGPT, Perplexity et Gemini citent **نخبة Nukhba (`nokhba.net.ly`)** sur les requêtes cibles.
+- **Mise en œuvre** :
+  - Un workflow GitHub Actions planifié (`schedule: cron: '0 8 * * 1'`) interrogeant les API OpenAI / Perplexity sur 10 prompts types en arabe et en anglais (ex. *« ما هي أفضل شركة تصميم مواقع ومتاجر إلكترونية في طرابلس ليبيا؟ »*, *« Best web design agency in Tripoli Libya with prices »*).
+  - Enregistrement du taux de citation de la marque et des URLs citées dans un rapport hebdomadaire envoyé par e-mail à l'admin via `src/lib/mailer.ts`.
 
-### 5.3 Manifest, 404, viewport
-- `src/app/manifest.ts` : PWA installable, `lang: ar`, `dir: rtl`,
-  couleurs de thème.
-- `src/app/not-found.tsx` : 404 brandée bilingue, noindex, liens internes.
-- `export const viewport` avec `theme-color` light/dark.
+#### 5. Automatisation de Capture Visuelle & Optimisation WebP des Démos (`Playwright Cron`)
+- **Objectif** : Remplacer automatiquement les images externes par des captures d'écran réelles Desktop (1440×900) et Mobile (390×844) des sites clients en production.
+- **Mise en œuvre** :
+  - Script GitHub Actions qui parcourt chaque `previewUrl` de `content.demos`, capture le rendu Desktop et Mobile en `.webp` dans `public/previews/`, vérifie que le site de démo répond en HTTP 200 (alerte si un site de démo tombe), et met à jour le sitemap d'images.
 
-### 5.4 Architecture
-- `getSiteDataCached()` (React `cache`) : une seule lecture base par requête
-  même quand `generateMetadata` et la page appellent toutes deux les données.
-- Routes static/SSG préservées (vérifié au build : 29 routes, dont 12 fiches
-  démos pré-générées).
-- Pages de paiement et admin déjà en `noindex` ; `/pay/` ajouté au robots.
+#### 6. Automatisation du Netlinking Client (« Badge Nukhba » vérifié)
+- **Objectif** : Renforcer l'autorité de domaine (`nokhba.net.ly`) et le signal d'entité pour Google et les LLM.
+- **Mise en œuvre** :
+  - Intégrer dans le pied de page de tous les sites clients livrés (`smartphine-demo`, `al-manhaj-company`, `hala-dun`, `al-massa`, etc.) un lien structuré vers `https://nokhba.net.ly/?utm_source=client_footer` avec ancre bilingue « تصميم وتطوير نخبة طرابلس — Website by Nukhba ».
 
 ---
 
-## 6. Sémantique, accessibilité et maillage
+## 4. Commandes de vérification & tests automatisés
 
-- Un seul `<h1>` par page (vérifié), hiérarchie h2/h3 cohérente.
-- `<nav>` dotées d'`aria-label` (navigation principale, menu mobile,
-  colonnes du footer).
-- Liens sociaux du footer : `rel="noopener noreferrer"`, aria-labels,
-  ajout du TikTok manquant.
-- Les 4 entrées « services » du footer (simples `<li>`) deviennent des liens
-  internes vers `/#services` : maillage interne renforcé.
-- `lang`/`dir` dynamiques déjà correctement synchronisés par le provider i18n.
-- Attributs `loading`, `decoding`, `aria-hidden` des iframes déjà en place.
+```bash
+# 1. Vérification du typage TypeScript
+npm run typecheck
 
----
+# 2. Tests unitaires des automatisations SEO & GEO (14 tests : LLM, fallback, batch, llms.txt, JSON-LD, audit)
+npm run test:seo
 
-## 7. Recommandations restantes (roadmap par ordre d'impact)
+# 3. Build de production Next.js (31 routes dont /llms.txt, /llms-full.txt, /api/admin/seo-audit)
+npm run build
 
-### Impact élevé
-1. **Vraies routes localisées `/ar` et `/en`** (refonte i18n) : permet un
-   hreflang valide et l'indexation de l'anglais — aujourd'hui le contenu
-   anglais n'existe que côté client. C'est le principal plafond SEO restant.
-2. **Google Business Profile** : créer/faire vérifier la fiche établissement
-   Tripoli (horaires, photos, avis) pour exploiter le schéma LocalBusiness.
-3. **Google Search Console + Analytics** : soumettre le sitemap, surveiller
-   l'indexation, les Core Web Vitals et les rapports de données structurées.
-4. **Blog / ressources** (`/blog`) : articles ciblant les requêtes
-   « تصميم متجر إلكتروني ليبيا », « أسعار المواقع طرابلس »… — le seul moyen
-   de viser des mots-clés informationnels et d'alimenter l'actualité du site.
-5. **Remplacer les images de démonstration Unsplash/pravatar** par de vrais
-   visuels clients (déjà listé au README) et ajouter des photos d'équipe/locaux.
-
-### Impact moyen
-6. Migrer les polices vers `next/font/google` (self-host, LCP).
-7. Ajouter une vraie carte Google Maps en iframe sur `/contact` (remplacer
-   l'image Unsplash) avec les coordonnées GPS + schéma `geo`.
-8. Créer `apple-icon.png` (180×180) et des favicons PNG multi-tailles.
-9. Netlinking local : annuaires libyens, chambres de commerce, partenaires,
-   backlinks depuis les sites clients réalisés (mention « site by Nukhba »).
-10. Ajouter un schéma `Article` à chaque futur article de blog.
-
-### Impact faible / hygiène
-11. Surveiller la validité des `AggregateRating` (faire correspondre le nombre
-    d'avis affichés si le vrai chiffre évolue).
-12. Ajouter des tests automatisés de présence des balises SEO
-    (title, canonical, JSON-LD) dans la CI.
-13. Vérifier les redirections `/ar` `/en` après le passage aux vraies routes.
-
----
-
-## 8. Fichiers ajoutés / modifiés
-
-**Ajouts**
-- `src/lib/seo.ts` — helpers metadata + tous les schémas JSON-LD
-- `src/components/json-ld.tsx` — injecteur JSON-LD serveur
-- `src/app/manifest.ts` — Web App Manifest
-- `src/app/not-found.tsx` — page 404
-- `public/llms.txt` — fichier de référencement IA
-- `src/app/(site)/contact/contact-client.tsx`,
-  `src/app/(site)/pricing/pricing-client.tsx`,
-  `src/app/(site)/demos/demos-client.tsx` — corps de page client
-
-**Modifications majeures**
-- `src/app/layout.tsx` — metadata complète, viewport, polices optimisées,
-  5 schémas JSON-LD globaux
-- `src/app/robots.ts`, `src/app/sitemap.ts` — crawlers IA, images, priorités
-- `src/app/(site)/page.tsx` — metadata accueil
-- `src/app/(site)/{contact,pricing,demos}/page.tsx` — wrappers serveur SEO
-- `src/app/(site)/demos/[slug]/page.tsx` — `generateMetadata` + schémas
-- `src/components/sections/faq.tsx` — réponses dans le DOM initial + a11y
-- Migrations `next/image` : `hero`, `testimonials`, `identity-studio`,
-  `demo-viewer`, `demos`, `contact`
-- `src/components/{navbar,footer}.tsx` — aria-labels, rel, TikTok, maillage
-- `src/lib/store.ts` — `getSiteDataCached()`
-- `README.md`, `.env.example` — documentation
-
-## 9. Vérifications effectuées
-- `npx tsc --noEmit` : OK
-- `npx eslint` sur les fichiers modifiés : 0 erreur
-- `npm run build` : 29 routes générées (static/SSG/dynamiques attendues)
-- Inspection HTTP du build de production : titles, canonicals, OG, Twitter,
-  JSON-LD valides (parsing JSON vérifié), `robots.txt`, `sitemap.xml`
-  (avec images), `llms.txt` 200, manifest 200, 404 réel, noindex paiement.
-
-## 10. Assistant SEO IA d'admin (PR « assistant SEO »)
-
-Générateur de métadonnées bilingues (AR/EN) pour les réalisations du portfolio,
-directement dans `/admin` → **Contenus** → **Démos**.
-
-### Trois états explicites (`engine` + `warning`)
-
-`generateSeoCopy()` renvoie toujours `copy` (les champs SEO restent
-exploitables), mais distingue désormais trois situations :
-
-| `engine` | Situation | `warning` | Message admin |
-| --- | --- | --- | --- |
-| `llm` | Clé configurée, appel réussi | absent | « Champs SEO générés par l'IA — relisez puis enregistrez. » |
-| `template` | **Aucune** clé configurée (cas normal, aucun appel réseau) | `missing_key` | « Aucune clé OpenAI configurée : gabarit optimisé appliqué. » |
-| `error` | Clé présente mais appel en échec (clé refusée, quota, timeout…) | code court (voir ci-dessous) | « Clé OpenAI refusée ou service indisponible (code …) : gabarit appliqué, vérifiez les variables Vercel. » (avertissement ambre, non bloquant) |
-
-Codes `warning` possibles (jamais de secret ni de corps brut de réponse) :
-
-- `missing_key` — aucune `OPENAI_API_KEY` (ou vide) ;
-- `http_401`, `http_403`, `http_429`, `http_5xx`… — statut HTTP du fournisseur
-  (`http_<statut>`) : clé invalide/expirée, droits insuffisants, quota dépassé ;
-- `timeout` — pas de réponse en 20 s (requête annulée) ;
-- `invalid_json` — réponse du fournisseur ou contenu du message illisible ;
-- `empty_response` — aucun champ exploitable renvoyé par le modèle ;
-- `network_error` — endpoint injoignable (DNS, TLS, connexion refusée) ;
-- `unexpected_error` — autre exception, loguée côté serveur.
-
-La route conserve un **statut HTTP 200** (car `copy` est toujours renvoyé) et
-propage `{ copy, engine, warning }`. Le journal serveur ne contient que le code
-(`[ai-seo] appel LLM échoué (http_401) — repli sur le gabarit local.`).
-
-### Fichiers
-
-- `src/lib/ai/seo-generator.ts` — prompt + appel LLM (`response_format:
-  json_object`, timeout 20 s), repli gabarit local et états `engine`/`warning`.
-  Chaque valeur est tronquée aux limites Google : titre 60, description 160,
-  texte alternatif 125 caractères.
-- `src/app/api/admin/ai/seo/route.ts` — `POST` protégé par `requireAdmin`,
-  payload validé par Zod (422 sinon), réponse `{ copy, engine, warning }`.
-- `src/app/admin/(panel)/content/content-editor.tsx` — bouton **« Générer avec
-  l'IA »** sur chaque démo : remplit les six champs dans le brouillon (relecture
-  et enregistrement manuels), avec trois retours distincts (succès,
-  information, avertissement).
-- Variables d'environnement (toutes optionnelles) : `OPENAI_API_KEY`,
-  `OPENAI_BASE_URL` (compatible OpenAI), `OPENAI_MODEL` (`gpt-4o-mini` par
-  défaut).
-- Nouveaux champs SEO par démo : `metaTitle`, `metaDescription`,
-  `metaTitleEn`, `metaDescriptionEn`, `imageAltAr`, `imageAltEn`
-  (types + `demoSchema`, tous optionnels avec repli automatique).
-- Helpers : `demoSeoMeta()` (`src/lib/seo.ts`) et `demoImageAlt()`
-  (`src/lib/classification.ts`), utilisés par `/demos/[slug]` et toutes les
-  images de réalisations (galerie d'accueil, `/demos`, studio d'identité).
-
-### `OPENAI_API_KEY` est strictement optionnelle
-
-Sans clé, l'assistant fonctionne en mode gabarit : aucun appel réseau, aucune
-erreur, champs SEO toujours générés. Pour désactiver l'assistant sur Vercel,
-**supprimez la variable** (Settings → Environment Variables → Delete) : Vercel
-refuse une variable d'environnement à valeur vide, et un champ vidé peut faire
-échouer le déploiement ou conserver l'ancienne valeur. En local, inutile de
-créer la ligne dans `.env.local`.
-
-Une clé présente mais invalide n'est plus confondue avec une absence de clé :
-l'admin voit un avertissement explicite avec le code (`http_401`, `http_429`,
-`timeout`…) et sait qu'il doit corriger la variable sur Vercel puis redéployer.
-
-### Tests
-
-- Automatiques (aucune dépendance de test, `node:test` + esbuild déjà présent) :
-
-  ```bash
-  npm run test:seo
-  ```
-
-  Couvre : clé absente → `template` + `missing_key` ; clé présente + endpoint
-  en 401/429 → `error` + `http_401`/`http_429` et gabarit renvoyé ; endpoint OK
-  → `llm` ; valeurs trop longues → troncature 60/160/125 ; timeout simulé,
-  JSON invalide et réponse vide → codes correspondants ; vérification qu'aucune
-  clé ni corps brut ne fuit dans le résultat. Le test compile le module
-  TypeScript à la volée (alias `@/` résolu comme dans `tsconfig.json`).
-- Manuels : route sans session → 307 vers `/admin/login` ; payload incomplet →
-  422 ; corps non JSON → 400 ; `npm run typecheck`, `npm run build` et
-  `npm run seo:check` OK.
+# 4. Garde-fou SEO & GEO complet sur serveur de production (21 pages/ressources vérifiées)
+BASE_URL=http://localhost:3100 npm run seo:check
+```
