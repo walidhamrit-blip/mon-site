@@ -185,9 +185,9 @@ export const siteConfig = {
     maxUsd: 5000,
     suggested: [1, 5, 10, 25, 50, 100, 250],
     noteAr:
-      "Certaines cryptos imposent un minimum (ex: 3–5 $ selon la pièce). Si le paiement échoue, augmentez simplement le montant — le surplus est déduit ou gardé en crédit.",
+      "بعض العملات تفرض حداً أدنى (مثلاً 3–5 دولارات حسب العملة). المبلغ المختار ثابت عند الدفع. إذا كان أقل من الحد الأدنى، ارجع هنا لاختيار مبلغ جديد. ادفع دائماً المبلغ المحدد في الفاتورة.",
     noteEn:
-      "Some coins require a minimum (e.g. 3–5 $ depending on the coin). If payment fails, just increase the amount — surplus is deducted or kept as credit.",
+      "Some coins require a minimum (e.g. $3–5 depending on the coin). Your selected amount is locked at checkout. If it is too low, return here to choose a new amount. Always pay the exact amount shown on the invoice.",
   },
 
   // Services libres / à la carte — petites missions vendues au forfait
