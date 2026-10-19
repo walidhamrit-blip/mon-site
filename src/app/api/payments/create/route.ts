@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { eq } from "drizzle-orm";
+import { and, eq, ne } from "drizzle-orm";
 import { db, ensureSchema } from "@/db";
 import { orders } from "@/db/schema";
 import { siteConfig } from "@/lib/config";
@@ -17,6 +17,12 @@ import {
   trancheRef,
 } from "@/lib/installments";
 import { siteBaseUrl } from "@/lib/site-url";
+import {
+  createTrackingToken,
+  newOrderReference,
+  trackingAccess,
+  trackingQuery,
+} from "@/lib/order-tracking";
 
 /**
  * Crée une commande + une facture NOWPayments (page de paiement
@@ -44,6 +50,8 @@ const createPaymentSchema = z
     /** Description libre du paiement flexible (acompte, solde…). */
     description: z.string().max(120).optional(),
     planId: z.string().min(1).max(64).optional(),
+    /** Jeton de suivi, exigé pour refacturer une commande protégée. */
+    trackingToken: z.string().max(200).optional(),
     /** Référence d'une tranche existante à régler (2e, 3e versement…). */
     orderRef: z.string().min(3).max(80).optional(),
     /** 1 = paiement total, 2 ou 3 = paiement en tranches. */
@@ -100,21 +108,14 @@ function databaseDetail(error: unknown): ErrorDetail {
   };
 }
 
-/** URL de base du site (succès/annulation/IPN) — voir src/lib/site-url.ts. */
-
-function newOrderRef(): string {
-  const stamp = Date.now().toString(36).toUpperCase();
-  const rand = Math.random().toString(36).slice(2, 6).toUpperCase();
-  return `NKH-${stamp}${rand}`;
-}
-
 /** Paramètres de paiement communs (retour NOWPayments → nos pages). */
-function paymentUrls(req: Request, ref: string) {
+function paymentUrls(req: Request, ref: string, trackingToken?: string | null) {
   const baseUrl = siteBaseUrl(req);
+  const query = trackingQuery(ref, trackingToken);
   return {
     ipnCallbackUrl: `${baseUrl}/api/payments/ipn`,
-    successUrl: `${baseUrl}/pay/success?ref=${encodeURIComponent(ref)}`,
-    cancelUrl: `${baseUrl}/pay/cancel?ref=${encodeURIComponent(ref)}`,
+    successUrl: `${baseUrl}/pay/success?${query}`,
+    cancelUrl: `${baseUrl}/pay/cancel?${query}`,
   };
 }
 
@@ -122,7 +123,11 @@ function paymentUrls(req: Request, ref: string) {
  * Facture une tranche existante (2e/3e versement) et met à jour
  * les informations de paiement de la commande.
  */
-async function payExistingOrder(orderRef: string, req: Request) {
+async function payExistingOrder(
+  orderRef: string,
+  trackingToken: string | undefined,
+  req: Request,
+) {
   await ensureSchema();
   const wanted = orderRef.trim().toUpperCase();
   const rows = await db
@@ -139,6 +144,19 @@ async function payExistingOrder(orderRef: string, req: Request) {
       message: `Aucune commande « ${wanted} »`,
     });
   }
+
+  // Les commandes protégées exigent leur jeton pour générer une nouvelle
+  // facture ; les anciennes commandes (sans empreinte) restent relançables
+  // par référence, comme avant, afin de ne pas bloquer les plans en cours.
+  const access = trackingAccess(order.trackingTokenHash, trackingToken);
+  if (access === "denied") {
+    return errorResponse("order_not_found", 404, {
+      source: "input",
+      status: null,
+      message: `Aucune commande « ${wanted} »`,
+    });
+  }
+
   if (order.status === "paid") {
     return errorResponse("order_already_paid", 409, {
       source: "input",
@@ -171,7 +189,7 @@ async function payExistingOrder(orderRef: string, req: Request) {
       // notre `ref` (voir refCandidates dans ipn/route.ts).
       orderId: `${order.ref}-R${Date.now().toString(36).toUpperCase()}`,
       orderDescription: label,
-      ...paymentUrls(req, order.ref),
+      ...paymentUrls(req, order.ref, access === "granted" ? trackingToken : null),
     });
   } catch (error) {
     console.error(
@@ -184,7 +202,9 @@ async function payExistingOrder(orderRef: string, req: Request) {
   }
 
   try {
-    await db
+    // Relance explicite, mais jamais au détriment d'un paiement confirmé
+    // entre la lecture initiale et la création de cette facture.
+    const relaunched = await db
       .update(orders)
       .set({
         status: "pending",
@@ -199,7 +219,16 @@ async function payExistingOrder(orderRef: string, req: Request) {
         paymentUrl: invoice.invoice_url,
         updatedAt: new Date(),
       })
-      .where(eq(orders.id, order.id));
+      .where(and(eq(orders.id, order.id), ne(orders.status, "paid")))
+      .returning({ id: orders.id });
+
+    if (relaunched.length === 0) {
+      return errorResponse("order_already_paid", 409, {
+        source: "input",
+        status: null,
+        message: `La commande « ${order.ref} » est déjà payée`,
+      });
+    }
   } catch (error) {
     console.error(
       "[payments] lien commande impossible :",
@@ -280,7 +309,8 @@ async function createFlexibleOrder(
   const usdToLyd =
     ratePlan && ratePlan.priceUsd ? ratePlan.price / ratePlan.priceUsd : 4.97;
 
-  const ref = newOrderRef();
+  const ref = newOrderReference("NKH");
+  const tracking = createTrackingToken();
   const label = data.description?.trim() || "Flexible payment";
 
   // 1) Commande en attente — trace immédiate dans /admin/orders.
@@ -291,6 +321,7 @@ async function createFlexibleOrder(
       .insert(orders)
       .values({
         ref,
+        trackingTokenHash: tracking.hash,
         groupRef: ref,
         kind: "flex",
         planId: "flexible",
@@ -323,7 +354,7 @@ async function createFlexibleOrder(
       priceAmount: amount,
       orderId: ref,
       orderDescription: `${config.name} — ${label}`.slice(0, 190),
-      ...paymentUrls(req, ref),
+      ...paymentUrls(req, ref, tracking.token),
     });
   } catch (error) {
     console.error(
@@ -351,6 +382,7 @@ async function createFlexibleOrder(
   return NextResponse.json({
     ok: true,
     orderRef: ref,
+    trackingToken: tracking.token,
     groupRef: ref,
     installments: 1,
     installmentIndex: 1,
@@ -398,7 +430,7 @@ export async function POST(req: Request) {
   // ── Mode « tranche suivante » : commande déjà planifiée ──
   if (data.orderRef) {
     try {
-      return await payExistingOrder(data.orderRef, req);
+      return await payExistingOrder(data.orderRef, data.trackingToken, req);
     } catch (error) {
       console.error(
         "[payments] paiement d'une tranche impossible :",
@@ -449,7 +481,10 @@ export async function POST(req: Request) {
   const usdTranches = splitAmount(plan.priceUsd, count);
   const lydTranches = splitAmount(plan.price, count);
 
-  const baseRef = newOrderRef();
+  const baseRef = newOrderReference("NKH");
+  // Un même jeton pour toutes les tranches du groupe : le lien reçu au
+  // premier paiement suit l'ensemble du plan.
+  const tracking = createTrackingToken();
 
   // 1) Une commande par tranche (statut « en attente »).
   //    Seule la première est facturée immédiatement ; les autres
@@ -462,6 +497,7 @@ export async function POST(req: Request) {
       .values(
         usdTranches.map((usd, index) => ({
           ref: trancheRef(baseRef, index + 1),
+          trackingTokenHash: tracking.hash,
           groupRef: baseRef,
           planId: plan.id,
           planName: plan.nameEn,
@@ -499,7 +535,7 @@ export async function POST(req: Request) {
         count > 1
           ? `${config.name} — ${plan.nameEn} (1/${count})`
           : `${config.name} — ${plan.nameEn} plan`,
-      ...paymentUrls(req, baseRef),
+      ...paymentUrls(req, baseRef, tracking.token),
     });
   } catch (error) {
     console.error("[payments] NOWPayments refusé :", errorMessage(error));
@@ -525,6 +561,7 @@ export async function POST(req: Request) {
   return NextResponse.json({
     ok: true,
     orderRef: baseRef,
+    trackingToken: tracking.token,
     groupRef: baseRef,
     installments: count,
     installmentIndex: 1,

@@ -369,11 +369,28 @@ export function verifyIpnSignature(
 
 /* ---------------- Statuts ---------------- */
 
-/** Statuts NOWPayments considérés comme « paiement reçu » (fonds crédités). */
-const PAID_STATUSES = new Set(["finished", "confirmed", "completed"]);
+/**
+ * Statuts NOWPayments considérés comme « paiement terminé ».
+ * `confirmed` et `sending` restent volontairement `pending` côté site :
+ * la blockchain a confirmé le dépôt, mais NOWPayments n'a pas encore
+ * terminé le règlement vers le marchand (`finished`).
+ */
+const PAID_STATUSES = new Set(["finished", "completed"]);
 const FAILED_STATUSES = new Set(["failed", "expired", "refunded"]);
 
 export type OrderStatus = "pending" | "paid" | "failed" | "expired";
+
+const ORDER_STATUSES = new Set<string>([
+  "pending",
+  "paid",
+  "failed",
+  "expired",
+]);
+
+function normalizeOrderStatus(status: string): OrderStatus {
+  const value = status.trim().toLowerCase();
+  return ORDER_STATUSES.has(value) ? (value as OrderStatus) : "pending";
+}
 
 export function isPaidStatus(status: string): boolean {
   return PAID_STATUSES.has(status.trim().toLowerCase());
@@ -390,6 +407,102 @@ export function orderStatusFromIpn(status: string): OrderStatus {
   if (value === "expired") return "expired";
   if (value === "failed" || value === "refunded") return "failed";
   return "pending";
+}
+
+/**
+ * Résout une transition sans jamais dégrader silencieusement une
+ * commande déjà payée sur une notification tardive/désordonnée.
+ *
+ * - `paid` est terminal, sauf remboursement explicite (`refunded`) ;
+ * - un vrai `finished` peut faire passer `pending`, `failed` ou
+ *   `expired` à `paid` (fonds effectivement reçus) ;
+ * - `failed`/`expired` ne reviennent pas à `pending` tout seuls : seule
+ *   la création explicite d'une nouvelle facture relance la commande.
+ */
+export function nextOrderStatus(
+  currentStatus: string,
+  rawStatus: string,
+): OrderStatus {
+  const current = normalizeOrderStatus(currentStatus);
+  const raw = rawStatus.trim().toLowerCase();
+  const incoming = orderStatusFromIpn(raw);
+
+  if (current === "paid") {
+    return raw === "refunded" ? "failed" : "paid";
+  }
+  if (incoming === "paid") return "paid";
+  if (current === "failed" || current === "expired") return current;
+  return incoming;
+}
+
+/* ----------- Contrôle montant/devise avant « paid » ----------- */
+
+function numericValue(value: unknown): number | null {
+  if (typeof value === "number") return Number.isFinite(value) ? value : null;
+  if (typeof value === "string" && value.trim()) {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : null;
+  }
+  return null;
+}
+
+export interface PaidAmountValidation {
+  ok: boolean;
+  /** Code machine de l'écart, destiné aux journaux. */
+  reason: string | null;
+}
+
+/**
+ * Vérifie qu'un statut « terminé » correspond bien au montant et à la
+ * devise facturés pour CETTE commande. La signature IPN prouve l'origine
+ * de la notification ; ce contrôle évite de valider une commande sur un
+ * paiement d'un autre montant (ou sous-payé) rattaché par erreur.
+ */
+export function validatePaidAmount(
+  expected: { amountUsd: string | number; currency: string },
+  payload: {
+    price_amount?: unknown;
+    price_currency?: unknown;
+    pay_amount?: unknown;
+    actually_paid?: unknown;
+  },
+): PaidAmountValidation {
+  const expectedAmount = numericValue(expected.amountUsd);
+  if (expectedAmount === null || expectedAmount <= 0) {
+    return { ok: false, reason: "expected_amount_invalid" };
+  }
+
+  const reportedAmount = numericValue(payload.price_amount);
+  if (reportedAmount === null) {
+    return { ok: false, reason: "missing_price_amount" };
+  }
+  const tolerance = Math.max(0.01, expectedAmount * 0.001);
+  if (Math.abs(reportedAmount - expectedAmount) > tolerance) {
+    return { ok: false, reason: "price_amount_mismatch" };
+  }
+
+  const reportedCurrency =
+    typeof payload.price_currency === "string"
+      ? payload.price_currency.trim().toLowerCase()
+      : "";
+  if (!reportedCurrency) {
+    return { ok: false, reason: "missing_price_currency" };
+  }
+  if (reportedCurrency !== expected.currency.trim().toLowerCase()) {
+    return { ok: false, reason: "price_currency_mismatch" };
+  }
+
+  // Quand les deux montants crypto sont fournis, le montant réellement
+  // reçu doit couvrir le montant demandé (1 % de tolérance d'arrondi).
+  const payAmount = numericValue(payload.pay_amount);
+  const actuallyPaid = numericValue(payload.actually_paid);
+  if (payAmount !== null && payAmount > 0 && actuallyPaid !== null) {
+    if (actuallyPaid < payAmount * 0.99) {
+      return { ok: false, reason: "actually_paid_insufficient" };
+    }
+  }
+
+  return { ok: true, reason: null };
 }
 
 /** Label affichable d'un statut de commande. */

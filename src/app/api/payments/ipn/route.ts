@@ -1,12 +1,14 @@
 import { NextResponse } from "next/server";
-import { eq, inArray } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 import { db, ensureSchema } from "@/db";
 import { orders, type Order } from "@/db/schema";
 import { getSiteData } from "@/lib/store";
 import {
-  isPaidStatus,
+  nextOrderStatus,
   orderStatusFromIpn,
+  validatePaidAmount,
   verifyIpnSignature,
+  type OrderStatus,
 } from "@/lib/nowpayments";
 import { orderRefCandidates } from "@/lib/installments";
 import { sendPaymentConfirmedEmail } from "@/lib/order-emails";
@@ -86,49 +88,112 @@ export async function POST(req: Request) {
       return NextResponse.json({ ok: true, ignored: true });
     }
 
-    const newStatus = orderStatusFromIpn(ipnStatus);
-    const wasPaid = order.status === "paid";
+    const currentStatus: OrderStatus = (
+      ["pending", "paid", "failed", "expired"] as const
+    ).includes(order.status as OrderStatus)
+      ? (order.status as OrderStatus)
+      : "pending";
+    const incomingStatus = orderStatusFromIpn(ipnStatus);
+    let resolvedStatus = nextOrderStatus(currentStatus, ipnStatus);
 
-    await db
+    // Un statut « terminé » ne valide la commande que si le montant et
+    // la devise annoncés correspondent à la facture attendue.
+    const amountValidation =
+      incomingStatus === "paid"
+        ? validatePaidAmount(order, payload)
+        : { ok: true, reason: null as string | null };
+    if (incomingStatus === "paid" && !amountValidation.ok) {
+      resolvedStatus = currentStatus;
+      console.warn(
+        `[ipn] montant refusé pour ${order.ref} : ${amountValidation.reason}`,
+      );
+    }
+
+    // Déjà payée : une notification « terminé » incohérente ne doit pas
+    // écraser les informations du paiement qui a validé la commande.
+    if (
+      currentStatus === "paid" &&
+      incomingStatus === "paid" &&
+      !amountValidation.ok
+    ) {
+      return NextResponse.json({
+        ok: true,
+        ignored: "amount_mismatch",
+        reason: amountValidation.reason,
+      });
+    }
+
+    // Notification plus ancienne que l'état déjà connu (ex. `confirming`
+    // reçue après `finished`) : on accuse réception sans rien écraser.
+    const isStale =
+      resolvedStatus !== incomingStatus && amountValidation.ok;
+    if (isStale) {
+      console.info(
+        `[ipn] statut ignoré pour ${order.ref} : ${ipnStatus} après ${currentStatus}`,
+      );
+      return NextResponse.json({ ok: true, ignored: "stale_status" });
+    }
+
+    const payAddress =
+      payload.pay_address != null
+        ? String(payload.pay_address)
+        : order.payAddress;
+    const payCurrency =
+      payload.pay_currency != null
+        ? String(payload.pay_currency)
+        : order.payCurrency;
+    const payAmount =
+      payload.pay_amount != null ? String(payload.pay_amount) : order.payAmount;
+
+    // Mise à jour conditionnelle : si le polling (ou un autre IPN) a déjà
+    // fait la même transition en parallèle, cette requête ne revendique
+    // pas une seconde fois le passage à `paid` — donc pas d'e-mail doublé.
+    const claimed = await db
       .update(orders)
       .set({
-        status: newStatus,
+        status: resolvedStatus,
         ipnStatus,
         // Mémorise le payment_id le plus récent : le polling direct
         // (page de suivi) interroge alors le bon paiement.
         paymentId,
-        payAddress:
-          (payload.pay_address as string | undefined) ?? order.payAddress,
-        payCurrency:
-          (payload.pay_currency as string | undefined) ?? order.payCurrency,
-        payAmount:
-          payload.pay_amount != null
-            ? String(payload.pay_amount)
-            : order.payAmount,
+        payAddress,
+        payCurrency,
+        payAmount,
         paymentUrl: order.paymentUrl,
         updatedAt: new Date(),
       })
-      .where(eq(orders.id, order.id));
+      .where(and(eq(orders.id, order.id), eq(orders.status, order.status)))
+      .returning({ id: orders.id });
 
-    // Notification à l'agence uniquement au moment de la
-    // confirmation (jamais en double).
-    if (!wasPaid && isPaidStatus(ipnStatus)) {
+    if (claimed.length === 0) {
+      return NextResponse.json({ ok: true, ignored: "concurrent_update" });
+    }
+
+    if (!amountValidation.ok) {
+      return NextResponse.json({
+        ok: true,
+        ignored: "amount_mismatch",
+        reason: amountValidation.reason,
+      });
+    }
+
+    // Notification à l'agence uniquement par la requête qui a réellement
+    // fait passer la commande à `paid`.
+    if (currentStatus !== "paid" && resolvedStatus === "paid") {
       const { config } = await getSiteData();
       const updated = {
         ...order,
-        status: newStatus,
+        status: resolvedStatus,
         ipnStatus,
-        payAddress:
-          (payload.pay_address as string | undefined) ?? order.payAddress,
-        payCurrency:
-          (payload.pay_currency as string | undefined) ?? order.payCurrency,
-        payAmount:
-          payload.pay_amount != null ? String(payload.pay_amount) : order.payAmount,
+        payAddress,
+        payCurrency,
+        payAmount,
       };
       const outcome = await sendPaymentConfirmedEmail(
         updated,
         config.name,
         config.url,
+        config.email,
       );
       if (!outcome.ok) {
         console.warn("[ipn] e-mail paiement non envoyé :", outcome.error);

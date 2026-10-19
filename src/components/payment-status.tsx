@@ -7,21 +7,17 @@ import { formatUsd } from "@/lib/installments";
 
 interface OrderStatus {
   ref: string;
-  kind?: "plan" | "reservation";
-  demoSlug?: string | null;
+  kind?: "plan" | "reservation" | "flex";
   planName: string;
   amountLyd: string;
   amountUsd: string;
   currency: string;
   installments?: number;
   installmentIndex?: number;
-  clientName: string | null;
-  email: string | null;
-  phone: string | null;
-  payAddress: string | null;
+  /** E-mail déjà masqué par le serveur (`w***@example.com`). */
+  emailMasked: string | null;
   payCurrency: string | null;
   payAmount: string | null;
-  paymentUrl: string | null;
   status: "pending" | "paid" | "failed" | "expired";
   ipnStatus: string | null;
   createdAt: string;
@@ -47,7 +43,13 @@ interface Tranche {
  * fait planter la page avec « Refs cannot be used in Server
  * Components, nor passed to Client Components ».
  */
-export function PaymentStatus({ orderRef }: { orderRef: string }) {
+export function PaymentStatus({
+  orderRef,
+  trackingToken,
+}: {
+  orderRef: string;
+  trackingToken?: string;
+}) {
   const { locale, t } = useI18n();
   const ar = locale === "ar";
   const [order, setOrder] = useState<OrderStatus | null>(null);
@@ -63,13 +65,20 @@ export function PaymentStatus({ orderRef }: { orderRef: string }) {
 
     const poll = async () => {
       try {
-        const res = await fetch(`/api/payments/order/${encodeURIComponent(orderRef)}`);
+        const res = await fetch(`/api/payments/order/${encodeURIComponent(orderRef)}`, {
+          headers: trackingToken
+            ? { "x-order-tracking-token": trackingToken }
+            : undefined,
+        });
         if (!res.ok) {
-          if (!stopped) setNotFound(true);
+          // Seul un vrai 404 est définitif ; une erreur transitoire
+          // (500, réseau) laisse le polling réessayer.
+          if (res.status === 404 && !stopped) setNotFound(true);
           return;
         }
         const data = await res.json();
         if (stopped) return;
+        setNotFound(false);
         setOrder(data.order);
         setTranches(Array.isArray(data.tranches) ? data.tranches : []);
         if (data.order.status !== "pending" || Date.now() > deadline) {
@@ -86,7 +95,7 @@ export function PaymentStatus({ orderRef }: { orderRef: string }) {
       stopped = true;
       clearInterval(timer);
     };
-  }, [orderRef]);
+  }, [orderRef, trackingToken]);
 
   const status = order?.status ?? "pending";
 
@@ -98,7 +107,10 @@ export function PaymentStatus({ orderRef }: { orderRef: string }) {
       const res = await fetch("/api/payments/create", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ orderRef: tranche }),
+        body: JSON.stringify({
+          orderRef: tranche,
+          trackingToken: trackingToken || undefined,
+        }),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok || !data.ok || !data.paymentUrl) {
@@ -246,10 +258,10 @@ export function PaymentStatus({ orderRef }: { orderRef: string }) {
               </dd>
             </div>
           )}
-          {order.email && (
+          {order.emailMasked && (
             <div className="flex justify-between gap-4">
               <dt className="opacity-60">{ar ? t.pay.emailAr : t.pay.emailEn}</dt>
-              <dd className="font-bold" dir="ltr">{order.email}</dd>
+              <dd className="font-bold" dir="ltr">{order.emailMasked}</dd>
             </div>
           )}
         </dl>

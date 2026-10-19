@@ -10,6 +10,10 @@ déployé répond correctement, mais le code révèle des points à corriger —
 notamment des dépendances à mettre à jour — avant de parler d'un état
 « 100 % sans réserve ».
 
+Les corrections de priorité 1 issues de cet audit ont ensuite été
+implémentées dans la **PR #22** (§7.5). Tant que cette PR n'est pas fusionnée
+sur `main`, la production `8b4e39e` continue d'exécuter l'ancien code.
+
 Ce document est la fiche de référence pour garder la production en bon état :
 qui fait quoi, chaque variable d'environnement, et comment vérifier.
 
@@ -88,7 +92,7 @@ paiement ne peut être crédité.
 | `EMAIL_FROM` | Expéditeur, ex. `Nukhba <no-reply@nokhba.net.ly>` — domaine à vérifier chez le fournisseur |
 | `EMAIL_DOMAIN` | Domaine utilisé pour construire l'expéditeur par défaut si `EMAIL_FROM` est vide |
 | `SMTP_TLS_REJECT_UNAUTHORIZED` | Laisser vide/`true` ; `false` désactive la vérification du certificat SMTP (relais auto-signé uniquement) |
-| `LEAD_NOTIFICATION_EMAIL` | Destinataire des notifications **leads et paiements**. Pour les paiements, c'est le destinataire fiable ; voir l'écart signalé au §7 |
+| `LEAD_NOTIFICATION_EMAIL` | Destinataire prioritaire des notifications **leads et paiements**. Pour les paiements, si elle est absente, le code retombe sur l'e-mail public configuré du site, puis sur l'adresse extraite de `EMAIL_FROM` |
 | `NEXT_PUBLIC_SITE_URL` | Repli lu par `src/lib/site-url.ts` ; préférer `SITE_URL` côté serveur |
 | `WEBHOOK_URL` | Webhook sortant après enregistrement d'un lead |
 
@@ -139,11 +143,17 @@ Ce que `/api/health` **ne prouve pas** :
 ## 4. Test de bout en bout (réservation 1 $)
 
 Fiche d'une démo → « Réservez votre place — 1 $ » → e-mail → la facture
-NOWPayments s'ouvre → après paiement, l'IPN traduit le statut brut
-(`confirmed`/`finished`) en statut interne **`paid`**, visible dans
-**Admin → Paiements & réservations**.
+NOWPayments s'ouvre → après paiement, les statuts bruts
+`confirming`/`confirmed`/`sending` restent **en attente** ; seuls
+`finished`/`completed`, après contrôle du montant et de la devise, passent
+la commande en **`paid`**, visible dans **Admin → Paiements &
+réservations**. Le lien de retour `/pay/success?…&t=…` contient le jeton de
+suivi du client : il ne doit pas être partagé publiquement.
 
 ## 5. Résultat de l'audit du 19/10/2026
+
+> Tableau historique, relevé **avant** l'implémentation des corrections de
+> la PR #22. L'état technique de la branche corrigée est au §7.5.
 
 | Contrôle | Résultat |
 |---|---|
@@ -223,6 +233,7 @@ jamais si elle est réellement présente sur Vercel.
    ici — mais les Server Actions et le runtime Next sont bien présents.
    **Action : PR dédiée de mise à jour Next + `eslint-config-next`, puis
    build/typecheck/audit et test Preview.**
+   **Statut PR #22 : corrigé — `next@16.4.2`, audit production à zéro (§7.5).**
 2. **Suivi de commande public trop bavard.** `GET /api/payments/order/[ref]`
    ne demande aucune authentification et renvoie nom, e-mail, téléphone,
    adresse crypto et URLs de paiement de toutes les tranches. Or les
@@ -232,6 +243,8 @@ jamais si elle est réellement présente sur Vercel.
    l'adresse crypto. **Action : références cryptographiquement aléatoires
    plus longues, retirer/masquer les données personnelles, et idéalement
    un jeton de suivi séparé de la référence lisible.**
+   **Statut PR #22 : corrigé pour les nouvelles commandes ; les anciennes
+   restent consultables en mode minimisé, sans lien de paiement direct.**
 3. **Machine à états IPN permissive.** L'IPN remplace toujours le statut
    par le dernier reçu : une notification tardive/désordonnée peut faire
    repasser une commande `paid` en `pending`/`failed` (le drapeau
@@ -241,6 +254,8 @@ jamais si elle est réellement présente sur Vercel.
    que le statut final de règlement est `finished`. **Action : transitions
    monotones/idempotentes, contrôle montant+devise sur les statuts payés,
    décision métier explicite pour `confirmed`.**
+   **Statut PR #22 : corrigé — `confirmed` reste en attente, transitions et
+   montants sont réconciliés côté IPN comme côté polling.**
 4. **Notification e-mail de paiement fragile.** Le destinataire est
    `LEAD_NOTIFICATION_EMAIL`, sinon l'adresse extraite d'un `EMAIL_FROM`
    de forme `Nom <adresse>` uniquement. Si ces deux variables sont absentes
@@ -249,6 +264,8 @@ jamais si elle est réellement présente sur Vercel.
    Le HTML de cet e-mail n'échappe pas les champs client/commande.
    **Action : destinataire unifié (variable explicite → e-mail du site),
    extraction robuste, échappement HTML.**
+   **Statut PR #22 : corrigé — repli sur l'e-mail du site, extraction d'une
+   adresse simple ou `Nom <adresse>`, valeurs dynamiques échappées.**
 
 ### 7.3 Priorité 2 — durcissement et exactitude
 
@@ -263,16 +280,25 @@ jamais si elle est réellement présente sur Vercel.
   à réduire une fois l'exploitation stabilisée.
 - **Doublons d'e-mail possibles** : IPN et polling `/order/[ref]` peuvent
   constater le même passage à `paid` en parallèle et notifier deux fois ;
-  aucun marqueur transactionnel « déjà notifié » n'existe.
+  aucun marqueur transactionnel « déjà notifié » n'existe. **Atténué dans la
+  PR #22** : les deux chemins effectuent une mise à jour conditionnelle sur
+  l'ancien statut, et seul celui qui revendique la transition envoie
+  l'e-mail. Il n'existe toujours pas de file transactionnelle de relance si
+  la requête gagnante échoue après l'écriture.
 - **Relance de tranche** : `payExistingOrder` crée une nouvelle facture et
   efface l'ancien `paymentId` ; l'ancienne facture payée tardivement peut
   ensuite écraser le suivi ou créer un double règlement à traiter
-  manuellement.
+  manuellement. **Atténué dans la PR #22** : le jeton est exigé pour les
+  commandes protégées et une relance ne peut plus repasser une commande
+  `paid` en `pending`. Deux factures réellement payées restent un cas de
+  remboursement manuel.
 - **Totaux admin filtrés** : `/admin/orders` calcule total encaissé et
   nombre de réservations sur les lignes filtrées (limite 500), alors que
   les libellés suggèrent des totaux globaux.
 - **Polling client** : toute erreur HTTP (y compris 500 transitoire) est
   affichée « commande introuvable » et n'est jamais réinitialisée.
+  **Corrigé dans la PR #22** : seul un `404` marque la commande introuvable,
+  et une réponse valide réinitialise cet état.
 - **Inventaire documentaire** : le code lit 23 variables applicatives ;
   `EMAIL_FROM`, `EMAIL_DOMAIN`, `SMTP_TLS_REJECT_UNAUTHORIZED` et
   `NEXT_PUBLIC_SITE_URL` manquaient dans `.env.example` (le README couvre
@@ -288,5 +314,87 @@ serveur, IPN signé, schéma auto-créé, admin protégé, replis propres.
 En revanche, le code **ne permet pas d'affirmer** que `SESSION_SECRET`,
 le secret IPN distinct, `SITE_URL`, les e-mails ou le wallet NOWPayments
 sont configurés — seuls les noms dans Vercel/NOWPayments le confirment.
-Et l'état « production sans réserve » attend au minimum la mise à jour
-de sécurité Next (priorité 1.1).
+Les quatre points de priorité 1 sont traités par la PR #22 (§7.5), mais la
+production n'en bénéficiera qu'après fusion sur `main` et redéploiement.
+Le lint historique (thème/langue, voir §6) et plusieurs points de priorité 2
+restent volontairement hors de cette PR.
+
+### 7.5 Corrections implémentées dans la PR #22
+
+**Dépendances**
+
+- `next` et `eslint-config-next` passent à `^16.4.2` (versions installées
+  vérifiées : `16.4.2`).
+- `npm audit --omit=dev` : **0 vulnérabilité** dans l'arbre de production.
+- `npm audit` complet : 10 vulnérabilités restantes (4 modérées, 6 élevées),
+  toutes dans l'arbre de développement (`eslint-config-next`,
+  `drizzle-kit`, `postcss` direct de build) ; elles ne font pas partie des
+  dépendances de production signalées par `--omit=dev`.
+
+**Suivi public des commandes**
+
+- Nouvelles références `NKH-…`/`RSV-…` à **96 bits** d'aléa
+  cryptographique (`randomBytes(12)`, hexadécimal), au lieu d'un timestamp
+  plus quelques caractères `Math.random()`.
+- Jeton de suivi séparé de **256 bits** par commande (un même jeton pour
+  toutes les tranches d'un groupe). Seul son **SHA-256** est stocké dans
+  `orders.tracking_token_hash` ; le jeton en clair n'apparaît que dans la
+  réponse de création et dans les URLs de retour NOWPayments (`?t=…`).
+- `GET /api/payments/order/[ref]` exige ce jeton pour les nouvelles
+  commandes (en-tête `x-order-tracking-token`, Bearer ou `?t=`) et répond
+  `404` sans lui, sans confirmer l'existence de la commande. La réponse ne
+  contient plus nom, téléphone, e-mail complet, adresse crypto ni
+  `paymentUrl` de la commande principale ; l'e-mail est masqué
+  (`w***@example.com`). Les liens de paiement des tranches ne sont renvoyés
+  qu'au porteur du jeton.
+- Anciennes commandes (`tracking_token_hash` à `NULL`) : accès « legacy »
+  conservé pour ne pas casser les liens déjà envoyés, mais avec la même
+  réponse minimisée et `paymentUrl: null` sur les tranches. Le bouton de la
+  page de suivi génère alors explicitement une nouvelle facture.
+- La colonne est créée par le DDL de base et par un
+  `ALTER TABLE … ADD COLUMN IF NOT EXISTS` idempotent dans
+  `ensureSchema()` : aucune migration manuelle n'est requise au déploiement.
+
+**Réconciliation IPN et polling**
+
+- Seuls `finished` et `completed` valent `paid`. `confirmed`, `sending` et
+  les autres états intermédiaires restent `pending`.
+- Transitions monotones : `paid` est terminal sauf `refunded` explicite ;
+  `failed`/`expired` ne reviennent pas seuls à `pending` ; un vrai
+  `finished` validé peut en revanche faire passer `failed`/`expired` à
+  `paid`. Les notifications périmées sont accusées (`200`) sans écraser
+  l'état connu.
+- Avant tout passage à `paid`, contrôle du montant facturé
+  (`price_amount`, tolérance max(0,01 ; 0,1 %)), de la devise
+  (`price_currency`) et, quand les montants crypto sont fournis, de
+  `actually_paid ≥ 99 %` de `pay_amount`. En cas d'écart, le statut interne
+  est conservé et l'anomalie est journalisée.
+- IPN et polling partagent ces règles et revendiquent la transition par une
+  mise à jour conditionnelle sur `(id, ancien statut)` : seule la requête
+  gagnante envoie l'e-mail « paiement confirmé ». Une relance manuelle de
+  tranche ne peut plus repasser une commande `paid` en `pending`.
+
+**Notification e-mail de paiement**
+
+- Destinataire : `LEAD_NOTIFICATION_EMAIL` → e-mail public du site
+  (`config.email`) → adresse extraite de `EMAIL_FROM` (forme simple ou
+  `Nom <adresse>`).
+- Toutes les valeurs dynamiques du HTML (client, commande, montants, URL
+  admin…) passent par `escapeHtml`.
+
+**Validation de la branche (19/10/2026, sandbox sans secrets)**
+
+| Contrôle | Résultat |
+|---|---|
+| `npm run typecheck` | ✅ |
+| `npm run build` (Next 16.4.2) | ✅ 28 routes |
+| `npm audit --omit=dev` | ✅ 0 vulnérabilité |
+| `npm run lint` | ⚠️ Inchangé : 5 erreurs `set-state-in-effect` + 8 avertissements (§6) |
+| Fonctions pures ciblées | ✅ Références/jetons (format, unicité, accès granted/legacy/denied), matrice de transitions, validation des montants, signature IPN valide/invalide |
+| Smoke tests serveur compilé | ✅ `/` et `/pay/success?…&t=…` → 200 ; création sans clé → 503 ; IPN mal signé → 401 ; lecture sans base → 500 contrôlé |
+
+Limites de cette validation : aucun paiement réel ni aucune écriture en
+base de production n'ont été effectués depuis le sandbox, et la Preview
+Vercel reste protégée par authentification. Le test final reste donc :
+ouvrir la Preview de la PR connecté à Vercel, puis — après fusion —
+effectuer le test de bout en bout du §4 sur la production.

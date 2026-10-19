@@ -47,8 +47,13 @@ export const orders = pgTable("orders", {
   updatedAt: timestamp("updated_at", { withTimezone: true })
     .notNull()
     .defaultNow(),
-  /** Référence interne affichée au client (ex. NKH-LZ3K9XAB12CD). */
+  /** Référence interne affichée au client (ex. NKH-9F2C…). */
   ref: text("ref").notNull().unique(),
+  /**
+   * SHA-256 du jeton de suivi public (jamais le jeton en clair).
+   * `null` sur les commandes créées avant cette protection.
+   */
+  trackingTokenHash: text("tracking_token_hash"),
   /** « plan » = formule complète ; « reservation » = acompte prioritaire 1 $. */
   kind: text("kind").notNull().default("plan"),
   /** Site du portfolio concerné par une réservation. */
