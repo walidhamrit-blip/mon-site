@@ -16,7 +16,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
-import { useSiteConfig } from "@/components/site-provider";
+import { useSectionHeading, useSiteConfig } from "@/components/site-provider";
 import { lydLabel } from "@/lib/classification";
 import { formatMainPrice } from "@/lib/installments";
 
@@ -37,6 +37,7 @@ const ICONS: Record<string, LucideIcon> = {
  */
 export function Services() {
   const siteConfig = useSiteConfig();
+  const heading = useSectionHeading("services");
   const { locale, t } = useI18n();
   const ar = locale === "ar";
 
@@ -60,11 +61,9 @@ export function Services() {
             <span className="h-px w-8 bg-[var(--accent)]" />
           </div>
           <h2 className="mt-3 text-[30px] lg:text-[42px] font-black tracking-tight leading-none">
-            {ar ? t.services.titleAr : t.services.titleEn}
+            {heading.title}
           </h2>
-          <p className="mt-3 opacity-60">
-            {ar ? t.services.subtitleAr : t.services.subtitleEn}
-          </p>
+          <p className="mt-3 opacity-60">{heading.subtitle}</p>
         </div>
 
         <div className="mt-10 grid sm:grid-cols-2 lg:grid-cols-3 gap-6 max-w-[1100px] mx-auto">

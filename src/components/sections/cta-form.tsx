@@ -6,7 +6,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { ArrowUpRight, Send, CheckCircle2, ShieldCheck, Clock, Headset } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
-import { useSiteConfig } from "@/components/site-provider";
+import { useSectionHeading, useSiteConfig } from "@/components/site-provider";
 import { whatsappLink } from "@/lib/utils";
 
 const schema = z.object({
@@ -25,6 +25,7 @@ type FormData = z.infer<typeof schema>;
 
 export function CTAForm() {
   const siteConfig = useSiteConfig();
+  const heading = useSectionHeading("cta");
   const { locale, t } = useI18n();
   const [step, setStep] = useState(1);
   const [submitted, setSubmitted] = useState(false);
@@ -84,8 +85,10 @@ export function CTAForm() {
                 {locale === "ar" ? "استشارة مجانية" : "FREE CONSULT"}
               </div>
               <h2 className="mt-4 text-[32px] lg:text-[42px] font-black leading-[0.95] tracking-tight">
-                {t.cta.title}
-                <span className="block font-light italic opacity-80 text-[28px] lg:text-[34px] mt-1">{t.cta.subtitle}</span>
+                {heading.title}
+                <span className="block font-light italic opacity-80 text-[28px] lg:text-[34px] mt-1">
+                  {heading.subtitle}
+                </span>
               </h2>
 
               <div className="mt-8 space-y-3">
@@ -110,7 +113,7 @@ export function CTAForm() {
                   <ArrowUpRight className="h-4 w-4" />
                 </a>
                 <div className="text-xs opacity-60 flex items-center">
-                  {t.cta.guarantee}
+                  {heading.note || t.cta.guarantee}
                 </div>
               </div>
             </div>

@@ -2,10 +2,11 @@
 import { motion } from "framer-motion";
 import { Star, Quote } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
-import { useSiteContent } from "@/components/site-provider";
+import { useSectionHeading, useSiteContent } from "@/components/site-provider";
 
 export function Testimonials() {
   const { testimonials } = useSiteContent();
+  const heading = useSectionHeading("testimonials");
   const { locale, t } = useI18n();
   return (
     <section className="py-16 lg:py-20">
@@ -16,8 +17,10 @@ export function Testimonials() {
               <span className="h-px w-8 bg-[var(--accent)]" />
               {locale === "ar" ? "آراء العملاء" : "TESTIMONIALS"}
             </div>
-            <h2 className="mt-3 text-[30px] lg:text-[42px] font-black tracking-tight leading-none">{t.testimonials.title}</h2>
-            <p className="mt-3 opacity-60">{t.testimonials.subtitle}</p>
+            <h2 className="mt-3 text-[30px] lg:text-[42px] font-black tracking-tight leading-none">
+              {heading.title}
+            </h2>
+            <p className="mt-3 opacity-60">{heading.subtitle}</p>
           </div>
           <div className="hidden lg:flex items-center gap-2 text-sm">
             <span className="flex">

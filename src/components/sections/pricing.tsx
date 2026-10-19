@@ -4,7 +4,7 @@ import Link from "next/link";
 import { motion } from "framer-motion";
 import { CalendarCheck, Check, Sparkles, ArrowUpRight, Bitcoin } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
-import { useSiteConfig } from "@/components/site-provider";
+import { useSectionHeading, useSiteConfig } from "@/components/site-provider";
 import { CheckoutDialog } from "@/components/checkout-dialog";
 import { formatLyd, lydLabel } from "@/lib/classification";
 import { formatMainPrice, formatUsd } from "@/lib/installments";
@@ -12,6 +12,7 @@ import type { PricingPlan } from "@/lib/config";
 
 export function Pricing() {
   const siteConfig = useSiteConfig();
+  const heading = useSectionHeading("pricing");
   const { locale, t } = useI18n();
   const plans = siteConfig.pricing.plans;
   const [checkoutPlan, setCheckoutPlan] = useState<PricingPlan | null>(null);
@@ -25,9 +26,11 @@ export function Pricing() {
             {locale === "ar" ? "الباقات" : "PRICING"}
             <span className="h-px w-8 bg-[var(--accent)]" />
           </div>
-          <h2 className="mt-3 text-[30px] lg:text-[42px] font-black tracking-tight leading-none">{t.pricing.title}</h2>
-          <p className="mt-3 opacity-60">{t.pricing.subtitle}</p>
-          <p className="mt-2 text-xs opacity-50">{t.pricing.perMonthNote}</p>
+          <h2 className="mt-3 text-[30px] lg:text-[42px] font-black tracking-tight leading-none">
+            {heading.title}
+          </h2>
+          <p className="mt-3 opacity-60">{heading.subtitle}</p>
+          {heading.note && <p className="mt-2 text-xs opacity-50">{heading.note}</p>}
         </div>
 
         <div className="mt-10 grid lg:grid-cols-3 gap-6 max-w-[1100px] mx-auto items-start">

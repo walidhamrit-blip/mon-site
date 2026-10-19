@@ -1,10 +1,12 @@
 "use client";
 import { motion } from "framer-motion";
 import { useI18n } from "@/lib/i18n";
-import { processSteps } from "@/lib/content";
+import { useSectionHeading, useSiteContent } from "@/components/site-provider";
 
 export function Process() {
-  const { locale, t } = useI18n();
+  const { locale } = useI18n();
+  const { process: processSteps } = useSiteContent();
+  const heading = useSectionHeading("process");
   return (
     <section className="py-16 lg:py-20">
       <div className="site-container px-4 sm:px-6 lg:px-8">
@@ -14,11 +16,15 @@ export function Process() {
             {locale === "ar" ? "العملية" : "PROCESS"}
             <span className="h-px w-8 bg-[var(--accent)]" />
           </div>
-          <h2 className="mt-3 text-[30px] lg:text-[42px] font-black tracking-tight leading-none">{t.process.title}</h2>
-          <p className="mt-3 opacity-60">{t.process.subtitle}</p>
-          <div className="mt-4 inline-flex px-4 py-1.5 rounded-full bg-[var(--secondary)] border border-[var(--border)] text-sm font-semibold">
-            ⏱ {t.process.total}
-          </div>
+          <h2 className="mt-3 text-[30px] lg:text-[42px] font-black tracking-tight leading-none">
+            {heading.title}
+          </h2>
+          <p className="mt-3 opacity-60">{heading.subtitle}</p>
+          {heading.note && (
+            <div className="mt-4 inline-flex px-4 py-1.5 rounded-full bg-[var(--secondary)] border border-[var(--border)] text-sm font-semibold">
+              ⏱ {heading.note}
+            </div>
+          )}
         </div>
 
         <div className="mt-10 relative">

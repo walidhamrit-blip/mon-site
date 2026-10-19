@@ -3,9 +3,15 @@ import { useState } from "react";
 import type {
   Demo,
   Faq,
+  HeroContent,
   PricingPlanData,
+  ProcessStep,
+  RibbonContent,
+  SectionHeading,
+  SectionHeadingId,
   SiteContent,
   Testimonial,
+  WhyUsItem,
 } from "@/lib/site-types";
 import { resetContentSection, saveContentSection } from "@/app/admin/actions";
 import { sectors } from "@/lib/content";
@@ -23,12 +29,80 @@ import {
   AlertCircle,
 } from "lucide-react";
 
-type Tab = "demos" | "testimonials" | "faqs";
+type Tab =
+  | "hero"
+  | "ribbon"
+  | "whyUs"
+  | "demos"
+  | "process"
+  | "testimonials"
+  | "faqs"
+  | "headings";
 
 const tabs: { id: Tab; label: string }[] = [
+  { id: "hero", label: "Accueil (Hero)" },
+  { id: "ribbon", label: "Bandeau services" },
+  { id: "whyUs", label: "Pourquoi nous" },
   { id: "demos", label: "Démos" },
+  { id: "process", label: "Processus" },
   { id: "testimonials", label: "Témoignages" },
   { id: "faqs", label: "FAQ" },
+  { id: "headings", label: "Titres des sections" },
+];
+
+/** Sections dont les titres/sous-titres sont éditables. */
+const headingFields: {
+  id: SectionHeadingId;
+  label: string;
+  description: string;
+  withNote?: boolean;
+}[] = [
+  { id: "why", label: "Pourquoi nous", description: "Section « Pourquoi nous ? »" },
+  { id: "demos", label: "Galerie de démos", description: "Section des sites en démonstration" },
+  {
+    id: "identityCustomizer",
+    label: "Studio d'identité — personnalisation",
+    description: "Bannière de personnalisation en direct",
+  },
+  {
+    id: "identityThemes",
+    label: "Studio d'identité — thèmes",
+    description: "Galerie des thèmes prêts à l'emploi",
+  },
+  {
+    id: "process",
+    label: "Processus",
+    description: "Étapes de la méthode de travail",
+    withNote: true,
+  },
+  {
+    id: "pricing",
+    label: "Tarifs",
+    description: "Formules et prix",
+    withNote: true,
+  },
+  {
+    id: "flexPay",
+    label: "Paiement flexible",
+    description: "Section « payez ce que vous voulez »",
+  },
+  {
+    id: "services",
+    label: "Services à la carte",
+    description: "Petites missions vendues au forfait",
+  },
+  {
+    id: "testimonials",
+    label: "Témoignages",
+    description: "Avis des clients",
+  },
+  { id: "faq", label: "FAQ", description: "Questions fréquentes" },
+  {
+    id: "cta",
+    label: "Appel à l'action",
+    description: "Formulaire de demande final",
+    withNote: true,
+  },
 ];
 
 /* ---------- éléments d'interface ---------- */
@@ -181,6 +255,26 @@ function ItemCard({
   );
 }
 
+function Panel({
+  title,
+  description,
+  children,
+}: {
+  title: string;
+  description?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <section className="rounded-3xl border border-white/10 bg-black/30 p-5">
+      <h2 className="font-black text-white">{title}</h2>
+      {description && (
+        <p className="mt-1 text-xs text-zinc-500 leading-5">{description}</p>
+      )}
+      <div className="mt-4">{children}</div>
+    </section>
+  );
+}
+
 /* ---------- éditeur ---------- */
 
 function newDemo(existing: Demo[], plans: PricingPlanData[]): Demo {
@@ -230,6 +324,28 @@ function newFaq(): Faq {
   };
 }
 
+function newWhyUs(): WhyUsItem {
+  return {
+    icon: "zap",
+    titleAr: "ميزة جديدة",
+    titleEn: "New advantage",
+    descAr: "وصف الميزة…",
+    descEn: "Advantage description…",
+  };
+}
+
+function newProcess(index: number): ProcessStep {
+  return {
+    num: String(index + 1).padStart(2, "0"),
+    titleAr: "خطوة جديدة",
+    titleEn: "New step",
+    descAr: "وصف الخطوة…",
+    descEn: "Step description…",
+    durationAr: "يوم واحد",
+    durationEn: "1 day",
+  };
+}
+
 function moveItem<T>(list: T[], index: number, dir: -1 | 1): T[] {
   const target = index + dir;
   if (target < 0 || target >= list.length) return list;
@@ -250,6 +366,41 @@ export function ContentEditor({
   const [busy, setBusy] = useState<"" | Tab | "reset">("");
   const [msg, setMsg] = useState<{ kind: "ok" | "err"; text: string } | null>(null);
 
+  const setHero = (patch: Partial<HeroContent>) =>
+    setDraft((d) => ({ ...d, hero: { ...d.hero, ...patch } }));
+
+  const setRibbon = (patch: Partial<RibbonContent>) =>
+    setDraft((d) => ({ ...d, ribbon: { ...d.ribbon, ...patch } }));
+
+  const setRibbonItem = (i: number, patch: Partial<RibbonContent["items"][number]>) =>
+    setDraft((d) => ({
+      ...d,
+      ribbon: {
+        ...d.ribbon,
+        items: d.ribbon.items.map((item, j) =>
+          j === i ? { ...item, ...patch } : item,
+        ),
+      },
+    }));
+
+  const setWhyUs = (i: number, patch: Partial<WhyUsItem>) =>
+    setDraft((d) => ({
+      ...d,
+      whyUs: d.whyUs.map((item, j) => (j === i ? { ...item, ...patch } : item)),
+    }));
+
+  const setProcess = (i: number, patch: Partial<ProcessStep>) =>
+    setDraft((d) => ({
+      ...d,
+      process: d.process.map((item, j) => (j === i ? { ...item, ...patch } : item)),
+    }));
+
+  const setHeading = (id: SectionHeadingId, patch: Partial<SectionHeading>) =>
+    setDraft((d) => ({
+      ...d,
+      headings: { ...d.headings, [id]: { ...d.headings[id], ...patch } },
+    }));
+
   const setDemo = (i: number, patch: Partial<Demo>) =>
     setDraft((d) => ({ ...d, demos: d.demos.map((x, j) => (j === i ? { ...x, ...patch } : x)) }));
   const setFaq = (i: number, patch: Partial<Faq>) =>
@@ -260,43 +411,93 @@ export function ContentEditor({
       testimonials: d.testimonials.map((x, j) => (j === i ? { ...x, ...patch } : x)),
     }));
 
-  const onDelete = (kind: Tab, index: number) => {
-    if (kind === "demos" && draft.demos.length <= 1) {
-      alert("Il doit rester au moins une démo sur le site.");
+  const onDelete = (
+    kind: "demos" | "faqs" | "testimonials" | "whyUs" | "process",
+    index: number,
+  ) => {
+    const lists = {
+      demos: draft.demos,
+      faqs: draft.faqs,
+      testimonials: draft.testimonials,
+      whyUs: draft.whyUs,
+      process: draft.process,
+    };
+    if (
+      (kind === "demos" || kind === "whyUs" || kind === "process") &&
+      lists[kind].length <= 1
+    ) {
+      alert("Il doit rester au moins un élément dans cette section.");
       return;
     }
     setDraft((d) => {
-      const list = kind === "demos" ? d.demos : kind === "faqs" ? d.faqs : d.testimonials;
-      const filtered = list.filter((_, j) => j !== index);
-      return kind === "demos"
-        ? { ...d, demos: filtered as Demo[] }
-        : kind === "faqs"
-          ? { ...d, faqs: filtered as Faq[] }
-          : { ...d, testimonials: filtered as Testimonial[] };
+      switch (kind) {
+        case "demos":
+          return { ...d, demos: d.demos.filter((_, j) => j !== index) };
+        case "faqs":
+          return { ...d, faqs: d.faqs.filter((_, j) => j !== index) };
+        case "testimonials":
+          return { ...d, testimonials: d.testimonials.filter((_, j) => j !== index) };
+        case "whyUs":
+          return { ...d, whyUs: d.whyUs.filter((_, j) => j !== index) };
+        case "process":
+          return { ...d, process: d.process.filter((_, j) => j !== index) };
+      }
     });
   };
 
-  const onMove = (kind: Tab, index: number, dir: -1 | 1) =>
-    setDraft((d) =>
-      kind === "demos"
-        ? { ...d, demos: moveItem(d.demos, index, dir) }
-        : kind === "faqs"
-          ? { ...d, faqs: moveItem(d.faqs, index, dir) }
-          : { ...d, testimonials: moveItem(d.testimonials, index, dir) },
-    );
+  const onMove = (
+    kind: "demos" | "faqs" | "testimonials" | "whyUs" | "process",
+    index: number,
+    dir: -1 | 1,
+  ) =>
+    setDraft((d) => {
+      switch (kind) {
+        case "demos":
+          return { ...d, demos: moveItem(d.demos, index, dir) };
+        case "faqs":
+          return { ...d, faqs: moveItem(d.faqs, index, dir) };
+        case "testimonials":
+          return { ...d, testimonials: moveItem(d.testimonials, index, dir) };
+        case "whyUs":
+          return { ...d, whyUs: moveItem(d.whyUs, index, dir) };
+        case "process":
+          return { ...d, process: moveItem(d.process, index, dir) };
+      }
+    });
 
   const buildPayload = () => {
     const clean = (list: string[]) => list.map((s) => s.trim()).filter(Boolean);
-    if (tab === "demos") {
-      return draft.demos.map((d) => ({
-        ...d,
-        slug: d.slug.trim(),
-        features: clean(d.features),
-        featuresEn: clean(d.featuresEn),
-      }));
+    switch (tab) {
+      case "hero":
+        return {
+          ...draft.hero,
+          chipsAr: clean(draft.hero.chipsAr),
+          chipsEn: clean(draft.hero.chipsEn),
+        };
+      case "ribbon": {
+        const items = draft.ribbon.items
+          .map((item) => ({ ar: item.ar.trim(), en: item.en.trim() }))
+          .filter((item) => item.ar || item.en);
+        return { ...draft.ribbon, items };
+      }
+      case "whyUs":
+        return draft.whyUs;
+      case "process":
+        return draft.process;
+      case "headings":
+        return draft.headings;
+      case "demos":
+        return draft.demos.map((d) => ({
+          ...d,
+          slug: d.slug.trim(),
+          features: clean(d.features),
+          featuresEn: clean(d.featuresEn),
+        }));
+      case "faqs":
+        return draft.faqs;
+      case "testimonials":
+        return draft.testimonials;
     }
-    if (tab === "faqs") return draft.faqs;
-    return draft.testimonials;
   };
 
   const onSave = async () => {
@@ -329,6 +530,25 @@ export function ContentEditor({
 
   const sectorOptions = sectors.filter((s) => s.id !== "all");
 
+  const tabCount = (id: Tab): number | null => {
+    switch (id) {
+      case "ribbon":
+        return draft.ribbon.items.length;
+      case "whyUs":
+        return draft.whyUs.length;
+      case "demos":
+        return draft.demos.length;
+      case "process":
+        return draft.process.length;
+      case "testimonials":
+        return draft.testimonials.length;
+      case "faqs":
+        return draft.faqs.length;
+      default:
+        return null;
+    }
+  };
+
   return (
     <div className="space-y-5">
       {/* Onglets */}
@@ -348,18 +568,429 @@ export function ContentEditor({
             }`}
           >
             {t.label}
-            <span className="ms-2 text-xs opacity-60">
-              {tab === t.id
-                ? t.id === "demos"
-                  ? draft.demos.length
-                  : t.id === "faqs"
-                    ? draft.faqs.length
-                    : draft.testimonials.length
-                : ""}
-            </span>
+            {tab === t.id && tabCount(t.id) !== null && (
+              <span className="ms-2 text-xs opacity-60">{tabCount(t.id)}</span>
+            )}
           </button>
         ))}
       </div>
+
+      {/* ---------- ACCUEIL (HERO) ---------- */}
+      {tab === "hero" && (
+        <div className="space-y-4">
+          <Panel
+            title="Bloc d'accueil"
+            description="Le premier écran du site : badge, grand titre, sous-titre et boutons. Chaque texte existe en arabe et en anglais."
+          >
+            <div className="grid sm:grid-cols-2 gap-4">
+              <Field
+                label="Badge (arabe)"
+                dir="rtl"
+                value={draft.hero.badgeAr}
+                onChange={(v) => setHero({ badgeAr: v })}
+              />
+              <Field
+                label="Badge (anglais)"
+                dir="ltr"
+                value={draft.hero.badgeEn}
+                onChange={(v) => setHero({ badgeEn: v })}
+              />
+              <Field
+                label="Titre — ligne 1 (arabe)"
+                dir="rtl"
+                value={draft.hero.title1Ar}
+                onChange={(v) => setHero({ title1Ar: v })}
+              />
+              <Field
+                label="Titre — ligne 1 (anglais)"
+                dir="ltr"
+                value={draft.hero.title1En}
+                onChange={(v) => setHero({ title1En: v })}
+              />
+              <Field
+                label="Titre — ligne 2 (arabe)"
+                dir="rtl"
+                value={draft.hero.title2Ar}
+                onChange={(v) => setHero({ title2Ar: v })}
+              />
+              <Field
+                label="Titre — ligne 2 (anglais)"
+                dir="ltr"
+                value={draft.hero.title2En}
+                onChange={(v) => setHero({ title2En: v })}
+              />
+              <Field
+                label="Titre — ligne 3, en italique (arabe)"
+                dir="rtl"
+                value={draft.hero.title3Ar}
+                onChange={(v) => setHero({ title3Ar: v })}
+              />
+              <Field
+                label="Titre — ligne 3, en italique (anglais)"
+                dir="ltr"
+                value={draft.hero.title3En}
+                onChange={(v) => setHero({ title3En: v })}
+              />
+            </div>
+            <div className="mt-4 grid lg:grid-cols-2 gap-4">
+              <Area
+                label="Sous-titre (arabe)"
+                dir="rtl"
+                value={draft.hero.subtitleAr}
+                onChange={(v) => setHero({ subtitleAr: v })}
+              />
+              <Area
+                label="Sous-titre (anglais)"
+                dir="ltr"
+                value={draft.hero.subtitleEn}
+                onChange={(v) => setHero({ subtitleEn: v })}
+              />
+            </div>
+          </Panel>
+
+          <Panel
+            title="Boutons & réassurance"
+            description="Libellés des deux boutons, preuve sociale et petites pastilles affichées sous le titre."
+          >
+            <div className="grid sm:grid-cols-2 gap-4">
+              <Field
+                label="Bouton principal (arabe)"
+                dir="rtl"
+                value={draft.hero.ctaPrimaryAr}
+                onChange={(v) => setHero({ ctaPrimaryAr: v })}
+              />
+              <Field
+                label="Bouton principal (anglais)"
+                dir="ltr"
+                value={draft.hero.ctaPrimaryEn}
+                onChange={(v) => setHero({ ctaPrimaryEn: v })}
+              />
+              <Field
+                label="Bouton secondaire (arabe)"
+                dir="rtl"
+                value={draft.hero.ctaSecondaryAr}
+                onChange={(v) => setHero({ ctaSecondaryAr: v })}
+              />
+              <Field
+                label="Bouton secondaire (anglais)"
+                dir="ltr"
+                value={draft.hero.ctaSecondaryEn}
+                onChange={(v) => setHero({ ctaSecondaryEn: v })}
+              />
+              <Field
+                label="Preuve sociale (arabe)"
+                dir="rtl"
+                value={draft.hero.trustedAr}
+                onChange={(v) => setHero({ trustedAr: v })}
+              />
+              <Field
+                label="Preuve sociale (anglais)"
+                dir="ltr"
+                value={draft.hero.trustedEn}
+                onChange={(v) => setHero({ trustedEn: v })}
+              />
+              <Field
+                label="Note / étoiles (arabe)"
+                dir="rtl"
+                value={draft.hero.ratingAr}
+                onChange={(v) => setHero({ ratingAr: v })}
+              />
+              <Field
+                label="Note / étoiles (anglais)"
+                dir="ltr"
+                value={draft.hero.ratingEn}
+                onChange={(v) => setHero({ ratingEn: v })}
+              />
+            </div>
+            <div className="mt-4 grid lg:grid-cols-2 gap-4">
+              <Lines
+                label="Pastilles de réassurance (arabe)"
+                value={draft.hero.chipsAr}
+                onChange={(v) => setHero({ chipsAr: v })}
+              />
+              <Lines
+                label="Pastilles de réassurance (anglais)"
+                value={draft.hero.chipsEn}
+                onChange={(v) => setHero({ chipsEn: v })}
+              />
+            </div>
+          </Panel>
+        </div>
+      )}
+
+      {/* ---------- BANDEAU DE SERVICES ---------- */}
+      {tab === "ribbon" && (
+        <div className="space-y-4">
+          <Panel
+            title="Bandeau défilant"
+            description="Le ruban de services qui défile sous le bloc d'accueil. Ajoutez, modifiez ou supprimez les éléments."
+          >
+            <div className="grid sm:grid-cols-2 gap-4">
+              <Field
+                label="Accroche (arabe)"
+                dir="rtl"
+                value={draft.ribbon.taglineAr}
+                onChange={(v) => setRibbon({ taglineAr: v })}
+              />
+              <Field
+                label="Accroche (anglais)"
+                dir="ltr"
+                value={draft.ribbon.taglineEn}
+                onChange={(v) => setRibbon({ taglineEn: v })}
+              />
+            </div>
+
+            <div className="mt-4 space-y-3">
+              {draft.ribbon.items.map((item, i) => (
+                <div
+                  key={i}
+                  className="grid sm:grid-cols-[1fr_1fr_auto] gap-3 items-end rounded-2xl border border-white/10 bg-black/20 p-3"
+                >
+                  <Field
+                    label={`Élément ${i + 1} (arabe)`}
+                    dir="rtl"
+                    value={item.ar}
+                    onChange={(v) => setRibbonItem(i, { ar: v })}
+                  />
+                  <Field
+                    label={`Élément ${i + 1} (anglais)`}
+                    dir="ltr"
+                    value={item.en}
+                    onChange={(v) => setRibbonItem(i, { en: v })}
+                  />
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setRibbon({ items: draft.ribbon.items.filter((_, j) => j !== i) })
+                    }
+                    disabled={draft.ribbon.items.length <= 1}
+                    className="h-10 w-10 rounded-xl border border-white/10 text-zinc-500 hover:text-red-400 hover:border-red-500/30 hover:bg-red-500/10 grid place-items-center transition-colors cursor-pointer disabled:opacity-30"
+                    aria-label="Supprimer l'élément"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                </div>
+              ))}
+            </div>
+
+            <button
+              type="button"
+              onClick={() =>
+                setRibbon({ items: [...draft.ribbon.items, { ar: "", en: "" }] })
+              }
+              className="mt-4 h-11 px-5 rounded-2xl border border-dashed border-white/20 text-sm font-bold text-zinc-400 hover:text-white hover:border-[#C6A664]/50 inline-flex items-center gap-2 transition-colors cursor-pointer"
+            >
+              <Plus className="h-4 w-4" /> Ajouter un élément
+            </button>
+          </Panel>
+        </div>
+      )}
+
+      {/* ---------- POURQUOI NOUS ---------- */}
+      {tab === "whyUs" && (
+        <div className="space-y-4">
+          {draft.whyUs.map((item, i) => (
+            <ItemCard
+              key={i}
+              index={i}
+              count={draft.whyUs.length}
+              title={item.titleEn || item.titleAr}
+              subtitle={item.icon}
+              onMove={(dir) => onMove("whyUs", i, dir)}
+              onDelete={() => onDelete("whyUs", i)}
+            >
+              <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                <label className="block">
+                  <span className="text-xs font-semibold text-zinc-400">Icône</span>
+                  <select
+                    value={item.icon}
+                    onChange={(e) => setWhyUs(i, { icon: e.target.value })}
+                    className="mt-1.5 h-10 w-full rounded-xl border border-white/10 bg-black/40 px-3 text-sm text-white outline-none focus:border-[#C6A664] cursor-pointer"
+                  >
+                    {["zap", "palette", "sliders", "search", "headset"].map((icon) => (
+                      <option key={icon} value={icon}>
+                        {icon}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <Field
+                  label="Titre (arabe)"
+                  dir="rtl"
+                  value={item.titleAr}
+                  onChange={(v) => setWhyUs(i, { titleAr: v })}
+                />
+                <Field
+                  label="Titre (anglais)"
+                  dir="ltr"
+                  value={item.titleEn}
+                  onChange={(v) => setWhyUs(i, { titleEn: v })}
+                />
+              </div>
+              <div className="mt-4 grid lg:grid-cols-2 gap-4">
+                <Area
+                  label="Description (arabe)"
+                  dir="rtl"
+                  value={item.descAr}
+                  onChange={(v) => setWhyUs(i, { descAr: v })}
+                />
+                <Area
+                  label="Description (anglais)"
+                  dir="ltr"
+                  value={item.descEn}
+                  onChange={(v) => setWhyUs(i, { descEn: v })}
+                />
+              </div>
+            </ItemCard>
+          ))}
+          <button
+            type="button"
+            onClick={() => setDraft((d) => ({ ...d, whyUs: [...d.whyUs, newWhyUs()] }))}
+            className="h-11 px-5 rounded-2xl border border-dashed border-white/20 text-sm font-bold text-zinc-400 hover:text-white hover:border-[#C6A664]/50 inline-flex items-center gap-2 transition-colors cursor-pointer"
+          >
+            <Plus className="h-4 w-4" /> Ajouter une carte
+          </button>
+        </div>
+      )}
+
+      {/* ---------- PROCESSUS ---------- */}
+      {tab === "process" && (
+        <div className="space-y-4">
+          {draft.process.map((step, i) => (
+            <ItemCard
+              key={i}
+              index={i}
+              count={draft.process.length}
+              title={step.titleEn || step.titleAr}
+              subtitle={`Étape ${step.num} — ${step.durationEn}`}
+              onMove={(dir) => onMove("process", i, dir)}
+              onDelete={() => onDelete("process", i)}
+            >
+              <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                <Field
+                  label="Numéro affiché"
+                  dir="ltr"
+                  value={step.num}
+                  placeholder="01"
+                  onChange={(v) => setProcess(i, { num: v })}
+                />
+                <Field
+                  label="Titre (arabe)"
+                  dir="rtl"
+                  value={step.titleAr}
+                  onChange={(v) => setProcess(i, { titleAr: v })}
+                />
+                <Field
+                  label="Titre (anglais)"
+                  dir="ltr"
+                  value={step.titleEn}
+                  onChange={(v) => setProcess(i, { titleEn: v })}
+                />
+                <Field
+                  label="Durée (arabe)"
+                  dir="rtl"
+                  value={step.durationAr}
+                  onChange={(v) => setProcess(i, { durationAr: v })}
+                />
+                <Field
+                  label="Durée (anglais)"
+                  dir="ltr"
+                  value={step.durationEn}
+                  onChange={(v) => setProcess(i, { durationEn: v })}
+                />
+              </div>
+              <div className="mt-4 grid lg:grid-cols-2 gap-4">
+                <Area
+                  label="Description (arabe)"
+                  dir="rtl"
+                  value={step.descAr}
+                  onChange={(v) => setProcess(i, { descAr: v })}
+                />
+                <Area
+                  label="Description (anglais)"
+                  dir="ltr"
+                  value={step.descEn}
+                  onChange={(v) => setProcess(i, { descEn: v })}
+                />
+              </div>
+            </ItemCard>
+          ))}
+          <button
+            type="button"
+            onClick={() =>
+              setDraft((d) => ({
+                ...d,
+                process: [...d.process, newProcess(d.process.length)],
+              }))
+            }
+            className="h-11 px-5 rounded-2xl border border-dashed border-white/20 text-sm font-bold text-zinc-400 hover:text-white hover:border-[#C6A664]/50 inline-flex items-center gap-2 transition-colors cursor-pointer"
+          >
+            <Plus className="h-4 w-4" /> Ajouter une étape
+          </button>
+        </div>
+      )}
+
+      {/* ---------- TITRES DES SECTIONS ---------- */}
+      {tab === "headings" && (
+        <div className="space-y-4">
+          <p className="rounded-2xl border border-white/10 bg-white/5 p-4 text-xs leading-5 text-zinc-400">
+            Modifiez ici les titres, sous-titres et notes de chaque section du site.
+            Les contenus (démos, témoignages, FAQ, étapes…) se règlent dans leurs
+            onglets respectifs.
+          </p>
+          {headingFields.map(({ id, label, description, withNote }) => {
+            const value = draft.headings[id];
+            return (
+              <Panel key={id} title={label} description={description}>
+                <div className="grid sm:grid-cols-2 gap-4">
+                  <Field
+                    label="Titre (arabe)"
+                    dir="rtl"
+                    value={value.titleAr}
+                    onChange={(v) => setHeading(id, { titleAr: v })}
+                  />
+                  <Field
+                    label="Titre (anglais)"
+                    dir="ltr"
+                    value={value.titleEn}
+                    onChange={(v) => setHeading(id, { titleEn: v })}
+                  />
+                </div>
+                <div className="mt-4 grid lg:grid-cols-2 gap-4">
+                  <Area
+                    label="Sous-titre (arabe)"
+                    dir="rtl"
+                    value={value.subtitleAr}
+                    onChange={(v) => setHeading(id, { subtitleAr: v })}
+                  />
+                  <Area
+                    label="Sous-titre (anglais)"
+                    dir="ltr"
+                    value={value.subtitleEn}
+                    onChange={(v) => setHeading(id, { subtitleEn: v })}
+                  />
+                </div>
+                {withNote && (
+                  <div className="mt-4 grid sm:grid-cols-2 gap-4">
+                    <Field
+                      label="Note (arabe)"
+                      dir="rtl"
+                      value={value.noteAr ?? ""}
+                      onChange={(v) => setHeading(id, { noteAr: v })}
+                    />
+                    <Field
+                      label="Note (anglais)"
+                      dir="ltr"
+                      value={value.noteEn ?? ""}
+                      onChange={(v) => setHeading(id, { noteEn: v })}
+                    />
+                  </div>
+                )}
+              </Panel>
+            );
+          })}
+        </div>
+      )}
 
       {/* ---------- DÉMOS ---------- */}
       {tab === "demos" && (

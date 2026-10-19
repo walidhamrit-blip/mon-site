@@ -1,3 +1,11 @@
+import type {
+  HeroContent,
+  RibbonContent,
+  SectionHeadings,
+  WhyUsItem,
+  ProcessStep,
+} from "./site-types";
+
 export const demos = [
   {
     slug: "myphone-tripoli",
@@ -412,3 +420,139 @@ export const faqs = [
     aEn: "Free 30-90 days support by plan. Then optional 99 LYD/mo for updates, backups & security.",
   },
 ] as const;
+
+/* ---------- Sections éditables de la page d'accueil ---------- */
+
+/** Textes par défaut du Hero (modifiables dans /admin → Contenu → Accueil). */
+export const heroContent: HeroContent = {
+  badgeAr: "✦ وكالة طرابلس الأولى للمواقع الفاخرة",
+  badgeEn: "✦ Tripoli's #1 Premium Web Agency",
+  title1Ar: "موقعك الاحترافي",
+  title1En: "Your pro website",
+  title2Ar: "جاهز في أيام",
+  title2En: "ready in days",
+  title3Ar: "وليس شهور",
+  title3En: "not months",
+  subtitleAr:
+    "نحوّل فكرتك إلى موقع فاخر، سريع، ويبيع — مصمم على هويتك، محسّن لجوجل، وجاهز ليستقبل عملاءك من أول يوم.",
+  subtitleEn:
+    "We turn your idea into a luxurious, fast, selling machine — crafted on your brand, optimized for Google, ready from day one.",
+  ctaPrimaryAr: "اطلب عرض سعر مجاني",
+  ctaPrimaryEn: "Get free quote",
+  ctaSecondaryAr: "شاهد المعارض الحية",
+  ctaSecondaryEn: "View live demos",
+  trustedAr: "يثق بنا 120+ نشاط في طرابلس",
+  trustedEn: "Trusted by 120+ businesses in Tripoli",
+  ratingAr: "تقييم 4.9/5",
+  ratingEn: "4.9/5 rating",
+  chipsAr: ["✓ تسليم 7 أيام", "✓ بدون دفعة كبيرة", "✓ دعم واتساب"],
+  chipsEn: ["✓ 7-day delivery", "✓ No big upfront", "✓ WhatsApp support"],
+};
+
+/** Bandeau défilant « services / points forts » (modifiable dans l'admin). */
+export const servicesRibbonContent: RibbonContent = {
+  taglineAr: "كل ما يحتاجه نشاطك لينمو",
+  taglineEn: "Everything your business needs to grow",
+  items: [
+    { ar: "تصميم مواقع حسب الطلب", en: "Bespoke web design" },
+    { ar: "متاجر إلكترونية", en: "E-commerce" },
+    { ar: "تصميم متجاوب", en: "Mobile-first design" },
+    { ar: "تحسين محركات البحث", en: "Search engine optimization" },
+    { ar: "عربي + إنجليزي", en: "Arabic + English" },
+    { ar: "طلبات عبر واتساب", en: "WhatsApp ordering" },
+    { ar: "سرعة وأداء", en: "Speed & performance" },
+    { ar: "دعم وتدريب", en: "Support & training" },
+  ],
+};
+
+/** Cartes « Pourquoi nous ? ». */
+export const defaultWhyUs: WhyUsItem[] = whyUs.map((item) => ({ ...item }));
+
+/** Étapes du processus. */
+export const defaultProcess: ProcessStep[] = processSteps.map((step) => ({ ...step }));
+
+/** Titres / sous-titres par défaut des sections du site. */
+export const defaultSectionHeadings: SectionHeadings = {
+  why: {
+    titleAr: "لماذا نخبة؟",
+    titleEn: "Why Nukhba?",
+    subtitleAr: "لسنا مجرد مصممين — نحن شريك نموك الرقمي",
+    subtitleEn: "Not just designers — your digital growth partner",
+  },
+  demos: {
+    titleAr: "معارض تنطق بالفخامة",
+    titleEn: "Showcases that speak luxury",
+    subtitleAr:
+      "تصفّح مواقع عملائنا الحقيقية مباشرةً أو افتحها بملء الشاشة مع إمكانية التبديل بين عرض الحاسوب والهاتف",
+    subtitleEn:
+      "Browse our real client websites live or open them in fullscreen with Desktop and Mobile view options",
+  },
+  identityCustomizer: {
+    titleAr: "جرّب قوة التخصيص",
+    titleEn: "Feel the customization",
+    subtitleAr:
+      "غيّر الألوان والخطوط وشاهد موقع الماسة الزرقاء يتشكل أمامك — هذه هي المرونة التي ستحصل عليها",
+    subtitleEn:
+      "Change colors & fonts live on Al-Massa Blue Diamond — this is the flexibility you'll get",
+  },
+  identityThemes: {
+    titleAr: "ثيمات جاهزة… اختر هوية موقعك",
+    titleEn: "Ready-made themes… pick your identity",
+    subtitleAr:
+      "8 ثيمات فاخرة — الأكثر طلباً في مواقع الشركات الفاخرة. كل ثيم يعمل بنسخة فاتحة وأخرى داكنة، والتبديل بينهما يتم بزر مستقل تماماً عن اختيار الثيم.",
+    subtitleEn:
+      "8 premium themes — the most requested palettes on luxury business websites. Each one runs in a light and a dark version, switched by a button of its own.",
+  },
+  process: {
+    titleAr: "من الفكرة إلى الإطلاق",
+    titleEn: "From idea to launch",
+    subtitleAr: "5 خطوات واضحة — تعرف أين نحن كل يوم",
+    subtitleEn: "5 clear steps — you know where we are every day",
+    noteAr: "إجمالي المدة: 7-14 يوم",
+    noteEn: "Total: 7-14 days",
+  },
+  pricing: {
+    titleAr: "استثمار يعود أضعافاً",
+    titleEn: "Investment that pays back",
+    subtitleAr: "أسعار واضحة، بلا مفاجآت — وكل دينار محسوب ليجلب عملاء",
+    subtitleEn: "Clear pricing, no surprises — every dinar calculated to bring clients",
+    noteAr: "دفع مرة واحدة + استضافة سنة مجاناً",
+    noteEn: "One-time + 1 year hosting free",
+  },
+  flexPay: {
+    titleAr: "ادفع ما تشاء — 1 دولار أو أكثر",
+    titleEn: "Pay what you want — $1 or more",
+    subtitleAr:
+      "حدّد المبلغ بنفسك — مفتوح من 1 دولار. مفيد خصوصاً عندما تفرض منصات العملات الرقمية حدوداً دنيا على المبلغ.",
+    subtitleEn:
+      "Set your own amount — open from $1 up. Especially handy when crypto platforms enforce minimum payment limits.",
+  },
+  services: {
+    titleAr: "خدماتنا المفتوحة — اختر ما تحتاجه فقط",
+    titleEn: "Open-serve services — pick only what you need",
+    subtitleAr:
+      "مهام صغيرة بأسعار واضحة — إعادة تصميم موقع قديم، إضافة قسم، بناء شرائح وعروض تقديمية، تصميم وهوية والمزيد.",
+    subtitleEn:
+      "Small tasks, clear prices — restyle an old site, add a section, build slides & decks, branding & design and more.",
+  },
+  testimonials: {
+    titleAr: "قصص نجاح من طرابلس",
+    titleEn: "Success stories from Tripoli",
+    subtitleAr: "قبل وبعد — كيف غيّر الموقع أعمالهم",
+    subtitleEn: "Before & after — how the site transformed them",
+  },
+  faq: {
+    titleAr: "أسئلة تهمك",
+    titleEn: "Good to know",
+    subtitleAr: "كل ما تريد معرفته قبل أن نبدأ",
+    subtitleEn: "Everything before we start",
+  },
+  cta: {
+    titleAr: "جاهز لتنطلق؟",
+    titleEn: "Ready to launch?",
+    subtitleAr: "احجز استشارتك المجانية اليوم — نرد في أقل من ساعتين",
+    subtitleEn: "Book your free consult today — we reply within 2 hours",
+    noteAr: "✓ رد خلال ساعتين  ✓ بدون التزام  ✓ استشارة مجانية",
+    noteEn: "✓ Reply in 2h  ✓ No commitment  ✓ Free consult",
+  },
+};

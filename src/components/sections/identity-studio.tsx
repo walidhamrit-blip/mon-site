@@ -15,7 +15,7 @@ import {
   Sun,
 } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
-import { useSiteContent } from "@/components/site-provider";
+import { useSectionHeading, useSiteContent } from "@/components/site-provider";
 import { useTheme } from "@/components/theme-provider";
 import { ThemePreview } from "@/components/theme-switcher";
 import { THEMES } from "@/lib/themes";
@@ -60,6 +60,8 @@ export function IdentityStudio() {
   const { locale, t } = useI18n();
   const ar = locale === "ar";
   const { demos } = useSiteContent();
+  const customizerHeading = useSectionHeading("identityCustomizer");
+  const themesHeading = useSectionHeading("identityThemes");
   const { palette, setPalette, mode, toggle } = useTheme();
 
   const [accent, setAccent] = useState(accents[1]);
@@ -155,9 +157,9 @@ export function IdentityStudio() {
               {ar ? "المخصص المباشر × ثيمات جاهزة" : "LIVE CUSTOMIZER × READY-MADE THEMES"}
             </div>
             <h2 className="mt-3 text-[30px] lg:text-[42px] font-black tracking-tight leading-none">
-              {t.customizer.title}
+              {customizerHeading.title}
             </h2>
-            <p className="mt-3 opacity-60 max-w-[60ch]">{t.customizer.subtitle}</p>
+            <p className="mt-3 opacity-60 max-w-[60ch]">{customizerHeading.subtitle}</p>
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
@@ -473,10 +475,10 @@ export function IdentityStudio() {
                   {ar ? "ثيمات جاهزة للشركات" : "READY-MADE BRAND THEMES"}
                 </div>
                 <h3 className="mt-2 text-2xl lg:text-[28px] font-black tracking-tight leading-none">
-                  {t.themes.title}
+                  {themesHeading.title}
                 </h3>
                 <p className="mt-3 opacity-60 max-w-[64ch] text-sm lg:text-base">
-                  {t.themes.subtitle}
+                  {themesHeading.subtitle}
                 </p>
               </div>
               <div

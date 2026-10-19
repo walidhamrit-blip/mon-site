@@ -3,7 +3,7 @@ import { useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { Bitcoin, PencilLine, ShieldCheck, SlidersHorizontal, TriangleAlert } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
-import { useSiteConfig } from "@/components/site-provider";
+import { useSectionHeading, useSiteConfig } from "@/components/site-provider";
 import { CheckoutDialog } from "@/components/checkout-dialog";
 import { PaymentGuarantee } from "@/components/payment-guarantee";
 import { formatUsd } from "@/lib/installments";
@@ -19,6 +19,7 @@ import { formatUsd } from "@/lib/installments";
  */
 export function FlexiblePayment() {
   const siteConfig = useSiteConfig();
+  const heading = useSectionHeading("flexPay");
   const { locale, t } = useI18n();
   const ar = locale === "ar";
 
@@ -77,11 +78,9 @@ export function FlexiblePayment() {
             <span className="h-px w-8 bg-[var(--accent)]" />
           </div>
           <h2 className="mt-3 text-[30px] lg:text-[42px] font-black tracking-tight leading-none">
-            {ar ? t.flexPay.titleAr : t.flexPay.titleEn}
+            {heading.title}
           </h2>
-          <p className="mt-3 opacity-60">
-            {ar ? t.flexPay.subtitleAr : t.flexPay.subtitleEn}
-          </p>
+          <p className="mt-3 opacity-60">{heading.subtitle}</p>
         </div>
 
         <motion.div

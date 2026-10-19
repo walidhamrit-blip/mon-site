@@ -78,10 +78,104 @@ export const testimonialSchema = z.object({
   beforeAfterEn: z.object({ before: z.string().max(300), after: z.string().max(300) }),
 });
 
+/* ---------- Sections éditoriales de la page d'accueil ---------- */
+
+export const heroSchema = z.object({
+  badgeAr: z.string().max(300),
+  badgeEn: z.string().max(300),
+  title1Ar: z.string().max(200),
+  title1En: z.string().max(200),
+  title2Ar: z.string().max(200),
+  title2En: z.string().max(200),
+  title3Ar: z.string().max(200),
+  title3En: z.string().max(200),
+  subtitleAr: z.string().max(1000),
+  subtitleEn: z.string().max(1000),
+  ctaPrimaryAr: z.string().max(100),
+  ctaPrimaryEn: z.string().max(100),
+  ctaSecondaryAr: z.string().max(100),
+  ctaSecondaryEn: z.string().max(100),
+  trustedAr: z.string().max(300),
+  trustedEn: z.string().max(300),
+  ratingAr: z.string().max(100),
+  ratingEn: z.string().max(100),
+  chipsAr: z.array(z.string().max(200)).max(12),
+  chipsEn: z.array(z.string().max(200)).max(12),
+});
+
+export const ribbonSchema = z.object({
+  taglineAr: z.string().max(300),
+  taglineEn: z.string().max(300),
+  items: z
+    .array(
+      z.object({
+        ar: z.string().max(200),
+        en: z.string().max(200),
+      }),
+    )
+    .max(30),
+});
+
+export const whyUsSchema = z
+  .array(
+    z.object({
+      icon: z.string().max(40),
+      titleAr: z.string().min(1).max(200),
+      titleEn: z.string().min(1).max(200),
+      descAr: z.string().max(1000),
+      descEn: z.string().max(1000),
+    }),
+  )
+  .min(1)
+  .max(12);
+
+export const processSchema = z
+  .array(
+    z.object({
+      num: z.string().max(10),
+      titleAr: z.string().min(1).max(200),
+      titleEn: z.string().min(1).max(200),
+      descAr: z.string().max(1000),
+      descEn: z.string().max(1000),
+      durationAr: z.string().max(100),
+      durationEn: z.string().max(100),
+    }),
+  )
+  .min(1)
+  .max(12);
+
+export const sectionHeadingSchema = z.object({
+  titleAr: z.string().max(300),
+  titleEn: z.string().max(300),
+  subtitleAr: z.string().max(1000),
+  subtitleEn: z.string().max(1000),
+  noteAr: z.string().max(300).optional(),
+  noteEn: z.string().max(300).optional(),
+});
+
+export const sectionHeadingsSchema = z.object({
+  why: sectionHeadingSchema,
+  demos: sectionHeadingSchema,
+  identityCustomizer: sectionHeadingSchema,
+  identityThemes: sectionHeadingSchema,
+  process: sectionHeadingSchema,
+  pricing: sectionHeadingSchema,
+  flexPay: sectionHeadingSchema,
+  services: sectionHeadingSchema,
+  testimonials: sectionHeadingSchema,
+  faq: sectionHeadingSchema,
+  cta: sectionHeadingSchema,
+});
+
 export const contentSchemas = {
   demos: z.array(demoSchema).max(50),
   faqs: z.array(faqSchema).max(50),
   testimonials: z.array(testimonialSchema).max(50),
+  hero: heroSchema,
+  ribbon: ribbonSchema,
+  whyUs: whyUsSchema,
+  process: processSchema,
+  headings: sectionHeadingsSchema,
 } as const;
 
 export type ContentSection = keyof typeof contentSchemas;
@@ -168,6 +262,41 @@ export const siteConfigSchema = z.object({
       defaultLocale: z.enum(["ar", "en"]).default("ar"),
     })
     .default({ themeId: DEFAULT_THEME_ID, mode: "light", defaultLocale: "ar" }),
+  /** Paiement flexible « 1 $ ou plus » (section dédiée du site). */
+  flexiblePayment: z
+    .object({
+      enabled: z.boolean(),
+      minUsd: z.coerce.number().min(0).max(1_000_000),
+      maxUsd: z.coerce.number().min(0).max(10_000_000),
+      suggested: z
+        .array(z.coerce.number().min(0).max(10_000_000))
+        .max(30),
+      noteAr: z.string().max(1000),
+      noteEn: z.string().max(1000),
+    })
+    .refine((value) => value.maxUsd >= value.minUsd, {
+      message: "Le montant maximum doit être supérieur ou égal au minimum.",
+      path: ["maxUsd"],
+    }),
+  /** Services libres / à la carte vendus au forfait. */
+  standaloneServices: z
+    .array(
+      z.object({
+        id: z.string().min(1).max(60),
+        icon: z.string().max(40),
+        titleAr: z.string().min(1).max(200),
+        titleEn: z.string().min(1).max(200),
+        descAr: z.string().max(1000),
+        descEn: z.string().max(1000),
+        priceFromUsd: z.coerce.number().min(0).max(1_000_000),
+        priceFromLyd: z.coerce.number().min(0).max(10_000_000),
+        badgeAr: z.string().max(100).optional(),
+        badgeEn: z.string().max(100).optional(),
+        featuresAr: z.array(z.string().max(300)).max(30),
+        featuresEn: z.array(z.string().max(300)).max(30),
+      }),
+    )
+    .max(30),
 });
 
 /* ---------- Statut d'une demande ---------- */

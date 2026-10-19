@@ -14,12 +14,13 @@ export default async function ContentPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl sm:text-3xl font-black text-white">Contenu</h1>
+        <h1 className="text-2xl sm:text-3xl font-black text-white">Contenu &amp; sections</h1>
         <p className="mt-1 text-sm text-zinc-500">
-          Galerie de démos, témoignages et questions fréquentes affichés sur le site
-          public. Chaque démo possède une classification (catégorie + prix)
-          modifiable dans sa fiche. Laisser une liste vide revient aux valeurs par
-          défaut.
+          Toutes les sections du site public : bloc d&apos;accueil, bandeau de
+          services, « Pourquoi nous », démos, processus, témoignages, FAQ, ainsi
+          que les titres de chaque section. Chaque démo possède une classification
+          (catégorie + prix) modifiable dans sa fiche. Laisser une liste vide
+          revient aux valeurs par défaut.
         </p>
       </div>
       <ContentEditor initial={initial} plans={plans} />

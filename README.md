@@ -293,8 +293,8 @@ NOWPayments pour prendre une place en avance dans le planning.
 - **Modules** :
   - **Tableau de bord** — statistiques (total, nouveaux, en cours, traités), activité 14 jours, dernières demandes
   - **Demandes** — les formulaires du site sont enregistrés en base (table `leads`, créée automatiquement) : filtres, recherche, statuts, notes internes, contact WhatsApp/email, export CSV
-  - **Configuration** — coordonnées, réseaux sociaux, chiffres, tarifs/catégories et réservation prioritaire éditables, visibles immédiatement sur le site
-  - **Contenu** — démos (classification + prix par site), témoignages et FAQ éditables (réordonner, ajouter, supprimer) avec bouton « Réinitialiser »
+  - **Configuration** — apparence (thème, mode, langue), coordonnées, réseaux sociaux, chiffres, tarifs/catégories, **paiement flexible**, **services à la carte** et réservation prioritaire éditables, visibles immédiatement sur le site
+  - **Contenu & sections** — toutes les sections du site public : **accueil (Hero)**, **bandeau de services**, **Pourquoi nous**, **démos**, **processus**, **témoignages**, **FAQ**, ainsi que les **titres/sous-titres de chaque section**. Listes à réordonner, ajouter ou supprimer, avec bouton « Réinitialiser » par section
 - Les réglages sont stockés dans la table `settings` ; par défaut le site utilise les valeurs de `src/lib/config.ts` et `src/lib/content.ts`
 - Après chaque enregistrement, le site public est régénéré automatiquement (revalidation Next.js)
 - **Optionnel** : `WEBHOOK_URL` — si définie, chaque demande du formulaire est aussi envoyée vers ce webhook (Formspree, Make, Zapier…)
