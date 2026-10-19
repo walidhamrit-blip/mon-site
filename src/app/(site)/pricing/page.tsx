@@ -13,7 +13,9 @@ export default function PricingPage() {
             {locale === "ar" ? "باقات واضحة — بلا مفاجآت" : "Clear plans — no surprises"}
           </h1>
           <p className="mt-3 opacity-60">
-            {locale === "ar" ? "اختر ما يناسب مرحلتك — ويمكنك الترقية لاحقاً بسهولة. كل الأسعار قابلة للتعديل في config.ts" : "Pick your stage — upgrade anytime. All prices editable in config.ts"}
+            {locale === "ar"
+              ? "اختر ما يناسب مرحلتك — الأسعار بالدينار الليبي وبالدولار، ويمكنك الدفع كاملاً أو على 2-3 أقساط بالعملات الرقمية عبر NOWPayments."
+              : "Pick your stage — prices in LYD and USD, pay in full or in 2–3 crypto installments via NOWPayments."}
           </p>
         </div>
       </section>

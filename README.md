@@ -74,8 +74,31 @@ Aucun fournisseur d'e-mail n'est obligatoire : sans configuration, le formulaire
 ## Paiements crypto (NOWPayments)
 
 Le site intègre NOWPayments : bouton « ادفع بالعملات الرقمية / Pay with crypto »
-sur les cartes tarifaires, paiement sur la page hébergée NOWPayments, confirmation
-automatique par IPN (webhook) et suivi dans `/admin/orders`.
+sur les cartes tarifaires, prix affichés en د.ل **et en USD**, paiement sur la
+page hébergée NOWPayments, confirmation automatique par IPN (webhook) et suivi
+dans `/admin/orders`.
+
+### Paiement en totalité ou en tranches
+
+Le dialogue de paiement propose trois modes, reflétés dans le prix affiché :
+
+| Mode | Facturation |
+| --- | --- |
+| **Paiement total** | 100 % du prix USD en une fois |
+| **2 tranches** | 50 % / 50 % (arrondi au centime, la dernière tranche absorbe le reste) |
+| **3 tranches** | 33,3 % / 33,3 % / 33,4 % |
+
+- La **première tranche est facturée immédiatement** ; les suivantes sont
+  créées à l'avance en base (une commande par tranche, référence
+  `NKH-XXXX-T2`, `NKH-XXXX-T3`) et restent à régler depuis la page de suivi
+  `/pay/success?ref=NKH-XXXX`.
+- Chaque tranche est un paiement NOWPayments distinct : l'IPN confirme chaque
+  versement indépendamment, et l'e-mail « paiement confirmé » précise la
+  tranche concernée.
+- Le montant est toujours recalculé côté serveur à partir de `priceUsd` :
+  le navigateur ne peut pas modifier le prix ni la répartition.
+- L'admin `/admin/orders` affiche le badge « Tranche 2/3 » et le groupe de
+  paiement associé.
 
 ### 1) Côté NOWPayments (une fois, dans votre tableau de bord)
 

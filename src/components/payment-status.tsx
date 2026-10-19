@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { BadgeCheck, Clock, Loader2, XCircle } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
+import { formatUsd } from "@/lib/installments";
 
 interface OrderStatus {
   ref: string;
@@ -10,6 +11,8 @@ interface OrderStatus {
   amountLyd: string;
   amountUsd: string;
   currency: string;
+  installments?: number;
+  installmentIndex?: number;
   clientName: string | null;
   email: string | null;
   phone: string | null;
@@ -22,6 +25,16 @@ interface OrderStatus {
   createdAt: string;
 }
 
+interface Tranche {
+  ref: string;
+  installmentIndex: number;
+  installments: number;
+  amountUsd: string;
+  amountLyd: string;
+  status: "pending" | "paid" | "failed" | "expired";
+  paymentUrl: string | null;
+}
+
 /**
  * Interroge le statut d'une commande (IPN à jour en base).
  * S'arrête dès que le paiement est confirmé — ou après
@@ -31,7 +44,10 @@ export function PaymentStatus({ ref }: { ref: string }) {
   const { locale, t } = useI18n();
   const ar = locale === "ar";
   const [order, setOrder] = useState<OrderStatus | null>(null);
+  const [tranches, setTranches] = useState<Tranche[]>([]);
   const [notFound, setNotFound] = useState(false);
+  const [paying, setPaying] = useState<string | null>(null);
+  const [payError, setPayError] = useState("");
 
   useEffect(() => {
     if (!ref) return;
@@ -48,6 +64,7 @@ export function PaymentStatus({ ref }: { ref: string }) {
         const data = await res.json();
         if (stopped) return;
         setOrder(data.order);
+        setTranches(Array.isArray(data.tranches) ? data.tranches : []);
         if (data.order.status !== "pending" || Date.now() > deadline) {
           clearInterval(timer);
         }
@@ -65,6 +82,31 @@ export function PaymentStatus({ ref }: { ref: string }) {
   }, [ref]);
 
   const status = order?.status ?? "pending";
+
+  /** Ouvre le paiement NOWPayments d'une tranche planifiée. */
+  const payTranche = async (tranche: string) => {
+    setPayError("");
+    setPaying(tranche);
+    try {
+      const res = await fetch("/api/payments/create", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ orderRef: tranche }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.ok || !data.paymentUrl) throw new Error(data.error ?? "error");
+      window.location.assign(data.paymentUrl);
+    } catch {
+      setPayError(ar ? t.pay.trancheErrorAr : t.pay.trancheErrorEn);
+      setPaying(null);
+    }
+  };
+
+  const unpaidUsd = tranches
+    .filter((tranche) => tranche.status !== "paid")
+    .reduce((sum, tranche) => sum + (Number(tranche.amountUsd) || 0), 0);
+  const allPaid =
+    tranches.length > 1 && tranches.every((tranche) => tranche.status === "paid");
 
   if (notFound) {
     return (
@@ -169,6 +211,80 @@ export function PaymentStatus({ ref }: { ref: string }) {
             </div>
           )}
         </dl>
+      )}
+
+      {tranches.length > 1 && (
+        <div className="mt-4 rounded-2xl border border-[var(--border)] bg-[var(--secondary)]/40 p-4 text-start">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <h3 className="text-sm font-black">
+              {ar ? t.pay.tranchesTitleAr : t.pay.tranchesTitleEn}
+            </h3>
+            {!allPaid && (
+              <span className="text-xs opacity-60">
+                {ar ? t.pay.remainingAr : t.pay.remainingEn}:{" "}
+                <strong className="text-[var(--accent)]" dir="ltr">
+                  ${formatUsd(unpaidUsd)}
+                </strong>
+              </span>
+            )}
+          </div>
+
+          {allPaid ? (
+            <p className="mt-2 inline-flex items-center gap-1.5 text-sm font-semibold text-emerald-400">
+              <BadgeCheck className="h-4 w-4" />
+              {ar ? t.pay.allTranchesPaidAr : t.pay.allTranchesPaidEn}
+            </p>
+          ) : (
+            <ul className="mt-3 space-y-2">
+              {tranches.map((tranche) => (
+                <li
+                  key={tranche.ref}
+                  className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-[var(--border)] bg-[var(--card)] px-3 py-2.5"
+                >
+                  <div className="min-w-0">
+                    <div className="text-sm font-bold">
+                      {ar ? t.pay.trancheAr : t.pay.trancheEn}{" "}
+                      {tranche.installmentIndex}/{tranche.installments}
+                    </div>
+                    <div className="text-xs opacity-60" dir="ltr">
+                      ${formatUsd(Number(tranche.amountUsd) || 0)}
+                    </div>
+                  </div>
+
+                  {tranche.status === "paid" ? (
+                    <span className="inline-flex items-center gap-1 text-xs font-bold text-emerald-400">
+                      <BadgeCheck className="h-3.5 w-3.5" />
+                      {ar ? t.pay.tranchePaidAr : t.pay.tranchePaidEn}
+                    </span>
+                  ) : tranche.status === "pending" && tranche.paymentUrl ? (
+                    <a
+                      href={tranche.paymentUrl}
+                      className="h-8 px-3 rounded-full bg-[var(--accent)] text-[var(--accent-foreground)] text-xs font-bold inline-flex items-center hover:bg-[var(--accent-hover)] transition-colors"
+                    >
+                      {ar ? t.pay.trancheOpenAr : t.pay.trancheOpenEn}
+                    </a>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => payTranche(tranche.ref)}
+                      disabled={paying !== null}
+                      className="h-8 px-3 rounded-full bg-[var(--accent)] text-[var(--accent-foreground)] text-xs font-bold inline-flex items-center gap-1.5 disabled:opacity-60 hover:bg-[var(--accent-hover)] transition-colors cursor-pointer"
+                    >
+                      {paying === tranche.ref && (
+                        <Loader2 className="h-3 w-3 animate-spin" />
+                      )}
+                      {ar ? t.pay.payTrancheAr : t.pay.payTrancheEn}
+                    </button>
+                  )}
+                </li>
+              ))}
+            </ul>
+          )}
+
+          {payError && (
+            <p className="mt-3 text-xs font-semibold text-red-400">{payError}</p>
+          )}
+        </div>
       )}
     </div>
   );

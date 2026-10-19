@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { eq } from "drizzle-orm";
+import { asc, eq } from "drizzle-orm";
 import { db, ensureSchema } from "@/db";
 import { orders } from "@/db/schema";
 import {
@@ -9,11 +9,15 @@ import {
 } from "@/lib/nowpayments";
 import { getSiteData } from "@/lib/store";
 import { sendPaymentConfirmedEmail } from "@/lib/order-emails";
+import { baseRefOf } from "@/lib/installments";
 
 /**
  * Statut d'une commande (lu par la page de succès et l'admin).
  * Rafraîchit opportunément depuis NOWPayments tant que le
  * paiement est en attente ; l'IPN reste la source de vérité.
+ *
+ * Renvoie aussi le plan de paiement complet (`tranches`) afin
+ * que le client puisse régler les versements suivants.
  */
 
 export async function GET(
@@ -27,7 +31,7 @@ export async function GET(
 
   try {
     await ensureSchema();
-    let rows = await db
+    const rows = await db
       .select()
       .from(orders)
       .where(eq(orders.ref, ref.toUpperCase()))
@@ -80,6 +84,20 @@ export async function GET(
       }
     }
 
+    // Plan de paiement : toutes les tranches du même groupe.
+    // Les commandes antérieures (une seule ligne) retombent sur
+    // elles-mêmes.
+    const groupRef = order.groupRef ?? baseRefOf(order.ref);
+    let groupRows = [order];
+    if (order.groupRef) {
+      const siblings = await db
+        .select()
+        .from(orders)
+        .where(eq(orders.groupRef, groupRef))
+        .orderBy(asc(orders.installmentIndex));
+      if (siblings.length > 0) groupRows = siblings;
+    }
+
     return NextResponse.json({
       ok: true,
       order: {
@@ -88,6 +106,9 @@ export async function GET(
         amountLyd: order.amountLyd,
         amountUsd: order.amountUsd,
         currency: order.currency,
+        installments: order.installments,
+        installmentIndex: order.installmentIndex,
+        groupRef: order.groupRef,
         clientName: order.clientName,
         email: order.email,
         phone: order.phone,
@@ -99,6 +120,15 @@ export async function GET(
         ipnStatus: order.ipnStatus,
         createdAt: order.createdAt.toISOString(),
       },
+      tranches: groupRows.map((row) => ({
+        ref: row.ref,
+        installmentIndex: row.installmentIndex,
+        installments: row.installments,
+        amountUsd: row.amountUsd,
+        amountLyd: row.amountLyd,
+        status: row.status,
+        paymentUrl: row.paymentUrl,
+      })),
     });
   } catch (error) {
     console.error("[payments] lecture commande impossible :", error instanceof Error ? error.message : error);
