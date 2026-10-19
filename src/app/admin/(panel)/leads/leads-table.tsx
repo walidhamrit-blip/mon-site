@@ -7,6 +7,7 @@ import {
 import { StatusBadge } from "../status-badge";
 import {
   deleteLead,
+  generateDemoFromLead,
   saveLeadNotes,
   updateLeadStatus,
 } from "@/app/admin/actions";
@@ -18,6 +19,10 @@ import {
   Mail,
   AlertCircle,
   CheckCircle2,
+  Sparkles,
+  MessageCircle,
+  Copy,
+  Star,
 } from "lucide-react";
 
 const waLink = (phone: string) => `https://wa.me/${phone.replace(/[^\d]/g, "")}`;
@@ -38,6 +43,9 @@ export function LeadsTable({ leads }: { leads: LeadRow[] }) {
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
+  // État pour l'automatisation « Projet livré → Avis + Brouillon démo »
+  const [genResult, setGenResult] = useState<Record<number, { demoUrl?: string; whatsappUrl?: string; message?: string }>>({});
+  const [genBusy, setGenBusy] = useState<number | null>(null);
 
   const run = (fn: () => Promise<{ ok: boolean; error?: string; message?: string }>, okMsg?: string) => {
     setError(null);
@@ -46,6 +54,25 @@ export function LeadsTable({ leads }: { leads: LeadRow[] }) {
       const res = await fn();
       if (res.ok) setNotice(okMsg ?? null);
       else setError(res.error ?? "Une erreur est survenue.");
+    });
+  };
+
+  const runGenerate = (leadId: number) => {
+    setError(null);
+    setNotice(null);
+    setGenBusy(leadId);
+    startTransition(async () => {
+      const res = await generateDemoFromLead(leadId);
+      setGenBusy(null);
+      if (res.ok) {
+        setNotice(res.message ?? "Fiche démo créée.");
+        setGenResult((prev) => ({
+          ...prev,
+          [leadId]: { demoUrl: res.demoUrl, whatsappUrl: res.whatsappUrl, message: res.whatsappMessage },
+        }));
+      } else {
+        setError(res.error ?? "Génération impossible.");
+      }
     });
   };
 
@@ -195,6 +222,72 @@ export function LeadsTable({ leads }: { leads: LeadRow[] }) {
                           </dl>
 
                           <div>
+                            {/* Automatisation « Projet livré → Avis Google + Brouillon démo » — visible quand statut = Traité (done) */}
+                            {lead.status === "done" && (
+                              <div className="mb-4 rounded-2xl border border-amber-400/30 bg-amber-400/10 p-4">
+                                <div className="flex items-center gap-2 text-amber-200 font-bold text-sm">
+                                  <Star className="h-4 w-4" /> Projet livré → Avis Google + Brouillon de Démo
+                                </div>
+                                <p className="mt-1 text-xs text-amber-100/70 leading-5">
+                                  Génère une fiche portfolio pré-remplie (SEO auto) et prépare le message WhatsApp pour demander un avis Google Maps au client.
+                                </p>
+                                <button
+                                  type="button"
+                                  disabled={pending || genBusy === lead.id}
+                                  onClick={() => runGenerate(lead.id)}
+                                  className="mt-3 h-9 px-4 rounded-xl bg-[#C6A664] text-black text-xs font-black inline-flex items-center gap-2 hover:bg-[#B89652] transition-colors cursor-pointer disabled:opacity-50"
+                                >
+                                  {genBusy === lead.id ? (
+                                    <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-black/20 border-t-black" />
+                                  ) : (
+                                    <Sparkles className="h-3.5 w-3.5" />
+                                  )}
+                                  {genBusy === lead.id ? "Génération…" : "Générer la fiche démo + message d'avis WhatsApp"}
+                                </button>
+
+                                {genResult[lead.id] && (
+                                  <div className="mt-3 space-y-2">
+                                    {genResult[lead.id].demoUrl && (
+                                      <a
+                                        href={genResult[lead.id].demoUrl}
+                                        target="_blank"
+                                        className="block text-xs font-bold text-emerald-300 hover:underline break-all"
+                                      >
+                                        ✅ Brouillon créé : {genResult[lead.id].demoUrl} — éditer dans /admin/content → Démos
+                                      </a>
+                                    )}
+                                    {genResult[lead.id].whatsappUrl && (
+                                      <a
+                                        href={genResult[lead.id].whatsappUrl}
+                                        target="_blank"
+                                        className="inline-flex h-9 px-4 rounded-xl bg-[#25D366] text-white text-xs font-bold items-center gap-2 hover:brightness-95"
+                                      >
+                                        <MessageCircle className="h-3.5 w-3.5" /> Ouvrir WhatsApp — envoyer demande d'avis
+                                      </a>
+                                    )}
+                                    {genResult[lead.id].message && (
+                                      <div className="rounded-xl bg-black/40 border border-white/10 p-3">
+                                        <div className="flex items-center justify-between gap-2">
+                                          <span className="text-[11px] font-bold text-zinc-500 uppercase tracking-wider">Message WhatsApp (copier)</span>
+                                          <button
+                                            type="button"
+                                            onClick={() => {
+                                              navigator.clipboard.writeText(genResult[lead.id].message ?? "");
+                                              setNotice("Message copié.");
+                                            }}
+                                            className="h-7 px-2.5 rounded-lg bg-white/10 text-xs font-bold text-white inline-flex items-center gap-1 hover:bg-white/15 cursor-pointer"
+                                          >
+                                            <Copy className="h-3 w-3" /> Copier
+                                          </button>
+                                        </div>
+                                        <pre className="mt-2 whitespace-pre-wrap text-xs text-zinc-200 leading-5 max-h-[160px] overflow-auto">{genResult[lead.id].message}</pre>
+                                      </div>
+                                    )}
+                                  </div>
+                                )}
+                              </div>
+                            )}
+
                             <label
                               htmlFor={`notes-${lead.id}`}
                               className="text-[11px] uppercase tracking-wider text-zinc-600 font-semibold"

@@ -1,4 +1,5 @@
 import { resolveDemoClassification } from "@/lib/classification";
+import { sectorSeo } from "@/lib/sectors";
 import type { SiteContent } from "@/lib/site-types";
 import type { siteConfig } from "@/lib/config";
 
@@ -59,6 +60,14 @@ export function buildLlmsTxt({ config, content }: LlmsSourceData): string {
   lines.push(
     `- [Live demos & portfolio](${cleanUrl(base, "/demos")}): ${content.demos.length} real, interactive client websites across Libya`,
   );
+  // Pages sectorielles automatiques (/sectors/[sector]) — 10 secteurs
+  lines.push(`- [Websites by sector](${cleanUrl(base, "/sectors")}): ${Object.keys(sectorSeo).length} sector pages — medical, restaurant, beauty, furniture, electronics, hardware…`);
+  for (const [id, sector] of Object.entries(sectorSeo)) {
+    const count = content.demos.filter((d) => d.sector === id).length;
+    lines.push(
+      `  - [${sector.labelEn} / ${sector.labelAr}](${cleanUrl(base, `/sectors/${id}`)}): ${count} showcase(s) — ${sector.titleEn}`,
+    );
+  }
   lines.push(
     `- [Pricing plans & comparison](${cleanUrl(base, "/pricing")}): transparent USD/LYD packages, open services and installment options`,
   );
@@ -237,6 +246,29 @@ export function buildLlmsFullTxt({ config, content }: LlmsSourceData): string {
     lines.push(`- **Description (AR)**: ${demo.description}`);
     lines.push(`- **Key Features (EN)**: ${demo.featuresEn.join(" · ")}`);
     lines.push(`- **Key Features (AR)**: ${demo.features.join(" · ")}`);
+    lines.push("");
+  }
+
+  lines.push(`## 7b. Sector Landing Pages (/sectors/[sector]) — 10 SEO-optimized sector pages`);
+  lines.push("");
+  for (const [id, sector] of Object.entries(sectorSeo)) {
+    const count = content.demos.filter((d) => d.sector === id).length;
+    lines.push(`### ${sector.labelEn} / ${sector.labelAr} — ${sector.titleEn}`);
+    lines.push(`- **Sector URL**: ${cleanUrl(base, `/sectors/${id}`)}`);
+    lines.push(`- **Showcases in sector**: ${count}`);
+    lines.push(`- **Title (AR)**: ${sector.titleAr}`);
+    lines.push(`- **Title (EN)**: ${sector.titleEn}`);
+    lines.push(`- **Description (AR)**: ${sector.descriptionAr}`);
+    lines.push(`- **Description (EN)**: ${sector.descriptionEn}`);
+    lines.push(`- **Hero (AR)**: ${sector.h1Ar} — ${sector.heroSubtitleAr}`);
+    lines.push(`- **Hero (EN)**: ${sector.h1En} — ${sector.heroSubtitleEn}`);
+    lines.push(`- **Keywords**: ${[...sector.keywordsAr, ...sector.keywordsEn].join(", ")}`);
+    if (sector.faqsAr.length > 0) {
+      lines.push(`- **Sector FAQs**:`);
+      for (const faq of sector.faqsAr) {
+        lines.push(`  - Q: ${faq.qAr} / ${faq.qEn} — A: ${faq.aAr} / ${faq.aEn}`);
+      }
+    }
     lines.push("");
   }
 
