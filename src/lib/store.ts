@@ -76,9 +76,13 @@ export function mergeConfig(override: unknown): typeof siteConfig {
         return {
           ...defaults,
           ...plan,
-          // Legacy saved plans have no crypto price; null means the new field
-          // has not yet been configured either, so preserve the code default.
-          priceUsd: plan.priceUsd ?? defaults.priceUsd,
+          // Les anciennes sauvegardes (avant le paiement crypto) n'ont
+          // pas la clé du tout → on garde le prix par défaut. Un `null`
+          // explicite vient du formulaire admin (« Prix USD » vidé) : la
+          // formule n'est volontairement plus payable en crypto.
+          ...(!("priceUsd" in plan) && defaults.priceUsd !== undefined
+            ? { priceUsd: defaults.priceUsd }
+            : {}),
         };
       });
       merged[key] = {

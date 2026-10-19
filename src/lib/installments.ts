@@ -48,6 +48,23 @@ export function trancheIndexFromRef(ref: string): number {
   return Number.isFinite(value) && value >= 1 ? value : 1;
 }
 
+/**
+ * Références candidates pour un `order_id` venant de NOWPayments (IPN).
+ * La facture d'une tranche relancée porte un suffixe « -R… »
+ * (ex. NKH-XXXX-T2-R9K) — retirer le dernier segment redonne la
+ * référence de la commande concernée. La chaîne exacte est toujours
+ * testée en premier.
+ */
+export function orderRefCandidates(orderId: string): string[] {
+  const normalized = orderId.trim().toUpperCase();
+  const candidates = [normalized];
+  const parts = normalized.split("-");
+  if (parts.length >= 3) {
+    candidates.push(parts.slice(0, -1).join("-"));
+  }
+  return Array.from(new Set(candidates));
+}
+
 /** Formate un montant USD : 300 → « 300 », 293.3 → « 293.30 ». */
 export function formatUsd(amount: number): string {
   const hasCents = Math.round(amount * 100) % 100 !== 0;

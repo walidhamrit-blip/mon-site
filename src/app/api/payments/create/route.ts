@@ -4,10 +4,11 @@ import { eq } from "drizzle-orm";
 import { db, ensureSchema } from "@/db";
 import { orders } from "@/db/schema";
 import { siteConfig } from "@/lib/config";
+import { getSiteData } from "@/lib/store";
 import {
-  createPayment,
+  createInvoice,
   nowPaymentsConfigured,
-  type CreatedPayment,
+  type CreatedInvoice,
 } from "@/lib/nowpayments";
 import {
   isInstallmentCount,
@@ -16,7 +17,8 @@ import {
 } from "@/lib/installments";
 
 /**
- * Crée une commande + un paiement NOWPayments.
+ * Crée une commande + une facture NOWPayments (page de paiement
+ * hébergée `invoice_url` vers laquelle le client est redirigé).
  * Appelée depuis le dialogue de paiement crypto (pricing).
  * Le montant est calculé côté serveur d'après l'ID de la
  * formule : le client ne peut pas forcer le prix.
@@ -24,8 +26,8 @@ import {
  * Deux modes :
  *  - nouveau paiement (`planId`) : une commande par tranche est
  *    créée (1, 2 ou 3), seul le 1er versement est facturé tout de suite ;
- *  - tranche suivante (`orderRef`) : recrée un paiement NOWPayments
- *    pour une tranche déjà planifiée (lien renvoyé au client).
+ *  - tranche suivante (`orderRef`) : crée une nouvelle facture pour
+ *    une tranche déjà planifiée (lien renvoyé au client).
  */
 
 const createPaymentSchema = z
@@ -107,20 +109,20 @@ async function payExistingOrder(orderRef: string) {
     );
   }
 
+  const { config } = await getSiteData();
   const label =
     order.installments > 1
-      ? `${siteConfig.name} — ${order.planName} (${order.installmentIndex}/${order.installments})`
-      : `${siteConfig.name} — ${order.planName} plan`;
+      ? `${config.name} — ${order.planName} (${order.installmentIndex}/${order.installments})`
+      : `${config.name} — ${order.planName} plan`;
 
-  let payment: CreatedPayment;
+  let invoice: CreatedInvoice;
   try {
-    payment = await createPayment({
+    invoice = await createInvoice({
       priceAmount: amount,
-      // Une nouvelle tentative ne doit pas réutiliser l'order_id
-      // déjà envoyé à NOWPayments.
-      orderId: order.paymentId
-        ? `${order.ref}-${Date.now().toString(36).toUpperCase()}`
-        : order.ref,
+      // Order_id unique à chaque facture (suffixe « -R… ») : une émission
+      // précédente n'interfère jamais, et l'IPN retombe quand même sur
+      // notre `ref` (voir refCandidates dans ipn/route.ts).
+      orderId: `${order.ref}-R${Date.now().toString(36).toUpperCase()}`,
       orderDescription: label,
       ...paymentUrls(order.ref),
     });
@@ -141,12 +143,14 @@ async function payExistingOrder(orderRef: string) {
       .set({
         status: "pending",
         ipnStatus: null,
-        paymentId: payment.payment_id || null,
-        payAddress: payment.pay_address || null,
-        payCurrency: payment.pay_currency || null,
-        payAmount:
-          payment.pay_amount != null ? String(payment.pay_amount) : null,
-        paymentUrl: payment.payment_url || null,
+        // Le payment_id est (ré)écrit par l'IPN dès que le client engage
+        // le règlement : un identifiant précédent (expiré) ne doit pas
+        // polluer le polling de statut.
+        paymentId: null,
+        payAddress: null,
+        payCurrency: null,
+        payAmount: null,
+        paymentUrl: invoice.invoice_url,
         updatedAt: new Date(),
       })
       .where(eq(orders.id, order.id));
@@ -164,13 +168,9 @@ async function payExistingOrder(orderRef: string) {
     installments: order.installments,
     installmentIndex: order.installmentIndex,
     trancheAmountUsd: amount,
-    paymentId: payment.payment_id,
-    paymentUrl: payment.payment_url,
-    payAddress: payment.pay_address,
-    payCurrency: payment.pay_currency,
-    payAmount: payment.pay_amount,
-    priceAmount: payment.price_amount,
-    priceCurrency: payment.price_currency,
+    paymentUrl: invoice.invoice_url,
+    priceAmount: invoice.price_amount,
+    priceCurrency: invoice.price_currency,
   });
 }
 
@@ -216,7 +216,10 @@ export async function POST(req: Request) {
   }
 
   // ── Mode « nouveau paiement » : total ou plan en tranches ──
-  const plan = siteConfig.pricing.plans.find((p) => p.id === data.planId);
+  // Le plan est lu depuis la configuration « vivante » (admin), pas la
+  // valeur codée : le montant facturé suit toujours le prix affiché.
+  const { config } = await getSiteData();
+  const plan = config.pricing.plans.find((p) => p.id === data.planId);
   if (!plan || !plan.priceUsd || plan.priceUsd <= 0) {
     return NextResponse.json(
       { ok: false, error: "plan_not_payable" },
@@ -270,21 +273,22 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: false, error: "save_failed" }, { status: 500 });
   }
 
-  // 2) Paiement chez NOWPayments pour la première tranche.
-  let payment: CreatedPayment;
+  // 2) Facture NOWPayments pour la première tranche : le client est
+  //    redirigé vers la page hébergée (invoice_url).
+  let invoice: CreatedInvoice;
   try {
-    payment = await createPayment({
+    invoice = await createInvoice({
       priceAmount: usdTranches[0],
       orderId: baseRef,
       orderDescription:
         count > 1
-          ? `${siteConfig.name} — ${plan.nameEn} (1/${count})`
-          : `${siteConfig.name} — ${plan.nameEn} plan`,
+          ? `${config.name} — ${plan.nameEn} (1/${count})`
+          : `${config.name} — ${plan.nameEn} plan`,
       ...paymentUrls(baseRef),
     });
   } catch (error) {
     console.error("[payments] NOWPayments refusé :", error instanceof Error ? error.message : error);
-    // Aucun paiement : on retire tout le groupe de tranches pour ne
+    // Aucune facture : on retire tout le groupe de tranches pour ne
     // pas laisser de lignes orphelines.
     await db.delete(orders).where(eq(orders.groupRef, baseRef)).catch(() => null);
     return NextResponse.json(
@@ -293,16 +297,12 @@ export async function POST(req: Request) {
     );
   }
 
-  // 3) Lien payement ↔ commande.
+  // 3) Lien facture ↔ commande (le payment_id arrivera via l'IPN).
   try {
     await db
       .update(orders)
       .set({
-        paymentId: payment.payment_id || null,
-        payAddress: payment.pay_address || null,
-        payCurrency: payment.pay_currency || null,
-        payAmount: payment.pay_amount != null ? String(payment.pay_amount) : null,
-        paymentUrl: payment.payment_url || null,
+        paymentUrl: invoice.invoice_url,
         updatedAt: new Date(),
       })
       .where(eq(orders.id, firstOrderId));
@@ -317,12 +317,8 @@ export async function POST(req: Request) {
     installments: count,
     installmentIndex: 1,
     trancheAmountUsd: usdTranches[0],
-    paymentId: payment.payment_id,
-    paymentUrl: payment.payment_url,
-    payAddress: payment.pay_address,
-    payCurrency: payment.pay_currency,
-    payAmount: payment.pay_amount,
-    priceAmount: payment.price_amount,
-    priceCurrency: payment.price_currency,
+    paymentUrl: invoice.invoice_url,
+    priceAmount: invoice.price_amount,
+    priceCurrency: invoice.price_currency,
   });
 }

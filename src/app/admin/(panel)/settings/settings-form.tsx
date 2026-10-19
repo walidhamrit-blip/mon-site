@@ -306,7 +306,7 @@ export function SettingsForm({ initial }: { initial: SiteConfigData }) {
                 <Field label="Nom (arabe)" value={plan.name} dir="rtl" onChange={(v) => setPlan(index, { name: v })} />
                 <Field label="Nom (latin)" value={plan.nameEn} dir="ltr" onChange={(v) => setPlan(index, { nameEn: v })} />
                 <NumberField label={`Prix (${c.pricing.currencyEn})`} value={plan.price} onChange={(v) => setPlan(index, { price: v ?? 0 })} />
-                <NumberField label="Prix USD (paiement crypto)" value={plan.priceUsd ?? null} nullable hint="Laissé vide : pas de paiement crypto pour cette formule" onChange={(v) => setPlan(index, { priceUsd: v ?? undefined })} />
+                <NumberField label="Prix USD (paiement crypto)" value={plan.priceUsd ?? null} nullable hint="Laissé vide : pas de paiement crypto pour cette formule" onChange={(v) => setPlan(index, { priceUsd: v })} />
                 <NumberField label="Prix barré (optionnel)" value={plan.originalPrice} nullable onChange={(v) => setPlan(index, { originalPrice: v })} />
                 <Field label="Badge (arabe, optionnel)" value={plan.badge ?? ""} dir="rtl" onChange={(v) => setPlan(index, { badge: v })} />
                 <Field label="Badge (anglais, optionnel)" value={plan.badgeEn ?? ""} dir="ltr" onChange={(v) => setPlan(index, { badgeEn: v })} />

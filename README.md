@@ -124,9 +124,18 @@ Le dialogue de paiement propose trois modes, reflétés dans le prix affiché :
 
 ### Notes
 
+- Le site crée une **facture NOWPayments** (API `/invoice`) : c'est elle qui
+  fournit la page de paiement hébergée (`invoice_url`) avec les retours
+  `success_url` / `cancel_url`, et le client y choisit sa cryptomonnaie.
+  Le `payment_id` est enregistré sur la commande dès le premier IPN, qui
+  retrouve la commande par son `order_id` (référence `NKH-…`).
+- Si le dialogue affiche « échec de création du paiement » à la validation :
+  vérifiez que `NOWPAYMENTS_API_KEY` est bien définie (Settings → API keys)
+  et que le compte n'est pas en mode test sans `NOWPAYMENTS_SANDBOX=true`.
 - Les prix s'affichent en د.ل mais sont facturés en USD : chaque formule a un
   `priceUsd` dans `src/lib/config.ts` (éditable aussi dans
-  Admin → Configuration). Ajustez-le selon votre taux de change.
+  Admin → Configuration — laissé vide, la formule n'est plus payable en
+  crypto). Ajustez-le selon votre taux de change.
 - **Seul l'IPN (ou le statut `finished`/`confirmed`) confirme un paiement** —
   la redirection `success_url` n'est qu'une indication visuelle.
 - La clé API ne quitte jamais le serveur : création du paiement, IPN et
