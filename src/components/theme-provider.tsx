@@ -7,6 +7,8 @@ import { DEFAULT_THEME_ID, isThemeId } from "@/lib/themes";
 //  - `mode`    : clair ou sombre — piloté par UN BOUTON DÉDIÉ (barre du haut).
 // Chaque thème existe en version claire ET en version sombre : les deux
 // notions sont donc totalement séparées, comme demandé.
+// L'admin choisit l'apparence PRINCIPALE (thème + mode) depuis /admin →
+// Réglages ; elle sert de défaut aux visiteurs qui n'ont pas encore choisi.
 
 export type ThemeMode = "light" | "dark";
 
@@ -28,20 +30,41 @@ interface ThemeContextValue {
 
 const ThemeCtx = createContext<ThemeContextValue | null>(null);
 
-export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [mode, setModeState] = useState<ThemeMode>("light");
-  const [palette, setPaletteState] = useState<string>(DEFAULT_THEME_ID);
+export function ThemeProvider({
+  children,
+  defaultMode,
+  defaultPalette,
+}: {
+  children: React.ReactNode;
+  /** Mode principal choisi dans l'admin (défaut des visiteurs sans choix mémorisé). */
+  defaultMode?: ThemeMode;
+  /** Thème principal choisi dans l'admin (défaut des visiteurs sans choix mémorisé). */
+  defaultPalette?: string;
+}) {
+  const [mode, setModeState] = useState<ThemeMode>(defaultMode ?? "light");
+  const [palette, setPaletteState] = useState<string>(
+    isThemeId(defaultPalette) ? (defaultPalette as string) : DEFAULT_THEME_ID,
+  );
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
     setMounted(true);
+    // Priorité : choix mémorisé du visiteur > apparence principale (admin)
+    // > préférence système.
     const savedMode = localStorage.getItem(MODE_KEY) ?? localStorage.getItem(LEGACY_MODE_KEY);
-    const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
-    setModeState(savedMode === "dark" || savedMode === "light" ? savedMode : prefersDark ? "dark" : "light");
+    if (savedMode === "dark" || savedMode === "light") {
+      setModeState(savedMode);
+    } else if (defaultMode === "dark" || defaultMode === "light") {
+      setModeState(defaultMode);
+    } else {
+      const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+      setModeState(prefersDark ? "dark" : "light");
+    }
 
     const savedPalette = localStorage.getItem(PALETTE_KEY);
-    setPaletteState(isThemeId(savedPalette) ? savedPalette : DEFAULT_THEME_ID);
-  }, []);
+    if (isThemeId(savedPalette)) setPaletteState(savedPalette);
+    else setPaletteState(isThemeId(defaultPalette) ? (defaultPalette as string) : DEFAULT_THEME_ID);
+  }, [defaultMode, defaultPalette]);
 
   // Application sur <html> : l'attribut data-theme choisit la palette,
   // la classe .dark choisit le mode (clair / sombre).

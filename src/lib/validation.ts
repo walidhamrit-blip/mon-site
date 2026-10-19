@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { LEAD_STATUSES } from "@/lib/site-types";
+import { DEFAULT_THEME_ID } from "@/lib/themes";
 
 /* ---------- Nouvelle demande (formulaire public -> /api/lead) ---------- */
 
@@ -156,6 +157,17 @@ export const siteConfigSchema = z.object({
     depositUsd: z.coerce.number().min(0).max(10_000),
     depositLyd: z.coerce.number().min(0).max(1_000_000),
   }),
+  /**
+   * Apparence principale du site : thème principal, mode clair/sombre et
+   * langue principale (défauts des visiteurs, choisis dans /admin).
+   */
+  appearance: z
+    .object({
+      themeId: z.string().min(1).max(40).default(DEFAULT_THEME_ID),
+      mode: z.enum(["light", "dark"]).default("light"),
+      defaultLocale: z.enum(["ar", "en"]).default("ar"),
+    })
+    .default({ themeId: DEFAULT_THEME_ID, mode: "light", defaultLocale: "ar" }),
 });
 
 /* ---------- Statut d'une demande ---------- */

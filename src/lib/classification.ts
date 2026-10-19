@@ -100,3 +100,12 @@ export function resolveDemoClassification(
 export function formatLyd(amount: number): string {
   return amount.toLocaleString("en-US", { maximumFractionDigits: 0 });
 }
+
+/**
+ * Libellé de la devise locale (Livre libyenne) affiché avec les montants
+ * LYD (équivalents indicatifs). La devise PRINCIPALE du site est le dollar —
+ * voir `formatMainPrice` dans `src/lib/installments.ts`.
+ */
+export function lydLabel(locale: "ar" | "en" | string): string {
+  return locale === "ar" ? "د.ل" : "LYD";
+}

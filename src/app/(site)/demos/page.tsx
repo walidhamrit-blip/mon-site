@@ -5,8 +5,8 @@ import { sectors } from "@/lib/content";
 import { useSiteConfig, useSiteContent } from "@/components/site-provider";
 import { useI18n } from "@/lib/i18n";
 import { ReservationButton } from "@/components/reservation-dialog";
-import { formatLyd, resolveDemoClassification } from "@/lib/classification";
-import { formatUsd } from "@/lib/installments";
+import { formatLyd, lydLabel, resolveDemoClassification } from "@/lib/classification";
+import { formatMainPrice } from "@/lib/installments";
 import { ArrowUpRight, ExternalLink, Search, Monitor, Smartphone } from "lucide-react";
 
 function isRealUrl(url?: string): boolean {
@@ -158,14 +158,17 @@ export default function DemosPage() {
                                   className="text-base font-black text-[var(--accent)]"
                                   dir="ltr"
                                 >
-                                  ${formatUsd(classification.priceUsd)}
+                                  {formatMainPrice(
+                                    classification.priceUsd,
+                                    locale === "ar"
+                                      ? config.pricing.currency
+                                      : config.pricing.currencyEn,
+                                  )}
                                 </div>
                               )}
                               <div className="text-[10px] opacity-60" dir="ltr">
                                 {formatLyd(classification.priceLyd)}{" "}
-                                {locale === "ar"
-                                  ? config.pricing.currency
-                                  : config.pricing.currencyEn}
+                                {lydLabel(locale)}
                               </div>
                             </div>
                           </div>

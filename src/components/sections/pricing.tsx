@@ -6,7 +6,8 @@ import { CalendarCheck, Check, Sparkles, ArrowUpRight, Bitcoin } from "lucide-re
 import { useI18n } from "@/lib/i18n";
 import { useSiteConfig } from "@/components/site-provider";
 import { CheckoutDialog } from "@/components/checkout-dialog";
-import { formatUsd } from "@/lib/installments";
+import { formatLyd, lydLabel } from "@/lib/classification";
+import { formatMainPrice, formatUsd } from "@/lib/installments";
 import type { PricingPlan } from "@/lib/config";
 
 export function Pricing() {
@@ -57,11 +58,31 @@ export function Pricing() {
                 {plan.featured && <span className="h-8 w-8 rounded-full bg-[var(--accent)] grid place-items-center">✦</span>}
               </div>
 
+              {/* Prix principal en DOLLAR (toutes langues) — le montant en
+                  Livre libyenne reste affiché en équivalent indicatif. */}
               <div className="mt-6 flex items-baseline gap-2">
-                <span className="text-[36px] font-black tracking-tight leading-none">{plan.price.toLocaleString("en-LY")}</span>
-                <span className="text-sm opacity-60">{locale === "ar" ? siteConfig.pricing.currency : siteConfig.pricing.currencyEn}</span>
-                {plan.originalPrice && (
-                  <span className="ms-2 text-sm line-through opacity-40">{plan.originalPrice.toLocaleString()}</span>
+                {(plan.priceUsd ?? 0) > 0 ? (
+                  <>
+                    <span className="text-[36px] font-black tracking-tight leading-none" dir="ltr">
+                      {formatMainPrice(plan.priceUsd ?? 0, locale === "ar" ? siteConfig.pricing.currency : siteConfig.pricing.currencyEn)}
+                    </span>
+                    {plan.originalPrice != null && plan.originalPrice > 0 && plan.price > 0 && (
+                      <span className="ms-2 text-sm line-through opacity-40" dir="ltr">
+                        {formatMainPrice(
+                          Math.round((plan.originalPrice * (plan.priceUsd ?? 0)) / plan.price),
+                          locale === "ar" ? siteConfig.pricing.currency : siteConfig.pricing.currencyEn,
+                        )}
+                      </span>
+                    )}
+                  </>
+                ) : (
+                  <>
+                    <span className="text-[36px] font-black tracking-tight leading-none">{formatLyd(plan.price)}</span>
+                    <span className="text-sm opacity-60">{lydLabel(locale)}</span>
+                    {plan.originalPrice != null && plan.originalPrice > 0 && (
+                      <span className="ms-2 text-sm line-through opacity-40">{formatLyd(plan.originalPrice)}</span>
+                    )}
+                  </>
                 )}
               </div>
               <div className="text-xs opacity-60">{locale === "ar" ? plan.period : plan.periodEn}</div>
@@ -72,11 +93,11 @@ export function Pricing() {
                     plan.featured ? "bg-white/10" : "bg-[var(--accent)]/10"
                   }`}
                 >
-                  <span className="text-lg font-black text-[var(--accent)]" dir="ltr">
-                    ≈ ${formatUsd(plan.priceUsd ?? 0)}
+                  <span className="text-sm font-bold opacity-80" dir="ltr">
+                    ≈ {formatLyd(plan.price)} {lydLabel(locale)}
                   </span>
                   <span className="text-[11px] opacity-70">
-                    {locale === "ar" ? t.crypto.usdNoteAr : t.crypto.usdNoteEn}
+                    {locale === "ar" ? t.crypto.lydNoteAr : t.crypto.lydNoteEn}
                   </span>
                 </div>
               )}

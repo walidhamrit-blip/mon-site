@@ -17,7 +17,8 @@ import {
 } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import { useSiteConfig } from "@/components/site-provider";
-import { formatUsd } from "@/lib/installments";
+import { lydLabel } from "@/lib/classification";
+import { formatMainPrice } from "@/lib/installments";
 
 /** Icônes disponibles pour les services libres (config : `standaloneServices`). */
 const ICONS: Record<string, LucideIcon> = {
@@ -94,11 +95,14 @@ export function Services() {
                       {ar ? t.services.fromAr : t.services.fromEn}
                     </div>
                     <div className="text-[22px] font-black text-[var(--accent)] leading-none" dir="ltr">
-                      ${formatUsd(service.priceFromUsd)}
+                      {formatMainPrice(
+                        service.priceFromUsd,
+                        ar ? siteConfig.pricing.currency : siteConfig.pricing.currencyEn,
+                      )}
                     </div>
                     <div className="text-[10px] opacity-50 mt-0.5" dir="ltr">
                       ≈ {service.priceFromLyd.toLocaleString("en-LY")}{" "}
-                      {ar ? siteConfig.pricing.currency : siteConfig.pricing.currencyEn}
+                      {lydLabel(ar ? "ar" : "en")}
                     </div>
                   </div>
                 </div>
