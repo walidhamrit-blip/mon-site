@@ -192,6 +192,56 @@ function Lines({
   );
 }
 
+/**
+ * Champ SEO avec compteur de caractères et signal de la zone d'affichage
+ * Google (vert = optimal, ambre = à vérifier, rouge = trop long).
+ * Une valeur vide déclenche le fallback automatique côté page publique.
+ */
+function SeoField({
+  label,
+  value,
+  onChange,
+  max,
+  rows = 2,
+  placeholder,
+  dir = "rtl",
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  max: number;
+  rows?: number;
+  placeholder?: string;
+  dir?: "ltr" | "rtl";
+}) {
+  const len = value.length;
+  const tone =
+    len === 0
+      ? "text-zinc-500"
+      : len <= max
+        ? "text-emerald-400"
+        : "text-red-400";
+  return (
+    <label className="block">
+      <span className="flex items-center justify-between gap-2 text-xs font-semibold text-zinc-400">
+        <span>{label}</span>
+        <span className={`font-mono ${tone}`}>
+          {len}/{max}
+        </span>
+      </span>
+      <textarea
+        rows={rows}
+        dir={dir}
+        value={value}
+        maxLength={max + 30}
+        placeholder={placeholder}
+        onChange={(e) => onChange(e.target.value)}
+        className="mt-1.5 w-full rounded-xl border border-white/10 bg-black/40 p-3 text-sm text-white outline-none focus:border-[#C6A664] resize-y leading-6"
+      />
+    </label>
+  );
+}
+
 function ItemCard({
   title,
   subtitle,
@@ -1184,6 +1234,43 @@ export function ContentEditor({
                 <Area label="Description (anglaise)" dir="ltr" value={demo.descriptionEn} onChange={(v) => setDemo(i, { descriptionEn: v })} />
                 <Lines label="Points forts (arabe)" value={demo.features} onChange={(v) => setDemo(i, { features: v })} />
                 <Lines label="Points forts (anglais)" value={demo.featuresEn} onChange={(v) => setDemo(i, { featuresEn: v })} />
+              </div>
+
+              <div className="mt-4 rounded-2xl border border-sky-400/25 bg-sky-400/5 p-4">
+                <div className="flex flex-wrap items-start justify-between gap-2">
+                  <div>
+                    <div className="text-xs font-bold text-sky-300">
+                      Référencement Google &amp; IA (SEO)
+                    </div>
+                    <p className="mt-0.5 text-[11px] text-zinc-500">
+                      Champs optionnels. Laissez vide pour utiliser
+                      automatiquement le titre et la description du projet.
+                    </p>
+                  </div>
+                  <span className="rounded-full border border-sky-400/30 bg-black/30 px-3 py-1 text-[11px] font-bold text-sky-300">
+                    /{demo.slug}
+                  </span>
+                </div>
+                <div className="mt-4 grid lg:grid-cols-2 gap-4">
+                  <SeoField
+                    label="Titre SEO (balise title, ≤ 60 recommandé)"
+                    max={60}
+                    rows={2}
+                    dir="rtl"
+                    value={demo.metaTitle ?? ""}
+                    placeholder={`${demo.title} — معرض موقع حي من نخبة`}
+                    onChange={(v) => setDemo(i, { metaTitle: v })}
+                  />
+                  <SeoField
+                    label="Description SEO (meta description, ≤ 160 recommandé)"
+                    max={160}
+                    rows={3}
+                    dir="rtl"
+                    value={demo.metaDescription ?? ""}
+                    placeholder={demo.description}
+                    onChange={(v) => setDemo(i, { metaDescription: v })}
+                  />
+                </div>
               </div>
             </ItemCard>
             );

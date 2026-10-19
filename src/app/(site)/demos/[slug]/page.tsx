@@ -32,10 +32,15 @@ export async function generateMetadata({
     });
   }
 
+  // Champs SEO personnalisés depuis l'admin ; s'ils sont vides, fallback
+  // automatique sur le titre et la description du projet.
+  const customTitle = demo.metaTitle?.trim();
+  const customDescription = demo.metaDescription?.trim();
+
   return pageMetadata(config, {
     path: `/demos/${demo.slug}`,
-    title: `${demo.title} — معرض موقع حي من نخبة`,
-    description: metaDescription(demo.description),
+    title: customTitle || `${demo.title} — معرض موقع حي من نخبة`,
+    description: metaDescription(customDescription || demo.description),
     // L'image OG/Twitter est générée dynamiquement par
     // opengraph-image.tsx / twitter-image.tsx (carte brandée 1200×630).
     image: false,

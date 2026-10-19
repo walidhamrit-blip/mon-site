@@ -56,6 +56,9 @@ export const demoSchema = z.object({
     .max(1_000_000)
     .nullable()
     .optional(),
+  /** SEO optionnel : valeur vide = fallback automatique côté page. */
+  metaTitle: z.string().max(70).optional().or(z.literal("")),
+  metaDescription: z.string().max(200).optional().or(z.literal("")),
 });
 
 export const faqSchema = z.object({

@@ -32,6 +32,13 @@ export interface Demo {
    * le panneau d'administration.
    */
   priceUsd?: number | null;
+  /**
+   * Réglages SEO optionnels. Un champ vide / absent = génération
+   * automatique depuis le titre et la description du projet
+   * (voir src/lib/seo.ts et la page /demos/[slug]).
+   */
+  metaTitle?: string;
+  metaDescription?: string;
 }
 
 export interface Faq {
