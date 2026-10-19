@@ -51,9 +51,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     lastModified: BUILD_DATE,
     changeFrequency: "weekly",
     priority: 0.7,
-    // Image sitemap : aide Google Images et les contextualiseurs IA à
-    // découvrir les visuels des réalisations.
-    images: d.image ? [d.image] : undefined,
+    // Image sitemap : aide Google Images. On filtre les URLs avec "&" non-échappés
+    // (Unsplash) car le générateur Next 16 ne les encode pas en &amp; → XML invalide.
+    images: d.image && !d.image.includes("&") ? [d.image] : undefined,
   }));
 
   return [...mainRoutes, ...sectorRoutes, ...demoRoutes];
