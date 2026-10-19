@@ -86,14 +86,8 @@ export function CheckoutDialog({
   const [countdown, setCountdown] = useState(3);
   const [payment, setPayment] = useState<CreatePaymentResponse | null>(null);
   const [copied, setCopied] = useState<"address" | "amount" | null>(null);
-  /**
-   * Montant flexible éditable : démarre sur la valeur choisie dans la
-   * section, mais peut être relevé ici même si un réseau crypto refuse
-   * le montant (minimum imposé par la pièce / la plateforme).
-   */
-  const [flexAmount, setFlexAmount] = useState<number>(
-    Math.round((Number(flex?.amountUsd) || 0) * 100) / 100,
-  );
+  // Source unique : le montant choisi dans la section, jamais modifiable ici.
+  const flexAmount = Math.round((Number(flex?.amountUsd) || 0) * 100) / 100;
 
   // Compte à rebours avant redirection vers NOWPayments.
   useEffect(() => {
@@ -121,17 +115,6 @@ export function CheckoutDialog({
   if (flexMode) {
     if (!Number.isFinite(flexAmount) || flexAmount <= 0) return null;
   } else if (!plan || !plan.priceUsd) return null;
-
-  /** Relève le montant flexible (limites minimales des réseaux crypto). */
-  const bumpFlexAmount = (delta: number) => {
-    setFlexAmount((prev) => {
-      const next = Math.round((prev + delta) * 100) / 100;
-      return next > 0 ? next : prev;
-    });
-    setStep("form");
-    setError("");
-    setFailure(null);
-  };
 
   const totalUsd = flexMode ? flexAmount : plan!.priceUsd!;
   // Prix de la formule affichés dans le récapitulatif (dollar principal +
@@ -297,7 +280,15 @@ export function CheckoutDialog({
                       ? plan!.name
                       : plan!.nameEn}
                 </span>
-                {!flexMode && (
+                {flexMode && (
+              <p className="text-xs opacity-70">
+                {ar
+                  ? "المبلغ المختار ثابت في هذا الدفع. لتغييره، أغلق هذه النافذة وارجع لاختيار المبلغ."
+                  : "Your selected amount is locked for this checkout. To change it, close this window and return to amount selection."}
+              </p>
+            )}
+
+            {!flexMode && (
                   <span className="text-xs opacity-60">
                     {formatMainPrice(
                       planPriceUsd ?? planPriceLyd,
@@ -546,28 +537,22 @@ export function CheckoutDialog({
             <p className="text-xs opacity-80 leading-relaxed">{failureHint()}</p>
 
             {flexMode && (
-              <div className="rounded-2xl border border-[var(--accent)]/30 bg-[var(--accent)]/5 p-4 space-y-2">
+              <div className="rounded-2xl border border-[var(--accent)]/30 bg-[var(--accent)]/5 p-4 space-y-3">
+                <p className="text-xs font-bold" dir="ltr">
+                  ${formatUsd(flexAmount)} USD
+                </p>
                 <p className="text-[11px] opacity-70">
                   {ar
-                    ? "إذا كان السبب حداً أدنى على المنصة أو على العملة الرقمية — زد المبلغ وحاول مجدداً:"
-                    : "If a platform or coin minimum caused this — raise the amount and retry:"}
+                    ? "المبلغ المختار ثابت. إذا كانت العملة تتطلب حداً أدنى أعلى، ارجع لاختيار مبلغ جديد قبل إعادة الدفع. لا ترسل مبلغاً مختلفاً عن الفاتورة."
+                    : "Your selected amount is locked. If a coin requires a higher minimum, go back and select a new amount before paying again. Do not send a different amount from the invoice."}
                 </p>
-                <div className="flex flex-wrap items-center justify-center gap-2">
-                  {[1, 2, 5, 10].map((delta) => (
-                    <button
-                      key={delta}
-                      type="button"
-                      onClick={() => bumpFlexAmount(delta)}
-                      className="h-9 px-3.5 rounded-full border border-[var(--accent)]/50 bg-[var(--accent)]/10 text-xs font-black hover:bg-[var(--accent)]/20 transition-colors cursor-pointer"
-                      dir="ltr"
-                    >
-                      +${formatUsd(delta)}
-                    </button>
-                  ))}
-                  <span className="text-xs opacity-60" dir="ltr">
-                    → ${formatUsd(flexAmount)}
-                  </span>
-                </div>
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="h-9 px-4 rounded-full border border-[var(--accent)]/50 text-xs font-bold hover:bg-[var(--accent)]/10 cursor-pointer"
+                >
+                  {ar ? "العودة لاختيار المبلغ" : "Back to amount selection"}
+                </button>
               </div>
             )}
 
