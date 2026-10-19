@@ -1,12 +1,12 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import "./globals.css";
-import { I18nProvider } from "@/lib/i18n";
-import { ThemeProvider } from "@/components/theme-provider";
+import { I18nProvider, type Locale } from "@/lib/i18n";
+import { ThemeProvider, type ThemeMode } from "@/components/theme-provider";
 import { SiteProvider } from "@/components/site-provider";
 import { getSiteData } from "@/lib/store";
 import { siteConfig } from "@/lib/config";
-import { THEME_BOOT_SCRIPT, themeCss } from "@/lib/themes";
+import { isThemeId, themeBootScript, themeCss } from "@/lib/themes";
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteConfig.url),
@@ -38,6 +38,22 @@ export const metadata: Metadata = {
 export default async function RootLayout({ children }: { children: ReactNode }) {
   const { config, content } = await getSiteData();
 
+  // Apparence principale du site (choisie dans /admin → Réglages) :
+  // langue principale, thème principal et mode clair/sombre servent de
+  // défaut à tous les visiteurs (un visiteur peut toujours basculer).
+  const appearance = {
+    themeId: String(config.appearance?.themeId ?? siteConfig.appearance.themeId),
+    mode: String(config.appearance?.mode ?? siteConfig.appearance.mode),
+    defaultLocale: String(
+      config.appearance?.defaultLocale ?? siteConfig.appearance.defaultLocale,
+    ),
+  };
+  const defaultLocale: Locale = appearance.defaultLocale === "en" ? "en" : "ar";
+  const defaultMode: ThemeMode = appearance.mode === "dark" ? "dark" : "light";
+  const defaultPalette = isThemeId(appearance.themeId)
+    ? appearance.themeId
+    : siteConfig.appearance.themeId;
+
   const localBusiness = {
     "@context": "https://schema.org",
     "@type": "LocalBusiness",
@@ -56,7 +72,11 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
   };
 
   return (
-    <html lang="ar" dir="rtl" suppressHydrationWarning>
+    <html
+      lang={defaultLocale}
+      dir={defaultLocale === "ar" ? "rtl" : "ltr"}
+      suppressHydrationWarning
+    >
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
@@ -66,15 +86,21 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
         />
         {/* Palettes des 8 thèmes (clair + sombre) — générées depuis src/lib/themes.ts */}
         <style dangerouslySetInnerHTML={{ __html: themeCss() }} />
-        {/* Applique thème + mode avant le premier rendu (aucun clignotement) */}
-        <script dangerouslySetInnerHTML={{ __html: THEME_BOOT_SCRIPT }} />
+        {/* Applique thème + mode avant le premier rendu (aucun clignotement).
+            À défaut de choix mémorisé du visiteur, l'apparence principale
+            choisie dans /admin → Réglages est appliquée. */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: themeBootScript({ mode: defaultMode, palette: defaultPalette }),
+          }}
+        />
       </head>
       <body
         className="antialiased"
         style={{ fontFamily: "var(--font-cairo), var(--font-inter), system-ui" }}
       >
-        <ThemeProvider>
-          <I18nProvider>
+        <ThemeProvider defaultMode={defaultMode} defaultPalette={defaultPalette}>
+          <I18nProvider defaultLocale={defaultLocale}>
             <SiteProvider config={config} content={content}>
               {children}
             </SiteProvider>

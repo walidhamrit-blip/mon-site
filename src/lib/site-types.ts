@@ -100,6 +100,19 @@ export interface SiteConfigData {
     accent: string;
     accentHover: string;
   };
+  /**
+   * Apparence principale du site — choisis depuis /admin → Réglages :
+   * le thème principal, le mode clair/sombre et la langue principale.
+   * Les visiteurs peuvent toujours basculer depuis les sélecteurs du site.
+   */
+  appearance: {
+    /** Identifiant de la palette principale (voir src/lib/themes.ts). */
+    themeId: string;
+    /** Mode d'affichage principal. */
+    mode: "light" | "dark";
+    /** Langue principale du site. */
+    defaultLocale: "ar" | "en";
+  };
   social: {
     instagram: string;
     facebook: string;

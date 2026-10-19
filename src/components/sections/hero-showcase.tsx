@@ -7,8 +7,8 @@ import { useSiteConfig, useSiteContent } from "@/components/site-provider";
 import { isRealUrl } from "@/components/live-site-frames";
 import { ProjectPreview } from "@/components/project-preview";
 import { getProjectPreview } from "@/lib/project-previews";
-import { formatLyd, resolveDemoClassification } from "@/lib/classification";
-import { formatUsd } from "@/lib/installments";
+import { formatLyd, lydLabel, resolveDemoClassification } from "@/lib/classification";
+import { formatMainPrice } from "@/lib/installments";
 import { useI18n } from "@/lib/i18n";
 
 const SLIDE_DURATION = 8000;
@@ -171,12 +171,15 @@ export function HeroShowcase() {
               <span>{ar ? classification.name : classification.nameEn}</span>
               {classification.priceUsd != null && (
                 <span className="font-black text-[var(--foreground)]" dir="ltr">
-                  ${formatUsd(classification.priceUsd)}
+                  {formatMainPrice(
+                    classification.priceUsd,
+                    ar ? config.pricing.currency : config.pricing.currencyEn,
+                  )}
                 </span>
               )}
               <span dir="ltr">
                 {formatLyd(classification.priceLyd)}{" "}
-                {ar ? config.pricing.currency : config.pricing.currencyEn}
+                {lydLabel(ar ? "ar" : "en")}
               </span>
             </p>
           )}

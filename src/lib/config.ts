@@ -12,10 +12,27 @@ export const siteConfig = {
   hours: "السبت - الخميس: 9:00 - 18:00",
   hoursEn: "Sat - Thu: 9:00 AM - 6:00 PM",
 
-  // Prix modifiables ici — source unique
+  // Apparence principale du site — modifiable depuis /admin → Réglages.
+  // Ce sont les valeurs par DÉFAUT : chaque visiteur peut toujours basculer
+  // thème / mode / langue depuis les sélecteurs du site (son choix est alors
+  // mémorisé sur son appareil et prime sur ces valeurs).
+  appearance: {
+    /** Thème principal (palette de couleurs, voir src/lib/themes.ts). */
+    themeId: "nukhba",
+    /** Mode d'affichage principal : "light" (clair) ou "dark" (sombre). */
+    mode: "light",
+    /** Langue principale du site : "ar" (arabe) ou "en" (anglais). */
+    defaultLocale: "ar",
+  },
+
+  // Prix modifiables ici — source unique.
+  // La devise principale est le DOLLAR ($) dans toutes les langues : les
+  // prix principaux s'affichent en USD (c'est aussi la devise facturée via
+  // la passerelle de paiement). Les montants en Livre libyenne restent
+  // affichés comme équivalent indicatif (« ≈ … د.ل / LYD »).
   pricing: {
-    currency: "د.ل",
-    currencyEn: "LYD",
+    currency: "$",
+    currencyEn: "$",
     plans: [
       {
         id: "vitrine",

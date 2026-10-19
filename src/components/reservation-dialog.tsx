@@ -14,9 +14,11 @@ import { useI18n } from "@/lib/i18n";
 import { useSiteConfig } from "@/components/site-provider";
 import {
   formatLyd,
+  lydLabel,
   resolveDemoClassification,
 } from "@/lib/classification";
-import { formatUsd } from "@/lib/installments";
+import { formatMainPrice, formatUsd } from "@/lib/installments";
+import { PaymentGuarantee } from "@/components/payment-guarantee";
 import type { Demo } from "@/lib/site-types";
 
 interface ReserveResponse {
@@ -252,12 +254,15 @@ export function ReservationDialog({
                 <span className="text-end">
                   {classification?.priceUsd != null ? (
                     <span className="block text-lg font-black text-[var(--accent)]" dir="ltr">
-                      ${formatUsd(classification.priceUsd)}
+                      {formatMainPrice(
+                        classification.priceUsd,
+                        ar ? config.pricing.currency : config.pricing.currencyEn,
+                      )}
                     </span>
                   ) : null}
                   <span className="block text-[11px] opacity-60" dir="ltr">
                     {formatLyd(classification?.priceLyd ?? 0)}{" "}
-                    {ar ? config.pricing.currency : config.pricing.currencyEn}
+                    {lydLabel(ar ? "ar" : "en")}
                   </span>
                 </span>
               </div>
@@ -275,11 +280,14 @@ export function ReservationDialog({
                 </div>
                 <div className="text-end" dir="ltr">
                   <div className="text-lg font-black text-[var(--accent)]">
-                    ${formatUsd(depositUsd)}
+                    {formatMainPrice(
+                      depositUsd,
+                      ar ? config.pricing.currency : config.pricing.currencyEn,
+                    )}
                   </div>
                   <div className="text-[10px] opacity-60">
                     {formatLyd(depositLyd)}{" "}
-                    {ar ? config.pricing.currency : config.pricing.currencyEn}
+                    {lydLabel(ar ? "ar" : "en")}
                   </div>
                 </div>
               </div>
@@ -312,6 +320,8 @@ export function ReservationDialog({
               dir="ltr"
             />
 
+            {/* Garantie du service — rassure avant le paiement via la passerelle */}
+            <PaymentGuarantee variant="compact" />
             <button
               type="submit"
               className="h-12 w-full rounded-full bg-[var(--accent)] font-black text-[var(--accent-foreground)] hover:bg-[var(--accent-hover)] transition-colors cursor-pointer inline-flex items-center justify-center gap-2"

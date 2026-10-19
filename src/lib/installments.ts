@@ -74,6 +74,18 @@ export function formatUsd(amount: number): string {
   });
 }
 
+/**
+ * Formate un montant dans la devise PRINCIPALE du site (le dollar par
+ * défaut, dans toutes les langues) : « $300 » pour un symbole monétaire
+ * (« $ », « € »…), « 300 USD » sinon. `currencyLabel` vient de la
+ * configuration admin (pricing.currency / pricing.currencyEn).
+ */
+export function formatMainPrice(amount: number, currencyLabel: string): string {
+  const label = (currencyLabel || "$").trim() || "$";
+  const value = formatUsd(amount);
+  return /^[$€£¥₺]/.test(label) ? `${label}${value}` : `${value} ${label}`;
+}
+
 /** Libellé court d'une tranche, ex. « Tranche 2/3 ». */
 export function trancheLabel(index: number, count: number): string {
   return `Tranche ${index}/${count}`;

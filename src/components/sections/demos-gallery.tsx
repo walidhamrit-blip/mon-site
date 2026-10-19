@@ -24,8 +24,8 @@ import {
 import Link from "next/link";
 import { ProjectPreview } from "@/components/project-preview";
 import { ReservationButton } from "@/components/reservation-dialog";
-import { formatLyd, resolveDemoClassification } from "@/lib/classification";
-import { formatUsd } from "@/lib/installments";
+import { formatLyd, lydLabel, resolveDemoClassification } from "@/lib/classification";
+import { formatMainPrice, formatUsd } from "@/lib/installments";
 
 function formatHost(url: string, fallbackSlug: string, domain: string): string {
   if (!isRealUrl(url)) return `${domain}/${fallbackSlug}`;
@@ -293,12 +293,15 @@ export function DemosGallery() {
                     </span>
                     {activeClassification.priceUsd != null && (
                       <span className="font-black text-[var(--accent)]" dir="ltr">
-                        ${formatUsd(activeClassification.priceUsd)}
+                        {formatMainPrice(
+                          activeClassification.priceUsd,
+                          locale === "ar" ? siteConfig.pricing.currency : siteConfig.pricing.currencyEn,
+                        )}
                       </span>
                     )}
                     <span className="opacity-50" dir="ltr">
                       {formatLyd(activeClassification.priceLyd)}{" "}
-                      {locale === "ar" ? siteConfig.pricing.currency : siteConfig.pricing.currencyEn}
+                      {lydLabel(locale)}
                     </span>
                   </div>
                 )}

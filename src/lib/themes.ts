@@ -473,13 +473,23 @@ export function themeCss(): string {
 
 /**
  * Script inline exécuté avant le premier rendu : applique le thème et le mode
- * enregistrés, ce qui évite tout clignotement de couleurs au chargement.
+ * du visiteur (localStorage) ou, à défaut, l'apparence principale choisie dans
+ * l'admin (`/admin` → Réglages), ce qui évite tout clignotement de couleurs.
  * Les clés doivent rester synchronisées avec `theme-provider.tsx`.
  */
-export const THEME_BOOT_SCRIPT = `(function(){try{
+export function themeBootScript(
+  defaults: { mode?: "light" | "dark" | ""; palette?: string } = {},
+): string {
+  const mode = defaults.mode === "dark" || defaults.mode === "light" ? defaults.mode : "";
+  const palette = isThemeId(defaults.palette) ? defaults.palette : "";
+  return `(function(){try{
 var d=document.documentElement;
 var m=localStorage.getItem("nukhba-mode")||localStorage.getItem("nukhba-theme");
 var p=localStorage.getItem("nukhba-palette");
+var defM=${JSON.stringify(mode)};
+var defP=${JSON.stringify(palette)};
+if(m!=="dark"&&m!=="light")m=defM;
 if(m==="dark"||(m!=="light"&&window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches)){d.classList.add("dark")}
-if(p){d.setAttribute("data-theme",p)}
+if(p||defP){d.setAttribute("data-theme",p||defP)}
 }catch(e){}})();`;
+}

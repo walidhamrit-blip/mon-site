@@ -15,8 +15,8 @@ export default function PricingPage() {
           </h1>
           <p className="mt-3 opacity-60">
             {locale === "ar"
-              ? "اختر ما يناسب مرحلتك — الأسعار بالدينار الليبي وبالدولار، ويمكنك الدفع كاملاً أو على 2-3 أقساط بالعملات الرقمية عبر NOWPayments."
-              : "Pick your stage — prices in LYD and USD, pay in full or in 2–3 crypto installments via NOWPayments."}
+              ? "اختر ما يناسب مرحلتك — الأسعار بالدولار (مع مكافئ تقديري بالدينار الليبي)، ويمكنك الدفع كاملاً أو على 2-3 أقساط بالعملات الرقمية عبر NOWPayments."
+              : "Pick your stage — prices in USD (with an indicative LYD equivalent), pay in full or in 2–3 crypto installments via NOWPayments."}
           </p>
           <div className="mt-5 flex flex-wrap items-center justify-center gap-2 text-xs">
             <Link

@@ -10,12 +10,15 @@ import {
 } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import { siteConfig, type PricingPlan } from "@/lib/config";
+import { formatLyd } from "@/lib/classification";
 import {
+  formatMainPrice,
   formatUsd,
   INSTALLMENT_COUNTS,
   splitAmount,
   type InstallmentCount,
 } from "@/lib/installments";
+import { PaymentGuarantee } from "@/components/payment-guarantee";
 
 interface CreatePaymentResponse {
   ok: boolean;
@@ -131,6 +134,10 @@ export function CheckoutDialog({
   };
 
   const totalUsd = flexMode ? flexAmount : plan!.priceUsd!;
+  // Prix de la formule affichés dans le récapitulatif (dollar principal +
+  // équivalent indicatif en Livre libyenne).
+  const planPriceUsd: number | null = plan?.priceUsd ?? null;
+  const planPriceLyd: number = plan?.price ?? 0;
   // En mode montant libre : paiement unique (les micro-tranches
   // tomberaient sous les minimums imposés par les réseaux crypto).
   const trancheAmounts = flexMode
@@ -292,7 +299,16 @@ export function CheckoutDialog({
                 </span>
                 {!flexMode && (
                   <span className="text-xs opacity-60">
-                    {plan!.price.toLocaleString("en-LY")} {ar ? siteConfig.pricing.currency : siteConfig.pricing.currencyEn}
+                    {formatMainPrice(
+                      planPriceUsd ?? planPriceLyd,
+                      ar ? siteConfig.pricing.currency : siteConfig.pricing.currencyEn,
+                    )}
+                    {planPriceUsd != null && (
+                      <span className="opacity-70">
+                        {" · ≈ "}
+                        {formatLyd(planPriceLyd)} {ar ? "د.ل" : "LYD"}
+                      </span>
+                    )}
                   </span>
                 )}
               </div>
@@ -398,6 +414,9 @@ export function CheckoutDialog({
             {error && (
               <p className="text-xs font-semibold text-red-400">{error}</p>
             )}
+
+            {/* Garantie du service — rassure avant le paiement via la passerelle */}
+            <PaymentGuarantee />
 
             <button
               type="submit"

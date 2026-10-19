@@ -2,6 +2,8 @@
 import { useState, type FormEvent } from "react";
 import type { SiteConfigData, PricingPlanData } from "@/lib/site-types";
 import { resetSiteConfig, saveSiteConfig } from "@/app/admin/actions";
+import { DEFAULT_THEME_ID, THEMES } from "@/lib/themes";
+import { ThemePreview } from "@/components/theme-switcher";
 import {
   Save,
   RotateCcw,
@@ -10,6 +12,8 @@ import {
   AlertCircle,
   ChevronUp,
   ChevronDown,
+  Sun,
+  Moon,
 } from "lucide-react";
 
 /* ---------- petits éléments d'interface ---------- */
@@ -205,9 +209,129 @@ export function SettingsForm({ initial }: { initial: SiteConfigData }) {
   };
 
   const c = draft;
+  const appearance = c.appearance ?? {
+    themeId: DEFAULT_THEME_ID,
+    mode: "light" as const,
+    defaultLocale: "ar" as const,
+  };
+  const setAppearance = (patch: Partial<SiteConfigData["appearance"]>) =>
+    set("appearance", { ...appearance, ...patch });
 
   return (
     <form onSubmit={onSubmit} className="space-y-5">
+      <Card
+        title="Apparence & langue"
+        description="Choisissez le thème principal du site, son mode clair/sombre et sa langue principale. Ces valeurs s'appliquent par défaut à tous les visiteurs — chacun peut toujours basculer depuis les sélecteurs du site (son choix est alors mémorisé sur son appareil)."
+      >
+        <div className="space-y-5">
+          <div>
+            <span className="text-xs font-semibold text-zinc-400">
+              Thème principal (palette de couleurs)
+            </span>
+            <div className="mt-2 grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+              {THEMES.map((theme) => {
+                const active = appearance.themeId === theme.id;
+                return (
+                  <button
+                    key={theme.id}
+                    type="button"
+                    onClick={() => setAppearance({ themeId: theme.id })}
+                    aria-pressed={active}
+                    className={`text-start rounded-2xl border p-2 transition-colors cursor-pointer ${
+                      active
+                        ? "border-[#C6A664] bg-[#C6A664]/10"
+                        : "border-white/10 hover:border-[#C6A664]/50"
+                    }`}
+                  >
+                    <ThemePreview theme={theme} className="w-full" />
+                    <span className="mt-1.5 flex items-center gap-1">
+                      <span className="text-[11px] font-bold text-white truncate">
+                        {theme.labelEn}
+                      </span>
+                      {active && (
+                        <CheckCircle2 className="h-3 w-3 text-[#C6A664] flex-shrink-0" />
+                      )}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+            <span className="mt-1.5 block text-[11px] text-zinc-600">
+              Chaque thème existe en version claire et sombre — le mode se choisit
+              ci-dessous, indépendamment du thème.
+            </span>
+          </div>
+
+          <div className="grid sm:grid-cols-2 gap-4">
+            <div>
+              <span className="text-xs font-semibold text-zinc-400">
+                Mode d’affichage principal
+              </span>
+              <div className="mt-2 grid grid-cols-2 gap-2">
+                {(["light", "dark"] as const).map((mode) => {
+                  const active = appearance.mode === mode;
+                  return (
+                    <button
+                      key={mode}
+                      type="button"
+                      onClick={() => setAppearance({ mode })}
+                      aria-pressed={active}
+                      className={`h-11 rounded-2xl border text-sm font-bold inline-flex items-center justify-center gap-2 transition-colors cursor-pointer ${
+                        active
+                          ? "border-[#C6A664] bg-[#C6A664]/15 text-white"
+                          : "border-white/10 text-zinc-400 hover:text-white hover:border-white/25"
+                      }`}
+                    >
+                      {mode === "light" ? (
+                        <Sun className="h-4 w-4" />
+                      ) : (
+                        <Moon className="h-4 w-4" />
+                      )}
+                      {mode === "light" ? "Clair" : "Sombre"}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div>
+              <span className="text-xs font-semibold text-zinc-400">
+                Langue principale du site
+              </span>
+              <div className="mt-2 grid grid-cols-2 gap-2">
+                {(
+                  [
+                    ["ar", "العربية — Arabe"],
+                    ["en", "English — Anglais"],
+                  ] as const
+                ).map(([value, label]) => {
+                  const active = appearance.defaultLocale === value;
+                  return (
+                    <button
+                      key={value}
+                      type="button"
+                      onClick={() => setAppearance({ defaultLocale: value })}
+                      aria-pressed={active}
+                      className={`h-11 rounded-2xl border text-sm font-bold inline-flex items-center justify-center gap-2 transition-colors cursor-pointer ${
+                        active
+                          ? "border-[#C6A664] bg-[#C6A664]/15 text-white"
+                          : "border-white/10 text-zinc-400 hover:text-white hover:border-white/25"
+                      }`}
+                    >
+                      {label}
+                    </button>
+                  );
+                })}
+              </div>
+              <span className="mt-1.5 block text-[11px] text-zinc-600">
+                Langue affichée par défaut à l’ouverture du site — chaque visiteur
+                peut ensuite basculer (son choix est mémorisé).
+              </span>
+            </div>
+          </div>
+        </div>
+      </Card>
+
       <Card title="Coordonnées" description="Informations de contact et identité affichées partout sur le site.">
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
           <Field label="Nom (arabe)" value={c.nameAr} dir="rtl" onChange={(v) => set("nameAr", v)} />
@@ -249,8 +373,8 @@ export function SettingsForm({ initial }: { initial: SiteConfigData }) {
         description="Les prix et formules de la section tarifs. L’ordre de cette liste définit le numéro de catégorie (1, 2, 3…) utilisé pour classer chaque site du portfolio. L’identifiant (id) de chaque formule est technique : ne le modifiez pas."
       >
         <div className="grid sm:grid-cols-2 gap-4 max-w-[420px]">
-          <Field label="Devise (arabe)" value={c.pricing.currency} dir="rtl" onChange={(v) => setDraft((d) => ({ ...d, pricing: { ...d.pricing, currency: v } }))} />
-          <Field label="Devise (anglais)" value={c.pricing.currencyEn} dir="ltr" onChange={(v) => setDraft((d) => ({ ...d, pricing: { ...d.pricing, currencyEn: v } }))} />
+          <Field label="Devise principale (arabe)" value={c.pricing.currency} dir="rtl" hint="Le dollar ($) par défaut — devise du prix principal" onChange={(v) => setDraft((d) => ({ ...d, pricing: { ...d.pricing, currency: v } }))} />
+          <Field label="Devise principale (anglais)" value={c.pricing.currencyEn} dir="ltr" hint="The dollar ($) by default — main price currency" onChange={(v) => setDraft((d) => ({ ...d, pricing: { ...d.pricing, currencyEn: v } }))} />
         </div>
 
         <div className="mt-6 space-y-5">
@@ -308,9 +432,9 @@ export function SettingsForm({ initial }: { initial: SiteConfigData }) {
               <div className="mt-4 grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 <Field label="Nom (arabe)" value={plan.name} dir="rtl" onChange={(v) => setPlan(index, { name: v })} />
                 <Field label="Nom (latin)" value={plan.nameEn} dir="ltr" onChange={(v) => setPlan(index, { nameEn: v })} />
-                <NumberField label={`Prix (${c.pricing.currencyEn})`} value={plan.price} onChange={(v) => setPlan(index, { price: v ?? 0 })} />
-                <NumberField label="Prix USD (paiement crypto)" value={plan.priceUsd ?? null} nullable hint="Laissé vide : pas de paiement crypto pour cette formule" onChange={(v) => setPlan(index, { priceUsd: v })} />
-                <NumberField label="Prix barré (optionnel)" value={plan.originalPrice} nullable onChange={(v) => setPlan(index, { originalPrice: v })} />
+                <NumberField label="Prix indicatif (LYD)" value={plan.price} hint="Équivalent affiché en Livre libyenne" onChange={(v) => setPlan(index, { price: v ?? 0 })} />
+                <NumberField label="Prix principal (USD)" value={plan.priceUsd ?? null} nullable hint="Prix affiché et facturé en dollar via la passerelle. Laissé vide : formule non payable en ligne" onChange={(v) => setPlan(index, { priceUsd: v })} />
+                <NumberField label="Prix barré indicatif (LYD, optionnel)" value={plan.originalPrice} nullable onChange={(v) => setPlan(index, { originalPrice: v })} />
                 <Field label="Badge (arabe, optionnel)" value={plan.badge ?? ""} dir="rtl" onChange={(v) => setPlan(index, { badge: v })} />
                 <Field label="Badge (anglais, optionnel)" value={plan.badgeEn ?? ""} dir="ltr" onChange={(v) => setPlan(index, { badgeEn: v })} />
                 <Field label="Description (arabe)" value={plan.description} dir="rtl" onChange={(v) => setPlan(index, { description: v })} />
@@ -365,7 +489,7 @@ export function SettingsForm({ initial }: { initial: SiteConfigData }) {
             }
           />
           <NumberField
-            label={`Équivalent affiché (${c.pricing.currencyEn})`}
+            label="Équivalent affiché (LYD)"
             value={c.reservation.depositLyd}
             hint="Montant indicatif en Livre libyenne"
             onChange={(v) =>

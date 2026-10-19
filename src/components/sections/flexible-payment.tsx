@@ -5,6 +5,7 @@ import { Bitcoin, PencilLine, ShieldCheck, SlidersHorizontal, TriangleAlert } fr
 import { useI18n } from "@/lib/i18n";
 import { useSiteConfig } from "@/components/site-provider";
 import { CheckoutDialog } from "@/components/checkout-dialog";
+import { PaymentGuarantee } from "@/components/payment-guarantee";
 import { formatUsd } from "@/lib/installments";
 
 /**
@@ -218,6 +219,9 @@ export function FlexiblePayment() {
             <ShieldCheck className="h-3.5 w-3.5" />
             {ar ? t.flexPay.secureAr : t.flexPay.secureEn}
           </p>
+
+          {/* Garantie du service — rassure avant le paiement via la passerelle */}
+          <PaymentGuarantee variant="compact" className="mt-4" />
         </motion.div>
       </div>
 

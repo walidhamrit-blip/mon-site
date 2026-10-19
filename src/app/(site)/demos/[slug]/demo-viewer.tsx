@@ -7,8 +7,8 @@ import { useI18n } from "@/lib/i18n";
 import { useSiteConfig } from "@/components/site-provider";
 import { isRealUrl, FullscreenLiveViewer } from "@/components/live-site-frames";
 import { ReservationButton } from "@/components/reservation-dialog";
-import { formatLyd, resolveDemoClassification } from "@/lib/classification";
-import { formatUsd } from "@/lib/installments";
+import { formatLyd, lydLabel, resolveDemoClassification } from "@/lib/classification";
+import { formatMainPrice, formatUsd } from "@/lib/installments";
 import {
   ArrowUpRight,
   Check,
@@ -146,14 +146,17 @@ export function DemoViewer({ demo, allDemos }: { demo: Demo; allDemos: Demo[] })
                             className="text-2xl font-black text-[var(--accent)] leading-none"
                             dir="ltr"
                           >
-                            ${formatUsd(classification.priceUsd)}
+                            {formatMainPrice(
+                              classification.priceUsd,
+                              locale === "ar"
+                                ? config.pricing.currency
+                                : config.pricing.currencyEn,
+                            )}
                           </div>
                         )}
                         <div className="mt-1 text-[11px] opacity-60" dir="ltr">
                           {formatLyd(classification.priceLyd)}{" "}
-                          {locale === "ar"
-                            ? config.pricing.currency
-                            : config.pricing.currencyEn}
+                          {lydLabel(locale)}
                         </div>
                       </div>
                     </div>

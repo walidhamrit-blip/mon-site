@@ -19,8 +19,8 @@ import type { Demo } from "@/lib/site-types";
 import { useI18n } from "@/lib/i18n";
 import { useSiteConfig } from "@/components/site-provider";
 import { ReservationButton } from "@/components/reservation-dialog";
-import { formatLyd, resolveDemoClassification } from "@/lib/classification";
-import { formatUsd } from "@/lib/installments";
+import { formatLyd, lydLabel, resolveDemoClassification } from "@/lib/classification";
+import { formatMainPrice, formatUsd } from "@/lib/installments";
 
 export function isRealUrl(url?: string): boolean {
   return Boolean(url && url !== "#" && (/^https?:\/\//i.test(url.trim()) || url.trim().startsWith("/")));
@@ -257,8 +257,11 @@ export function FullscreenLiveViewer({
               {locale === "ar" ? "الفئة" : "Cat."} {classification.tier}
               <span className="text-white/30">·</span>
               {classification.priceUsd != null
-                ? `$${formatUsd(classification.priceUsd)}`
-                : `${formatLyd(classification.priceLyd)} LYD`}
+                ? formatMainPrice(
+                    classification.priceUsd,
+                    locale === "ar" ? config.pricing.currency : config.pricing.currencyEn,
+                  )
+                : `${formatLyd(classification.priceLyd)} ${lydLabel(locale)}`}
             </span>
           )}
 
@@ -384,12 +387,15 @@ export function FullscreenLiveViewer({
               <div className="text-end flex-shrink-0">
                 {classification.priceUsd != null && (
                   <div className="text-xl font-black text-[var(--accent)]" dir="ltr">
-                    ${formatUsd(classification.priceUsd)}
+                    {formatMainPrice(
+                      classification.priceUsd,
+                      locale === "ar" ? config.pricing.currency : config.pricing.currencyEn,
+                    )}
                   </div>
                 )}
                 <div className="text-[10px] text-zinc-500" dir="ltr">
                   {formatLyd(classification.priceLyd)}{" "}
-                  {locale === "ar" ? config.pricing.currency : config.pricing.currencyEn}
+                  {lydLabel(locale)}
                 </div>
               </div>
             </div>

@@ -106,6 +106,8 @@ const translations = {
       orQuote: "أو اطلب عرض سعر",
       usdNoteAr: "بالدولار — دفع آمن عبر NOWPayments",
       usdNoteEn: "in USD — secure via NOWPayments",
+      lydNoteAr: "بالدينار الليبي — سعر تقديري",
+      lydNoteEn: "in Libyan dinars — indicative price",
       installmentNoteAr: "دفعة كاملة أو 2-3 أقساط",
       installmentNoteEn: "Pay in full or 2–3 installments",
     },
@@ -126,6 +128,20 @@ const translations = {
       continueEn: "Continue to payment",
       secureAr: "🔒 تشفير كامل — لا نخزن أي بيانات دفع",
       secureEn: "🔒 Fully encrypted — we never store payment data",
+      guaranteeTitleAr: "🛡️ ضمان الخدمة — دفعك محمي",
+      guaranteeTitleEn: "🛡️ Service guarantee — your payment is protected",
+      guarantee1Ar:
+        "التزام كامل بالتسليم حسب المواصفات المتفق عليها — وإن لم تُسلَّم الخدمة كما اتفقنا، تسترجع مبلغك كاملاً.",
+      guarantee1En:
+        "We deliver the agreed specifications in full — if the service is not delivered as agreed, you get a full refund.",
+      guarantee2Ar:
+        "دفع آمن عبر بوابة NOWPayments الرسمية — تشفير كامل، ولا نصل إلى بيانات محفظتك أو بطاقتك ولا نخزّنها إطلاقاً.",
+      guarantee2En:
+        "Secure payment through the official NOWPayments gateway — fully encrypted, we never access or store your wallet or card data.",
+      guarantee3Ar:
+        "إيصال تأكيد فوري يصلك بالبريد الإلكتروني، وطلبك يُفعَّل فور تأكيد الشبكة — مع متابعتنا لك خلال ساعتين.",
+      guarantee3En:
+        "Instant email receipt, your order activates as soon as the network confirms — and we follow up within 2 hours.",
       creatingAr: "جارٍ إنشاء الدفع…",
       creatingEn: "Creating your payment…",
       readyAr: "تم إنشاء الدفع. التحويل خلال",
@@ -385,6 +401,8 @@ const translations = {
       orQuote: "or request a quote",
       usdNoteAr: "in USD — secure via NOWPayments",
       usdNoteEn: "in USD — secure via NOWPayments",
+      lydNoteAr: "≈ in Libyan dinars — indicative price",
+      lydNoteEn: "≈ in Libyan dinars — indicative price",
       installmentNoteAr: "Pay in full or 2–3 installments",
       installmentNoteEn: "Pay in full or 2–3 installments",
     },
@@ -405,6 +423,20 @@ const translations = {
       continueEn: "Continue to payment",
       secureAr: "🔒 Fully encrypted — we never store payment data",
       secureEn: "🔒 Fully encrypted — we never store payment data",
+      guaranteeTitleAr: "🛡️ Service guarantee — your payment is protected",
+      guaranteeTitleEn: "🛡️ Service guarantee — your payment is protected",
+      guarantee1Ar:
+        "We deliver the agreed specifications in full — if the service is not delivered as agreed, you get a full refund.",
+      guarantee1En:
+        "We deliver the agreed specifications in full — if the service is not delivered as agreed, you get a full refund.",
+      guarantee2Ar:
+        "Secure payment through the official NOWPayments gateway — fully encrypted, we never access or store your wallet or card data.",
+      guarantee2En:
+        "Secure payment through the official NOWPayments gateway — fully encrypted, we never access or store your wallet or card data.",
+      guarantee3Ar:
+        "Instant email receipt, your order activates as soon as the network confirms — and we follow up within 2 hours.",
+      guarantee3En:
+        "Instant email receipt, your order activates as soon as the network confirms — and we follow up within 2 hours.",
       creatingAr: "Creating your payment…",
       creatingEn: "Creating your payment…",
       readyAr: "Payment created. Redirecting in",
@@ -574,10 +606,21 @@ const I18nContext = createContext<{
   toggleLocale: () => void;
 } | null>(null);
 
-export function I18nProvider({ children }: { children: React.ReactNode }) {
-  const [locale, setLocaleState] = useState<Locale>("ar");
+export function I18nProvider({
+  children,
+  defaultLocale = "ar",
+}: {
+  children: React.ReactNode;
+  /**
+   * Langue principale du site, choisie dans /admin → Réglages.
+   * Le visiteur qui a déjà choisi une langue (localStorage) la conserve.
+   */
+  defaultLocale?: Locale;
+}) {
+  const [locale, setLocaleState] = useState<Locale>(defaultLocale);
 
   useEffect(() => {
+    // Priorité : langue mémorisée du visiteur > langue principale (admin).
     const saved = localStorage.getItem("nukhba-locale") as Locale | null;
     if (saved && (saved === "ar" || saved === "en")) setLocaleState(saved);
   }, []);
