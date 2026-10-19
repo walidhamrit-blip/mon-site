@@ -105,6 +105,11 @@ export function OrdersTable({ orders }: { orders: OrderRow[] }) {
                             {ORDER_KIND_LABELS.reservation}
                           </span>
                         )}
+                        {order.kind === "flex" && (
+                          <span className="inline-flex items-center rounded-full border border-sky-500/30 bg-sky-500/10 px-2 py-0.5 text-[10px] font-bold text-sky-300 whitespace-nowrap">
+                            {ORDER_KIND_LABELS.flex}
+                          </span>
+                        )}
                         {order.installments > 1 && (
                           <span className="inline-flex items-center rounded-full border border-[#C6A664]/30 bg-[#C6A664]/10 px-2 py-0.5 text-[10px] font-bold text-[#E8D5A9] whitespace-nowrap">
                             Tranche {order.installmentIndex}/{order.installments}

@@ -47,17 +47,28 @@ interface Failure {
 
 type Step = "form" | "creating" | "ready" | "error";
 
+/** Paiement flexible « 1 $ ou plus » : montant choisi par le client. */
+export interface FlexPaymentIntent {
+  /** Montant en USD (1 $ minimum — borné serveur). */
+  amountUsd: number;
+  /** Description libre (acompte, solde, soutien…). */
+  purpose?: string;
+}
+
 /**
  * Dialogue de paiement crypto (NOWPayments).
- * S'ouvre depuis les cartes tarifaires : le client laisse
+ * S'ouvre depuis les cartes tarifaires (mode formule) ou depuis la
+ * section « paiement flexible » (mode montant libre) : le client laisse
  * son e-mail, puis est redirigé vers la page de paiement
  * hébergée par NOWPayments.
  */
 export function CheckoutDialog({
   plan,
+  flex,
   onClose,
 }: {
-  plan: PricingPlan | null;
+  plan?: PricingPlan | null;
+  flex?: FlexPaymentIntent | null;
   onClose: () => void;
 }) {
   const { locale, t } = useI18n();
@@ -72,6 +83,14 @@ export function CheckoutDialog({
   const [countdown, setCountdown] = useState(3);
   const [payment, setPayment] = useState<CreatePaymentResponse | null>(null);
   const [copied, setCopied] = useState<"address" | "amount" | null>(null);
+  /**
+   * Montant flexible éditable : démarre sur la valeur choisie dans la
+   * section, mais peut être relevé ici même si un réseau crypto refuse
+   * le montant (minimum imposé par la pièce / la plateforme).
+   */
+  const [flexAmount, setFlexAmount] = useState<number>(
+    Math.round((Number(flex?.amountUsd) || 0) * 100) / 100,
+  );
 
   // Compte à rebours avant redirection vers NOWPayments.
   useEffect(() => {
@@ -86,18 +105,37 @@ export function CheckoutDialog({
 
   // Échap pour fermer.
   useEffect(() => {
-    if (!plan) return;
+    if (!plan && !flex) return;
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [plan, onClose]);
+  }, [plan, flex, onClose]);
 
-  if (!plan || !plan.priceUsd) return null;
+  const flexMode = Boolean(flex && !plan);
 
-  const totalUsd = plan.priceUsd;
-  const trancheAmounts = splitAmount(totalUsd, installments);
+  if (flexMode) {
+    if (!Number.isFinite(flexAmount) || flexAmount <= 0) return null;
+  } else if (!plan || !plan.priceUsd) return null;
+
+  /** Relève le montant flexible (limites minimales des réseaux crypto). */
+  const bumpFlexAmount = (delta: number) => {
+    setFlexAmount((prev) => {
+      const next = Math.round((prev + delta) * 100) / 100;
+      return next > 0 ? next : prev;
+    });
+    setStep("form");
+    setError("");
+    setFailure(null);
+  };
+
+  const totalUsd = flexMode ? flexAmount : plan!.priceUsd!;
+  // En mode montant libre : paiement unique (les micro-tranches
+  // tomberaient sous les minimums imposés par les réseaux crypto).
+  const trancheAmounts = flexMode
+    ? [totalUsd]
+    : splitAmount(totalUsd, installments);
   const dueNow = trancheAmounts[0] ?? totalUsd;
 
   const submit = async (e: React.FormEvent) => {
@@ -113,14 +151,26 @@ export function CheckoutDialog({
       const res = await fetch("/api/payments/create", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          planId: plan.id,
-          installments,
-          name: name.trim() || undefined,
-          email: email.trim() || undefined,
-          phone: phone.trim() || undefined,
-          locale,
-        }),
+        body: JSON.stringify(
+          flexMode
+            ? {
+                kind: "flex",
+                amountUsd: flexAmount,
+                description: flex?.purpose?.trim() || undefined,
+                name: name.trim() || undefined,
+                email: email.trim() || undefined,
+                phone: phone.trim() || undefined,
+                locale,
+              }
+            : {
+                planId: plan!.id,
+                installments,
+                name: name.trim() || undefined,
+                email: email.trim() || undefined,
+                phone: phone.trim() || undefined,
+                locale,
+              },
+        ),
       });
       const data: CreatePaymentResponse = await res
         .json()
@@ -233,11 +283,18 @@ export function CheckoutDialog({
             <div className="rounded-2xl border border-[var(--border)] bg-[var(--secondary)]/40 p-4">
               <div className="flex items-baseline justify-between gap-2">
                 <span className="font-bold text-sm">
-                  {ar ? plan.name : plan.nameEn}
+                  {flexMode
+                    ? flex?.purpose?.trim() ||
+                      (ar ? "دفع حر" : "Flexible payment")
+                    : ar
+                      ? plan!.name
+                      : plan!.nameEn}
                 </span>
-                <span className="text-xs opacity-60">
-                  {plan.price.toLocaleString("en-LY")} {ar ? siteConfig.pricing.currency : siteConfig.pricing.currencyEn}
-                </span>
+                {!flexMode && (
+                  <span className="text-xs opacity-60">
+                    {plan!.price.toLocaleString("en-LY")} {ar ? siteConfig.pricing.currency : siteConfig.pricing.currencyEn}
+                  </span>
+                )}
               </div>
               <div className="mt-1.5 flex items-baseline justify-between gap-2">
                 <span className="text-2xl font-black text-[var(--accent)]" dir="ltr">
@@ -249,6 +306,7 @@ export function CheckoutDialog({
               </div>
             </div>
 
+            {!flexMode && (
             <div>
               <div className="mb-1.5 text-[11px] font-semibold uppercase tracking-wider opacity-50">
                 {ar ? t.checkout.modeAr : t.checkout.modeEn}
@@ -291,6 +349,7 @@ export function CheckoutDialog({
                 })}
               </div>
             </div>
+            )}
 
             <div className="flex items-center justify-between rounded-xl bg-[var(--accent)]/10 border border-[var(--accent)]/30 px-3 py-2 text-sm">
               <span className="opacity-70">
@@ -466,6 +525,32 @@ export function CheckoutDialog({
               {ar ? t.checkout.errorAr : t.checkout.errorEn}
             </p>
             <p className="text-xs opacity-80 leading-relaxed">{failureHint()}</p>
+
+            {flexMode && (
+              <div className="rounded-2xl border border-[var(--accent)]/30 bg-[var(--accent)]/5 p-4 space-y-2">
+                <p className="text-[11px] opacity-70">
+                  {ar
+                    ? "إذا كان السبب حداً أدنى على المنصة أو على العملة الرقمية — زد المبلغ وحاول مجدداً:"
+                    : "If a platform or coin minimum caused this — raise the amount and retry:"}
+                </p>
+                <div className="flex flex-wrap items-center justify-center gap-2">
+                  {[1, 2, 5, 10].map((delta) => (
+                    <button
+                      key={delta}
+                      type="button"
+                      onClick={() => bumpFlexAmount(delta)}
+                      className="h-9 px-3.5 rounded-full border border-[var(--accent)]/50 bg-[var(--accent)]/10 text-xs font-black hover:bg-[var(--accent)]/20 transition-colors cursor-pointer"
+                      dir="ltr"
+                    >
+                      +${formatUsd(delta)}
+                    </button>
+                  ))}
+                  <span className="text-xs opacity-60" dir="ltr">
+                    → ${formatUsd(flexAmount)}
+                  </span>
+                </div>
+              </div>
+            )}
 
             {failure && (
               <div

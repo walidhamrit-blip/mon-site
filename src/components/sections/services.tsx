@@ -1,0 +1,170 @@
+"use client";
+import { useState } from "react";
+import Link from "next/link";
+import { motion } from "framer-motion";
+import {
+  ArrowUpRight,
+  Check,
+  LayoutGrid,
+  MessageCircle,
+  Palette,
+  PenTool,
+  Presentation,
+  Rocket,
+  Sparkles,
+  Wrench,
+  type LucideIcon,
+} from "lucide-react";
+import { useI18n } from "@/lib/i18n";
+import { useSiteConfig } from "@/components/site-provider";
+import { formatUsd } from "@/lib/installments";
+
+/** Icônes disponibles pour les services libres (config : `standaloneServices`). */
+const ICONS: Record<string, LucideIcon> = {
+  Palette,
+  LayoutGrid,
+  Presentation,
+  PenTool,
+  Rocket,
+  Wrench,
+};
+
+/**
+ * Section « services libres » : petites missions à la carte, vendues au
+ * forfait — restyliser un ancien site, ajouter une section, construire
+ * des diapositives / présentations, design & identité, etc.
+ */
+export function Services() {
+  const siteConfig = useSiteConfig();
+  const { locale, t } = useI18n();
+  const ar = locale === "ar";
+
+  const [requested, setRequested] = useState<string | null>(null);
+  const services = siteConfig.standaloneServices;
+
+  const whatsappUrl = (serviceTitle: string) =>
+    `https://wa.me/${siteConfig.whatsapp}?text=${encodeURIComponent(
+      ar
+        ? `مرحبا ${siteConfig.nameAr} 👋 أريد طلب الخدمة: ${serviceTitle}`
+        : `Hello ${siteConfig.name} 👋 I'd like to request this service: ${serviceTitle}`,
+    )}`;
+
+  return (
+    <section id="services" className="py-16 lg:py-24 bg-[var(--secondary)]/40 border-y border-[var(--border)]">
+      <div className="site-container px-4 sm:px-6 lg:px-8">
+        <div className="max-w-[760px] mx-auto text-center">
+          <div className="inline-flex items-center gap-2 text-sm font-semibold tracking-[0.12em] text-[var(--accent)]">
+            <span className="h-px w-8 bg-[var(--accent)]" />
+            {ar ? "خدمات مفتوحة" : "OPEN SERVICES"}
+            <span className="h-px w-8 bg-[var(--accent)]" />
+          </div>
+          <h2 className="mt-3 text-[30px] lg:text-[42px] font-black tracking-tight leading-none">
+            {ar ? t.services.titleAr : t.services.titleEn}
+          </h2>
+          <p className="mt-3 opacity-60">
+            {ar ? t.services.subtitleAr : t.services.subtitleEn}
+          </p>
+        </div>
+
+        <div className="mt-10 grid sm:grid-cols-2 lg:grid-cols-3 gap-6 max-w-[1100px] mx-auto">
+          {services.map((service, idx) => {
+            const Icon = ICONS[service.icon] ?? Sparkles;
+            const title = ar ? service.titleAr : service.titleEn;
+            return (
+              <motion.div
+                key={service.id}
+                initial={{ opacity: 0, y: 16 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: (idx % 3) * 0.08 }}
+                className="relative rounded-[24px] border border-[var(--border)] bg-[var(--card)] p-6 flex flex-col hover:border-[var(--accent)]/50 hover:shadow-lg transition-all"
+              >
+                {"badgeAr" in service && service.badgeAr ? (
+                  <div className="absolute -top-3 start-6 px-3 py-1 rounded-full bg-[var(--accent)] text-[var(--accent-foreground)] text-[10px] font-black shadow">
+                    {ar ? service.badgeAr : service.badgeEn}
+                  </div>
+                ) : null}
+
+                <div className="flex items-start justify-between gap-3">
+                  <span className="grid h-11 w-11 place-items-center rounded-2xl bg-[var(--accent)]/12 text-[var(--accent)]">
+                    <Icon className="h-5 w-5" />
+                  </span>
+                  <div className="text-end">
+                    <div className="text-[10px] font-bold uppercase tracking-wider opacity-50">
+                      {ar ? t.services.fromAr : t.services.fromEn}
+                    </div>
+                    <div className="text-[22px] font-black text-[var(--accent)] leading-none" dir="ltr">
+                      ${formatUsd(service.priceFromUsd)}
+                    </div>
+                    <div className="text-[10px] opacity-50 mt-0.5" dir="ltr">
+                      ≈ {service.priceFromLyd.toLocaleString("en-LY")}{" "}
+                      {ar ? siteConfig.pricing.currency : siteConfig.pricing.currencyEn}
+                    </div>
+                  </div>
+                </div>
+
+                <h3 className="mt-4 text-lg font-black leading-snug">{title}</h3>
+                <p className="mt-1.5 text-sm opacity-60 leading-6">
+                  {ar ? service.descAr : service.descEn}
+                </p>
+
+                <ul className="mt-4 space-y-2">
+                  {(ar ? service.featuresAr : service.featuresEn).map((f) => (
+                    <li key={f} className="flex gap-2 text-[13px] leading-6 opacity-80">
+                      <span className="mt-1 h-4 w-4 rounded-full bg-[var(--accent)] text-white grid place-items-center flex-shrink-0">
+                        <Check className="h-2.5 w-2.5" />
+                      </span>
+                      <span>{f}</span>
+                    </li>
+                  ))}
+                </ul>
+
+                <div className="mt-auto pt-5">
+                  {requested === service.id ? (
+                    <a
+                      href={whatsappUrl(title)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="h-11 rounded-full bg-[#25D366] text-white font-bold text-sm inline-flex items-center justify-center gap-2 w-full hover:brightness-95 transition"
+                    >
+                      <MessageCircle className="h-4 w-4" />
+                      {ar ? "أكمل الطلب عبر واتساب" : "Continue on WhatsApp"}
+                    </a>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => setRequested(service.id)}
+                      className="h-11 rounded-full border border-[var(--border)] font-bold text-sm inline-flex items-center justify-center gap-2 w-full hover:border-[var(--accent)] hover:bg-[var(--accent)]/10 transition-colors cursor-pointer"
+                    >
+                      {ar ? t.services.ctaAr : t.services.ctaEn}
+                      <ArrowUpRight className="h-4 w-4" />
+                    </button>
+                  )}
+                </div>
+              </motion.div>
+            );
+          })}
+        </div>
+
+        <div className="mt-10 max-w-[760px] mx-auto rounded-[20px] border border-[var(--accent)]/30 bg-[var(--accent)]/5 p-5 flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="text-center sm:text-start">
+            <div className="flex items-center justify-center sm:justify-start gap-2 text-sm font-black">
+              <Sparkles className="h-4 w-4 text-[var(--accent)]" />
+              {ar ? t.services.customAr : t.services.customEn}
+            </div>
+            <p className="mt-1 text-xs opacity-60">
+              {ar ? t.services.customCtaAr : t.services.customCtaEn}
+            </p>
+          </div>
+          <Link
+            href="/contact"
+            className="h-10 px-5 rounded-full bg-[var(--accent)] text-[var(--accent-foreground)] text-xs font-black inline-flex items-center gap-1.5 hover:bg-[var(--accent-hover)] transition-colors flex-shrink-0"
+          >
+            {ar ? "تواصل معنا" : "Contact us"}
+            <ArrowUpRight className="h-3.5 w-3.5" />
+          </Link>
+        </div>
+      </div>
+    </section>
+  );
+}

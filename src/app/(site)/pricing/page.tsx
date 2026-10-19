@@ -1,4 +1,5 @@
 "use client";
+import Link from "next/link";
 import { Pricing } from "@/components/sections/pricing";
 import { FAQ } from "@/components/sections/faq";
 import { useI18n } from "@/lib/i18n";
@@ -17,6 +18,24 @@ export default function PricingPage() {
               ? "اختر ما يناسب مرحلتك — الأسعار بالدينار الليبي وبالدولار، ويمكنك الدفع كاملاً أو على 2-3 أقساط بالعملات الرقمية عبر NOWPayments."
               : "Pick your stage — prices in LYD and USD, pay in full or in 2–3 crypto installments via NOWPayments."}
           </p>
+          <div className="mt-5 flex flex-wrap items-center justify-center gap-2 text-xs">
+            <Link
+              href="/#flex-pay"
+              className="inline-flex items-center gap-1.5 h-9 px-4 rounded-full border border-[var(--accent)]/40 bg-[var(--accent)]/10 font-bold hover:bg-[var(--accent)]/20 transition-colors"
+            >
+              {locale === "ar"
+                ? "💸 دفع حر — 1 دولار أو أكثر (قابل للتعديل)"
+                : "💸 Flexible payment — $1 or more (editable amount)"}
+            </Link>
+            <Link
+              href="/#services"
+              className="inline-flex items-center gap-1.5 h-9 px-4 rounded-full border border-[var(--border)] font-bold hover:border-[var(--accent)]/60 transition-colors"
+            >
+              {locale === "ar"
+                ? "🧩 خدمات مفتوحة — إعادة تصميم، إضافة قسم، شرائح، تصميم"
+                : "🧩 Open services — restyle, add a section, slides, design"}
+            </Link>
+          </div>
         </div>
       </section>
       <Pricing />

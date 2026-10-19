@@ -158,6 +158,98 @@ export const siteConfig = {
     depositUsd: 1,
     depositLyd: 6,
   },
+
+  // Paiement flexible 1 $+ — montant éditable pour contourner les
+  // limites minimales des réseaux crypto (ex: certaines pièces exigent
+  // ≥ 3–5 $). Le client peut ajuster le montant à la hausse.
+  flexiblePayment: {
+    enabled: true,
+    minUsd: 1,
+    maxUsd: 5000,
+    suggested: [1, 5, 10, 25, 50, 100, 250],
+    noteAr:
+      "Certaines cryptos imposent un minimum (ex: 3–5 $ selon la pièce). Si le paiement échoue, augmentez simplement le montant — le surplus est déduit ou gardé en crédit.",
+    noteEn:
+      "Some coins require a minimum (e.g. 3–5 $ depending on the coin). If payment fails, just increase the amount — surplus is deducted or kept as credit.",
+  },
+
+  // Services libres / à la carte — petites missions vendues au forfait
+  standaloneServices: [
+    {
+      id: "restyle",
+      icon: "Palette",
+      titleAr: "إعادة تصميم موقع قديم",
+      titleEn: "Restyle an Old Website",
+      descAr: "نحوّل موقعك القديم إلى واجهة عصرية سريعة ومتجاوبة — بدون فقدان المحتوى أو الـ SEO.",
+      descEn: "Turn your outdated site into a modern, fast, responsive showcase — no content or SEO loss.",
+      priceFromUsd: 49,
+      priceFromLyd: 290,
+      badgeAr: "الأكثر طلباً",
+      badgeEn: "Most requested",
+      featuresAr: ["تصميم جديد على هويتك", "تسريع + تحسين SEO", "نقل المحتوى مجاناً"],
+      featuresEn: ["Fresh brand-aligned design", "Speed + SEO boost", "Free content migration"],
+    },
+    {
+      id: "add-section",
+      icon: "LayoutGrid",
+      titleAr: "إضافة قسم جديد",
+      titleEn: "Add a New Section",
+      descAr: "قسم جديد لموقعك الحالي: معرض أعمال، مدونة، حجز مواعيد، متجر مصغّر، أسئلة شائعة...",
+      descEn: "A new section for your current site: portfolio, blog, booking, mini-shop, FAQ…",
+      priceFromUsd: 19,
+      priceFromLyd: 110,
+      featuresAr: ["متجاوب 100%", "لوحة تحكم لو احتجت", "تسليم 48–72 ساعة"],
+      featuresEn: ["100% responsive", "Admin if needed", "Delivery in 48–72h"],
+    },
+    {
+      id: "slides",
+      icon: "Presentation",
+      titleAr: "بناء شرائح وعروض",
+      titleEn: "Slides & Pitch Decks",
+      descAr: "عروض PowerPoint / Google Slides / Keynote فاخرة: بيتش ديك، بروفايل شركة، عرض مبيعات.",
+      descEn: "Premium PowerPoint / Google Slides / Keynote decks: pitch deck, company profile, sales deck.",
+      priceFromUsd: 29,
+      priceFromLyd: 170,
+      featuresAr: ["تصميم على الهوية", "إنفوغرافيك وأيقونات", "ملف قابل للتعديل + PDF"],
+      featuresEn: ["On-brand design", "Infographics & icons", "Editable file + PDF"],
+    },
+    {
+      id: "branding",
+      icon: "PenTool",
+      titleAr: "تصميم وهوية",
+      titleEn: "Branding & Design",
+      descAr: "شعار، ألوان، خطوط، بطاقات، فلاير، منشورات سوشيال — هوية متكاملة جاهزة للطباعة والويب.",
+      descEn: "Logo, colors, fonts, cards, flyers, social posts — complete identity ready for print & web.",
+      priceFromUsd: 39,
+      priceFromLyd: 230,
+      featuresAr: ["شعار + دليل ألوان", "قوالب سوشيال", "ملفات AI/SVG/PNG"],
+      featuresEn: ["Logo + color guide", "Social templates", "AI/SVG/PNG files"],
+    },
+    {
+      id: "landing",
+      icon: "Rocket",
+      titleAr: "صفحة هبوط سريعة",
+      titleEn: "Landing Page Sprint",
+      descAr: "صفحة هبوط واحدة عالية التحويل لإطلاق منتج، حملة، أو حدث — مع فورم وواتساب.",
+      descEn: "One high-converting landing page to launch a product, campaign or event — with form & WhatsApp.",
+      priceFromUsd: 59,
+      priceFromLyd: 350,
+      featuresAr: ["كوبي رايتنغ مقنع", "فورم + واتساب + تحليلات", "تسليم 3–5 أيام"],
+      featuresEn: ["Persuasive copy", "Form + WhatsApp + analytics", "Delivery in 3–5 days"],
+    },
+    {
+      id: "fix-optimize",
+      icon: "Wrench",
+      titleAr: "إصلاح وتحسين",
+      titleEn: "Fix & Optimize",
+      descAr: "حل مشاكل السرعة، التجاوب، الأخطاء، الـ SEO، أو الأمان — تدقيق + إصلاح + تقرير.",
+      descEn: "Fix speed, responsiveness, bugs, SEO or security — audit + fix + report.",
+      priceFromUsd: 15,
+      priceFromLyd: 90,
+      featuresAr: ["تدقيق شامل", "إصلاح فوري", "تقرير قبل/بعد"],
+      featuresEn: ["Full audit", "Instant fix", "Before/after report"],
+    },
+  ],
 } as const;
 
 export type PricingPlan = (typeof siteConfig.pricing.plans)[number];
