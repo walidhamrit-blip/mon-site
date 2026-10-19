@@ -7,6 +7,7 @@ import { siteConfig } from "@/lib/config";
 import { getSiteData } from "@/lib/store";
 import {
   createInvoice,
+  isNowPaymentsError,
   nowPaymentsConfigured,
   type CreatedInvoice,
 } from "@/lib/nowpayments";
@@ -46,6 +47,43 @@ const createPaymentSchema = z
   .refine((data) => Boolean(data.planId || data.orderRef), {
     message: "planId ou orderRef requis",
   });
+
+/** Cause exacte d'un échec, remontée telle quelle au dialogue de paiement. */
+interface ErrorDetail {
+  /** Origine : config serveur, base de données, passerelle ou saisie. */
+  source: "config" | "database" | "nowpayments" | "input";
+  /** Code HTTP renvoyé par NOWPayments (null si non applicable). */
+  status: number | null;
+  /** Message exact (corps NOWPayments ou erreur serveur). */
+  message: string;
+}
+
+function errorResponse(error: string, httpStatus: number, detail: ErrorDetail) {
+  return NextResponse.json({ ok: false, error, detail }, { status: httpStatus });
+}
+
+/** Message d'erreur exploitable depuis une exception. */
+function errorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : String(error);
+}
+
+/** Détail standard pour une erreur NOWPayments. */
+function gatewayDetail(error: unknown): ErrorDetail {
+  return {
+    source: "nowpayments",
+    status: isNowPaymentsError(error) ? error.status : null,
+    message: errorMessage(error),
+  };
+}
+
+/** Détail standard pour une erreur de base de données. */
+function databaseDetail(error: unknown): ErrorDetail {
+  return {
+    source: "database",
+    status: null,
+    message: errorMessage(error),
+  };
+}
 
 /** URL de base du site (succès/annulation/IPN). */
 function siteBaseUrl(): string {
@@ -89,24 +127,27 @@ async function payExistingOrder(orderRef: string) {
   const order = rows[0];
 
   if (!order) {
-    return NextResponse.json(
-      { ok: false, error: "order_not_found" },
-      { status: 404 },
-    );
+    return errorResponse("order_not_found", 404, {
+      source: "input",
+      status: null,
+      message: `Aucune commande « ${wanted} »`,
+    });
   }
   if (order.status === "paid") {
-    return NextResponse.json(
-      { ok: false, error: "order_already_paid" },
-      { status: 409 },
-    );
+    return errorResponse("order_already_paid", 409, {
+      source: "input",
+      status: null,
+      message: `La commande « ${order.ref} » est déjà payée`,
+    });
   }
 
   const amount = Number(order.amountUsd);
   if (!Number.isFinite(amount) || amount <= 0) {
-    return NextResponse.json(
-      { ok: false, error: "invalid_amount" },
-      { status: 400 },
-    );
+    return errorResponse("invalid_amount", 400, {
+      source: "input",
+      status: null,
+      message: `Montant invalide pour « ${order.ref} » : ${order.amountUsd}`,
+    });
   }
 
   const { config } = await getSiteData();
@@ -129,12 +170,11 @@ async function payExistingOrder(orderRef: string) {
   } catch (error) {
     console.error(
       "[payments] NOWPayments refusé (tranche) :",
-      error instanceof Error ? error.message : error,
+      errorMessage(error),
     );
-    return NextResponse.json(
-      { ok: false, error: "gateway_error" },
-      { status: 502 },
-    );
+    // Aucune facture créée : la commande existe déjà, inutile de la
+    // supprimer — le client pourra réessayer depuis la page de suivi.
+    return errorResponse("gateway_error", 502, gatewayDetail(error));
   }
 
   try {
@@ -176,25 +216,34 @@ async function payExistingOrder(orderRef: string) {
 
 export async function POST(req: Request) {
   if (!nowPaymentsConfigured()) {
-    return NextResponse.json(
-      { ok: false, error: "gateway_not_configured" },
-      { status: 503 },
-    );
+    return errorResponse("gateway_not_configured", 503, {
+      source: "config",
+      status: null,
+      message:
+        "NOWPAYMENTS_API_KEY absente du serveur (variable d'environnement non définie, ou non appliquée à l'environnement Production — après ajout sur Vercel, redéployer)",
+    });
   }
 
   let body: unknown;
   try {
     body = await req.json();
   } catch {
-    return NextResponse.json({ ok: false, error: "invalid_json" }, { status: 400 });
+    return errorResponse("invalid_json", 400, {
+      source: "input",
+      status: null,
+      message: "Corps JSON invalide",
+    });
   }
 
   const parsed = createPaymentSchema.safeParse(body);
   if (!parsed.success) {
-    return NextResponse.json(
-      { ok: false, error: "invalid_input", issues: parsed.error.issues },
-      { status: 400 },
-    );
+    return errorResponse("invalid_input", 400, {
+      source: "input",
+      status: null,
+      message: parsed.error.issues
+        .map((issue) => `${issue.path.join(".") || "?"}: ${issue.message}`)
+        .join(" ; "),
+    });
   }
 
   const data = parsed.data;
@@ -206,12 +255,9 @@ export async function POST(req: Request) {
     } catch (error) {
       console.error(
         "[payments] paiement d'une tranche impossible :",
-        error instanceof Error ? error.message : error,
+        errorMessage(error),
       );
-      return NextResponse.json(
-        { ok: false, error: "save_failed" },
-        { status: 500 },
-      );
+      return errorResponse("save_failed", 500, databaseDetail(error));
     }
   }
 
@@ -221,10 +267,11 @@ export async function POST(req: Request) {
   const { config } = await getSiteData();
   const plan = config.pricing.plans.find((p) => p.id === data.planId);
   if (!plan || !plan.priceUsd || plan.priceUsd <= 0) {
-    return NextResponse.json(
-      { ok: false, error: "plan_not_payable" },
-      { status: 400 },
-    );
+    return errorResponse("plan_not_payable", 400, {
+      source: "input",
+      status: null,
+      message: `Formule « ${data.planId} » absente ou sans prix USD (prix administrateur non configuré ?)`,
+    });
   }
 
   const count =
@@ -268,9 +315,9 @@ export async function POST(req: Request) {
   } catch (error) {
     console.error(
       "[payments] création commande impossible :",
-      error instanceof Error ? error.message : error,
+      errorMessage(error),
     );
-    return NextResponse.json({ ok: false, error: "save_failed" }, { status: 500 });
+    return errorResponse("save_failed", 500, databaseDetail(error));
   }
 
   // 2) Facture NOWPayments pour la première tranche : le client est
@@ -287,14 +334,11 @@ export async function POST(req: Request) {
       ...paymentUrls(baseRef),
     });
   } catch (error) {
-    console.error("[payments] NOWPayments refusé :", error instanceof Error ? error.message : error);
+    console.error("[payments] NOWPayments refusé :", errorMessage(error));
     // Aucune facture : on retire tout le groupe de tranches pour ne
     // pas laisser de lignes orphelines.
     await db.delete(orders).where(eq(orders.groupRef, baseRef)).catch(() => null);
-    return NextResponse.json(
-      { ok: false, error: "gateway_error" },
-      { status: 502 },
-    );
+    return errorResponse("gateway_error", 502, gatewayDetail(error));
   }
 
   // 3) Lien facture ↔ commande (le payment_id arrivera via l'IPN).

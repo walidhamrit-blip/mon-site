@@ -93,8 +93,33 @@ export function PaymentStatus({ ref }: { ref: string }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ orderRef: tranche }),
       });
-      const data = await res.json();
-      if (!res.ok || !data.ok || !data.paymentUrl) throw new Error(data.error ?? "error");
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.ok || !data.paymentUrl) {
+        // Cause exacte : code serveur + détail (statut/message NOWPayments).
+        const code: string = data.error ?? `http_${res.status}`;
+        const detail: { status?: number | null; message?: string } =
+          data.detail ?? {};
+        const hint =
+          code === "save_failed"
+            ? ar
+              ? t.checkout.hintDbAr
+              : t.checkout.hintDbEn
+            : code === "gateway_not_configured"
+              ? ar
+                ? t.checkout.hintKeyAr
+                : t.checkout.hintKeyEn
+              : ar
+                ? t.pay.trancheErrorAr
+                : t.pay.trancheErrorEn;
+        const statusPart =
+          detail.status != null ? ` · HTTP ${detail.status}` : "";
+        const messagePart = detail.message
+          ? ` — ${String(detail.message).slice(0, 200)}`
+          : "";
+        setPayError(`${hint} [${code}${statusPart}]${messagePart}`);
+        setPaying(null);
+        return;
+      }
       window.location.assign(data.paymentUrl);
     } catch {
       setPayError(ar ? t.pay.trancheErrorAr : t.pay.trancheErrorEn);
