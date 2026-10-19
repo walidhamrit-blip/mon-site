@@ -20,6 +20,12 @@ import {
 interface CreatePaymentResponse {
   ok: boolean;
   error?: string;
+  /** Cause exacte remontée par le serveur (diagnostic). */
+  detail?: {
+    source?: string;
+    status?: number | null;
+    message?: string;
+  };
   orderRef?: string;
   installments?: number;
   installmentIndex?: number;
@@ -30,6 +36,13 @@ interface CreatePaymentResponse {
   payAmount?: number;
   priceAmount?: number;
   priceCurrency?: string;
+}
+
+/** Échec de création, avec la cause exacte pour l'afficher au client. */
+interface Failure {
+  code: string;
+  status: number | null;
+  message: string;
 }
 
 type Step = "form" | "creating" | "ready" | "error";
@@ -55,6 +68,7 @@ export function CheckoutDialog({
   const [phone, setPhone] = useState("");
   const [installments, setInstallments] = useState<InstallmentCount>(1);
   const [error, setError] = useState("");
+  const [failure, setFailure] = useState<Failure | null>(null);
   const [countdown, setCountdown] = useState(3);
   const [payment, setPayment] = useState<CreatePaymentResponse | null>(null);
   const [copied, setCopied] = useState<"address" | "amount" | null>(null);
@@ -94,6 +108,7 @@ export function CheckoutDialog({
     }
     setStep("creating");
     setError("");
+    setFailure(null);
     try {
       const res = await fetch("/api/payments/create", {
         method: "POST",
@@ -107,17 +122,56 @@ export function CheckoutDialog({
           locale,
         }),
       });
-      const data: CreatePaymentResponse = await res.json();
+      const data: CreatePaymentResponse = await res
+        .json()
+        .catch(() => ({ ok: false }) as CreatePaymentResponse);
       if (!res.ok || !data.ok || !data.paymentUrl) {
+        // Cause exacte : code serveur + détail (statut/message NOWPayments).
+        setFailure({
+          code: data.error ?? `http_${res.status}`,
+          status: data.detail?.status ?? res.status,
+          message: data.detail?.message ?? "",
+        });
         setStep("error");
         return;
       }
       setPayment(data);
       setCountdown(3);
       setStep("ready");
-    } catch {
+    } catch (err) {
+      setFailure({
+        code: "network_error",
+        status: null,
+        message: err instanceof Error ? err.message : String(err),
+      });
       setStep("error");
     }
+  };
+
+  /** Conseil bilingue selon la cause exacte de l'échec. */
+  const failureHint = (): string => {
+    const code = failure?.code ?? "";
+    const status = failure?.status ?? null;
+    if (code === "gateway_not_configured")
+      return ar ? t.checkout.hintKeyAr : t.checkout.hintKeyEn;
+    if (code === "gateway_error" && (status === 401 || status === 403))
+      return ar ? t.checkout.hintKeyRejectedAr : t.checkout.hintKeyRejectedEn;
+    if (code === "gateway_error")
+      return status === null
+        ? ar
+          ? t.checkout.hintNetworkAr
+          : t.checkout.hintNetworkEn
+        : ar
+          ? t.checkout.hintGatewayAr
+          : t.checkout.hintGatewayEn;
+    if (code === "save_failed") return ar ? t.checkout.hintDbAr : t.checkout.hintDbEn;
+    if (code === "network_error")
+      return ar ? t.checkout.hintNetworkAr : t.checkout.hintNetworkEn;
+    if (code === "order_not_found" || code === "order_already_paid")
+      return ar ? t.checkout.hintOrderAr : t.checkout.hintOrderEn;
+    if (code === "plan_not_payable")
+      return ar ? t.checkout.hintPlanAr : t.checkout.hintPlanEn;
+    return ar ? t.checkout.hintGenericAr : t.checkout.hintGenericEn;
   };
 
   const copy = async (value: string, key: "address" | "amount") => {
@@ -411,6 +465,37 @@ export function CheckoutDialog({
             <p className="text-sm text-red-300 font-semibold">
               {ar ? t.checkout.errorAr : t.checkout.errorEn}
             </p>
+            <p className="text-xs opacity-80 leading-relaxed">{failureHint()}</p>
+
+            {failure && (
+              <div
+                dir="ltr"
+                className="rounded-xl border border-red-400/30 bg-black/40 p-3 text-left"
+              >
+                <p className="text-[10px] uppercase tracking-wider opacity-60">
+                  {ar ? t.checkout.diagTitleAr : t.checkout.diagTitleEn}
+                </p>
+                <p className="mt-1 font-mono text-[11px] text-red-200 break-all">
+                  {failure.code}
+                  {failure.status != null ? ` · HTTP ${failure.status}` : ""}
+                </p>
+                {failure.message && (
+                  <p className="mt-1 font-mono text-[10px] opacity-70 break-all">
+                    {failure.message}
+                  </p>
+                )}
+              </div>
+            )}
+
+            <a
+              href="/api/health"
+              target="_blank"
+              rel="noreferrer"
+              className="inline-block text-xs font-semibold underline opacity-80 hover:opacity-100"
+            >
+              {ar ? t.checkout.healthLinkAr : t.checkout.healthLinkEn}
+            </a>
+
             <div className="flex gap-2 justify-center">
               <button
                 type="button"

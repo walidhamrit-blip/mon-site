@@ -42,6 +42,31 @@ export function nowPaymentsFiatCurrency(): string {
   return (process.env.NOWPAYMENTS_CURRENCY?.trim() || "usd").toLowerCase();
 }
 
+/* ------------- Erreurs structurées (cause exacte) ------------- */
+
+/**
+ * Erreur NOWPayments enrichie : porte le code HTTP et le corps brut
+ * renvoyé par la passerelle, pour afficher la cause exacte dans le
+ * dialogue de paiement et dans les réponses `/api/payments/create`.
+ */
+export class NowPaymentsError extends Error {
+  /** Code HTTP renvoyé par NOWPayments (null = erreur réseau/timeout). */
+  readonly status: number | null;
+  /** Corps brut de la réponse NOWPayments (le message d'erreur réel). */
+  readonly body: string;
+
+  constructor(message: string, status: number | null, body = "") {
+    super(message);
+    this.name = "NowPaymentsError";
+    this.status = status;
+    this.body = body;
+  }
+}
+
+export function isNowPaymentsError(error: unknown): error is NowPaymentsError {
+  return error instanceof NowPaymentsError;
+}
+
 /* ------------- Création de facture (page de paiement hébergée) ------------- */
 
 export interface CreateInvoiceInput {
@@ -91,36 +116,54 @@ export async function createInvoice(
   input: CreateInvoiceInput,
 ): Promise<CreatedInvoice> {
   const apiKey = nowPaymentsApiKey();
-  if (!apiKey) throw new Error("NOWPAYMENTS_API_KEY manquant");
+  if (!apiKey) {
+    throw new NowPaymentsError("NOWPAYMENTS_API_KEY manquant", null);
+  }
 
-  const response = await fetch(`${nowPaymentsApiBase()}/invoice`, {
-    method: "POST",
-    headers: {
-      "x-api-key": apiKey,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      price_amount: input.priceAmount,
-      price_currency: input.priceCurrency ?? nowPaymentsFiatCurrency(),
-      order_id: input.orderId,
-      order_description: input.orderDescription,
-      ...(input.ipnCallbackUrl ? { ipn_callback_url: input.ipnCallbackUrl } : {}),
-      ...(input.successUrl ? { success_url: input.successUrl } : {}),
-      ...(input.cancelUrl ? { cancel_url: input.cancelUrl } : {}),
-    }),
-    signal: AbortSignal.timeout(15000),
-  });
+  let response: Response;
+  try {
+    response = await fetch(`${nowPaymentsApiBase()}/invoice`, {
+      method: "POST",
+      headers: {
+        "x-api-key": apiKey,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        price_amount: input.priceAmount,
+        price_currency: input.priceCurrency ?? nowPaymentsFiatCurrency(),
+        order_id: input.orderId,
+        order_description: input.orderDescription,
+        ...(input.ipnCallbackUrl ? { ipn_callback_url: input.ipnCallbackUrl } : {}),
+        ...(input.successUrl ? { success_url: input.successUrl } : {}),
+        ...(input.cancelUrl ? { cancel_url: input.cancelUrl } : {}),
+      }),
+      signal: AbortSignal.timeout(15000),
+    });
+  } catch (error) {
+    const detail = error instanceof Error ? error.message : String(error);
+    throw new NowPaymentsError(
+      `NOWPayments injoignable — ${detail}`,
+      null,
+      detail,
+    );
+  }
 
   if (!response.ok) {
     const detail = await response.text().catch(() => "");
-    throw new Error(
+    throw new NowPaymentsError(
       `NOWPayments create invoice ${response.status} — ${detail.slice(0, 300)}`,
+      response.status,
+      detail.slice(0, 300),
     );
   }
 
   const invoice = (await response.json()) as CreatedInvoice;
   if (!invoice.invoice_url) {
-    throw new Error("NOWPayments n'a pas renvoyé invoice_url");
+    throw new NowPaymentsError(
+      "NOWPayments n'a pas renvoyé invoice_url",
+      response.status,
+      JSON.stringify(invoice).slice(0, 300),
+    );
   }
   return invoice;
 }
