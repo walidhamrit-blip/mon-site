@@ -606,6 +606,13 @@ const I18nContext = createContext<{
   toggleLocale: () => void;
 } | null>(null);
 
+// Seuls les choix explicites du visiteur (bouton de langue du site) sont
+// mémorisés, sous cette clé. L'ancienne clé `nukhba-locale` était écrite
+// automatiquement à chaque visite — y compris pour la simple langue par
+// défaut de l'admin — ce qui empêchait tout changement de langue principale
+// depuis /admin de prendre effet sur les navigateurs déjà passés par le site.
+const LOCALE_KEY = "nukhba-locale-choice";
+
 export function I18nProvider({
   children,
   defaultLocale = "ar",
@@ -620,20 +627,38 @@ export function I18nProvider({
   const [locale, setLocaleState] = useState<Locale>(defaultLocale);
 
   useEffect(() => {
-    // Priorité : langue mémorisée du visiteur > langue principale (admin).
-    const saved = localStorage.getItem("nukhba-locale") as Locale | null;
-    if (saved && (saved === "ar" || saved === "en")) setLocaleState(saved);
-  }, []);
+    // Priorité : langue explicitement choisie par le visiteur >
+    // langue principale (admin), y compris si elle change après coup.
+    try {
+      localStorage.removeItem("nukhba-locale");
+      const saved = localStorage.getItem(LOCALE_KEY) as Locale | null;
+      if (saved && (saved === "ar" || saved === "en")) {
+        setLocaleState(saved);
+        return;
+      }
+    } catch {
+      /* localStorage indisponible */
+    }
+    setLocaleState(defaultLocale);
+  }, [defaultLocale]);
 
   useEffect(() => {
-    localStorage.setItem("nukhba-locale", locale);
+    // ⚠️ Aucune écriture localStorage ici : enregistrer la langue courante
+    // transformerait le défaut admin en faux « choix du visiteur ».
     document.documentElement.lang = locale;
     document.documentElement.dir = locale === "ar" ? "rtl" : "ltr";
     document.documentElement.classList.toggle("rtl", locale === "ar");
   }, [locale]);
 
-  const setLocale = (l: Locale) => setLocaleState(l);
-  const toggleLocale = () => setLocaleState((p) => (p === "ar" ? "en" : "ar"));
+  const setLocale = (l: Locale) => {
+    try {
+      localStorage.setItem(LOCALE_KEY, l);
+    } catch {
+      /* localStorage indisponible */
+    }
+    setLocaleState(l);
+  };
+  const toggleLocale = () => setLocale(locale === "ar" ? "en" : "ar");
   const t = translations[locale];
   const dir = locale === "ar" ? "rtl" : "ltr";
 
