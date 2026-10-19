@@ -24,7 +24,7 @@ import {
 import Link from "next/link";
 import { ProjectPreview } from "@/components/project-preview";
 import { ReservationButton } from "@/components/reservation-dialog";
-import { formatLyd, lydLabel, resolveDemoClassification } from "@/lib/classification";
+import { demoImageAlt, formatLyd, lydLabel, resolveDemoClassification } from "@/lib/classification";
 import { formatMainPrice, formatUsd } from "@/lib/installments";
 
 function formatHost(url: string, fallbackSlug: string, domain: string): string {
@@ -229,7 +229,7 @@ export function DemosGallery() {
                         exit={{ opacity: 0 }}
                         transition={{ duration: 0.4 }}
                         src={activeDemo.image}
-                        alt={locale === "ar" ? activeDemo.title : activeDemo.titleEn}
+                        alt={demoImageAlt(activeDemo, locale)}
                         className="w-full h-full object-cover"
                       />
                     </AnimatePresence>

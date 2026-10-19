@@ -8,7 +8,7 @@ import { useI18n } from "@/lib/i18n";
 import { useSiteConfig } from "@/components/site-provider";
 import { isRealUrl, FullscreenLiveViewer } from "@/components/live-site-frames";
 import { ReservationButton } from "@/components/reservation-dialog";
-import { formatLyd, lydLabel, resolveDemoClassification } from "@/lib/classification";
+import { demoImageAlt, formatLyd, lydLabel, resolveDemoClassification } from "@/lib/classification";
 import { formatMainPrice, formatUsd } from "@/lib/installments";
 import {
   ArrowUpRight,
@@ -94,7 +94,7 @@ export function DemoViewer({ demo, allDemos }: { demo: Demo; allDemos: Demo[] })
               >
                 <Image
                   src={demo.image}
-                  alt={title}
+                  alt={demoImageAlt(demo, locale)}
                   fill
                   sizes="(max-width: 1024px) 100vw, 60vw"
                   loading="lazy"
@@ -224,7 +224,7 @@ export function DemoViewer({ demo, allDemos }: { demo: Demo; allDemos: Demo[] })
                           loading="lazy"
                           decoding="async"
                           src={item.image}
-                          alt={locale === "ar" ? item.title : item.titleEn}
+                          alt={demoImageAlt(item, locale)}
                           width={64}
                           height={48}
                           className="h-12 w-16 rounded-lg object-cover flex-shrink-0"

@@ -244,3 +244,33 @@ avec `aria-expanded`, `aria-controls` et `role="region"`.
 - Inspection HTTP du build de production : titles, canonicals, OG, Twitter,
   JSON-LD valides (parsing JSON vérifié), `robots.txt`, `sitemap.xml`
   (avec images), `llms.txt` 200, manifest 200, 404 réel, noindex paiement.
+
+## 10. Assistant SEO IA d'admin (PR « assistant SEO »)
+
+Générateur de métadonnées bilingues (AR/EN) pour les réalisations du portfolio,
+directement dans `/admin` → **Contenus** → **Démos**.
+
+- `src/lib/ai/seo-generator.ts` — prompt + appel LLM (`response_format:
+  json_object`, timeout 20 s) et **repli gabarit local** : sans clé ou en cas
+  d'erreur, des champs optimisés sont toujours renvoyés (`engine: "template"`).
+  Chaque valeur est tronquée aux limites Google : titre 60, description 160,
+  texte alternatif 125 caractères.
+- `src/app/api/admin/ai/seo/route.ts` — `POST` protégé par `requireAdmin`,
+  payload validé par Zod (422 sinon), réponse `{ copy, engine }`.
+- Variables d'environnement (toutes optionnelles) : `OPENAI_API_KEY`,
+  `OPENAI_BASE_URL` (compatible OpenAI), `OPENAI_MODEL` (`gpt-4o-mini` par
+  défaut).
+- Nouveaux champs SEO par démo : `metaTitle`, `metaDescription`,
+  `metaTitleEn`, `metaDescriptionEn`, `imageAltAr`, `imageAltEn`
+  (types + `demoSchema`, tous optionnels avec repli automatique).
+- Helpers : `demoSeoMeta()` (`src/lib/seo.ts`) et `demoImageAlt()`
+  (`src/lib/classification.ts`), utilisés par `/demos/[slug]` et toutes les
+  images de réalisations (galerie d'accueil, `/demos`, studio d'identité).
+- Bouton **« Générer avec l'IA »** sur chaque démo : remplit les six champs
+  dans le brouillon, l'enregistrement reste manuel (relecture humaine).
+
+**Tests manuels effectués** : route sans session → 307 vers `/admin/login` ;
+payload incomplet → 422 ; corps non JSON → 400 ; LLM simulé → `engine: "llm"`
+avec troncature (60/160/125) ; LLM injoignable → `engine: "template"` ;
+`npm run typecheck` et `npm run build` OK ; `npm run seo:check` → 20
+pages/ressources, 0 erreur.

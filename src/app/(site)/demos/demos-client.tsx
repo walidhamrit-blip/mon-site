@@ -6,7 +6,7 @@ import { sectors } from "@/lib/content";
 import { useSiteConfig, useSiteContent } from "@/components/site-provider";
 import { useI18n } from "@/lib/i18n";
 import { ReservationButton } from "@/components/reservation-dialog";
-import { formatLyd, lydLabel, resolveDemoClassification } from "@/lib/classification";
+import { demoImageAlt, formatLyd, lydLabel, resolveDemoClassification } from "@/lib/classification";
 import { formatMainPrice } from "@/lib/installments";
 import { ArrowUpRight, ExternalLink, Search, Monitor, Smartphone } from "lucide-react";
 
@@ -98,7 +98,7 @@ export function DemosClient() {
                     <Link href={`/demos/${d.slug}`} className="block relative aspect-[16/11] overflow-hidden">
                       <Image
                         src={d.image}
-                        alt={locale === "ar" ? d.title : d.titleEn}
+                        alt={demoImageAlt(d, locale)}
                         fill
                         sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
                         loading="lazy"

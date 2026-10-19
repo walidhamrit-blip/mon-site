@@ -39,6 +39,10 @@ export interface Demo {
    */
   metaTitle?: string;
   metaDescription?: string;
+  metaTitleEn?: string;
+  metaDescriptionEn?: string;
+  imageAltAr?: string;
+  imageAltEn?: string;
 }
 
 export interface Faq {
