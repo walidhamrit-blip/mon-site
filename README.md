@@ -282,6 +282,26 @@ NOWPayments pour prendre une place en avance dans le planning.
 - Détail complet de l'audit : `docs/seo-audit.md`
 - Respect de `prefers-reduced-motion` via Framer Motion
 
+### Automatisation SEO
+
+- **Garde-fou local/CI** : `npm run seo:check` (`scripts/seo-check.mjs`) parcourt
+  toutes les URLs du sitemap et vérifie title, description, canonical, h1 unique,
+  JSON-LD parseable, absence de noindex accidentel et images sans `alt`. Code 1
+  si erreur bloquante.
+- **GitHub Actions** (`.github/workflows/seo.yml`) : à chaque PR/push, build →
+  serveur → `seo:check` → Lighthouse (seuil SEO ≥ 90, bonnes pratiques ≥ 90,
+  config `lighthouserc.json`).
+- **OG images dynamiques** : `src/app/(site)/demos/[slug]/opengraph-image.tsx`
+  génère une image de partage 1200×630 brandée par réalisation avec `next/og`
+  (police Cairo TTF vendue dans `src/lib/fonts`, helper `src/lib/og-image.tsx`).
+- **IndexNow** : chaque sauvegarde admin (`src/app/admin/actions.ts`) notifie
+  Bing/Yandex via `src/lib/indexnow.ts` (ping uniquement en production, tolérant
+  aux pannes). Clé publique dans `public/<clé>.txt`, surcharge possible via
+  `INDEXNOW_KEY`.
+- Les fiches démos « live » exposent un h1 + une description `sr-only` dans le
+  HTML initial (`standalone` de `FullscreenLiveViewer`) car le portail plein
+  écran ne se monte qu'après hydratation.
+
 ## A personnaliser avant mise en ligne
 1. Prix réels dans config.ts
 2. Numéro WhatsApp réel

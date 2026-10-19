@@ -28,7 +28,14 @@ export function DemoViewer({ demo, allDemos }: { demo: Demo; allDemos: Demo[] })
   // on l'ouvre directement en plein écran intégral avec le choix des 2 vues (Desktop / Mobile),
   // sans aucun arrière-plan de l'ancien site.
   if (hasLiveUrl) {
-    return <FullscreenLiveViewer demo={demo} initialMode="desktop" backHref="/demos" />;
+    return (
+      <FullscreenLiveViewer
+        demo={demo}
+        initialMode="desktop"
+        backHref="/demos"
+        standalone
+      />
+    );
   }
 
   const title = locale === "ar" ? demo.title : demo.titleEn;

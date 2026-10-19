@@ -3,6 +3,7 @@ import { getSiteDataCached } from "@/lib/store";
 import {
   breadcrumbJsonLd,
   demoJsonLd,
+  metaDescription,
   pageMetadata,
 } from "@/lib/seo";
 import { JsonLd } from "@/components/json-ld";
@@ -34,8 +35,10 @@ export async function generateMetadata({
   return pageMetadata(config, {
     path: `/demos/${demo.slug}`,
     title: `${demo.title} — معرض موقع حي من نخبة`,
-    description: demo.description,
-    image: demo.image,
+    description: metaDescription(demo.description),
+    // L'image OG/Twitter est générée dynamiquement par
+    // opengraph-image.tsx / twitter-image.tsx (carte brandée 1200×630).
+    image: false,
     keywords: [demo.sectorAr, demo.sectorEn, "تصميم مواقع طرابلس", "نخبة"],
   });
 }

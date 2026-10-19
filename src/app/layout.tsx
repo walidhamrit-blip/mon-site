@@ -9,6 +9,7 @@ import { siteConfig } from "@/lib/config";
 import { isThemeId, themeBootScript, themeCss } from "@/lib/themes";
 import { JsonLd } from "@/components/json-ld";
 import {
+  DEFAULT_META_DESCRIPTION,
   faqJsonLd,
   localBusinessJsonLd,
   offerCatalogJsonLd,
@@ -23,8 +24,7 @@ export const metadata: Metadata = {
       "تصميم مواقع في طرابلس — نخبة Nukhba | وكالة ويب بريميوم، متاجر وحجز",
     template: "%s | نخبة Nukhba",
   },
-  description:
-    "نخبة وكالة تصميم مواقع في طرابلس: مواقع واجهة فاخرة، متاجر إلكترونية وأنظمة حجز — تسليم في 7 أيام، سرعة 90+ Lighthouse، تحسين SEO لمحركات البحث والذكاء الاصطناعي، ودعم واتساب. اطلب عرضك المجاني.",
+  description: DEFAULT_META_DESCRIPTION,
   keywords: [
     "تصميم مواقع طرابلس",
     "شركة تصميم مواقع ليبيا",

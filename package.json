@@ -7,7 +7,8 @@
     "start": "next start",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
-    "doctor": "node scripts/check-setup.mjs"
+    "doctor": "node scripts/check-setup.mjs",
+    "seo:check": "node scripts/seo-check.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.9.1",

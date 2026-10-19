@@ -43,6 +43,24 @@ const ORG_ID = "#organization";
 const WEBSITE_ID = "#website";
 const BUSINESS_ID = "#business";
 
+/**
+ * Description meta par défaut du site (source unique, utilisée par le layout
+ * racine et la page d'accueil). ~155 caractères arabe : assez riche en
+ * mots-clés, dans la zone d'affichage des résultats Google.
+ */
+export const DEFAULT_META_DESCRIPTION =
+  "وكالة نخبة لتصميم المواقع في طرابلس: مواقع واجهة، متاجر إلكترونية وأنظمة حجز — تسليم في 7 أيام، سرعة 90+، تحسين SEO لمحركات البحث والذكاء الاصطناعي، ودعم واتساب.";
+
+/**
+ * Tronque une description dynamique (ex. fiche réalisation venue de la base)
+ * pour rester dans la fourchette d'affichage Google, sans couper un mot.
+ */
+export function metaDescription(text: string, max = 160): string {
+  const clean = text.replace(/\s+/g, " ").trim();
+  if (clean.length <= max) return clean;
+  return `${clean.slice(0, max - 1).trimEnd()}…`;
+}
+
 /** URL absolue canonique d'un chemin interne. */
 export function absoluteUrl(config: Pick<SiteConfig, "url">, path = "/"): string {
   const base = config.url.replace(/\/+$/, "");
@@ -245,8 +263,12 @@ export interface PageSeoOptions {
   /** Titre court de la page (le suffixe de marque est ajouté par le template). */
   title: string;
   description: string;
-  /** Image OG/Twitter absolue ou racine ("/og.jpg"). Défaut : /og.jpg. */
-  image?: string;
+  /**
+   * Image OG/Twitter absolue ou racine ("/og.jpg"). Défaut : /og.jpg.
+   * Passer `false` pour n'en déclarer aucune : les conventions de fichiers
+   * Next.js (opengraph-image.tsx / twitter-image.tsx) s'en chargent alors.
+   */
+  image?: string | false;
   noindex?: boolean;
   /** Mots-clés supplémentaires (AR/EN/FR). */
   keywords?: string[];
@@ -258,11 +280,16 @@ export interface PageSeoOptions {
  */
 export function pageMetadata(config: SiteConfig, opts: PageSeoOptions): Metadata {
   const canonical = absoluteUrl(config, opts.path);
-  const image = opts.image
-    ? opts.image.startsWith("http")
-      ? opts.image
-      : absoluteUrl(config, opts.image)
-    : absoluteUrl(config, "/og.jpg");
+  // undefined = pas d'images déclarées manuellement (la page s'appuie sur
+  // les fichiers opengraph-image / twitter-image du segment de route).
+  const ogImage =
+    opts.image === false
+      ? undefined
+      : opts.image
+        ? opts.image.startsWith("http")
+          ? opts.image
+          : absoluteUrl(config, opts.image)
+        : absoluteUrl(config, "/og.jpg");
 
   return {
     title: opts.title,
@@ -290,13 +317,15 @@ export function pageMetadata(config: SiteConfig, opts: PageSeoOptions): Metadata
       locale: "ar_LY",
       alternateLocale: ["en_US"],
       type: "website",
-      images: [{ url: image, width: 1376, height: 768, alt: opts.title }],
+      ...(ogImage
+        ? { images: [{ url: ogImage, width: 1376, height: 768, alt: opts.title }] }
+        : {}),
     },
     twitter: {
       card: "summary_large_image",
       title: opts.title,
       description: opts.description,
-      images: [image],
+      ...(ogImage ? { images: [ogImage] } : {}),
     },
   };
 }
