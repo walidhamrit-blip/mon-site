@@ -20,6 +20,7 @@ import { useSectionHeading, useSiteContent } from "@/components/site-provider";
 import { useTheme } from "@/components/theme-provider";
 import { ThemePreview } from "@/components/theme-switcher";
 import { THEMES } from "@/lib/themes";
+import { demoImageAlt } from "@/lib/classification";
 import { ScaledLiveIframe, FullscreenLiveViewer } from "@/components/live-site-frames";
 import { demos as fallbackDemos } from "@/lib/content";
 import type { Demo } from "@/lib/site-types";
@@ -271,7 +272,7 @@ export function IdentityStudio() {
                     {/* Image du projet : fond immédiat pendant le chargement du site. */}
                     <Image
                       src={demo.image}
-                      alt={ar ? demo.title : demo.titleEn}
+                      alt={demoImageAlt(demo, ar ? "ar" : "en")}
                       fill
                       sizes="(max-width: 1024px) 100vw, 80vw"
                       priority={i === 0}

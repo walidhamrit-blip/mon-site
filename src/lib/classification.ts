@@ -109,3 +109,17 @@ export function formatLyd(amount: number): string {
 export function lydLabel(locale: "ar" | "en" | string): string {
   return locale === "ar" ? "د.ل" : "LYD";
 }
+
+/**
+ * Texte alternatif de l'image d'un projet.
+ *
+ * Les champs `imageAltAr` / `imageAltEn` (éditables dans /admin/content ou
+ * proposés par l'assistant SEO IA) sont prioritaires ; sinon on retombe sur
+ * le titre du projet, déjà descriptif et localisé.
+ */
+export function demoImageAlt(demo: Demo, locale: "ar" | "en" | string): string {
+  const ar = locale === "ar";
+  const custom = ar ? demo.imageAltAr?.trim() : demo.imageAltEn?.trim();
+  if (custom) return custom;
+  return ar ? demo.title : demo.titleEn;
+}

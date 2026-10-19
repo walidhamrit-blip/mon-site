@@ -3,7 +3,7 @@ import { getSiteDataCached } from "@/lib/store";
 import {
   breadcrumbJsonLd,
   demoJsonLd,
-  metaDescription,
+  demoSeoMeta,
   pageMetadata,
 } from "@/lib/seo";
 import { JsonLd } from "@/components/json-ld";
@@ -32,15 +32,14 @@ export async function generateMetadata({
     });
   }
 
-  // Champs SEO personnalisés depuis l'admin ; s'ils sont vides, fallback
-  // automatique sur le titre et la description du projet.
-  const customTitle = demo.metaTitle?.trim();
-  const customDescription = demo.metaDescription?.trim();
+  // Champs SEO personnalisés depuis l'admin (arabe par défaut) ; s'ils sont
+  // vides, repli automatique sur le titre et la description du projet.
+  const seo = demoSeoMeta(demo, "ar");
 
   return pageMetadata(config, {
     path: `/demos/${demo.slug}`,
-    title: customTitle || `${demo.title} — معرض موقع حي من نخبة`,
-    description: metaDescription(customDescription || demo.description),
+    title: seo.title,
+    description: seo.description,
     // L'image OG/Twitter est générée dynamiquement par
     // opengraph-image.tsx / twitter-image.tsx (carte brandée 1200×630).
     image: false,

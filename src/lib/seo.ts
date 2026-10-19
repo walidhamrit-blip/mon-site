@@ -257,6 +257,27 @@ export function demoJsonLd(config: SiteConfig, demo: Demo) {
   };
 }
 
+/**
+ * Titre + description SEO d'une réalisation, dans la langue demandée.
+ *
+ * Ordre de priorité : champs personnalisés saisis dans /admin/content (ou
+ * proposés par l'assistant SEO IA) → repli automatique sur le titre et la
+ * description du projet. La description est toujours tronquée pour rester
+ * dans la zone d'affichage Google.
+ */
+export function demoSeoMeta(demo: Demo, locale: "ar" | "en" = "ar"): { title: string; description: string } {
+  if (locale === "en") {
+    return {
+      title: demo.metaTitleEn?.trim() || `${demo.titleEn} — live website showcase by Nukhba`,
+      description: metaDescription(demo.metaDescriptionEn?.trim() || demo.descriptionEn),
+    };
+  }
+  return {
+    title: demo.metaTitle?.trim() || `${demo.title} — معرض موقع حي من نخبة`,
+    description: metaDescription(demo.metaDescription?.trim() || demo.description),
+  };
+}
+
 export interface PageSeoOptions {
   /** Chemin interne, ex "/contact". */
   path: string;

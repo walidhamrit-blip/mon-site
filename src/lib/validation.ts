@@ -59,6 +59,10 @@ export const demoSchema = z.object({
   /** SEO optionnel : valeur vide = fallback automatique côté page. */
   metaTitle: z.string().max(70).optional().or(z.literal("")),
   metaDescription: z.string().max(200).optional().or(z.literal("")),
+  metaTitleEn: z.string().max(70).optional().or(z.literal("")),
+  metaDescriptionEn: z.string().max(200).optional().or(z.literal("")),
+  imageAltAr: z.string().max(150).optional().or(z.literal("")),
+  imageAltEn: z.string().max(150).optional().or(z.literal("")),
 });
 
 export const faqSchema = z.object({

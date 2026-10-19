@@ -27,6 +27,7 @@ import {
   Loader2,
   CheckCircle2,
   AlertCircle,
+  Sparkles,
 } from "lucide-react";
 
 type Tab =
@@ -415,6 +416,13 @@ export function ContentEditor({
   const [draft, setDraft] = useState<SiteContent>(() => structuredClone(initial));
   const [busy, setBusy] = useState<"" | Tab | "reset">("");
   const [msg, setMsg] = useState<{ kind: "ok" | "err"; text: string } | null>(null);
+  // Assistant SEO IA : index de la démo en cours de génération + retour.
+  const [aiIndex, setAiIndex] = useState<number | null>(null);
+  const [aiMsg, setAiMsg] = useState<{
+    index: number;
+    kind: "ok" | "err";
+    text: string;
+  } | null>(null);
 
   const setHero = (patch: Partial<HeroContent>) =>
     setDraft((d) => ({ ...d, hero: { ...d.hero, ...patch } }));
@@ -453,6 +461,59 @@ export function ContentEditor({
 
   const setDemo = (i: number, patch: Partial<Demo>) =>
     setDraft((d) => ({ ...d, demos: d.demos.map((x, j) => (j === i ? { ...x, ...patch } : x)) }));
+
+  /**
+   * Demande à l'assistant SEO IA (route /api/admin/ai/seo) un jeu de champs
+   * SEO bilingues pour la démo `i` : titre/description AR + EN et textes
+   * alternatifs d'image. Sans OPENAI_API_KEY (ou en cas d'erreur réseau),
+   * l'API renvoie un gabarit local et `engine: "template"`.
+   */
+  const generateSeo = async (i: number) => {
+    const demo = draft.demos[i];
+    if (!demo) return;
+    setAiIndex(i);
+    setAiMsg(null);
+    try {
+      const res = await fetch("/api/admin/ai/seo", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: demo.title,
+          titleEn: demo.titleEn,
+          description: demo.description,
+          descriptionEn: demo.descriptionEn,
+          sectorAr: demo.sectorAr,
+          sectorEn: demo.sectorEn,
+        }),
+      });
+      const data = (await res.json().catch(() => null)) as {
+        copy?: Partial<Demo>;
+        engine?: "llm" | "template";
+        error?: string;
+      } | null;
+      if (!res.ok || !data?.copy) {
+        setAiMsg({
+          index: i,
+          kind: "err",
+          text: data?.error ?? "Génération impossible (vérifiez votre session).",
+        });
+        return;
+      }
+      setDemo(i, data.copy);
+      setAiMsg({
+        index: i,
+        kind: "ok",
+        text:
+          data.engine === "llm"
+            ? "Champs SEO générés par l'IA — relisez puis enregistrez."
+            : "IA non configurée : un gabarit optimisé a été appliqué.",
+      });
+    } catch {
+      setAiMsg({ index: i, kind: "err", text: "Requête impossible." });
+    } finally {
+      setAiIndex(null);
+    }
+  };
   const setFaq = (i: number, patch: Partial<Faq>) =>
     setDraft((d) => ({ ...d, faqs: d.faqs.map((x, j) => (j === i ? { ...x, ...patch } : x)) }));
   const setTestimonial = (i: number, patch: Partial<Testimonial>) =>
@@ -1247,9 +1308,25 @@ export function ContentEditor({
                       automatiquement le titre et la description du projet.
                     </p>
                   </div>
-                  <span className="rounded-full border border-sky-400/30 bg-black/30 px-3 py-1 text-[11px] font-bold text-sky-300">
-                    /{demo.slug}
-                  </span>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => generateSeo(i)}
+                      disabled={aiIndex === i}
+                      className="h-8 px-3 rounded-full border border-sky-400/40 bg-sky-400/10 text-[11px] font-bold text-sky-200 hover:bg-sky-400/20 disabled:opacity-60 inline-flex items-center gap-1.5 transition-colors cursor-pointer"
+                      title="Générer les titres, descriptions et textes alternatifs (arabe + anglais)"
+                    >
+                      {aiIndex === i ? (
+                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                      ) : (
+                        <Sparkles className="h-3.5 w-3.5" />
+                      )}
+                      {aiIndex === i ? "Génération…" : "Générer avec l'IA"}
+                    </button>
+                    <span className="rounded-full border border-sky-400/30 bg-black/30 px-3 py-1 text-[11px] font-bold text-sky-300">
+                      /{demo.slug}
+                    </span>
+                  </div>
                 </div>
                 <div className="mt-4 grid lg:grid-cols-2 gap-4">
                   <SeoField
@@ -1270,7 +1347,57 @@ export function ContentEditor({
                     placeholder={demo.description}
                     onChange={(v) => setDemo(i, { metaDescription: v })}
                   />
+                  <SeoField
+                    label="Titre SEO anglais (title, ≤ 60 recommandé)"
+                    max={60}
+                    rows={2}
+                    dir="ltr"
+                    value={demo.metaTitleEn ?? ""}
+                    placeholder={demo.titleEn}
+                    onChange={(v) => setDemo(i, { metaTitleEn: v })}
+                  />
+                  <SeoField
+                    label="Description SEO anglaise (meta description, ≤ 160 recommandé)"
+                    max={160}
+                    rows={3}
+                    dir="ltr"
+                    value={demo.metaDescriptionEn ?? ""}
+                    placeholder={demo.descriptionEn}
+                    onChange={(v) => setDemo(i, { metaDescriptionEn: v })}
+                  />
+                  <SeoField
+                    label="Texte alternatif image (arabe, ≤ 125 recommandé)"
+                    max={125}
+                    rows={2}
+                    dir="rtl"
+                    value={demo.imageAltAr ?? ""}
+                    placeholder={demo.title}
+                    onChange={(v) => setDemo(i, { imageAltAr: v })}
+                  />
+                  <SeoField
+                    label="Texte alternatif image (anglais, ≤ 125 recommandé)"
+                    max={125}
+                    rows={2}
+                    dir="ltr"
+                    value={demo.imageAltEn ?? ""}
+                    placeholder={demo.titleEn}
+                    onChange={(v) => setDemo(i, { imageAltEn: v })}
+                  />
                 </div>
+                {aiMsg?.index === i && (
+                  <p
+                    className={`mt-3 flex items-center gap-1.5 text-[11px] font-semibold ${
+                      aiMsg.kind === "ok" ? "text-emerald-400" : "text-red-400"
+                    }`}
+                  >
+                    {aiMsg.kind === "ok" ? (
+                      <CheckCircle2 className="h-3.5 w-3.5" />
+                    ) : (
+                      <AlertCircle className="h-3.5 w-3.5" />
+                    )}
+                    {aiMsg.text}
+                  </p>
+                )}
               </div>
             </ItemCard>
             );
