@@ -13,6 +13,11 @@ import {
   nowPaymentsConfigured,
   type CreatedInvoice,
 } from "@/lib/nowpayments";
+import {
+  createTrackingToken,
+  newOrderReference,
+  trackingQuery,
+} from "@/lib/order-tracking";
 
 /**
  * Réservation prioritaire : le client verse un petit acompte (1 $ par
@@ -49,12 +54,6 @@ function gatewayDetail(error: unknown): ErrorDetail {
 
 function databaseDetail(error: unknown): ErrorDetail {
   return { source: "database", status: null, message: errorMessage(error) };
-}
-
-function newReservationRef(): string {
-  const stamp = Date.now().toString(36).toUpperCase();
-  const rand = Math.random().toString(36).slice(2, 6).toUpperCase();
-  return `RSV-${stamp}${rand}`;
 }
 
 /* Limitation simple par IP : évite qu'une même personne crée des dizaines
@@ -168,7 +167,8 @@ export async function POST(req: Request) {
   const categoryLabel = classification
     ? `Cat. ${classification.tier} · ${classification.nameEn}`
     : null;
-  const ref = newReservationRef();
+  const ref = newOrderReference("RSV");
+  const tracking = createTrackingToken();
 
   // 1) Commande en attente — trace immédiate dans /admin/orders.
   let orderId: number;
@@ -178,6 +178,7 @@ export async function POST(req: Request) {
       .insert(orders)
       .values({
         ref,
+        trackingTokenHash: tracking.hash,
         kind: "reservation",
         demoSlug: demo.slug,
         planId: "reservation",
@@ -206,6 +207,7 @@ export async function POST(req: Request) {
   //    Les URLs de retour (succès/annulation/IPN) pointent vers
   //    l'environnement réellement utilisé (voir src/lib/site-url.ts).
   const baseUrl = siteBaseUrl(req);
+  const trackingParams = trackingQuery(ref, tracking.token);
   let invoice: CreatedInvoice;
   try {
     invoice = await createInvoice({
@@ -213,8 +215,8 @@ export async function POST(req: Request) {
       orderId: ref,
       orderDescription: `${config.name} — ${tierInfo} — ${demo.titleEn} (réservation prioritaire)`,
       ipnCallbackUrl: `${baseUrl}/api/payments/ipn`,
-      successUrl: `${baseUrl}/pay/success?ref=${encodeURIComponent(ref)}`,
-      cancelUrl: `${baseUrl}/pay/cancel?ref=${encodeURIComponent(ref)}`,
+      successUrl: `${baseUrl}/pay/success?${trackingParams}`,
+      cancelUrl: `${baseUrl}/pay/cancel?${trackingParams}`,
     });
   } catch (error) {
     console.error("[reservation] NOWPayments refusé :", errorMessage(error));
@@ -238,6 +240,7 @@ export async function POST(req: Request) {
   return NextResponse.json({
     ok: true,
     orderRef: ref,
+    trackingToken: tracking.token,
     demoSlug: demo.slug,
     classification: classification
       ? {

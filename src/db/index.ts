@@ -66,6 +66,7 @@ export function ensureSchema(): Promise<void> {
           created_at timestamptz NOT NULL DEFAULT now(),
           updated_at timestamptz NOT NULL DEFAULT now(),
           ref text NOT NULL UNIQUE,
+          tracking_token_hash text,
           kind text NOT NULL DEFAULT 'plan',
           demo_slug text,
           plan_id text NOT NULL,
@@ -120,6 +121,10 @@ export function ensureSchema(): Promise<void> {
       );
       await pool.query(
         "CREATE INDEX IF NOT EXISTS orders_kind_idx ON orders (kind)",
+      );
+      // Jeton de suivi public : seule l'empreinte SHA-256 est stockée.
+      await pool.query(
+        "ALTER TABLE orders ADD COLUMN IF NOT EXISTS tracking_token_hash text",
       );
     })().catch((error) => {
       schemaReady = null; // permet de réessayer au prochain accès

@@ -14,16 +14,16 @@ export const metadata: Metadata = {
 export default async function PaySuccessPage({
   searchParams,
 }: {
-  searchParams: Promise<{ ref?: string }>;
+  searchParams: Promise<{ ref?: string; t?: string }>;
 }) {
-  const { ref } = await searchParams;
+  const { ref, t } = await searchParams;
 
   return (
     <main className="pt-[96px] min-h-[70vh]">
       <div className="mx-auto max-w-[960px] px-4 sm:px-6 lg:px-8 py-10">
         {/* Prop `orderRef` (et non `ref`) : `ref` est réservée par React 19
             et ferait échouer tout le rendu de cette page. */}
-        <PaymentStatus orderRef={ref ?? ""} />
+        <PaymentStatus orderRef={ref ?? ""} trackingToken={t} />
         <p className="mt-6 text-center text-xs opacity-50">
           Le paiement est confirmé dès réception de la notification du
           réseau — généralement en quelques minutes.
