@@ -2,7 +2,7 @@
 import { motion } from "framer-motion";
 import { Zap, Palette, SlidersHorizontal, Search, Headset } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
-import { whyUs } from "@/lib/content";
+import { useSectionHeading, useSiteContent } from "@/components/site-provider";
 
 const icons: Record<string, any> = {
   zap: Zap,
@@ -13,7 +13,9 @@ const icons: Record<string, any> = {
 };
 
 export function WhyUs() {
-  const { locale, t } = useI18n();
+  const { locale } = useI18n();
+  const { whyUs } = useSiteContent();
+  const heading = useSectionHeading("why");
   return (
     <section className="py-16 lg:py-20 bg-[var(--secondary)]/50">
       <div className="site-container px-4 sm:px-6 lg:px-8">
@@ -23,8 +25,10 @@ export function WhyUs() {
               <span className="h-px w-8 bg-[var(--accent)]" />
               {locale === "ar" ? "قيمنا" : "WHY US"}
             </div>
-            <h2 className="mt-3 text-[32px] lg:text-[42px] font-black tracking-tight leading-none">{t.why.title}</h2>
-            <p className="mt-3 text-[17px] opacity-60 max-w-[50ch]">{t.why.subtitle}</p>
+            <h2 className="mt-3 text-[32px] lg:text-[42px] font-black tracking-tight leading-none">
+              {heading.title}
+            </h2>
+            <p className="mt-3 text-[17px] opacity-60 max-w-[50ch]">{heading.subtitle}</p>
           </div>
           <div className="hidden lg:block text-sm opacity-40">
             {locale === "ar" ? "مصمم للموبايل أولاً • سريع كالبرق" : "Mobile-first • Lightning fast"}

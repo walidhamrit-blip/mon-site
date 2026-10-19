@@ -17,7 +17,7 @@ const links = [
   { href: "/admin/leads", label: "Demandes", icon: Inbox },
   { href: "/admin/orders", label: "Paiements & réservations", icon: CreditCard },
   { href: "/admin/settings", label: "Configuration", icon: Settings2 },
-  { href: "/admin/content", label: "Contenu", icon: FileText },
+  { href: "/admin/content", label: "Contenu & sections", icon: FileText },
 ];
 
 function isActive(pathname: string, href: string): boolean {

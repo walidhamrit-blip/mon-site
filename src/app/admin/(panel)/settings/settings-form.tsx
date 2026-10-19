@@ -14,6 +14,8 @@ import {
   ChevronDown,
   Sun,
   Moon,
+  Plus,
+  Trash2,
 } from "lucide-react";
 
 /* ---------- petits éléments d'interface ---------- */
@@ -101,6 +103,36 @@ function NumberField({
   );
 }
 
+function AreaField({
+  label,
+  value,
+  onChange,
+  dir,
+  rows = 3,
+  hint,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  dir?: "ltr" | "rtl";
+  rows?: number;
+  hint?: string;
+}) {
+  return (
+    <label className="block">
+      <span className="text-xs font-semibold text-zinc-400">{label}</span>
+      <textarea
+        rows={rows}
+        dir={dir}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="mt-1.5 w-full rounded-2xl border border-white/10 bg-black/40 p-3 text-sm text-white outline-none focus:border-[#C6A664] resize-y leading-6"
+      />
+      {hint && <span className="mt-1 block text-[11px] text-zinc-600">{hint}</span>}
+    </label>
+  );
+}
+
 function LinesField({
   label,
   value,
@@ -128,6 +160,26 @@ function LinesField({
   );
 }
 
+/** Icônes proposées pour les services à la carte. */
+const SERVICE_ICONS = ["Palette", "LayoutGrid", "Presentation", "PenTool", "Rocket", "Wrench"];
+
+function newStandaloneService(): SiteConfigData["standaloneServices"][number] {
+  return {
+    id: `service-${Date.now().toString(36)}`,
+    icon: "Palette",
+    titleAr: "خدمة جديدة",
+    titleEn: "New service",
+    descAr: "وصف الخدمة…",
+    descEn: "Service description…",
+    priceFromUsd: 19,
+    priceFromLyd: 110,
+    badgeAr: "",
+    badgeEn: "",
+    featuresAr: ["ميزة أولى"],
+    featuresEn: ["First feature"],
+  };
+}
+
 /* ---------- formulaire ---------- */
 
 export function SettingsForm({ initial }: { initial: SiteConfigData }) {
@@ -153,6 +205,38 @@ export function SettingsForm({ initial }: { initial: SiteConfigData }) {
       },
     }));
 
+  const setFlex = (patch: Partial<SiteConfigData["flexiblePayment"]>) =>
+    setDraft((d) => ({
+      ...d,
+      flexiblePayment: { ...d.flexiblePayment, ...patch },
+    }));
+
+  const setService = (
+    index: number,
+    patch: Partial<SiteConfigData["standaloneServices"][number]>,
+  ) =>
+    setDraft((d) => ({
+      ...d,
+      standaloneServices: d.standaloneServices.map((service, i) =>
+        i === index ? { ...service, ...patch } : service,
+      ),
+    }));
+
+  const moveService = (index: number, dir: -1 | 1) =>
+    setDraft((d) => {
+      const services = [...d.standaloneServices];
+      const target = index + dir;
+      if (target < 0 || target >= services.length) return d;
+      [services[index], services[target]] = [services[target], services[index]];
+      return { ...d, standaloneServices: services };
+    });
+
+  const removeService = (index: number) =>
+    setDraft((d) => ({
+      ...d,
+      standaloneServices: d.standaloneServices.filter((_, i) => i !== index),
+    }));
+
   const movePlan = (index: number, dir: -1 | 1) =>
     setDraft((d) => {
       const plans = [...d.pricing.plans];
@@ -176,6 +260,19 @@ export function SettingsForm({ initial }: { initial: SiteConfigData }) {
           featuresEn: clean(p.featuresEn),
         })),
       },
+      flexiblePayment: {
+        ...draft.flexiblePayment,
+        suggested: draft.flexiblePayment.suggested.filter(
+          (value) => Number.isFinite(value) && value > 0,
+        ),
+      },
+      standaloneServices: draft.standaloneServices.map((service) => ({
+        ...service,
+        badgeAr: service.badgeAr?.trim() || undefined,
+        badgeEn: service.badgeEn?.trim() || undefined,
+        featuresAr: clean(service.featuresAr),
+        featuresEn: clean(service.featuresEn),
+      })),
     };
   };
 
@@ -195,7 +292,7 @@ export function SettingsForm({ initial }: { initial: SiteConfigData }) {
   const onReset = async () => {
     if (
       !confirm(
-        "Réinitialiser toute la configuration (coordonnées, réseaux, tarifs) aux valeurs par défaut du code ?",
+        "Réinitialiser toute la configuration (apparence, coordonnées, réseaux, tarifs, paiement flexible, services à la carte, réservation) aux valeurs par défaut du code ?",
       )
     ) {
       return;
@@ -451,6 +548,222 @@ export function SettingsForm({ initial }: { initial: SiteConfigData }) {
               </div>
             </div>
           ))}
+        </div>
+      </Card>
+
+      <Card
+        title="Paiement flexible « 1 $ ou plus »"
+        description="Section où le client choisit lui-même le montant à payer (acompte, solde, soutien…). Utile aussi pour contourner les minimums imposés par certains réseaux crypto."
+      >
+        <label className="flex items-center gap-3 rounded-2xl border border-white/10 bg-black/30 px-4 py-3 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={c.flexiblePayment.enabled}
+            onChange={(event) =>
+              setFlex({ enabled: event.target.checked })
+            }
+            className="h-4 w-4 accent-[#C6A664]"
+          />
+          <span>
+            <span className="block text-sm font-bold text-white">
+              Afficher la section de paiement flexible
+            </span>
+            <span className="block text-[11px] text-zinc-500">
+              Décochez pour la masquer sur le site public
+            </span>
+          </span>
+        </label>
+
+        <div className="mt-4 grid sm:grid-cols-3 gap-4">
+          <NumberField
+            label="Montant minimum (USD)"
+            value={c.flexiblePayment.minUsd}
+            hint="1 $ par défaut"
+            onChange={(v) => setFlex({ minUsd: v ?? 0 })}
+          />
+          <NumberField
+            label="Montant maximum (USD)"
+            value={c.flexiblePayment.maxUsd}
+            hint="Garde-fou anti-abus"
+            onChange={(v) => setFlex({ maxUsd: v ?? 0 })}
+          />
+          <Field
+            label="Montants suggérés (USD)"
+            dir="ltr"
+            value={c.flexiblePayment.suggested.join(", ")}
+            hint="Séparés par des virgules — ex. 1, 5, 10, 25"
+            onChange={(v) =>
+              setFlex({
+                suggested: v
+                  .split(/[,\s]+/)
+                  .map((part) => Number(part))
+                  .filter((value) => Number.isFinite(value) && value > 0),
+              })
+            }
+          />
+        </div>
+
+        <div className="mt-4 grid lg:grid-cols-2 gap-4">
+          <AreaField
+            label="Note affichée (arabe)"
+            dir="rtl"
+            value={c.flexiblePayment.noteAr}
+            onChange={(v) => setFlex({ noteAr: v })}
+          />
+          <AreaField
+            label="Note affichée (anglais)"
+            dir="ltr"
+            value={c.flexiblePayment.noteEn}
+            onChange={(v) => setFlex({ noteEn: v })}
+          />
+        </div>
+      </Card>
+
+      <Card
+        title="Services à la carte"
+        description="Petites missions vendues au forfait, affichées dans la section « services libres » du site. L’ordre de la liste est celui du site ; chaque service possède un identifiant technique (ne le modifiez pas)."
+      >
+        <div className="space-y-5">
+          {c.standaloneServices.map((service, index) => (
+            <div
+              key={service.id}
+              className="rounded-3xl border border-white/10 bg-black/30 p-5"
+            >
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div className="flex flex-wrap items-center gap-2.5">
+                  <span className="px-2.5 py-1 rounded-lg bg-white/10 text-zinc-300 text-xs font-black border border-white/15">
+                    {index + 1}
+                  </span>
+                  <span className="px-2.5 py-1 rounded-lg bg-[#C6A664]/15 text-[#E8D5A9] text-xs font-black border border-[#C6A664]/30">
+                    {service.id}
+                  </span>
+                  <span className="font-bold text-white">
+                    {service.titleEn || service.titleAr}
+                  </span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => moveService(index, -1)}
+                    disabled={index === 0}
+                    className="h-8 w-8 rounded-lg border border-white/10 text-zinc-400 hover:text-white grid place-items-center disabled:opacity-30 cursor-pointer"
+                    aria-label="Monter"
+                  >
+                    <ChevronUp className="h-4 w-4" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => moveService(index, 1)}
+                    disabled={index === c.standaloneServices.length - 1}
+                    className="h-8 w-8 rounded-lg border border-white/10 text-zinc-400 hover:text-white grid place-items-center disabled:opacity-30 cursor-pointer"
+                    aria-label="Descendre"
+                  >
+                    <ChevronDown className="h-4 w-4" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => removeService(index)}
+                    className="h-8 w-8 rounded-lg border border-white/10 text-zinc-500 hover:text-red-400 hover:border-red-500/30 hover:bg-red-500/10 grid place-items-center transition-colors cursor-pointer"
+                    aria-label="Supprimer"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+              </div>
+
+              <div className="mt-4 grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                <label className="block">
+                  <span className="text-xs font-semibold text-zinc-400">Icône</span>
+                  <select
+                    value={service.icon}
+                    onChange={(e) => setService(index, { icon: e.target.value })}
+                    className="mt-1.5 h-11 w-full rounded-2xl border border-white/10 bg-black/40 px-3.5 text-sm text-white outline-none focus:border-[#C6A664] cursor-pointer"
+                  >
+                    {SERVICE_ICONS.map((icon) => (
+                      <option key={icon} value={icon}>
+                        {icon}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <Field
+                  label="Titre (arabe)"
+                  dir="rtl"
+                  value={service.titleAr}
+                  onChange={(v) => setService(index, { titleAr: v })}
+                />
+                <Field
+                  label="Titre (anglais)"
+                  dir="ltr"
+                  value={service.titleEn}
+                  onChange={(v) => setService(index, { titleEn: v })}
+                />
+                <NumberField
+                  label="Prix de départ (USD)"
+                  value={service.priceFromUsd}
+                  onChange={(v) => setService(index, { priceFromUsd: v ?? 0 })}
+                />
+                <NumberField
+                  label="Équivalent (LYD)"
+                  value={service.priceFromLyd}
+                  onChange={(v) => setService(index, { priceFromLyd: v ?? 0 })}
+                />
+                <Field
+                  label="Badge (arabe, optionnel)"
+                  dir="rtl"
+                  value={service.badgeAr ?? ""}
+                  onChange={(v) => setService(index, { badgeAr: v })}
+                />
+                <Field
+                  label="Badge (anglais, optionnel)"
+                  dir="ltr"
+                  value={service.badgeEn ?? ""}
+                  onChange={(v) => setService(index, { badgeEn: v })}
+                />
+              </div>
+
+              <div className="mt-4 grid lg:grid-cols-2 gap-4">
+                <AreaField
+                  label="Description (arabe)"
+                  dir="rtl"
+                  value={service.descAr}
+                  onChange={(v) => setService(index, { descAr: v })}
+                />
+                <AreaField
+                  label="Description (anglais)"
+                  dir="ltr"
+                  value={service.descEn}
+                  onChange={(v) => setService(index, { descEn: v })}
+                />
+                <LinesField
+                  label="Points forts (arabe)"
+                  value={service.featuresAr}
+                  onChange={(v) => setService(index, { featuresAr: v })}
+                />
+                <LinesField
+                  label="Points forts (anglais)"
+                  value={service.featuresEn}
+                  onChange={(v) => setService(index, { featuresEn: v })}
+                />
+              </div>
+            </div>
+          ))}
+
+          <button
+            type="button"
+            onClick={() =>
+              setDraft((d) => ({
+                ...d,
+                standaloneServices: [
+                  ...d.standaloneServices,
+                  newStandaloneService(),
+                ],
+              }))
+            }
+            className="h-11 px-5 rounded-2xl border border-dashed border-white/20 text-sm font-bold text-zinc-400 hover:text-white hover:border-[#C6A664]/50 inline-flex items-center gap-2 transition-colors cursor-pointer"
+          >
+            <Plus className="h-4 w-4" /> Ajouter un service
+          </button>
         </div>
       </Card>
 

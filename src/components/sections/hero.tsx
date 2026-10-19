@@ -2,14 +2,16 @@
 import { motion, useScroll, useTransform, useReducedMotion } from "framer-motion";
 import { ArrowUpRight, Play, Star } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
-import { useSiteConfig } from "@/components/site-provider";
+import { useSiteConfig, useSiteContent } from "@/components/site-provider";
 import { whatsappLink } from "@/lib/utils";
 import { useRef } from "react";
 import { HeroShowcase } from "@/components/sections/hero-showcase";
 
 export function Hero() {
   const siteConfig = useSiteConfig();
-  const { locale, t } = useI18n();
+  const { hero } = useSiteContent();
+  const { locale } = useI18n();
+  const ar = locale === "ar";
   const ref = useRef<HTMLDivElement>(null);
   const reducedMotion = useReducedMotion();
   const { scrollYProgress } = useScroll({ target: ref, offset: ["start start", "end start"] });
@@ -40,10 +42,10 @@ export function Hero() {
               className="inline-flex items-center gap-2 rounded-full border border-[var(--border)] bg-[var(--card)]/80 backdrop-blur px-4 py-2 text-sm shadow-sm"
             >
               <span className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
-              {t.hero.badge}
+              {ar ? hero.badgeAr : hero.badgeEn}
               <span className="hidden sm:inline-flex items-center gap-1 ms-2 ps-2 border-s border-[var(--border)]">
                 <Star className="h-3.5 w-3.5 fill-[var(--accent)] text-[var(--accent)]" />
-                {t.hero.rating}
+                {ar ? hero.ratingAr : hero.ratingEn}
               </span>
             </motion.div>
 
@@ -54,7 +56,7 @@ export function Hero() {
                 transition={{ delay: 0.1, duration: 0.6 }}
                 className="block hero-shine"
               >
-                {t.hero.title1}
+                {ar ? hero.title1Ar : hero.title1En}
               </motion.span>
               <motion.span
                 initial={{ opacity: 0, y: 20 }}
@@ -63,10 +65,12 @@ export function Hero() {
                 className="block"
               >
                 <span className="relative inline-block hero-shine">
-                  {t.hero.title2}
+                  {ar ? hero.title2Ar : hero.title2En}
                   <span className="absolute -bottom-2 start-0 end-0 h-[8px] bg-[var(--accent)]/30 -z-10 rounded-full hidden sm:block" />
                 </span>{" "}
-                <span className="hero-shine font-light italic">{t.hero.title3}</span>
+                <span className="hero-shine font-light italic">
+                  {ar ? hero.title3Ar : hero.title3En}
+                </span>
               </motion.span>
             </h1>
 
@@ -76,7 +80,7 @@ export function Hero() {
               transition={{ delay: 0.3, duration: 0.6 }}
               className="mt-6 text-[17px] sm:text-[19px] leading-8 opacity-70 max-w-[56ch] text-balance"
             >
-              {t.hero.subtitle}
+              {ar ? hero.subtitleAr : hero.subtitleEn}
             </motion.p>
 
             <motion.div
@@ -89,7 +93,7 @@ export function Hero() {
                 onClick={() => document.getElementById("lead-form")?.scrollIntoView({ behavior: "smooth" })}
                 className="h-[52px] px-8 rounded-full bg-[var(--primary)] text-[var(--primary-foreground)] font-bold inline-flex items-center gap-2 hover:opacity-90 transition-all active:scale-[0.98] shadow-lg cursor-pointer"
               >
-                {t.hero.ctaPrimary}
+                {ar ? hero.ctaPrimaryAr : hero.ctaPrimaryEn}
                 <ArrowUpRight className="h-4 w-4" />
               </button>
               <button
@@ -97,7 +101,7 @@ export function Hero() {
                 className="h-[52px] px-7 rounded-full bg-[var(--card)] border border-[var(--border)] font-semibold inline-flex items-center gap-2 hover:bg-[var(--secondary)] transition-colors cursor-pointer shadow-sm"
               >
                 <Play className="h-4 w-4 fill-current" />
-                {t.hero.ctaSecondary}
+                {ar ? hero.ctaSecondaryAr : hero.ctaSecondaryEn}
               </button>
             </motion.div>
 
@@ -120,23 +124,19 @@ export function Hero() {
                   +120
                 </div>
               </div>
-              <p className="text-sm opacity-60">{t.hero.trusted}</p>
+              <p className="text-sm opacity-60">{ar ? hero.trustedAr : hero.trustedEn}</p>
               <a
                 href={whatsappLink(siteConfig.whatsapp, whatsappMsg)}
                 target="_blank"
                 className="ms-auto sm:ms-0 inline-flex items-center gap-2 h-9 px-4 rounded-full bg-[#25D366] text-white text-sm font-semibold hover:brightness-95 transition"
               >
                 <span className="h-2 w-2 bg-white rounded-full animate-pulse" />
-                {locale === "ar" ? "تحدث عبر واتساب" : "Chat on WhatsApp"}
+                {ar ? "تحدث عبر واتساب" : "Chat on WhatsApp"}
               </a>
             </motion.div>
 
             <div className="mt-6 flex flex-wrap gap-2 text-xs">
-              {[
-                locale === "ar" ? "✓ تسليم 7 أيام" : "✓ 7-day delivery",
-                locale === "ar" ? "✓ بدون دفعة كبيرة" : "✓ No big upfront",
-                locale === "ar" ? "✓ دعم واتساب" : "✓ WhatsApp support",
-              ].map((item) => (
+              {(ar ? hero.chipsAr : hero.chipsEn).map((item) => (
                 <span
                   key={item}
                   className="px-3 py-1.5 rounded-full bg-[var(--secondary)] border border-[var(--border)] font-medium"

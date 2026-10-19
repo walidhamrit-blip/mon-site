@@ -13,7 +13,8 @@ export default async function SettingsPage() {
       <div>
         <h1 className="text-2xl sm:text-3xl font-black text-white">Configuration</h1>
         <p className="mt-1 text-sm text-zinc-500">
-          Coordonnées, réseaux sociaux et tarifs affichés sur le site public. Les
+          Apparence, coordonnées, réseaux sociaux, chiffres, tarifs, paiement
+          flexible, services à la carte et réservation prioritaire. Les
           modifications sont visibles immédiatement après enregistrement.
         </p>
       </div>

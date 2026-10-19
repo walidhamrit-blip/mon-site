@@ -6,8 +6,26 @@ import {
   demos as defaultDemos,
   faqs as defaultFaqs,
   testimonials as defaultTestimonials,
+  heroContent as defaultHero,
+  servicesRibbonContent as defaultRibbon,
+  defaultWhyUs,
+  defaultProcess,
+  defaultSectionHeadings,
 } from "@/lib/content";
-import type { Demo, Faq, SiteConfigData, SiteContent, Testimonial } from "@/lib/site-types";
+import {
+  SECTION_HEADING_IDS,
+  type Demo,
+  type Faq,
+  type HeroContent,
+  type ProcessStep,
+  type RibbonContent,
+  type SectionHeading,
+  type SectionHeadings,
+  type SiteConfigData,
+  type SiteContent,
+  type Testimonial,
+  type WhyUsItem,
+} from "@/lib/site-types";
 
 // Accès aux données « vivantes » du site (configuration + contenu éditables
 // depuis le panneau d'administration). Toutes les lectures sont protégées :
@@ -18,6 +36,11 @@ const KEY_CONFIG = "site_config";
 const KEY_DEMOS = "content_demos";
 const KEY_FAQS = "content_faqs";
 const KEY_TESTIMONIALS = "content_testimonials";
+const KEY_HERO = "content_hero";
+const KEY_RIBBON = "content_ribbon";
+const KEY_WHY_US = "content_why_us";
+const KEY_PROCESS = "content_process";
+const KEY_HEADINGS = "content_headings";
 
 export interface SiteData {
   config: typeof siteConfig;
@@ -111,6 +134,56 @@ function asList<T>(value: unknown, fallback: readonly unknown[]): T[] {
   return fallback as T[];
 }
 
+/** Fusionne un objet enregistré par-dessus ses valeurs par défaut. */
+function mergeObject<T extends object>(defaults: T, value: unknown): T {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return defaults;
+  return { ...defaults, ...(value as Partial<T>) };
+}
+
+/** Textes du Hero : fusion champ par champ + repli sur les pastilles par défaut. */
+function resolveHero(value: unknown): HeroContent {
+  const merged = mergeObject(defaultHero, value);
+  return {
+    ...merged,
+    chipsAr:
+      Array.isArray(merged.chipsAr) && merged.chipsAr.length > 0
+        ? merged.chipsAr
+        : defaultHero.chipsAr,
+    chipsEn:
+      Array.isArray(merged.chipsEn) && merged.chipsEn.length > 0
+        ? merged.chipsEn
+        : defaultHero.chipsEn,
+  };
+}
+
+/** Bandeau de services : les éléments vides retombent sur le catalogue par défaut. */
+function resolveRibbon(value: unknown): RibbonContent {
+  const merged = mergeObject(defaultRibbon, value);
+  return {
+    ...merged,
+    items:
+      Array.isArray(merged.items) && merged.items.length > 0
+        ? merged.items
+        : defaultRibbon.items,
+  };
+}
+
+/** Titres de sections : chaque section est fusionnée avec son défaut. */
+function resolveHeadings(value: unknown): SectionHeadings {
+  const result = { ...defaultSectionHeadings };
+  if (!value || typeof value !== "object" || Array.isArray(value)) return result;
+  for (const id of SECTION_HEADING_IDS) {
+    const stored = (value as Record<string, unknown>)[id];
+    if (stored && typeof stored === "object" && !Array.isArray(stored)) {
+      result[id] = {
+        ...defaultSectionHeadings[id],
+        ...(stored as Partial<SectionHeading>),
+      };
+    }
+  }
+  return result;
+}
+
 const LEGACY_PLACEHOLDER_SLUGS = new Set([
   "al-diwan-restaurant",
   "noor-clinic",
@@ -181,6 +254,11 @@ export async function getSiteData(): Promise<SiteData> {
           map.get(KEY_TESTIMONIALS),
           defaultTestimonials,
         ),
+        hero: resolveHero(map.get(KEY_HERO)),
+        ribbon: resolveRibbon(map.get(KEY_RIBBON)),
+        whyUs: asList<WhyUsItem>(map.get(KEY_WHY_US), defaultWhyUs),
+        process: asList<ProcessStep>(map.get(KEY_PROCESS), defaultProcess),
+        headings: resolveHeadings(map.get(KEY_HEADINGS)),
       },
     };
   } catch (error) {
@@ -194,6 +272,11 @@ export async function getSiteData(): Promise<SiteData> {
         demos: defaultDemos as unknown as Demo[],
         faqs: defaultFaqs as unknown as Faq[],
         testimonials: defaultTestimonials as unknown as Testimonial[],
+        hero: defaultHero,
+        ribbon: defaultRibbon,
+        whyUs: defaultWhyUs,
+        process: defaultProcess,
+        headings: defaultSectionHeadings,
       },
     };
   }
@@ -222,4 +305,9 @@ export const SETTINGS_KEYS = {
   demos: KEY_DEMOS,
   faqs: KEY_FAQS,
   testimonials: KEY_TESTIMONIALS,
+  hero: KEY_HERO,
+  ribbon: KEY_RIBBON,
+  whyUs: KEY_WHY_US,
+  process: KEY_PROCESS,
+  headings: KEY_HEADINGS,
 } as const;

@@ -3,11 +3,12 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Plus, Minus } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
-import { useSiteContent } from "@/components/site-provider";
+import { useSectionHeading, useSiteContent } from "@/components/site-provider";
 
 export function FAQ() {
   const { faqs } = useSiteContent();
-  const { locale, t } = useI18n();
+  const heading = useSectionHeading("faq");
+  const { locale } = useI18n();
   const [open, setOpen] = useState<number | null>(0);
 
   return (
@@ -19,8 +20,10 @@ export function FAQ() {
             {locale === "ar" ? "الأسئلة الشائعة" : "FAQ"}
             <span className="h-px w-8 bg-[var(--accent)]" />
           </div>
-          <h2 className="mt-3 text-[28px] lg:text-[38px] font-black tracking-tight">{t.faq.title}</h2>
-          <p className="mt-2 opacity-60">{t.faq.subtitle}</p>
+          <h2 className="mt-3 text-[28px] lg:text-[38px] font-black tracking-tight">
+            {heading.title}
+          </h2>
+          <p className="mt-2 opacity-60">{heading.subtitle}</p>
         </div>
 
         <div className="mt-8 rounded-[24px] bg-[var(--card)] border border-[var(--border)] overflow-hidden divide-y divide-[var(--border)]">

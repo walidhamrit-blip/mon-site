@@ -183,6 +183,11 @@ const CONTENT_KEYS: Record<ContentSection, string> = {
   demos: SETTINGS_KEYS.demos,
   faqs: SETTINGS_KEYS.faqs,
   testimonials: SETTINGS_KEYS.testimonials,
+  hero: SETTINGS_KEYS.hero,
+  ribbon: SETTINGS_KEYS.ribbon,
+  whyUs: SETTINGS_KEYS.whyUs,
+  process: SETTINGS_KEYS.process,
+  headings: SETTINGS_KEYS.headings,
 };
 
 export async function saveContentSection(

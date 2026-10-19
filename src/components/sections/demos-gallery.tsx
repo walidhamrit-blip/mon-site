@@ -14,7 +14,7 @@ import {
 } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import { sectors } from "@/lib/content";
-import { useSiteConfig, useSiteContent } from "@/components/site-provider";
+import { useSectionHeading, useSiteConfig, useSiteContent } from "@/components/site-provider";
 import type { Demo } from "@/lib/site-types";
 import {
   isRealUrl,
@@ -40,6 +40,7 @@ function formatHost(url: string, fallbackSlug: string, domain: string): string {
 export function DemosGallery() {
   const siteConfig = useSiteConfig();
   const { demos } = useSiteContent();
+  const heading = useSectionHeading("demos");
   const { locale, t } = useI18n();
   const [filter, setFilter] = useState("all");
   const [mode, setMode] = useState<"mobile" | "desktop">("desktop");
@@ -75,13 +76,9 @@ export function DemosGallery() {
               {locale === "ar" ? "المعارض والأعمال الحية" : "LIVE SHOWCASES & REAL WORK"}
             </div>
             <h2 className="mt-3 text-[32px] lg:text-[44px] font-black tracking-tight leading-none">
-              {t.demos.title}
+              {heading.title}
             </h2>
-            <p className="mt-3 opacity-60 max-w-[54ch]">
-              {locale === "ar"
-                ? "تصفّح مواقع عملائنا الحقيقية مباشرةً أو افتحها بملء الشاشة مع إمكانية التبديل بين عرض الحاسوب والهاتف"
-                : "Browse our real client websites live or open them in fullscreen with Desktop and Mobile view options"}
-            </p>
+            <p className="mt-3 opacity-60 max-w-[54ch]">{heading.subtitle}</p>
           </div>
           <div className="flex flex-wrap items-center gap-3">
             <div className="flex items-center gap-1 p-1 rounded-full bg-[var(--secondary)] border border-[var(--border)]">

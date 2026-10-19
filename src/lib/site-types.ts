@@ -175,10 +175,103 @@ export interface StandaloneService {
   featuresEn: string[];
 }
 
+/* ---------- Sections de la page d'accueil ---------- */
+
+/** Textes du bloc d'accueil (Hero) — bilingue AR/EN. */
+export interface HeroContent {
+  badgeAr: string;
+  badgeEn: string;
+  title1Ar: string;
+  title1En: string;
+  title2Ar: string;
+  title2En: string;
+  title3Ar: string;
+  title3En: string;
+  subtitleAr: string;
+  subtitleEn: string;
+  ctaPrimaryAr: string;
+  ctaPrimaryEn: string;
+  ctaSecondaryAr: string;
+  ctaSecondaryEn: string;
+  trustedAr: string;
+  trustedEn: string;
+  ratingAr: string;
+  ratingEn: string;
+  /** Petites pastilles de réassurance (✓ …), une par ligne dans l'admin. */
+  chipsAr: string[];
+  chipsEn: string[];
+}
+
+/** Bandeau défilant des services / points forts. */
+export interface RibbonContent {
+  taglineAr: string;
+  taglineEn: string;
+  items: { ar: string; en: string }[];
+}
+
+/** Carte de la section « Pourquoi nous ? ». */
+export interface WhyUsItem {
+  /** Nom d'icône lucide : zap, palette, sliders, search, headset. */
+  icon: string;
+  titleAr: string;
+  titleEn: string;
+  descAr: string;
+  descEn: string;
+}
+
+/** Étape de la section « Processus ». */
+export interface ProcessStep {
+  num: string;
+  titleAr: string;
+  titleEn: string;
+  descAr: string;
+  descEn: string;
+  durationAr: string;
+  durationEn: string;
+}
+
+/**
+ * Titres / sous-titres éditables des sections du site.
+ * Chaque section possède un identifiant stable (voir SectionHeadingId).
+ */
+export interface SectionHeading {
+  titleAr: string;
+  titleEn: string;
+  subtitleAr: string;
+  subtitleEn: string;
+  /** Texte secondaire optionnel (ex. durée totale du processus, note tarifs). */
+  noteAr?: string;
+  noteEn?: string;
+}
+
+export const SECTION_HEADING_IDS = [
+  "why",
+  "demos",
+  "identityCustomizer",
+  "identityThemes",
+  "process",
+  "pricing",
+  "flexPay",
+  "services",
+  "testimonials",
+  "faq",
+  "cta",
+] as const;
+
+export type SectionHeadingId = (typeof SECTION_HEADING_IDS)[number];
+
+/** Ensemble des titres de sections, indexé par identifiant. */
+export type SectionHeadings = Record<SectionHeadingId, SectionHeading>;
+
 export interface SiteContent {
   demos: Demo[];
   faqs: Faq[];
   testimonials: Testimonial[];
+  hero: HeroContent;
+  ribbon: RibbonContent;
+  whyUs: WhyUsItem[];
+  process: ProcessStep[];
+  headings: SectionHeadings;
 }
 
 /* ---------- Demandes (leads) ---------- */
