@@ -5,6 +5,7 @@ import { db, ensureSchema } from "@/db";
 import { orders } from "@/db/schema";
 import { siteConfig } from "@/lib/config";
 import { getSiteData } from "@/lib/store";
+import { siteBaseUrl } from "@/lib/site-url";
 import { resolveDemoClassification } from "@/lib/classification";
 import {
   createInvoice,
@@ -48,13 +49,6 @@ function gatewayDetail(error: unknown): ErrorDetail {
 
 function databaseDetail(error: unknown): ErrorDetail {
   return { source: "database", status: null, message: errorMessage(error) };
-}
-
-function siteBaseUrl(): string {
-  const explicit =
-    process.env.SITE_URL?.trim() || process.env.NEXT_PUBLIC_SITE_URL?.trim();
-  if (explicit) return explicit.replace(/\/+$/, "");
-  return siteConfig.url.replace(/\/+$/, "");
 }
 
 function newReservationRef(): string {
@@ -209,7 +203,9 @@ export async function POST(req: Request) {
   }
 
   // 2) Facture NOWPayments à 1 $ (page de paiement hébergée).
-  const baseUrl = siteBaseUrl();
+  //    Les URLs de retour (succès/annulation/IPN) pointent vers
+  //    l'environnement réellement utilisé (voir src/lib/site-url.ts).
+  const baseUrl = siteBaseUrl(req);
   let invoice: CreatedInvoice;
   try {
     invoice = await createInvoice({

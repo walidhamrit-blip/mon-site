@@ -21,7 +21,9 @@ export default async function PaySuccessPage({
   return (
     <main className="pt-[96px] min-h-[70vh]">
       <div className="mx-auto max-w-[960px] px-4 sm:px-6 lg:px-8 py-10">
-        <PaymentStatus ref={ref ?? ""} />
+        {/* Prop `orderRef` (et non `ref`) : `ref` est réservée par React 19
+            et ferait échouer tout le rendu de cette page. */}
+        <PaymentStatus orderRef={ref ?? ""} />
         <p className="mt-6 text-center text-xs opacity-50">
           Le paiement est confirmé dès réception de la notification du
           réseau — généralement en quelques minutes.

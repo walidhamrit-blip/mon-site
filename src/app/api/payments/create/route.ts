@@ -16,6 +16,7 @@ import {
   splitAmount,
   trancheRef,
 } from "@/lib/installments";
+import { siteBaseUrl } from "@/lib/site-url";
 
 /**
  * Crée une commande + une facture NOWPayments (page de paiement
@@ -99,16 +100,7 @@ function databaseDetail(error: unknown): ErrorDetail {
   };
 }
 
-/** URL de base du site (succès/annulation/IPN). */
-function siteBaseUrl(): string {
-  // Variable privée (jamais exposée au navigateur) — en repli,
-  // NEXT_PUBLIC_SITE_URL puis l'URL codée dans config.ts.
-  const explicit =
-    process.env.SITE_URL?.trim() ||
-    process.env.NEXT_PUBLIC_SITE_URL?.trim();
-  if (explicit) return explicit.replace(/\/+$/, "");
-  return siteConfig.url.replace(/\/+$/, "");
-}
+/** URL de base du site (succès/annulation/IPN) — voir src/lib/site-url.ts. */
 
 function newOrderRef(): string {
   const stamp = Date.now().toString(36).toUpperCase();
@@ -117,8 +109,8 @@ function newOrderRef(): string {
 }
 
 /** Paramètres de paiement communs (retour NOWPayments → nos pages). */
-function paymentUrls(ref: string) {
-  const baseUrl = siteBaseUrl();
+function paymentUrls(req: Request, ref: string) {
+  const baseUrl = siteBaseUrl(req);
   return {
     ipnCallbackUrl: `${baseUrl}/api/payments/ipn`,
     successUrl: `${baseUrl}/pay/success?ref=${encodeURIComponent(ref)}`,
@@ -130,7 +122,7 @@ function paymentUrls(ref: string) {
  * Facture une tranche existante (2e/3e versement) et met à jour
  * les informations de paiement de la commande.
  */
-async function payExistingOrder(orderRef: string) {
+async function payExistingOrder(orderRef: string, req: Request) {
   await ensureSchema();
   const wanted = orderRef.trim().toUpperCase();
   const rows = await db
@@ -179,7 +171,7 @@ async function payExistingOrder(orderRef: string) {
       // notre `ref` (voir refCandidates dans ipn/route.ts).
       orderId: `${order.ref}-R${Date.now().toString(36).toUpperCase()}`,
       orderDescription: label,
-      ...paymentUrls(order.ref),
+      ...paymentUrls(req, order.ref),
     });
   } catch (error) {
     console.error(
@@ -238,15 +230,18 @@ async function payExistingOrder(orderRef: string) {
  * `flexiblePayment.minUsd` / `maxUsd`) — le navigateur ne peut ni
  * payer 0 $, ni dépasser le maximum autorisé.
  */
-async function createFlexibleOrder(data: {
-  amountUsd: number;
-  description?: string;
-  name?: string;
-  email?: string;
-  phone?: string;
-  locale?: "ar" | "en";
-  utm?: string;
-}) {
+async function createFlexibleOrder(
+  req: Request,
+  data: {
+    amountUsd: number;
+    description?: string;
+    name?: string;
+    email?: string;
+    phone?: string;
+    locale?: "ar" | "en";
+    utm?: string;
+  },
+) {
   const { config } = await getSiteData();
 
   // Type lâche : la configuration « vivante » vient de la base (valeurs
@@ -328,7 +323,7 @@ async function createFlexibleOrder(data: {
       priceAmount: amount,
       orderId: ref,
       orderDescription: `${config.name} — ${label}`.slice(0, 190),
-      ...paymentUrls(ref),
+      ...paymentUrls(req, ref),
     });
   } catch (error) {
     console.error(
@@ -403,7 +398,7 @@ export async function POST(req: Request) {
   // ── Mode « tranche suivante » : commande déjà planifiée ──
   if (data.orderRef) {
     try {
-      return await payExistingOrder(data.orderRef);
+      return await payExistingOrder(data.orderRef, req);
     } catch (error) {
       console.error(
         "[payments] paiement d'une tranche impossible :",
@@ -416,7 +411,7 @@ export async function POST(req: Request) {
   // ── Mode « paiement flexible » : montant libre 1 $ ou plus ──
   if (data.kind === "flex") {
     try {
-      return await createFlexibleOrder({
+      return await createFlexibleOrder(req, {
         amountUsd: data.amountUsd ?? 0,
         description: data.description,
         name: data.name,
@@ -504,7 +499,7 @@ export async function POST(req: Request) {
         count > 1
           ? `${config.name} — ${plan.nameEn} (1/${count})`
           : `${config.name} — ${plan.nameEn} plan`,
-      ...paymentUrls(baseRef),
+      ...paymentUrls(req, baseRef),
     });
   } catch (error) {
     console.error("[payments] NOWPayments refusé :", errorMessage(error));

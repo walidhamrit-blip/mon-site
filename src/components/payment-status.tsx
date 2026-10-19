@@ -41,8 +41,13 @@ interface Tranche {
  * Interroge le statut d'une commande (IPN à jour en base).
  * S'arrête dès que le paiement est confirmé — ou après
  * 10 minutes d'attente.
+ *
+ * ⚠️ La prop s'appelle `orderRef` (et non `ref`) : React 19 réserve
+ * `ref` comme prop spéciale — la passer depuis un Server Component
+ * fait planter la page avec « Refs cannot be used in Server
+ * Components, nor passed to Client Components ».
  */
-export function PaymentStatus({ ref }: { ref: string }) {
+export function PaymentStatus({ orderRef }: { orderRef: string }) {
   const { locale, t } = useI18n();
   const ar = locale === "ar";
   const [order, setOrder] = useState<OrderStatus | null>(null);
@@ -52,13 +57,13 @@ export function PaymentStatus({ ref }: { ref: string }) {
   const [payError, setPayError] = useState("");
 
   useEffect(() => {
-    if (!ref) return;
+    if (!orderRef) return;
     let stopped = false;
     const deadline = Date.now() + 10 * 60 * 1000;
 
     const poll = async () => {
       try {
-        const res = await fetch(`/api/payments/order/${encodeURIComponent(ref)}`);
+        const res = await fetch(`/api/payments/order/${encodeURIComponent(orderRef)}`);
         if (!res.ok) {
           if (!stopped) setNotFound(true);
           return;
@@ -81,7 +86,7 @@ export function PaymentStatus({ ref }: { ref: string }) {
       stopped = true;
       clearInterval(timer);
     };
-  }, [ref]);
+  }, [orderRef]);
 
   const status = order?.status ?? "pending";
 
