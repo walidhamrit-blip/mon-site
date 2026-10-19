@@ -5,6 +5,7 @@
 
 import { sendEmail } from "@/lib/mailer";
 import { ORDER_STATUS_LABELS } from "@/lib/nowpayments";
+import { ORDER_KIND_LABELS } from "@/lib/site-types";
 import type { Order } from "@/db/schema";
 
 function frDate(value: Date | string): string {
@@ -56,14 +57,23 @@ export async function sendPaymentConfirmedEmail(
       ? `Tranche ${order.installmentIndex}/${order.installments} — plan ${order.groupRef ?? order.ref}`
       : null;
 
-  const subject = `✓ Paiement crypto confirmé — ${order.ref} (${order.planName}${
-    trancheInfo ? ` — ${trancheInfo}` : ""
-  })`;
+  const isReservation = order.kind === "reservation";
+  const kindLabel = isReservation
+    ? ORDER_KIND_LABELS.reservation
+    : ORDER_KIND_LABELS.plan;
+
+  const subject = `✓ ${
+    isReservation ? "Réservation prioritaire confirmée" : "Paiement crypto confirmé"
+  } — ${order.ref} (${order.planName}${trancheInfo ? ` — ${trancheInfo}` : ""})`;
 
   const text = [
-    `Paiement confirmé via NOWPayments`,
+    isReservation
+      ? `Réservation prioritaire confirmée via NOWPayments (acompte)`
+      : `Paiement confirmé via NOWPayments`,
     ``,
     `Commande : ${order.ref}`,
+    `Type : ${kindLabel}${isReservation ? " — acompte prioritaire" : ""}`,
+    ...(order.demoSlug ? [`Site : /demos/${order.demoSlug}`] : []),
     `Boutique : ${order.planName}`,
     `Montant : ${order.amountLyd} LYD / ${order.amountUsd} ${order.currency.toUpperCase()}`,
     ...(trancheInfo ? [`Tranche : ${trancheInfo}`] : []),
@@ -78,10 +88,22 @@ export async function sendPaymentConfirmedEmail(
   const html = `
     <div style="font-family:system-ui,Arial,sans-serif;max-width:560px;margin:0 auto;padding:24px;color:#1a1a1e">
       <div style="font-size:13px;letter-spacing:.12em;color:#C6A664;font-weight:700">${siteName.toUpperCase()} — PAIEMENT CRYPTO</div>
-      <h1 style="font-size:22px;font-weight:900;margin:8px 0 4px">Paiement confirmé ✓</h1>
-      <p style="color:#666;font-size:14px;margin:0 0 20px">Le client a réglé sa commande en cryptomonnaie.</p>
+      <h1 style="font-size:22px;font-weight:900;margin:8px 0 4px">${
+        isReservation ? "Réservation prioritaire confirmée ✓" : "Paiement confirmé ✓"
+      }</h1>
+      <p style="color:#666;font-size:14px;margin:0 0 20px">${
+        isReservation
+          ? "Le client a réglé l'acompte de réservation en cryptomonnaie. Il prend une place en avance dans le planning."
+          : "Le client a réglé sa commande en cryptomonnaie."
+      }</p>
       <table style="width:100%;border-collapse:collapse;font-size:14px" cellpadding="0" cellspacing="0">
         <tr><td style="padding:8px 12px;background:#f6f3ec;font-weight:700;width:140px">Commande</td><td style="padding:8px 12px;border-bottom:1px solid #eee">${order.ref}</td></tr>
+        <tr><td style="padding:8px 12px;background:#f6f3ec;font-weight:700">Type</td><td style="padding:8px 12px;border-bottom:1px solid #eee">${kindLabel}${isReservation ? " — acompte prioritaire" : ""}</td></tr>
+        ${
+          order.demoSlug
+            ? `<tr><td style="padding:8px 12px;background:#f6f3ec;font-weight:700">Site</td><td style="padding:8px 12px;border-bottom:1px solid #eee">/demos/${order.demoSlug}</td></tr>`
+            : ""
+        }
         <tr><td style="padding:8px 12px;background:#f6f3ec;font-weight:700">Boutique</td><td style="padding:8px 12px;border-bottom:1px solid #eee">${order.planName}</td></tr>
         <tr><td style="padding:8px 12px;background:#f6f3ec;font-weight:700">Montant</td><td style="padding:8px 12px;border-bottom:1px solid #eee"><strong>${order.amountLyd} LYD</strong> / ${order.amountUsd} ${order.currency.toUpperCase()}</td></tr>
         ${trancheInfo ? `<tr><td style="padding:8px 12px;background:#f6f3ec;font-weight:700">Tranche</td><td style="padding:8px 12px;border-bottom:1px solid #eee">${trancheInfo}</td></tr>` : ""}

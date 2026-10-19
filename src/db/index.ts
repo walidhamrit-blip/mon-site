@@ -66,6 +66,8 @@ export function ensureSchema(): Promise<void> {
           created_at timestamptz NOT NULL DEFAULT now(),
           updated_at timestamptz NOT NULL DEFAULT now(),
           ref text NOT NULL UNIQUE,
+          kind text NOT NULL DEFAULT 'plan',
+          demo_slug text,
           plan_id text NOT NULL,
           plan_name text NOT NULL,
           amount_lyd text NOT NULL,
@@ -107,6 +109,17 @@ export function ensureSchema(): Promise<void> {
       );
       await pool.query(
         "CREATE INDEX IF NOT EXISTS orders_group_ref_idx ON orders (group_ref)",
+      );
+      // Réservations prioritaires (acompte) : nature de la commande et
+      // site du portfolio concerné.
+      await pool.query(
+        "ALTER TABLE orders ADD COLUMN IF NOT EXISTS kind text NOT NULL DEFAULT 'plan'",
+      );
+      await pool.query(
+        "ALTER TABLE orders ADD COLUMN IF NOT EXISTS demo_slug text",
+      );
+      await pool.query(
+        "CREATE INDEX IF NOT EXISTS orders_kind_idx ON orders (kind)",
       );
     })().catch((error) => {
       schemaReady = null; // permet de réessayer au prochain accès

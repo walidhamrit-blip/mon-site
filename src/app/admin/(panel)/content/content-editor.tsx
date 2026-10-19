@@ -1,8 +1,16 @@
 "use client";
 import { useState } from "react";
-import type { Demo, Faq, SiteContent, Testimonial } from "@/lib/site-types";
+import type {
+  Demo,
+  Faq,
+  PricingPlanData,
+  SiteContent,
+  Testimonial,
+} from "@/lib/site-types";
 import { resetContentSection, saveContentSection } from "@/app/admin/actions";
 import { sectors } from "@/lib/content";
+import { formatLyd, resolveDemoClassification } from "@/lib/classification";
+import { formatUsd } from "@/lib/installments";
 import {
   Plus,
   Trash2,
@@ -175,11 +183,14 @@ function ItemCard({
 
 /* ---------- éditeur ---------- */
 
-function newDemo(existing: Demo[]): Demo {
+function newDemo(existing: Demo[], plans: PricingPlanData[]): Demo {
   let slug = `nouveau-projet-${Date.now().toString(36)}`;
   while (existing.some((d) => d.slug === slug)) slug = `${slug}-2`;
   return {
     slug,
+    planId: plans[0]?.id ?? "vitrine",
+    categoryTier: 1,
+    priceUsd: null,
     sector: "other",
     sectorAr: "قطاع جديد",
     sectorEn: "New sector",
@@ -227,7 +238,13 @@ function moveItem<T>(list: T[], index: number, dir: -1 | 1): T[] {
   return copy;
 }
 
-export function ContentEditor({ initial }: { initial: SiteContent }) {
+export function ContentEditor({
+  initial,
+  plans,
+}: {
+  initial: SiteContent;
+  plans: PricingPlanData[];
+}) {
   const [tab, setTab] = useState<Tab>("demos");
   const [draft, setDraft] = useState<SiteContent>(() => structuredClone(initial));
   const [busy, setBusy] = useState<"" | Tab | "reset">("");
@@ -354,13 +371,23 @@ export function ContentEditor({ initial }: { initial: SiteContent }) {
               </option>
             ))}
           </datalist>
-          {draft.demos.map((demo, i) => (
+          {draft.demos.map((demo, i) => {
+            const preview = resolveDemoClassification(demo, plans);
+            return (
             <ItemCard
               key={i}
               index={i}
               count={draft.demos.length}
               title={demo.titleEn || demo.title}
-              subtitle={`/${demo.slug} — ${demo.sector}`}
+              subtitle={
+                preview
+                  ? `/${demo.slug} — Catégorie ${preview.tier} · ${preview.nameEn} · ${
+                      preview.priceUsd != null
+                        ? `$${formatUsd(preview.priceUsd)}`
+                        : `${formatLyd(preview.priceLyd)} LYD`
+                    }`
+                  : `/${demo.slug} — ${demo.sector}`
+              }
               onMove={(dir) => onMove("demos", i, dir)}
               onDelete={() => onDelete("demos", i)}
             >
@@ -406,6 +433,121 @@ export function ContentEditor({ initial }: { initial: SiteContent }) {
                   onChange={(v) => setDemo(i, { previewUrl: v })}
                 />
               </div>
+              {(() => {
+                const classification = resolveDemoClassification(demo, plans);
+                const planIndex = plans.findIndex((plan) => plan.id === demo.planId);
+                // Une formule supprimée ou renommée ne doit pas laisser le
+                // sélecteur vide : on retombe sur la catégorie du projet.
+                const effectivePlanId =
+                  planIndex >= 0
+                    ? (demo.planId as string)
+                    : (plans[Math.min(plans.length - 1, Math.max(0, (demo.categoryTier ?? 1) - 1))]
+                        ?.id ?? plans[0]?.id ?? "");
+                return (
+                  <div className="mt-4 rounded-2xl border border-[#C6A664]/25 bg-[#C6A664]/5 p-4">
+                    <div className="flex flex-wrap items-start justify-between gap-2">
+                      <div>
+                        <div className="text-xs font-bold text-[#E8D5A9]">
+                          Classification &amp; prix du site
+                        </div>
+                        <p className="mt-0.5 text-[11px] text-zinc-500">
+                          La catégorie suit la formule choisie ; le prix reprend son
+                          prix USD, sauf prix personnalisé ci-dessous.
+                        </p>
+                      </div>
+                      {classification && (
+                        <span className="rounded-full border border-[#C6A664]/30 bg-black/30 px-3 py-1 text-[11px] font-bold text-[#E8D5A9]">
+                          Catégorie {classification.tier} · {classification.nameEn} ·{" "}
+                          {classification.priceUsd != null
+                            ? `$${formatUsd(classification.priceUsd)}`
+                            : "—"}{" "}
+                          / {formatLyd(classification.priceLyd)} LYD
+                        </span>
+                      )}
+                    </div>
+                    <div className="mt-4 grid sm:grid-cols-3 gap-4">
+                      <label className="block">
+                        <span className="text-xs font-semibold text-zinc-400">
+                          Formule / catégorie
+                        </span>
+                        <select
+                          value={effectivePlanId}
+                          onChange={(event) => {
+                            const index = plans.findIndex(
+                              (plan) => plan.id === event.target.value,
+                            );
+                            setDemo(i, {
+                              planId: event.target.value,
+                              ...(index >= 0 ? { categoryTier: index + 1 } : {}),
+                            });
+                          }}
+                          className="mt-1.5 h-10 w-full rounded-xl border border-white/10 bg-black/40 px-3 text-sm text-white outline-none focus:border-[#C6A664] cursor-pointer"
+                        >
+                          {plans.map((plan, index) => (
+                            <option key={plan.id} value={plan.id}>
+                              Catégorie {index + 1} — {plan.nameEn}
+                              {plan.priceUsd ? ` ($${formatUsd(plan.priceUsd)})` : ""}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                      <label className="block">
+                        <span className="text-xs font-semibold text-zinc-400">
+                          Numéro de catégorie
+                        </span>
+                        <input
+                          type="number"
+                          min={1}
+                          max={99}
+                          value={
+                            demo.categoryTier ??
+                            (planIndex >= 0 ? planIndex + 1 : 1)
+                          }
+                          onChange={(event) => {
+                            const value = Number(event.target.value);
+                            setDemo(i, {
+                              categoryTier:
+                                Number.isFinite(value) && value >= 1
+                                  ? Math.floor(value)
+                                  : undefined,
+                            });
+                          }}
+                          className="mt-1.5 h-10 w-full rounded-xl border border-white/10 bg-black/40 px-3 text-sm text-white outline-none focus:border-[#C6A664]"
+                        />
+                      </label>
+                      <label className="block">
+                        <span className="text-xs font-semibold text-zinc-400">
+                          Prix USD du projet{" "}
+                          <span className="text-zinc-600">(vide = prix catégorie)</span>
+                        </span>
+                        <input
+                          type="number"
+                          min={0}
+                          step={1}
+                          value={demo.priceUsd ?? ""}
+                          placeholder={
+                            plans.find((plan) => plan.id === demo.planId)?.priceUsd != null
+                              ? String(plans.find((plan) => plan.id === demo.planId)?.priceUsd)
+                              : "prix de la catégorie"
+                          }
+                          onChange={(event) => {
+                            if (event.target.value === "") {
+                              setDemo(i, { priceUsd: null });
+                              return;
+                            }
+                            const value = Number(event.target.value);
+                            setDemo(i, {
+                              priceUsd: Number.isFinite(value) ? value : null,
+                            });
+                          }}
+                          className="mt-1.5 h-10 w-full rounded-xl border border-white/10 bg-black/40 px-3 text-sm text-white outline-none focus:border-[#C6A664]"
+                        />
+                      </label>
+                    </div>
+                  </div>
+                );
+              })()}
+
               <div className="mt-4 grid lg:grid-cols-2 gap-4">
                 <Area label="Description (arabe)" dir="rtl" value={demo.description} onChange={(v) => setDemo(i, { description: v })} />
                 <Area label="Description (anglaise)" dir="ltr" value={demo.descriptionEn} onChange={(v) => setDemo(i, { descriptionEn: v })} />
@@ -413,10 +555,13 @@ export function ContentEditor({ initial }: { initial: SiteContent }) {
                 <Lines label="Points forts (anglais)" value={demo.featuresEn} onChange={(v) => setDemo(i, { featuresEn: v })} />
               </div>
             </ItemCard>
-          ))}
+            );
+          })}
           <button
             type="button"
-            onClick={() => setDraft((d) => ({ ...d, demos: [...d.demos, newDemo(d.demos)] }))}
+            onClick={() =>
+              setDraft((d) => ({ ...d, demos: [...d.demos, newDemo(d.demos, plans)] }))
+            }
             className="h-11 px-5 rounded-2xl border border-dashed border-white/20 text-sm font-bold text-zinc-400 hover:text-white hover:border-[#C6A664]/50 inline-flex items-center gap-2 transition-colors cursor-pointer"
           >
             <Plus className="h-4 w-4" /> Ajouter une démo

@@ -2,8 +2,11 @@
 import { useState } from "react";
 import Link from "next/link";
 import { sectors } from "@/lib/content";
-import { useSiteContent } from "@/components/site-provider";
+import { useSiteConfig, useSiteContent } from "@/components/site-provider";
 import { useI18n } from "@/lib/i18n";
+import { ReservationButton } from "@/components/reservation-dialog";
+import { formatLyd, resolveDemoClassification } from "@/lib/classification";
+import { formatUsd } from "@/lib/installments";
 import { ArrowUpRight, ExternalLink, Search, Monitor, Smartphone } from "lucide-react";
 
 function isRealUrl(url?: string): boolean {
@@ -12,6 +15,7 @@ function isRealUrl(url?: string): boolean {
 
 export default function DemosPage() {
   const { demos } = useSiteContent();
+  const config = useSiteConfig();
   const { locale } = useI18n();
   const [filter, setFilter] = useState("all");
   const [q, setQ] = useState("");
@@ -80,6 +84,10 @@ export default function DemosPage() {
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {filtered.map((d) => {
               const hasLive = isRealUrl(d.previewUrl);
+              const classification = resolveDemoClassification(
+                d,
+                config.pricing.plans,
+              );
               return (
                 <div
                   key={d.slug}
@@ -128,6 +136,46 @@ export default function DemosPage() {
                       <p className="text-sm opacity-60 mt-1 line-clamp-2">
                         {locale === "ar" ? d.description : d.descriptionEn}
                       </p>
+
+                      {classification && (
+                        <div className="mt-3 rounded-xl border border-[var(--border)] bg-[var(--secondary)]/60 px-3 py-2.5">
+                          <div className="flex items-center justify-between gap-2">
+                            <div className="min-w-0">
+                              <div className="text-[10px] uppercase tracking-wider opacity-50">
+                                {locale === "ar"
+                                  ? `الفئة ${classification.tier}`
+                                  : `Category ${classification.tier}`}
+                              </div>
+                              <div className="text-sm font-bold truncate">
+                                {locale === "ar"
+                                  ? classification.name
+                                  : classification.nameEn}
+                              </div>
+                            </div>
+                            <div className="text-end flex-shrink-0">
+                              {classification.priceUsd != null && (
+                                <div
+                                  className="text-base font-black text-[var(--accent)]"
+                                  dir="ltr"
+                                >
+                                  ${formatUsd(classification.priceUsd)}
+                                </div>
+                              )}
+                              <div className="text-[10px] opacity-60" dir="ltr">
+                                {formatLyd(classification.priceLyd)}{" "}
+                                {locale === "ar"
+                                  ? config.pricing.currency
+                                  : config.pricing.currencyEn}
+                              </div>
+                            </div>
+                          </div>
+                          <ReservationButton
+                            demo={d}
+                            className="mt-2 h-8 w-full rounded-full bg-[var(--accent)]/15 border border-[var(--accent)]/40 text-[var(--accent)] text-[11px] font-black inline-flex items-center justify-center gap-1.5 hover:bg-[var(--accent)] hover:text-[var(--accent-foreground)] transition-colors cursor-pointer"
+                          />
+                        </div>
+                      )}
+
                       <div className="mt-3 flex flex-wrap gap-1.5">
                         {(locale === "ar" ? d.features : d.featuresEn).map((f) => (
                           <span

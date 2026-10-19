@@ -120,6 +120,20 @@ const LEGACY_PLACEHOLDER_SLUGS = new Set([
   "safir-hotel",
 ]);
 
+/**
+ * Complète une démo enregistrée avant l'ajout de la classification :
+ * la catégorie et le prix par défaut du projet sont repris du code,
+ * sans jamais écraser un choix fait dans l'administration.
+ */
+function backfillClassification(base: Demo, stored: Demo): Demo {
+  return {
+    ...stored,
+    planId: stored.planId ?? base.planId,
+    categoryTier: stored.categoryTier ?? base.categoryTier,
+    priceUsd: stored.priceUsd !== undefined ? stored.priceUsd : base.priceUsd,
+  };
+}
+
 function resolveDemos(value: unknown, fallback: readonly unknown[]): Demo[] {
   const defaults = fallback as Demo[];
   if (!Array.isArray(value) || value.length === 0) return defaults;
@@ -127,6 +141,16 @@ function resolveDemos(value: unknown, fallback: readonly unknown[]): Demo[] {
     (d) => !(LEGACY_PLACEHOLDER_SLUGS.has(d.slug) && (!d.previewUrl || d.previewUrl === "#")),
   );
   if (stored.length === 0) return defaults;
+
+  const withClassification = stored.map((item) => {
+    const base = defaults.find(
+      (def) =>
+        def.slug === item.slug ||
+        (Boolean(def.previewUrl) && def.previewUrl === item.previewUrl),
+    );
+    return base ? backfillClassification(base, item) : item;
+  });
+
   const missingLiveDefaults = defaults.filter(
     (def) =>
       def.previewUrl &&
@@ -135,9 +159,9 @@ function resolveDemos(value: unknown, fallback: readonly unknown[]): Demo[] {
       !stored.some((s) => s.slug === def.slug || s.previewUrl === def.previewUrl),
   );
   if (missingLiveDefaults.length > 0) {
-    return [...missingLiveDefaults, ...stored];
+    return [...missingLiveDefaults, ...withClassification];
   }
-  return stored;
+  return withClassification;
 }
 
 /** Lit configuration + contenu depuis la base (avec repli sur les défauts). */

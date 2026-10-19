@@ -102,6 +102,8 @@ export async function GET(
       ok: true,
       order: {
         ref: order.ref,
+        kind: order.kind,
+        demoSlug: order.demoSlug,
         planName: order.planName,
         amountLyd: order.amountLyd,
         amountUsd: order.amountUsd,

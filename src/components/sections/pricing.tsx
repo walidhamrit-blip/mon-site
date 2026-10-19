@@ -1,7 +1,8 @@
 "use client";
 import { useState } from "react";
+import Link from "next/link";
 import { motion } from "framer-motion";
-import { Check, Sparkles, ArrowUpRight, Bitcoin } from "lucide-react";
+import { CalendarCheck, Check, Sparkles, ArrowUpRight, Bitcoin } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import { useSiteConfig } from "@/components/site-provider";
 import { CheckoutDialog } from "@/components/checkout-dialog";
@@ -47,7 +48,10 @@ export function Pricing() {
 
               <div className="flex items-start justify-between gap-4">
                 <div>
-                  <h3 className="text-lg font-black">{locale === "ar" ? plan.name : plan.nameEn}</h3>
+                  <div className="text-[10px] font-black uppercase tracking-[0.14em] opacity-50">
+                    {locale === "ar" ? `الفئة ${idx + 1}` : `Category ${idx + 1}`}
+                  </div>
+                  <h3 className="mt-0.5 text-lg font-black">{locale === "ar" ? plan.name : plan.nameEn}</h3>
                   <p className={`text-sm mt-1 ${plan.featured ? "opacity-70" : "opacity-60"}`}>{locale === "ar" ? plan.description : plan.descriptionEn}</p>
                 </div>
                 {plan.featured && <span className="h-8 w-8 rounded-full bg-[var(--accent)] grid place-items-center">✦</span>}
@@ -127,6 +131,31 @@ export function Pricing() {
             </motion.div>
           ))}
         </div>
+
+        {siteConfig.reservation?.enabled && (
+          <div className="mt-8 max-w-[760px] mx-auto rounded-[20px] border border-[var(--accent)]/30 bg-[var(--accent)]/5 p-5 flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div className="text-center sm:text-start">
+              <div className="flex items-center justify-center sm:justify-start gap-2 text-sm font-black">
+                <CalendarCheck className="h-4 w-4 text-[var(--accent)]" />
+                {locale === "ar"
+                  ? "احجز مكانك في جدول العمل"
+                  : "Reserve your place in our queue"}
+              </div>
+              <p className="mt-1 text-xs opacity-60">
+                {locale === "ar"
+                  ? `عربون ${formatUsd(siteConfig.reservation?.depositUsd ?? 1)} $ فقط — يُخصم من سعر المشروع ويمنحك أولوية في التنفيذ.`
+                  : `Only a $${formatUsd(siteConfig.reservation?.depositUsd ?? 1)} deposit — deducted from the project price and giving you priority.`}
+              </p>
+            </div>
+            <Link
+              href="/demos"
+              className="h-10 px-5 rounded-full bg-[var(--accent)] text-[var(--accent-foreground)] text-xs font-black inline-flex items-center gap-1.5 hover:bg-[var(--accent-hover)] transition-colors flex-shrink-0"
+            >
+              {locale === "ar" ? "اختر موقعاً واحجز" : "Pick a site & reserve"}
+              <ArrowUpRight className="h-3.5 w-3.5" />
+            </Link>
+          </div>
+        )}
 
         <div className="mt-8 text-center">
           <p className="text-sm opacity-60">

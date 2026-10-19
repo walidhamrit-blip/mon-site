@@ -47,6 +47,82 @@ Remplacez les URLs Unsplash par vos images dans `content.ts` et sections. Placez
 - **Vercel** : `vercel --prod` — SSG automatique, 90+ Lighthouse. Ajoutez `nokhba.net.ly` dans Settings → Domains et configurez les DNS chez votre registrar.
 - **VPS** : `npm run build` + `npm start` derrière Nginx + PM2. Ajoutez `DATABASE_URL` si vous activez formulaire DB.
 
+## Mise en service — sortir du mode « dégradé »
+
+Sans base de données ni clé NOWPayments, le site reste **consultable** mais
+l'administration affiche « Base de données inaccessible » et la réservation à
+1 $ répond `gateway_not_configured`. C'est le comportement attendu : rien
+n'est cassé, les fonctionnalités attendent simplement leur configuration.
+
+Un diagnostic automatique vérifie les quatre briques ci-dessous :
+
+```bash
+npm run doctor
+```
+
+Il lit `.env.local` puis `.env` (les variables déjà exportées dans le shell
+restent prioritaires), ne révèle jamais un secret et se termine par un code
+de sortie non nul s'il reste un point bloquant.
+
+### Étape 1 — Base PostgreSQL (obligatoire)
+
+1. Créez une base : **Neon** (offre gratuite), **Supabase**, **Vercel Postgres**
+   ou un PostgreSQL auto-hébergé.
+2. Copiez la chaîne de connexion (`postgresql://user:pass@host/db?sslmode=require`).
+3. Renseignez-la :
+   - en local : `cp .env.example .env.local` puis `DATABASE_URL=…` ;
+   - sur Vercel : **Settings → Environment Variables → Production**.
+4. C'est tout : les tables `leads`, `settings` et `orders` (avec `kind` et
+   `demo_slug`) sont créées **automatiquement** au premier chargement —
+   aucun `drizzle-kit push` nécessaire.
+
+Une fois connectée, l'édition admin (catégories, prix, réservation) est
+persistée et `/admin/orders` affiche les commandes et réservations.
+
+### Étape 2 — Accès admin
+
+```bash
+ADMIN_PASSWORD=votre-mot-de-passe-long   # obligatoire, /admin/login reste fermé sans lui
+SESSION_SECRET=$(openssl rand -hex 32)   # recommandé (sinon signé avec ADMIN_PASSWORD)
+```
+
+### Étape 3 — Acompte de 1 $ via NOWPayments
+
+1. Créez un compte sur **nowpayments.io**, confirmez l'e-mail.
+2. **Settings → API keys** : générez une clé → `NOWPAYMENTS_API_KEY`.
+3. **Settings → Crypto accounts** : ajoutez au moins une adresse de réception
+   (BTC, USDT-TRC20…), sinon aucun paiement ne peut être crédité.
+4. **Settings → IPN** : ajoutez
+   `https://votre-domaine/api/payments/ipn` et copiez le secret →
+   `NOWPAYMENTS_IPN_SECRET`.
+5. `SITE_URL=https://votre-domaine` — sert aux retours succès/annulation et à
+   l'IPN.
+6. Pour tester sans argent réel : compte **sandbox** (`account-sandbox.nowpayments.io`)
+   + `NOWPAYMENTS_SANDBOX=true`. Les deux environnements sont séparés : une
+   clé sandbox avec `NOWPAYMENTS_SANDBOX` vide donne `403 · INVALID_API_KEY`.
+
+### Étape 4 — Vérifier, puis déployer
+
+```bash
+npm run doctor                 # tout doit être ✓ (les ! sont facultatifs)
+curl -s localhost:3000/api/health   # ok:true, database.connected:true, nowpayments.apiKeyValid:true
+```
+
+Sur Vercel, **après avoir ajouté ou modifié une variable, redéployez** :
+les fonctions déjà déployées ne lisent pas les nouvelles valeurs.
+
+Test de bout en bout de la réservation : ouvrez une fiche de démo →
+« Réservez votre place — 1 $ » → renseignez un e-mail → la facture NOWPayments
+doit s'ouvrir → après paiement, l'IPN passe la commande `RSV-…` en
+`confirmed` et elle apparaît dans **Admin → Paiements & réservations**
+(filtre « Réservations prioritaires »).
+
+### Étape 5 — E-mails (facultatif)
+
+Sans `RESEND_API_KEY` ni `SMTP_HOST`, les demandes et réservations restent
+enregistrées en base mais aucune confirmation n'est envoyée. Voir la section
+« Variables d'environnement (e-mails) ».
+
 ## Formulaire
 La demande est enregistrée en base (table `leads`, visible dans `/admin`), transmise au webhook optionnel, et déclenche **deux e-mails** :
 
@@ -145,8 +221,47 @@ Le dialogue de paiement propose trois modes, reflétés dans le prix affiché :
   la redirection `success_url` n'est qu'une indication visuelle.
 - La clé API ne quitte jamais le serveur : création du paiement, IPN et
   consultation du statut sont tous des appels serveur-à-serveur.
-- Commandes visibles dans `/admin/orders` (nav « Paiements crypto ») avec
-  filtres par statut et détails (adresse, montant crypto, IPN brut).
+- Commandes visibles dans `/admin/orders` (nav « Paiements & réservations »)
+  avec filtres par statut/type et détails (adresse, montant crypto, IPN brut).
+
+## Classification des sites & réservation prioritaire (1 $)
+
+Chaque site du portfolio est rattaché à une **catégorie** issue des formules
+tarifaires (`vitrine` = catégorie 1, `vitrine-plus` = 2, `boutique` = 3…) et
+affiche son **prix** sur les cartes de la galerie, la fiche du site et la
+visionneuse plein écran.
+
+- **Ordre des formules = numéro de catégorie** : réorganisez les formules dans
+  Admin → Configuration → Tarifs pour changer la numérotation. Les noms et les
+  prix USD/LYD de chaque catégorie s'y modifient aussi.
+- **Par site** : Admin → Contenu → onglet « Démos » → bloc
+  « Classification & prix du site ». On y choisit la formule, le numéro de
+  catégorie et, si besoin, un **prix USD propre au projet** (vide = prix de la
+  catégorie). Le récapitulatif (ex. `Catégorie 3 · Boutique · $880`) est
+  affiché en direct.
+- Les champs sont stockés avec la démo (`planId`, `categoryTier`, `priceUsd`)
+  et restent compatibles avec les anciennes sauvegardes : la classification
+  par défaut du code est reprise si elle manque.
+
+### Réservation à 1 $ (acompte prioritaire)
+
+Une offre « Réservez votre place » apparaît sur chaque site (galerie, fiche,
+visionneuse plein écran) et permet de payer un **acompte de 1 $** via
+NOWPayments pour prendre une place en avance dans le planning.
+
+- Montant, équivalent LYD et activation : Admin → Configuration →
+  **Réservation prioritaire** (1 $ / 6 د.ل par défaut).
+- Le dialogue affiche la catégorie, le prix du projet et l'acompte, puis crée
+  une commande `kind = reservation` (référence `RSV-…`) et une facture
+  NOWPayments de 1 $.
+- Confirmation par le même webhook IPN ; l'e-mail envoyé à l'agence précise
+  qu'il s'agit d'une réservation et indique le site concerné (`demo_slug`).
+- Admin → **Paiements crypto** : badge « Réservation », filtre
+  « Réservations prioritaires », référence du site dans le détail.
+- Si la passerelle n'est pas configurée, le dialogue propose un repli
+  WhatsApp pré-rempli pour ne pas perdre la demande.
+- Colonnes ajoutées automatiquement à la table `orders` : `kind`
+  (`plan` | `reservation`) et `demo_slug`.
 
 ## SEO
 - sitemap.ts, robots.ts, metadata, hreflang, Open Graph, LocalBusiness JSON-LD déjà inclus
@@ -178,8 +293,8 @@ Le dialogue de paiement propose trois modes, reflétés dans le prix affiché :
 - **Modules** :
   - **Tableau de bord** — statistiques (total, nouveaux, en cours, traités), activité 14 jours, dernières demandes
   - **Demandes** — les formulaires du site sont enregistrés en base (table `leads`, créée automatiquement) : filtres, recherche, statuts, notes internes, contact WhatsApp/email, export CSV
-  - **Configuration** — coordonnées, réseaux sociaux, chiffres et tarifs éditables, visibles immédiatement sur le site
-  - **Contenu** — démos, témoignages et FAQ éditables (réordonner, ajouter, supprimer) avec bouton « Réinitialiser »
+  - **Configuration** — coordonnées, réseaux sociaux, chiffres, tarifs/catégories et réservation prioritaire éditables, visibles immédiatement sur le site
+  - **Contenu** — démos (classification + prix par site), témoignages et FAQ éditables (réordonner, ajouter, supprimer) avec bouton « Réinitialiser »
 - Les réglages sont stockés dans la table `settings` ; par défaut le site utilise les valeurs de `src/lib/config.ts` et `src/lib/content.ts`
 - Après chaque enregistrement, le site public est régénéré automatiquement (revalidation Next.js)
 - **Optionnel** : `WEBHOOK_URL` — si définie, chaque demande du formulaire est aussi envoyée vers ce webhook (Formspree, Make, Zapier…)

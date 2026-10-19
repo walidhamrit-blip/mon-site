@@ -15,6 +15,23 @@ export interface Demo {
   features: string[];
   featuresEn: string[];
   previewUrl: string;
+  /**
+   * Classification du projet : identifiant de la formule tarifaire
+   * (« vitrine », « vitrine-plus », « boutique »…) qui définit la
+   * catégorie et le prix affichés sur la fiche du site.
+   */
+  planId?: string;
+  /**
+   * Numéro de catégorie affiché (1, 2, 3…). Stocké séparément de la
+   * formule pour rester stable même si l'ordre des tarifs change.
+   */
+  categoryTier?: number;
+  /**
+   * Prix USD propre à ce projet. Absent / null = prix de la catégorie.
+   * Permet au propriétaire d'ajuster un prix au cas par cas depuis
+   * le panneau d'administration.
+   */
+  priceUsd?: number | null;
 }
 
 export interface Faq {
@@ -96,6 +113,14 @@ export interface SiteConfigData {
     satisfaction: string;
     support: string;
   };
+  /** Réservation prioritaire : petit acompte pour prendre une place. */
+  reservation: {
+    enabled: boolean;
+    /** Montant de l'acompte facturé en USD (1 $ par défaut). */
+    depositUsd: number;
+    /** Équivalent affiché en Livre libyenne. */
+    depositLyd: number;
+  };
 }
 
 export interface SiteContent {
@@ -139,6 +164,15 @@ export interface LeadRow {
 
 /* ---------- Commandes (paiements crypto) ---------- */
 
+/** Nature de la commande : formule complète ou réservation prioritaire. */
+export const ORDER_KINDS = ["plan", "reservation"] as const;
+export type OrderKind = (typeof ORDER_KINDS)[number];
+
+export const ORDER_KIND_LABELS: Record<OrderKind, string> = {
+  plan: "Formule",
+  reservation: "Réservation",
+};
+
 export const ORDER_STATUSES = ["pending", "paid", "failed", "expired"] as const;
 export type OrderStatus = (typeof ORDER_STATUSES)[number];
 
@@ -154,6 +188,10 @@ export interface OrderRow {
   createdAt: string;
   dateFr: string;
   ref: string;
+  /** « plan » (formule complète) ou « reservation » (acompte prioritaire). */
+  kind: OrderKind;
+  /** Slug du site consulté pour une réservation. */
+  demoSlug: string | null;
   planId: string;
   planName: string;
   amountLyd: string;

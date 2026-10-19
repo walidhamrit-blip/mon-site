@@ -150,6 +150,14 @@ export const siteConfig = {
     satisfaction: "98%",
     support: "24/7",
   },
+
+  // Réservation prioritaire — petit acompte pour prendre une place
+  // dans le planning. Le montant est déduit du prix final du projet.
+  reservation: {
+    enabled: true,
+    depositUsd: 1,
+    depositLyd: 6,
+  },
 } as const;
 
 export type PricingPlan = (typeof siteConfig.pricing.plans)[number];
