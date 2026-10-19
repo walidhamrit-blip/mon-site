@@ -13,6 +13,36 @@ export interface SeoCopy {
   imageAltAr: string; imageAltEn: string;
 }
 
+/**
+ * Moteur réellement utilisé pour produire les champs SEO :
+ * - `llm`      : la clé OpenAI est configurée et l'appel a réussi ;
+ * - `template` : aucune clé n'est configurée (comportement normal, silencieux) ;
+ * - `error`    : une clé est configurée mais l'appel a échoué (401/403/429,
+ *                timeout, réponse illisible…). Le gabarit local est renvoyé et
+ *                `warning` explique la cause à l'admin.
+ */
+export type SeoEngine = "llm" | "template" | "error";
+
+/**
+ * Code court et stable remonté à l'admin et écrit dans les logs.
+ * Aucun secret ni corps de réponse du LLM n'est exposé.
+ */
+export type SeoWarningCode =
+  | "missing_key"
+  | "timeout"
+  | "invalid_json"
+  | "empty_response"
+  | "network_error"
+  | "unexpected_error"
+  | `http_${number}`;
+
+export interface SeoGenerationResult {
+  copy: SeoCopy;
+  engine: SeoEngine;
+  /** Renseigné pour `template` (missing_key) et `error` (cause). */
+  warning?: SeoWarningCode;
+}
+
 function clamp(text: string, max: number): string {
   return metaDescription(text, max);
 }
@@ -42,13 +72,46 @@ function buildPrompt(demo: SeoDemoInput): string {
   ].join("\n");
 }
 
-async function llmSeoCopy(demo: SeoDemoInput): Promise<Partial<SeoCopy>> {
+const KEYS: (keyof SeoCopy)[] = ["metaTitle","metaDescription","metaDescriptionEn","metaTitleEn","imageAltAr","imageAltEn"];
+const MAX_BY_KEY: Record<keyof SeoCopy, number> = {
+  metaTitle: LIMITS.title, metaTitleEn: LIMITS.title,
+  metaDescription: LIMITS.description, metaDescriptionEn: LIMITS.description,
+  imageAltAr: LIMITS.alt, imageAltEn: LIMITS.alt,
+};
+
+type LlmOutcome =
+  | { ok: true; raw: Partial<SeoCopy> }
+  | { ok: false; code: SeoWarningCode };
+
+function isAbortError(error: unknown): boolean {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    "name" in error &&
+    (error as { name?: unknown }).name === "AbortError"
+  );
+}
+
+function isPlainObject(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+/**
+ * Appelle le LLM et renvoie soit les champs bruts, soit un code d'échec.
+ * Ne lève jamais : `generateSeoCopy` décide du repli et de l'état exposé.
+ * Ne journalise ni la clé ni le corps de la réponse.
+ */
+async function llmSeoCopy(demo: SeoDemoInput): Promise<LlmOutcome> {
   const apiKey = process.env.OPENAI_API_KEY?.trim();
-  if (!apiKey) throw new Error("OPENAI_API_KEY absente");
+  if (!apiKey) return { ok: false, code: "missing_key" };
   const baseUrl = (process.env.OPENAI_BASE_URL?.trim() || "https://api.openai.com/v1").replace(/\/+$/, "");
   const model = process.env.OPENAI_MODEL?.trim() || "gpt-4o-mini";
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 20_000);
+  let timedOut = false;
+  const timeout = setTimeout(() => {
+    timedOut = true;
+    controller.abort();
+  }, 20_000);
   try {
     const res = await fetch(`${baseUrl}/chat/completions`, {
       method: "POST",
@@ -62,33 +125,60 @@ async function llmSeoCopy(demo: SeoDemoInput): Promise<Partial<SeoCopy>> {
       }),
       signal: controller.signal,
     });
-    if (!res.ok) throw new Error(`LLM HTTP ${res.status}`);
-    const data = (await res.json()) as { choices?: { message?: { content?: string } }[] };
+    if (!res.ok) return { ok: false, code: `http_${res.status}` };
+    let data: { choices?: { message?: { content?: string } }[] };
+    try {
+      data = (await res.json()) as { choices?: { message?: { content?: string } }[] };
+    } catch {
+      return { ok: false, code: "invalid_json" };
+    }
     const content = data.choices?.[0]?.message?.content;
-    if (!content) throw new Error("Réponse LLM vide");
-    return JSON.parse(content) as Partial<SeoCopy>;
-  } finally { clearTimeout(timeout); }
+    if (typeof content !== "string" || content.trim().length === 0) {
+      return { ok: false, code: "empty_response" };
+    }
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(content);
+    } catch {
+      return { ok: false, code: "invalid_json" };
+    }
+    if (!isPlainObject(parsed)) return { ok: false, code: "invalid_json" };
+    const raw = parsed as Partial<SeoCopy>;
+    const hasValue = KEYS.some(
+      (key) => typeof raw[key] === "string" && (raw[key] as string).trim().length > 0,
+    );
+    if (!hasValue) return { ok: false, code: "empty_response" };
+    return { ok: true, raw };
+  } catch (error) {
+    if (timedOut || isAbortError(error)) return { ok: false, code: "timeout" };
+    if (error instanceof TypeError) return { ok: false, code: "network_error" };
+    return { ok: false, code: "unexpected_error" };
+  } finally {
+    clearTimeout(timeout);
+  }
 }
 
-const KEYS: (keyof SeoCopy)[] = ["metaTitle","metaDescription","metaDescriptionEn","metaTitleEn","imageAltAr","imageAltEn"];
-const MAX_BY_KEY: Record<keyof SeoCopy, number> = {
-  metaTitle: LIMITS.title, metaTitleEn: LIMITS.title,
-  metaDescription: LIMITS.description, metaDescriptionEn: LIMITS.description,
-  imageAltAr: LIMITS.alt, imageAltEn: LIMITS.alt,
-};
-
-export async function generateSeoCopy(demo: SeoDemoInput): Promise<{ copy: SeoCopy; engine: "llm" | "template" }> {
+/**
+ * Génère les six champs SEO bilingues d'une réalisation.
+ *
+ * `copy` est toujours renvoyé (repli gabarit local si besoin). L'état
+ * `engine` + `warning` permet à l'admin de distinguer une absence de clé
+ * (normal) d'une clé refusée ou d'un service indisponible (à corriger).
+ */
+export async function generateSeoCopy(demo: SeoDemoInput): Promise<SeoGenerationResult> {
   const fallback = templateSeoCopy(demo);
-  let raw: Partial<SeoCopy> = {};
-  let engine: "llm" | "template" = "template";
-  if (process.env.OPENAI_API_KEY?.trim()) {
-    try { raw = await llmSeoCopy(demo); engine = "llm"; }
-    catch (error) { console.warn("[ai-seo] repli gabarit :", error instanceof Error ? error.message : error); }
+  if (!process.env.OPENAI_API_KEY?.trim()) {
+    return { copy: fallback, engine: "template", warning: "missing_key" };
+  }
+  const outcome = await llmSeoCopy(demo);
+  if (!outcome.ok) {
+    console.warn(`[ai-seo] appel LLM échoué (${outcome.code}) — repli sur le gabarit local.`);
+    return { copy: fallback, engine: "error", warning: outcome.code };
   }
   const copy = { ...fallback };
   for (const key of KEYS) {
-    const value = raw[key];
+    const value = outcome.raw[key];
     if (typeof value === "string" && value.trim().length > 0) copy[key] = clamp(value.trim(), MAX_BY_KEY[key]);
   }
-  return { copy, engine };
+  return { copy, engine: "llm" };
 }

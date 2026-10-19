@@ -250,13 +250,44 @@ avec `aria-expanded`, `aria-controls` et `role="region"`.
 Générateur de métadonnées bilingues (AR/EN) pour les réalisations du portfolio,
 directement dans `/admin` → **Contenus** → **Démos**.
 
+### Trois états explicites (`engine` + `warning`)
+
+`generateSeoCopy()` renvoie toujours `copy` (les champs SEO restent
+exploitables), mais distingue désormais trois situations :
+
+| `engine` | Situation | `warning` | Message admin |
+| --- | --- | --- | --- |
+| `llm` | Clé configurée, appel réussi | absent | « Champs SEO générés par l'IA — relisez puis enregistrez. » |
+| `template` | **Aucune** clé configurée (cas normal, aucun appel réseau) | `missing_key` | « Aucune clé OpenAI configurée : gabarit optimisé appliqué. » |
+| `error` | Clé présente mais appel en échec (clé refusée, quota, timeout…) | code court (voir ci-dessous) | « Clé OpenAI refusée ou service indisponible (code …) : gabarit appliqué, vérifiez les variables Vercel. » (avertissement ambre, non bloquant) |
+
+Codes `warning` possibles (jamais de secret ni de corps brut de réponse) :
+
+- `missing_key` — aucune `OPENAI_API_KEY` (ou vide) ;
+- `http_401`, `http_403`, `http_429`, `http_5xx`… — statut HTTP du fournisseur
+  (`http_<statut>`) : clé invalide/expirée, droits insuffisants, quota dépassé ;
+- `timeout` — pas de réponse en 20 s (requête annulée) ;
+- `invalid_json` — réponse du fournisseur ou contenu du message illisible ;
+- `empty_response` — aucun champ exploitable renvoyé par le modèle ;
+- `network_error` — endpoint injoignable (DNS, TLS, connexion refusée) ;
+- `unexpected_error` — autre exception, loguée côté serveur.
+
+La route conserve un **statut HTTP 200** (car `copy` est toujours renvoyé) et
+propage `{ copy, engine, warning }`. Le journal serveur ne contient que le code
+(`[ai-seo] appel LLM échoué (http_401) — repli sur le gabarit local.`).
+
+### Fichiers
+
 - `src/lib/ai/seo-generator.ts` — prompt + appel LLM (`response_format:
-  json_object`, timeout 20 s) et **repli gabarit local** : sans clé ou en cas
-  d'erreur, des champs optimisés sont toujours renvoyés (`engine: "template"`).
+  json_object`, timeout 20 s), repli gabarit local et états `engine`/`warning`.
   Chaque valeur est tronquée aux limites Google : titre 60, description 160,
   texte alternatif 125 caractères.
 - `src/app/api/admin/ai/seo/route.ts` — `POST` protégé par `requireAdmin`,
-  payload validé par Zod (422 sinon), réponse `{ copy, engine }`.
+  payload validé par Zod (422 sinon), réponse `{ copy, engine, warning }`.
+- `src/app/admin/(panel)/content/content-editor.tsx` — bouton **« Générer avec
+  l'IA »** sur chaque démo : remplit les six champs dans le brouillon (relecture
+  et enregistrement manuels), avec trois retours distincts (succès,
+  information, avertissement).
 - Variables d'environnement (toutes optionnelles) : `OPENAI_API_KEY`,
   `OPENAI_BASE_URL` (compatible OpenAI), `OPENAI_MODEL` (`gpt-4o-mini` par
   défaut).
@@ -266,11 +297,34 @@ directement dans `/admin` → **Contenus** → **Démos**.
 - Helpers : `demoSeoMeta()` (`src/lib/seo.ts`) et `demoImageAlt()`
   (`src/lib/classification.ts`), utilisés par `/demos/[slug]` et toutes les
   images de réalisations (galerie d'accueil, `/demos`, studio d'identité).
-- Bouton **« Générer avec l'IA »** sur chaque démo : remplit les six champs
-  dans le brouillon, l'enregistrement reste manuel (relecture humaine).
 
-**Tests manuels effectués** : route sans session → 307 vers `/admin/login` ;
-payload incomplet → 422 ; corps non JSON → 400 ; LLM simulé → `engine: "llm"`
-avec troncature (60/160/125) ; LLM injoignable → `engine: "template"` ;
-`npm run typecheck` et `npm run build` OK ; `npm run seo:check` → 20
-pages/ressources, 0 erreur.
+### `OPENAI_API_KEY` est strictement optionnelle
+
+Sans clé, l'assistant fonctionne en mode gabarit : aucun appel réseau, aucune
+erreur, champs SEO toujours générés. Pour désactiver l'assistant sur Vercel,
+**supprimez la variable** (Settings → Environment Variables → Delete) : Vercel
+refuse une variable d'environnement à valeur vide, et un champ vidé peut faire
+échouer le déploiement ou conserver l'ancienne valeur. En local, inutile de
+créer la ligne dans `.env.local`.
+
+Une clé présente mais invalide n'est plus confondue avec une absence de clé :
+l'admin voit un avertissement explicite avec le code (`http_401`, `http_429`,
+`timeout`…) et sait qu'il doit corriger la variable sur Vercel puis redéployer.
+
+### Tests
+
+- Automatiques (aucune dépendance de test, `node:test` + esbuild déjà présent) :
+
+  ```bash
+  npm run test:seo
+  ```
+
+  Couvre : clé absente → `template` + `missing_key` ; clé présente + endpoint
+  en 401/429 → `error` + `http_401`/`http_429` et gabarit renvoyé ; endpoint OK
+  → `llm` ; valeurs trop longues → troncature 60/160/125 ; timeout simulé,
+  JSON invalide et réponse vide → codes correspondants ; vérification qu'aucune
+  clé ni corps brut ne fuit dans le résultat. Le test compile le module
+  TypeScript à la volée (alias `@/` résolu comme dans `tsconfig.json`).
+- Manuels : route sans session → 307 vers `/admin/login` ; payload incomplet →
+  422 ; corps non JSON → 400 ; `npm run typecheck`, `npm run build` et
+  `npm run seo:check` OK.

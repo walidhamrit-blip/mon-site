@@ -25,8 +25,11 @@ export async function POST(request: Request) {
   }
   try {
     const demo: SeoDemoInput = parsed.data;
-    const { copy, engine } = await generateSeoCopy(demo);
-    return NextResponse.json({ copy, engine });
+    // Statut 200 conservé : `copy` est toujours exploitable (repli gabarit).
+    // `engine: "error"` + `warning` indiquent à l'admin qu'une clé existe mais
+    // que l'appel a échoué (clé refusée, quota, timeout…).
+    const { copy, engine, warning } = await generateSeoCopy(demo);
+    return NextResponse.json({ copy, engine, warning });
   } catch (error) {
     console.error("[ai-seo]", error);
     return NextResponse.json({ error: "Génération impossible pour le moment." }, { status: 502 });
