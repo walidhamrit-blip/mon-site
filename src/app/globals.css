@@ -136,12 +136,25 @@ body {
               radial-gradient(at 0% 50%, #121214 0px, transparent 50%);
 }
 
-/* Recover half of the space outside the former 1280px shell on each side.
-   1920px viewport => 1600px shell; below 1280px it remains full width. */
+/* The shell keeps growing past 1280px and now also takes back HALF of the
+   space that was still empty on each side:
+     old = 50% + 640px  ->  new = old + (100% - old) / 2 = 75% + 320px
+   1920px viewport => 1760px shell (was 1600px); below 1280px it stays full width. */
 .site-container {
   width: 100%;
-  max-width: calc(50% + 640px);
+  max-width: calc(75% + 320px);
   margin-inline: auto;
+}
+
+/* Progress bar of the home-page banner (identity studio section). */
+@keyframes banner-progress {
+  from { width: 0%; }
+  to { width: 100%; }
+}
+.banner-progress {
+  animation-name: banner-progress;
+  animation-timing-function: linear;
+  animation-fill-mode: forwards;
 }
 
 /* A narrow highlight passes over the actual lettering, not a rectangle.
