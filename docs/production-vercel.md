@@ -28,6 +28,12 @@ Vercel Production — nokhba.net.ly mis à jour automatiquement
 - 🔒 Ne jamais coller un secret (mot de passe, clé API, token Vercel) dans
   une conversation, un commit ou une issue. `.gitignore` bloque déjà
   `.env` / `.env.*` (sauf `.env.example`, sans valeur réelle).
+- 🔐 **Les Preview sont protégées** (Vercel Authentication, constaté le
+  19/10/2026) : l'URL `*.vercel.app` demande une connexion Vercel. Connecté
+  à votre compte, vous y accédez normalement. Pour montrer un aperçu à un
+  client : tableau de bord Vercel → le déploiement → **Share** (lien de
+  partage temporaire), ou régler Settings → Deployment Protection.
+  La production `nokhba.net.ly` n'est pas concernée : elle est publique.
 
 ## 2. Variables d'environnement — une par une
 
