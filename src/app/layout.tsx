@@ -1,42 +1,111 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";
 import "./globals.css";
 import { I18nProvider, type Locale } from "@/lib/i18n";
 import { ThemeProvider, type ThemeMode } from "@/components/theme-provider";
 import { SiteProvider } from "@/components/site-provider";
-import { getSiteData } from "@/lib/store";
+import { getSiteDataCached } from "@/lib/store";
 import { siteConfig } from "@/lib/config";
 import { isThemeId, themeBootScript, themeCss } from "@/lib/themes";
+import { JsonLd } from "@/components/json-ld";
+import {
+  DEFAULT_META_DESCRIPTION,
+  faqJsonLd,
+  localBusinessJsonLd,
+  offerCatalogJsonLd,
+  organizationJsonLd,
+  websiteJsonLd,
+} from "@/lib/seo";
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteConfig.url),
   title: {
-    default: "نخبة — مواقع فاخرة لشركات طرابلس | Nukhba — Premium Sites Tripoli",
+    default:
+      "تصميم مواقع في طرابلس — نخبة Nukhba | وكالة ويب بريميوم، متاجر وحجز",
     template: "%s | نخبة Nukhba",
   },
-  description:
-    "نصمم مواقع فاخرة وسريعة لشركات طرابلس — تسليم في 7 أيام، Next.js 90+ Lighthouse، تخصيص كامل، ودعم واتساب. اطلب عرضك المجاني.",
+  description: DEFAULT_META_DESCRIPTION,
+  keywords: [
+    "تصميم مواقع طرابلس",
+    "شركة تصميم مواقع ليبيا",
+    "متجر إلكتروني ليبيا",
+    "تصميم متجر إلكتروني طرابلس",
+    "حجز مواعيد أونلاين",
+    "تحسين SEO ليبيا",
+    "وكالة ويب طرابلس",
+    "web design Tripoli",
+    "web design Libya",
+    "e-commerce Libya",
+    "Nukhba web agency",
+    "création site web Tripoli",
+  ],
+  authors: [{ name: "نخبة Nukhba", url: siteConfig.url }],
+  creator: "نخبة Nukhba",
+  publisher: "نخبة Nukhba",
+  category: "technology",
+  applicationName: "نخبة Nukhba",
   alternates: {
-    languages: {
-      ar: `${siteConfig.url}/ar`,
-      en: `${siteConfig.url}/en`,
-    },
+    // Canonique racine : les pages internes surchargent avec leur propre URL.
+    // Les langues sont gérées côté client (pas d'URL /ar /en réelles) : on ne
+    // déclare donc pas de hreflang pointant vers des redirections — Google
+    // pénaliserait des alternates sans page canonique distincte.
+    canonical: "/",
   },
+  manifest: "/manifest.webmanifest",
   openGraph: {
     title: "نخبة — مواقع فاخرة لشركات طرابلس",
-    description: "موقعك الاحترافي جاهز في أيام — تصميم نخبوي، سرعة تذهل، وتخصيص بلا حدود.",
+    description:
+      "موقعك الاحترافي جاهز في أيام — تصميم نخبوي، سرعة تذهل، وتخصيص بلا حدود.",
     url: siteConfig.url,
     siteName: "نخبة Nukhba",
     locale: "ar_LY",
+    alternateLocale: ["en_US"],
     type: "website",
-    images: [{ url: "/og.jpg", width: 1200, height: 630 }],
+    images: [
+      {
+        url: "/og.jpg",
+        width: 1376,
+        height: 768,
+        alt: "نخبة — وكالة تصميم مواقع فاخرة في طرابلس",
+      },
+    ],
   },
-  robots: { index: true, follow: true },
-  verification: { google: "placeholder" },
+  twitter: {
+    card: "summary_large_image",
+    title: "نخبة — مواقع فاخرة لشركات طرابلس",
+    description:
+      "موقعك الاحترافي جاهز في أيام — تصميم نخبوي، سرعة تذهل، وتخصيص بلا حدود.",
+    images: ["/og.jpg"],
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+      "max-video-preview": -1,
+    },
+  },
+  // La vérification fichier (public/googleaf….html) reste active ; ce meta
+  // n'est émis que si un code est fourni via variable d'environnement.
+  verification: process.env.GOOGLE_SITE_VERIFICATION
+    ? { google: process.env.GOOGLE_SITE_VERIFICATION }
+    : undefined,
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#FCFCF9" },
+    { media: "(prefers-color-scheme: dark)", color: "#08080A" },
+  ],
 };
 
 export default async function RootLayout({ children }: { children: ReactNode }) {
-  const { config, content } = await getSiteData();
+  const { config, content } = await getSiteDataCached();
 
   // Apparence principale du site (choisie dans /admin → Réglages) :
   // langue principale, thème principal et mode clair/sombre servent de
@@ -54,22 +123,16 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
     ? appearance.themeId
     : siteConfig.appearance.themeId;
 
-  const localBusiness = {
-    "@context": "https://schema.org",
-    "@type": "LocalBusiness",
-    name: "نخبة - Nukhba Premium Web Agency",
-    url: config.url,
-    telephone: config.phone,
-    address: {
-      "@type": "PostalAddress",
-      streetAddress: config.address,
-      addressLocality: "Tripoli",
-      addressCountry: "LY",
-    },
-    description: "وكالة تصميم مواقع فاخرة في طرابلس - تسليم 7 أيام",
-    priceRange: "$$",
-    areaServed: "Tripoli",
-  };
+  // Données structurées servies dans le HTML initial (sans JS requis) :
+  // Organization + WebSite + ProfessionalService (SEO local) + FAQ (rich
+  // results et réponses IA) + catalogue d'offres tarifaires.
+  const structuredData = [
+    organizationJsonLd(config),
+    websiteJsonLd(config),
+    localBusinessJsonLd(config),
+    faqJsonLd(content.faqs),
+    offerCatalogJsonLd(config),
+  ];
 
   return (
     <html
@@ -79,10 +142,17 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
     >
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link
+          rel="preconnect"
+          href="https://fonts.gstatic.com"
+          crossOrigin="anonymous"
+        />
+        {/* Polices : uniquement les graisses réellement utilisées.
+            Playfair Display (jamais utilisé) a été retiré ; Tajawal ajouté
+            car référencé par le sélecteur de polices du customisateur. */}
         <link
           rel="stylesheet"
-          href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800;900&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@400;600;700&display=swap"
+          href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700;900&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=Tajawal:wght@400;500;700&display=swap"
         />
         {/* Palettes des 8 thèmes (clair + sombre) — générées depuis src/lib/themes.ts */}
         <style dangerouslySetInnerHTML={{ __html: themeCss() }} />
@@ -107,10 +177,7 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
           </I18nProvider>
         </ThemeProvider>
 
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(localBusiness) }}
-        />
+        <JsonLd data={structuredData} />
       </body>
     </html>
   );

@@ -67,7 +67,7 @@ export function Navbar() {
               </div>
             </Link>
 
-            <nav className="hidden lg:flex items-center gap-1 bg-[var(--secondary)] rounded-full p-1">
+            <nav aria-label={locale === "ar" ? "التنقل الرئيسي" : "Main navigation"} className="hidden lg:flex items-center gap-1 bg-[var(--secondary)] rounded-full p-1">
               {links.map((l) => (
                 <Link
                   key={l.href}
@@ -138,7 +138,7 @@ export function Navbar() {
             className="fixed inset-0 z-40 lg:hidden pt-[92px] px-4"
           >
             <div className="bg-[var(--card)] rounded-[24px] border border-[var(--border)] p-6 shadow-2xl">
-              <nav className="flex flex-col gap-2">
+              <nav aria-label={locale === "ar" ? "قائمة الجوال" : "Mobile menu"} className="flex flex-col gap-2">
                 {links.map((l) => (
                   <Link
                     key={l.href}

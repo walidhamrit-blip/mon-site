@@ -21,13 +21,14 @@ export function Footer() {
             </div>
             <p className="mt-4 text-sm leading-6 opacity-70 max-w-[36ch]">{t.footer.desc}</p>
             <div className="mt-4 flex gap-2">
-              <a href={siteConfig.social.instagram} target="_blank" className="h-9 w-9 rounded-full bg-white/10 grid place-items-center hover:bg-white/15 text-xs font-bold">IG</a>
-              <a href={siteConfig.social.facebook} target="_blank" className="h-9 w-9 rounded-full bg-white/10 grid place-items-center hover:bg-white/15 text-xs font-bold">Fb</a>
-              <a href={siteConfig.social.whatsapp} target="_blank" className="h-9 w-9 rounded-full bg-[#25D366] grid place-items-center text-white"><MessageCircle className="h-4 w-4" /></a>
+              <a href={siteConfig.social.instagram} target="_blank" rel="noopener noreferrer" aria-label={locale === "ar" ? "إنستغرام نخبة" : "Nukhba on Instagram"} className="h-9 w-9 rounded-full bg-white/10 grid place-items-center hover:bg-white/15 text-xs font-bold">IG</a>
+              <a href={siteConfig.social.facebook} target="_blank" rel="noopener noreferrer" aria-label={locale === "ar" ? "فيسبوك نخبة" : "Nukhba on Facebook"} className="h-9 w-9 rounded-full bg-white/10 grid place-items-center hover:bg-white/15 text-xs font-bold">Fb</a>
+              <a href={siteConfig.social.tiktok} target="_blank" rel="noopener noreferrer" aria-label={locale === "ar" ? "تيك توك نخبة" : "Nukhba on TikTok"} className="h-9 w-9 rounded-full bg-white/10 grid place-items-center hover:bg-white/15 text-xs font-bold">TT</a>
+              <a href={siteConfig.social.whatsapp} target="_blank" rel="noopener noreferrer" aria-label="WhatsApp" className="h-9 w-9 rounded-full bg-[#25D366] grid place-items-center text-white"><MessageCircle className="h-4 w-4" /></a>
             </div>
           </div>
 
-          <div>
+          <nav aria-label={locale === "ar" ? "روابط الموقع" : "Site links"}>
             <div className="font-bold text-sm tracking-wide opacity-90">{t.footer.links}</div>
             <ul className="mt-4 space-y-2 text-sm opacity-70">
               <li><Link href="/" className="hover:opacity-100 hover:underline">{t.nav.home}</Link></li>
@@ -35,17 +36,17 @@ export function Footer() {
               <li><Link href="/pricing" className="hover:opacity-100 hover:underline">{t.nav.pricing}</Link></li>
               <li><Link href="/contact" className="hover:opacity-100 hover:underline">{t.nav.contact}</Link></li>
             </ul>
-          </div>
+          </nav>
 
-          <div>
+          <nav aria-label={locale === "ar" ? "خدماتنا" : "Our services"}>
             <div className="font-bold text-sm tracking-wide opacity-90">{t.footer.services}</div>
             <ul className="mt-4 space-y-2 text-sm opacity-70">
-              <li>{locale === "ar" ? "موقع واجهة" : "Vitrine site"}</li>
-              <li>{locale === "ar" ? "متجر إلكتروني" : "E-commerce"}</li>
-              <li>{locale === "ar" ? "حجز مواعيد" : "Booking"}</li>
-              <li>{locale === "ar" ? "تحسين SEO" : "SEO"}</li>
+              <li><Link href="/#services" className="hover:opacity-100 hover:underline">{locale === "ar" ? "موقع واجهة" : "Vitrine site"}</Link></li>
+              <li><Link href="/#services" className="hover:opacity-100 hover:underline">{locale === "ar" ? "متجر إلكتروني" : "E-commerce"}</Link></li>
+              <li><Link href="/#services" className="hover:opacity-100 hover:underline">{locale === "ar" ? "حجز مواعيد" : "Booking"}</Link></li>
+              <li><Link href="/#services" className="hover:opacity-100 hover:underline">{locale === "ar" ? "تحسين SEO" : "SEO"}</Link></li>
             </ul>
-          </div>
+          </nav>
 
           <div>
             <div className="font-bold text-sm tracking-wide opacity-90">{t.footer.contact}</div>

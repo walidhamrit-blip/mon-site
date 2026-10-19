@@ -1,4 +1,5 @@
 "use client";
+import Image from "next/image";
 import { motion, useScroll, useTransform, useReducedMotion } from "framer-motion";
 import { ArrowUpRight, Play, Star } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
@@ -113,10 +114,13 @@ export function Hero() {
             >
               <div className="flex -space-x-2 rtl:space-x-reverse">
                 {[1, 2, 3].map((i) => (
-                  <img
+                  <Image
                     key={i}
                     src={`https://i.pravatar.cc/100?img=${10 + i}`}
                     alt=""
+                    width={32}
+                    height={32}
+                    sizes="32px"
                     className="h-8 w-8 rounded-full border-2 border-[var(--card)] object-cover"
                   />
                 ))}

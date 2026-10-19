@@ -139,11 +139,20 @@ export function FullscreenLiveViewer({
   initialMode = "desktop",
   onClose,
   backHref,
+  standalone = false,
 }: {
   demo: Demo;
   initialMode?: "desktop" | "mobile";
   onClose?: () => void;
   backHref?: string;
+  /**
+   * Page dédiée (/demos/[slug]) : le viewer est alors le contenu principal.
+   * On émet un bloc sémantique (h1 + description) rendu côté serveur, donc
+   * présent dans le HTML initial — sinon la page serait vide pour les
+   * crawlers (le portail ne se monte qu'après hydratation). En usage modale
+   * (page d'accueil), on reste sans h1 pour ne pas doubler celui du hero.
+   */
+  standalone?: boolean;
 }) {
   const { locale } = useI18n();
   const config = useSiteConfig();
@@ -419,6 +428,15 @@ export function FullscreenLiveViewer({
     </div>
   );
 
-  if (!mounted) return null;
-  return createPortal(content, document.body);
+  return (
+    <>
+      {standalone && (
+        <section className="sr-only" aria-label={title}>
+          <h1>{title}</h1>
+          <p>{locale === "ar" ? demo.description : demo.descriptionEn}</p>
+        </section>
+      )}
+      {mounted && createPortal(content, document.body)}
+    </>
+  );
 }

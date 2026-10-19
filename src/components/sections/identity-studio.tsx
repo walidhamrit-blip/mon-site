@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useMemo, useRef, useState } from "react";
+import Image from "next/image";
 import { motion, useInView, useReducedMotion } from "framer-motion";
 import {
   Check,
@@ -268,13 +269,15 @@ export function IdentityStudio() {
                 <div key={demo.slug} className="w-full shrink-0" aria-hidden={i !== index % count}>
                   <div className="relative aspect-[4/3] sm:aspect-[16/9] lg:aspect-[16/8] bg-white overflow-hidden">
                     {/* Image du projet : fond immédiat pendant le chargement du site. */}
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
+                    <Image
                       src={demo.image}
                       alt={ar ? demo.title : demo.titleEn}
+                      fill
+                      sizes="(max-width: 1024px) 100vw, 80vw"
+                      priority={i === 0}
                       loading={i === 0 ? "eager" : "lazy"}
                       decoding="async"
-                      className="absolute inset-0 h-full w-full object-cover object-top"
+                      className="object-cover object-top"
                     />
                     {visited.includes(i) && (
                       <div

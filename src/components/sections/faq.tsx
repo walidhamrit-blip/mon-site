@@ -1,6 +1,5 @@
 "use client";
 import { useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
 import { Plus, Minus } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import { useSectionHeading, useSiteContent } from "@/components/site-provider";
@@ -35,27 +34,32 @@ export function FAQ() {
                   onClick={() => setOpen(isOpen ? null : idx)}
                   className="w-full flex items-center justify-between gap-4 px-6 py-5 text-start hover:bg-[var(--secondary)]/50 transition-colors cursor-pointer"
                   aria-expanded={isOpen}
+                  aria-controls={`faq-panel-${idx}`}
+                  id={`faq-trigger-${idx}`}
                 >
                   <span className="font-bold text-[15px] leading-6">{locale === "ar" ? item.qAr : item.qEn}</span>
                   <span className={`h-8 w-8 rounded-full grid place-items-center flex-shrink-0 border transition-colors ${isOpen ? "bg-[var(--primary)] text-[var(--primary-foreground)] border-[var(--primary)]" : "bg-[var(--secondary)] border-[var(--border)]"}`}>
                     {isOpen ? <Minus className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
                   </span>
                 </button>
-                <AnimatePresence initial={false}>
-                  {isOpen && (
-                    <motion.div
-                      initial={{ height: 0, opacity: 0 }}
-                      animate={{ height: "auto", opacity: 1 }}
-                      exit={{ height: 0, opacity: 0 }}
-                      transition={{ duration: 0.25 }}
-                      className="overflow-hidden"
-                    >
-                      <div className="px-6 pb-5 text-sm leading-7 opacity-70">
-                        {locale === "ar" ? item.aAr : item.aEn}
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
+                {/* Réponse TOUJOURS présente dans le DOM (important : le
+                    schéma FAQPage JSON-LD décrit les 7 Q/R — elles doivent
+                    donc exister dans le HTML initial pour Google et les
+                    crawlers IA). L'ouverture est animée en CSS pur. */}
+                <div
+                  id={`faq-panel-${idx}`}
+                  role="region"
+                  aria-labelledby={`faq-trigger-${idx}`}
+                  className={`grid transition-[grid-template-rows,opacity] duration-300 ease-out ${
+                    isOpen ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"
+                  }`}
+                >
+                  <div className="overflow-hidden">
+                    <div className="px-6 pb-5 text-sm leading-7 opacity-70">
+                      {locale === "ar" ? item.aAr : item.aEn}
+                    </div>
+                  </div>
+                </div>
               </div>
             );
           })}

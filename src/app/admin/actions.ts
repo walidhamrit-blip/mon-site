@@ -9,6 +9,7 @@ import { db, ensureSchema } from "@/db";
 import { leads } from "@/db/schema";
 import { ADMIN_COOKIE, checkPassword, createSessionToken, requireAdmin } from "@/lib/auth";
 import { deleteSetting, upsertSetting, SETTINGS_KEYS } from "@/lib/store";
+import { pingAllPublicPages } from "@/lib/indexnow";
 import {
   contentSchemas,
   leadStatusSchema,
@@ -160,6 +161,8 @@ export async function saveSiteConfig(input: unknown): Promise<ActionResult> {
   try {
     await upsertSetting(SETTINGS_KEYS.config, parsed.data);
     revalidatePath("/", "layout");
+    // Notification IndexNow en arrière-plan (ne bloque pas la réponse admin).
+    void pingAllPublicPages();
     return { ok: true, message: "Configuration enregistrée — le site public est à jour." };
   } catch (error) {
     return { ok: false, error: dbIssue(error) };
@@ -171,6 +174,7 @@ export async function resetSiteConfig(): Promise<ActionResult> {
   try {
     await deleteSetting(SETTINGS_KEYS.config);
     revalidatePath("/", "layout");
+    void pingAllPublicPages();
     return { ok: true, message: "Configuration réinitialisée aux valeurs par défaut." };
   } catch (error) {
     return { ok: false, error: dbIssue(error) };
@@ -215,6 +219,7 @@ export async function saveContentSection(
   try {
     await upsertSetting(CONTENT_KEYS[section], parsed.data);
     revalidatePath("/", "layout");
+    void pingAllPublicPages();
     return { ok: true, message: "Contenu enregistré — le site public est à jour." };
   } catch (error) {
     return { ok: false, error: dbIssue(error) };
@@ -228,6 +233,7 @@ export async function resetContentSection(
   try {
     await deleteSetting(CONTENT_KEYS[section]);
     revalidatePath("/", "layout");
+    void pingAllPublicPages();
     return { ok: true, message: "Contenu réinitialisé aux valeurs par défaut." };
   } catch (error) {
     return { ok: false, error: dbIssue(error) };

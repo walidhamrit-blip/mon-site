@@ -1,0 +1,64 @@
+name: SEO & Lighthouse
+
+on:
+  push:
+    branches:
+      - main
+      - "arena/**"
+  pull_request:
+
+jobs:
+  seo-audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Récupération du code
+        uses: actions/checkout@v5
+
+      - name: Installation Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Installation des dépendances
+        run: npm ci
+
+      - name: Vérification TypeScript
+        run: npm run typecheck
+
+      - name: Build de production
+        run: npm run build
+        env:
+          # Sans base en CI : le site bascule sur les contenus par défaut.
+          DATABASE_URL: ""
+
+      - name: Démarrage du serveur
+        run: |
+          npx next start -p 3100 &
+          echo "Attente du serveur..."
+          for i in $(seq 1 60); do
+            if curl -sf http://localhost:3100/ > /dev/null; then
+              echo "Serveur prêt"; exit 0
+            fi
+            sleep 1
+          done
+          echo "Le serveur n'a pas démarré à temps"; exit 1
+
+      - name: Garde-fous SEO (titres, canoniques, h1, JSON-LD, alt)
+        run: npm run seo:check
+        env:
+          BASE_URL: http://localhost:3100
+
+      - name: Audit Lighthouse (SEO ≥ 90, bonnes pratiques ≥ 90)
+        uses: treosh/lighthouse-ci-action@v12
+        with:
+          urls: |
+            http://localhost:3100/
+            http://localhost:3100/demos
+            http://localhost:3100/pricing
+            http://localhost:3100/contact
+          configPath: ./lighthouserc.json
+          uploadArtifacts: true
+          temporaryPublicStorage: true
