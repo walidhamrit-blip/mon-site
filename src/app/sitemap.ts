@@ -18,6 +18,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.9,
     },
     {
+      url: `${base}/sectors`,
+      lastModified: BUILD_DATE,
+      changeFrequency: "weekly",
+      priority: 0.8,
+    },
+    {
       url: `${base}/pricing`,
       lastModified: BUILD_DATE,
       changeFrequency: "monthly",
@@ -31,6 +37,15 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     },
   ];
 
+  // Pages sectorielles automatiques — 10 secteurs (medical, restaurant…)
+  const { sectorIds } = await import("@/lib/sectors");
+  const sectorRoutes: MetadataRoute.Sitemap = sectorIds.map((id) => ({
+    url: `${base}/sectors/${id}`,
+    lastModified: BUILD_DATE,
+    changeFrequency: "weekly",
+    priority: 0.75,
+  }));
+
   const demoRoutes: MetadataRoute.Sitemap = content.demos.map((d) => ({
     url: `${base}/demos/${d.slug}`,
     lastModified: BUILD_DATE,
@@ -41,5 +56,5 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     images: d.image ? [d.image] : undefined,
   }));
 
-  return [...mainRoutes, ...demoRoutes];
+  return [...mainRoutes, ...sectorRoutes, ...demoRoutes];
 }

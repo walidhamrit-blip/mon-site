@@ -83,21 +83,79 @@ export async function notifyIndexNow(
   }
 }
 
+/**
+ * Ping Google Sitemap — complète IndexNow.
+ * Google ignore IndexNow ; on notifie via  https://www.google.com/ping?sitemap=URL
+ * Tolérant aux pannes, production uniquement.
+ */
+export async function notifyGoogleSitemap(baseUrl: string = siteConfig.url): Promise<void> {
+  if (!isProductionHost()) return;
+  const origin = baseUrl.replace(/\/+$/, "");
+  const sitemapUrl = `${origin}/sitemap.xml`;
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 4000);
+    const res = await fetch(`https://www.google.com/ping?sitemap=${encodeURIComponent(sitemapUrl)}`, {
+      signal: controller.signal,
+    });
+    clearTimeout(timeout);
+    if (!res.ok) {
+      console.warn("[google-ping] réponse non-OK :", res.status);
+    } else {
+      console.log("[google-ping] sitemap notifié :", sitemapUrl);
+    }
+  } catch (error) {
+    console.warn("[google-ping] ping ignoré :", error instanceof Error ? error.message : error);
+  }
+}
+
+/** Ping Bing Sitemap (complément IndexNow, même endpoint Google-like pour Bing). */
+export async function notifyBingSitemap(baseUrl: string = siteConfig.url): Promise<void> {
+  if (!isProductionHost()) return;
+  const origin = baseUrl.replace(/\/+$/, "");
+  const sitemapUrl = `${origin}/sitemap.xml`;
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 4000);
+    const res = await fetch(
+      `https://www.bing.com/ping?sitemap=${encodeURIComponent(sitemapUrl)}`,
+      { signal: controller.signal },
+    );
+    clearTimeout(timeout);
+    if (!res.ok) console.warn("[bing-ping] réponse non-OK :", res.status);
+  } catch (error) {
+    console.warn("[bing-ping] ping ignoré :", error instanceof Error ? error.message : error);
+  }
+}
+
 /** URLs publiques principales + fichiers IA/sitemap + toutes les fiches réalisations. */
 export async function pingAllPublicPages(): Promise<void> {
   // Import différé pour éviter tout cycle au chargement du module.
   const { getSiteDataCached } = await import("@/lib/store");
   const { config, content } = await getSiteDataCached();
   const base = config.url.replace(/\/+$/, "");
+  const { sectorIds } = await import("@/lib/sectors");
+  const sectorUrls = sectorIds.map((id) => `${base}/sectors/${id}`);
   const urls = [
     `${base}/`,
     `${base}/demos`,
+    `${base}/sectors`,
     `${base}/pricing`,
     `${base}/contact`,
     `${base}/llms.txt`,
     `${base}/llms-full.txt`,
     `${base}/sitemap.xml`,
+    ...sectorUrls,
     ...content.demos.map((d) => `${base}/demos/${d.slug}`),
   ];
-  await notifyIndexNow(urls, config.url);
+  await Promise.allSettled([
+    notifyIndexNow(urls, config.url),
+    notifyGoogleSitemap(config.url),
+    notifyBingSitemap(config.url),
+  ]);
+}
+
+/** Re-validation + ping unifié (IndexNow + Google) — appelé après chaque save admin. */
+export async function notifyAllSearchEngines(): Promise<void> {
+  await pingAllPublicPages();
 }

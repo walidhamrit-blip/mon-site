@@ -138,7 +138,8 @@ function checkPage(pathname, html) {
 
   const schemaTypes = new Set(parsedSchemas.map((s) => s && s["@type"]).filter(Boolean));
   const hasFaqSchema = schemaTypes.has("FAQPage");
-  if (page === "/" || page === "/pricing") {
+  const isFaqExpected = page === "/" || page === "/pricing" || page.startsWith("/sectors/");
+  if (isFaqExpected) {
     if (!hasFaqSchema) {
       record(page, "error", "schéma FAQPage attendu sur cette page mais absent");
     }
