@@ -283,6 +283,14 @@ NOWPayments pour prendre une place en avance dans le planning.
   avec sommaire sticky, FAQ `FAQPage`, tableau tarifaire lu en direct depuis
   l'admin, schéma `BlogPosting` (dates + `wordCount`), carte OG dédiée et
   maillage vers services, secteurs et réalisations
+- **Badge de netlinking client** `/badge` : page officielle avec extraits
+  copiables (HTML, React/Next.js) et visuels SVG auto-hébergés
+  (`public/badge/nukhba-badge{,-light}.svg`) à poser dans le pied de page de
+  chaque site livré — lien dofollow vers `nokhba.net.ly`
+  (`?utm_source=client_footer`, traçable). `npm run badge:audit` vérifie
+  chaque site client (dofollow / nofollow / manquant / hors ligne) et alimente
+  `public/badge/clients.json` ; workflow hebdomadaire + issue de suivi.
+  Procédure : `docs/badge-netlinking.md`.
 - `/llms.txt` et `/llms-full.txt` **dynamiques** (`src/lib/llms-txt.ts`) :
   résumé et base de connaissances bilingue régénérés par requête depuis la
   base admin, avec `ETag` pour la revalidation des crawlers IA
@@ -351,6 +359,14 @@ NOWPayments pour prendre une place en avance dans le planning.
   `.github/workflows/geo-tracker.yml` (lundi 08:00 UTC), rapport JSON en
   artefact, e-mail optionnel via Resend. Sans clé API, rapport `skipped` sans
   échec du workflow.
+- **Badge client** : `npm run badge:audit` (`scripts/badge-audit.mjs`) lit les
+  démos (`--base=https://nokhba.net.ly` en CI), cherche le lien de crédit dans
+  le HTML de chaque site client (racine, puis `/ar` et `/en`), distingue
+  dofollow / nofollow / manquant / hors ligne, et n'écrit
+  `public/badge/clients.json` que lorsqu'un statut change. Exécution
+  hebdomadaire via `.github/workflows/badge-audit.yml` (lundi 07:30 UTC), avec
+  ouverture/fermeture automatique d'une issue `badge-client` listant les sites
+  à corriger. Aucune clé requise.
 - Les fiches démos « live » exposent un h1 + une description `sr-only` dans le
   HTML initial (`standalone` de `FullscreenLiveViewer`) car le portail plein
   écran ne se monte qu'après hydratation.

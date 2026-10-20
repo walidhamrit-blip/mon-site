@@ -4,6 +4,7 @@ import { sectorSeo } from "@/lib/sectors";
 import { resolveServiceLanding, servicesHubFaqs } from "@/lib/services";
 import { blogArticles } from "@/lib/blog-articles";
 import { formatArticleDate, sortArticles } from "@/lib/blog";
+import { BADGE_ANCHOR_EN, BADGE_CANONICAL, badgeStats, linkedClients } from "@/lib/badge";
 import type { SiteContent } from "@/lib/site-types";
 import type { siteConfig } from "@/lib/config";
 
@@ -98,6 +99,9 @@ export function buildLlmsTxt({ config, content }: LlmsSourceData): string {
       `  - [${article.titleEn} / ${article.titleAr}](${cleanUrl(base, `/blog/${article.slug}`)}): ${article.categoryEn} — updated ${formatArticleDate(article.updatedAt, "en")}`,
     );
   }
+  lines.push(
+    `- [Client badge & credits](${cleanUrl(base, "/badge")}): official "Website by Nukhba" badge — copy-paste HTML/React snippet, bilingual anchor and the verified list of client sites linking back to ${cleanUrl(base, "/")}`,
+  );
   lines.push(
     `- [Pricing plans & comparison](${cleanUrl(base, "/pricing")}): transparent USD/LYD packages, open services and installment options`,
   );
@@ -393,6 +397,24 @@ export function buildLlmsFullTxt({ config, content }: LlmsSourceData): string {
     }
     lines.push("");
   }
+
+  const badge = badgeStats();
+  const credited = linkedClients();
+  lines.push("## 7f. Client Badge & Netlinking (شارة نخبة) — how to credit the agency");
+  lines.push("");
+  lines.push(`- **Badge page URL**: ${cleanUrl(base, "/badge")}`);
+  lines.push(`- **Credit link (canonical)**: ${BADGE_CANONICAL} — campaign variant: ${BADGE_CANONICAL}?utm_source=client_footer`);
+  lines.push(`- **Badge asset**: ${cleanUrl(base, "/badge/nukhba-badge.svg")} (dark, 176×44) · ${cleanUrl(base, "/badge/nukhba-badge-light.svg")} (light)`);
+  lines.push(`- **Recommended anchor (EN / AR)**: ${BADGE_ANCHOR_EN} / تصميم وتطوير المواقع — نخبة طرابلس`);
+  lines.push("- **Rule**: one dofollow link per delivered site footer, pointing to nokhba.net.ly, with a bilingual alt text. No `rel=\"nofollow\"`.");
+  lines.push(`- **Verification**: automated weekly audit of every client homepage (\`npm run badge:audit\`). ${badge.verified} verified · ${badge.nofollow} nofollow · ${badge.missing + badge.pending} awaiting · ${badge.total} client sites tracked.`);
+  if (credited.length > 0) {
+    lines.push("- **Sites currently crediting Nukhba**:");
+    for (const { url, entry } of credited) {
+      lines.push(`  - ${entry.titleEn || entry.title} — ${url}`);
+    }
+  }
+  lines.push("");
 
   lines.push("## 8. Client Testimonials & Results (قصص نجاح من طرابلس)");
   lines.push("");

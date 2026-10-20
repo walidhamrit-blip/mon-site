@@ -356,6 +356,36 @@ async function main() {
     record("sitemap.xml", "error", "aucune URL découverte dans le sitemap");
   }
 
+  // 2a. Badge de netlinking client : la page /badge doit être publiée, citer le
+  //     lien de crédit et servir ses propres assets. Sans elle, les sites
+  //     clients n'ont aucune source officielle où copier le badge.
+  try {
+    if (!paths.includes("/badge")) {
+      record("/badge", "error", "page /badge absente du sitemap");
+    }
+    const { status, body } = await fetchText(`${BASE}/badge`);
+    if (status !== 200) {
+      record("/badge", "error", `HTTP ${status}`);
+    } else if (!/https:\/\/nokhba\.net\.ly\/\?utm_source=client_footer/.test(body)) {
+      record("/badge", "error", "lien de crédit (utm_source=client_footer) absent de la page");
+    } else if (!/nukhba-badge(-light)?\.svg/.test(body)) {
+      record("/badge", "warn", "asset du badge non référencé sur /badge");
+    } else {
+      record("/badge", "pass", "page badge et extrait de crédit publiés");
+    }
+    for (const asset of ["/badge/nukhba-badge.svg", "/badge/nukhba-badge-light.svg"]) {
+      const res = await fetchText(`${BASE}${asset}`);
+      if (res.status !== 200) record(asset, "error", `HTTP ${res.status}`);
+      else if (!/^<svg[\s>]/i.test(res.body.trim())) {
+        record(asset, "error", "le fichier servi n'est pas un SVG");
+      } else {
+        record(asset, "pass", `SVG servi (${res.body.length} octets)`);
+      }
+    }
+  } catch (err) {
+    record("/badge", "error", `badge non vérifié : ${err.message}`);
+  }
+
   // Vérifie que chaque réalisation du sitemap est bien synchronisée dans /llms.txt et /llms-full.txt
   const llmsBody = resourceBodies.get("/llms.txt") || "";
   const llmsFullBody = resourceBodies.get("/llms-full.txt") || "";

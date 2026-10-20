@@ -270,6 +270,21 @@ Chaque guide contient **4 à 5 sections bilingues** (AR puis EN), des **faits ch
 - `.github/workflows/demo-previews.yml` : lundi 07:00 UTC + `workflow_dispatch`, `npm ci`, Chromium, captures en `--force`, rapport en artefact (90 jours), pull request `chore(previews)` si des WebP changent, issue `demo-preview` si une démo est morte.
 - Garde-fous : `scripts/demo-previews.test.mjs` (21 tests) et `scripts/seo-check.mjs` (au moins une capture locale dans le sitemap d'images). Résultat : `npm run test:seo` **69 tests**, `npm run seo:check` **50 pages/ressources, 0 erreur, 0 avertissement**.
 
-### 6.5 Roadmap restante
+### 6.5 Badge de netlinking client (« شارة نخبة »)
 
-Badges de netlinking client (« badge Nukhba » vérifié) et générateur d'articles dans l'administration — les deux derniers points non encore outillés. Search Console, le GEO Tracker, le blog et les captures d'aperçu sont désormais en place.
+Point 6 de la roadmap d'origine : obtenir un lien réel depuis chaque site livré vers `nokhba.net.ly`, pour construire l'autorité de domaine et le signal d'entité auprès de Google et des LLM.
+
+- **Page publique `/badge`** : extraits copiables (HTML autonome, React/Next.js, version minimale), deux variantes de visuel (sombre/clair), ancres bilingues, règles d'usage et statut de chaque site client. Génération des extraits dans `src/lib/badge.ts` (`badgeHtmlSnippet`, `badgeReactSnippet`) — testée, donc jamais désynchronisée de la page.
+- **Assets auto-hébergés** : `public/badge/nukhba-badge.svg` et `nukhba-badge-light.svg` (176 × 44, ~1 Ko chacun, texte vectoriel). Aucune dépendance à un service de badges tiers, donc aucun risque de lien cassé ou de tracking externe.
+- **Lien de crédit** : `https://nokhba.net.ly/?utm_source=client_footer&utm_medium=badge&utm_campaign=client_credit`. `utm_source=client_footer` rend les visites issues des pieds de page clients identifiables dans les statistiques, et sert de signature vérifiable par l'audit.
+- **Détection automatique** (`detectBadge`) : analyse du HTML de la page d'accueil, puis `/ar` et `/en` si nécessaire ; classe chaque client en `verified` (dofollow), `nofollow`, `missing` ou `down`, avec ancre et `rel` réellement trouvés. Les imitations (`nokhba.net.ly.evil.com`, `notnokhba.net.ly`) sont rejetées.
+- **`npm run badge:audit`** (`scripts/badge-audit.mjs`) : options `--dry-run`, `--only=`, `--base=`, `--concurrency=` ; écrit `public/badge/clients.json` (statut, `checkedAt` au changement seulement) et `reports/badge-audit-AAAA-MM-JJ.json`. Codes de sortie 0/4.
+- **`.github/workflows/badge-audit.yml`** : lundi 07:30 UTC + `workflow_dispatch`, commit `public/badge/clients.json` quand un statut change, issue `badge-client` listant les sites à corriger, fermeture automatique de l'issue quand tout est vert.
+- **Maillage** : `/badge` figure dans `sitemap.xml`, `llms.txt`, `llms-full.txt` (§7f, avec la règle dofollow et la liste des sites qui créditent), `pingAllPublicPages()` (IndexNow + Search Console) et le pied de page du site.
+- **Garde-fous** : `scripts/badge-audit.test.mjs` (33 tests : détection, faux positifs, extraits, fusion du fichier, orchestration, `--dry-run`, `--only`) et contrôle `seo:check` sur `/badge` (page publiée, lien de crédit présent, SVG servis avec le bon type). Résultat : `npm run test:seo` **102 tests**, `npm run seo:check` **54 pages/ressources, 0 erreur, 0 avertissement**.
+
+L'intégration du badge dans chaque dépôt client reste manuelle (ce sont des dépôts séparés) : la page `/badge` fournit l'extrait, l'audit dit qui ne l'a pas encore, et l'issue hebdomadaire sert de checklist. La procédure est décrite dans `docs/badge-netlinking.md`.
+
+### 6.6 Roadmap restante
+
+Le générateur d'articles bilingues dans `/admin` (§3.2 point 3, volet administration) est le dernier chantier non outillé. Search Console, le GEO Tracker, le blog, les captures d'aperçu et le badge de netlinking sont désormais en place.

@@ -1,0 +1,203 @@
+name: Client badge audit
+
+# Vérifie chaque semaine que les sites clients livrés portent bien le badge
+# « Website by Nukhba » (lien dofollow vers nokhba.net.ly dans le pied de page).
+#
+# - mesure : `verified` / `nofollow` / `missing` / `down` par client ;
+# - commit `public/badge/clients.json` quand un statut change (page /badge) ;
+# - ouvre ou met à jour une issue listant les sites à corriger.
+#
+# Aucune clé n'est nécessaire.
+
+on:
+  schedule:
+    - cron: "30 7 * * 1"
+  workflow_dispatch:
+    inputs:
+      only:
+        description: "Slugs à vérifier (séparés par des virgules, vide = tous)"
+        required: false
+        default: ""
+
+concurrency:
+  group: badge-audit
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+  issues: write
+  pull-requests: write
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Récupération du code
+        uses: actions/checkout@v5
+
+      - name: Installation Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Installation des dépendances
+        run: npm ci
+
+      - name: Audit du badge
+        id: audit
+        env:
+          BADGE_BASE_URL: https://nokhba.net.ly
+        run: |
+          ARGS="--concurrency=3"
+          if [ -n "${{ inputs.only }}" ]; then
+            ARGS="$ARGS --only=${{ inputs.only }}"
+          fi
+          npm run badge:audit -- $ARGS
+
+      - name: Synthèse
+        id: summary
+        if: always()
+        run: |
+          node -e '
+            const fs = require("node:fs");
+            const path = require("node:path");
+            const dir = "reports";
+            let summary = { total: 0, verified: 0, nofollow: 0, missing: 0, down: 0, pending: 0 };
+            let clients = [];
+            if (fs.existsSync(dir)) {
+              const files = fs
+                .readdirSync(dir)
+                .filter((name) => name.startsWith("badge-audit-"))
+                .sort();
+              if (files.length > 0) {
+                const report = JSON.parse(
+                  fs.readFileSync(path.join(dir, files[files.length - 1]), "utf8"),
+                );
+                summary = report.summary ?? summary;
+                clients = report.clients ?? [];
+              }
+            }
+            const pending = clients.filter(
+              (c) => c.status === "missing" || c.status === "nofollow",
+            );
+            const lines = [
+              `- ✅ vérifiés (dofollow) : **${summary.verified}**`,
+              `- ⚠️ nofollow : **${summary.nofollow ?? 0}**`,
+              `- ➖ sans badge : **${summary.missing ?? 0}**`,
+              `- ✖ hors ligne : **${summary.down ?? 0}**`,
+              `- total suivi : ${summary.total ?? 0}`,
+            ];
+            if (pending.length > 0) {
+              lines.push("", "### Sites à corriger", "");
+              for (const client of pending) {
+                lines.push(
+                  `- **${client.slug}** — ${client.url} — ${
+                    client.status === "nofollow" ? "lien en `nofollow`" : "aucun lien vers nokhba.net.ly"
+                  }`,
+                );
+              }
+            }
+            lines.push(
+              "",
+              "Extrait prêt à coller : https://nokhba.net.ly/badge",
+              "",
+              `Run : ${process.env.GITHUB_SERVER_URL}/${process.env.GITHUB_REPOSITORY}/actions/runs/${process.env.GITHUB_RUN_ID}`,
+            );
+            fs.writeFileSync(process.env.GITHUB_OUTPUT, `body<<EOF\n${lines.join("\n")}\nEOF\n`, {
+              flag: "a",
+            });
+            fs.writeFileSync(
+              process.env.GITHUB_OUTPUT,
+              `verified=${summary.verified ?? 0}\nnofollow=${summary.nofollow ?? 0}\nmissing=${summary.missing ?? 0}\ndown=${summary.down ?? 0}\n`,
+              { flag: "a" },
+            );
+          '
+
+      - name: Publication du rapport
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: badge-audit-report
+          path: reports/
+          retention-days: 90
+
+      - name: Commit du statut des clients
+        id: commit
+        run: |
+          if [ -z "$(git status --porcelain public/badge/clients.json)" ]; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            echo "Aucun changement de statut."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add public/badge/clients.json
+          git commit -m "chore(badge): statut des badges clients"
+          git push
+          echo "changed=true" >> "$GITHUB_OUTPUT"
+
+      - name: Issue — sites sans badge
+        if: steps.summary.outputs.missing != '0' || steps.summary.outputs.nofollow != '0'
+        uses: actions/github-script@v8
+        with:
+          script: |
+            const title = "Badge client : sites à corriger (netlinking)";
+            const body = [
+              "Audit hebdomadaire du badge « Website by Nukhba ».",
+              "",
+              "${{ steps.summary.outputs.body }}",
+            ].join("\n");
+            const { data: issues } = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: "open",
+              labels: "badge-client",
+            });
+            const existing = issues.find((issue) => issue.title === title);
+            if (existing) {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: existing.number,
+                body,
+              });
+            } else {
+              await github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title,
+                body,
+                labels: ["badge-client"],
+              });
+            }
+
+      - name: Clôture de l'issue quand tout est bon
+        if: steps.summary.outputs.missing == '0' && steps.summary.outputs.nofollow == '0'
+        uses: actions/github-script@v8
+        with:
+          script: |
+            const title = "Badge client : sites à corriger (netlinking)";
+            const { data: issues } = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: "open",
+              labels: "badge-client",
+            });
+            const existing = issues.find((issue) => issue.title === title);
+            if (existing) {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: existing.number,
+                body: "Tous les sites clients suivis portent désormais le badge. Fermeture automatique. ✅",
+              });
+              await github.rest.issues.update({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: existing.number,
+                state: "closed",
+              });
+            }

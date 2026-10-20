@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="176" height="44" viewBox="0 0 176 44" role="img" aria-labelledby="nukhba-badge-title">
+  <title id="nukhba-badge-title">شارة نخبة — Website by Nukhba, Tripoli</title>
+  <rect x="0.75" y="0.75" width="174.5" height="42.5" rx="21.25" fill="#0C0C0F" stroke="#C6A664" stroke-opacity="0.45" stroke-width="1.5"/>
+  <path d="M24 10.5 35.5 22 24 33.5 12.5 22Z" fill="#C6A664"/>
+  <path d="M24 16.5 29.5 22 24 27.5 18.5 22Z" fill="#0C0C0F"/>
+  <text x="46" y="21" fill="#F5F3EE" font-family="system-ui, -apple-system, 'Segoe UI', Tahoma, sans-serif" font-size="13.5" font-weight="700">نخبة</text>
+  <text x="84" y="21" fill="#C6A664" font-family="system-ui, -apple-system, 'Segoe UI', Tahoma, sans-serif" font-size="9" font-weight="600" letter-spacing="1.1">NUKHBA</text>
+  <text x="46" y="33" fill="#9C9A94" font-family="system-ui, -apple-system, 'Segoe UI', Tahoma, sans-serif" font-size="7" font-weight="500" letter-spacing="1.2">WEBSITE BY NUKHBA</text>
+</svg>

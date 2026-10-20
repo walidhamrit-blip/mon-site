@@ -7,11 +7,12 @@
     "start": "next start",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
-    "test:seo": "node --test scripts/seo-generator.test.mjs scripts/service-pages.test.mjs scripts/blog.test.mjs scripts/demo-previews.test.mjs scripts/google-indexing.test.mjs scripts/geo-citations.test.mjs scripts/security-headers.test.mjs",
+    "test:seo": "node --test scripts/seo-generator.test.mjs scripts/service-pages.test.mjs scripts/blog.test.mjs scripts/demo-previews.test.mjs scripts/badge-audit.test.mjs scripts/google-indexing.test.mjs scripts/geo-citations.test.mjs scripts/security-headers.test.mjs",
     "doctor": "node scripts/check-setup.mjs",
     "seo:check": "node scripts/seo-check.mjs",
     "seo:geo": "node scripts/geo-citations.mjs",
-    "previews:capture": "node scripts/capture-previews.mjs"
+    "previews:capture": "node scripts/capture-previews.mjs",
+    "badge:audit": "node scripts/badge-audit.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.9.1",
