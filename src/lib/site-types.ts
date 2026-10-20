@@ -28,14 +28,11 @@ export interface Demo {
   categoryTier?: number;
   /**
    * Prix USD propre à ce projet. Absent / null = prix de la catégorie.
-   * Permet au propriétaire d'ajuster un prix au cas par cas depuis
-   * le panneau d'administration.
    */
   priceUsd?: number | null;
   /**
    * Réglages SEO optionnels. Un champ vide / absent = génération
-   * automatique depuis le titre et la description du projet
-   * (voir src/lib/seo.ts et la page /demos/[slug]).
+   * automatique depuis le titre et la description du projet.
    */
   metaTitle?: string;
   metaDescription?: string;
@@ -111,17 +108,9 @@ export interface SiteConfigData {
     accent: string;
     accentHover: string;
   };
-  /**
-   * Apparence principale du site — choisis depuis /admin → Réglages :
-   * le thème principal, le mode clair/sombre et la langue principale.
-   * Les visiteurs peuvent toujours basculer depuis les sélecteurs du site.
-   */
   appearance: {
-    /** Identifiant de la palette principale (voir src/lib/themes.ts). */
     themeId: string;
-    /** Mode d'affichage principal. */
     mode: "light" | "dark";
-    /** Langue principale du site. */
     defaultLocale: "ar" | "en";
   };
   social: {
@@ -137,47 +126,31 @@ export interface SiteConfigData {
     satisfaction: string;
     support: string;
   };
-  /** Réservation prioritaire : petit acompte pour prendre une place. */
   reservation: {
     enabled: boolean;
-    /** Montant de l'acompte facturé en USD (1 $ par défaut). */
     depositUsd: number;
-    /** Équivalent affiché en Livre libyenne. */
     depositLyd: number;
   };
-  /**
-   * Paiement flexible « 1 $ ou plus » : le client choisit son montant
-   * (borné min/max) — pratique face aux limites minimales imposées par
-   * certaines plateformes de crypto.
-   */
   flexiblePayment: FlexiblePaymentConfig;
-  /** Services libres / à la carte (restylage, diapositives, design…). */
   standaloneServices: StandaloneService[];
 }
 
 export interface FlexiblePaymentConfig {
   enabled: boolean;
-  /** Montant minimal facturable en USD (1 $ par défaut). */
   minUsd: number;
-  /** Montant maximal facturable en USD (garde-fou anti-abus). */
   maxUsd: number;
-  /** Montants suggérés affichés en boutons rapides. */
   suggested: number[];
-  /** Note affichée (limites minimales des réseaux crypto…). */
   noteAr: string;
   noteEn: string;
 }
 
-/** Service à la carte vendu au forfait (section « services libres »). */
 export interface StandaloneService {
   id: string;
-  /** Nom d'icône lucide (Palette, LayoutGrid, Presentation, PenTool, Rocket, Wrench). */
   icon: string;
   titleAr: string;
   titleEn: string;
   descAr: string;
   descEn: string;
-  /** Prix de départ affiché (USD / LYD). */
   priceFromUsd: number;
   priceFromLyd: number;
   badgeAr?: string;
@@ -188,7 +161,6 @@ export interface StandaloneService {
 
 /* ---------- Sections de la page d'accueil ---------- */
 
-/** Textes du bloc d'accueil (Hero) — bilingue AR/EN. */
 export interface HeroContent {
   badgeAr: string;
   badgeEn: string;
@@ -208,21 +180,17 @@ export interface HeroContent {
   trustedEn: string;
   ratingAr: string;
   ratingEn: string;
-  /** Petites pastilles de réassurance (✓ …), une par ligne dans l'admin. */
   chipsAr: string[];
   chipsEn: string[];
 }
 
-/** Bandeau défilant des services / points forts. */
 export interface RibbonContent {
   taglineAr: string;
   taglineEn: string;
   items: { ar: string; en: string }[];
 }
 
-/** Carte de la section « Pourquoi nous ? ». */
 export interface WhyUsItem {
-  /** Nom d'icône lucide : zap, palette, sliders, search, headset. */
   icon: string;
   titleAr: string;
   titleEn: string;
@@ -230,7 +198,6 @@ export interface WhyUsItem {
   descEn: string;
 }
 
-/** Étape de la section « Processus ». */
 export interface ProcessStep {
   num: string;
   titleAr: string;
@@ -241,16 +208,11 @@ export interface ProcessStep {
   durationEn: string;
 }
 
-/**
- * Titres / sous-titres éditables des sections du site.
- * Chaque section possède un identifiant stable (voir SectionHeadingId).
- */
 export interface SectionHeading {
   titleAr: string;
   titleEn: string;
   subtitleAr: string;
   subtitleEn: string;
-  /** Texte secondaire optionnel (ex. durée totale du processus, note tarifs). */
   noteAr?: string;
   noteEn?: string;
 }
@@ -271,8 +233,107 @@ export const SECTION_HEADING_IDS = [
 
 export type SectionHeadingId = (typeof SECTION_HEADING_IDS)[number];
 
-/** Ensemble des titres de sections, indexé par identifiant. */
 export type SectionHeadings = Record<SectionHeadingId, SectionHeading>;
+
+/* ---------- Architecture dynamique des sections & sites personnalisés ---------- */
+
+export const BUILTIN_SECTION_IDS = [
+  "hero",
+  "ribbon",
+  "whyUs",
+  "demos",
+  "identityStudio",
+  "process",
+  "pricing",
+  "flexiblePayment",
+  "services",
+  "testimonials",
+  "faq",
+  "cta",
+] as const;
+
+export type BuiltInSectionId = (typeof BUILTIN_SECTION_IDS)[number];
+
+/**
+ * Section personnalisée créée depuis /admin : possède son propre en-tête
+ * bilingue et sa propre liste de sites (avec aperçu interactif en direct,
+ * mode plein écran Desktop/Mobile et réservation).
+ */
+export interface CustomSiteSection {
+  id: string;
+  badgeAr: string;
+  badgeEn: string;
+  titleAr: string;
+  titleEn: string;
+  subtitleAr: string;
+  subtitleEn: string;
+  /** Mode d'affichage : galerie interactive avec écran live ou grille de cartes. */
+  variant: "interactive" | "cards";
+  /** Liste des sites appartenant à cette section. */
+  sites: Demo[];
+}
+
+export interface HomeSectionEntry {
+  /** Clé unique : ex. "demos" ou "custom:mes-projets". */
+  key: string;
+  kind: "builtin" | "custom";
+  builtinId?: BuiltInSectionId;
+  customId?: string;
+  enabled: boolean;
+}
+
+export interface HomeLayoutConfig {
+  entries: HomeSectionEntry[];
+  customSections: CustomSiteSection[];
+}
+
+/* ---------- Pages « Nos applications » & « Produits numériques & logiciels » ---------- */
+
+export const LAUNCH_STATUSES = [
+  "in_preparation",
+  "coming_soon",
+  "available",
+] as const;
+
+export type LaunchStatus = (typeof LAUNCH_STATUSES)[number];
+
+export interface UpcomingCatalogItem {
+  id: string;
+  slug: string;
+  status: LaunchStatus;
+  badgeAr: string;
+  badgeEn: string;
+  categoryAr: string;
+  categoryEn: string;
+  titleAr: string;
+  titleEn: string;
+  descriptionAr: string;
+  descriptionEn: string;
+  image: string;
+  color: string;
+  platforms: string[];
+  featuresAr: string[];
+  featuresEn: string[];
+  progress?: number | null;
+  priceHintUsd?: number | null;
+  demoUrl?: string;
+}
+
+export interface ShowcasePageConfig {
+  statusBadgeAr: string;
+  statusBadgeEn: string;
+  titleAr: string;
+  titleEn: string;
+  highlightAr: string;
+  highlightEn: string;
+  subtitleAr: string;
+  subtitleEn: string;
+  bannerNoteAr: string;
+  bannerNoteEn: string;
+  ctaLabelAr: string;
+  ctaLabelEn: string;
+  items: UpcomingCatalogItem[];
+}
 
 export interface SiteContent {
   demos: Demo[];
@@ -283,6 +344,41 @@ export interface SiteContent {
   whyUs: WhyUsItem[];
   process: ProcessStep[];
   headings: SectionHeadings;
+  layout: HomeLayoutConfig;
+  appsPage: ShowcasePageConfig;
+  productsPage: ShowcasePageConfig;
+}
+
+/**
+ * Fusionne sans doublon les sites de la galerie principale et ceux des
+ * sections personnalisées actives (pur TypeScript — utilisable côté client et serveur).
+ */
+export function collectAllDemos(
+  content: Pick<SiteContent, "demos" | "layout">,
+): Demo[] {
+  const seen = new Set<string>();
+  const all: Demo[] = [];
+  for (const d of content.demos) {
+    if (!seen.has(d.slug)) {
+      seen.add(d.slug);
+      all.push(d);
+    }
+  }
+  const activeCustomIds = new Set(
+    content.layout.entries
+      .filter((e) => e.kind === "custom" && e.enabled && e.customId)
+      .map((e) => e.customId as string),
+  );
+  for (const sec of content.layout.customSections) {
+    if (!activeCustomIds.has(sec.id)) continue;
+    for (const d of sec.sites) {
+      if (!seen.has(d.slug)) {
+        seen.add(d.slug);
+        all.push(d);
+      }
+    }
+  }
+  return all;
 }
 
 /* ---------- Demandes (leads) ---------- */
@@ -299,9 +395,7 @@ export const LEAD_STATUS_LABELS: Record<LeadStatus, string> = {
 
 export interface LeadRow {
   id: number;
-  /** ISO string (serialisable vers un composant client) */
   createdAt: string;
-  /** Date formatée côté serveur (fr-FR, fuseau Tripoli) */
   dateFr: string;
   name: string;
   business: string;
@@ -320,7 +414,6 @@ export interface LeadRow {
 
 /* ---------- Commandes (paiements crypto) ---------- */
 
-/** Nature de la commande : formule complète, réservation ou paiement flexible. */
 export const ORDER_KINDS = ["plan", "reservation", "flex"] as const;
 export type OrderKind = (typeof ORDER_KINDS)[number];
 
@@ -345,20 +438,15 @@ export interface OrderRow {
   createdAt: string;
   dateFr: string;
   ref: string;
-  /** « plan » (formule complète) ou « reservation » (acompte prioritaire). */
   kind: OrderKind;
-  /** Slug du site consulté pour une réservation. */
   demoSlug: string | null;
   planId: string;
   planName: string;
   amountLyd: string;
   amountUsd: string;
   currency: string;
-  /** Nombre total de tranches (1 = paiement en une fois). */
   installments: number;
-  /** Numéro de la tranche (1…installments). */
   installmentIndex: number;
-  /** Référence commune aux tranches d'un même paiement. */
   groupRef: string | null;
   clientName: string | null;
   email: string | null;

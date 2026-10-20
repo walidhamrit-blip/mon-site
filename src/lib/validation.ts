@@ -133,8 +133,7 @@ export const whyUsSchema = z
       descEn: z.string().max(1000),
     }),
   )
-  .min(1)
-  .max(12);
+  .max(20);
 
 export const processSchema = z
   .array(
@@ -148,8 +147,7 @@ export const processSchema = z
       durationEn: z.string().max(100),
     }),
   )
-  .min(1)
-  .max(12);
+  .max(20);
 
 export const sectionHeadingSchema = z.object({
   titleAr: z.string().max(300),
@@ -174,15 +172,106 @@ export const sectionHeadingsSchema = z.object({
   cta: sectionHeadingSchema,
 });
 
+export const customSiteSectionSchema = z.object({
+  id: z
+    .string()
+    .min(1)
+    .max(100)
+    .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, "Identifiant de section invalide"),
+  badgeAr: z.string().max(200),
+  badgeEn: z.string().max(200),
+  titleAr: z.string().min(1).max(300),
+  titleEn: z.string().min(1).max(300),
+  subtitleAr: z.string().max(1000),
+  subtitleEn: z.string().max(1000),
+  variant: z.enum(["interactive", "cards"]),
+  sites: z.array(demoSchema).max(60),
+});
+
+export const homeLayoutSchema = z.object({
+  entries: z
+    .array(
+      z.object({
+        key: z.string().min(1).max(120),
+        kind: z.enum(["builtin", "custom"]),
+        builtinId: z
+          .enum([
+            "hero",
+            "ribbon",
+            "whyUs",
+            "demos",
+            "identityStudio",
+            "process",
+            "pricing",
+            "flexiblePayment",
+            "services",
+            "testimonials",
+            "faq",
+            "cta",
+          ])
+          .optional(),
+        customId: z.string().max(100).optional(),
+        enabled: z.boolean(),
+      }),
+    )
+    .max(60),
+  customSections: z.array(customSiteSectionSchema).max(40),
+});
+
+export const upcomingCatalogItemSchema = z.object({
+  id: z.string().min(1).max(100),
+  slug: z
+    .string()
+    .min(1)
+    .max(120)
+    .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, "Slug invalide (lettres minuscules, chiffres et tirets)"),
+  status: z.enum(["in_preparation", "coming_soon", "available"]),
+  badgeAr: z.string().max(120),
+  badgeEn: z.string().max(120),
+  categoryAr: z.string().max(120),
+  categoryEn: z.string().max(120),
+  titleAr: z.string().min(1).max(240),
+  titleEn: z.string().min(1).max(240),
+  descriptionAr: z.string().min(1).max(1200),
+  descriptionEn: z.string().min(1).max(1200),
+  image: z.string().min(4).max(1000),
+  color: z.string().regex(/^#[0-9a-fA-F]{3,8}$/, "Couleur hexadécimale attendue (#RRGGBB)"),
+  platforms: z.array(z.string().max(100)).max(12),
+  featuresAr: z.array(z.string().max(200)).max(16),
+  featuresEn: z.array(z.string().max(200)).max(16),
+  progress: z.coerce.number().int().min(0).max(100).nullable().optional(),
+  priceHintUsd: z.coerce.number().min(0).max(1_000_000).nullable().optional(),
+  demoUrl: z.string().max(1000).optional().or(z.literal("")),
+});
+
+export const showcasePageSchema = z.object({
+  statusBadgeAr: z.string().max(200),
+  statusBadgeEn: z.string().max(200),
+  titleAr: z.string().min(1).max(300),
+  titleEn: z.string().min(1).max(300),
+  highlightAr: z.string().max(300),
+  highlightEn: z.string().max(300),
+  subtitleAr: z.string().max(1500),
+  subtitleEn: z.string().max(1500),
+  bannerNoteAr: z.string().max(1000),
+  bannerNoteEn: z.string().max(1000),
+  ctaLabelAr: z.string().max(120),
+  ctaLabelEn: z.string().max(120),
+  items: z.array(upcomingCatalogItemSchema).max(60),
+});
+
 export const contentSchemas = {
-  demos: z.array(demoSchema).max(50),
-  faqs: z.array(faqSchema).max(50),
-  testimonials: z.array(testimonialSchema).max(50),
+  demos: z.array(demoSchema).max(80),
+  faqs: z.array(faqSchema).max(60),
+  testimonials: z.array(testimonialSchema).max(60),
   hero: heroSchema,
   ribbon: ribbonSchema,
   whyUs: whyUsSchema,
   process: processSchema,
   headings: sectionHeadingsSchema,
+  layout: homeLayoutSchema,
+  appsPage: showcasePageSchema,
+  productsPage: showcasePageSchema,
 } as const;
 
 export type ContentSection = keyof typeof contentSchemas;

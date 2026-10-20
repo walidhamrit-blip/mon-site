@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { getSiteDataCached } from "@/lib/store";
+import { getAllKnownDemos, getSiteDataCached } from "@/lib/store";
 import { absoluteUrl, breadcrumbJsonLd, pageMetadata } from "@/lib/seo";
 import { JsonLd } from "@/components/json-ld";
 import { DemosClient } from "./demos-client";
@@ -22,6 +22,7 @@ export async function generateMetadata(): Promise<Metadata> {
 
 export default async function DemosPage() {
   const { config, content } = await getSiteDataCached();
+  const allDemos = getAllKnownDemos(content);
 
   // CollectionPage + ItemList : chaque réalisation est listée avec son
   // URL canonique — facilite la découverte par Google et les assistants IA.
@@ -35,8 +36,8 @@ export default async function DemosPage() {
     isPartOf: { "@id": absoluteUrl(config, "#website") },
     mainEntity: {
       "@type": "ItemList",
-      numberOfItems: content.demos.length,
-      itemListElement: content.demos.map((d, i) => ({
+      numberOfItems: allDemos.length,
+      itemListElement: allDemos.map((d, i) => ({
         "@type": "ListItem",
         position: i + 1,
         url: absoluteUrl(config, `/demos/${d.slug}`),

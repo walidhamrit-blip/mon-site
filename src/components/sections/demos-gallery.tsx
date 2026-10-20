@@ -15,7 +15,7 @@ import {
 import { useI18n } from "@/lib/i18n";
 import { sectors } from "@/lib/content";
 import { useSectionHeading, useSiteConfig, useSiteContent } from "@/components/site-provider";
-import type { Demo } from "@/lib/site-types";
+import type { CustomSiteSection, Demo } from "@/lib/site-types";
 import {
   isRealUrl,
   ScaledLiveIframe,
@@ -37,23 +37,50 @@ function formatHost(url: string, fallbackSlug: string, domain: string): string {
   }
 }
 
-export function DemosGallery() {
+interface InteractiveShowcaseProps {
+  sectionId: string;
+  badgeAr: string;
+  badgeEn: string;
+  title: string;
+  subtitle: string;
+  items: Demo[];
+  showSectorFilters?: boolean;
+  showAllDemosButton?: boolean;
+  variant?: "interactive" | "cards";
+}
+
+function InteractiveShowcase({
+  sectionId,
+  badgeAr,
+  badgeEn,
+  title,
+  subtitle,
+  items,
+  showSectorFilters = true,
+  showAllDemosButton = true,
+  variant = "interactive",
+}: InteractiveShowcaseProps) {
   const siteConfig = useSiteConfig();
-  const { demos } = useSiteContent();
-  const heading = useSectionHeading("demos");
   const { locale, t } = useI18n();
   const [filter, setFilter] = useState("all");
   const [mode, setMode] = useState<"mobile" | "desktop">("desktop");
-  const [active, setActive] = useState<string | null>(demos[0]?.slug ?? null);
+  const [active, setActive] = useState<string | null>(items[0]?.slug ?? null);
   const [iframeKey, setIframeKey] = useState(0);
   const [liveSlug, setLiveSlug] = useState<string | null>(null);
-  const [fullscreen, setFullscreen] = useState(false);
+  const [fullscreenDemo, setFullscreenDemo] = useState<Demo | null>(null);
 
-  const filtered = filter === "all" ? demos : demos.filter((d) => d.sector === filter);
-  const activeDemo: Demo = demos.find((d) => d.slug === active) || demos[0];
+  if (items.length === 0) return null;
+
+  const filtered =
+    showSectorFilters && filter !== "all"
+      ? items.filter((d) => d.sector === filter)
+      : items;
+  const activeDemo: Demo =
+    filtered.find((d) => d.slug === active) ||
+    items.find((d) => d.slug === active) ||
+    filtered[0] ||
+    items[0];
   const hasLiveUrl = isRealUrl(activeDemo?.previewUrl);
-
-  if (!activeDemo) return null;
 
   const activeClassification = resolveDemoClassification(
     activeDemo,
@@ -66,19 +93,161 @@ export function DemosGallery() {
     setIframeKey((k) => k + 1);
   };
 
+  if (variant === "cards") {
+    return (
+      <section id={sectionId} className="py-16 lg:py-24">
+        <div className="site-container px-4 sm:px-6 lg:px-8">
+          <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6 mb-8">
+            <div>
+              <div className="inline-flex items-center gap-2 text-sm font-semibold tracking-[0.12em] text-[var(--accent)]">
+                <span className="h-px w-8 bg-[var(--accent)]" />
+                {locale === "ar" ? badgeAr : badgeEn}
+              </div>
+              <h2 className="mt-3 text-[32px] lg:text-[44px] font-black tracking-tight leading-none">
+                {title}
+              </h2>
+              {subtitle && <p className="mt-3 opacity-60 max-w-[56ch]">{subtitle}</p>}
+            </div>
+            {showAllDemosButton && (
+              <Link
+                href="/demos"
+                className="h-9 px-5 rounded-full bg-[var(--accent)] text-[var(--accent-foreground)] inline-flex items-center gap-1.5 text-sm font-bold hover:bg-[var(--accent-hover)] self-start lg:self-auto"
+              >
+                {t.demos.all} <ArrowUpRight className="h-3.5 w-3.5" />
+              </Link>
+            )}
+          </div>
+
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {items.map((d) => {
+              const dIsLive = isRealUrl(d.previewUrl);
+              const dClassification = resolveDemoClassification(
+                d,
+                siteConfig.pricing.plans,
+              );
+              return (
+                <div
+                  key={d.slug}
+                  className="group rounded-[22px] overflow-hidden bg-[var(--card)] border border-[var(--border)] hover:shadow-xl hover:border-[var(--accent)]/45 transition-all flex flex-col justify-between"
+                >
+                  <div>
+                    <div className="relative aspect-[16/10] overflow-hidden">
+                      <ProjectPreview demo={d} />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/65 via-black/15 to-transparent" />
+                      <div className="absolute top-3 start-3 end-3 flex items-center justify-between gap-2">
+                        <span className="px-2.5 py-1 rounded-full bg-white text-black text-xs font-bold truncate">
+                          {locale === "ar" ? d.sectorAr : d.sectorEn}
+                        </span>
+                        {dIsLive && (
+                          <span className="px-2.5 py-1 rounded-full bg-emerald-500 text-white text-[11px] font-black inline-flex items-center gap-1 shadow">
+                            <span className="h-1.5 w-1.5 rounded-full bg-white animate-pulse" />
+                            {locale === "ar" ? "موقع حقيقي حي" : "LIVE SITE"}
+                          </span>
+                        )}
+                      </div>
+                      {dClassification && (
+                        <div className="absolute bottom-3 start-3 flex items-center gap-1.5">
+                          <span className="px-2.5 py-1 rounded-full bg-[var(--accent)] text-[var(--accent-foreground)] text-xs font-black">
+                            {locale === "ar"
+                              ? `الفئة ${dClassification.tier}`
+                              : `Category ${dClassification.tier}`}
+                          </span>
+                          {dClassification.priceUsd != null && (
+                            <span
+                              className="px-2.5 py-1 rounded-full bg-black/70 text-white text-xs font-bold backdrop-blur"
+                              dir="ltr"
+                            >
+                              {formatMainPrice(
+                                dClassification.priceUsd,
+                                locale === "ar"
+                                  ? siteConfig.pricing.currency
+                                  : siteConfig.pricing.currencyEn,
+                              )}
+                            </span>
+                          )}
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="p-5">
+                      <h3 className="text-lg font-black leading-snug">
+                        {locale === "ar" ? d.title : d.titleEn}
+                      </h3>
+                      <p className="mt-1.5 text-sm opacity-65 line-clamp-2">
+                        {locale === "ar" ? d.description : d.descriptionEn}
+                      </p>
+                      <div className="mt-3 flex flex-wrap gap-1.5">
+                        {(locale === "ar" ? d.features : d.featuresEn)
+                          .slice(0, 4)
+                          .map((f) => (
+                            <span
+                              key={f}
+                              className="px-2.5 py-1 rounded-full bg-[var(--secondary)] text-xs font-medium"
+                            >
+                              {f}
+                            </span>
+                          ))}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="px-5 pb-5 pt-2 flex flex-wrap items-center gap-2 border-t border-[var(--border)]/60">
+                    <ReservationButton
+                      demo={d}
+                      label={
+                        locale === "ar"
+                          ? `احجز — ${formatUsd(depositUsd)} $`
+                          : `Reserve — $${formatUsd(depositUsd)}`
+                      }
+                      className="h-9 px-4 rounded-full bg-[var(--accent)] text-[var(--accent-foreground)] inline-flex items-center gap-1.5 text-xs font-black hover:bg-[var(--accent-hover)] transition-colors cursor-pointer"
+                    />
+                    {dIsLive && (
+                      <button
+                        type="button"
+                        onClick={() => setFullscreenDemo(d)}
+                        className="h-9 px-3.5 rounded-full bg-[var(--primary)] text-[var(--primary-foreground)] inline-flex items-center gap-1.5 text-xs font-bold hover:opacity-90 transition-opacity cursor-pointer"
+                      >
+                        <Maximize2 className="h-3.5 w-3.5" />
+                        {locale === "ar" ? "معاينة حية" : "Live View"}
+                      </button>
+                    )}
+                    <Link
+                      href={`/demos/${d.slug}`}
+                      className="h-9 px-3.5 rounded-full border border-[var(--border)] bg-[var(--card)] inline-flex items-center gap-1 text-xs font-semibold hover:border-[var(--accent)] ms-auto"
+                    >
+                      {t.demos.viewDemo} <ArrowUpRight className="h-3.5 w-3.5" />
+                    </Link>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {fullscreenDemo && isRealUrl(fullscreenDemo.previewUrl) && (
+          <FullscreenLiveViewer
+            demo={fullscreenDemo}
+            initialMode={mode}
+            onClose={() => setFullscreenDemo(null)}
+          />
+        )}
+      </section>
+    );
+  }
+
   return (
-    <section id="demos" className="py-16 lg:py-24">
+    <section id={sectionId} className="py-16 lg:py-24">
       <div className="site-container px-4 sm:px-6 lg:px-8">
         <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6 mb-8">
           <div>
             <div className="inline-flex items-center gap-2 text-sm font-semibold tracking-[0.12em] text-[var(--accent)]">
               <span className="h-px w-8 bg-[var(--accent)]" />
-              {locale === "ar" ? "المعارض والأعمال الحية" : "LIVE SHOWCASES & REAL WORK"}
+              {locale === "ar" ? badgeAr : badgeEn}
             </div>
             <h2 className="mt-3 text-[32px] lg:text-[44px] font-black tracking-tight leading-none">
-              {heading.title}
+              {title}
             </h2>
-            <p className="mt-3 opacity-60 max-w-[54ch]">{heading.subtitle}</p>
+            {subtitle && <p className="mt-3 opacity-60 max-w-[54ch]">{subtitle}</p>}
           </div>
           <div className="flex flex-wrap items-center gap-3">
             <div className="flex items-center gap-1 p-1 rounded-full bg-[var(--secondary)] border border-[var(--border)]">
@@ -105,32 +274,36 @@ export function DemosGallery() {
                 <Smartphone className="h-3.5 w-3.5" /> {locale === "ar" ? "هاتف" : "Mobile"}
               </button>
             </div>
-            <Link
-              href="/demos"
-              className="h-9 px-5 rounded-full bg-[var(--accent)] text-[var(--accent-foreground)] inline-flex items-center gap-1.5 text-sm font-bold hover:bg-[var(--accent-hover)]"
-            >
-              {t.demos.all} <ArrowUpRight className="h-3.5 w-3.5" />
-            </Link>
+            {showAllDemosButton && (
+              <Link
+                href="/demos"
+                className="h-9 px-5 rounded-full bg-[var(--accent)] text-[var(--accent-foreground)] inline-flex items-center gap-1.5 text-sm font-bold hover:bg-[var(--accent-hover)]"
+              >
+                {t.demos.all} <ArrowUpRight className="h-3.5 w-3.5" />
+              </Link>
+            )}
           </div>
         </div>
 
         {/* Filters */}
-        <div className="flex flex-wrap gap-2 mb-6">
-          {sectors.map((s) => (
-            <button
-              key={s.id}
-              type="button"
-              onClick={() => setFilter(s.id)}
-              className={`px-4 py-2 rounded-full text-sm font-medium border transition-colors cursor-pointer ${
-                filter === s.id
-                  ? "bg-[var(--primary)] text-[var(--primary-foreground)] border-[var(--primary)]"
-                  : "bg-[var(--card)] border-[var(--border)] hover:bg-[var(--secondary)]"
-              }`}
-            >
-              {locale === "ar" ? s.labelAr : s.labelEn}
-            </button>
-          ))}
-        </div>
+        {showSectorFilters && (
+          <div className="flex flex-wrap gap-2 mb-6">
+            {sectors.map((s) => (
+              <button
+                key={s.id}
+                type="button"
+                onClick={() => setFilter(s.id)}
+                className={`px-4 py-2 rounded-full text-sm font-medium border transition-colors cursor-pointer ${
+                  filter === s.id
+                    ? "bg-[var(--primary)] text-[var(--primary-foreground)] border-[var(--primary)]"
+                    : "bg-[var(--card)] border-[var(--border)] hover:bg-[var(--secondary)]"
+                }`}
+              >
+                {locale === "ar" ? s.labelAr : s.labelEn}
+              </button>
+            ))}
+          </div>
+        )}
 
         <div className="grid lg:grid-cols-[1.35fr_0.75fr] gap-6 items-start">
           {/* Preview Stage */}
@@ -170,7 +343,7 @@ export function DemosGallery() {
                     </button>
                     <button
                       type="button"
-                      onClick={() => setFullscreen(true)}
+                      onClick={() => setFullscreenDemo(activeDemo)}
                       className="h-8 px-3.5 rounded-full bg-[var(--accent)] text-[var(--accent-foreground)] inline-flex items-center gap-1.5 text-xs font-black hover:bg-[var(--accent-hover)] transition-colors cursor-pointer shadow-sm"
                     >
                       <Maximize2 className="h-3.5 w-3.5" />
@@ -188,7 +361,7 @@ export function DemosGallery() {
               </div>
             </div>
 
-            {/* Device Frame — géométrie exacte 16:10 (Desktop 1440x900) ou 9:16 (Mobile 390x693) */}
+            {/* Device Frame */}
             <div
               dir="ltr"
               className={`mx-auto w-full bg-zinc-950 rounded-[18px] p-2 sm:p-3 shadow-xl transition-all duration-300 ${
@@ -212,7 +385,11 @@ export function DemosGallery() {
                     <div className="absolute inset-0">
                       <ProjectPreview demo={activeDemo} mode={mode} />
                       <div className="absolute inset-0 flex items-center justify-center bg-black/15">
-                        <button type="button" onClick={() => setLiveSlug(activeDemo.slug)} className="inline-flex items-center gap-2 rounded-full bg-[var(--card)] px-5 py-3 text-sm font-bold shadow-xl cursor-pointer hover:bg-[var(--secondary)]">
+                        <button
+                          type="button"
+                          onClick={() => setLiveSlug(activeDemo.slug)}
+                          className="inline-flex items-center gap-2 rounded-full bg-[var(--card)] px-5 py-3 text-sm font-bold shadow-xl cursor-pointer hover:bg-[var(--secondary)]"
+                        >
                           <Play className="h-4 w-4" />
                           {locale === "ar" ? "تشغيل المعاينة التفاعلية" : "Load interactive preview"}
                         </button>
@@ -318,7 +495,7 @@ export function DemosGallery() {
                   <>
                     <button
                       type="button"
-                      onClick={() => setFullscreen(true)}
+                      onClick={() => setFullscreenDemo(activeDemo)}
                       className="h-9 px-4 rounded-full bg-[var(--primary)] text-[var(--primary-foreground)] inline-flex items-center gap-1.5 text-xs sm:text-sm font-bold hover:opacity-90 transition-opacity cursor-pointer"
                     >
                       <Maximize2 className="h-3.5 w-3.5" />
@@ -360,7 +537,7 @@ export function DemosGallery() {
                   type="button"
                   onClick={() => setActive(d.slug)}
                   className={`group text-start rounded-[20px] overflow-hidden border-2 bg-[var(--card)] transition-all cursor-pointer ${
-                    active === d.slug
+                    activeDemo.slug === d.slug
                       ? "border-[var(--accent)] shadow-lg"
                       : "border-[var(--border)] hover:border-[var(--accent)]/50"
                   }`}
@@ -389,7 +566,7 @@ export function DemosGallery() {
                           </span>
                         )}
                       </div>
-                      {active === d.slug && (
+                      {activeDemo.slug === d.slug && (
                         <span className="h-6 w-6 rounded-full bg-[var(--accent)] text-[var(--accent-foreground)] grid place-items-center flex-shrink-0">
                           <Sparkles className="h-3 w-3" />
                         </span>
@@ -411,14 +588,49 @@ export function DemosGallery() {
         </div>
       </div>
 
-      {/* Plein écran 100% dédié avec choix des 2 vues (Desktop / Mobile) */}
-      {fullscreen && hasLiveUrl && (
+      {fullscreenDemo && isRealUrl(fullscreenDemo.previewUrl) && (
         <FullscreenLiveViewer
-          demo={activeDemo}
+          demo={fullscreenDemo}
           initialMode={mode}
-          onClose={() => setFullscreen(false)}
+          onClose={() => setFullscreenDemo(null)}
         />
       )}
     </section>
+  );
+}
+
+export function DemosGallery() {
+  const { demos } = useSiteContent();
+  const heading = useSectionHeading("demos");
+  return (
+    <InteractiveShowcase
+      sectionId="demos"
+      badgeAr="المعارض والأعمال الحية"
+      badgeEn="LIVE SHOWCASES & REAL WORK"
+      title={heading.title}
+      subtitle={heading.subtitle}
+      items={demos}
+      showSectorFilters
+      showAllDemosButton
+      variant="interactive"
+    />
+  );
+}
+
+export function CustomShowcaseSection({ section }: { section: CustomSiteSection }) {
+  const { locale } = useI18n();
+  const ar = locale === "ar";
+  return (
+    <InteractiveShowcase
+      sectionId={`section-${section.id}`}
+      badgeAr={section.badgeAr || "مجموعة مختارة"}
+      badgeEn={section.badgeEn || "CURATED SHOWCASE"}
+      title={ar ? section.titleAr : section.titleEn}
+      subtitle={ar ? section.subtitleAr : section.subtitleEn}
+      items={section.sites}
+      showSectorFilters={false}
+      showAllDemosButton={false}
+      variant={section.variant}
+    />
   );
 }

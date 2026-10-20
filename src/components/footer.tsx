@@ -33,6 +33,16 @@ export function Footer() {
             <ul className="mt-4 space-y-2 text-sm opacity-70">
               <li><Link href="/" className="hover:opacity-100 hover:underline">{t.nav.home}</Link></li>
               <li><Link href="/demos" className="hover:opacity-100 hover:underline">{t.nav.demos}</Link></li>
+              <li>
+                <Link href="/apps" className="hover:opacity-100 hover:underline inline-flex items-center gap-1.5">
+                  {locale === "ar" ? "تطبيقاتنا الذكية (قريباً)" : "Our Applications (Soon)"}
+                </Link>
+              </li>
+              <li>
+                <Link href="/products" className="hover:opacity-100 hover:underline inline-flex items-center gap-1.5">
+                  {locale === "ar" ? "منتجاتنا الرقمية وبرامجنا (قريباً)" : "Digital Products & Software (Soon)"}
+                </Link>
+              </li>
               <li><Link href="/pricing" className="hover:opacity-100 hover:underline">{t.nav.pricing}</Link></li>
               <li><Link href="/contact" className="hover:opacity-100 hover:underline">{t.nav.contact}</Link></li>
             </ul>

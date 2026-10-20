@@ -10,13 +10,12 @@ import {
   defaultWhyUs,
   defaultProcess,
   defaultSectionHeadings,
+  defaultHomeLayout,
+  defaultAppsPage,
+  defaultProductsPage,
 } from "@/lib/content";
 import { useI18n } from "@/lib/i18n";
 import type { SectionHeadingId, SiteContent } from "@/lib/site-types";
-
-// Fournit la configuration et le contenu « vivants » (issus de la base,
-// éditables depuis /admin) à tous les composants du site. Les valeurs par
-// défaut servent de repli si aucun réglage n'est encore enregistré.
 
 interface SiteContextValue {
   config: typeof siteConfig;
@@ -32,6 +31,9 @@ const defaultContent: SiteContent = {
   whyUs: defaultWhyUs,
   process: defaultProcess,
   headings: defaultSectionHeadings,
+  layout: defaultHomeLayout,
+  appsPage: defaultAppsPage,
+  productsPage: defaultProductsPage,
 };
 
 const SiteContext = createContext<SiteContextValue>({
@@ -63,11 +65,6 @@ export function useSiteContent(): SiteContent {
   return useContext(SiteContext).content;
 }
 
-/**
- * Titre / sous-titre localisé d'une section du site, éditables dans
- * /admin → Contenu → « Titres des sections ». Repli automatique sur les
- * valeurs par défaut si aucun réglage n'a encore été enregistré.
- */
 export function useSectionHeading(id: SectionHeadingId) {
   const { headings } = useSiteContent();
   const { locale } = useI18n();

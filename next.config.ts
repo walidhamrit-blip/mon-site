@@ -133,6 +133,12 @@ const nextConfig: NextConfig = {
       // routes (la langue est gérée côté client) : on évite les 404 SEO.
       { source: "/ar", destination: "/", permanent: false },
       { source: "/en", destination: "/", permanent: false },
+      // Alias conviviaux vers les pages Applications & Produits numériques
+      { source: "/applications", destination: "/apps", permanent: false },
+      { source: "/nos-applications", destination: "/apps", permanent: false },
+      { source: "/produits", destination: "/products", permanent: false },
+      { source: "/nos-produits", destination: "/products", permanent: false },
+      { source: "/logiciels", destination: "/products", permanent: false },
     ];
   },
 };

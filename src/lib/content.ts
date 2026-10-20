@@ -1,10 +1,13 @@
 import type {
   HeroContent,
+  HomeLayoutConfig,
   RibbonContent,
   SectionHeadings,
+  ShowcasePageConfig,
   WhyUsItem,
   ProcessStep,
 } from "./site-types";
+import { BUILTIN_SECTION_IDS } from "./site-types";
 
 export const demos = [
   {
@@ -556,3 +559,331 @@ export const defaultSectionHeadings: SectionHeadings = {
     noteEn: "✓ Reply in 2h  ✓ No commitment  ✓ Free consult",
   },
 };
+
+/** Ordre et état par défaut des sections de la page d'accueil. */
+export const defaultHomeLayout: HomeLayoutConfig = {
+  entries: BUILTIN_SECTION_IDS.map((builtinId) => ({
+    key: builtinId,
+    kind: "builtin" as const,
+    builtinId,
+    enabled: true,
+  })),
+  customSections: [],
+};
+
+/** Page « Nos applications » (en cours de préparation / prochainement). */
+export const defaultAppsPage: ShowcasePageConfig = {
+  statusBadgeAr: "قيد التحضير • قريباً",
+  statusBadgeEn: "In Preparation • Coming Soon",
+  titleAr: "تطبيقاتنا الذكية",
+  titleEn: "Our Smart Applications",
+  highlightAr: "قيد التحضير للإطلاق القريب",
+  highlightEn: "Currently in final preparation",
+  subtitleAr:
+    "نطوّر الجيل القادم من تطبيقات الجوال والويب للشركات والعيادات والمتاجر في طرابلس وليبيا — تجربة سريعة، إشعارات فورية، وربط مباشر بواتساب ونظام الإدارة.",
+  subtitleEn:
+    "We are crafting our flagship line of iOS, Android & Web applications for clinics, stores and restaurants across Tripoli & Libya — fast native feel, instant alerts and seamless WhatsApp sync.",
+  bannerNoteAr:
+    "هذه التطبيقات قيد التحضير حالياً — سجّل اهتمامك لتكون أول من يجرّب النسخة التجريبية أو اطلب تطبيقاً مخصّصاً لهويتك.",
+  bannerNoteEn:
+    "These applications are currently in preparation — join the priority list for early access or request your custom branded app today.",
+  ctaLabelAr: "أعلمني فور الإطلاق",
+  ctaLabelEn: "Notify me at launch",
+  items: [
+    {
+      id: "app-clinic-mobile",
+      slug: "nukhba-clinic-app",
+      status: "in_preparation",
+      badgeAr: "قيد التحضير",
+      badgeEn: "In Preparation",
+      categoryAr: "صحة وعيادات",
+      categoryEn: "Clinics & Health",
+      titleAr: "نخبة كلينك — تطبيق حجز المواعيد والعيادات",
+      titleEn: "Nukhba Clinic — Patient & Booking App",
+      descriptionAr:
+        "تطبيق جوال للعيادات والمراكز الطبية يتيح للمرضى حجز المواعيد في ثوانٍ، استلام تذكيرات تلقائية عبر الإشعارات وواتساب، ومتابعة الوصفات والزيارات.",
+      descriptionEn:
+        "Mobile app for clinics & medical centers letting patients book appointments in seconds, receive automatic push & WhatsApp reminders, and access visit history.",
+      image:
+        "https://images.unsplash.com/photo-1576091160550-2173dba999ef?auto=format&fit=crop&w=1200&q=80",
+      color: "#059669",
+      platforms: ["iOS", "Android", "Web App"],
+      featuresAr: [
+        "حجز مواعيد ذكي حسب الطبيب والتخصص",
+        "تذكيرات فورية لتقليل الغياب",
+        "ملف متابعة رقمي لكل مريض",
+        "عربي + إنجليزي بواجهة مريحة",
+      ],
+      featuresEn: [
+        "Smart slot booking by doctor & specialty",
+        "Instant reminders cutting no-shows",
+        "Digital follow-up file per patient",
+        "Bilingual Arabic & English UI",
+      ],
+      progress: 85,
+      priceHintUsd: null,
+      demoUrl: "",
+    },
+    {
+      id: "app-commerce-go",
+      slug: "nukhba-shop-app",
+      status: "in_preparation",
+      badgeAr: "قيد التحضير",
+      badgeEn: "In Preparation",
+      categoryAr: "تجارة إلكترونية",
+      categoryEn: "E-Commerce",
+      titleAr: "نخبة شوب — تطبيق المتجر والتوصيل السريع",
+      titleEn: "Nukhba Shop — Native Store & Delivery App",
+      descriptionAr:
+        "تطبيق متجر إلكتروني بهويتك الخاصة على App Store وGoogle Play: تصفح فائق السرعة، إشعارات عروض وتخفيضات، دفع عند الاستلام وتتبع حالة المندوب مباشرة.",
+      descriptionEn:
+        "Branded mobile store for iOS & Android with instant browsing, push flash-sale notifications, cash-on-delivery checkout and live courier status tracking.",
+      image:
+        "https://images.unsplash.com/photo-1512941937669-90a1b58e7e9c?auto=format&fit=crop&w=1200&q=80",
+      color: "#C6A664",
+      platforms: ["iOS", "Android"],
+      featuresAr: [
+        "إشعارات عروض تزيد تكرار الشراء",
+        "سلة سريعة ودفع عند الاستلام",
+        "تتبع الطلب خطوة بخطوة",
+        "مزامنة كاملة مع موقع المتجر",
+      ],
+      featuresEn: [
+        "Push promos boosting repeat orders",
+        "1-minute cart & Cash on Delivery",
+        "Step-by-step order tracking",
+        "Real-time sync with web store",
+      ],
+      progress: 80,
+      priceHintUsd: null,
+      demoUrl: "",
+    },
+    {
+      id: "app-food-qr",
+      slug: "nukhba-food-order",
+      status: "coming_soon",
+      badgeAr: "قريباً",
+      badgeEn: "Coming Soon",
+      categoryAr: "مطاعم ومقاهي",
+      categoryEn: "Restaurants & Cafés",
+      titleAr: "نخبة فود — تطبيق الطلب والمنيو التفاعلي",
+      titleEn: "Nukhba Food — Ordering, Loyalty & QR App",
+      descriptionAr:
+        "منظومة طلب متكاملة للمطاعم والمقاهي تجمع تطبيق العميل للطلب والتوصيل، قائمة الطاولة عبر QR، وبرنامج نقاط الولاء لعملائك الدائمين.",
+      descriptionEn:
+        "All-in-one restaurant ordering app uniting delivery & pickup orders, QR table menu ordering, kitchen ticket screen and customer loyalty points.",
+      image:
+        "https://images.unsplash.com/photo-1555396273-367ea4eb4db5?auto=format&fit=crop&w=1200&q=80",
+      color: "#DC2626",
+      platforms: ["iOS", "Android", "QR Web"],
+      featuresAr: [
+        "طلب توصيل أو استلام بدون عمولة وسيط",
+        "تخصيص الإضافات والوجبات بسهولة",
+        "نقاط ولاء وكوبونات خصم",
+        "شاشة استقبال فورية للمطبخ",
+      ],
+      featuresEn: [
+        "Zero-commission delivery & pickup",
+        "Easy meal & topping customization",
+        "Built-in loyalty points & coupons",
+        "Live kitchen order display",
+      ],
+      progress: 65,
+      priceHintUsd: null,
+      demoUrl: "",
+    },
+    {
+      id: "app-business-pilot",
+      slug: "nukhba-pilot-app",
+      status: "coming_soon",
+      badgeAr: "قريباً",
+      badgeEn: "Coming Soon",
+      categoryAr: "إدارة الأعمال",
+      categoryEn: "Business Control",
+      titleAr: "نخبة بايلوت — لوحة قيادة مشروعك في جيبك",
+      titleEn: "Nukhba Pilot — Owner Dashboard in Your Pocket",
+      descriptionAr:
+        "تطبيق مخصّص لأصحاب المشاريع لمتابعة مبيعات اليوم، الطلبات الجديدة، تنبيهات المخزون ورسائل العملاء لحظة بلحظة من الهاتف أينما كنت.",
+      descriptionEn:
+        "Executive mobile companion giving business owners real-time daily sales, incoming web orders, low-stock alerts and one-tap WhatsApp replies anywhere.",
+      image:
+        "https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=1200&q=80",
+      color: "#0EA5E9",
+      platforms: ["iOS", "Android", "Web"],
+      featuresAr: [
+        "ملخص مبيعات وطلبات لحظي",
+        "تنبيه فوري لكل طلب أو حجز جديد",
+        "تقارير يومية وأسبوعية مبسّطة",
+        "صلاحيات متعددة لفريق العمل",
+      ],
+      featuresEn: [
+        "Live daily revenue & order pulse",
+        "Instant alert on every new lead/order",
+        "Clean daily & weekly summaries",
+        "Role-based team access",
+      ],
+      progress: 55,
+      priceHintUsd: null,
+      demoUrl: "",
+    },
+  ],
+};
+
+/** Page « Nos produits numériques & logiciels » (prochainement). */
+export const defaultProductsPage: ShowcasePageConfig = {
+  statusBadgeAr: "قريباً • منتجات وبرامج نخبة",
+  statusBadgeEn: "Coming Soon • Nukhba Software Suite",
+  titleAr: "منتجاتنا الرقمية وبرامجنا",
+  titleEn: "Digital Products & Software",
+  highlightAr: "قريباً للشركات والروّاد",
+  highlightEn: "Coming soon for modern businesses",
+  subtitleAr:
+    "حزمة متكاملة من البرامج السحابية والأنظمة الإدارية والمنتجات الرقمية الجاهزة — مصممة خصيصاً لبيئة العمل في طرابلس وليبيا بواجهة عربية وإنجليزية فائقة السلاسة.",
+  subtitleEn:
+    "A curated suite of cloud software, POS & ERP systems, and ready-to-launch digital assets tailored for businesses in Tripoli & across Libya.",
+  bannerNoteAr:
+    "جميع البرامج والمنتجات الرقمية أدناه تُطرح قريباً — احجز نسختك المبكرة بسعر الإطلاق التفضيلي.",
+  bannerNoteEn:
+    "All digital products & software packages below are launching soon — reserve early-bird access via WhatsApp.",
+  ctaLabelAr: "احجز نسختك عند الإطلاق",
+  ctaLabelEn: "Reserve launch access",
+  items: [
+    {
+      id: "prod-cloud-pos",
+      slug: "nukhba-cloud-pos",
+      status: "coming_soon",
+      badgeAr: "قريباً",
+      badgeEn: "Coming Soon",
+      categoryAr: "نقاط بيع ومخزون",
+      categoryEn: "POS & Inventory",
+      titleAr: "نخبة POS السحابي — نظام المبيعات والمخزون والفوترة",
+      titleEn: "Nukhba Cloud POS — Billing, Barcode & Multi-Store Stock",
+      descriptionAr:
+        "برنامج كاشير ومخازن سريع يعمل على الحاسوب والتابلت مع دعم قارئ الباركود، تعدد العملات (د.ل / $)، جرد الفروع، وتقارير الأرباح اليومية بضغطة زر.",
+      descriptionEn:
+        "Fast desktop & tablet POS software supporting barcode scanners, dual LYD/USD pricing, multi-branch stock transfers and instant daily profit reports.",
+      image:
+        "https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?auto=format&fit=crop&w=1200&q=80",
+      color: "#C6A664",
+      platforms: ["Windows / Mac", "Web Cloud", "Tablet"],
+      featuresAr: [
+        "فواتير سريعة ودعم قارئ الباركود",
+        "إدارة مخزون وتنبيهات النفاد",
+        "حسابات بالدينار الليبي والدولار",
+        "يعمل أونلاين وبدون انقطاع",
+      ],
+      featuresEn: [
+        "Instant invoicing & barcode scanning",
+        "Multi-warehouse stock & low-stock alerts",
+        "Dual LYD & USD accounting",
+        "Offline-resilient cloud sync",
+      ],
+      progress: 80,
+      priceHintUsd: null,
+      demoUrl: "",
+    },
+    {
+      id: "prod-whatsapp-crm",
+      slug: "nukhba-whatsapp-crm",
+      status: "coming_soon",
+      badgeAr: "قريباً",
+      badgeEn: "Coming Soon",
+      categoryAr: "إدارة عملاء CRM",
+      categoryEn: "CRM & Automation",
+      titleAr: "نخبة CRM — نظام إدارة العملاء ومبيعات واتساب",
+      titleEn: "Nukhba CRM — Lead Pipeline & WhatsApp Sales Desk",
+      descriptionAr:
+        "نظّم كل رسائل العملاء وعروض الأسعار في لوحة واحدة: تصنيف تلقائي للعملاء المحتملين، قوالب ردود جاهزة، تذكير بالمتابعة، وقياس أداء المبيعات.",
+      descriptionEn:
+        "Centralize every prospect, quote and follow-up in one clean workspace with smart status pipelines, quick reply templates and conversion analytics.",
+      image:
+        "https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&w=1200&q=80",
+      color: "#0F766E",
+      platforms: ["Web SaaS", "Mobile Web", "API"],
+      featuresAr: [
+        "مسار مبيعات مرئي من أول رسالة حتى الإغلاق",
+        "عروض أسعار PDF احترافية في دقيقة",
+        "تذكيرات متابعة تلقائية للفريق",
+        "تصدير تقارير وبيانات Excel / CSV",
+      ],
+      featuresEn: [
+        "Visual Kanban pipeline from lead to deal",
+        "1-minute branded PDF quotes",
+        "Automated team follow-up reminders",
+        "One-click CSV / Excel exports",
+      ],
+      progress: 75,
+      priceHintUsd: null,
+      demoUrl: "",
+    },
+    {
+      id: "prod-medsuite-erp",
+      slug: "nukhba-medsuite",
+      status: "in_preparation",
+      badgeAr: "قيد التحضير",
+      badgeEn: "In Preparation",
+      categoryAr: "برامج طبية وإدارية",
+      categoryEn: "Medical & Clinic Software",
+      titleAr: "نخبة ميد سويت — برنامج إدارة العيادات والمصحات",
+      titleEn: "Nukhba MedSuite — Complete Clinic & Polyclinic Software",
+      descriptionAr:
+        "برنامج متكامل لإدارة الاستقبال، طابور الانتظار، السجلات الطبية، الوصفات المطبوعة، وحسابات الأطباء والخزينة اليومية بخصوصية وأمان عالٍ.",
+      descriptionEn:
+        "Comprehensive clinic management software covering reception queue, electronic patient records, printed prescriptions and doctor revenue split.",
+      image:
+        "https://images.unsplash.com/photo-1516549655169-df83a0774514?auto=format&fit=crop&w=1200&q=80",
+      color: "#2563EB",
+      platforms: ["Desktop", "Local Network", "Cloud"],
+      featuresAr: [
+        "إدارة استقبال وطابور انتظار ذكي",
+        "أرشيف إلكتروني آمن لملفات المرضى",
+        "طباعة وصفات وتقارير بهوية العيادة",
+        "حساب نسب الأطباء والخزينة تلقائياً",
+      ],
+      featuresEn: [
+        "Smart reception & waiting-room queue",
+        "Secure searchable patient records",
+        "Branded prescription & report printing",
+        "Automated doctor payout & cashbox",
+      ],
+      progress: 70,
+      priceHintUsd: null,
+      demoUrl: "",
+    },
+    {
+      id: "prod-launch-kits",
+      slug: "nukhba-digital-kits",
+      status: "coming_soon",
+      badgeAr: "قريباً",
+      badgeEn: "Coming Soon",
+      categoryAr: "منتجات وقوالب رقمية",
+      categoryEn: "Digital Kits & Templates",
+      titleAr: "حزم نخبة الرقمية — قوالب أعمال وهوية جاهزة للانطلاق",
+      titleEn: "Nukhba Digital Kits — Ready-to-Use Business & Brand Packs",
+      descriptionAr:
+        "منتجات رقمية فورية التحميل لأصحاب المشاريع: عروض تقديمية تفاعلية، قوائم أسعار رقمية، حزم محتوى سوشيال ميديا، وجداول إدارة مالية احترافية.",
+      descriptionEn:
+        "Instant-download digital packs for founders: interactive pitch decks, digital price menus, social brand kits and financial planning dashboards.",
+      image:
+        "https://images.unsplash.com/photo-1542744173-8e7e53415bb0?auto=format&fit=crop&w=1200&q=80",
+      color: "#9333EA",
+      platforms: ["Instant Download", "Figma / PDF / Web"],
+      featuresAr: [
+        "جاهزة للتعديل الفوري باسم مشروعك",
+        "تصميم عربي وإنجليزي متقن",
+        "تحديثات مجانية مدى الحياة",
+        "شرح فيديو مبسّط خطوة بخطوة",
+      ],
+      featuresEn: [
+        " Customize in minutes with your brand",
+        "Crafted for Arabic & English layouts",
+        "Lifetime free updates included",
+        "Step-by-step video walkthrough",
+      ],
+      progress: 90,
+      priceHintUsd: null,
+      demoUrl: "",
+    },
+  ],
+};
+
