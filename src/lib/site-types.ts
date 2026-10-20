@@ -72,6 +72,8 @@ export interface PricingPlanData {
    * `null` (champ vidé dans l'admin) = formule non payable en crypto.
    */
   priceUsd?: number | null;
+  /** Pourcentage appliqué au prix du modèle pour calculer les frais de personnalisation. */
+  customizationPercent?: number | null;
   originalPrice: number | null;
   period: string;
   periodEn: string;

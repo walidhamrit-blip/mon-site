@@ -21,6 +21,8 @@ import { useSiteConfig } from "@/components/site-provider";
 import { ReservationButton } from "@/components/reservation-dialog";
 import { formatLyd, lydLabel, resolveDemoClassification } from "@/lib/classification";
 import { formatMainPrice, formatUsd } from "@/lib/installments";
+import { ModelPriceBreakdown } from "@/components/model-price-breakdown";
+import { ModelPurchaseButton } from "@/components/model-purchase-button";
 
 export function isRealUrl(url?: string): boolean {
   return Boolean(url && url !== "#" && (/^https?:\/\//i.test(url.trim()) || url.trim().startsWith("/")));
@@ -158,6 +160,9 @@ export function FullscreenLiveViewer({
   const { locale } = useI18n();
   const config = useSiteConfig();
   const classification = resolveDemoClassification(demo, config.pricing.plans);
+  const classifiedPlan = classification
+    ? config.pricing.plans.find((plan) => plan.id === classification.planId)
+    : null;
   const depositUsd = config.reservation?.depositUsd ?? 1;
   const [mode, setMode] = useState<"desktop" | "mobile">(initialMode);
   const [reloadKey, setReloadKey] = useState(0);
@@ -265,12 +270,17 @@ export function FullscreenLiveViewer({
               <Tag className="h-3.5 w-3.5 text-[var(--accent)]" />
               {locale === "ar" ? "الفئة" : "Cat."} {classification.tier}
               <span className="text-white/30">·</span>
-              {classification.priceUsd != null
+              {classification.totalPriceUsd != null
                 ? formatMainPrice(
-                    classification.priceUsd,
+                    classification.totalPriceUsd,
                     locale === "ar" ? config.pricing.currency : config.pricing.currencyEn,
                   )
-                : `${formatLyd(classification.priceLyd)} ${lydLabel(locale)}`}
+                : classification.priceUsd != null
+                  ? `${locale === "ar" ? "النموذج" : "Model"} ${formatMainPrice(
+                      classification.priceUsd,
+                      locale === "ar" ? config.pricing.currency : config.pricing.currencyEn,
+                    )}`
+                  : `${formatLyd(classification.priceLyd)} ${lydLabel(locale)}`}
             </span>
           )}
 
@@ -363,7 +373,7 @@ export function FullscreenLiveViewer({
       </div>
 
       {/* Proposition de réservation prioritaire — classification + prix + acompte */}
-      {config.reservation?.enabled && offerVisible && (
+      {(config.reservation?.enabled || classifiedPlan) && offerVisible && (
         <div
           dir={locale === "ar" ? "rtl" : "ltr"}
           className="absolute bottom-3 start-3 end-3 sm:end-auto sm:w-[330px] z-30 rounded-2xl border border-white/15 bg-[#111116]/95 backdrop-blur-md p-4 text-white shadow-[0_18px_50px_rgba(0,0,0,0.55)]"
@@ -371,7 +381,7 @@ export function FullscreenLiveViewer({
           <div className="flex items-start justify-between gap-3">
             <span className="inline-flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wider text-[var(--accent)]">
               <Sparkles className="h-3 w-3" />
-              {locale === "ar" ? "حجز أولوية" : "Priority booking"}
+              {locale === "ar" ? "سعر الموقع والتخصيص" : "Model + customization"}
             </span>
             <button
               type="button"
@@ -384,45 +394,44 @@ export function FullscreenLiveViewer({
           </div>
 
           {classification && (
-            <div className="mt-2 flex items-end justify-between gap-3">
-              <div className="min-w-0">
-                <div className="text-[10px] uppercase tracking-wider text-zinc-500">
-                  {locale === "ar" ? "الفئة" : "Category"} {classification.tier}
-                </div>
-                <div className="text-sm font-bold truncate">
-                  {locale === "ar" ? classification.name : classification.nameEn}
-                </div>
+            <div className="mt-2 rounded-xl bg-white/5 p-3">
+              <div className="mb-2 text-[10px] uppercase tracking-wider text-zinc-500">
+                {locale === "ar" ? `الفئة ${classification.tier} · ` : `Category ${classification.tier} · `}
+                {locale === "ar" ? classification.name : classification.nameEn}
               </div>
-              <div className="text-end flex-shrink-0">
-                {classification.priceUsd != null && (
-                  <div className="text-xl font-black text-[var(--accent)]" dir="ltr">
-                    {formatMainPrice(
-                      classification.priceUsd,
-                      locale === "ar" ? config.pricing.currency : config.pricing.currencyEn,
-                    )}
-                  </div>
-                )}
-                <div className="text-[10px] text-zinc-500" dir="ltr">
-                  {formatLyd(classification.priceLyd)}{" "}
-                  {lydLabel(locale)}
-                </div>
-              </div>
+              <ModelPriceBreakdown
+                breakdown={classification}
+                currency={locale === "ar" ? config.pricing.currency : config.pricing.currencyEn}
+                compact
+                className="text-white"
+              />
             </div>
           )}
 
-          <ReservationButton
-            demo={demo}
-            className="mt-3 h-10 w-full rounded-full bg-[var(--accent)] text-[var(--accent-foreground)] text-xs font-black inline-flex items-center justify-center gap-1.5 hover:bg-[var(--accent-hover)] transition-colors cursor-pointer"
-          />
-          <p className="mt-2 text-[10px] text-zinc-500 leading-relaxed">
-            {locale === "ar"
-              ? `عربون ${formatUsd(depositUsd)} $ (${formatLyd(
-                  config.reservation?.depositLyd ?? 0,
-                )} د.ل) يُخصم من سعر المشروع — أولوية في جدول العمل.`
-              : `$${formatUsd(depositUsd)} deposit (${formatLyd(
-                  config.reservation?.depositLyd ?? 0,
-                )} LYD) deducted from the project price — priority in our schedule.`}
-          </p>
+          {classifiedPlan && (
+            <ModelPurchaseButton
+              plan={classifiedPlan}
+              demo={demo}
+              className="mt-3 h-10 w-full rounded-full bg-[var(--accent)] text-[var(--accent-foreground)] text-xs font-black inline-flex items-center justify-center gap-1.5 hover:bg-[var(--accent-hover)] transition-colors cursor-pointer"
+            />
+          )}
+          {config.reservation?.enabled && (
+            <>
+              <ReservationButton
+                demo={demo}
+                className="mt-2 h-10 w-full rounded-full border border-white/20 bg-white/10 text-white text-xs font-black inline-flex items-center justify-center gap-1.5 hover:bg-white/15 transition-colors cursor-pointer"
+              />
+              <p className="mt-2 text-[10px] text-zinc-500 leading-relaxed">
+                {locale === "ar"
+                  ? `العربون ${formatUsd(depositUsd)} $ (${formatLyd(
+                      config.reservation?.depositLyd ?? 0,
+                    )} د.ل) يُخصم من الإجمالي بعد اعتماد التخصيص.`
+                  : `$${formatUsd(depositUsd)} deposit (${formatLyd(
+                      config.reservation?.depositLyd ?? 0,
+                    )} LYD) is deducted from the final total after customization is approved.`}
+              </p>
+            </>
+          )}
         </div>
       )}
     </div>
@@ -454,11 +463,7 @@ export function FullscreenLiveViewer({
             <p>
               {demo.sectorAr} ({demo.sectorEn})
               {classification
-                ? ` — الفئة ${classification.tier}: ${classification.name} (${classification.nameEn})${
-                    classification.priceUsd != null
-                      ? ` · $${formatUsd(classification.priceUsd)} USD (≈ ${formatLyd(classification.priceLyd)} LYD)`
-                      : ""
-                  }`
+                ? ` — الفئة ${classification.tier}: ${classification.name} (${classification.nameEn}) · نموذج الموقع: ${classification.priceUsd != null ? `$${formatUsd(classification.priceUsd)} USD (≈ ${formatLyd(classification.priceLyd)} LYD)` : "حسب الطلب"} · التخصيص${classification.customizationPercent != null ? ` (${classification.customizationPercent}٪)` : ""}: ${classification.customizationUsd != null ? `$${formatUsd(classification.customizationUsd)} USD` : "عرض سعر مكتوب قبل الدفع"} · الإجمالي: ${classification.totalPriceUsd != null ? `$${formatUsd(classification.totalPriceUsd)} USD (≈ ${formatLyd(classification.totalPriceLyd ?? 0)} LYD)` : "يُحدد ويُعتمد قبل الدفع النهائي"}`
                 : ""}
             </p>
           </section>

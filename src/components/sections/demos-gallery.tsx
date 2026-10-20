@@ -24,9 +24,10 @@ import {
 import Link from "next/link";
 import { ProjectPreview } from "@/components/project-preview";
 import { ReservationButton } from "@/components/reservation-dialog";
-import { demoImageAlt, formatLyd, lydLabel, resolveDemoClassification } from "@/lib/classification";
+import { demoImageAlt, resolveDemoClassification } from "@/lib/classification";
 import { formatMainPrice, formatUsd } from "@/lib/installments";
-import { freeCustomizationLabel } from "@/lib/promotion";
+import { ModelPriceBreakdown } from "@/components/model-price-breakdown";
+import { ModelPurchaseButton } from "@/components/model-purchase-button";
 
 function formatHost(url: string, fallbackSlug: string, domain: string): string {
   if (!isRealUrl(url)) return `${domain}/${fallbackSlug}`;
@@ -87,6 +88,9 @@ function InteractiveShowcase({
     activeDemo,
     siteConfig.pricing.plans,
   );
+  const activePlan = activeClassification
+    ? siteConfig.pricing.plans.find((plan) => plan.id === activeClassification.planId)
+    : null;
   const depositUsd = siteConfig.reservation?.depositUsd ?? 1;
 
   const reloadIframe = () => {
@@ -161,28 +165,15 @@ function InteractiveShowcase({
                       <h3 className="text-lg font-black leading-snug">
                         {locale === "ar" ? d.title : d.titleEn}
                       </h3>
-                      {dClassification?.priceUsd != null && (
-                        <div className="mt-1 flex flex-wrap items-baseline gap-x-2">
-                          <span
-                            className="text-base font-black text-[var(--accent)] leading-none"
-                            dir="ltr"
-                          >
-                            {formatMainPrice(
-                              dClassification.priceUsd,
-                              locale === "ar"
-                                ? siteConfig.pricing.currency
-                                : siteConfig.pricing.currencyEn,
-                            )}
-                          </span>
-                          <span className="text-[11px] opacity-55" dir="ltr">
-                            ≈ {formatLyd(dClassification.priceLyd)} {lydLabel(locale)}
-                          </span>
+                      {dClassification && (
+                        <div className="mt-2 rounded-xl bg-[var(--secondary)]/50 p-3">
+                          <ModelPriceBreakdown
+                            breakdown={dClassification}
+                            currency={locale === "ar" ? siteConfig.pricing.currency : siteConfig.pricing.currencyEn}
+                            compact
+                          />
                         </div>
                       )}
-                      <div className="mt-1 inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">
-                        <Sparkles className="h-3 w-3 shrink-0" />
-                        {freeCustomizationLabel(locale)}
-                      </div>
                       <p className="mt-1.5 text-sm opacity-65 line-clamp-2">
                         {locale === "ar" ? d.description : d.descriptionEn}
                       </p>
@@ -202,6 +193,13 @@ function InteractiveShowcase({
                   </div>
 
                   <div className="px-5 pb-5 pt-2 flex flex-wrap items-center gap-2 border-t border-[var(--border)]/60">
+                    {dClassification && siteConfig.pricing.plans.find((plan) => plan.id === dClassification.planId) && (
+                      <ModelPurchaseButton
+                        plan={siteConfig.pricing.plans.find((plan) => plan.id === dClassification.planId)!}
+                        demo={d}
+                        className="inline-flex min-h-9 w-full flex-wrap items-center justify-center gap-1.5 rounded-full border border-[var(--accent)]/50 bg-[var(--accent)]/10 px-3 py-2 text-center text-[11px] font-black hover:bg-[var(--accent)]/20 transition-colors"
+                      />
+                    )}
                     <ReservationButton
                       demo={d}
                       label={
@@ -464,38 +462,34 @@ function InteractiveShowcase({
                   {locale === "ar" ? activeDemo.description : activeDemo.descriptionEn}
                 </p>
                 {activeClassification && (
-                  <div className="mt-1.5 flex flex-wrap items-center gap-2 text-xs">
-                    <span className="px-2 py-0.5 rounded-full bg-[var(--accent)]/15 text-[var(--accent)] font-black">
-                      {locale === "ar"
-                        ? `الفئة ${activeClassification.tier}`
-                        : `Category ${activeClassification.tier}`}
-                    </span>
-                    <span className="opacity-70">
-                      {locale === "ar"
-                        ? activeClassification.name
-                        : activeClassification.nameEn}
-                    </span>
-                    {activeClassification.priceUsd != null && (
-                      <span className="font-black text-[var(--accent)]" dir="ltr">
-                        {formatMainPrice(
-                          activeClassification.priceUsd,
-                          locale === "ar" ? siteConfig.pricing.currency : siteConfig.pricing.currencyEn,
-                        )}
+                  <div className="mt-2 max-w-[420px] rounded-xl bg-[var(--secondary)]/50 p-3">
+                    <div className="mb-2 flex flex-wrap items-center gap-2 text-xs">
+                      <span className="px-2 py-0.5 rounded-full bg-[var(--accent)]/15 text-[var(--accent)] font-black">
+                        {locale === "ar"
+                          ? `الفئة ${activeClassification.tier}`
+                          : `Category ${activeClassification.tier}`}
                       </span>
-                    )}
-                    <span className="opacity-50" dir="ltr">
-                      {formatLyd(activeClassification.priceLyd)}{" "}
-                      {lydLabel(locale)}
-                    </span>
-                    <span className="inline-flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-semibold">
-                      <Sparkles className="h-3 w-3" />
-                      {freeCustomizationLabel(locale)}
-                    </span>
+                      <span className="opacity-70">
+                        {locale === "ar" ? activeClassification.name : activeClassification.nameEn}
+                      </span>
+                    </div>
+                    <ModelPriceBreakdown
+                      breakdown={activeClassification}
+                      currency={locale === "ar" ? siteConfig.pricing.currency : siteConfig.pricing.currencyEn}
+                      compact
+                    />
                   </div>
                 )}
               </div>
 
               <div className="flex items-center gap-2 flex-shrink-0 flex-wrap">
+                {activePlan && (
+                  <ModelPurchaseButton
+                    plan={activePlan}
+                    demo={activeDemo}
+                    className="h-9 px-3.5 rounded-full bg-[var(--accent)] text-[var(--accent-foreground)] inline-flex items-center justify-center gap-1.5 text-xs font-black hover:bg-[var(--accent-hover)] transition-colors cursor-pointer"
+                  />
+                )}
                 <ReservationButton
                   demo={activeDemo}
                   label={
@@ -592,20 +586,20 @@ function InteractiveShowcase({
                       {locale === "ar" ? d.title : d.titleEn}
                     </div>
                     {dClassification?.priceUsd != null && (
-                      <div
-                        className="mt-0.5 text-sm font-black text-[var(--accent)] leading-none"
-                        dir="ltr"
-                      >
-                        {formatMainPrice(
+                      <div className="mt-0.5 text-xs font-bold opacity-75" dir="ltr">
+                        {locale === "ar" ? "النموذج" : "Model"}: {formatMainPrice(
                           dClassification.priceUsd,
-                          locale === "ar"
-                            ? siteConfig.pricing.currency
-                            : siteConfig.pricing.currencyEn,
+                          locale === "ar" ? siteConfig.pricing.currency : siteConfig.pricing.currencyEn,
                         )}
                       </div>
                     )}
-                    <div className="text-[11px] text-emerald-600 dark:text-emerald-400 mt-0.5 line-clamp-1">
-                      {freeCustomizationLabel(locale)}
+                    <div className="text-[11px] text-[var(--accent)] mt-0.5 line-clamp-1">
+                      {dClassification?.totalPriceUsd != null
+                        ? `${locale === "ar" ? "الإجمالي" : "Total"}: ${formatMainPrice(
+                            dClassification.totalPriceUsd,
+                            locale === "ar" ? siteConfig.pricing.currency : siteConfig.pricing.currencyEn,
+                          )}`
+                        : (locale === "ar" ? "التخصيص: عرض سعر" : "Customization: quote")}
                     </div>
                   </div>
                 </button>

@@ -176,7 +176,7 @@ export function SiteItemEditor({
                 <span className="px-2 py-0.5 rounded-full bg-[#FAF6EC] text-[#7A5D20] border border-[#C6A664]/40 text-[10px] font-bold">
                   Cat. {classification.tier}
                   {classification.priceUsd != null
-                    ? ` · ${classification.priceUsd} ${currency}`
+                    ? ` · modèle ${classification.priceUsd} ${currency}`
                     : ""}
                 </span>
               )}
@@ -312,7 +312,7 @@ export function SiteItemEditor({
               </select>
             </Field>
 
-            <Field label={`Prix spécifique (${currency} — vide = prix catégorie)`}>
+            <Field label={`Prix du modèle propre au site (${currency} — vide = prix catégorie)`}>
               <input
                 type="number"
                 min={0}

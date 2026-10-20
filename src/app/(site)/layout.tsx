@@ -16,10 +16,7 @@ export default function SiteLayout({ children }: { children: ReactNode }) {
     <>
       <PromoBanner />
       <Navbar />
-      <main
-        className="min-h-screen"
-        style={{ paddingTop: "var(--promo-space, 0px)" }}
-      >
+      <main className="min-h-screen">
         {children}
       </main>
       <Footer />

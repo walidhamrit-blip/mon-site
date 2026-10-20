@@ -31,7 +31,7 @@ import {
 import { blogArticles } from "@/lib/blog-articles";
 import { getSectorSeo } from "@/lib/sectors";
 import { resolveServiceLanding, servicePath } from "@/lib/services";
-import { formatLyd, lydLabel } from "@/lib/classification";
+import { formatLyd, lydLabel, resolvePlanPriceBreakdown } from "@/lib/classification";
 import { formatMainPrice } from "@/lib/installments";
 import { JsonLd } from "@/components/json-ld";
 
@@ -255,12 +255,14 @@ export default async function ArticlePage({
                       <tr>
                         <th className="text-start px-4 py-3 font-bold">الباقة</th>
                         <th className="text-start px-4 py-3 font-bold">المشمول</th>
-                        <th className="text-end px-4 py-3 font-bold">USD</th>
-                        <th className="text-end px-4 py-3 font-bold">≈ {lyd}</th>
+                        <th className="text-end px-4 py-3 font-bold">النموذج + التخصيص + الإجمالي (USD)</th>
+                        <th className="text-end px-4 py-3 font-bold">≈ {lyd} (إرشادي)</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {config.pricing.plans.map((plan) => (
+                      {config.pricing.plans.map((plan) => {
+                        const breakdown = resolvePlanPriceBreakdown(plan);
+                        return (
                         <tr key={plan.id} className="border-t border-[var(--border)]">
                           <td className="px-4 py-3 font-black">
                             {plan.name}
@@ -271,16 +273,19 @@ export default async function ArticlePage({
                           <td className="px-4 py-3 text-xs opacity-65">
                             {plan.features.slice(0, 3).join(" · ")}
                           </td>
-                          <td className="px-4 py-3 text-end font-black" dir="ltr">
-                            {typeof plan.priceUsd === "number"
-                              ? formatMainPrice(plan.priceUsd, "$")
-                              : "—"}
+                          <td className="px-4 py-3 text-end text-xs" dir="ltr">
+                            <div>النموذج: {breakdown.modelPriceUsd == null ? "—" : formatMainPrice(breakdown.modelPriceUsd, "$")}</div>
+                            <div className="mt-1 opacity-65">
+                              التخصيص{breakdown.customizationPercent == null ? "" : ` (${breakdown.customizationPercent}٪)`}: {breakdown.customizationUsd == null ? "عرض سعر" : formatMainPrice(breakdown.customizationUsd, "$")}
+                            </div>
+                            <strong className="mt-1 block text-sm text-[var(--accent)]">الإجمالي: {breakdown.totalPriceUsd == null ? "يُحدد بعرض سعر" : formatMainPrice(breakdown.totalPriceUsd, "$")}</strong>
                           </td>
                           <td className="px-4 py-3 text-end text-xs opacity-60" dir="ltr">
-                            {formatLyd(plan.price)}
+                            {breakdown.totalPriceLyd == null ? `${formatLyd(plan.price)} + تخصيص` : formatLyd(breakdown.totalPriceLyd)}
                           </td>
                         </tr>
-                      ))}
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>

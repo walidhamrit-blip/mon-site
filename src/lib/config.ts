@@ -39,9 +39,10 @@ export const siteConfig = {
         name: "الواجهة",
         nameEn: "Vitrine",
         price: 1490,
-        // Équivalent USD pour le paiement crypto (NOWPayments ne
-        // facture pas en Livre libyenne). Ajustez selon votre taux.
+        // Prix du modèle hors personnalisation, facturé en USD.
         priceUsd: 300,
+        // Frais de personnalisation calculés en pourcentage du prix modèle.
+        customizationPercent: 20,
         originalPrice: 1900,
         period: "/ مرة واحدة",
         periodEn: "/ one-time",
@@ -75,6 +76,7 @@ export const siteConfig = {
         nameEn: "Vitrine+",
         price: 2490,
         priceUsd: 510,
+        customizationPercent: 20,
         originalPrice: 3200,
         period: "/ مرة واحدة",
         periodEn: "/ one-time",
@@ -112,6 +114,7 @@ export const siteConfig = {
         nameEn: "Boutique",
         price: 4290,
         priceUsd: 880,
+        customizationPercent: 20,
         originalPrice: null,
         period: "/ مرة واحدة",
         periodEn: "/ one-time",

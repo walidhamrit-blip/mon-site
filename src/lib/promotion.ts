@@ -77,10 +77,3 @@ export function promoBannerText(locale: "ar" | "en" | string, promo: PromoConfig
   }
   return `${promo.percent}% off every website — use purchase coupon ${promo.code} at checkout`;
 }
-
-/** Petite ligne réutilisable : « تخصيص مجاني » / « Free customization ». */
-export function freeCustomizationLabel(locale: "ar" | "en" | string): string {
-  return locale === "ar"
-    ? "مع تخصيص مجاني على هويتك"
-    : "+ free customization to your brand";
-}

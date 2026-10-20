@@ -558,9 +558,14 @@ export function SettingsForm({ initial, initialTab }: Props) {
           </div>
 
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <h2 className="text-sm font-black text-stone-900">
-              Formules tarifaires ({form.pricing.plans.length})
-            </h2>
+            <div>
+              <h2 className="text-sm font-black text-stone-900">
+                Modèle + personnalisation ({form.pricing.plans.length} formules)
+              </h2>
+              <p className="mt-1 text-xs text-stone-500">
+                La personnalisation est calculée en pourcentage du prix du modèle (20 % par défaut). Champ vide = devis final requis avant tout paiement.
+              </p>
+            </div>
             <button
               type="button"
               onClick={() => {
@@ -576,6 +581,7 @@ export function SettingsForm({ initial, initialTab }: Props) {
                         nameEn: "New Package",
                         price: 1500,
                         priceUsd: 290,
+                        customizationPercent: 20,
                         originalPrice: null,
                         period: "دفعة واحدة",
                         periodEn: "one-time",
@@ -668,7 +674,7 @@ export function SettingsForm({ initial, initialTab }: Props) {
                 </div>
               </div>
 
-              <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
+              <div className="grid sm:grid-cols-2 lg:grid-cols-5 gap-3.5">
                 <Field label="Nom (arabe)">
                   <input
                     dir="rtl"
@@ -686,7 +692,7 @@ export function SettingsForm({ initial, initialTab }: Props) {
                     className={ADMIN_INPUT_CLS}
                   />
                 </Field>
-                <Field label="Prix USD ($ — vide = sur devis)">
+                <Field label="Prix du modèle USD ($ — vide = sur devis)">
                   <input
                     type="number"
                     min={0}
@@ -699,6 +705,25 @@ export function SettingsForm({ initial, initialTab }: Props) {
                             : Number(e.target.value),
                       })
                     }
+                    className={ADMIN_INPUT_CLS}
+                  />
+                </Field>
+                <Field label="Personnalisation (% du modèle — vide = devis)">
+                  <input
+                    type="number"
+                    step="0.1"
+                    min={0}
+                    max={100}
+                    value={plan.customizationPercent ?? ""}
+                    onChange={(e) =>
+                      updatePlan(idx, {
+                        customizationPercent:
+                          e.target.value.trim() === ""
+                            ? null
+                            : Number(e.target.value),
+                      })
+                    }
+                    placeholder="20 %"
                     className={ADMIN_INPUT_CLS}
                   />
                 </Field>

@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { resolveDemoClassification } from "@/lib/classification";
+import { resolveDemoClassification, resolvePlanPriceBreakdown } from "@/lib/classification";
 import { getDemoCapturedAt, getDemoPreviewImages } from "@/lib/preview-manifest";
 import type { Demo, Faq, ProcessStep, Testimonial } from "@/lib/site-types";
 
@@ -34,10 +34,11 @@ type SiteConfig = {
       id: string;
       name: string;
       nameEn: string;
-      price?: number;
+      price: number;
       description: string;
       descriptionEn: string;
       priceUsd?: number | null;
+      customizationPercent?: number | null;
     }>;
   };
   stats?: {
@@ -286,19 +287,24 @@ export function faqJsonLd(faqs: ReadonlyArray<Faq>) {
  * avec prix USD machine-lisibles. Synchronisé automatiquement depuis /admin.
  */
 export function offerCatalogJsonLd(config: SiteConfig) {
-  const planOffers = config.pricing.plans
-    .filter((p) => typeof p.priceUsd === "number")
-    .map((plan) => ({
-      "@type": "Offer",
-      name: plan.name,
-      alternateName: plan.nameEn,
-      description: plan.description,
-      url: absoluteUrl(config, "/pricing"),
-      priceCurrency: "USD",
-      price: String(plan.priceUsd),
-      availability: "https://schema.org/InStock",
-      seller: { "@id": absoluteUrl(config, ORG_ID) },
-    }));
+  const planOffers = config.pricing.plans.flatMap((plan) => {
+    const totalPriceUsd = resolvePlanPriceBreakdown(plan).totalPriceUsd;
+    return totalPriceUsd == null
+      ? []
+      : [
+          {
+            "@type": "Offer",
+            name: plan.name,
+            alternateName: plan.nameEn,
+            description: `${plan.description} — model + customization`,
+            url: absoluteUrl(config, "/pricing"),
+            priceCurrency: "USD",
+            price: String(totalPriceUsd),
+            availability: "https://schema.org/InStock",
+            seller: { "@id": absoluteUrl(config, ORG_ID) },
+          },
+        ];
+  });
 
   const serviceOffers = (config.standaloneServices ?? [])
     .filter((s) => typeof s.priceFromUsd === "number" && s.priceFromUsd > 0)
@@ -478,13 +484,13 @@ export function demoJsonLd(config: SiteConfig, demo: Demo) {
       name: `${demo.sectorEn} businesses in Tripoli, Libya`,
     },
     ...(hasLivePreview ? { workExample: demo.previewUrl } : {}),
-    ...(cls && cls.priceUsd != null
+    ...(cls && cls.totalPriceUsd != null
       ? {
           offers: {
             "@type": "Offer",
-            name: `${cls.name} — ${cls.nameEn}`,
+            name: `${cls.name} — ${cls.nameEn} (model + customization)`,
             priceCurrency: "USD",
-            price: String(cls.priceUsd),
+            price: String(cls.totalPriceUsd),
             availability: "https://schema.org/InStock",
             url: canonicalUrl,
             seller: { "@id": absoluteUrl(config, ORG_ID) },
