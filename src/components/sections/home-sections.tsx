@@ -10,7 +10,6 @@ import {
 import { IdentityStudio } from "@/components/sections/identity-studio";
 import { Process } from "@/components/sections/process";
 import { Pricing } from "@/components/sections/pricing";
-import { FlexiblePayment } from "@/components/sections/flexible-payment";
 import { Services } from "@/components/sections/services";
 import { Testimonials } from "@/components/sections/testimonials";
 import { FAQ } from "@/components/sections/faq";
@@ -34,8 +33,6 @@ function renderBuiltInSection(id: BuiltInSectionId) {
       return <Process />;
     case "pricing":
       return <Pricing />;
-    case "flexiblePayment":
-      return <FlexiblePayment />;
     case "services":
       return <Services />;
     case "testimonials":

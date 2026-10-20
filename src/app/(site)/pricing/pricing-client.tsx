@@ -3,6 +3,7 @@ import Link from "next/link";
 import { Pricing } from "@/components/sections/pricing";
 import { FAQ } from "@/components/sections/faq";
 import { useI18n } from "@/lib/i18n";
+import { CURRENT_PROMO } from "@/lib/promotion";
 
 export function PricingClient() {
   const { locale } = useI18n();
@@ -20,12 +21,12 @@ export function PricingClient() {
           </p>
           <div className="mt-5 flex flex-wrap items-center justify-center gap-2 text-xs">
             <Link
-              href="/#flex-pay"
+              href="/demos"
               className="inline-flex items-center gap-1.5 h-9 px-4 rounded-full border border-[var(--accent)]/40 bg-[var(--accent)]/10 font-bold hover:bg-[var(--accent)]/20 transition-colors"
             >
               {locale === "ar"
-                ? "💸 دفع حر — 1 دولار أو أكثر (قابل للتعديل)"
-                : "💸 Flexible payment — $1 or more (editable amount)"}
+                ? `🎁 خصم ${CURRENT_PROMO.percent}% بكوبون ${CURRENT_PROMO.code}`
+                : `🎁 ${CURRENT_PROMO.percent}% off with coupon ${CURRENT_PROMO.code}`}
             </Link>
             <Link
               href="/#services"

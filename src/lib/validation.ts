@@ -203,7 +203,6 @@ export const homeLayoutSchema = z.object({
             "identityStudio",
             "process",
             "pricing",
-            "flexiblePayment",
             "services",
             "testimonials",
             "faq",

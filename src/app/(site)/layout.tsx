@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { Navbar } from "@/components/navbar";
+import { PromoBanner } from "@/components/promo-banner";
 import { Footer } from "@/components/footer";
 import { WhatsAppFloat } from "@/components/whatsapp-float";
 
@@ -12,8 +13,14 @@ import { WhatsAppFloat } from "@/components/whatsapp-float";
 export default function SiteLayout({ children }: { children: ReactNode }) {
   return (
     <>
+      <PromoBanner />
       <Navbar />
-      <main className="min-h-screen">{children}</main>
+      <main
+        className="min-h-screen"
+        style={{ paddingTop: "var(--promo-h, 0px)" }}
+      >
+        {children}
+      </main>
       <Footer />
       <WhatsAppFloat />
       <Analytics />

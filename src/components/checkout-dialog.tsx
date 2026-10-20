@@ -4,8 +4,10 @@ import { useEffect, useState } from "react";
 import {
   BadgeCheck,
   Bitcoin,
+  Check,
   Copy,
   Loader2,
+  Tag,
   X,
 } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
@@ -19,6 +21,13 @@ import {
   type InstallmentCount,
 } from "@/lib/installments";
 import { PaymentGuarantee } from "@/components/payment-guarantee";
+import {
+  CURRENT_PROMO,
+  discountedAmount,
+  isPromoCode,
+  normalizeCoupon,
+  promoActive,
+} from "@/lib/promotion";
 
 interface CreatePaymentResponse {
   ok: boolean;
@@ -86,6 +95,9 @@ export function CheckoutDialog({
   const [countdown, setCountdown] = useState(3);
   const [payment, setPayment] = useState<CreatePaymentResponse | null>(null);
   const [copied, setCopied] = useState<"address" | "amount" | null>(null);
+  const [couponInput, setCouponInput] = useState("");
+  const [appliedCoupon, setAppliedCoupon] = useState<string | null>(null);
+  const [couponError, setCouponError] = useState("");
   // Source unique : le montant choisi dans la section, jamais modifiable ici.
   const flexAmount = Math.round((Number(flex?.amountUsd) || 0) * 100) / 100;
 
@@ -116,11 +128,36 @@ export function CheckoutDialog({
     if (!Number.isFinite(flexAmount) || flexAmount <= 0) return null;
   } else if (!plan || !plan.priceUsd) return null;
 
-  const totalUsd = flexMode ? flexAmount : plan!.priceUsd!;
+  // Remise : appliquée uniquement aux formules (pas au montant libre).
+  // Le serveur recalcule le prix : ce calcul ne sert qu'à l'affichage.
+  const discountPercent = appliedCoupon ? CURRENT_PROMO.percent : 0;
+  const baseTotalUsd = flexMode ? flexAmount : plan!.priceUsd!;
+  const totalUsd = discountedAmount(baseTotalUsd, discountPercent);
+  const savedUsd = Math.round((baseTotalUsd - totalUsd) * 100) / 100;
   // Prix de la formule affichés dans le récapitulatif (dollar principal +
-  // équivalent indicatif en Livre libyenne).
-  const planPriceUsd: number | null = plan?.priceUsd ?? null;
-  const planPriceLyd: number = plan?.price ?? 0;
+  // équivalent indicatif en Livre libyenne), remise déduite.
+  const planPriceUsd: number | null =
+    plan?.priceUsd != null ? discountedAmount(plan.priceUsd, discountPercent) : null;
+  const planPriceLyd: number = plan
+    ? Math.round(discountedAmount(plan.price, discountPercent))
+    : 0;
+  const planBasePriceUsd: number | null = plan?.priceUsd ?? null;
+
+  /** Applique le coupon saisi (comparaison insensible à la casse). */
+  const applyCoupon = () => {
+    if (isPromoCode(couponInput)) {
+      setAppliedCoupon(normalizeCoupon(couponInput));
+      setCouponInput("");
+      setCouponError("");
+      return;
+    }
+    setCouponError(ar ? t.checkout.couponInvalidAr : t.checkout.couponInvalidEn);
+  };
+
+  const removeCoupon = () => {
+    setAppliedCoupon(null);
+    setCouponError("");
+  };
   // En mode montant libre : paiement unique (les micro-tranches
   // tomberaient sous les minimums imposés par les réseaux crypto).
   const trancheAmounts = flexMode
@@ -155,6 +192,7 @@ export function CheckoutDialog({
             : {
                 planId: plan!.id,
                 installments,
+                coupon: appliedCoupon ?? undefined,
                 name: name.trim() || undefined,
                 email: email.trim() || undefined,
                 phone: phone.trim() || undefined,
@@ -304,13 +342,31 @@ export function CheckoutDialog({
                 )}
               </div>
               <div className="mt-1.5 flex items-baseline justify-between gap-2">
-                <span className="text-2xl font-black text-[var(--accent)]" dir="ltr">
-                  ${formatUsd(totalUsd)}
+                <span className="flex items-baseline gap-2">
+                  <span className="text-2xl font-black text-[var(--accent)]" dir="ltr">
+                    ${formatUsd(totalUsd)}
+                  </span>
+                  {savedUsd > 0 && planBasePriceUsd != null && (
+                    <span className="text-sm line-through opacity-40" dir="ltr">
+                      ${formatUsd(planBasePriceUsd)}
+                    </span>
+                  )}
                 </span>
                 <span className="text-[11px] opacity-50">
                   {ar ? t.checkout.totalUsdAr : t.checkout.totalUsdEn}
                 </span>
               </div>
+              {savedUsd > 0 && (
+                <div className="mt-1 flex items-center justify-between gap-2 text-[11px] font-bold text-emerald-600 dark:text-emerald-400">
+                  <span dir="ltr">
+                    {ar ? t.checkout.couponSaveAr : t.checkout.couponSaveEn} $
+                    {formatUsd(savedUsd)}
+                  </span>
+                  <span dir="ltr">
+                    −{discountPercent}% · {appliedCoupon}
+                  </span>
+                </div>
+              )}
             </div>
 
             {!flexMode && (
@@ -356,6 +412,68 @@ export function CheckoutDialog({
                 })}
               </div>
             </div>
+            )}
+
+            {!flexMode && promoActive(CURRENT_PROMO) && (
+              <div>
+                <div className="mb-1.5 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider opacity-50">
+                  <Tag className="h-3.5 w-3.5" />
+                  {ar ? t.checkout.couponLabelAr : t.checkout.couponLabelEn}
+                </div>
+                {appliedCoupon ? (
+                  <div className="flex items-center justify-between gap-2 rounded-xl border border-emerald-500/40 bg-emerald-500/10 px-3 py-2.5 text-sm">
+                    <span className="inline-flex items-center gap-1.5 font-black text-emerald-600 dark:text-emerald-400">
+                      <Check className="h-4 w-4" />
+                      <span dir="ltr">{appliedCoupon}</span>
+                      <span className="text-[11px] font-semibold opacity-80">
+                        {ar ? t.checkout.couponAppliedAr : t.checkout.couponAppliedEn}
+                      </span>
+                    </span>
+                    <button
+                      type="button"
+                      onClick={removeCoupon}
+                      className="text-[11px] font-bold underline underline-offset-4 opacity-60 hover:opacity-100 cursor-pointer"
+                    >
+                      {ar ? t.checkout.couponRemoveAr : t.checkout.couponRemoveEn}
+                    </button>
+                  </div>
+                ) : (
+                  <>
+                    <div className="flex gap-2">
+                      <input
+                        className={`${inputCls} uppercase`}
+                        value={couponInput}
+                        onChange={(e) => {
+                          setCouponInput(e.target.value);
+                          setCouponError("");
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") {
+                            e.preventDefault();
+                            applyCoupon();
+                          }
+                        }}
+                        placeholder={
+                          ar ? t.checkout.couponPlaceholderAr : t.checkout.couponPlaceholderEn
+                        }
+                        maxLength={40}
+                        dir="ltr"
+                        aria-invalid={Boolean(couponError)}
+                      />
+                      <button
+                        type="button"
+                        onClick={applyCoupon}
+                        className="h-11 shrink-0 rounded-xl border border-[var(--border)] px-4 text-sm font-bold hover:border-[var(--accent)] transition-colors cursor-pointer"
+                      >
+                        {ar ? t.checkout.couponApplyAr : t.checkout.couponApplyEn}
+                      </button>
+                    </div>
+                    {couponError && (
+                      <p className="mt-1 text-xs font-semibold text-red-400">{couponError}</p>
+                    )}
+                  </>
+                )}
+              </div>
             )}
 
             <div className="flex items-center justify-between rounded-xl bg-[var(--accent)]/10 border border-[var(--accent)]/30 px-3 py-2 text-sm">

@@ -87,11 +87,6 @@ const BUILTIN_META: Record<
     desc: "Grille comparative des formules Vitrine, Vitrine+ et Boutique.",
     editHref: "/admin/settings?tab=pricing",
   },
-  flexiblePayment: {
-    label: "Paiement flexible (montant libre)",
-    desc: "Module permettant au client de régler le montant de son choix.",
-    editHref: "/admin/settings?tab=flex",
-  },
   services: {
     label: "Services ouverts à la carte",
     desc: "Prestations ciblées (refonte, ajout de section, identité, slides).",

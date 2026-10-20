@@ -1,4 +1,5 @@
 import { resolveDemoClassification } from "@/lib/classification";
+import { CURRENT_PROMO } from "@/lib/promotion";
 import { defaultAppsPage, defaultProductsPage } from "@/lib/content";
 import { sectorSeo } from "@/lib/sectors";
 import { resolveServiceLanding, servicesHubFaqs } from "@/lib/services";
@@ -54,7 +55,7 @@ export function buildLlmsTxt({ config, content }: LlmsSourceData): string {
     `- Languages: Arabic (ar-LY, primary RTL) and English (en); French-speaking team`,
   );
   lines.push(
-    `- Payments: USD pricing with indicative Libyan Dinar (LYD / د.ل) equivalent; bank transfer, cash, and crypto via NOWPayments (1 payment or 2–3 installments); $${config.reservation.depositUsd} (${config.reservation.depositLyd} LYD) priority reservation deposit deducted from final price; flexible payment from $${config.flexiblePayment.minUsd} to $${config.flexiblePayment.maxUsd}`,
+    `- Payments: USD pricing with indicative Libyan Dinar (LYD / د.ل) equivalent; bank transfer, cash, and crypto via NOWPayments (1 payment or 2–3 installments); $${config.reservation.depositUsd} (${config.reservation.depositLyd} LYD) priority reservation deposit deducted from final price; current promotion: ${CURRENT_PROMO.percent}% off with purchase coupon ${CURRENT_PROMO.code}`,
   );
   lines.push("");
   lines.push("## Main pages & AI resources");
