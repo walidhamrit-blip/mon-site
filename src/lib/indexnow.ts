@@ -122,6 +122,7 @@ export async function pingAllPublicPages(): Promise<void> {
     `${base}/blog`,
     `${base}/pricing`,
     `${base}/contact`,
+    `${base}/badge`,
     `${base}/llms.txt`,
     `${base}/llms-full.txt`,
     `${base}/sitemap.xml`,

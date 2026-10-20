@@ -53,6 +53,11 @@ export function Footer() {
                   {locale === "ar" ? "الأدلة والمقالات" : "Guides & blog"}
                 </Link>
               </li>
+              <li>
+                <Link href="/badge" className="hover:opacity-100 hover:underline">
+                  {locale === "ar" ? "شارة نخبة للمواقع" : "Nukhba client badge"}
+                </Link>
+              </li>
               <li><Link href="/pricing" className="hover:opacity-100 hover:underline">{t.nav.pricing}</Link></li>
               <li><Link href="/contact" className="hover:opacity-100 hover:underline">{t.nav.contact}</Link></li>
             </ul>
