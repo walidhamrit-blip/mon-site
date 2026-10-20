@@ -329,10 +329,44 @@ test("schémas JSON-LD incluent geo, review, services à la carte, HowTo et Offe
 
   const catalog = offerCatalogJsonLd(siteConfig);
   assert.ok(catalog["@id"].endsWith("/pricing#offer-catalog"));
-  const expectedCount =
-    siteConfig.pricing.plans.length + siteConfig.standaloneServices.length;
-  assert.equal(catalog.itemListElement.length, expectedCount);
-  assert.equal(catalog.numberOfItems, expectedCount);
+  assert.equal(
+    catalog.itemListElement.length,
+    siteConfig.pricing.plans.length + siteConfig.standaloneServices.length,
+  );
+  assert.deepEqual(
+    catalog.itemListElement.slice(0, 3).map((offer) => offer.price),
+    ["360", "612", "1056"],
+    "les offres structurées publient le total modèle + 20 % de personnalisation",
+  );
+
+  const quoteConfig = {
+    ...siteConfig,
+    pricing: {
+      ...siteConfig.pricing,
+      plans: siteConfig.pricing.plans.map((plan) => ({
+        ...plan,
+        customizationPercent: null,
+      })),
+    },
+  };
+  const quoteCatalog = offerCatalogJsonLd(quoteConfig);
+  assert.equal(quoteCatalog.itemListElement.length, siteConfig.standaloneServices.length);
+
+  const pricedConfig = {
+    ...siteConfig,
+    pricing: {
+      ...siteConfig.pricing,
+      plans: siteConfig.pricing.plans.map((plan) => ({
+        ...plan,
+        customizationPercent: 5,
+      })),
+    },
+  };
+  const pricedCatalog = offerCatalogJsonLd(pricedConfig);
+  assert.equal(
+    pricedCatalog.itemListElement.length,
+    siteConfig.pricing.plans.length + siteConfig.standaloneServices.length,
+  );
 
   const howTo = howToJsonLd(siteConfig, defaultProcess);
   assert.equal(howTo["@type"], "HowTo");
@@ -340,8 +374,12 @@ test("schémas JSON-LD incluent geo, review, services à la carte, HowTo et Offe
 
   const work = demoJsonLd(siteConfig, defaultDemos[0]);
   assert.equal(work["@type"], "CreativeWork");
-  assert.equal(work.offers["@type"], "Offer");
-  assert.ok(Number(work.offers.price) > 0);
+  assert.ok(work.offers, "une offre avec personnalisation tarifée publie le total");
+  const quoteWork = demoJsonLd(quoteConfig, defaultDemos[0]);
+  assert.equal(quoteWork.offers, undefined, "un devis non confirmé ne doit pas être présenté comme total");
+  const pricedWork = demoJsonLd(pricedConfig, defaultDemos[0]);
+  assert.equal(pricedWork.offers["@type"], "Offer");
+  assert.equal(Number(pricedWork.offers.price), 924);
   assert.equal(work.isPartOf["@id"], `${siteConfig.url}/#website`);
   assert.equal(work.mainEntityOfPage["@type"], "WebPage");
   assert.equal(work.about["@type"], "Thing");

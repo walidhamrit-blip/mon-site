@@ -5,6 +5,8 @@ import { db, ensureSchema } from "@/db";
 import { orders } from "@/db/schema";
 import { siteConfig } from "@/lib/config";
 import { getSiteData } from "@/lib/store";
+import { resolveDemoClassification, resolvePlanPriceBreakdown } from "@/lib/classification";
+import { collectAllDemos } from "@/lib/site-types";
 import {
   createInvoice,
   isNowPaymentsError,
@@ -68,6 +70,8 @@ const createPaymentSchema = z
     /** Description libre du paiement flexible (acompte, solde…). */
     description: z.string().max(120).optional(),
     planId: z.string().min(1).max(64).optional(),
+    /** Site du portfolio acheté ; son éventuel prix modèle spécifique est recalculé côté serveur. */
+    demoSlug: z.string().min(1).max(100).optional(),
     /** Jeton de suivi, exigé pour refacturer une commande protégée. */
     trackingToken: z.string().max(200).optional(),
     /** Référence d'une tranche existante à régler (2e, 3e versement…). */
@@ -509,13 +513,57 @@ export async function POST(req: Request) {
   // ── Mode « nouveau paiement » : total ou plan en tranches ──
   // Le plan est lu depuis la configuration « vivante » (admin), pas la
   // valeur codée : le montant facturé suit toujours le prix affiché.
-  const { config } = await getSiteData();
+  const { config, content } = await getSiteData();
   const plan = config.pricing.plans.find((p) => p.id === data.planId);
-  if (!plan || !plan.priceUsd || plan.priceUsd <= 0) {
+  if (!plan) {
     return errorResponse("plan_not_payable", 400, {
       source: "input",
       status: null,
-      message: `Formule « ${data.planId} » absente ou sans prix USD (prix administrateur non configuré ?)`,
+      message: `Formule « ${data.planId} » absente de la configuration.`,
+    });
+  }
+
+  const demos = collectAllDemos(content);
+  const demo = data.demoSlug ? demos.find((item) => item.slug === data.demoSlug) : null;
+  if (data.demoSlug && !demo) {
+    return errorResponse("demo_not_found", 404, {
+      source: "input",
+      status: null,
+      message: `Site « ${data.demoSlug} » introuvable dans le catalogue.`,
+    });
+  }
+  const demoClassification = demo
+    ? resolveDemoClassification(demo, config.pricing.plans)
+    : null;
+  if (demoClassification && demoClassification.planId !== plan.id) {
+    return errorResponse("plan_not_payable", 400, {
+      source: "input",
+      status: null,
+      message: `Le site « ${data.demoSlug} » ne correspond pas à la formule « ${plan.id} ».`,
+    });
+  }
+
+  const modelPriceUsd = demoClassification?.priceUsd ?? plan.priceUsd;
+  const modelPriceLyd = demoClassification?.priceLyd ?? plan.price;
+  if (typeof modelPriceUsd !== "number" || !Number.isFinite(modelPriceUsd) || modelPriceUsd <= 0) {
+    return errorResponse("plan_not_payable", 400, {
+      source: "input",
+      status: null,
+      message: `Le prix USD du modèle « ${plan.id} » n'est pas configuré.`,
+    });
+  }
+
+  // Recalcul partagé avec l'affichage public : le navigateur ne peut pas
+  // modifier le prix du modèle, le pourcentage ni le total facturé.
+  const priceBreakdown = resolvePlanPriceBreakdown(plan, modelPriceUsd, modelPriceLyd);
+  const customizationUsd = priceBreakdown.customizationUsd;
+  const grossTotalUsd = priceBreakdown.totalPriceUsd;
+  const grossTotalLyd = priceBreakdown.totalPriceLyd;
+  if (customizationUsd == null || grossTotalUsd == null || grossTotalLyd == null) {
+    return errorResponse("customization_quote_required", 400, {
+      source: "config",
+      status: null,
+      message: `Le taux de personnalisation de la formule « ${plan.id} » doit être renseigné dans Réglages → Tarifs avant tout paiement.`,
     });
   }
 
@@ -537,12 +585,13 @@ export async function POST(req: Request) {
     });
   }
   const discountPercent = couponValid ? CURRENT_PROMO.percent : 0;
-  const totalUsd = discountedAmount(plan.priceUsd, discountPercent);
-  const totalLyd = Math.round(discountedAmount(plan.price, discountPercent));
-  const planLabel =
-    discountPercent > 0
-      ? `${plan.nameEn} (-${discountPercent}% ${normalizeCoupon(data.coupon)})`
-      : plan.nameEn;
+  const totalUsd = discountedAmount(grossTotalUsd, discountPercent);
+  const totalLyd = Math.round(discountedAmount(grossTotalLyd, discountPercent));
+  const projectName = demo?.titleEn || plan.nameEn;
+  const priceDetails = `model $${modelPriceUsd} + customization $${customizationUsd}`;
+  const planLabel = `${projectName} (${priceDetails})${
+    discountPercent > 0 ? ` (-${discountPercent}% ${normalizeCoupon(data.coupon)})` : ""
+  }`.slice(0, 190);
 
   const usdTranches = splitAmount(totalUsd, count);
   const lydTranches = splitAmount(totalLyd, count);
@@ -572,6 +621,7 @@ export async function POST(req: Request) {
           currency: "usd",
           installments: count,
           installmentIndex: index + 1,
+          demoSlug: demo?.slug ?? null,
           clientName: data.name || null,
           email: data.email || null,
           phone: data.phone || null,

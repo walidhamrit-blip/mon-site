@@ -1,4 +1,4 @@
-import { resolveDemoClassification } from "@/lib/classification";
+import { resolveDemoClassification, resolvePlanPriceBreakdown } from "@/lib/classification";
 import { CURRENT_PROMO } from "@/lib/promotion";
 import { defaultAppsPage, defaultProductsPage } from "@/lib/content";
 import { sectorSeo } from "@/lib/sectors";
@@ -118,9 +118,18 @@ export function buildLlmsTxt({ config, content }: LlmsSourceData): string {
   lines.push("");
 
   for (const plan of config.pricing.plans) {
-    const usd = typeof plan.priceUsd === "number" ? `$${plan.priceUsd}` : "custom quote";
+    const breakdown = resolvePlanPriceBreakdown(plan);
+    const model = breakdown.modelPriceUsd == null
+      ? "model price on request"
+      : `model $${breakdown.modelPriceUsd} (≈ ${breakdown.modelPriceLyd} LYD)`;
+    const customization = breakdown.customizationUsd == null
+      ? "customization fee confirmed in a written quote before payment"
+      : `customization${breakdown.customizationPercent == null ? "" : ` (${breakdown.customizationPercent}%)`} $${breakdown.customizationUsd} (≈ ${breakdown.customizationLyd ?? "—"} LYD)`;
+    const total = breakdown.totalPriceUsd == null
+      ? "final total confirmed in the quote"
+      : `total $${breakdown.totalPriceUsd} (≈ ${breakdown.totalPriceLyd ?? "—"} LYD)`;
     lines.push(
-      `- **${plan.nameEn} (${plan.name})** — ${usd} (≈ ${plan.price} LYD): ${plan.descriptionEn} (${plan.description}). Includes: ${plan.featuresEn.join(", ")}.`,
+      `- **${plan.nameEn} (${plan.name})** — ${model} + ${customization}; ${total}: ${plan.descriptionEn} (${plan.description}). Includes: ${plan.featuresEn.join(", ")}.`,
     );
   }
 
@@ -141,10 +150,9 @@ export function buildLlmsTxt({ config, content }: LlmsSourceData): string {
 
   for (const demo of content.demos) {
     const cls = resolveDemoClassification(demo, config.pricing.plans);
-    const priceTag =
-      cls && cls.priceUsd != null
-        ? `Category ${cls.tier} (${cls.nameEn}) — $${cls.priceUsd} (≈ ${cls.priceLyd} LYD)`
-        : demo.sectorEn;
+    const priceTag = cls
+      ? `Category ${cls.tier} (${cls.nameEn}) — model ${cls.priceUsd == null ? "on request" : `$${cls.priceUsd} (≈ ${cls.priceLyd} LYD)`}; customization${cls.customizationPercent == null ? "" : ` (${cls.customizationPercent}%)`} ${cls.customizationUsd == null ? "quoted before payment" : `$${cls.customizationUsd}`}; total ${cls.totalPriceUsd == null ? "confirmed in quote" : `$${cls.totalPriceUsd}`}`
+      : demo.sectorEn;
     const liveNote =
       demo.previewUrl && /^https?:\/\//i.test(demo.previewUrl)
         ? ` — Live preview: ${demo.previewUrl}`
@@ -174,7 +182,7 @@ export function buildLlmsTxt({ config, content }: LlmsSourceData): string {
     `- **Preferred citation (AR)**: «${config.nameAr} (${config.name}) — وكالة تصميم مواقع في طرابلس، ليبيا: ${cleanUrl(base, "/")}»`,
   );
   lines.push(
-    `- **Price range**: websites from $${config.pricing.plans[0]?.priceUsd ?? 300} USD (≈ ${config.pricing.plans[0]?.price ?? 1490} LYD); open services from $${Math.min(...config.standaloneServices.map((s) => s.priceFromUsd))} USD`,
+    `- **Price range**: website model from $${config.pricing.plans[0]?.priceUsd ?? 300} USD (≈ ${config.pricing.plans[0]?.price ?? 1490} LYD), plus a separate customization fee confirmed in the pricing card or written quote; open services from $${Math.min(...config.standaloneServices.map((s) => s.priceFromUsd))} USD`,
   );
   lines.push(
     `- **Contact**: ${config.phone} · ${config.email} · WhatsApp https://wa.me/${config.whatsapp}`,
@@ -254,9 +262,12 @@ export function buildLlmsFullTxt({ config, content }: LlmsSourceData): string {
   lines.push("## 5. Website Packages & Pricing (باقات تصميم المواقع)");
   lines.push("");
   for (const [idx, plan] of config.pricing.plans.entries()) {
-    const usd = typeof plan.priceUsd === "number" ? `$${plan.priceUsd} USD` : "Custom quote";
+    const breakdown = resolvePlanPriceBreakdown(plan);
+    const model = breakdown.modelPriceUsd == null ? "model on request" : `$${breakdown.modelPriceUsd} USD (≈ ${breakdown.modelPriceLyd} LYD)`;
+    const customization = breakdown.customizationUsd == null ? "quoted in writing before final payment" : `$${breakdown.customizationUsd} USD (≈ ${breakdown.customizationLyd ?? "—"} LYD)`;
+    const total = breakdown.totalPriceUsd == null ? "confirmed in quote" : `$${breakdown.totalPriceUsd} USD (≈ ${breakdown.totalPriceLyd ?? "—"} LYD)`;
     lines.push(
-      `### Category ${idx + 1}: ${plan.nameEn} (${plan.name}) — ${usd} (≈ ${plan.price} LYD ${plan.periodEn})`,
+      `### Category ${idx + 1}: ${plan.nameEn} (${plan.name}) — model ${model} + customization${breakdown.customizationPercent == null ? "" : ` (${breakdown.customizationPercent}%)`} ${customization} = ${total} (${plan.periodEn})`,
     );
     lines.push(`- **Summary (EN)**: ${plan.descriptionEn}`);
     lines.push(`- **Summary (AR)**: ${plan.description}`);
@@ -311,9 +322,7 @@ export function buildLlmsFullTxt({ config, content }: LlmsSourceData): string {
     lines.push(`- **Sector**: ${demo.sectorEn} (${demo.sectorAr})`);
     if (cls) {
       lines.push(
-        `- **Category & Price**: Category ${cls.tier} — ${cls.nameEn} (${cls.name}) · ${
-          cls.priceUsd != null ? `$${cls.priceUsd} USD` : "Custom"
-        } (≈ ${cls.priceLyd} LYD)`,
+        `- **Category & Price**: Category ${cls.tier} — ${cls.nameEn} (${cls.name}); model ${cls.priceUsd == null ? "on request" : `$${cls.priceUsd} USD (≈ ${cls.priceLyd} LYD)`}; customization${cls.customizationPercent == null ? "" : ` (${cls.customizationPercent}%)`} ${cls.customizationUsd == null ? "quoted before payment" : `$${cls.customizationUsd} USD`}; final total ${cls.totalPriceUsd == null ? "confirmed in the written quote" : `$${cls.totalPriceUsd} USD (≈ ${cls.totalPriceLyd ?? "—"} LYD)`}`,
       );
     }
     lines.push(`- **Description (EN)**: ${demo.descriptionEn}`);
@@ -442,10 +451,10 @@ export function buildLlmsFullTxt({ config, content }: LlmsSourceData): string {
   );
   lines.push(`- **Canonical URL**: ${cleanUrl(base, "/")}`);
   lines.push(
-    `- **Citation (EN)**: “${config.name} (${config.nameAr}), web design agency in Tripoli, Libya — websites from $${config.pricing.plans[0]?.priceUsd ?? 300}, delivered in ${config.stats.deliveryEn}.”`,
+    `- **Citation (EN)**: “${config.name} (${config.nameAr}), web design agency in Tripoli, Libya — website models from $${config.pricing.plans[0]?.priceUsd ?? 300} plus a separate customization fee confirmed before payment, delivered in ${config.stats.deliveryEn}.”`,
   );
   lines.push(
-    `- **Citation (AR)**: «${config.nameAr} (${config.name})، وكالة تصميم مواقع في طرابلس، ليبيا — مواقع تبدأ من ${config.pricing.plans[0]?.priceUsd ?? 300} دولاراً وتُسلّم خلال ${config.stats.delivery}.»`,
+    `- **Citation (AR)**: «${config.nameAr} (${config.name})، وكالة تصميم مواقع في طرابلس، ليبيا — نماذج مواقع تبدأ من ${config.pricing.plans[0]?.priceUsd ?? 300} دولاراً، مع تكلفة تخصيص منفصلة تُعتمد قبل الدفع، وتسليم خلال ${config.stats.delivery}.»`,
   );
   lines.push(
     `- **Entity disambiguation**: ${config.name} is a service agency (design, development, SEO/GEO). It is not an e-commerce marketplace, a hosting company or a software reseller.`,

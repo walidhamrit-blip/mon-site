@@ -296,6 +296,8 @@ const planSchema = z.object({
     .max(1_000_000)
     .nullable()
     .optional(),
+  /** Personnalisation en pourcentage du prix modèle ; null/absent = devis avant paiement. */
+  customizationPercent: z.coerce.number().min(0).max(100).nullable().optional(),
   originalPrice: z.coerce.number().int().min(0).max(10_000_000).nullable(),
   period: z.string().max(100),
   periodEn: z.string().max(100),

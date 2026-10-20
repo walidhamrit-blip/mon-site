@@ -19,6 +19,7 @@ import {
 } from "@/lib/classification";
 import { formatMainPrice, formatUsd } from "@/lib/installments";
 import { PaymentGuarantee } from "@/components/payment-guarantee";
+import { ModelPriceBreakdown } from "@/components/model-price-breakdown";
 import type { Demo } from "@/lib/site-types";
 
 interface ReserveResponse {
@@ -247,25 +248,15 @@ export function ReservationDialog({
                 </div>
               )}
 
-              <div className="mt-3 flex items-end justify-between gap-2">
-                <span className="text-[11px] uppercase tracking-wider opacity-50">
-                  {ar ? "سعر المشروع" : "Project price"}
-                </span>
-                <span className="text-end">
-                  {classification?.priceUsd != null ? (
-                    <span className="block text-lg font-black text-[var(--accent)]" dir="ltr">
-                      {formatMainPrice(
-                        classification.priceUsd,
-                        ar ? config.pricing.currency : config.pricing.currencyEn,
-                      )}
-                    </span>
-                  ) : null}
-                  <span className="block text-[11px] opacity-60" dir="ltr">
-                    {formatLyd(classification?.priceLyd ?? 0)}{" "}
-                    {lydLabel(ar ? "ar" : "en")}
-                  </span>
-                </span>
-              </div>
+              {classification && (
+                <div className="mt-3 rounded-xl bg-[var(--card)]/60 p-3">
+                  <ModelPriceBreakdown
+                    breakdown={classification}
+                    currency={ar ? config.pricing.currency : config.pricing.currencyEn}
+                    compact
+                  />
+                </div>
+              )}
 
               <div className="mt-3 flex items-center justify-between gap-2 rounded-xl bg-[var(--accent)]/10 border border-[var(--accent)]/30 px-3 py-2">
                 <div>
@@ -274,8 +265,8 @@ export function ReservationDialog({
                   </div>
                   <div className="text-[10px] opacity-60">
                     {ar
-                      ? "يُخصم من السعر النهائي عند التعاقد"
-                      : "Deducted from the final price at signing"}
+                      ? "يُخصم من الإجمالي النهائي بعد اعتماد عرض التخصيص"
+                      : "Deducted from the approved final total after the customization quote"}
                   </div>
                 </div>
                 <div className="text-end" dir="ltr">

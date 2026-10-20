@@ -8,8 +8,10 @@ import { useI18n } from "@/lib/i18n";
 import { useSiteConfig } from "@/components/site-provider";
 import { isRealUrl, FullscreenLiveViewer } from "@/components/live-site-frames";
 import { ReservationButton } from "@/components/reservation-dialog";
-import { demoImageAlt, formatLyd, lydLabel, resolveDemoClassification } from "@/lib/classification";
-import { formatMainPrice, formatUsd } from "@/lib/installments";
+import { demoImageAlt, resolveDemoClassification } from "@/lib/classification";
+import { formatUsd } from "@/lib/installments";
+import { ModelPriceBreakdown } from "@/components/model-price-breakdown";
+import { ModelPurchaseButton } from "@/components/model-purchase-button";
 import {
   ArrowUpRight,
   Check,
@@ -153,47 +155,35 @@ export function DemoViewer({ demo, allDemos }: { demo: Demo; allDemos: Demo[] })
 
                 {classification && (
                   <div className="mt-5 rounded-2xl border border-[var(--accent)]/30 bg-[var(--accent)]/5 p-4">
-                    <div className="flex items-end justify-between gap-3">
-                      <div className="min-w-0">
-                        <div className="text-[10px] font-bold uppercase tracking-wider opacity-50">
-                          {locale === "ar"
-                            ? `الفئة ${classification.tier}`
-                            : `Category ${classification.tier}`}
-                        </div>
-                        <div className="font-black">
-                          {locale === "ar"
-                            ? classification.name
-                            : classification.nameEn}
-                        </div>
+                    <div className="mb-3">
+                      <div className="text-[10px] font-bold uppercase tracking-wider opacity-50">
+                        {locale === "ar"
+                          ? `الفئة ${classification.tier}`
+                          : `Category ${classification.tier}`}
                       </div>
-                      <div className="text-end flex-shrink-0">
-                        {classification.priceUsd != null && (
-                          <div
-                            className="text-2xl font-black text-[var(--accent)] leading-none"
-                            dir="ltr"
-                          >
-                            {formatMainPrice(
-                              classification.priceUsd,
-                              locale === "ar"
-                                ? config.pricing.currency
-                                : config.pricing.currencyEn,
-                            )}
-                          </div>
-                        )}
-                        <div className="mt-1 text-[11px] opacity-60" dir="ltr">
-                          {formatLyd(classification.priceLyd)}{" "}
-                          {lydLabel(locale)}
-                        </div>
+                      <div className="font-black">
+                        {locale === "ar" ? classification.name : classification.nameEn}
                       </div>
                     </div>
+                    <ModelPriceBreakdown
+                      breakdown={classification}
+                      currency={locale === "ar" ? config.pricing.currency : config.pricing.currencyEn}
+                    />
+                    {config.pricing.plans.find((plan) => plan.id === classification.planId) && (
+                      <ModelPurchaseButton
+                        plan={config.pricing.plans.find((plan) => plan.id === classification.planId)!}
+                        demo={demo}
+                        className="mt-3 h-10 w-full rounded-full bg-[var(--primary)] text-[var(--primary-foreground)] text-xs font-black inline-flex items-center justify-center gap-1.5 hover:opacity-90 transition-colors cursor-pointer"
+                      />
+                    )}
                     <ReservationButton
                       demo={demo}
-                      className="mt-3 h-10 w-full rounded-full bg-[var(--accent)] text-[var(--accent-foreground)] text-xs font-black inline-flex items-center justify-center gap-1.5 hover:bg-[var(--accent-hover)] transition-colors cursor-pointer"
+                      className="mt-2 h-10 w-full rounded-full bg-[var(--accent)] text-[var(--accent-foreground)] text-xs font-black inline-flex items-center justify-center gap-1.5 hover:bg-[var(--accent-hover)] transition-colors cursor-pointer"
                     />
                     <p className="mt-2 text-[10px] opacity-50 leading-relaxed">
                       {locale === "ar"
-                        ? `عربون ${formatUsd(depositUsd)} $ يُخصم من سعر المشروع — أولوية في جدول العمل.`
-                        : `$${formatUsd(depositUsd)} deposit deducted from the project price — priority in our schedule.`}
+                        ? `عربون ${formatUsd(depositUsd)} $ يُخصم من الإجمالي النهائي بعد اعتماد التخصيص.`
+                        : `$${formatUsd(depositUsd)} deposit is deducted from the final total once customization is approved.`}
                     </p>
                   </div>
                 )}

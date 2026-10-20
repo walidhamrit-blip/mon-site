@@ -8,18 +8,18 @@ import { collectAllDemos } from "@/lib/site-types";
 import { useI18n } from "@/lib/i18n";
 import {
   demoImageAlt,
-  formatLyd,
-  lydLabel,
   resolveDemoClassification,
+  resolvePlanPriceBreakdown,
   type DemoClassification,
+  type PlanPriceBreakdown,
 } from "@/lib/classification";
 import { formatMainPrice } from "@/lib/installments";
-import { freeCustomizationLabel } from "@/lib/promotion";
+import { ModelPriceBreakdown } from "@/components/model-price-breakdown";
+import { ModelPurchaseButton } from "@/components/model-purchase-button";
 import {
   ArrowUpRight,
   ExternalLink,
   Search,
-  Sparkles,
   X,
 } from "lucide-react";
 
@@ -38,13 +38,14 @@ interface Group {
   nameEn: string;
   priceUsd: number | null;
   priceLyd: number;
+  breakdown: PlanPriceBreakdown;
   entries: Entry[];
 }
 
 /**
  * Galerie classée par CATÉGORIE TARIFAIRE (et non par secteur) :
  * une section par formule, avec son prix, puis les sites de la catégorie.
- * Sous chaque site : son prix et la mention « personnalisation gratuite ».
+ * Sous chaque site : prix du modèle, frais de personnalisation et total (ou devis).
  * Le filtre par secteur a été retiré pour garder une lecture simple ;
  * seule la recherche reste disponible.
  */
@@ -75,15 +76,14 @@ export function DemosClient() {
     return config.pricing.plans
       .map((plan, index) => {
         const t = index + 1;
+        const breakdown = resolvePlanPriceBreakdown(plan);
         return {
           tier: t,
           name: plan.name,
           nameEn: plan.nameEn,
-          priceUsd:
-            typeof plan.priceUsd === "number" && plan.priceUsd > 0
-              ? plan.priceUsd
-              : null,
-          priceLyd: plan.price,
+          priceUsd: breakdown.modelPriceUsd,
+          priceLyd: breakdown.modelPriceLyd,
+          breakdown,
           entries: byTier.get(t) ?? [],
         };
       })
@@ -123,8 +123,8 @@ export function DemosClient() {
               </h1>
               <p className="mt-2.5 text-sm sm:text-base opacity-60 max-w-[58ch]">
                 {ar
-                  ? "كل موقع مصنّف حسب فئته مع سعره — والتخصيص الكامل على هويتك مجاني في كل الفئات."
-                  : "Every site is sorted by its price category, with its price — full customization to your brand is free in every category."}
+                  ? "اعرف سعر نموذج الموقع أولاً، ثم تكلفة تخصيصه لهويتك. يظهر الإجمالي قبل الدفع؛ وإذا لم يُحدد السعر بعد، نرسل لك عرضاً مكتوباً للموافقة."
+                  : "See each website model price and its separate brand-customization fee. The full total appears before checkout; if a fee is not set yet, request a written quote first."}
               </p>
             </div>
 
@@ -181,10 +181,15 @@ export function DemosClient() {
                   {ar ? group.name : group.nameEn}
                   {group.priceUsd != null && (
                     <span className="ms-1.5 opacity-70" dir="ltr">
-                      {formatMainPrice(
-                        group.priceUsd,
-                        ar ? config.pricing.currency : config.pricing.currencyEn,
-                      )}
+                      {group.breakdown.totalPriceUsd != null
+                        ? formatMainPrice(
+                            group.breakdown.totalPriceUsd,
+                            ar ? config.pricing.currency : config.pricing.currencyEn,
+                          )
+                        : `${ar ? "النموذج" : "model"} ${formatMainPrice(
+                            group.priceUsd,
+                            ar ? config.pricing.currency : config.pricing.currencyEn,
+                          )}`}
                     </span>
                   )}
                 </button>
@@ -223,27 +228,24 @@ export function DemosClient() {
                 </div>
               </div>
 
-              <div className="text-end">
-                {group.priceUsd != null && (
-                  <div
-                    className="text-xl sm:text-2xl font-black text-[var(--accent)] leading-none"
-                    dir="ltr"
-                  >
-                    {formatMainPrice(
-                      group.priceUsd,
-                      ar ? config.pricing.currency : config.pricing.currencyEn,
-                    )}
-                  </div>
-                )}
-                <div className="mt-1 text-[11px] opacity-55" dir="ltr">
-                  ≈ {formatLyd(group.priceLyd)} {lydLabel(locale)}
-                </div>
+              <div className="w-full sm:w-auto sm:min-w-[260px] rounded-xl border border-[var(--border)]/70 bg-[var(--card)]/70 p-3">
+                <ModelPriceBreakdown
+                  breakdown={group.breakdown}
+                  currency={ar ? config.pricing.currency : config.pricing.currencyEn}
+                  compact
+                />
+                <p className="mt-1 text-[10px] opacity-50">
+                  {ar ? "الدينار الليبي مقابل إرشادي" : "LYD equivalent is indicative"}
+                </p>
               </div>
             </div>
 
             <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
               {group.entries.map(({ demo, classification }) => {
                 const live = isRealUrl(demo.previewUrl);
+                const plan = classification
+                  ? config.pricing.plans.find((candidate) => candidate.id === classification.planId)
+                  : null;
                 return (
                   <article
                     key={demo.slug}
@@ -281,36 +283,27 @@ export function DemosClient() {
                         </Link>
                       </h3>
 
-                      {/* Prix directement sous le nom du site. */}
-                      <div className="mt-1.5 flex flex-wrap items-baseline gap-x-2 gap-y-1">
-                        {classification?.priceUsd != null ? (
-                          <>
-                            <span
-                              className="text-lg font-black text-[var(--accent)] leading-none"
-                              dir="ltr"
-                            >
-                              {formatMainPrice(
-                                classification.priceUsd,
-                                ar
-                                  ? config.pricing.currency
-                                  : config.pricing.currencyEn,
-                              )}
-                            </span>
-                            <span className="text-[11px] opacity-55" dir="ltr">
-                              ≈ {formatLyd(classification.priceLyd)}{" "}
-                              {lydLabel(locale)}
-                            </span>
-                          </>
-                        ) : (
-                          <span className="text-sm font-bold opacity-70">
-                            {ar ? "سعر حسب الطلب" : "Price on request"}
-                          </span>
-                        )}
-                      </div>
-                      <div className="mt-1.5 inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">
-                        <Sparkles className="h-3.5 w-3.5 shrink-0" />
-                        {freeCustomizationLabel(locale)}
-                      </div>
+                      {classification ? (
+                        <div className="mt-2 rounded-xl bg-[var(--secondary)]/50 p-3">
+                          <ModelPriceBreakdown
+                            breakdown={classification}
+                            currency={ar ? config.pricing.currency : config.pricing.currencyEn}
+                            compact
+                          />
+                        </div>
+                      ) : (
+                        <p className="mt-2 text-sm font-bold opacity-70">
+                          {ar ? "السعر النهائي حسب الطلب" : "Final price on request"}
+                        </p>
+                      )}
+
+                      {plan && (
+                        <ModelPurchaseButton
+                          plan={plan}
+                          demo={demo}
+                          className="mt-3 inline-flex min-h-9 w-full flex-wrap items-center justify-center gap-1.5 rounded-full border border-[var(--accent)]/50 bg-[var(--accent)]/10 px-3 py-2 text-center text-[11px] font-black hover:bg-[var(--accent)]/20 transition-colors"
+                        />
+                      )}
 
                       <div className="mt-3 flex items-center gap-2 pt-3 border-t border-[var(--border)]/70">
                         <Link

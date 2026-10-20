@@ -16,8 +16,8 @@ export function PricingClient() {
           </h1>
           <p className="mt-3 opacity-60">
             {locale === "ar"
-              ? "اختر ما يناسب مرحلتك — الأسعار بالدولار (مع مكافئ تقديري بالدينار الليبي)، ويمكنك الدفع كاملاً أو على 2-3 أقساط بالعملات الرقمية عبر NOWPayments."
-              : "Pick your stage — prices in USD (with an indicative LYD equivalent), pay in full or in 2–3 crypto installments via NOWPayments."}
+              ? "اختر نموذج الموقع، ثم راجع تكلفة التخصيص كبند منفصل. الإجمالي النهائي يظهر قبل الدفع؛ وإذا كان التخصيص يحتاج تقديراً، نرسل عرضاً مكتوباً للموافقة أولاً. الدفع الكامل أو 2–3 أقساط بالعملات الرقمية."
+              : "Choose a website model, then review its separate customization fee. The full total appears before checkout; if customization needs scoping, approve a written quote first. Pay in full or in 2–3 crypto installments."}
           </p>
           <div className="mt-5 flex flex-wrap items-center justify-center gap-2 text-xs">
             <Link
