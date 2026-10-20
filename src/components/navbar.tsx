@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
@@ -17,13 +17,6 @@ export function Navbar() {
   const { locale, t, toggleLocale, dir } = useI18n();
   const { mode, toggle } = useTheme();
   const [open, setOpen] = useState(false);
-  const [scrolled, setScrolled] = useState(false);
-
-  useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 20);
-    window.addEventListener("scroll", onScroll);
-    return () => window.removeEventListener("scroll", onScroll);
-  }, []);
 
   const links = [
     { href: "/services", label: locale === "ar" ? "خدمات سريعة" : "Open services" },
@@ -49,18 +42,10 @@ export function Navbar() {
 
   return (
     <>
-      <header
-        className={`fixed top-[var(--promo-h,0px)] inset-x-0 z-50 transition-all duration-300 ${
-          scrolled ? "py-3" : "py-5"
-        }`}
-      >
+      <header className="relative z-50 py-5">
         <div className="site-container px-4 sm:px-6">
           <div
-            className={`flex items-center justify-between rounded-full px-4 sm:px-6 py-3 transition-all duration-300 ${
-              scrolled
-                ? "bg-[var(--card)]/80 backdrop-blur-xl shadow-[0_8px_32px_rgba(0,0,0,0.08)] border border-[var(--border)]"
-                : "bg-[var(--card)]/60 backdrop-blur-md border border-[var(--border)]/50"
-            }`}
+            className="flex items-center justify-between rounded-full px-4 sm:px-6 py-3 bg-[var(--card)]/60 backdrop-blur-md border border-[var(--border)]/50"
           >
             <Link href="/" className="flex items-center gap-3 group">
               <div className="h-9 w-9 rounded-full bg-[var(--primary)] text-[var(--primary-foreground)] grid place-items-center font-black text-sm tracking-tight">
