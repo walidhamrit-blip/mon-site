@@ -13,6 +13,7 @@ import {
   User,
 } from "lucide-react";
 import { getSiteDataCached } from "@/lib/store";
+import { whatsappLink } from "@/lib/utils";
 import {
   absoluteUrl,
   breadcrumbJsonLd,
@@ -87,9 +88,10 @@ export default async function ArticlePage({
   const related = relatedArticles(blogArticles, article, 3);
   const lyd = lydLabel("ar");
 
-  const whatsappUrl = `https://wa.me/${config.whatsapp}?text=${encodeURIComponent(
+  const whatsappUrl = whatsappLink(
+    config.whatsapp,
     `مرحبا نخبة 👋 قرأت دليل «${article.h1Ar}» وأريد عرض سعر لمشروعي.`,
-  )}`;
+  );
 
   return (
     <>

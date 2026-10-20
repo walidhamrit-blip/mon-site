@@ -6,6 +6,14 @@ import { LoginForm } from "./login-form";
 
 export const dynamic = "force-dynamic";
 
+// Défense en profondeur : robots.txt bloque déjà /admin, mais la page de
+// connexion déclare aussi explicitement son noindex (elle héritait sinon
+// des métadonnées publiques du layout racine).
+export const metadata = {
+  title: "Connexion — Administration",
+  robots: { index: false, follow: false },
+};
+
 export default async function AdminLoginPage() {
   if (await isAdminAuthenticated()) {
     redirect("/admin");
