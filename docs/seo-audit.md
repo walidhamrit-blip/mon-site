@@ -260,6 +260,16 @@ Chaque guide contient **4 à 5 sections bilingues** (AR puis EN), des **faits ch
 - `scripts/blog.test.mjs` (12 tests) : slugs uniques, longueurs de titres/descriptions, réponse directe bilingue, dates cohérentes, ancres uniques, équilibre AR/EN des sections et puces, qualité des FAQ, existence réelle des services/secteurs liés, schémas, `wordCount`, ordre du `CollectionPage`, articles liés, synchronisation des flux IA.
 - Résultat : `npm run test:seo` **48 tests** au vert · `npm run seo:check` **49 pages/ressources, 0 erreur, 0 avertissement** · `npm run build` 45 routes.
 
-### 6.4 Roadmap restante
+### 6.4 Captures d'aperçu des démos — Playwright + Sharp
 
-Captures Playwright automatiques des démos (WebP desktop/mobile) et badges de netlinking client — les deux seuls points non encore outillés. Le monitoring des citations IA (GEO Tracker) et le blog sont désormais en place.
+- `scripts/capture-previews.mjs` : vérification HTTP 200 de chaque `previewUrl`, capture réelle du rendu en 1440 × 900 (ordinateur) et 390 × 693 (téléphone), conversion WebP qualité 78 (960 × 600 / 390 × 693), écriture dans `public/previews` et mise à jour de `public/previews/manifest.json` (empreinte, `capturedAt`, `httpStatus`, `status`, `lastError`).
+- `public/previews/manifest.json` devient la **source unique** lue par `src/lib/preview-manifest.ts` : carrousel et galerie (`src/lib/project-previews.ts`), `<image:loc>` de `sitemap.xml`, et données structurées `CreativeWork` (`image`, `screenshot`, `thumbnailUrl` dans `src/lib/seo.ts`). Plus de dépendance à un hébergeur d'images externe pour ces visuels.
+- Anti-cache sans renommage : `?v=<empreinte>` sur chaque URL servie. Une capture identique n'écrit rien (`unchanged`).
+- **Une démo hors ligne ne dégrade jamais le site** : la dernière capture connue est conservée, l'entrée passe `status: "down"`, et le workflow ouvre une issue au lieu de publier une image cassée.
+- `src/app/api/public/demos/route.ts` : `GET /api/public/demos` → `{ok, count, demos:[{slug, previewUrl, sector, title, titleEn}]}`, `s-maxage=300`. Permet au workflow de capturer depuis `--base=https://nokhba.net.ly` sans accès à la base.
+- `.github/workflows/demo-previews.yml` : lundi 07:00 UTC + `workflow_dispatch`, `npm ci`, Chromium, captures en `--force`, rapport en artefact (90 jours), pull request `chore(previews)` si des WebP changent, issue `demo-preview` si une démo est morte.
+- Garde-fous : `scripts/demo-previews.test.mjs` (21 tests) et `scripts/seo-check.mjs` (au moins une capture locale dans le sitemap d'images). Résultat : `npm run test:seo` **69 tests**, `npm run seo:check` **50 pages/ressources, 0 erreur, 0 avertissement**.
+
+### 6.5 Roadmap restante
+
+Badges de netlinking client (« badge Nukhba » vérifié) et générateur d'articles dans l'administration — les deux derniers points non encore outillés. Search Console, le GEO Tracker, le blog et les captures d'aperçu sont désormais en place.

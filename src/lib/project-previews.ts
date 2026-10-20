@@ -1,8 +1,19 @@
 import type { Demo } from "@/lib/site-types";
+import { findPreviewEntry, previewSrc } from "@/lib/preview-manifest";
 
-// Match the URL as well as the project: changing an admin URL must not leave an
-// unrelated screenshot attached to it. These are static, compressed local files.
-const previews: Record<string, { desktop: string; mobile: string; screenshot: boolean }> = {
+/**
+ * Aperçus légers du carrousel d'accueil.
+ *
+ * Source principale : `public/previews/manifest.json`, mis à jour
+ * automatiquement par `scripts/capture-previews.mjs` (captures desktop/mobile
+ * des démos en production). Le tableau ci-dessous ne sert plus que de repli
+ * pour d'anciens visuels qui ne figurent pas encore dans le manifeste.
+ *
+ * L'association se fait sur l'URL exacte du projet (hors slash terminal) :
+ * changer l'URL dans l'administration ne rattache jamais une ancienne capture
+ * sans rapport au nouveau site.
+ */
+const legacyPreviews: Record<string, { desktop: string; mobile: string; screenshot: boolean }> = {
   "https://al-manhaj-company.vercel.app": {
     desktop: "/previews/al-manhaj-company-desktop.webp",
     mobile: "/previews/al-manhaj-company-mobile.webp",
@@ -28,6 +39,13 @@ const previews: Record<string, { desktop: string; mobile: string; screenshot: bo
 };
 
 export function getProjectPreview(demo: Demo, mode: "desktop" | "mobile") {
-  const preview = previews[demo.previewUrl.trim().replace(/\/+$/, "")];
-  return { src: preview?.[mode] || demo.image, screenshot: preview?.screenshot ?? false };
+  const entry = findPreviewEntry(demo.previewUrl);
+  const fromManifest = previewSrc(entry, mode);
+  if (fromManifest) {
+    return { src: fromManifest, screenshot: entry?.screenshot ?? false };
+  }
+
+  const key = demo.previewUrl.trim().replace(/\/+$/, "");
+  const legacy = legacyPreviews[key];
+  return { src: legacy?.[mode] || demo.image, screenshot: legacy?.screenshot ?? false };
 }
