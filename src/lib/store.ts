@@ -13,19 +13,28 @@ import {
   defaultWhyUs,
   defaultProcess,
   defaultSectionHeadings,
+  defaultHomeLayout,
+  defaultAppsPage,
+  defaultProductsPage,
 } from "@/lib/content";
 import {
+  BUILTIN_SECTION_IDS,
   SECTION_HEADING_IDS,
+  collectAllDemos,
+  type CustomSiteSection,
   type Demo,
   type Faq,
   type HeroContent,
+  type HomeLayoutConfig,
+  type HomeSectionEntry,
   type ProcessStep,
   type RibbonContent,
   type SectionHeading,
   type SectionHeadings,
-  type SiteConfigData,
+  type ShowcasePageConfig,
   type SiteContent,
   type Testimonial,
+  type UpcomingCatalogItem,
   type WhyUsItem,
 } from "@/lib/site-types";
 
@@ -43,11 +52,21 @@ const KEY_RIBBON = "content_ribbon";
 const KEY_WHY_US = "content_why_us";
 const KEY_PROCESS = "content_process";
 const KEY_HEADINGS = "content_headings";
+const KEY_LAYOUT = "content_layout";
+const KEY_APPS_PAGE = "content_apps_page";
+const KEY_PRODUCTS_PAGE = "content_products_page";
 
 export interface SiteData {
   config: typeof siteConfig;
   content: SiteContent;
 }
+
+/**
+ * Retourne l'ensemble dédoublonné des sites connus du portfolio principal
+ * et des sections personnalisées actives, afin que `/demos/[slug]` et
+ * `/sitemap.xml` résolvent aussi tout site créé dans une section dédiée.
+ */
+export const getAllKnownDemos = collectAllDemos;
 
 /** Fusionne une configuration enregistrée par-dessus les valeurs par défaut. */
 export function mergeConfig(override: unknown): typeof siteConfig {
@@ -60,8 +79,6 @@ export function mergeConfig(override: unknown): typeof siteConfig {
     if (value === undefined) continue;
     const baseValue = base[key];
 
-    // Remplace les anciennes valeurs par défaut persistées, sans modifier
-    // un domaine personnalisé configuré par le propriétaire du site.
     const normalized = typeof value === "string" ? value.trim().toLowerCase() : "";
     const isOldDefaultDomain = key === "domain" && normalized === "nukhba.ly";
     const isOldDefaultUrl =
@@ -89,22 +106,19 @@ export function mergeConfig(override: unknown): typeof siteConfig {
           return storedPlan;
         }
         const plan = storedPlan as Record<string, unknown>;
-        const fallback = defaultPlans.find(
-          (candidate) =>
-            candidate &&
-            typeof candidate === "object" &&
-            !Array.isArray(candidate) &&
-            (candidate as Record<string, unknown>).id === plan.id,
-        ) ?? defaultPlans[index];
+        const fallback =
+          defaultPlans.find(
+            (candidate) =>
+              candidate &&
+              typeof candidate === "object" &&
+              !Array.isArray(candidate) &&
+              (candidate as Record<string, unknown>).id === plan.id,
+          ) ?? defaultPlans[index];
         if (!fallback || typeof fallback !== "object" || Array.isArray(fallback)) return plan;
         const defaults = fallback as Record<string, unknown>;
         return {
           ...defaults,
           ...plan,
-          // Les anciennes sauvegardes (avant le paiement crypto) n'ont
-          // pas la clé du tout → on garde le prix par défaut. Un `null`
-          // explicite vient du formulaire admin (« Prix USD » vidé) : la
-          // formule n'est volontairement plus payable en crypto.
           ...(!("priceUsd" in plan) && defaults.priceUsd !== undefined
             ? { priceUsd: defaults.priceUsd }
             : {}),
@@ -131,46 +145,45 @@ export function mergeConfig(override: unknown): typeof siteConfig {
   return merged as unknown as typeof siteConfig;
 }
 
-function asList<T>(value: unknown, fallback: readonly unknown[]): T[] {
-  if (Array.isArray(value) && value.length > 0) return value as T[];
+/**
+ * Si la clé existe explicitement en base (`hasKey`), on respecte la liste
+ * enregistrée (y compris vide `[]` lorsque l'administrateur a supprimé tous
+ * les éléments d'une section). Sinon on retombe sur les valeurs par défaut.
+ */
+function resolveStoredList<T>(
+  map: Map<string, unknown>,
+  key: string,
+  fallback: readonly unknown[],
+): T[] {
+  if (map.has(key) && Array.isArray(map.get(key))) {
+    return map.get(key) as T[];
+  }
   return fallback as T[];
 }
 
-/** Fusionne un objet enregistré par-dessus ses valeurs par défaut. */
 function mergeObject<T extends object>(defaults: T, value: unknown): T {
   if (!value || typeof value !== "object" || Array.isArray(value)) return defaults;
   return { ...defaults, ...(value as Partial<T>) };
 }
 
-/** Textes du Hero : fusion champ par champ + repli sur les pastilles par défaut. */
 function resolveHero(value: unknown): HeroContent {
   const merged = mergeObject(defaultHero, value);
   return {
     ...merged,
-    chipsAr:
-      Array.isArray(merged.chipsAr) && merged.chipsAr.length > 0
-        ? merged.chipsAr
-        : defaultHero.chipsAr,
-    chipsEn:
-      Array.isArray(merged.chipsEn) && merged.chipsEn.length > 0
-        ? merged.chipsEn
-        : defaultHero.chipsEn,
+    chipsAr: Array.isArray(merged.chipsAr) ? merged.chipsAr : defaultHero.chipsAr,
+    chipsEn: Array.isArray(merged.chipsEn) ? merged.chipsEn : defaultHero.chipsEn,
   };
 }
 
-/** Bandeau de services : les éléments vides retombent sur le catalogue par défaut. */
-function resolveRibbon(value: unknown): RibbonContent {
-  const merged = mergeObject(defaultRibbon, value);
+function resolveRibbon(map: Map<string, unknown>): RibbonContent {
+  if (!map.has(KEY_RIBBON)) return defaultRibbon;
+  const merged = mergeObject(defaultRibbon, map.get(KEY_RIBBON));
   return {
     ...merged,
-    items:
-      Array.isArray(merged.items) && merged.items.length > 0
-        ? merged.items
-        : defaultRibbon.items,
+    items: Array.isArray(merged.items) ? merged.items : defaultRibbon.items,
   };
 }
 
-/** Titres de sections : chaque section est fusionnée avec son défaut. */
 function resolveHeadings(value: unknown): SectionHeadings {
   const result = { ...defaultSectionHeadings };
   if (!value || typeof value !== "object" || Array.isArray(value)) return result;
@@ -195,11 +208,6 @@ const LEGACY_PLACEHOLDER_SLUGS = new Set([
   "safir-hotel",
 ]);
 
-/**
- * Complète une démo enregistrée avant l'ajout de la classification :
- * la catégorie et le prix par défaut du projet sont repris du code,
- * sans jamais écraser un choix fait dans l'administration.
- */
 function backfillClassification(base: Demo, stored: Demo): Demo {
   return {
     ...stored,
@@ -209,15 +217,24 @@ function backfillClassification(base: Demo, stored: Demo): Demo {
   };
 }
 
-function resolveDemos(value: unknown, fallback: readonly unknown[]): Demo[] {
+/**
+ * Résout la galerie des sites :
+ * - Si `content_demos` n'a jamais été enregistré en base, retourne les démos par défaut.
+ * - Si `content_demos` a été enregistré par l'administrateur, respecte exactement
+ *   les ajouts ET les suppressions (sans réinjecter les sites supprimés).
+ */
+function resolveDemos(map: Map<string, unknown>, fallback: readonly unknown[]): Demo[] {
   const defaults = (fallback as Demo[]).map((d) => ensureDemoSeoFields(d));
-  if (!Array.isArray(value) || value.length === 0) return defaults;
+  if (!map.has(KEY_DEMOS)) return defaults;
+
+  const value = map.get(KEY_DEMOS);
+  if (!Array.isArray(value)) return defaults;
+
   const stored = (value as Demo[]).filter(
     (d) => !(LEGACY_PLACEHOLDER_SLUGS.has(d.slug) && (!d.previewUrl || d.previewUrl === "#")),
   );
-  if (stored.length === 0) return defaults;
 
-  const withClassification = stored.map((item) => {
+  return stored.map((item) => {
     const base = defaults.find(
       (def) =>
         def.slug === item.slug ||
@@ -226,18 +243,98 @@ function resolveDemos(value: unknown, fallback: readonly unknown[]): Demo[] {
     const merged = base ? backfillClassification(base, item) : item;
     return ensureDemoSeoFields(merged);
   });
+}
 
-  const missingLiveDefaults = defaults.filter(
-    (def) =>
-      def.previewUrl &&
-      def.previewUrl !== "#" &&
-      /^https?:\/\//i.test(def.previewUrl) &&
-      !stored.some((s) => s.slug === def.slug || s.previewUrl === def.previewUrl),
-  );
-  if (missingLiveDefaults.length > 0) {
-    return [...missingLiveDefaults, ...withClassification];
+function resolveLayout(value: unknown): HomeLayoutConfig {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return {
+      entries: defaultHomeLayout.entries.map((e) => ({ ...e })),
+      customSections: [],
+    };
   }
-  return withClassification;
+  const raw = value as Partial<HomeLayoutConfig>;
+  const customSections: CustomSiteSection[] = Array.isArray(raw.customSections)
+    ? raw.customSections.map((sec) => ({
+        ...sec,
+        variant: sec.variant === "cards" ? "cards" : "interactive",
+        sites: Array.isArray(sec.sites)
+          ? sec.sites.map((site) => ensureDemoSeoFields(site))
+          : [],
+      }))
+    : [];
+
+  const customIds = new Set(customSections.map((s) => s.id));
+  const storedEntries: HomeSectionEntry[] = Array.isArray(raw.entries)
+    ? raw.entries.filter((entry) => {
+        if (entry.kind === "builtin") {
+          return (
+            Boolean(entry.builtinId) &&
+            (BUILTIN_SECTION_IDS as readonly string[]).includes(entry.builtinId!)
+          );
+        }
+        return Boolean(entry.customId) && customIds.has(entry.customId!);
+      })
+    : [];
+
+  // S'assure que toute section native et toute section personnalisée figurent
+  // dans `entries` (même désactivées) pour pouvoir être réactivées depuis l'admin.
+  const seenBuiltin = new Set(
+    storedEntries
+      .filter((e) => e.kind === "builtin" && e.builtinId)
+      .map((e) => e.builtinId!),
+  );
+  for (const builtinId of BUILTIN_SECTION_IDS) {
+    if (!seenBuiltin.has(builtinId)) {
+      storedEntries.push({
+        key: builtinId,
+        kind: "builtin",
+        builtinId,
+        enabled: true,
+      });
+    }
+  }
+
+  const seenCustom = new Set(
+    storedEntries
+      .filter((e) => e.kind === "custom" && e.customId)
+      .map((e) => e.customId!),
+  );
+  for (const sec of customSections) {
+    if (!seenCustom.has(sec.id)) {
+      storedEntries.push({
+        key: `custom:${sec.id}`,
+        kind: "custom",
+        customId: sec.id,
+        enabled: true,
+      });
+    }
+  }
+
+  return {
+    entries: storedEntries,
+    customSections,
+  };
+}
+
+function resolveShowcasePage(
+  map: Map<string, unknown>,
+  key: string,
+  defaults: ShowcasePageConfig,
+): ShowcasePageConfig {
+  if (!map.has(key)) {
+    return {
+      ...defaults,
+      items: defaults.items.map((item) => ({ ...item })),
+    };
+  }
+  const merged = mergeObject(defaults, map.get(key));
+  const rawItems: UpcomingCatalogItem[] = Array.isArray(merged.items)
+    ? merged.items
+    : defaults.items;
+  return {
+    ...merged,
+    items: rawItems,
+  };
 }
 
 /** Lit configuration + contenu depuis la base (avec repli sur les défauts). */
@@ -251,17 +348,21 @@ export async function getSiteData(): Promise<SiteData> {
     return {
       config: mergeConfig(map.get(KEY_CONFIG)),
       content: {
-        demos: resolveDemos(map.get(KEY_DEMOS), defaultDemos),
-        faqs: asList<Faq>(map.get(KEY_FAQS), defaultFaqs),
-        testimonials: asList<Testimonial>(
-          map.get(KEY_TESTIMONIALS),
+        demos: resolveDemos(map, defaultDemos),
+        faqs: resolveStoredList<Faq>(map, KEY_FAQS, defaultFaqs),
+        testimonials: resolveStoredList<Testimonial>(
+          map,
+          KEY_TESTIMONIALS,
           defaultTestimonials,
         ),
         hero: resolveHero(map.get(KEY_HERO)),
-        ribbon: resolveRibbon(map.get(KEY_RIBBON)),
-        whyUs: asList<WhyUsItem>(map.get(KEY_WHY_US), defaultWhyUs),
-        process: asList<ProcessStep>(map.get(KEY_PROCESS), defaultProcess),
+        ribbon: resolveRibbon(map),
+        whyUs: resolveStoredList<WhyUsItem>(map, KEY_WHY_US, defaultWhyUs),
+        process: resolveStoredList<ProcessStep>(map, KEY_PROCESS, defaultProcess),
         headings: resolveHeadings(map.get(KEY_HEADINGS)),
+        layout: resolveLayout(map.get(KEY_LAYOUT)),
+        appsPage: resolveShowcasePage(map, KEY_APPS_PAGE, defaultAppsPage),
+        productsPage: resolveShowcasePage(map, KEY_PRODUCTS_PAGE, defaultProductsPage),
       },
     };
   } catch (error) {
@@ -280,20 +381,25 @@ export async function getSiteData(): Promise<SiteData> {
         whyUs: defaultWhyUs,
         process: defaultProcess,
         headings: defaultSectionHeadings,
+        layout: {
+          entries: defaultHomeLayout.entries.map((e) => ({ ...e })),
+          customSections: [],
+        },
+        appsPage: {
+          ...defaultAppsPage,
+          items: defaultAppsPage.items.map((item) => ({ ...item })),
+        },
+        productsPage: {
+          ...defaultProductsPage,
+          items: defaultProductsPage.items.map((item) => ({ ...item })),
+        },
       },
     };
   }
 }
 
-/**
- * Version dédupliquée par requête de getSiteData (React `cache`).
- * Une page qui appelle les données dans generateMetadata PUIS dans son
- * composant ne déclenche qu'une seule lecture base — important pour les
- * pages SEO (layout, sitemap, robots, pages internes).
- */
 export const getSiteDataCached = cache(getSiteData);
 
-/** Enregistre (ou remplace) une valeur de réglage en base. */
 export async function upsertSetting(key: string, value: unknown): Promise<void> {
   await ensureSchema();
   await db
@@ -305,7 +411,6 @@ export async function upsertSetting(key: string, value: unknown): Promise<void> 
     });
 }
 
-/** Supprime un réglage (le site repasse aux valeurs par défaut). */
 export async function deleteSetting(key: string): Promise<void> {
   await ensureSchema();
   await db.delete(settings).where(eq(settings.key, key));
@@ -321,4 +426,7 @@ export const SETTINGS_KEYS = {
   whyUs: KEY_WHY_US,
   process: KEY_PROCESS,
   headings: KEY_HEADINGS,
+  layout: KEY_LAYOUT,
+  appsPage: KEY_APPS_PAGE,
+  productsPage: KEY_PRODUCTS_PAGE,
 } as const;

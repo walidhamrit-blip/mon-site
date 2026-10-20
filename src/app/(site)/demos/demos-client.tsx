@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { sectors } from "@/lib/content";
 import { useSiteConfig, useSiteContent } from "@/components/site-provider";
+import { collectAllDemos } from "@/lib/site-types";
 import { useI18n } from "@/lib/i18n";
 import { ReservationButton } from "@/components/reservation-dialog";
 import { demoImageAlt, formatLyd, lydLabel, resolveDemoClassification } from "@/lib/classification";
@@ -15,7 +16,8 @@ function isRealUrl(url?: string): boolean {
 }
 
 export function DemosClient() {
-  const { demos } = useSiteContent();
+  const siteContent = useSiteContent();
+  const demos = collectAllDemos(siteContent);
   const config = useSiteConfig();
   const { locale } = useI18n();
   const [filter, setFilter] = useState("all");

@@ -1,1713 +1,1532 @@
 "use client";
-import { useState } from "react";
-import type {
-  Demo,
-  Faq,
-  HeroContent,
-  PricingPlanData,
-  ProcessStep,
-  RibbonContent,
-  SectionHeading,
-  SectionHeadingId,
-  SiteContent,
-  Testimonial,
-  WhyUsItem,
-} from "@/lib/site-types";
-import { resetContentSection, saveContentSection } from "@/app/admin/actions";
-import { sectors } from "@/lib/content";
-import { formatLyd, resolveDemoClassification } from "@/lib/classification";
-import { formatUsd } from "@/lib/installments";
-import type { SeoEngine, SeoWarningCode } from "@/lib/ai/seo-generator";
-import { runSeoAudit } from "@/lib/seo-audit";
-import {
-  Plus,
-  Trash2,
-  ChevronUp,
-  ChevronDown,
-  Save,
-  RotateCcw,
-  Loader2,
-  CheckCircle2,
-  AlertCircle,
-  Sparkles,
-} from "lucide-react";
 
-type Tab =
+import { useState, useTransition } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import {
+  ArrowDown,
+  ArrowUp,
+  Blocks,
+  Check,
+  Plus,
+  RotateCcw,
+  Trash2,
+} from "lucide-react";
+import { resetContentSection, saveContentSection } from "@/app/admin/actions";
+
+const WHY_ICON_IDS = ["zap", "palette", "sliders", "search", "headset"] as const;
+import {
+  SECTION_HEADING_IDS,
+  type Demo,
+  type Faq,
+  type HeroContent,
+  type PricingPlanData,
+  type ProcessStep,
+  type RibbonContent,
+  type SectionHeadingId,
+  type SectionHeadings,
+  type SiteContent,
+  type Testimonial,
+  type WhyUsItem,
+} from "@/lib/site-types";
+import {
+  ADMIN_INPUT_CLS,
+  ADMIN_TEXTAREA_CLS,
+  SiteItemEditor,
+  makeBlankDemo,
+} from "../site-item-editor";
+
+type EditableTab =
   | "hero"
   | "ribbon"
   | "whyUs"
-  | "demos"
   | "process"
   | "testimonials"
   | "faqs"
-  | "headings";
+  | "headings"
+  | "demos";
 
-const tabs: { id: Tab; label: string }[] = [
-  { id: "hero", label: "Accueil (Hero)" },
-  { id: "ribbon", label: "Bandeau services" },
-  { id: "whyUs", label: "Pourquoi nous" },
-  { id: "demos", label: "Démos" },
-  { id: "process", label: "Processus" },
-  { id: "testimonials", label: "Témoignages" },
-  { id: "faqs", label: "FAQ" },
-  { id: "headings", label: "Titres des sections" },
+const VALID_TABS: EditableTab[] = [
+  "hero",
+  "ribbon",
+  "whyUs",
+  "process",
+  "testimonials",
+  "faqs",
+  "headings",
+  "demos",
 ];
 
-/** Sections dont les titres/sous-titres sont éditables. */
-const headingFields: {
-  id: SectionHeadingId;
-  label: string;
-  description: string;
-  withNote?: boolean;
-}[] = [
-  { id: "why", label: "Pourquoi nous", description: "Section « Pourquoi nous ? »" },
-  { id: "demos", label: "Galerie de démos", description: "Section des sites en démonstration" },
-  {
-    id: "identityCustomizer",
-    label: "Studio d'identité — personnalisation",
-    description: "Bannière de personnalisation en direct",
-  },
-  {
-    id: "identityThemes",
-    label: "Studio d'identité — thèmes",
-    description: "Galerie des thèmes prêts à l'emploi",
-  },
-  {
-    id: "process",
-    label: "Processus",
-    description: "Étapes de la méthode de travail",
-    withNote: true,
-  },
-  {
-    id: "pricing",
-    label: "Tarifs",
-    description: "Formules et prix",
-    withNote: true,
-  },
-  {
-    id: "flexPay",
-    label: "Paiement flexible",
-    description: "Section « payez ce que vous voulez »",
-  },
-  {
-    id: "services",
-    label: "Services à la carte",
-    description: "Petites missions vendues au forfait",
-  },
-  {
-    id: "testimonials",
-    label: "Témoignages",
-    description: "Avis des clients",
-  },
-  { id: "faq", label: "FAQ", description: "Questions fréquentes" },
-  {
-    id: "cta",
-    label: "Appel à l'action",
-    description: "Formulaire de demande final",
-    withNote: true,
-  },
-];
+const HEADING_META: Record<
+  SectionHeadingId,
+  { label: string; hasNote?: boolean }
+> = {
+  why: { label: "Pourquoi nous choisir" },
+  demos: { label: "Galerie des sites clients" },
+  identityCustomizer: { label: "Personnalisateur d’identité" },
+  identityThemes: { label: "Sélecteur des 8 thèmes" },
+  process: { label: "Processus en 5 étapes", hasNote: true },
+  pricing: { label: "Formules & Tarifs", hasNote: true },
+  flexPay: { label: "Paiement flexible" },
+  services: { label: "Services ouverts à la carte" },
+  testimonials: { label: "Témoignages clients" },
+  faq: { label: "Questions fréquentes (FAQ)" },
+  cta: { label: "Appel à l’action & formulaire devis", hasNote: true },
+};
 
-/* ---------- éléments d'interface ---------- */
+const WHY_ICON_LABELS: Record<(typeof WHY_ICON_IDS)[number], string> = {
+  zap: "Éclair — Rapidité",
+  palette: "Palette — Design",
+  sliders: "Curseurs — Sur-mesure",
+  search: "Loupe — SEO Google",
+  headset: "Casque — Support client",
+};
 
-function Field({
-  label,
-  value,
-  onChange,
-  dir,
-  placeholder,
-}: {
-  label: string;
-  value: string;
-  onChange: (v: string) => void;
-  dir?: "ltr" | "rtl";
-  placeholder?: string;
-}) {
-  return (
-    <label className="block">
-      <span className="text-xs font-semibold text-zinc-400">{label}</span>
-      <input
-        value={value}
-        dir={dir}
-        placeholder={placeholder}
-        onChange={(e) => onChange(e.target.value)}
-        className="mt-1.5 h-10 w-full rounded-xl border border-white/10 bg-black/40 px-3 text-sm text-white outline-none focus:border-[#C6A664] transition-colors"
-      />
-    </label>
-  );
-}
-
-function Area({
-  label,
-  value,
-  onChange,
-  dir,
-  rows = 3,
-  hint,
-}: {
-  label: string;
-  value: string;
-  onChange: (v: string) => void;
-  dir?: "ltr" | "rtl";
-  rows?: number;
-  hint?: string;
-}) {
-  return (
-    <label className="block">
-      <span className="text-xs font-semibold text-zinc-400">
-        {label} {hint && <span className="text-zinc-600">{hint}</span>}
-      </span>
-      <textarea
-        rows={rows}
-        dir={dir}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        className="mt-1.5 w-full rounded-xl border border-white/10 bg-black/40 p-3 text-sm text-white outline-none focus:border-[#C6A664] resize-y leading-6"
-      />
-    </label>
-  );
-}
-
-function Lines({
-  label,
-  value,
-  onChange,
-  rows = 4,
-}: {
-  label: string;
-  value: string[];
-  onChange: (v: string[]) => void;
-  rows?: number;
-}) {
-  return (
-    <label className="block">
-      <span className="text-xs font-semibold text-zinc-400">
-        {label} <span className="text-zinc-600">(un par ligne)</span>
-      </span>
-      <textarea
-        rows={rows}
-        dir="auto"
-        value={value.join("\n")}
-        onChange={(e) => onChange(e.target.value.split("\n"))}
-        className="mt-1.5 w-full rounded-xl border border-white/10 bg-black/40 p-3 text-sm text-white outline-none focus:border-[#C6A664] resize-y leading-6"
-      />
-    </label>
-  );
-}
-
-/**
- * Champ SEO avec compteur de caractères et signal de la zone d'affichage
- * Google (vert = optimal, ambre = à vérifier, rouge = trop long).
- * Une valeur vide déclenche le fallback automatique côté page publique.
- */
-function SeoField({
-  label,
-  value,
-  onChange,
-  max,
-  rows = 2,
-  placeholder,
-  dir = "rtl",
-}: {
-  label: string;
-  value: string;
-  onChange: (v: string) => void;
-  max: number;
-  rows?: number;
-  placeholder?: string;
-  dir?: "ltr" | "rtl";
-}) {
-  const len = value.length;
-  const tone =
-    len === 0
-      ? "text-zinc-500"
-      : len <= max
-        ? "text-emerald-400"
-        : "text-red-400";
-  return (
-    <label className="block">
-      <span className="flex items-center justify-between gap-2 text-xs font-semibold text-zinc-400">
-        <span>{label}</span>
-        <span className={`font-mono ${tone}`}>
-          {len}/{max}
-        </span>
-      </span>
-      <textarea
-        rows={rows}
-        dir={dir}
-        value={value}
-        maxLength={max + 30}
-        placeholder={placeholder}
-        onChange={(e) => onChange(e.target.value)}
-        className="mt-1.5 w-full rounded-xl border border-white/10 bg-black/40 p-3 text-sm text-white outline-none focus:border-[#C6A664] resize-y leading-6"
-      />
-    </label>
-  );
-}
-
-function ItemCard({
-  title,
-  subtitle,
-  index,
-  count,
-  onMove,
-  onDelete,
-  children,
-}: {
-  title: string;
-  subtitle?: string;
-  index: number;
-  count: number;
-  onMove: (dir: -1 | 1) => void;
-  onDelete: () => void;
-  children: React.ReactNode;
-}) {
-  return (
-    <div className="rounded-3xl border border-white/10 bg-black/30 p-5">
-      <div className="flex items-center justify-between gap-3">
-        <div className="flex items-center gap-3 min-w-0">
-          <span className="h-7 w-7 rounded-lg bg-white/5 border border-white/10 text-zinc-400 text-xs font-black grid place-items-center flex-shrink-0">
-            {index + 1}
-          </span>
-          <div className="min-w-0">
-            <div className="font-bold text-white truncate">{title}</div>
-            {subtitle && <div className="text-xs text-zinc-600 truncate">{subtitle}</div>}
-          </div>
-        </div>
-        <div className="flex items-center gap-1.5 flex-shrink-0">
-          <button
-            type="button"
-            onClick={() => onMove(-1)}
-            disabled={index === 0}
-            className="h-8 w-8 rounded-lg border border-white/10 text-zinc-400 hover:text-white grid place-items-center disabled:opacity-30 cursor-pointer"
-            aria-label="Monter"
-          >
-            <ChevronUp className="h-4 w-4" />
-          </button>
-          <button
-            type="button"
-            onClick={() => onMove(1)}
-            disabled={index === count - 1}
-            className="h-8 w-8 rounded-lg border border-white/10 text-zinc-400 hover:text-white grid place-items-center disabled:opacity-30 cursor-pointer"
-            aria-label="Descendre"
-          >
-            <ChevronDown className="h-4 w-4" />
-          </button>
-          <button
-            type="button"
-            onClick={onDelete}
-            className="h-8 w-8 rounded-lg border border-white/10 text-zinc-500 hover:text-red-400 hover:border-red-500/30 hover:bg-red-500/10 grid place-items-center transition-colors cursor-pointer"
-            aria-label="Supprimer"
-          >
-            <Trash2 className="h-3.5 w-3.5" />
-          </button>
-        </div>
-      </div>
-      <div className="mt-4">{children}</div>
-    </div>
-  );
-}
-
-function Panel({
-  title,
-  description,
-  children,
-}: {
-  title: string;
-  description?: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <section className="rounded-3xl border border-white/10 bg-black/30 p-5">
-      <h2 className="font-black text-white">{title}</h2>
-      {description && (
-        <p className="mt-1 text-xs text-zinc-500 leading-5">{description}</p>
-      )}
-      <div className="mt-4">{children}</div>
-    </section>
-  );
-}
-
-/* ---------- éditeur ---------- */
-
-function newDemo(existing: Demo[], plans: PricingPlanData[]): Demo {
-  let slug = `nouveau-projet-${Date.now().toString(36)}`;
-  while (existing.some((d) => d.slug === slug)) slug = `${slug}-2`;
-  return {
-    slug,
-    planId: plans[0]?.id ?? "vitrine",
-    categoryTier: 1,
-    priceUsd: null,
-    sector: "other",
-    sectorAr: "قطاع جديد",
-    sectorEn: "New sector",
-    title: "Nouveau projet",
-    titleEn: "New project",
-    description: "Description du démonstrateur…",
-    descriptionEn: "Demo description…",
-    image: "https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=800&q=80&auto=format&fit=crop",
-    color: "#C6A664",
-    features: ["Fonctionnalité 1", "Fonctionnalité 2"],
-    featuresEn: ["Feature 1", "Feature 2"],
-    previewUrl: "#",
-  };
-}
-
-function newTestimonial(): Testimonial {
-  return {
-    name: "Nom du client",
-    nameEn: "Client name",
-    role: "Entreprise — ville",
-    roleEn: "Company — city",
-    text: "Témoignage…",
-    textEn: "Testimonial…",
-    image: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=200&q=80&auto=format&fit=crop&crop=face",
-    rating: 5,
-    beforeAfter: { before: "Avant", after: "Après" },
-    beforeAfterEn: { before: "Before", after: "After" },
-  };
-}
-
-function newFaq(): Faq {
-  return {
-    qAr: "سؤال جديد؟",
-    qEn: "New question?",
-    aAr: "الجواب…",
-    aEn: "Answer…",
-  };
-}
-
-function newWhyUs(): WhyUsItem {
-  return {
-    icon: "zap",
-    titleAr: "ميزة جديدة",
-    titleEn: "New advantage",
-    descAr: "وصف الميزة…",
-    descEn: "Advantage description…",
-  };
-}
-
-function newProcess(index: number): ProcessStep {
-  return {
-    num: String(index + 1).padStart(2, "0"),
-    titleAr: "خطوة جديدة",
-    titleEn: "New step",
-    descAr: "وصف الخطوة…",
-    descEn: "Step description…",
-    durationAr: "يوم واحد",
-    durationEn: "1 day",
-  };
-}
-
-function moveItem<T>(list: T[], index: number, dir: -1 | 1): T[] {
-  const target = index + dir;
-  if (target < 0 || target >= list.length) return list;
-  const copy = [...list];
-  [copy[index], copy[target]] = [copy[target], copy[index]];
-  return copy;
+interface Props {
+  initial: SiteContent;
+  plans: PricingPlanData[];
+  currency: string;
+  initialTab?: string;
 }
 
 export function ContentEditor({
   initial,
   plans,
-}: {
-  initial: SiteContent;
-  plans: PricingPlanData[];
-}) {
-  const [tab, setTab] = useState<Tab>("demos");
-  const [draft, setDraft] = useState<SiteContent>(() => structuredClone(initial));
-  const [busy, setBusy] = useState<"" | Tab | "reset">("");
-  const [msg, setMsg] = useState<{ kind: "ok" | "err"; text: string } | null>(null);
-  // Assistant SEO IA : index de la démo en cours de génération + retour.
-  const [aiIndex, setAiIndex] = useState<number | null>(null);
-  const [aiBatchBusy, setAiBatchBusy] = useState(false);
-  const [aiBatchMsg, setAiBatchMsg] = useState<{
-    kind: "ok" | "warn" | "err";
-    text: string;
-  } | null>(null);
-  const [aiMsg, setAiMsg] = useState<{
-    index: number;
-    // "warn" = clé présente mais appel LLM en échec : gabarit appliqué,
-    // action requise côté Vercel, sans bloquer l'enregistrement.
-    kind: "ok" | "warn" | "err";
-    text: string;
-  } | null>(null);
+  currency,
+  initialTab,
+}: Props) {
+  const router = useRouter();
+  const resolvedInitialTab: EditableTab = VALID_TABS.includes(
+    initialTab as EditableTab,
+  )
+    ? (initialTab as EditableTab)
+    : "hero";
 
-  const seoAudit = runSeoAudit(draft, { pricing: { plans } });
+  const [tab, setTab] = useState<EditableTab>(resolvedInitialTab);
+  const [hero, setHero] = useState<HeroContent>(initial.hero);
+  const [ribbon, setRibbon] = useState<RibbonContent>(initial.ribbon);
+  const [whyUs, setWhyUs] = useState<WhyUsItem[]>(initial.whyUs);
+  const [process, setProcess] = useState<ProcessStep[]>(initial.process);
+  const [testimonials, setTestimonials] = useState<Testimonial[]>(
+    initial.testimonials,
+  );
+  const [faqs, setFaqs] = useState<Faq[]>(initial.faqs);
+  const [headings, setHeadings] = useState<SectionHeadings>(initial.headings);
+  const [demos, setDemos] = useState<Demo[]>(initial.demos);
+  const [openDemoSlugs, setOpenDemoSlugs] = useState<Record<string, boolean>>(
+    {},
+  );
+  const [dirtyMap, setDirtyMap] = useState<Record<string, boolean>>({});
+  const [toast, setToast] = useState<{ msg: string; kind: "ok" | "err" } | null>(
+    null,
+  );
+  const [pending, startTransition] = useTransition();
 
-  const setHero = (patch: Partial<HeroContent>) =>
-    setDraft((d) => ({ ...d, hero: { ...d.hero, ...patch } }));
+  const markDirty = (t: EditableTab) =>
+    setDirtyMap((prev) => ({ ...prev, [t]: true }));
 
-  const setRibbon = (patch: Partial<RibbonContent>) =>
-    setDraft((d) => ({ ...d, ribbon: { ...d.ribbon, ...patch } }));
-
-  const setRibbonItem = (i: number, patch: Partial<RibbonContent["items"][number]>) =>
-    setDraft((d) => ({
-      ...d,
-      ribbon: {
-        ...d.ribbon,
-        items: d.ribbon.items.map((item, j) =>
-          j === i ? { ...item, ...patch } : item,
-        ),
-      },
-    }));
-
-  const setWhyUs = (i: number, patch: Partial<WhyUsItem>) =>
-    setDraft((d) => ({
-      ...d,
-      whyUs: d.whyUs.map((item, j) => (j === i ? { ...item, ...patch } : item)),
-    }));
-
-  const setProcess = (i: number, patch: Partial<ProcessStep>) =>
-    setDraft((d) => ({
-      ...d,
-      process: d.process.map((item, j) => (j === i ? { ...item, ...patch } : item)),
-    }));
-
-  const setHeading = (id: SectionHeadingId, patch: Partial<SectionHeading>) =>
-    setDraft((d) => ({
-      ...d,
-      headings: { ...d.headings, [id]: { ...d.headings[id], ...patch } },
-    }));
-
-  const setDemo = (i: number, patch: Partial<Demo>) =>
-    setDraft((d) => ({ ...d, demos: d.demos.map((x, j) => (j === i ? { ...x, ...patch } : x)) }));
-
-  /**
-   * Demande à l'assistant SEO IA (route /api/admin/ai/seo) un jeu de champs
-   * SEO bilingues pour la démo `i` : titre/description AR + EN et textes
-   * alternatifs d'image. `copy` est toujours renvoyé ; `engine` distingue :
-   * - "llm"      → champs générés par le modèle ;
-   * - "template" → aucune clé OpenAI configurée (gabarit local) ;
-   * - "error"    → clé configurée mais refusée/indisponible (gabarit + code).
-   */
-  const generateSeo = async (i: number) => {
-    const demo = draft.demos[i];
-    if (!demo) return;
-    setAiIndex(i);
-    setAiMsg(null);
-    try {
-      const res = await fetch("/api/admin/ai/seo", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          title: demo.title,
-          titleEn: demo.titleEn,
-          description: demo.description,
-          descriptionEn: demo.descriptionEn,
-          sectorAr: demo.sectorAr,
-          sectorEn: demo.sectorEn,
-        }),
-      });
-      const data = (await res.json().catch(() => null)) as {
-        copy?: Partial<Demo>;
-        engine?: SeoEngine;
-        warning?: SeoWarningCode;
-        error?: string;
-      } | null;
-      if (!res.ok || !data?.copy) {
-        setAiMsg({
-          index: i,
-          kind: "err",
-          text: data?.error ?? "Génération impossible (vérifiez votre session).",
-        });
-        return;
-      }
-      setDemo(i, data.copy);
-      if (data.engine === "llm") {
-        setAiMsg({
-          index: i,
-          kind: "ok",
-          text: "Champs SEO générés par l'IA — relisez puis enregistrez.",
-        });
-      } else if (data.engine === "error") {
-        const code = data.warning
-          ? data.warning.startsWith("http_")
-            ? `HTTP ${data.warning.slice("http_".length)}`
-            : data.warning
-          : "inconnu";
-        setAiMsg({
-          index: i,
-          kind: "warn",
-          text: `Clé OpenAI refusée ou service indisponible (code ${code}) : gabarit appliqué, vérifiez les variables Vercel.`,
-        });
-      } else {
-        setAiMsg({
-          index: i,
-          kind: "ok",
-          text: "Aucune clé OpenAI configurée : gabarit optimisé appliqué.",
-        });
-      }
-    } catch {
-      setAiMsg({ index: i, kind: "err", text: "Requête impossible." });
-    } finally {
-      setAiIndex(null);
-    }
+  const flash = (msg: string, kind: "ok" | "err") => {
+    setToast({ msg, kind });
+    setTimeout(() => setToast(null), 4000);
   };
 
-  /**
-   * Génère en un seul clic les 6 champs SEO bilingues de toutes les
-   * réalisations du portfolio (appel batch vers /api/admin/ai/seo).
-   */
-  const generateAllSeo = async () => {
-    if (draft.demos.length === 0) return;
-    setAiBatchBusy(true);
-    setAiBatchMsg(null);
-    try {
-      const res = await fetch("/api/admin/ai/seo", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          demos: draft.demos.map((d) => ({
-            title: d.title,
-            titleEn: d.titleEn,
-            description: d.description,
-            descriptionEn: d.descriptionEn,
-            sectorAr: d.sectorAr,
-            sectorEn: d.sectorEn,
-          })),
-        }),
-      });
-      const data = (await res.json().catch(() => null)) as {
-        copies?: Partial<Demo>[];
-        engine?: SeoEngine;
-        warning?: SeoWarningCode;
-        error?: string;
-      } | null;
-      if (!res.ok || !Array.isArray(data?.copies)) {
-        setAiBatchMsg({
-          kind: "err",
-          text: data?.error ?? "Génération en lot impossible.",
-        });
-        return;
-      }
-      setDraft((d) => ({
-        ...d,
-        demos: d.demos.map((demo, idx) => ({
-          ...demo,
-          ...(data.copies?.[idx] ?? {}),
-        })),
-      }));
-      if (data.engine === "llm") {
-        setAiBatchMsg({
-          kind: "ok",
-          text: `SEO bilingue généré par l'IA pour les ${data.copies.length} réalisations — cliquez sur Enregistrer.`,
-        });
-      } else if (data.engine === "error") {
-        const code = data.warning ?? "inconnu";
-        setAiBatchMsg({
-          kind: "warn",
-          text: `Clé OpenAI indisponible (${code}) : gabarits SEO appliqués aux ${data.copies.length} réalisations.`,
-        });
-      } else {
-        setAiBatchMsg({
-          kind: "ok",
-          text: `Gabarits SEO bilingues appliqués aux ${data.copies.length} réalisations — cliquez sur Enregistrer.`,
-        });
-      }
-    } catch {
-      setAiBatchMsg({ kind: "err", text: "Requête en lot impossible." });
-    } finally {
-      setAiBatchBusy(false);
-    }
-  };
-  const setFaq = (i: number, patch: Partial<Faq>) =>
-    setDraft((d) => ({ ...d, faqs: d.faqs.map((x, j) => (j === i ? { ...x, ...patch } : x)) }));
-  const setTestimonial = (i: number, patch: Partial<Testimonial>) =>
-    setDraft((d) => ({
-      ...d,
-      testimonials: d.testimonials.map((x, j) => (j === i ? { ...x, ...patch } : x)),
-    }));
+  const tabItems: { id: EditableTab; label: string; count?: number }[] = [
+    { id: "hero", label: "Hero d’accueil" },
+    { id: "ribbon", label: "Bandeau défilant", count: ribbon.items.length },
+    { id: "whyUs", label: "Pourquoi nous", count: whyUs.length },
+    { id: "process", label: "Étapes", count: process.length },
+    { id: "testimonials", label: "Témoignages", count: testimonials.length },
+    { id: "faqs", label: "FAQ", count: faqs.length },
+    { id: "headings", label: "Titres de sections" },
+    { id: "demos", label: "Sites clients", count: demos.length },
+  ];
 
-  const onDelete = (
-    kind: "demos" | "faqs" | "testimonials" | "whyUs" | "process",
-    index: number,
-  ) => {
-    const lists = {
-      demos: draft.demos,
-      faqs: draft.faqs,
-      testimonials: draft.testimonials,
-      whyUs: draft.whyUs,
-      process: draft.process,
-    };
-    if (
-      (kind === "demos" || kind === "whyUs" || kind === "process") &&
-      lists[kind].length <= 1
-    ) {
-      alert("Il doit rester au moins un élément dans cette section.");
-      return;
-    }
-    setDraft((d) => {
-      switch (kind) {
-        case "demos":
-          return { ...d, demos: d.demos.filter((_, j) => j !== index) };
-        case "faqs":
-          return { ...d, faqs: d.faqs.filter((_, j) => j !== index) };
-        case "testimonials":
-          return { ...d, testimonials: d.testimonials.filter((_, j) => j !== index) };
-        case "whyUs":
-          return { ...d, whyUs: d.whyUs.filter((_, j) => j !== index) };
-        case "process":
-          return { ...d, process: d.process.filter((_, j) => j !== index) };
-      }
-    });
-  };
-
-  const onMove = (
-    kind: "demos" | "faqs" | "testimonials" | "whyUs" | "process",
-    index: number,
-    dir: -1 | 1,
-  ) =>
-    setDraft((d) => {
-      switch (kind) {
-        case "demos":
-          return { ...d, demos: moveItem(d.demos, index, dir) };
-        case "faqs":
-          return { ...d, faqs: moveItem(d.faqs, index, dir) };
-        case "testimonials":
-          return { ...d, testimonials: moveItem(d.testimonials, index, dir) };
-        case "whyUs":
-          return { ...d, whyUs: moveItem(d.whyUs, index, dir) };
-        case "process":
-          return { ...d, process: moveItem(d.process, index, dir) };
-      }
-    });
-
-  const buildPayload = () => {
-    const clean = (list: string[]) => list.map((s) => s.trim()).filter(Boolean);
-    switch (tab) {
+  const payloadForTab = (t: EditableTab): unknown => {
+    switch (t) {
       case "hero":
-        return {
-          ...draft.hero,
-          chipsAr: clean(draft.hero.chipsAr),
-          chipsEn: clean(draft.hero.chipsEn),
-        };
-      case "ribbon": {
-        const items = draft.ribbon.items
-          .map((item) => ({ ar: item.ar.trim(), en: item.en.trim() }))
-          .filter((item) => item.ar || item.en);
-        return { ...draft.ribbon, items };
-      }
+        return hero;
+      case "ribbon":
+        return ribbon;
       case "whyUs":
-        return draft.whyUs;
+        return whyUs;
       case "process":
-        return draft.process;
-      case "headings":
-        return draft.headings;
-      case "demos":
-        return draft.demos.map((d) => ({
-          ...d,
-          slug: d.slug.trim(),
-          features: clean(d.features),
-          featuresEn: clean(d.featuresEn),
-        }));
-      case "faqs":
-        return draft.faqs;
+        return process;
       case "testimonials":
-        return draft.testimonials;
+        return testimonials;
+      case "faqs":
+        return faqs;
+      case "headings":
+        return headings;
+      case "demos":
+        return demos;
     }
   };
 
-  const onSave = async () => {
-    setBusy(tab);
-    setMsg(null);
-    const res = await saveContentSection(tab, buildPayload());
-    setBusy("");
-    setMsg(
-      res.ok
-        ? { kind: "ok", text: res.message ?? "Enregistré." }
-        : { kind: "err", text: res.error ?? "Erreur inconnue." },
-    );
+  const onSave = () => {
+    startTransition(async () => {
+      const res = await saveContentSection(tab, payloadForTab(tab));
+      if (res.ok) {
+        setDirtyMap((prev) => ({ ...prev, [tab]: false }));
+        flash(res.message ?? "Contenu enregistré.", "ok");
+        router.refresh();
+      } else {
+        flash(res.error ?? "Échec de l’enregistrement.", "err");
+      }
+    });
   };
 
-  const onReset = async () => {
+  const onReset = () => {
     if (
       !confirm(
-        `Réinitialiser « ${tabs.find((t) => t.id === tab)?.label} » aux valeurs par défaut du code ?`,
+        "Réinitialiser cet onglet à ses valeurs par défaut d’origine ?",
       )
     ) {
       return;
     }
-    setBusy("reset");
-    setMsg(null);
-    const res = await resetContentSection(tab);
-    setBusy("");
-    if (res.ok) window.location.reload();
-    else setMsg({ kind: "err", text: res.error ?? "Erreur inconnue." });
-  };
-
-  const sectorOptions = sectors.filter((s) => s.id !== "all");
-
-  const tabCount = (id: Tab): number | null => {
-    switch (id) {
-      case "ribbon":
-        return draft.ribbon.items.length;
-      case "whyUs":
-        return draft.whyUs.length;
-      case "demos":
-        return draft.demos.length;
-      case "process":
-        return draft.process.length;
-      case "testimonials":
-        return draft.testimonials.length;
-      case "faqs":
-        return draft.faqs.length;
-      default:
-        return null;
-    }
+    startTransition(async () => {
+      const res = await resetContentSection(tab);
+      if (res.ok) {
+        setDirtyMap((prev) => ({ ...prev, [tab]: false }));
+        flash("Valeurs par défaut restaurées.", "ok");
+        router.refresh();
+      } else {
+        flash(res.error ?? "Erreur.", "err");
+      }
+    });
   };
 
   return (
-    <div className="space-y-5">
-      {/* Onglets */}
-      <div className="flex flex-wrap items-center gap-2">
-        {tabs.map((t) => (
-          <button
-            key={t.id}
-            type="button"
-            onClick={() => {
-              setTab(t.id);
-              setMsg(null);
-            }}
-            className={`h-10 px-5 rounded-full text-sm font-bold border transition-colors cursor-pointer ${
-              tab === t.id
-                ? "bg-[#C6A664]/15 border-[#C6A664]/40 text-[#E8D5A9]"
-                : "bg-white/5 border-white/10 text-zinc-400 hover:text-white"
-            }`}
-          >
-            {t.label}
-            {tab === t.id && tabCount(t.id) !== null && (
-              <span className="ms-2 text-xs opacity-60">{tabCount(t.id)}</span>
-            )}
-          </button>
-        ))}
-      </div>
-
-      {/* ---------- ACCUEIL (HERO) ---------- */}
-      {tab === "hero" && (
-        <div className="space-y-4">
-          <Panel
-            title="Bloc d'accueil"
-            description="Le premier écran du site : badge, grand titre, sous-titre et boutons. Chaque texte existe en arabe et en anglais."
-          >
-            <div className="grid sm:grid-cols-2 gap-4">
-              <Field
-                label="Badge (arabe)"
-                dir="rtl"
-                value={draft.hero.badgeAr}
-                onChange={(v) => setHero({ badgeAr: v })}
-              />
-              <Field
-                label="Badge (anglais)"
-                dir="ltr"
-                value={draft.hero.badgeEn}
-                onChange={(v) => setHero({ badgeEn: v })}
-              />
-              <Field
-                label="Titre — ligne 1 (arabe)"
-                dir="rtl"
-                value={draft.hero.title1Ar}
-                onChange={(v) => setHero({ title1Ar: v })}
-              />
-              <Field
-                label="Titre — ligne 1 (anglais)"
-                dir="ltr"
-                value={draft.hero.title1En}
-                onChange={(v) => setHero({ title1En: v })}
-              />
-              <Field
-                label="Titre — ligne 2 (arabe)"
-                dir="rtl"
-                value={draft.hero.title2Ar}
-                onChange={(v) => setHero({ title2Ar: v })}
-              />
-              <Field
-                label="Titre — ligne 2 (anglais)"
-                dir="ltr"
-                value={draft.hero.title2En}
-                onChange={(v) => setHero({ title2En: v })}
-              />
-              <Field
-                label="Titre — ligne 3, en italique (arabe)"
-                dir="rtl"
-                value={draft.hero.title3Ar}
-                onChange={(v) => setHero({ title3Ar: v })}
-              />
-              <Field
-                label="Titre — ligne 3, en italique (anglais)"
-                dir="ltr"
-                value={draft.hero.title3En}
-                onChange={(v) => setHero({ title3En: v })}
-              />
-            </div>
-            <div className="mt-4 grid lg:grid-cols-2 gap-4">
-              <Area
-                label="Sous-titre (arabe)"
-                dir="rtl"
-                value={draft.hero.subtitleAr}
-                onChange={(v) => setHero({ subtitleAr: v })}
-              />
-              <Area
-                label="Sous-titre (anglais)"
-                dir="ltr"
-                value={draft.hero.subtitleEn}
-                onChange={(v) => setHero({ subtitleEn: v })}
-              />
-            </div>
-          </Panel>
-
-          <Panel
-            title="Boutons & réassurance"
-            description="Libellés des deux boutons, preuve sociale et petites pastilles affichées sous le titre."
-          >
-            <div className="grid sm:grid-cols-2 gap-4">
-              <Field
-                label="Bouton principal (arabe)"
-                dir="rtl"
-                value={draft.hero.ctaPrimaryAr}
-                onChange={(v) => setHero({ ctaPrimaryAr: v })}
-              />
-              <Field
-                label="Bouton principal (anglais)"
-                dir="ltr"
-                value={draft.hero.ctaPrimaryEn}
-                onChange={(v) => setHero({ ctaPrimaryEn: v })}
-              />
-              <Field
-                label="Bouton secondaire (arabe)"
-                dir="rtl"
-                value={draft.hero.ctaSecondaryAr}
-                onChange={(v) => setHero({ ctaSecondaryAr: v })}
-              />
-              <Field
-                label="Bouton secondaire (anglais)"
-                dir="ltr"
-                value={draft.hero.ctaSecondaryEn}
-                onChange={(v) => setHero({ ctaSecondaryEn: v })}
-              />
-              <Field
-                label="Preuve sociale (arabe)"
-                dir="rtl"
-                value={draft.hero.trustedAr}
-                onChange={(v) => setHero({ trustedAr: v })}
-              />
-              <Field
-                label="Preuve sociale (anglais)"
-                dir="ltr"
-                value={draft.hero.trustedEn}
-                onChange={(v) => setHero({ trustedEn: v })}
-              />
-              <Field
-                label="Note / étoiles (arabe)"
-                dir="rtl"
-                value={draft.hero.ratingAr}
-                onChange={(v) => setHero({ ratingAr: v })}
-              />
-              <Field
-                label="Note / étoiles (anglais)"
-                dir="ltr"
-                value={draft.hero.ratingEn}
-                onChange={(v) => setHero({ ratingEn: v })}
-              />
-            </div>
-            <div className="mt-4 grid lg:grid-cols-2 gap-4">
-              <Lines
-                label="Pastilles de réassurance (arabe)"
-                value={draft.hero.chipsAr}
-                onChange={(v) => setHero({ chipsAr: v })}
-              />
-              <Lines
-                label="Pastilles de réassurance (anglais)"
-                value={draft.hero.chipsEn}
-                onChange={(v) => setHero({ chipsEn: v })}
-              />
-            </div>
-          </Panel>
+    <div className="space-y-6 pb-24">
+      {toast && (
+        <div
+          className={`fixed bottom-5 right-5 z-50 rounded-xl px-4 py-3 text-xs font-semibold shadow-xl flex items-center gap-2 max-w-md ${
+            toast.kind === "ok"
+              ? "bg-stone-900 text-white"
+              : "bg-red-600 text-white"
+          }`}
+        >
+          <Check className="h-3.5 w-3.5 text-[#E5CA87] shrink-0" />
+          <span>{toast.msg}</span>
         </div>
       )}
 
-      {/* ---------- BANDEAU DE SERVICES ---------- */}
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <span className="text-xs font-bold uppercase tracking-wider text-[#8A6D2F]">
+            Édition éditoriale bilingue
+          </span>
+          <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-stone-900 mt-0.5">
+            Textes, FAQ & Témoignages
+          </h1>
+          <p className="text-sm text-stone-500 mt-1">
+            Modifiez tous les textes bilingues (arabe & anglais) de votre site. Pour ajouter ou supprimer des sections entières, rendez-vous dans{" "}
+            <Link
+              href="/admin/sections"
+              className="text-[#8A6D2F] font-semibold hover:underline inline-flex items-center gap-1"
+            >
+              <Blocks className="h-3.5 w-3.5" /> Sections & Sites
+            </Link>
+            .
+          </p>
+        </div>
+      </div>
+
+      {/* Onglets clairs et lisibles */}
+      <div className="flex flex-wrap gap-1.5 rounded-2xl border border-stone-200 bg-white p-2 shadow-2xs">
+        {tabItems.map((item) => {
+          const active = tab === item.id;
+          return (
+            <button
+              key={item.id}
+              type="button"
+              onClick={() => setTab(item.id)}
+              className={`px-3.5 py-2 rounded-xl text-xs font-bold inline-flex items-center gap-1.5 transition-all cursor-pointer ${
+                active
+                  ? "bg-stone-900 text-white shadow-2xs"
+                  : "text-stone-600 hover:bg-stone-100 hover:text-stone-900"
+              }`}
+            >
+              <span>{item.label}</span>
+              {item.count !== undefined && (
+                <span
+                  className={`px-1.5 py-0.5 rounded-md text-[10px] ${
+                    active
+                      ? "bg-white/20 text-white"
+                      : "bg-stone-100 text-stone-500"
+                  }`}
+                >
+                  {item.count}
+                </span>
+              )}
+              {dirtyMap[item.id] && (
+                <span className="h-2 w-2 rounded-full bg-amber-400" />
+              )}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* --- ONGLET HERO --- */}
+      {tab === "hero" && (
+        <div className="rounded-2xl border border-stone-200 bg-white p-5 sm:p-6 space-y-4 shadow-2xs">
+          <h2 className="text-sm font-black text-stone-900">
+            Bannière principale d’accueil (Hero)
+          </h2>
+          <div className="grid sm:grid-cols-2 gap-3.5">
+            <Field label="Badge au-dessus du titre (arabe)">
+              <input
+                dir="rtl"
+                value={hero.badgeAr}
+                onChange={(e) => {
+                  setHero({ ...hero, badgeAr: e.target.value });
+                  markDirty("hero");
+                }}
+                className={ADMIN_INPUT_CLS}
+              />
+            </Field>
+            <Field label="Badge au-dessus du titre (anglais)">
+              <input
+                value={hero.badgeEn}
+                onChange={(e) => {
+                  setHero({ ...hero, badgeEn: e.target.value });
+                  markDirty("hero");
+                }}
+                className={ADMIN_INPUT_CLS}
+              />
+            </Field>
+
+            <Field label="Titre ligne 1 (arabe)">
+              <input
+                dir="rtl"
+                value={hero.title1Ar}
+                onChange={(e) => {
+                  setHero({ ...hero, title1Ar: e.target.value });
+                  markDirty("hero");
+                }}
+                className={ADMIN_INPUT_CLS}
+              />
+            </Field>
+            <Field label="Titre ligne 1 (anglais)">
+              <input
+                value={hero.title1En}
+                onChange={(e) => {
+                  setHero({ ...hero, title1En: e.target.value });
+                  markDirty("hero");
+                }}
+                className={ADMIN_INPUT_CLS}
+              />
+            </Field>
+
+            <Field label="Titre ligne 2 — couleur d'accent (arabe)">
+              <input
+                dir="rtl"
+                value={hero.title2Ar}
+                onChange={(e) => {
+                  setHero({ ...hero, title2Ar: e.target.value });
+                  markDirty("hero");
+                }}
+                className={ADMIN_INPUT_CLS}
+              />
+            </Field>
+            <Field label="Titre ligne 2 — couleur d'accent (anglais)">
+              <input
+                value={hero.title2En}
+                onChange={(e) => {
+                  setHero({ ...hero, title2En: e.target.value });
+                  markDirty("hero");
+                }}
+                className={ADMIN_INPUT_CLS}
+              />
+            </Field>
+
+            <Field label="Titre ligne 3 (arabe)">
+              <input
+                dir="rtl"
+                value={hero.title3Ar}
+                onChange={(e) => {
+                  setHero({ ...hero, title3Ar: e.target.value });
+                  markDirty("hero");
+                }}
+                className={ADMIN_INPUT_CLS}
+              />
+            </Field>
+            <Field label="Titre ligne 3 (anglais)">
+              <input
+                value={hero.title3En}
+                onChange={(e) => {
+                  setHero({ ...hero, title3En: e.target.value });
+                  markDirty("hero");
+                }}
+                className={ADMIN_INPUT_CLS}
+              />
+            </Field>
+
+            <Field label="Sous-titre (arabe)">
+              <textarea
+                dir="rtl"
+                rows={3}
+                value={hero.subtitleAr}
+                onChange={(e) => {
+                  setHero({ ...hero, subtitleAr: e.target.value });
+                  markDirty("hero");
+                }}
+                className={ADMIN_TEXTAREA_CLS}
+              />
+            </Field>
+            <Field label="Sous-titre (anglais)">
+              <textarea
+                rows={3}
+                value={hero.subtitleEn}
+                onChange={(e) => {
+                  setHero({ ...hero, subtitleEn: e.target.value });
+                  markDirty("hero");
+                }}
+                className={ADMIN_TEXTAREA_CLS}
+              />
+            </Field>
+
+            <Field label="Bouton principal (arabe)">
+              <input
+                dir="rtl"
+                value={hero.ctaPrimaryAr}
+                onChange={(e) => {
+                  setHero({ ...hero, ctaPrimaryAr: e.target.value });
+                  markDirty("hero");
+                }}
+                className={ADMIN_INPUT_CLS}
+              />
+            </Field>
+            <Field label="Bouton principal (anglais)">
+              <input
+                value={hero.ctaPrimaryEn}
+                onChange={(e) => {
+                  setHero({ ...hero, ctaPrimaryEn: e.target.value });
+                  markDirty("hero");
+                }}
+                className={ADMIN_INPUT_CLS}
+              />
+            </Field>
+
+            <Field label="Bouton secondaire (arabe)">
+              <input
+                dir="rtl"
+                value={hero.ctaSecondaryAr}
+                onChange={(e) => {
+                  setHero({ ...hero, ctaSecondaryAr: e.target.value });
+                  markDirty("hero");
+                }}
+                className={ADMIN_INPUT_CLS}
+              />
+            </Field>
+            <Field label="Bouton secondaire (anglais)">
+              <input
+                value={hero.ctaSecondaryEn}
+                onChange={(e) => {
+                  setHero({ ...hero, ctaSecondaryEn: e.target.value });
+                  markDirty("hero");
+                }}
+                className={ADMIN_INPUT_CLS}
+              />
+            </Field>
+
+            <Field label="Confiance client (arabe)">
+              <input
+                dir="rtl"
+                value={hero.trustedAr}
+                onChange={(e) => {
+                  setHero({ ...hero, trustedAr: e.target.value });
+                  markDirty("hero");
+                }}
+                className={ADMIN_INPUT_CLS}
+              />
+            </Field>
+            <Field label="Confiance client (anglais)">
+              <input
+                value={hero.trustedEn}
+                onChange={(e) => {
+                  setHero({ ...hero, trustedEn: e.target.value });
+                  markDirty("hero");
+                }}
+                className={ADMIN_INPUT_CLS}
+              />
+            </Field>
+
+            <Field label="Note moyenne (arabe)">
+              <input
+                dir="rtl"
+                value={hero.ratingAr}
+                onChange={(e) => {
+                  setHero({ ...hero, ratingAr: e.target.value });
+                  markDirty("hero");
+                }}
+                className={ADMIN_INPUT_CLS}
+              />
+            </Field>
+            <Field label="Note moyenne (anglais)">
+              <input
+                value={hero.ratingEn}
+                onChange={(e) => {
+                  setHero({ ...hero, ratingEn: e.target.value });
+                  markDirty("hero");
+                }}
+                className={ADMIN_INPUT_CLS}
+              />
+            </Field>
+
+            <Field label="Pastilles de réassurance (arabe — une par ligne)">
+              <textarea
+                dir="rtl"
+                rows={3}
+                value={hero.chipsAr.join("\n")}
+                onChange={(e) => {
+                  setHero({
+                    ...hero,
+                    chipsAr: e.target.value
+                      .split("\n")
+                      .map((s) => s.trim())
+                      .filter(Boolean),
+                  });
+                  markDirty("hero");
+                }}
+                className={ADMIN_TEXTAREA_CLS}
+              />
+            </Field>
+            <Field label="Pastilles de réassurance (anglais — une par ligne)">
+              <textarea
+                rows={3}
+                value={hero.chipsEn.join("\n")}
+                onChange={(e) => {
+                  setHero({
+                    ...hero,
+                    chipsEn: e.target.value
+                      .split("\n")
+                      .map((s) => s.trim())
+                      .filter(Boolean),
+                  });
+                  markDirty("hero");
+                }}
+                className={ADMIN_TEXTAREA_CLS}
+              />
+            </Field>
+          </div>
+        </div>
+      )}
+
+      {/* --- ONGLET RIBBON --- */}
       {tab === "ribbon" && (
         <div className="space-y-4">
-          <Panel
-            title="Bandeau défilant"
-            description="Le ruban de services qui défile sous le bloc d'accueil. Ajoutez, modifiez ou supprimez les éléments."
-          >
-            <div className="grid sm:grid-cols-2 gap-4">
-              <Field
-                label="Accroche (arabe)"
-                dir="rtl"
-                value={draft.ribbon.taglineAr}
-                onChange={(v) => setRibbon({ taglineAr: v })}
-              />
-              <Field
-                label="Accroche (anglais)"
-                dir="ltr"
-                value={draft.ribbon.taglineEn}
-                onChange={(v) => setRibbon({ taglineEn: v })}
-              />
+          <div className="rounded-2xl border border-stone-200 bg-white p-5 space-y-3.5 shadow-2xs">
+            <h2 className="text-sm font-black text-stone-900">
+              Accroche du bandeau défilant
+            </h2>
+            <div className="grid sm:grid-cols-2 gap-3.5">
+              <Field label="Accroche (arabe)">
+                <input
+                  dir="rtl"
+                  value={ribbon.taglineAr}
+                  onChange={(e) => {
+                    setRibbon({ ...ribbon, taglineAr: e.target.value });
+                    markDirty("ribbon");
+                  }}
+                  className={ADMIN_INPUT_CLS}
+                />
+              </Field>
+              <Field label="Accroche (anglais)">
+                <input
+                  value={ribbon.taglineEn}
+                  onChange={(e) => {
+                    setRibbon({ ...ribbon, taglineEn: e.target.value });
+                    markDirty("ribbon");
+                  }}
+                  className={ADMIN_INPUT_CLS}
+                />
+              </Field>
+            </div>
+          </div>
+
+          <div className="rounded-2xl border border-stone-200 bg-white p-5 space-y-3 shadow-2xs">
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-black text-stone-900">
+                Mots-clés défilants ({ribbon.items.length})
+              </h3>
+              <button
+                type="button"
+                onClick={() => {
+                  setRibbon({
+                    ...ribbon,
+                    items: [
+                      ...ribbon.items,
+                      { ar: "خدمة جديدة", en: "New service" },
+                    ],
+                  });
+                  markDirty("ribbon");
+                }}
+                className="h-8 px-3 rounded-lg bg-stone-900 text-white text-xs font-bold inline-flex items-center gap-1 cursor-pointer"
+              >
+                <Plus className="h-3.5 w-3.5" /> Ajouter
+              </button>
             </div>
 
-            <div className="mt-4 space-y-3">
-              {draft.ribbon.items.map((item, i) => (
+            <div className="space-y-2">
+              {ribbon.items.map((it, idx) => (
                 <div
-                  key={i}
-                  className="grid sm:grid-cols-[1fr_1fr_auto] gap-3 items-end rounded-2xl border border-white/10 bg-black/20 p-3"
+                  key={idx}
+                  className="grid sm:grid-cols-[1fr_1fr_auto] gap-2 items-center"
                 >
-                  <Field
-                    label={`Élément ${i + 1} (arabe)`}
+                  <input
                     dir="rtl"
-                    value={item.ar}
-                    onChange={(v) => setRibbonItem(i, { ar: v })}
+                    value={it.ar}
+                    onChange={(e) => {
+                      const next = [...ribbon.items];
+                      next[idx] = { ...it, ar: e.target.value };
+                      setRibbon({ ...ribbon, items: next });
+                      markDirty("ribbon");
+                    }}
+                    className={ADMIN_INPUT_CLS}
                   />
-                  <Field
-                    label={`Élément ${i + 1} (anglais)`}
-                    dir="ltr"
-                    value={item.en}
-                    onChange={(v) => setRibbonItem(i, { en: v })}
+                  <input
+                    value={it.en}
+                    onChange={(e) => {
+                      const next = [...ribbon.items];
+                      next[idx] = { ...it, en: e.target.value };
+                      setRibbon({ ...ribbon, items: next });
+                      markDirty("ribbon");
+                    }}
+                    className={ADMIN_INPUT_CLS}
                   />
                   <button
                     type="button"
-                    onClick={() =>
-                      setRibbon({ items: draft.ribbon.items.filter((_, j) => j !== i) })
-                    }
-                    disabled={draft.ribbon.items.length <= 1}
-                    className="h-10 w-10 rounded-xl border border-white/10 text-zinc-500 hover:text-red-400 hover:border-red-500/30 hover:bg-red-500/10 grid place-items-center transition-colors cursor-pointer disabled:opacity-30"
-                    aria-label="Supprimer l'élément"
+                    onClick={() => {
+                      setRibbon({
+                        ...ribbon,
+                        items: ribbon.items.filter((_, i) => i !== idx),
+                      });
+                      markDirty("ribbon");
+                    }}
+                    className="h-10 px-3 rounded-xl border border-red-200 bg-red-50 text-red-600 hover:bg-red-100 text-xs font-semibold cursor-pointer"
                   >
-                    <Trash2 className="h-4 w-4" />
+                    <Trash2 className="h-3.5 w-3.5" />
                   </button>
                 </div>
               ))}
             </div>
+          </div>
+        </div>
+      )}
 
+      {/* --- ONGLET WHY US --- */}
+      {tab === "whyUs" && (
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <h2 className="text-sm font-black text-stone-900">
+              Cartes « Pourquoi nous choisir » ({whyUs.length})
+            </h2>
             <button
               type="button"
-              onClick={() =>
-                setRibbon({ items: [...draft.ribbon.items, { ar: "", en: "" }] })
-              }
-              className="mt-4 h-11 px-5 rounded-2xl border border-dashed border-white/20 text-sm font-bold text-zinc-400 hover:text-white hover:border-[#C6A664]/50 inline-flex items-center gap-2 transition-colors cursor-pointer"
+              onClick={() => {
+                setWhyUs([
+                  ...whyUs,
+                  {
+                    icon: "zap",
+                    titleAr: "ميزة جديدة",
+                    titleEn: "New advantage",
+                    descAr: "وصف مختصر للميزة",
+                    descEn: "Short description of this advantage",
+                  },
+                ]);
+                markDirty("whyUs");
+              }}
+              className="h-9 px-3.5 rounded-xl bg-stone-900 text-white text-xs font-bold inline-flex items-center gap-1.5 cursor-pointer"
             >
-              <Plus className="h-4 w-4" /> Ajouter un élément
+              <Plus className="h-3.5 w-3.5" /> Ajouter une carte
             </button>
-          </Panel>
-        </div>
-      )}
-
-      {/* ---------- POURQUOI NOUS ---------- */}
-      {tab === "whyUs" && (
-        <div className="space-y-4">
-          {draft.whyUs.map((item, i) => (
-            <ItemCard
-              key={i}
-              index={i}
-              count={draft.whyUs.length}
-              title={item.titleEn || item.titleAr}
-              subtitle={item.icon}
-              onMove={(dir) => onMove("whyUs", i, dir)}
-              onDelete={() => onDelete("whyUs", i)}
-            >
-              <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                <label className="block">
-                  <span className="text-xs font-semibold text-zinc-400">Icône</span>
-                  <select
-                    value={item.icon}
-                    onChange={(e) => setWhyUs(i, { icon: e.target.value })}
-                    className="mt-1.5 h-10 w-full rounded-xl border border-white/10 bg-black/40 px-3 text-sm text-white outline-none focus:border-[#C6A664] cursor-pointer"
-                  >
-                    {["zap", "palette", "sliders", "search", "headset"].map((icon) => (
-                      <option key={icon} value={icon}>
-                        {icon}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                <Field
-                  label="Titre (arabe)"
-                  dir="rtl"
-                  value={item.titleAr}
-                  onChange={(v) => setWhyUs(i, { titleAr: v })}
-                />
-                <Field
-                  label="Titre (anglais)"
-                  dir="ltr"
-                  value={item.titleEn}
-                  onChange={(v) => setWhyUs(i, { titleEn: v })}
-                />
-              </div>
-              <div className="mt-4 grid lg:grid-cols-2 gap-4">
-                <Area
-                  label="Description (arabe)"
-                  dir="rtl"
-                  value={item.descAr}
-                  onChange={(v) => setWhyUs(i, { descAr: v })}
-                />
-                <Area
-                  label="Description (anglais)"
-                  dir="ltr"
-                  value={item.descEn}
-                  onChange={(v) => setWhyUs(i, { descEn: v })}
-                />
-              </div>
-            </ItemCard>
-          ))}
-          <button
-            type="button"
-            onClick={() => setDraft((d) => ({ ...d, whyUs: [...d.whyUs, newWhyUs()] }))}
-            className="h-11 px-5 rounded-2xl border border-dashed border-white/20 text-sm font-bold text-zinc-400 hover:text-white hover:border-[#C6A664]/50 inline-flex items-center gap-2 transition-colors cursor-pointer"
-          >
-            <Plus className="h-4 w-4" /> Ajouter une carte
-          </button>
-        </div>
-      )}
-
-      {/* ---------- PROCESSUS ---------- */}
-      {tab === "process" && (
-        <div className="space-y-4">
-          {draft.process.map((step, i) => (
-            <ItemCard
-              key={i}
-              index={i}
-              count={draft.process.length}
-              title={step.titleEn || step.titleAr}
-              subtitle={`Étape ${step.num} — ${step.durationEn}`}
-              onMove={(dir) => onMove("process", i, dir)}
-              onDelete={() => onDelete("process", i)}
-            >
-              <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                <Field
-                  label="Numéro affiché"
-                  dir="ltr"
-                  value={step.num}
-                  placeholder="01"
-                  onChange={(v) => setProcess(i, { num: v })}
-                />
-                <Field
-                  label="Titre (arabe)"
-                  dir="rtl"
-                  value={step.titleAr}
-                  onChange={(v) => setProcess(i, { titleAr: v })}
-                />
-                <Field
-                  label="Titre (anglais)"
-                  dir="ltr"
-                  value={step.titleEn}
-                  onChange={(v) => setProcess(i, { titleEn: v })}
-                />
-                <Field
-                  label="Durée (arabe)"
-                  dir="rtl"
-                  value={step.durationAr}
-                  onChange={(v) => setProcess(i, { durationAr: v })}
-                />
-                <Field
-                  label="Durée (anglais)"
-                  dir="ltr"
-                  value={step.durationEn}
-                  onChange={(v) => setProcess(i, { durationEn: v })}
-                />
-              </div>
-              <div className="mt-4 grid lg:grid-cols-2 gap-4">
-                <Area
-                  label="Description (arabe)"
-                  dir="rtl"
-                  value={step.descAr}
-                  onChange={(v) => setProcess(i, { descAr: v })}
-                />
-                <Area
-                  label="Description (anglais)"
-                  dir="ltr"
-                  value={step.descEn}
-                  onChange={(v) => setProcess(i, { descEn: v })}
-                />
-              </div>
-            </ItemCard>
-          ))}
-          <button
-            type="button"
-            onClick={() =>
-              setDraft((d) => ({
-                ...d,
-                process: [...d.process, newProcess(d.process.length)],
-              }))
-            }
-            className="h-11 px-5 rounded-2xl border border-dashed border-white/20 text-sm font-bold text-zinc-400 hover:text-white hover:border-[#C6A664]/50 inline-flex items-center gap-2 transition-colors cursor-pointer"
-          >
-            <Plus className="h-4 w-4" /> Ajouter une étape
-          </button>
-        </div>
-      )}
-
-      {/* ---------- TITRES DES SECTIONS ---------- */}
-      {tab === "headings" && (
-        <div className="space-y-4">
-          <p className="rounded-2xl border border-white/10 bg-white/5 p-4 text-xs leading-5 text-zinc-400">
-            Modifiez ici les titres, sous-titres et notes de chaque section du site.
-            Les contenus (démos, témoignages, FAQ, étapes…) se règlent dans leurs
-            onglets respectifs.
-          </p>
-          {headingFields.map(({ id, label, description, withNote }) => {
-            const value = draft.headings[id];
-            return (
-              <Panel key={id} title={label} description={description}>
-                <div className="grid sm:grid-cols-2 gap-4">
-                  <Field
-                    label="Titre (arabe)"
-                    dir="rtl"
-                    value={value.titleAr}
-                    onChange={(v) => setHeading(id, { titleAr: v })}
-                  />
-                  <Field
-                    label="Titre (anglais)"
-                    dir="ltr"
-                    value={value.titleEn}
-                    onChange={(v) => setHeading(id, { titleEn: v })}
-                  />
-                </div>
-                <div className="mt-4 grid lg:grid-cols-2 gap-4">
-                  <Area
-                    label="Sous-titre (arabe)"
-                    dir="rtl"
-                    value={value.subtitleAr}
-                    onChange={(v) => setHeading(id, { subtitleAr: v })}
-                  />
-                  <Area
-                    label="Sous-titre (anglais)"
-                    dir="ltr"
-                    value={value.subtitleEn}
-                    onChange={(v) => setHeading(id, { subtitleEn: v })}
-                  />
-                </div>
-                {withNote && (
-                  <div className="mt-4 grid sm:grid-cols-2 gap-4">
-                    <Field
-                      label="Note (arabe)"
-                      dir="rtl"
-                      value={value.noteAr ?? ""}
-                      onChange={(v) => setHeading(id, { noteAr: v })}
-                    />
-                    <Field
-                      label="Note (anglais)"
-                      dir="ltr"
-                      value={value.noteEn ?? ""}
-                      onChange={(v) => setHeading(id, { noteEn: v })}
-                    />
-                  </div>
-                )}
-              </Panel>
-            );
-          })}
-        </div>
-      )}
-
-      {/* ---------- DÉMOS ---------- */}
-      {tab === "demos" && (
-        <div className="space-y-4">
-          <div className="rounded-3xl border border-sky-400/25 bg-sky-400/5 p-5">
-            <div className="flex flex-wrap items-center justify-between gap-4">
-              <div>
-                <div className="flex items-center gap-2.5">
-                  <span className="inline-flex items-center gap-1.5 rounded-full bg-sky-400/15 border border-sky-400/30 px-3 py-1 text-xs font-black text-sky-200">
-                    <Sparkles className="h-3.5 w-3.5" />
-                    Score SEO &amp; IA : {seoAudit.score}/100
-                  </span>
-                  <span className="text-xs font-semibold text-zinc-400">
-                    {seoAudit.summary.demosWithCompleteSeo}/{seoAudit.summary.totalDemos} réalisations avec 6/6 champs SEO bilingues
-                  </span>
-                </div>
-                <p className="mt-1.5 text-xs text-zinc-400 leading-5">
-                  Chaque enregistrement met à jour automatiquement les schémas JSON-LD, le{" "}
-                  <a href="/sitemap.xml" target="_blank" rel="noopener noreferrer" className="text-sky-300 underline">
-                    sitemap.xml
-                  </a>
-                  , les flux IA{" "}
-                  <a href="/llms.txt" target="_blank" rel="noopener noreferrer" className="text-sky-300 underline">
-                    /llms.txt
-                  </a>{" "}
-                  et{" "}
-                  <a href="/llms-full.txt" target="_blank" rel="noopener noreferrer" className="text-sky-300 underline">
-                    /llms-full.txt
-                  </a>
-                  , et notifie IndexNow.
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={generateAllSeo}
-                disabled={aiBatchBusy}
-                className="h-10 px-4 rounded-2xl border border-sky-400/40 bg-sky-400/15 text-xs font-black text-sky-100 hover:bg-sky-400/25 disabled:opacity-60 inline-flex items-center gap-2 transition-colors cursor-pointer"
-              >
-                {aiBatchBusy ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Sparkles className="h-4 w-4" />
-                )}
-                {aiBatchBusy
-                  ? "Génération en lot…"
-                  : `Générer tout le SEO avec l'IA (${draft.demos.length})`}
-              </button>
-            </div>
-            {aiBatchMsg && (
-              <p
-                className={`mt-3 text-xs font-semibold ${
-                  aiBatchMsg.kind === "ok"
-                    ? "text-emerald-300"
-                    : aiBatchMsg.kind === "warn"
-                      ? "text-amber-300"
-                      : "text-red-300"
-                }`}
-              >
-                {aiBatchMsg.text}
-              </p>
-            )}
           </div>
 
-          <datalist id="sector-ids">
-            {sectorOptions.map((s) => (
-              <option key={s.id} value={s.id}>
-                {s.labelEn}
-              </option>
-            ))}
-          </datalist>
-          {draft.demos.map((demo, i) => {
-            const preview = resolveDemoClassification(demo, plans);
-            return (
-            <ItemCard
-              key={i}
-              index={i}
-              count={draft.demos.length}
-              title={demo.titleEn || demo.title}
-              subtitle={
-                preview
-                  ? `/${demo.slug} — Catégorie ${preview.tier} · ${preview.nameEn} · ${
-                      preview.priceUsd != null
-                        ? `$${formatUsd(preview.priceUsd)}`
-                        : `${formatLyd(preview.priceLyd)} LYD`
-                    }`
-                  : `/${demo.slug} — ${demo.sector}`
-              }
-              onMove={(dir) => onMove("demos", i, dir)}
-              onDelete={() => onDelete("demos", i)}
+          {whyUs.map((item, idx) => (
+            <div
+              key={idx}
+              className="rounded-2xl border border-stone-200 bg-white p-5 space-y-3.5 shadow-2xs"
             >
-              <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                <Field label="Titre (arabe)" dir="rtl" value={demo.title} onChange={(v) => setDemo(i, { title: v })} />
-                <Field label="Titre (latin)" dir="ltr" value={demo.titleEn} onChange={(v) => setDemo(i, { titleEn: v })} />
-                <Field label="Slug (URL)" dir="ltr" value={demo.slug} placeholder="mon-projet" onChange={(v) => setDemo(i, { slug: v.toLowerCase().replace(/\s+/g, "-") })} />
-                <label className="block">
-                  <span className="text-xs font-semibold text-zinc-400">Identifiant secteur</span>
-                  <input
-                    list="sector-ids"
-                    value={demo.sector}
-                    dir="ltr"
-                    onChange={(e) => setDemo(i, { sector: e.target.value })}
-                    className="mt-1.5 h-10 w-full rounded-xl border border-white/10 bg-black/40 px-3 text-sm text-white outline-none focus:border-[#C6A664]"
-                  />
-                </label>
-                <Field label="Libellé secteur (arabe)" dir="rtl" value={demo.sectorAr} onChange={(v) => setDemo(i, { sectorAr: v })} />
-                <Field label="Libellé secteur (latin)" dir="ltr" value={demo.sectorEn} onChange={(v) => setDemo(i, { sectorEn: v })} />
-                <Field label="Image (URL)" dir="ltr" value={demo.image} onChange={(v) => setDemo(i, { image: v })} />
-                <label className="block">
-                  <span className="text-xs font-semibold text-zinc-400">Couleur</span>
-                  <div className="mt-1.5 flex gap-2">
-                    <input
-                      type="color"
-                      value={/^#[0-9a-fA-F]{6}$/.test(demo.color) ? demo.color : "#C6A664"}
-                      onChange={(e) => setDemo(i, { color: e.target.value })}
-                      className="h-10 w-12 rounded-xl border border-white/10 bg-black/40 cursor-pointer p-1"
-                    />
-                    <input
-                      value={demo.color}
-                      dir="ltr"
-                      onChange={(e) => setDemo(i, { color: e.target.value })}
-                      className="h-10 flex-1 min-w-0 rounded-xl border border-white/10 bg-black/40 px-3 text-sm text-white outline-none focus:border-[#C6A664]"
-                    />
-                  </div>
-                </label>
-                <Field
-                  label="URL du site réel (https://… pour visite interactive en direct, ou #)"
-                  dir="ltr"
-                  placeholder="https://mon-site-client.vercel.app/"
-                  value={demo.previewUrl}
-                  onChange={(v) => setDemo(i, { previewUrl: v })}
-                />
-              </div>
-              {(() => {
-                const classification = resolveDemoClassification(demo, plans);
-                const planIndex = plans.findIndex((plan) => plan.id === demo.planId);
-                // Une formule supprimée ou renommée ne doit pas laisser le
-                // sélecteur vide : on retombe sur la catégorie du projet.
-                const effectivePlanId =
-                  planIndex >= 0
-                    ? (demo.planId as string)
-                    : (plans[Math.min(plans.length - 1, Math.max(0, (demo.categoryTier ?? 1) - 1))]
-                        ?.id ?? plans[0]?.id ?? "");
-                return (
-                  <div className="mt-4 rounded-2xl border border-[#C6A664]/25 bg-[#C6A664]/5 p-4">
-                    <div className="flex flex-wrap items-start justify-between gap-2">
-                      <div>
-                        <div className="text-xs font-bold text-[#E8D5A9]">
-                          Classification &amp; prix du site
-                        </div>
-                        <p className="mt-0.5 text-[11px] text-zinc-500">
-                          La catégorie suit la formule choisie ; le prix reprend son
-                          prix USD, sauf prix personnalisé ci-dessous.
-                        </p>
-                      </div>
-                      {classification && (
-                        <span className="rounded-full border border-[#C6A664]/30 bg-black/30 px-3 py-1 text-[11px] font-bold text-[#E8D5A9]">
-                          Catégorie {classification.tier} · {classification.nameEn} ·{" "}
-                          {classification.priceUsd != null
-                            ? `$${formatUsd(classification.priceUsd)}`
-                            : "—"}{" "}
-                          / {formatLyd(classification.priceLyd)} LYD
-                        </span>
-                      )}
-                    </div>
-                    <div className="mt-4 grid sm:grid-cols-3 gap-4">
-                      <label className="block">
-                        <span className="text-xs font-semibold text-zinc-400">
-                          Formule / catégorie
-                        </span>
-                        <select
-                          value={effectivePlanId}
-                          onChange={(event) => {
-                            const index = plans.findIndex(
-                              (plan) => plan.id === event.target.value,
-                            );
-                            setDemo(i, {
-                              planId: event.target.value,
-                              ...(index >= 0 ? { categoryTier: index + 1 } : {}),
-                            });
-                          }}
-                          className="mt-1.5 h-10 w-full rounded-xl border border-white/10 bg-black/40 px-3 text-sm text-white outline-none focus:border-[#C6A664] cursor-pointer"
-                        >
-                          {plans.map((plan, index) => (
-                            <option key={plan.id} value={plan.id}>
-                              Catégorie {index + 1} — {plan.nameEn}
-                              {plan.priceUsd ? ` ($${formatUsd(plan.priceUsd)})` : ""}
-                            </option>
-                          ))}
-                        </select>
-                      </label>
-                      <label className="block">
-                        <span className="text-xs font-semibold text-zinc-400">
-                          Numéro de catégorie
-                        </span>
-                        <input
-                          type="number"
-                          min={1}
-                          max={99}
-                          value={
-                            demo.categoryTier ??
-                            (planIndex >= 0 ? planIndex + 1 : 1)
-                          }
-                          onChange={(event) => {
-                            const value = Number(event.target.value);
-                            setDemo(i, {
-                              categoryTier:
-                                Number.isFinite(value) && value >= 1
-                                  ? Math.floor(value)
-                                  : undefined,
-                            });
-                          }}
-                          className="mt-1.5 h-10 w-full rounded-xl border border-white/10 bg-black/40 px-3 text-sm text-white outline-none focus:border-[#C6A664]"
-                        />
-                      </label>
-                      <label className="block">
-                        <span className="text-xs font-semibold text-zinc-400">
-                          Prix USD du projet{" "}
-                          <span className="text-zinc-600">(vide = prix catégorie)</span>
-                        </span>
-                        <input
-                          type="number"
-                          min={0}
-                          step={1}
-                          value={demo.priceUsd ?? ""}
-                          placeholder={
-                            plans.find((plan) => plan.id === demo.planId)?.priceUsd != null
-                              ? String(plans.find((plan) => plan.id === demo.planId)?.priceUsd)
-                              : "prix de la catégorie"
-                          }
-                          onChange={(event) => {
-                            if (event.target.value === "") {
-                              setDemo(i, { priceUsd: null });
-                              return;
-                            }
-                            const value = Number(event.target.value);
-                            setDemo(i, {
-                              priceUsd: Number.isFinite(value) ? value : null,
-                            });
-                          }}
-                          className="mt-1.5 h-10 w-full rounded-xl border border-white/10 bg-black/40 px-3 text-sm text-white outline-none focus:border-[#C6A664]"
-                        />
-                      </label>
-                    </div>
-                  </div>
-                );
-              })()}
-
-              <div className="mt-4 grid lg:grid-cols-2 gap-4">
-                <Area label="Description (arabe)" dir="rtl" value={demo.description} onChange={(v) => setDemo(i, { description: v })} />
-                <Area label="Description (anglaise)" dir="ltr" value={demo.descriptionEn} onChange={(v) => setDemo(i, { descriptionEn: v })} />
-                <Lines label="Points forts (arabe)" value={demo.features} onChange={(v) => setDemo(i, { features: v })} />
-                <Lines label="Points forts (anglais)" value={demo.featuresEn} onChange={(v) => setDemo(i, { featuresEn: v })} />
-              </div>
-
-              <div className="mt-4 rounded-2xl border border-sky-400/25 bg-sky-400/5 p-4">
-                <div className="flex flex-wrap items-start justify-between gap-2">
-                  <div>
-                    <div className="text-xs font-bold text-sky-300">
-                      Référencement Google &amp; IA (SEO)
-                    </div>
-                    <p className="mt-0.5 text-[11px] text-zinc-500">
-                      Champs optionnels. Laissez vide pour utiliser
-                      automatiquement le titre et la description du projet.
-                    </p>
-                  </div>
-                  <div className="flex flex-wrap items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={() => generateSeo(i)}
-                      disabled={aiIndex === i}
-                      className="h-8 px-3 rounded-full border border-sky-400/40 bg-sky-400/10 text-[11px] font-bold text-sky-200 hover:bg-sky-400/20 disabled:opacity-60 inline-flex items-center gap-1.5 transition-colors cursor-pointer"
-                      title="Générer les titres, descriptions et textes alternatifs (arabe + anglais)"
-                    >
-                      {aiIndex === i ? (
-                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                      ) : (
-                        <Sparkles className="h-3.5 w-3.5" />
-                      )}
-                      {aiIndex === i ? "Génération…" : "Générer avec l'IA"}
-                    </button>
-                    <span className="rounded-full border border-sky-400/30 bg-black/30 px-3 py-1 text-[11px] font-bold text-sky-300">
-                      /{demo.slug}
-                    </span>
-                  </div>
-                </div>
-                <div className="mt-4 grid lg:grid-cols-2 gap-4">
-                  <SeoField
-                    label="Titre SEO (balise title, ≤ 60 recommandé)"
-                    max={60}
-                    rows={2}
-                    dir="rtl"
-                    value={demo.metaTitle ?? ""}
-                    placeholder={`${demo.title} — معرض موقع حي من نخبة`}
-                    onChange={(v) => setDemo(i, { metaTitle: v })}
-                  />
-                  <SeoField
-                    label="Description SEO (meta description, ≤ 160 recommandé)"
-                    max={160}
-                    rows={3}
-                    dir="rtl"
-                    value={demo.metaDescription ?? ""}
-                    placeholder={demo.description}
-                    onChange={(v) => setDemo(i, { metaDescription: v })}
-                  />
-                  <SeoField
-                    label="Titre SEO anglais (title, ≤ 60 recommandé)"
-                    max={60}
-                    rows={2}
-                    dir="ltr"
-                    value={demo.metaTitleEn ?? ""}
-                    placeholder={demo.titleEn}
-                    onChange={(v) => setDemo(i, { metaTitleEn: v })}
-                  />
-                  <SeoField
-                    label="Description SEO anglaise (meta description, ≤ 160 recommandé)"
-                    max={160}
-                    rows={3}
-                    dir="ltr"
-                    value={demo.metaDescriptionEn ?? ""}
-                    placeholder={demo.descriptionEn}
-                    onChange={(v) => setDemo(i, { metaDescriptionEn: v })}
-                  />
-                  <SeoField
-                    label="Texte alternatif image (arabe, ≤ 125 recommandé)"
-                    max={125}
-                    rows={2}
-                    dir="rtl"
-                    value={demo.imageAltAr ?? ""}
-                    placeholder={demo.title}
-                    onChange={(v) => setDemo(i, { imageAltAr: v })}
-                  />
-                  <SeoField
-                    label="Texte alternatif image (anglais, ≤ 125 recommandé)"
-                    max={125}
-                    rows={2}
-                    dir="ltr"
-                    value={demo.imageAltEn ?? ""}
-                    placeholder={demo.titleEn}
-                    onChange={(v) => setDemo(i, { imageAltEn: v })}
-                  />
-                </div>
-                {aiMsg?.index === i && (
-                  <p
-                    className={`mt-3 flex items-center gap-1.5 text-[11px] font-semibold ${
-                      aiMsg.kind === "ok"
-                        ? "text-emerald-400"
-                        : aiMsg.kind === "warn"
-                          ? "text-amber-400"
-                          : "text-red-400"
-                    }`}
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-xs font-black text-stone-700">
+                  Carte #{idx + 1}
+                </span>
+                <div className="flex items-center gap-1">
+                  <button
+                    type="button"
+                    disabled={idx === 0}
+                    onClick={() => {
+                      const next = [...whyUs];
+                      [next[idx - 1], next[idx]] = [next[idx], next[idx - 1]];
+                      setWhyUs(next);
+                      markDirty("whyUs");
+                    }}
+                    className="h-8 w-8 rounded-lg border border-stone-200 bg-stone-50 grid place-items-center disabled:opacity-30 cursor-pointer"
                   >
-                    {aiMsg.kind === "ok" ? (
-                      <CheckCircle2 className="h-3.5 w-3.5" />
-                    ) : (
-                      <AlertCircle className="h-3.5 w-3.5" />
-                    )}
-                    {aiMsg.text}
-                  </p>
-                )}
+                    <ArrowUp className="h-3.5 w-3.5" />
+                  </button>
+                  <button
+                    type="button"
+                    disabled={idx === whyUs.length - 1}
+                    onClick={() => {
+                      const next = [...whyUs];
+                      [next[idx + 1], next[idx]] = [next[idx], next[idx + 1]];
+                      setWhyUs(next);
+                      markDirty("whyUs");
+                    }}
+                    className="h-8 w-8 rounded-lg border border-stone-200 bg-stone-50 grid place-items-center disabled:opacity-30 cursor-pointer"
+                  >
+                    <ArrowDown className="h-3.5 w-3.5" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setWhyUs(whyUs.filter((_, i) => i !== idx));
+                      markDirty("whyUs");
+                    }}
+                    className="h-8 px-2.5 rounded-lg border border-red-200 bg-red-50 text-red-600 text-xs font-semibold inline-flex items-center gap-1 cursor-pointer"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" /> Supprimer
+                  </button>
+                </div>
               </div>
-            </ItemCard>
-            );
-          })}
-          <button
-            type="button"
-            onClick={() =>
-              setDraft((d) => ({ ...d, demos: [...d.demos, newDemo(d.demos, plans)] }))
-            }
-            className="h-11 px-5 rounded-2xl border border-dashed border-white/20 text-sm font-bold text-zinc-400 hover:text-white hover:border-[#C6A664]/50 inline-flex items-center gap-2 transition-colors cursor-pointer"
-          >
-            <Plus className="h-4 w-4" /> Ajouter une démo
-          </button>
-        </div>
-      )}
 
-      {/* ---------- TÉMOIGNAGES ---------- */}
-      {tab === "testimonials" && (
-        <div className="space-y-4">
-          {draft.testimonials.map((item, i) => (
-            <ItemCard
-              key={i}
-              index={i}
-              count={draft.testimonials.length}
-              title={item.nameEn || item.name}
-              subtitle={item.roleEn}
-              onMove={(dir) => onMove("testimonials", i, dir)}
-              onDelete={() => onDelete("testimonials", i)}
-            >
-              <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                <Field label="Nom (arabe)" dir="rtl" value={item.name} onChange={(v) => setTestimonial(i, { name: v })} />
-                <Field label="Nom (latin)" dir="ltr" value={item.nameEn} onChange={(v) => setTestimonial(i, { nameEn: v })} />
-                <Field label="Rôle / entreprise (arabe)" dir="rtl" value={item.role} onChange={(v) => setTestimonial(i, { role: v })} />
-                <Field label="Rôle / entreprise (latin)" dir="ltr" value={item.roleEn} onChange={(v) => setTestimonial(i, { roleEn: v })} />
-                <Field label="Photo (URL)" dir="ltr" value={item.image} onChange={(v) => setTestimonial(i, { image: v })} />
-                <label className="block">
-                  <span className="text-xs font-semibold text-zinc-400">Note (étoiles)</span>
+              <div className="grid sm:grid-cols-3 gap-3.5">
+                <Field label="Icône">
                   <select
-                    value={item.rating}
-                    onChange={(e) => setTestimonial(i, { rating: Number(e.target.value) })}
-                    className="mt-1.5 h-10 w-full rounded-xl border border-white/10 bg-black/40 px-3 text-sm text-white outline-none focus:border-[#C6A664] cursor-pointer"
+                    value={item.icon}
+                    onChange={(e) => {
+                      const next = [...whyUs];
+                      next[idx] = { ...item, icon: e.target.value };
+                      setWhyUs(next);
+                      markDirty("whyUs");
+                    }}
+                    className={ADMIN_INPUT_CLS}
                   >
-                    {[5, 4, 3, 2, 1].map((n) => (
-                      <option key={n} value={n}>
-                        {n} étoile{n > 1 ? "s" : ""}
+                    {WHY_ICON_IDS.map((id) => (
+                      <option key={id} value={id}>
+                        {WHY_ICON_LABELS[id]}
                       </option>
                     ))}
                   </select>
-                </label>
+                </Field>
+                <Field label="Titre (arabe)">
+                  <input
+                    dir="rtl"
+                    value={item.titleAr}
+                    onChange={(e) => {
+                      const next = [...whyUs];
+                      next[idx] = { ...item, titleAr: e.target.value };
+                      setWhyUs(next);
+                      markDirty("whyUs");
+                    }}
+                    className={ADMIN_INPUT_CLS}
+                  />
+                </Field>
+                <Field label="Titre (anglais)">
+                  <input
+                    value={item.titleEn}
+                    onChange={(e) => {
+                      const next = [...whyUs];
+                      next[idx] = { ...item, titleEn: e.target.value };
+                      setWhyUs(next);
+                      markDirty("whyUs");
+                    }}
+                    className={ADMIN_INPUT_CLS}
+                  />
+                </Field>
               </div>
-              <div className="mt-4 grid lg:grid-cols-2 gap-4">
-                <Area label="Témoignage (arabe)" dir="rtl" value={item.text} onChange={(v) => setTestimonial(i, { text: v })} />
-                <Area label="Témoignage (anglais)" dir="ltr" value={item.textEn} onChange={(v) => setTestimonial(i, { textEn: v })} />
-                <div className="grid grid-cols-2 gap-3">
-                  <Field label="Avant (arabe)" dir="rtl" value={item.beforeAfter.before} onChange={(v) => setTestimonial(i, { beforeAfter: { ...item.beforeAfter, before: v } })} />
-                  <Field label="Après (arabe)" dir="rtl" value={item.beforeAfter.after} onChange={(v) => setTestimonial(i, { beforeAfter: { ...item.beforeAfter, after: v } })} />
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <Field label="Avant (latin)" dir="ltr" value={item.beforeAfterEn.before} onChange={(v) => setTestimonial(i, { beforeAfterEn: { ...item.beforeAfterEn, before: v } })} />
-                  <Field label="Après (latin)" dir="ltr" value={item.beforeAfterEn.after} onChange={(v) => setTestimonial(i, { beforeAfterEn: { ...item.beforeAfterEn, after: v } })} />
-                </div>
+              <div className="grid sm:grid-cols-2 gap-3.5">
+                <Field label="Description (arabe)">
+                  <textarea
+                    dir="rtl"
+                    rows={2}
+                    value={item.descAr}
+                    onChange={(e) => {
+                      const next = [...whyUs];
+                      next[idx] = { ...item, descAr: e.target.value };
+                      setWhyUs(next);
+                      markDirty("whyUs");
+                    }}
+                    className={ADMIN_TEXTAREA_CLS}
+                  />
+                </Field>
+                <Field label="Description (anglais)">
+                  <textarea
+                    rows={2}
+                    value={item.descEn}
+                    onChange={(e) => {
+                      const next = [...whyUs];
+                      next[idx] = { ...item, descEn: e.target.value };
+                      setWhyUs(next);
+                      markDirty("whyUs");
+                    }}
+                    className={ADMIN_TEXTAREA_CLS}
+                  />
+                </Field>
               </div>
-            </ItemCard>
+            </div>
           ))}
-          <button
-            type="button"
-            onClick={() => setDraft((d) => ({ ...d, testimonials: [...d.testimonials, newTestimonial()] }))}
-            className="h-11 px-5 rounded-2xl border border-dashed border-white/20 text-sm font-bold text-zinc-400 hover:text-white hover:border-[#C6A664]/50 inline-flex items-center gap-2 transition-colors cursor-pointer"
-          >
-            <Plus className="h-4 w-4" /> Ajouter un témoignage
-          </button>
         </div>
       )}
 
-      {/* ---------- FAQ ---------- */}
-      {tab === "faqs" && (
-        <div className="space-y-4">
-          {draft.faqs.map((item, i) => (
-            <ItemCard
-              key={i}
-              index={i}
-              count={draft.faqs.length}
-              title={item.qEn || item.qAr}
-              subtitle={item.qAr}
-              onMove={(dir) => onMove("faqs", i, dir)}
-              onDelete={() => onDelete("faqs", i)}
+      {/* --- ONGLET PROCESS --- */}
+      {tab === "process" && (
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <h2 className="text-sm font-black text-stone-900">
+              Étapes du processus ({process.length})
+            </h2>
+            <button
+              type="button"
+              onClick={() => {
+                const n = String(process.length + 1).padStart(2, "0");
+                setProcess([
+                  ...process,
+                  {
+                    num: n,
+                    titleAr: "خطوة جديدة",
+                    titleEn: "New step",
+                    descAr: "وصف الخطوة",
+                    descEn: "Step description",
+                    durationAr: "يوم واحد",
+                    durationEn: "1 day",
+                  },
+                ]);
+                markDirty("process");
+              }}
+              className="h-9 px-3.5 rounded-xl bg-stone-900 text-white text-xs font-bold inline-flex items-center gap-1.5 cursor-pointer"
             >
-              <div className="grid lg:grid-cols-2 gap-4">
-                <Field label="Question (arabe)" dir="rtl" value={item.qAr} onChange={(v) => setFaq(i, { qAr: v })} />
-                <Field label="Question (anglaise)" dir="ltr" value={item.qEn} onChange={(v) => setFaq(i, { qEn: v })} />
-                <Area label="Réponse (arabe)" dir="rtl" value={item.aAr} onChange={(v) => setFaq(i, { aAr: v })} />
-                <Area label="Réponse (anglaise)" dir="ltr" value={item.aEn} onChange={(v) => setFaq(i, { aEn: v })} />
+              <Plus className="h-3.5 w-3.5" /> Ajouter une étape
+            </button>
+          </div>
+
+          {process.map((step, idx) => (
+            <div
+              key={idx}
+              className="rounded-2xl border border-stone-200 bg-white p-5 space-y-3.5 shadow-2xs"
+            >
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-black text-stone-700">
+                  Étape #{step.num}
+                </span>
+                <div className="flex items-center gap-1">
+                  <button
+                    type="button"
+                    disabled={idx === 0}
+                    onClick={() => {
+                      const next = [...process];
+                      [next[idx - 1], next[idx]] = [next[idx], next[idx - 1]];
+                      setProcess(next);
+                      markDirty("process");
+                    }}
+                    className="h-8 w-8 rounded-lg border border-stone-200 bg-stone-50 grid place-items-center disabled:opacity-30 cursor-pointer"
+                  >
+                    <ArrowUp className="h-3.5 w-3.5" />
+                  </button>
+                  <button
+                    type="button"
+                    disabled={idx === process.length - 1}
+                    onClick={() => {
+                      const next = [...process];
+                      [next[idx + 1], next[idx]] = [next[idx], next[idx + 1]];
+                      setProcess(next);
+                      markDirty("process");
+                    }}
+                    className="h-8 w-8 rounded-lg border border-stone-200 bg-stone-50 grid place-items-center disabled:opacity-30 cursor-pointer"
+                  >
+                    <ArrowDown className="h-3.5 w-3.5" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setProcess(process.filter((_, i) => i !== idx));
+                      markDirty("process");
+                    }}
+                    className="h-8 px-2.5 rounded-lg border border-red-200 bg-red-50 text-red-600 text-xs font-semibold inline-flex items-center gap-1 cursor-pointer"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" /> Supprimer
+                  </button>
+                </div>
               </div>
-            </ItemCard>
+
+              <div className="grid sm:grid-cols-3 gap-3.5">
+                <Field label="Numéro affiché">
+                  <input
+                    value={step.num}
+                    onChange={(e) => {
+                      const next = [...process];
+                      next[idx] = { ...step, num: e.target.value };
+                      setProcess(next);
+                      markDirty("process");
+                    }}
+                    className={ADMIN_INPUT_CLS}
+                  />
+                </Field>
+                <Field label="Durée (arabe)">
+                  <input
+                    dir="rtl"
+                    value={step.durationAr}
+                    onChange={(e) => {
+                      const next = [...process];
+                      next[idx] = { ...step, durationAr: e.target.value };
+                      setProcess(next);
+                      markDirty("process");
+                    }}
+                    className={ADMIN_INPUT_CLS}
+                  />
+                </Field>
+                <Field label="Durée (anglais)">
+                  <input
+                    value={step.durationEn}
+                    onChange={(e) => {
+                      const next = [...process];
+                      next[idx] = { ...step, durationEn: e.target.value };
+                      setProcess(next);
+                      markDirty("process");
+                    }}
+                    className={ADMIN_INPUT_CLS}
+                  />
+                </Field>
+              </div>
+
+              <div className="grid sm:grid-cols-2 gap-3.5">
+                <Field label="Titre (arabe)">
+                  <input
+                    dir="rtl"
+                    value={step.titleAr}
+                    onChange={(e) => {
+                      const next = [...process];
+                      next[idx] = { ...step, titleAr: e.target.value };
+                      setProcess(next);
+                      markDirty("process");
+                    }}
+                    className={ADMIN_INPUT_CLS}
+                  />
+                </Field>
+                <Field label="Titre (anglais)">
+                  <input
+                    value={step.titleEn}
+                    onChange={(e) => {
+                      const next = [...process];
+                      next[idx] = { ...step, titleEn: e.target.value };
+                      setProcess(next);
+                      markDirty("process");
+                    }}
+                    className={ADMIN_INPUT_CLS}
+                  />
+                </Field>
+                <Field label="Description (arabe)">
+                  <textarea
+                    dir="rtl"
+                    rows={2}
+                    value={step.descAr}
+                    onChange={(e) => {
+                      const next = [...process];
+                      next[idx] = { ...step, descAr: e.target.value };
+                      setProcess(next);
+                      markDirty("process");
+                    }}
+                    className={ADMIN_TEXTAREA_CLS}
+                  />
+                </Field>
+                <Field label="Description (anglais)">
+                  <textarea
+                    rows={2}
+                    value={step.descEn}
+                    onChange={(e) => {
+                      const next = [...process];
+                      next[idx] = { ...step, descEn: e.target.value };
+                      setProcess(next);
+                      markDirty("process");
+                    }}
+                    className={ADMIN_TEXTAREA_CLS}
+                  />
+                </Field>
+              </div>
+            </div>
           ))}
-          <button
-            type="button"
-            onClick={() => setDraft((d) => ({ ...d, faqs: [...d.faqs, newFaq()] }))}
-            className="h-11 px-5 rounded-2xl border border-dashed border-white/20 text-sm font-bold text-zinc-400 hover:text-white hover:border-[#C6A664]/50 inline-flex items-center gap-2 transition-colors cursor-pointer"
-          >
-            <Plus className="h-4 w-4" /> Ajouter une question
-          </button>
         </div>
       )}
 
-      {/* Barre d'enregistrement */}
-      <div className="sticky bottom-4 z-10 rounded-3xl border border-white/10 bg-[#121218]/95 backdrop-blur p-4 flex flex-wrap items-center gap-3 shadow-2xl">
-        {msg && (
-          <span
-            className={`text-sm font-semibold inline-flex items-center gap-2 ${
-              msg.kind === "ok" ? "text-emerald-300" : "text-red-300"
-            }`}
-          >
-            {msg.kind === "ok" ? (
-              <CheckCircle2 className="h-4 w-4" />
+      {/* --- ONGLET TESTIMONIALS --- */}
+      {tab === "testimonials" && (
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <h2 className="text-sm font-black text-stone-900">
+              Témoignages clients ({testimonials.length})
+            </h2>
+            <button
+              type="button"
+              onClick={() => {
+                setTestimonials([
+                  {
+                    name: "عميل جديد",
+                    nameEn: "New Client",
+                    role: "صاحب مشروع",
+                    roleEn: "Business Owner",
+                    text: "تجربة ممتازة ونتائج سريعة.",
+                    textEn: "Great experience and fast results.",
+                    image:
+                      "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&q=80&auto=format&fit=crop&crop=face",
+                    rating: 5,
+                    beforeAfter: { before: "قبل الموقع", after: "بعد الموقع" },
+                    beforeAfterEn: {
+                      before: "Before website",
+                      after: "After website",
+                    },
+                  },
+                  ...testimonials,
+                ]);
+                markDirty("testimonials");
+              }}
+              className="h-9 px-3.5 rounded-xl bg-stone-900 text-white text-xs font-bold inline-flex items-center gap-1.5 cursor-pointer"
+            >
+              <Plus className="h-3.5 w-3.5" /> Ajouter un avis
+            </button>
+          </div>
+
+          {testimonials.map((t, idx) => (
+            <div
+              key={idx}
+              className="rounded-2xl border border-stone-200 bg-white p-5 space-y-3.5 shadow-2xs"
+            >
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-bold text-stone-900">
+                  {t.nameEn || t.name}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setTestimonials(testimonials.filter((_, i) => i !== idx));
+                    markDirty("testimonials");
+                  }}
+                  className="h-8 px-2.5 rounded-lg border border-red-200 bg-red-50 text-red-600 text-xs font-semibold inline-flex items-center gap-1 cursor-pointer"
+                >
+                  <Trash2 className="h-3.5 w-3.5" /> Supprimer
+                </button>
+              </div>
+
+              <div className="grid sm:grid-cols-2 gap-3.5">
+                <Field label="Nom (arabe)">
+                  <input
+                    dir="rtl"
+                    value={t.name}
+                    onChange={(e) => {
+                      const next = [...testimonials];
+                      next[idx] = { ...t, name: e.target.value };
+                      setTestimonials(next);
+                      markDirty("testimonials");
+                    }}
+                    className={ADMIN_INPUT_CLS}
+                  />
+                </Field>
+                <Field label="Nom (anglais)">
+                  <input
+                    value={t.nameEn}
+                    onChange={(e) => {
+                      const next = [...testimonials];
+                      next[idx] = { ...t, nameEn: e.target.value };
+                      setTestimonials(next);
+                      markDirty("testimonials");
+                    }}
+                    className={ADMIN_INPUT_CLS}
+                  />
+                </Field>
+                <Field label="Rôle / Entreprise (arabe)">
+                  <input
+                    dir="rtl"
+                    value={t.role}
+                    onChange={(e) => {
+                      const next = [...testimonials];
+                      next[idx] = { ...t, role: e.target.value };
+                      setTestimonials(next);
+                      markDirty("testimonials");
+                    }}
+                    className={ADMIN_INPUT_CLS}
+                  />
+                </Field>
+                <Field label="Rôle / Entreprise (anglais)">
+                  <input
+                    value={t.roleEn}
+                    onChange={(e) => {
+                      const next = [...testimonials];
+                      next[idx] = { ...t, roleEn: e.target.value };
+                      setTestimonials(next);
+                      markDirty("testimonials");
+                    }}
+                    className={ADMIN_INPUT_CLS}
+                  />
+                </Field>
+                <Field label="Photo (URL)">
+                  <input
+                    value={t.image}
+                    onChange={(e) => {
+                      const next = [...testimonials];
+                      next[idx] = { ...t, image: e.target.value };
+                      setTestimonials(next);
+                      markDirty("testimonials");
+                    }}
+                    className={ADMIN_INPUT_CLS}
+                  />
+                </Field>
+                <Field label="Note sur 5">
+                  <input
+                    type="number"
+                    min={1}
+                    max={5}
+                    value={t.rating}
+                    onChange={(e) => {
+                      const next = [...testimonials];
+                      next[idx] = { ...t, rating: Number(e.target.value) };
+                      setTestimonials(next);
+                      markDirty("testimonials");
+                    }}
+                    className={ADMIN_INPUT_CLS}
+                  />
+                </Field>
+                <Field label="Témoignage (arabe)">
+                  <textarea
+                    dir="rtl"
+                    rows={2}
+                    value={t.text}
+                    onChange={(e) => {
+                      const next = [...testimonials];
+                      next[idx] = { ...t, text: e.target.value };
+                      setTestimonials(next);
+                      markDirty("testimonials");
+                    }}
+                    className={ADMIN_TEXTAREA_CLS}
+                  />
+                </Field>
+                <Field label="Témoignage (anglais)">
+                  <textarea
+                    rows={2}
+                    value={t.textEn}
+                    onChange={(e) => {
+                      const next = [...testimonials];
+                      next[idx] = { ...t, textEn: e.target.value };
+                      setTestimonials(next);
+                      markDirty("testimonials");
+                    }}
+                    className={ADMIN_TEXTAREA_CLS}
+                  />
+                </Field>
+                <Field label="Avant / Après (arabe)">
+                  <div className="grid grid-cols-2 gap-2">
+                    <input
+                      dir="rtl"
+                      value={t.beforeAfter.before}
+                      onChange={(e) => {
+                        const next = [...testimonials];
+                        next[idx] = {
+                          ...t,
+                          beforeAfter: {
+                            ...t.beforeAfter,
+                            before: e.target.value,
+                          },
+                        };
+                        setTestimonials(next);
+                        markDirty("testimonials");
+                      }}
+                      className={ADMIN_INPUT_CLS}
+                    />
+                    <input
+                      dir="rtl"
+                      value={t.beforeAfter.after}
+                      onChange={(e) => {
+                        const next = [...testimonials];
+                        next[idx] = {
+                          ...t,
+                          beforeAfter: {
+                            ...t.beforeAfter,
+                            after: e.target.value,
+                          },
+                        };
+                        setTestimonials(next);
+                        markDirty("testimonials");
+                      }}
+                      className={ADMIN_INPUT_CLS}
+                    />
+                  </div>
+                </Field>
+                <Field label="Before / After (anglais)">
+                  <div className="grid grid-cols-2 gap-2">
+                    <input
+                      value={t.beforeAfterEn.before}
+                      onChange={(e) => {
+                        const next = [...testimonials];
+                        next[idx] = {
+                          ...t,
+                          beforeAfterEn: {
+                            ...t.beforeAfterEn,
+                            before: e.target.value,
+                          },
+                        };
+                        setTestimonials(next);
+                        markDirty("testimonials");
+                      }}
+                      className={ADMIN_INPUT_CLS}
+                    />
+                    <input
+                      value={t.beforeAfterEn.after}
+                      onChange={(e) => {
+                        const next = [...testimonials];
+                        next[idx] = {
+                          ...t,
+                          beforeAfterEn: {
+                            ...t.beforeAfterEn,
+                            after: e.target.value,
+                          },
+                        };
+                        setTestimonials(next);
+                        markDirty("testimonials");
+                      }}
+                      className={ADMIN_INPUT_CLS}
+                    />
+                  </div>
+                </Field>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* --- ONGLET FAQS --- */}
+      {tab === "faqs" && (
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <h2 className="text-sm font-black text-stone-900">
+              Questions fréquentes ({faqs.length})
+            </h2>
+            <button
+              type="button"
+              onClick={() => {
+                setFaqs([
+                  {
+                    qAr: "سؤال جديد؟",
+                    qEn: "New question?",
+                    aAr: "الإجابة هنا.",
+                    aEn: "Answer here.",
+                  },
+                  ...faqs,
+                ]);
+                markDirty("faqs");
+              }}
+              className="h-9 px-3.5 rounded-xl bg-stone-900 text-white text-xs font-bold inline-flex items-center gap-1.5 cursor-pointer"
+            >
+              <Plus className="h-3.5 w-3.5" /> Ajouter une question
+            </button>
+          </div>
+
+          {faqs.map((faq, idx) => (
+            <div
+              key={idx}
+              className="rounded-2xl border border-stone-200 bg-white p-5 space-y-3 shadow-2xs"
+            >
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-xs font-bold text-stone-700">
+                  Question #{idx + 1}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setFaqs(faqs.filter((_, i) => i !== idx));
+                    markDirty("faqs");
+                  }}
+                  className="h-8 px-2.5 rounded-lg border border-red-200 bg-red-50 text-red-600 text-xs font-semibold inline-flex items-center gap-1 cursor-pointer"
+                >
+                  <Trash2 className="h-3.5 w-3.5" /> Supprimer
+                </button>
+              </div>
+
+              <div className="grid sm:grid-cols-2 gap-3.5">
+                <Field label="Question (arabe)">
+                  <input
+                    dir="rtl"
+                    value={faq.qAr}
+                    onChange={(e) => {
+                      const next = [...faqs];
+                      next[idx] = { ...faq, qAr: e.target.value };
+                      setFaqs(next);
+                      markDirty("faqs");
+                    }}
+                    className={ADMIN_INPUT_CLS}
+                  />
+                </Field>
+                <Field label="Question (anglais)">
+                  <input
+                    value={faq.qEn}
+                    onChange={(e) => {
+                      const next = [...faqs];
+                      next[idx] = { ...faq, qEn: e.target.value };
+                      setFaqs(next);
+                      markDirty("faqs");
+                    }}
+                    className={ADMIN_INPUT_CLS}
+                  />
+                </Field>
+                <Field label="Réponse (arabe)">
+                  <textarea
+                    dir="rtl"
+                    rows={2}
+                    value={faq.aAr}
+                    onChange={(e) => {
+                      const next = [...faqs];
+                      next[idx] = { ...faq, aAr: e.target.value };
+                      setFaqs(next);
+                      markDirty("faqs");
+                    }}
+                    className={ADMIN_TEXTAREA_CLS}
+                  />
+                </Field>
+                <Field label="Réponse (anglais)">
+                  <textarea
+                    rows={2}
+                    value={faq.aEn}
+                    onChange={(e) => {
+                      const next = [...faqs];
+                      next[idx] = { ...faq, aEn: e.target.value };
+                      setFaqs(next);
+                      markDirty("faqs");
+                    }}
+                    className={ADMIN_TEXTAREA_CLS}
+                  />
+                </Field>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* --- ONGLET HEADINGS --- */}
+      {tab === "headings" && (
+        <div className="space-y-3">
+          {SECTION_HEADING_IDS.map((id) => {
+            const meta = HEADING_META[id];
+            const h = headings[id];
+            return (
+              <div
+                key={id}
+                className="rounded-2xl border border-stone-200 bg-white p-5 space-y-3 shadow-2xs"
+              >
+                <h3 className="text-sm font-black text-stone-900">
+                  {meta.label}
+                </h3>
+                <div className="grid sm:grid-cols-2 gap-3.5">
+                  <Field label="Titre (arabe)">
+                    <input
+                      dir="rtl"
+                      value={h.titleAr}
+                      onChange={(e) => {
+                        setHeadings({
+                          ...headings,
+                          [id]: { ...h, titleAr: e.target.value },
+                        });
+                        markDirty("headings");
+                      }}
+                      className={ADMIN_INPUT_CLS}
+                    />
+                  </Field>
+                  <Field label="Titre (anglais)">
+                    <input
+                      value={h.titleEn}
+                      onChange={(e) => {
+                        setHeadings({
+                          ...headings,
+                          [id]: { ...h, titleEn: e.target.value },
+                        });
+                        markDirty("headings");
+                      }}
+                      className={ADMIN_INPUT_CLS}
+                    />
+                  </Field>
+                  <Field label="Sous-titre (arabe)">
+                    <textarea
+                      dir="rtl"
+                      rows={2}
+                      value={h.subtitleAr}
+                      onChange={(e) => {
+                        setHeadings({
+                          ...headings,
+                          [id]: { ...h, subtitleAr: e.target.value },
+                        });
+                        markDirty("headings");
+                      }}
+                      className={ADMIN_TEXTAREA_CLS}
+                    />
+                  </Field>
+                  <Field label="Sous-titre (anglais)">
+                    <textarea
+                      rows={2}
+                      value={h.subtitleEn}
+                      onChange={(e) => {
+                        setHeadings({
+                          ...headings,
+                          [id]: { ...h, subtitleEn: e.target.value },
+                        });
+                        markDirty("headings");
+                      }}
+                      className={ADMIN_TEXTAREA_CLS}
+                    />
+                  </Field>
+                  {meta.hasNote && (
+                    <>
+                      <Field label="Mention complémentaire (arabe)">
+                        <input
+                          dir="rtl"
+                          value={h.noteAr ?? ""}
+                          onChange={(e) => {
+                            setHeadings({
+                              ...headings,
+                              [id]: { ...h, noteAr: e.target.value },
+                            });
+                            markDirty("headings");
+                          }}
+                          className={ADMIN_INPUT_CLS}
+                        />
+                      </Field>
+                      <Field label="Mention complémentaire (anglais)">
+                        <input
+                          value={h.noteEn ?? ""}
+                          onChange={(e) => {
+                            setHeadings({
+                              ...headings,
+                              [id]: { ...h, noteEn: e.target.value },
+                            });
+                            markDirty("headings");
+                          }}
+                          className={ADMIN_INPUT_CLS}
+                        />
+                      </Field>
+                    </>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* --- ONGLET SITES (accélérateur direct) --- */}
+      {tab === "demos" && (
+        <div className="space-y-3">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <h2 className="text-sm font-black text-stone-900">
+              Sites clients ({demos.length})
+            </h2>
+            <button
+              type="button"
+              onClick={() => {
+                const blank = makeBlankDemo(
+                  demos.map((d) => d.slug),
+                  plans,
+                );
+                setDemos([blank, ...demos]);
+                setOpenDemoSlugs((prev) => ({ ...prev, [blank.slug]: true }));
+                markDirty("demos");
+              }}
+              className="h-9 px-3.5 rounded-xl bg-stone-900 text-white text-xs font-bold inline-flex items-center gap-1.5 cursor-pointer"
+            >
+              <Plus className="h-3.5 w-3.5" /> Ajouter un site
+            </button>
+          </div>
+
+          {demos.map((demo, idx) => (
+            <SiteItemEditor
+              key={`${demo.slug}-${idx}`}
+              demo={demo}
+              index={idx}
+              total={demos.length}
+              plans={plans}
+              currency={currency}
+              expanded={Boolean(openDemoSlugs[demo.slug])}
+              onToggleExpand={() =>
+                setOpenDemoSlugs((prev) => ({
+                  ...prev,
+                  [demo.slug]: !prev[demo.slug],
+                }))
+              }
+              onChange={(next) => {
+                const copy = [...demos];
+                copy[idx] = next;
+                setDemos(copy);
+                markDirty("demos");
+              }}
+              onMove={(delta) => {
+                const target = idx + delta;
+                if (target < 0 || target >= demos.length) return;
+                const copy = [...demos];
+                [copy[idx], copy[target]] = [copy[target], copy[idx]];
+                setDemos(copy);
+                markDirty("demos");
+              }}
+              onDelete={() => {
+                if (
+                  !confirm(
+                    `Supprimer « ${demo.titleEn || demo.title} » ?`,
+                  )
+                ) {
+                  return;
+                }
+                setDemos(demos.filter((_, i) => i !== idx));
+                markDirty("demos");
+              }}
+              onFlash={flash}
+            />
+          ))}
+        </div>
+      )}
+
+      {/* Barre d'enregistrement fixe */}
+      <div className="fixed bottom-4 left-4 right-4 lg:left-80 lg:right-8 z-30">
+        <div className="max-w-5xl mx-auto rounded-2xl border border-stone-300 bg-white/95 backdrop-blur px-4 py-3 shadow-xl flex flex-wrap items-center justify-between gap-3">
+          <div className="text-xs text-stone-600">
+            {dirtyMap[tab] ? (
+              <span className="font-bold text-[#8A6D2F]">
+                ● Modifications en attente sur cet onglet.
+              </span>
             ) : (
-              <AlertCircle className="h-4 w-4" />
+              <span>Onglet synchronisé avec le site public.</span>
             )}
-            {msg.text}
-          </span>
-        )}
-        <div className="ms-auto flex items-center gap-2.5">
-          <button
-            type="button"
-            onClick={onReset}
-            disabled={busy !== ""}
-            className="h-11 px-4 rounded-2xl border border-white/10 text-sm font-semibold text-zinc-400 hover:text-red-400 hover:border-red-500/30 inline-flex items-center gap-2 transition-colors cursor-pointer disabled:opacity-50"
-          >
-            {busy === "reset" ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <RotateCcw className="h-4 w-4" />
-            )}
-            Réinitialiser
-          </button>
-          <button
-            type="button"
-            onClick={onSave}
-            disabled={busy !== ""}
-            className="h-11 px-6 rounded-2xl bg-[#C6A664] text-black text-sm font-black inline-flex items-center gap-2 hover:bg-[#B89652] transition-colors cursor-pointer disabled:opacity-60"
-          >
-            {busy === tab ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <Save className="h-4 w-4" />
-            )}
-            Enregistrer
-          </button>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              disabled={pending}
+              onClick={onReset}
+              className="h-9 px-3.5 rounded-xl border border-stone-300 bg-stone-50 text-stone-600 text-xs font-semibold hover:bg-stone-100 inline-flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+            >
+              <RotateCcw className="h-3.5 w-3.5" />
+              Valeurs par défaut
+            </button>
+            <button
+              type="button"
+              disabled={pending}
+              onClick={onSave}
+              className="h-9 px-5 rounded-xl bg-stone-900 text-white text-xs sm:text-sm font-bold hover:bg-stone-800 inline-flex items-center gap-2 cursor-pointer disabled:opacity-50 shadow-xs"
+            >
+              <Check className="h-4 w-4 text-[#E5CA87]" />
+              {pending ? "Enregistrement…" : "Enregistrer l’onglet"}
+            </button>
+          </div>
         </div>
       </div>
     </div>
+  );
+}
+
+function Field({
+  label,
+  children,
+}: {
+  label: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <label className="block space-y-1">
+      <span className="block text-xs font-semibold text-stone-600">{label}</span>
+      {children}
+    </label>
   );
 }

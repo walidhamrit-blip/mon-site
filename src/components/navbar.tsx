@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { Menu, X, Moon, Sun, Globe, ArrowUpRight } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
@@ -11,6 +12,7 @@ import { Button } from "./ui/button";
 import { whatsappLink } from "@/lib/utils";
 
 export function Navbar() {
+  const router = useRouter();
   const siteConfig = useSiteConfig();
   const { locale, t, toggleLocale, dir } = useI18n();
   const { mode, toggle } = useTheme();
@@ -24,10 +26,19 @@ export function Navbar() {
   }, []);
 
   const links = [
-    { href: "#demos", label: t.nav.demos },
-    { href: "#pricing", label: t.nav.pricing },
-    { href: "#services", label: t.nav.services },
+    { href: "/#demos", label: t.nav.demos },
     { href: "/demos", label: locale === "ar" ? "كل المعارض" : "All demos" },
+    {
+      href: "/apps",
+      label: locale === "ar" ? "تطبيقاتنا" : "Our Apps",
+      soon: true,
+    },
+    {
+      href: "/products",
+      label: locale === "ar" ? "منتجاتنا وبرامجنا" : "Digital Products",
+      soon: true,
+    },
+    { href: "/#pricing", label: t.nav.pricing },
     { href: "/contact", label: t.nav.contact },
   ];
 
@@ -67,14 +78,17 @@ export function Navbar() {
               </div>
             </Link>
 
-            <nav aria-label={locale === "ar" ? "التنقل الرئيسي" : "Main navigation"} className="hidden lg:flex items-center gap-1 bg-[var(--secondary)] rounded-full p-1">
+            <nav aria-label={locale === "ar" ? "التنقل الرئيسي" : "Main navigation"} className="hidden xl:flex items-center gap-0.5 bg-[var(--secondary)] rounded-full p-1">
               {links.map((l) => (
                 <Link
                   key={l.href}
                   href={l.href}
-                  className="px-4 py-1.5 rounded-full text-sm font-medium hover:bg-[var(--card)] transition-colors"
+                  className="px-3.5 py-1.5 rounded-full text-sm font-medium hover:bg-[var(--card)] transition-colors inline-flex items-center gap-1.5 whitespace-nowrap"
                 >
-                  {l.label}
+                  <span>{l.label}</span>
+                  {l.soon && (
+                    <span className="h-1.5 w-1.5 rounded-full bg-[var(--accent)]" aria-hidden="true" />
+                  )}
                 </Link>
               ))}
             </nav>
@@ -113,14 +127,18 @@ export function Navbar() {
               <Button
                 size="sm"
                 className="hidden sm:inline-flex"
-                onClick={() => document.getElementById("lead-form")?.scrollIntoView({ behavior: "smooth" })}
+                onClick={() => {
+                  const el = document.getElementById("lead-form");
+                  if (el) el.scrollIntoView({ behavior: "smooth" });
+                  else router.push("/contact");
+                }}
               >
                 {locale === "ar" ? "طلب عرض" : "Get quote"}
               </Button>
 
               <button
                 onClick={() => setOpen((v) => !v)}
-                className="lg:hidden h-9 w-9 rounded-full bg-[var(--primary)] text-[var(--primary-foreground)] grid place-items-center cursor-pointer"
+                className="xl:hidden h-9 w-9 rounded-full bg-[var(--primary)] text-[var(--primary-foreground)] grid place-items-center cursor-pointer"
               >
                 {open ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
               </button>
@@ -135,18 +153,23 @@ export function Navbar() {
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
-            className="fixed inset-0 z-40 lg:hidden pt-[92px] px-4"
+            className="fixed inset-0 z-40 xl:hidden pt-[92px] px-4 overflow-y-auto pb-8"
           >
             <div className="bg-[var(--card)] rounded-[24px] border border-[var(--border)] p-6 shadow-2xl">
-              <nav aria-label={locale === "ar" ? "قائمة الجوال" : "Mobile menu"} className="flex flex-col gap-2">
+              <nav aria-label={locale === "ar" ? "قائمة الجوال" : "Mobile menu"} className="flex flex-col gap-1.5">
                 {links.map((l) => (
                   <Link
                     key={l.href}
                     href={l.href}
                     onClick={() => setOpen(false)}
-                    className="px-4 py-3 rounded-xl hover:bg-[var(--secondary)] font-medium"
+                    className="px-4 py-3 rounded-xl hover:bg-[var(--secondary)] font-medium flex items-center justify-between"
                   >
-                    {l.label}
+                    <span>{l.label}</span>
+                    {l.soon && (
+                      <span className="px-2.5 py-0.5 rounded-full bg-[var(--accent)]/15 text-[var(--accent)] text-[11px] font-bold">
+                        {locale === "ar" ? "قريباً" : "Soon"}
+                      </span>
+                    )}
                   </Link>
                 ))}
               </nav>

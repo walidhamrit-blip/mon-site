@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { and, desc, eq, ilike, or, sql } from "drizzle-orm";
+import { Download } from "lucide-react";
 import { db, ensureSchema } from "@/db";
 import { leads } from "@/db/schema";
 import {
@@ -9,7 +10,6 @@ import {
   type LeadStatus,
 } from "@/lib/site-types";
 import { LeadsTable } from "./leads-table";
-import { Download, Inbox, Search } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
@@ -29,35 +29,29 @@ function frDate(value: Date | string): string {
   }
 }
 
-interface SearchParams {
-  status?: string;
-  q?: string;
+interface Props {
+  searchParams: Promise<{ status?: string; q?: string }>;
 }
 
-export default async function LeadsPage({
-  searchParams,
-}: {
-  searchParams: Promise<SearchParams>;
-}) {
-  const { status, q } = await searchParams;
+export default async function AdminLeadsPage({ searchParams }: Props) {
+  const params = await searchParams;
   const activeStatus =
-    status && (LEAD_STATUSES as readonly string[]).includes(status)
-      ? (status as LeadStatus)
+    params.status && (LEAD_STATUSES as readonly string[]).includes(params.status)
+      ? (params.status as LeadStatus)
       : undefined;
-  const query = (q ?? "").trim();
+  const search = (params.q ?? "").trim();
 
   let dbError: string | null = null;
-  let rows: (typeof leads.$inferSelect)[] = [];
-  let counts: Partial<Record<LeadStatus, number>> = {};
+  let rawRows: (typeof leads.$inferSelect)[] = [];
+  const counts: Partial<Record<LeadStatus, number>> = {};
   let total = 0;
 
   try {
     await ensureSchema();
-
     const conditions = [];
     if (activeStatus) conditions.push(eq(leads.status, activeStatus));
-    if (query) {
-      const pattern = `%${query}%`;
+    if (search) {
+      const pattern = `%${search}%`;
       conditions.push(
         or(
           ilike(leads.name, pattern),
@@ -69,7 +63,7 @@ export default async function LeadsPage({
       );
     }
 
-    rows = await db
+    rawRows = await db
       .select()
       .from(leads)
       .where(conditions.length ? and(...conditions) : undefined)
@@ -90,12 +84,14 @@ export default async function LeadsPage({
     total = Object.values(counts).reduce((a, b) => a + b, 0);
   } catch (error) {
     dbError = error instanceof Error ? error.message.slice(0, 200) : String(error);
-    console.error("[admin/leads]", dbError);
   }
 
-  const leadsRows: LeadRow[] = rows.map((l) => ({
+  const rows: LeadRow[] = rawRows.map((l) => ({
     id: l.id,
-    createdAt: l.createdAt instanceof Date ? l.createdAt.toISOString() : String(l.createdAt),
+    createdAt:
+      l.createdAt instanceof Date
+        ? l.createdAt.toISOString()
+        : String(l.createdAt),
     dateFr: frDate(l.createdAt),
     name: l.name,
     business: l.business,
@@ -114,104 +110,91 @@ export default async function LeadsPage({
     notes: l.notes,
   }));
 
-  const chipHref = (value?: string) => {
-    const params = new URLSearchParams();
-    if (value) params.set("status", value);
-    if (query) params.set("q", query);
-    const s = params.toString();
-    return s ? `/admin/leads?${s}` : "/admin/leads";
-  };
-
-  const chips: { label: string; value?: string; count: number }[] = [
-    { label: "Tous", value: undefined, count: total },
+  const tabs: { value: LeadStatus | undefined; label: string; count: number }[] = [
+    { value: undefined, label: "Toutes", count: total },
     ...LEAD_STATUSES.map((s) => ({
+      value: s,
       label: LEAD_STATUS_LABELS[s],
-      value: s as string,
       count: counts[s] ?? 0,
     })),
   ];
 
+  const hrefFor = (nextStatus: LeadStatus | undefined) => {
+    const sp = new URLSearchParams();
+    if (nextStatus) sp.set("status", nextStatus);
+    if (search) sp.set("q", search);
+    const qs = sp.toString();
+    return `/admin/leads${qs ? `?${qs}` : ""}`;
+  };
+
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-end justify-between gap-4">
+      <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-black text-white">Demandes</h1>
-          <p className="mt-1 text-sm text-zinc-500">
-            {total} demande{total > 1 ? "s" : ""} reçue{total > 1 ? "s" : ""} via le site
+          <h1 className="text-2xl font-black tracking-tight text-stone-900">
+            Demandes clients
+          </h1>
+          <p className="text-sm text-stone-500 mt-1">
+            {total} demande{total > 1 ? "s" : ""} reçue{total > 1 ? "s" : ""} au total
           </p>
         </div>
         <a
           href="/admin/leads/export"
-          className="h-10 px-5 rounded-full border border-white/15 text-sm font-bold text-zinc-300 inline-flex items-center gap-2 hover:bg-white/5 transition-colors"
+          className="inline-flex items-center gap-2 h-10 px-4 rounded-xl border border-stone-300 bg-white text-sm font-semibold text-stone-700 hover:bg-stone-50 shadow-2xs"
         >
-          <Download className="h-4 w-4" /> Exporter (CSV)
+          <Download className="h-4 w-4 text-stone-500" />
+          Exporter en CSV
         </a>
       </div>
 
-      {dbError && (
-        <div className="rounded-2xl border border-red-500/30 bg-red-500/10 p-4 text-sm text-red-300">
-          <strong className="font-bold">Base de données inaccessible :</strong> vérifiez{" "}
-          <code className="px-1.5 py-0.5 rounded bg-black/30">DATABASE_URL</code> sur Vercel.
-          <div className="mt-1 text-red-400/70 text-xs">{dbError}</div>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex flex-wrap gap-1.5">
+          {tabs.map((tab) => {
+            const active = tab.value === activeStatus;
+            return (
+              <Link
+                key={tab.label}
+                href={hrefFor(tab.value)}
+                className={`px-3.5 py-1.5 rounded-full text-xs font-semibold inline-flex items-center gap-1.5 transition-colors ${
+                  active
+                    ? "bg-stone-900 text-white shadow-2xs"
+                    : "bg-white text-stone-600 border border-stone-200 hover:bg-stone-100 hover:text-stone-900"
+                }`}
+              >
+                <span>{tab.label}</span>
+                <span className="opacity-70">{tab.count}</span>
+              </Link>
+            );
+          })}
         </div>
-      )}
 
-      {/* Filtres */}
-      <div className="flex flex-wrap items-center gap-2">
-        {chips.map((chip) => {
-          const active = (chip.value ?? undefined) === activeStatus && !(chip.value === undefined && activeStatus);
-          const isActive = chip.value === activeStatus;
-          return (
-            <Link
-              key={chip.label}
-              href={chipHref(chip.value)}
-              className={`h-9 px-4 rounded-full text-sm font-semibold inline-flex items-center gap-2 border transition-colors ${
-                isActive
-                  ? "bg-[#C6A664]/15 border-[#C6A664]/40 text-[#E8D5A9]"
-                  : "bg-white/5 border-white/10 text-zinc-400 hover:text-white"
-              } ${active ? "ring-1 ring-[#C6A664]/40" : ""}`}
-            >
-              {chip.label}
-              <span className="text-xs opacity-60">{chip.count}</span>
-            </Link>
-          );
-        })}
-
-        <form action="/admin/leads" method="get" className="ms-auto flex items-center gap-2">
-          {activeStatus && <input type="hidden" name="status" value={activeStatus} />}
-          <div className="relative">
-            <Search className="absolute start-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-500" />
-            <input
-              name="q"
-              defaultValue={query}
-              placeholder="Nom, activité, téléphone…"
-              className="h-9 ps-9 pe-4 w-[230px] rounded-full border border-white/10 bg-black/40 text-sm text-white outline-none focus:border-[#C6A664]"
-            />
-          </div>
+        <form action="/admin/leads" method="get" className="flex gap-2">
+          {activeStatus && (
+            <input type="hidden" name="status" value={activeStatus} />
+          )}
+          <input
+            type="search"
+            name="q"
+            defaultValue={search}
+            placeholder="Nom, activité, téléphone…"
+            className="h-9 w-56 sm:w-64 rounded-xl bg-white border border-stone-300 px-3 text-sm text-stone-900 placeholder:text-stone-400 focus:outline-none focus:border-[#B8923F]"
+          />
           <button
             type="submit"
-            className="h-9 px-4 rounded-full bg-white/10 text-sm font-semibold text-white hover:bg-white/15 transition-colors cursor-pointer"
+            className="h-9 px-3.5 rounded-xl bg-stone-900 text-white text-xs font-semibold hover:bg-stone-800 cursor-pointer"
           >
             Rechercher
           </button>
         </form>
       </div>
 
-      {/* Tableau */}
-      {leadsRows.length === 0 && !dbError ? (
-        <div className="rounded-3xl border border-white/10 bg-[#121218] p-12 text-center">
-          <Inbox className="h-10 w-10 mx-auto text-zinc-600" />
-          <p className="mt-4 font-bold text-white">
-            {query || activeStatus ? "Aucun résultat pour ce filtre." : "Aucune demande pour l’instant."}
-          </p>
-          <p className="mt-1 text-sm text-zinc-500 max-w-[46ch] mx-auto">
-            Les demandes envoyées depuis le formulaire de contact du site seront
-            enregistrées ici automatiquement.
-          </p>
+      {dbError && (
+        <div className="rounded-xl border border-amber-300 bg-amber-50 p-4 text-xs text-amber-900">
+          Lecture impossible : <code className="font-semibold">{dbError}</code>
         </div>
-      ) : (
-        <LeadsTable leads={leadsRows} />
       )}
+
+      <LeadsTable rows={rows} />
     </div>
   );
 }

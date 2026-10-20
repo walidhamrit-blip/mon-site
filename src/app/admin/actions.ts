@@ -198,6 +198,9 @@ const CONTENT_KEYS: Record<ContentSection, string> = {
   whyUs: SETTINGS_KEYS.whyUs,
   process: SETTINGS_KEYS.process,
   headings: SETTINGS_KEYS.headings,
+  layout: SETTINGS_KEYS.layout,
+  appsPage: SETTINGS_KEYS.appsPage,
+  productsPage: SETTINGS_KEYS.productsPage,
 };
 
 export async function saveContentSection(
@@ -213,7 +216,7 @@ export async function saveContentSection(
 
   let dataToStore: unknown = parsed.data;
   if (section === "demos") {
-    const items = parsed.data as ( { slug: string } & Parameters<typeof ensureDemoSeoFields>[0] )[];
+    const items = parsed.data as ({ slug: string } & Parameters<typeof ensureDemoSeoFields>[0])[];
     const slugs = new Set<string>();
     for (const item of items) {
       if (slugs.has(item.slug)) {
@@ -221,9 +224,23 @@ export async function saveContentSection(
       }
       slugs.add(item.slug);
     }
-    // Automatisation SEO : complète automatiquement tout champ SEO vide
-    // avec le gabarit optimisé bilingue avant l'enregistrement en base.
     dataToStore = items.map((item) => ensureDemoSeoFields(item));
+  } else if (section === "layout") {
+    const layoutData = parsed.data as z.infer<typeof contentSchemas.layout>;
+    const secIds = new Set<string>();
+    for (const sec of layoutData.customSections) {
+      if (secIds.has(sec.id)) {
+        return { ok: false, error: `Identifiant de section dupliqué : « ${sec.id} ».` };
+      }
+      secIds.add(sec.id);
+    }
+    dataToStore = {
+      ...layoutData,
+      customSections: layoutData.customSections.map((sec) => ({
+        ...sec,
+        sites: sec.sites.map((site) => ensureDemoSeoFields(site)),
+      })),
+    };
   }
 
   try {
@@ -231,6 +248,85 @@ export async function saveContentSection(
     revalidatePath("/", "layout");
     void pingAllPublicPages();
     return { ok: true, message: "Contenu enregistré — le site public est à jour." };
+  } catch (error) {
+    return { ok: false, error: dbIssue(error) };
+  }
+}
+
+export async function saveSectionsWorkspace(input: {
+  layout: unknown;
+  demos: unknown;
+}): Promise<ActionResult> {
+  await requireAdmin();
+  const parsedLayout = contentSchemas.layout.safeParse(input.layout);
+  if (!parsedLayout.success) {
+    return { ok: false, error: `Sections invalides — ${firstIssue(parsedLayout.error)}` };
+  }
+  const parsedDemos = contentSchemas.demos.safeParse(input.demos);
+  if (!parsedDemos.success) {
+    return { ok: false, error: `Sites invalides — ${firstIssue(parsedDemos.error)}` };
+  }
+
+  const demoSlugs = new Set<string>();
+  for (const item of parsedDemos.data) {
+    if (demoSlugs.has(item.slug)) {
+      return { ok: false, error: `Slug dupliqué dans la galerie : « ${item.slug} ».` };
+    }
+    demoSlugs.add(item.slug);
+  }
+
+  const secIds = new Set<string>();
+  for (const sec of parsedLayout.data.customSections) {
+    if (secIds.has(sec.id)) {
+      return { ok: false, error: `Identifiant de section dupliqué : « ${sec.id} ».` };
+    }
+    secIds.add(sec.id);
+    const localSlugs = new Set<string>();
+    for (const site of sec.sites) {
+      if (localSlugs.has(site.slug)) {
+        return {
+          ok: false,
+          error: `Slug dupliqué « ${site.slug} » dans la section « ${sec.titleEn || sec.titleAr} ».`,
+        };
+      }
+      localSlugs.add(site.slug);
+    }
+  }
+
+  const normalizedDemos = parsedDemos.data.map((d) => ensureDemoSeoFields(d));
+  const normalizedLayout = {
+    ...parsedLayout.data,
+    customSections: parsedLayout.data.customSections.map((sec) => ({
+      ...sec,
+      sites: sec.sites.map((site) => ensureDemoSeoFields(site)),
+    })),
+  };
+
+  try {
+    await upsertSetting(SETTINGS_KEYS.demos, normalizedDemos);
+    await upsertSetting(SETTINGS_KEYS.layout, normalizedLayout);
+    revalidatePath("/", "layout");
+    void pingAllPublicPages();
+    return {
+      ok: true,
+      message: "Architecture des sections et sites enregistrée — le site public est à jour.",
+    };
+  } catch (error) {
+    return { ok: false, error: dbIssue(error) };
+  }
+}
+
+export async function resetSectionsWorkspace(): Promise<ActionResult> {
+  await requireAdmin();
+  try {
+    await deleteSetting(SETTINGS_KEYS.layout);
+    await deleteSetting(SETTINGS_KEYS.demos);
+    revalidatePath("/", "layout");
+    void pingAllPublicPages();
+    return {
+      ok: true,
+      message: "Sections et galerie de sites réinitialisées aux valeurs par défaut.",
+    };
   } catch (error) {
     return { ok: false, error: dbIssue(error) };
   }

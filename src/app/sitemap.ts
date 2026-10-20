@@ -1,8 +1,6 @@
 import type { MetadataRoute } from "next";
-import { getSiteDataCached } from "@/lib/store";
+import { getAllKnownDemos, getSiteDataCached } from "@/lib/store";
 
-// Date stable pour l'instance du serveur (évite de faire varier le sitemap
-// à chaque requête — un lastModified qui change sans raison dévalorise le signal).
 const BUILD_DATE = new Date();
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
@@ -16,6 +14,18 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       lastModified: BUILD_DATE,
       changeFrequency: "weekly",
       priority: 0.9,
+    },
+    {
+      url: `${base}/apps`,
+      lastModified: BUILD_DATE,
+      changeFrequency: "weekly",
+      priority: 0.85,
+    },
+    {
+      url: `${base}/products`,
+      lastModified: BUILD_DATE,
+      changeFrequency: "weekly",
+      priority: 0.85,
     },
     {
       url: `${base}/sectors`,
@@ -37,7 +47,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     },
   ];
 
-  // Pages sectorielles automatiques — 10 secteurs (medical, restaurant…)
   const { sectorIds } = await import("@/lib/sectors");
   const sectorRoutes: MetadataRoute.Sitemap = sectorIds.map((id) => ({
     url: `${base}/sectors/${id}`,
@@ -46,13 +55,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.75,
   }));
 
-  const demoRoutes: MetadataRoute.Sitemap = content.demos.map((d) => ({
+  const demoRoutes: MetadataRoute.Sitemap = getAllKnownDemos(content).map((d) => ({
     url: `${base}/demos/${d.slug}`,
     lastModified: BUILD_DATE,
     changeFrequency: "weekly",
     priority: 0.7,
-    // Image sitemap : aide Google Images. On filtre les URLs avec "&" non-échappés
-    // (Unsplash) car le générateur Next 16 ne les encode pas en &amp; → XML invalide.
     images: d.image && !d.image.includes("&") ? [d.image] : undefined,
   }));
 

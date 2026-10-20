@@ -1,343 +1,376 @@
 "use client";
-import { Fragment, useTransition, useState } from "react";
+
+import { useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import {
-  LEAD_STATUSES,
-  type LeadRow,
-} from "@/lib/site-types";
-import { StatusBadge } from "../status-badge";
+  ChevronDown,
+  MessageCircle,
+  Mail,
+  Trash2,
+  Check,
+  Sparkles,
+  Copy,
+  ExternalLink,
+  X,
+} from "lucide-react";
 import {
   deleteLead,
   generateDemoFromLead,
   saveLeadNotes,
   updateLeadStatus,
+  type GenerateDemoResult,
 } from "@/app/admin/actions";
 import {
-  ChevronDown,
-  Trash2,
-  Save,
-  ExternalLink,
-  Mail,
-  AlertCircle,
-  CheckCircle2,
-  Sparkles,
-  MessageCircle,
-  Copy,
-  Star,
-} from "lucide-react";
+  LEAD_STATUSES,
+  LEAD_STATUS_LABELS,
+  type LeadRow,
+  type LeadStatus,
+} from "@/lib/site-types";
+import { StatusBadge } from "../status-badge";
 
-const waLink = (phone: string) => `https://wa.me/${phone.replace(/[^\d]/g, "")}`;
-
-function Detail({ label, value }: { label: string; value?: string | null }) {
-  if (!value) return null;
-  return (
-    <div>
-      <dt className="text-[11px] uppercase tracking-wider text-zinc-600">{label}</dt>
-      <dd className="mt-0.5 text-sm text-zinc-200 whitespace-pre-wrap">{value}</dd>
-    </div>
-  );
+function whatsappHref(phone: string, name: string): string {
+  const digits = phone.replace(/[^0-9]/g, "");
+  const text = encodeURIComponent(`مرحبا ${name}، معك فريق نخبة بخصوص طلبك`);
+  return `https://wa.me/${digits}?text=${text}`;
 }
 
-export function LeadsTable({ leads }: { leads: LeadRow[] }) {
-  const [expanded, setExpanded] = useState<number | null>(null);
+export function LeadsTable({ rows }: { rows: LeadRow[] }) {
+  const router = useRouter();
+  const [openId, setOpenId] = useState<number | null>(null);
   const [notesDraft, setNotesDraft] = useState<Record<number, string>>({});
-  const [error, setError] = useState<string | null>(null);
-  const [notice, setNotice] = useState<string | null>(null);
+  const [feedback, setFeedback] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
-  // État pour l'automatisation « Projet livré → Avis + Brouillon démo »
-  const [genResult, setGenResult] = useState<Record<number, { demoUrl?: string; whatsappUrl?: string; message?: string }>>({});
-  const [genBusy, setGenBusy] = useState<number | null>(null);
+  const [reviewModal, setReviewModal] = useState<GenerateDemoResult | null>(null);
+  const [copiedWa, setCopiedWa] = useState(false);
 
-  const run = (fn: () => Promise<{ ok: boolean; error?: string; message?: string }>, okMsg?: string) => {
-    setError(null);
-    setNotice(null);
+  const flash = (msg: string) => {
+    setFeedback(msg);
+    setTimeout(() => setFeedback(null), 3500);
+  };
+
+  const onStatus = (id: number, status: LeadStatus) => {
     startTransition(async () => {
-      const res = await fn();
-      if (res.ok) setNotice(okMsg ?? null);
-      else setError(res.error ?? "Une erreur est survenue.");
+      const res = await updateLeadStatus(id, status);
+      flash(res.ok ? "Statut mis à jour." : (res.error ?? "Erreur"));
+      router.refresh();
     });
   };
 
-  const runGenerate = (leadId: number) => {
-    setError(null);
-    setNotice(null);
-    setGenBusy(leadId);
+  const onSaveNotes = (lead: LeadRow) => {
+    const value = notesDraft[lead.id] ?? lead.notes ?? "";
     startTransition(async () => {
-      const res = await generateDemoFromLead(leadId);
-      setGenBusy(null);
+      const res = await saveLeadNotes(lead.id, value);
+      flash(res.ok ? "Notes enregistrées." : (res.error ?? "Erreur"));
+      router.refresh();
+    });
+  };
+
+  const onDelete = (lead: LeadRow) => {
+    if (
+      !confirm(
+        `Supprimer définitivement la demande de « ${lead.name} » (${lead.business}) ?`,
+      )
+    ) {
+      return;
+    }
+    startTransition(async () => {
+      const res = await deleteLead(lead.id);
+      flash(res.ok ? "Demande supprimée." : (res.error ?? "Erreur"));
+      router.refresh();
+    });
+  };
+
+  const onDeliverAndReview = (lead: LeadRow) => {
+    startTransition(async () => {
+      const res = await generateDemoFromLead(lead.id);
       if (res.ok) {
-        setNotice(res.message ?? "Fiche démo créée.");
-        setGenResult((prev) => ({
-          ...prev,
-          [leadId]: { demoUrl: res.demoUrl, whatsappUrl: res.whatsappUrl, message: res.whatsappMessage },
-        }));
+        setReviewModal(res);
+        setCopiedWa(false);
+        router.refresh();
       } else {
-        setError(res.error ?? "Génération impossible.");
+        flash(res.error ?? "Échec de la génération");
       }
     });
   };
 
+  const copyWhatsappMessage = async () => {
+    if (!reviewModal?.whatsappMessage) return;
+    try {
+      await navigator.clipboard.writeText(reviewModal.whatsappMessage);
+      setCopiedWa(true);
+      setTimeout(() => setCopiedWa(false), 2500);
+    } catch {
+      flash("Impossible de copier automatiquement.");
+    }
+  };
+
+  if (rows.length === 0) {
+    return (
+      <div className="rounded-2xl border border-stone-200 bg-white p-12 text-center text-sm text-stone-500 shadow-2xs">
+        Aucune demande ne correspond à ces critères.
+      </div>
+    );
+  }
+
   return (
-    <div className="rounded-3xl border border-white/10 bg-[#121218] overflow-hidden">
-      {error && (
-        <div className="flex items-center gap-2 border-b border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-300">
-          <AlertCircle className="h-4 w-4 flex-shrink-0" /> {error}
-        </div>
-      )}
-      {notice && !error && (
-        <div className="flex items-center gap-2 border-b border-emerald-500/20 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-300">
-          <CheckCircle2 className="h-4 w-4 flex-shrink-0" /> {notice}
+    <div className="space-y-3">
+      {feedback && (
+        <div className="fixed bottom-5 right-5 z-50 rounded-xl bg-stone-900 text-white px-4 py-2.5 text-xs font-semibold shadow-xl flex items-center gap-2">
+          <Check className="h-3.5 w-3.5 text-[#E5CA87]" /> {feedback}
         </div>
       )}
 
-      <div className="overflow-x-auto">
-        <table className="w-full text-sm min-w-[940px]">
-          <thead>
-            <tr className="text-xs uppercase tracking-wider text-zinc-500 border-b border-white/10">
-              <th className="px-4 py-3 text-left font-semibold">Date</th>
-              <th className="px-4 py-3 text-left font-semibold">Demandeur</th>
-              <th className="px-4 py-3 text-left font-semibold">Contact</th>
-              <th className="px-4 py-3 text-left font-semibold">Projet</th>
-              <th className="px-4 py-3 text-left font-semibold">Statut</th>
-              <th className="px-4 py-3" />
-            </tr>
-          </thead>
-          <tbody>
-            {leads.map((lead) => {
-              const isOpen = expanded === lead.id;
-              return (
-                <Fragment key={lead.id}>
-                  <tr
-                    className={`border-b border-white/5 transition-colors ${
-                      isOpen ? "bg-white/[0.04]" : "hover:bg-white/[0.02]"
-                    }`}
+      {reviewModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-stone-950/45 backdrop-blur-xs p-4">
+          <div className="w-full max-w-lg rounded-2xl border border-stone-200 bg-white p-6 space-y-4 shadow-2xl">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <span className="inline-flex items-center gap-1.5 text-xs font-bold text-[#8A6D2F]">
+                  <Sparkles className="h-3.5 w-3.5" /> Projet livré → Avis + Fiche démo
+                </span>
+                <h3 className="text-base font-black text-stone-900 mt-1">
+                  {reviewModal.message ?? "Fiche créée avec succès"}
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setReviewModal(null)}
+                className="text-stone-400 hover:text-stone-800 p-1"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            {reviewModal.demoUrl && (
+              <div className="rounded-xl bg-[#FAF9F6] border border-stone-200 px-3.5 py-2.5 flex items-center justify-between gap-2 text-xs">
+                <span className="text-stone-600 truncate">
+                  Fiche créée :{" "}
+                  <strong className="text-stone-900">{reviewModal.demoSlug}</strong>
+                </span>
+                <a
+                  href={`/demos/${reviewModal.demoSlug}`}
+                  target="_blank"
+                  rel="noopener"
+                  className="inline-flex items-center gap-1 text-[#8A6D2F] font-semibold hover:underline shrink-0"
+                >
+                  Voir <ExternalLink className="h-3 w-3" />
+                </a>
+              </div>
+            )}
+
+            <div>
+              <label className="block text-xs font-semibold text-stone-600 mb-1.5">
+                Message WhatsApp pré-rempli :
+              </label>
+              <textarea
+                rows={7}
+                readOnly
+                value={reviewModal.whatsappMessage ?? ""}
+                dir="rtl"
+                className="w-full rounded-xl bg-[#FAF9F6] border border-stone-200 p-3 text-xs text-stone-800 leading-relaxed focus:outline-none"
+              />
+            </div>
+
+            <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
+              <button
+                type="button"
+                onClick={copyWhatsappMessage}
+                className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-xl border border-stone-300 bg-white text-xs font-semibold text-stone-700 hover:bg-stone-50 cursor-pointer"
+              >
+                {copiedWa ? (
+                  <>
+                    <Check className="h-3.5 w-3.5 text-emerald-600" /> Copié !
+                  </>
+                ) : (
+                  <>
+                    <Copy className="h-3.5 w-3.5" /> Copier le texte
+                  </>
+                )}
+              </button>
+
+              <div className="flex items-center gap-2">
+                <a
+                  href="/admin/sites"
+                  className="inline-flex items-center gap-1 h-9 px-3.5 rounded-xl border border-stone-300 bg-white text-xs font-semibold text-stone-700 hover:bg-stone-50"
+                >
+                  Modifier la fiche
+                </a>
+                {reviewModal.whatsappUrl && (
+                  <a
+                    href={reviewModal.whatsappUrl}
+                    target="_blank"
+                    rel="noopener"
+                    className="inline-flex items-center gap-1.5 h-9 px-4 rounded-xl bg-[#25D366] text-white text-xs font-bold hover:brightness-95 shadow-xs"
                   >
-                    <td className="px-4 py-3.5 text-zinc-400 whitespace-nowrap text-xs">
-                      {lead.dateFr}
-                    </td>
-                    <td className="px-4 py-3.5">
-                      <div className="font-bold text-white">{lead.name}</div>
-                      <div className="text-xs text-zinc-500">{lead.business}</div>
-                    </td>
-                    <td className="px-4 py-3.5">
-                      <a
-                        href={waLink(lead.phone)}
-                        target="_blank"
-                        className="inline-flex items-center gap-1.5 text-zinc-300 hover:text-[#C6A664] transition-colors"
-                        dir="ltr"
+                    <MessageCircle className="h-3.5 w-3.5" /> Envoyer sur WhatsApp
+                  </a>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <div className="rounded-2xl border border-stone-200/90 bg-white overflow-hidden divide-y divide-stone-100 shadow-2xs">
+        {rows.map((lead) => {
+          const open = openId === lead.id;
+          const notes = notesDraft[lead.id] ?? lead.notes ?? "";
+          return (
+            <div key={lead.id} className={open ? "bg-[#FAF9F6]" : "bg-white"}>
+              <div className="px-4 sm:px-5 py-3.5 flex flex-wrap items-center justify-between gap-3">
+                <button
+                  type="button"
+                  onClick={() => setOpenId(open ? null : lead.id)}
+                  className="flex items-center gap-3 min-w-0 text-left flex-1 cursor-pointer"
+                >
+                  <ChevronDown
+                    className={`h-4 w-4 text-stone-400 shrink-0 transition-transform ${
+                      open ? "rotate-180 text-stone-800" : ""
+                    }`}
+                  />
+                  <div className="min-w-0">
+                    <div className="text-sm font-bold text-stone-900 truncate">
+                      {lead.business}
+                      <span className="text-stone-500 font-normal">
+                        {" "}
+                        — {lead.name}
+                      </span>
+                    </div>
+                    <div className="text-xs text-stone-500 truncate mt-0.5">
+                      {lead.phone} · {lead.sector} · {lead.need} · {lead.budget}
+                    </div>
+                  </div>
+                </button>
+
+                <div className="flex items-center gap-2 shrink-0">
+                  <span className="hidden sm:inline text-xs text-stone-400 tabular-nums">
+                    {lead.dateFr}
+                  </span>
+                  <StatusBadge status={lead.status} />
+                  <select
+                    aria-label="Changer le statut"
+                    value={lead.status}
+                    disabled={pending}
+                    onChange={(e) =>
+                      onStatus(lead.id, e.target.value as LeadStatus)
+                    }
+                    className="h-8 rounded-lg bg-stone-50 border border-stone-300 px-2.5 text-xs font-medium text-stone-800 focus:outline-none focus:border-[#B8923F] cursor-pointer"
+                  >
+                    {LEAD_STATUSES.map((s) => (
+                      <option key={s} value={s}>
+                        {LEAD_STATUS_LABELS[s]}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              {open && (
+                <div className="px-4 sm:px-5 pb-5 pt-2 border-t border-stone-200/80 space-y-4 text-sm">
+                  <dl className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                    <Detail label="Reçue le" value={lead.dateFr} />
+                    <Detail label="Client" value={lead.name} />
+                    <Detail label="Activité" value={lead.business} />
+                    <Detail label="Téléphone" value={lead.phone} />
+                    <Detail label="Email" value={lead.email || "—"} />
+                    <Detail label="Secteur" value={lead.sector} />
+                    <Detail label="Besoin" value={lead.need} />
+                    <Detail label="Budget" value={lead.budget} />
+                    <Detail label="Délai souhaité" value={lead.deadline} />
+                    {lead.locale && <Detail label="Langue" value={lead.locale} />}
+                    {lead.utm && <Detail label="Origine (UTM)" value={lead.utm} />}
+                  </dl>
+
+                  {lead.message && (
+                    <div>
+                      <div className="text-xs font-semibold text-stone-500 mb-1">
+                        Message du client
+                      </div>
+                      <p className="rounded-xl bg-white border border-stone-200 p-3 text-sm text-stone-800 whitespace-pre-wrap">
+                        {lead.message}
+                      </p>
+                    </div>
+                  )}
+
+                  <div>
+                    <label
+                      htmlFor={`notes-${lead.id}`}
+                      className="block text-xs font-semibold text-stone-500 mb-1"
+                    >
+                      Notes internes (visibles uniquement ici)
+                    </label>
+                    <textarea
+                      id={`notes-${lead.id}`}
+                      rows={2}
+                      value={notes}
+                      onChange={(e) =>
+                        setNotesDraft({ ...notesDraft, [lead.id]: e.target.value })
+                      }
+                      placeholder="Rappel prévu mardi, devis 1 490 LYD envoyé…"
+                      className="w-full rounded-xl bg-white border border-stone-300 p-3 text-sm text-stone-900 placeholder:text-stone-400 focus:outline-none focus:border-[#B8923F]"
+                    />
+                  </div>
+
+                  <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
+                    <div className="flex flex-wrap gap-2">
+                      <button
+                        type="button"
+                        disabled={pending}
+                        onClick={() => onSaveNotes(lead)}
+                        className="h-9 px-4 rounded-xl bg-stone-900 text-white text-xs font-semibold hover:bg-stone-800 disabled:opacity-50 cursor-pointer"
                       >
-                        <ExternalLink className="h-3 w-3" /> {lead.phone}
+                        Enregistrer les notes
+                      </button>
+                      <a
+                        href={whatsappHref(lead.phone, lead.name)}
+                        target="_blank"
+                        rel="noopener"
+                        className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-xl bg-emerald-50 text-emerald-800 border border-emerald-200 text-xs font-semibold hover:bg-emerald-100"
+                      >
+                        <MessageCircle className="h-3.5 w-3.5" /> WhatsApp
                       </a>
                       {lead.email && (
                         <a
                           href={`mailto:${lead.email}`}
-                          className="block text-xs text-zinc-500 hover:text-white transition-colors mt-0.5"
-                          dir="ltr"
+                          className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-xl border border-stone-300 bg-white text-stone-700 text-xs font-semibold hover:bg-stone-50"
                         >
-                          {lead.email}
+                          <Mail className="h-3.5 w-3.5" /> Email
                         </a>
                       )}
-                    </td>
-                    <td className="px-4 py-3.5 text-zinc-300">
-                      <div className="text-xs">
-                        <span className="font-semibold">{lead.need}</span> · {lead.budget}
-                      </div>
-                      <div className="text-xs text-zinc-600">{lead.deadline}</div>
-                    </td>
-                    <td className="px-4 py-3.5">
-                      <select
-                        value={lead.status}
+                      <button
+                        type="button"
                         disabled={pending}
-                        onChange={(e) =>
-                          run(() => updateLeadStatus(lead.id, e.target.value), "Statut mis à jour.")
-                        }
-                        className="h-9 px-2.5 rounded-xl border border-white/10 bg-black/40 text-xs font-semibold text-white outline-none focus:border-[#C6A664] cursor-pointer disabled:opacity-50"
+                        onClick={() => onDeliverAndReview(lead)}
+                        className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-xl bg-[#C6A664]/20 text-[#7A5D20] border border-[#C6A664]/45 text-xs font-bold hover:bg-[#C6A664]/30 disabled:opacity-50 cursor-pointer"
                       >
-                        {LEAD_STATUSES.map((s) => (
-                          <option key={s} value={s}>
-                            {s === "new"
-                              ? "Nouveau"
-                              : s === "in_progress"
-                                ? "En cours"
-                                : s === "done"
-                                  ? "Traité"
-                                  : "Archivé"}
-                          </option>
-                        ))}
-                      </select>
-                      <div className="mt-1.5">
-                        <StatusBadge status={lead.status} />
-                      </div>
-                    </td>
-                    <td className="px-4 py-3.5">
-                      <div className="flex items-center justify-end gap-1.5">
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setExpanded(isOpen ? null : lead.id);
-                            setNotesDraft((d) => ({ ...d, [lead.id]: d[lead.id] ?? lead.notes ?? "" }));
-                          }}
-                          className="h-8 w-8 rounded-lg border border-white/10 text-zinc-400 hover:text-white hover:bg-white/5 grid place-items-center transition-colors cursor-pointer"
-                          aria-label="Détails"
-                        >
-                          <ChevronDown
-                            className={`h-4 w-4 transition-transform ${isOpen ? "rotate-180" : ""}`}
-                          />
-                        </button>
-                        <button
-                          type="button"
-                          disabled={pending}
-                          onClick={() => {
-                            if (
-                              confirm(
-                                `Supprimer définitivement la demande de ${lead.name} ? Cette action est irréversible.`,
-                              )
-                            ) {
-                              setExpanded(null);
-                              run(() => deleteLead(lead.id), "Demande supprimée.");
-                            }
-                          }}
-                          className="h-8 w-8 rounded-lg border border-white/10 text-zinc-500 hover:text-red-400 hover:border-red-500/30 hover:bg-red-500/10 grid place-items-center transition-colors cursor-pointer disabled:opacity-50"
-                          aria-label="Supprimer"
-                        >
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
+                        <Sparkles className="h-3.5 w-3.5" /> Projet livré → Avis + Démo
+                      </button>
+                    </div>
 
-                  {isOpen && (
-                    <tr className="border-b border-white/10 bg-black/40">
-                      <td colSpan={6} className="px-4 py-5">
-                        <div className="grid md:grid-cols-2 gap-6">
-                          <dl className="grid grid-cols-2 gap-x-4 gap-y-3.5 content-start">
-                            <Detail label="Secteur" value={lead.sector} />
-                            <Detail label="Besoin" value={lead.need} />
-                            <Detail label="Budget" value={lead.budget} />
-                            <Detail label="Délai" value={lead.deadline} />
-                            <Detail label="Langue du site" value={lead.locale} />
-                            <Detail label="UTM" value={lead.utm} />
-                            <div className="col-span-2">
-                              <Detail label="Message" value={lead.message} />
-                            </div>
-                          </dl>
-
-                          <div>
-                            {/* Automatisation « Projet livré → Avis Google + Brouillon démo » — visible quand statut = Traité (done) */}
-                            {lead.status === "done" && (
-                              <div className="mb-4 rounded-2xl border border-amber-400/30 bg-amber-400/10 p-4">
-                                <div className="flex items-center gap-2 text-amber-200 font-bold text-sm">
-                                  <Star className="h-4 w-4" /> Projet livré → Avis Google + Brouillon de Démo
-                                </div>
-                                <p className="mt-1 text-xs text-amber-100/70 leading-5">
-                                  Génère une fiche portfolio pré-remplie (SEO auto) et prépare le message WhatsApp pour demander un avis Google Maps au client.
-                                </p>
-                                <button
-                                  type="button"
-                                  disabled={pending || genBusy === lead.id}
-                                  onClick={() => runGenerate(lead.id)}
-                                  className="mt-3 h-9 px-4 rounded-xl bg-[#C6A664] text-black text-xs font-black inline-flex items-center gap-2 hover:bg-[#B89652] transition-colors cursor-pointer disabled:opacity-50"
-                                >
-                                  {genBusy === lead.id ? (
-                                    <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-black/20 border-t-black" />
-                                  ) : (
-                                    <Sparkles className="h-3.5 w-3.5" />
-                                  )}
-                                  {genBusy === lead.id ? "Génération…" : "Générer la fiche démo + message d'avis WhatsApp"}
-                                </button>
-
-                                {genResult[lead.id] && (
-                                  <div className="mt-3 space-y-2">
-                                    {genResult[lead.id].demoUrl && (
-                                      <a
-                                        href={genResult[lead.id].demoUrl}
-                                        target="_blank"
-                                        className="block text-xs font-bold text-emerald-300 hover:underline break-all"
-                                      >
-                                        ✅ Brouillon créé : {genResult[lead.id].demoUrl} — éditer dans /admin/content → Démos
-                                      </a>
-                                    )}
-                                    {genResult[lead.id].whatsappUrl && (
-                                      <a
-                                        href={genResult[lead.id].whatsappUrl}
-                                        target="_blank"
-                                        className="inline-flex h-9 px-4 rounded-xl bg-[#25D366] text-white text-xs font-bold items-center gap-2 hover:brightness-95"
-                                      >
-                                        <MessageCircle className="h-3.5 w-3.5" /> Ouvrir WhatsApp — envoyer demande d&apos;avis
-                                      </a>
-                                    )}
-                                    {genResult[lead.id].message && (
-                                      <div className="rounded-xl bg-black/40 border border-white/10 p-3">
-                                        <div className="flex items-center justify-between gap-2">
-                                          <span className="text-[11px] font-bold text-zinc-500 uppercase tracking-wider">Message WhatsApp (copier)</span>
-                                          <button
-                                            type="button"
-                                            onClick={() => {
-                                              navigator.clipboard.writeText(genResult[lead.id].message ?? "");
-                                              setNotice("Message copié.");
-                                            }}
-                                            className="h-7 px-2.5 rounded-lg bg-white/10 text-xs font-bold text-white inline-flex items-center gap-1 hover:bg-white/15 cursor-pointer"
-                                          >
-                                            <Copy className="h-3 w-3" /> Copier
-                                          </button>
-                                        </div>
-                                        <pre className="mt-2 whitespace-pre-wrap text-xs text-zinc-200 leading-5 max-h-[160px] overflow-auto">{genResult[lead.id].message}</pre>
-                                      </div>
-                                    )}
-                                  </div>
-                                )}
-                              </div>
-                            )}
-
-                            <label
-                              htmlFor={`notes-${lead.id}`}
-                              className="text-[11px] uppercase tracking-wider text-zinc-600 font-semibold"
-                            >
-                              Notes internes
-                            </label>
-                            <textarea
-                              id={`notes-${lead.id}`}
-                              rows={4}
-                              value={notesDraft[lead.id] ?? lead.notes ?? ""}
-                              onChange={(e) =>
-                                setNotesDraft((d) => ({ ...d, [lead.id]: e.target.value }))
-                              }
-                              placeholder="Relance prévue lundi, devis envoyé…"
-                              className="mt-1.5 w-full rounded-2xl border border-white/10 bg-black/40 p-3 text-sm text-white outline-none focus:border-[#C6A664] resize-y"
-                            />
-                            <div className="mt-2 flex items-center gap-2">
-                              <button
-                                type="button"
-                                disabled={pending}
-                                onClick={() =>
-                                  run(
-                                    () => saveLeadNotes(lead.id, notesDraft[lead.id] ?? ""),
-                                    "Notes enregistrées.",
-                                  )
-                                }
-                                className="h-9 px-4 rounded-xl bg-white/10 hover:bg-white/15 text-xs font-bold text-white inline-flex items-center gap-1.5 transition-colors cursor-pointer disabled:opacity-50"
-                              >
-                                <Save className="h-3.5 w-3.5" /> Enregistrer les notes
-                              </button>
-                              <a
-                                href={`mailto:${lead.email ?? ""}`}
-                                className={`h-9 px-4 rounded-xl border border-white/10 text-xs font-semibold text-zinc-400 inline-flex items-center gap-1.5 hover:text-white transition-colors ${
-                                  lead.email ? "" : "pointer-events-none opacity-40"
-                                }`}
-                              >
-                                <Mail className="h-3.5 w-3.5" /> Répondre par email
-                              </a>
-                            </div>
-                          </div>
-                        </div>
-                      </td>
-                    </tr>
-                  )}
-                </Fragment>
-              );
-            })}
-          </tbody>
-        </table>
+                    <button
+                      type="button"
+                      disabled={pending}
+                      onClick={() => onDelete(lead)}
+                      className="inline-flex items-center gap-1.5 h-9 px-3 rounded-xl text-red-600 hover:bg-red-50 text-xs font-semibold disabled:opacity-50 cursor-pointer"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" /> Supprimer
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          );
+        })}
       </div>
+    </div>
+  );
+}
+
+function Detail({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-xl bg-white border border-stone-200 px-3 py-2">
+      <dt className="text-[11px] font-medium text-stone-400">{label}</dt>
+      <dd className="text-sm font-medium text-stone-900 break-words">{value}</dd>
     </div>
   );
 }

@@ -4,6 +4,7 @@ import { db, ensureSchema } from "@/db";
 import { orders } from "@/db/schema";
 import {
   ORDER_KINDS,
+  ORDER_KIND_LABELS,
   ORDER_STATUSES,
   ORDER_STATUS_LABELS,
   type OrderKind,
@@ -11,7 +12,6 @@ import {
   type OrderStatus,
 } from "@/lib/site-types";
 import { OrdersTable } from "./orders-table";
-import { CreditCard, RefreshCw, Search } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
@@ -31,43 +31,37 @@ function frDate(value: Date | string): string {
   }
 }
 
-interface SearchParams {
-  status?: string;
-  q?: string;
-  type?: string;
+interface Props {
+  searchParams: Promise<{ status?: string; kind?: string; type?: string; q?: string }>;
 }
 
-export default async function OrdersPage({
-  searchParams,
-}: {
-  searchParams: Promise<SearchParams>;
-}) {
-  const { status, q, type } = await searchParams;
+export default async function AdminOrdersPage({ searchParams }: Props) {
+  const params = await searchParams;
   const activeStatus =
-    status && (ORDER_STATUSES as readonly string[]).includes(status)
-      ? (status as OrderStatus)
+    params.status && (ORDER_STATUSES as readonly string[]).includes(params.status)
+      ? (params.status as OrderStatus)
       : undefined;
+  const rawKind = params.kind ?? params.type;
   const activeKind =
-    type && (ORDER_KINDS as readonly string[]).includes(type)
-      ? (type as OrderKind)
+    rawKind && (ORDER_KINDS as readonly string[]).includes(rawKind)
+      ? (rawKind as OrderKind)
       : undefined;
-  const query = (q ?? "").trim();
+  const search = (params.q ?? "").trim();
 
-  let dbError: string | null = null;
-  let rows: (typeof orders.$inferSelect)[] = [];
+  let rawRows: (typeof orders.$inferSelect)[] = [];
   const counts: Partial<Record<OrderStatus, number>> = {};
-  let total = 0;
+  let paidCount = 0;
+  let pendingCount = 0;
   let paidTotalUsd = 0;
-  let reservationCount = 0;
+  let dbError: string | null = null;
 
   try {
     await ensureSchema();
-
     const conditions = [];
     if (activeStatus) conditions.push(eq(orders.status, activeStatus));
     if (activeKind) conditions.push(eq(orders.kind, activeKind));
-    if (query) {
-      const pattern = `%${query}%`;
+    if (search) {
+      const pattern = `%${search}%`;
       conditions.push(
         or(
           ilike(orders.ref, pattern),
@@ -80,7 +74,7 @@ export default async function OrdersPage({
       );
     }
 
-    rows = await db
+    rawRows = await db
       .select()
       .from(orders)
       .where(conditions.length ? and(...conditions) : undefined)
@@ -99,20 +93,21 @@ export default async function OrdersPage({
         counts[row.status as OrderStatus] = Number(row.count);
       }
     }
-
-    total = rows.length;
-    reservationCount = rows.filter((r) => r.kind === "reservation").length;
-    paidTotalUsd = rows
+    paidCount = counts.paid ?? 0;
+    pendingCount = counts.pending ?? 0;
+    paidTotalUsd = rawRows
       .filter((r) => r.status === "paid")
       .reduce((sum, r) => sum + (Number(r.amountUsd) || 0), 0);
   } catch (error) {
     dbError = error instanceof Error ? error.message.slice(0, 200) : String(error);
-    console.error("[admin/orders]", dbError);
   }
 
-  const orderRows: OrderRow[] = rows.map((o) => ({
+  const rows: OrderRow[] = rawRows.map((o) => ({
     id: o.id,
-    createdAt: o.createdAt instanceof Date ? o.createdAt.toISOString() : String(o.createdAt),
+    createdAt:
+      o.createdAt instanceof Date
+        ? o.createdAt.toISOString()
+        : String(o.createdAt),
     dateFr: frDate(o.createdAt),
     ref: o.ref,
     kind: (ORDER_KINDS as readonly string[]).includes(o.kind)
@@ -143,143 +138,118 @@ export default async function OrdersPage({
     locale: o.locale,
   }));
 
-  const chipHref = (value?: string) => {
-    const params = new URLSearchParams();
-    if (value) params.set("status", value);
-    if (query) params.set("q", query);
-    if (activeKind) params.set("type", activeKind);
-    const s = params.toString();
-    return s ? `/admin/orders?${s}` : "/admin/orders";
-  };
-
-  const kindHref = (value?: OrderKind) => {
-    const params = new URLSearchParams();
-    if (activeStatus) params.set("status", activeStatus);
-    if (query) params.set("q", query);
-    if (value) params.set("type", value);
-    const s = params.toString();
-    return s ? `/admin/orders?${s}` : "/admin/orders";
-  };
-
-  const chips: { label: string; value?: string; count: number }[] = [
-    { label: "Tous", value: undefined, count: total },
+  const tabs: { value: OrderStatus | undefined; label: string; count: number }[] = [
+    { value: undefined, label: "Toutes", count: rows.length },
     ...ORDER_STATUSES.map((s) => ({
+      value: s,
       label: ORDER_STATUS_LABELS[s],
-      value: s as string,
       count: counts[s] ?? 0,
     })),
   ];
 
+  const kindTabs: { value: OrderKind | undefined; label: string }[] = [
+    { value: undefined, label: "Tous types" },
+    ...ORDER_KINDS.map((k) => ({ value: k, label: ORDER_KIND_LABELS[k] })),
+  ];
+
+  const hrefFor = (
+    nextStatus: OrderStatus | undefined,
+    nextKind: OrderKind | undefined = activeKind,
+  ) => {
+    const sp = new URLSearchParams();
+    if (nextStatus) sp.set("status", nextStatus);
+    if (nextKind) sp.set("kind", nextKind);
+    if (search) sp.set("q", search);
+    const qs = sp.toString();
+    return `/admin/orders${qs ? `?${qs}` : ""}`;
+  };
+
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-end justify-between gap-4">
+      <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-black text-white flex items-center gap-2">
-            <CreditCard className="h-6 w-6 text-[#C6A664]" />
-            Paiements &amp; réservations
+          <h1 className="text-2xl font-black tracking-tight text-stone-900">
+            Paiements & réservations
           </h1>
-          <p className="mt-1 text-sm text-zinc-500">
-            {total} commande{total > 1 ? "s" : ""} ·{" "}
-            <span className="text-emerald-300 font-bold">
-              ${paidTotalUsd.toLocaleString("en-US")}
-            </span>{" "}
-            encaissés via NOWPayments ·{" "}
-            <span className="text-[#E8D5A9] font-bold">{reservationCount}</span>{" "}
-            réservation{reservationCount > 1 ? "s" : ""} prioritaire
-            {reservationCount > 1 ? "s" : ""}
+          <p className="text-sm text-stone-500 mt-1">
+            {rows.length} commande{rows.length > 1 ? "s" : ""} affichée
+            {rows.length > 1 ? "s" : ""} · {paidCount} confirmée
+            {paidCount > 1 ? "s" : ""} ({Math.round(paidTotalUsd * 100) / 100} $) ·{" "}
+            {pendingCount} en attente
           </p>
         </div>
-        <Link
-          href="/admin/orders"
-          className="h-10 px-5 rounded-full border border-white/15 text-sm font-bold text-zinc-300 inline-flex items-center gap-2 hover:bg-white/5 transition-colors"
-        >
-          <RefreshCw className="h-4 w-4" /> Rafraîchir
-        </Link>
       </div>
 
-      {dbError && (
-        <div className="rounded-2xl border border-red-500/30 bg-red-500/10 p-4 text-sm text-red-300">
-          <strong className="font-bold">Base de données inaccessible :</strong>{" "}
-          vérifiez <code className="px-1.5 py-0.5 rounded bg-black/30">DATABASE_URL</code> sur Vercel.
-          <div className="mt-1 text-red-400/70 text-xs">{dbError}</div>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex flex-wrap gap-1.5">
+          {tabs.map((tab) => {
+            const active = tab.value === activeStatus;
+            return (
+              <Link
+                key={tab.label}
+                href={hrefFor(tab.value)}
+                className={`px-3.5 py-1.5 rounded-full text-xs font-semibold inline-flex items-center gap-1.5 transition-colors ${
+                  active
+                    ? "bg-stone-900 text-white shadow-2xs"
+                    : "bg-white text-stone-600 border border-stone-200 hover:bg-stone-100 hover:text-stone-900"
+                }`}
+              >
+                <span>{tab.label}</span>
+                <span className="opacity-70">{tab.count}</span>
+              </Link>
+            );
+          })}
         </div>
-      )}
 
-      {/* Type de commande */}
-      <div className="flex flex-wrap items-center gap-2">
-        <span className="text-[11px] font-bold uppercase tracking-wider text-zinc-600 me-1">
-          Type
-        </span>
-        <Link
-          href={kindHref(undefined)}
-          className={`h-8 px-4 rounded-full text-xs font-bold inline-flex items-center gap-1.5 border transition-colors ${
-            !activeKind
-              ? "bg-white/10 border-white/20 text-white"
-              : "bg-white/5 border-white/10 text-zinc-400 hover:text-white"
-          }`}
-        >
-          Toutes les commandes
-        </Link>
-        <Link
-          href={kindHref("reservation")}
-          className={`h-8 px-4 rounded-full text-xs font-bold inline-flex items-center gap-1.5 border transition-colors ${
-            activeKind === "reservation"
-              ? "bg-[#C6A664]/15 border-[#C6A664]/40 text-[#E8D5A9]"
-              : "bg-white/5 border-white/10 text-zinc-400 hover:text-white"
-          }`}
-        >
-          Réservations prioritaires
-        </Link>
-      </div>
-
-      {/* Filtres */}
-      <div className="flex flex-wrap items-center gap-2">
-        {chips.map((chip) => {
-          const isActive = chip.value === activeStatus;
-          return (
-            <Link
-              key={chip.label}
-              href={chipHref(chip.value)}
-              className={`h-9 px-4 rounded-full text-sm font-semibold inline-flex items-center gap-2 border transition-colors ${
-                isActive
-                  ? "bg-[#C6A664]/15 border-[#C6A664]/40 text-[#E8D5A9]"
-                  : "bg-white/5 border-white/10 text-zinc-400 hover:text-white"
-              }`}
-            >
-              {chip.label}
-              <span className="text-xs opacity-60">{chip.count}</span>
-            </Link>
-          );
-        })}
-
-        <form action="/admin/orders" method="get" className="ms-auto flex items-center gap-2">
-          {activeStatus && <input type="hidden" name="status" value={activeStatus} />}
-          {activeKind && <input type="hidden" name="type" value={activeKind} />}
-          <div className="relative">
-            <Search className="absolute start-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-500" />
-            <input
-              name="q"
-              defaultValue={query}
-              placeholder="Référence, client, e-mail…"
-              className="h-9 ps-9 pe-4 w-[230px] rounded-full border border-white/10 bg-black/40 text-sm text-white outline-none focus:border-[#C6A664]"
-            />
-          </div>
+        <form action="/admin/orders" method="get" className="flex gap-2">
+          {activeStatus && (
+            <input type="hidden" name="status" value={activeStatus} />
+          )}
+          {activeKind && (
+            <input type="hidden" name="kind" value={activeKind} />
+          )}
+          <input
+            type="search"
+            name="q"
+            defaultValue={search}
+            placeholder="Référence, client, ID paiement…"
+            className="h-9 w-56 sm:w-64 rounded-xl bg-white border border-stone-300 px-3 text-sm text-stone-900 placeholder:text-stone-400 focus:outline-none focus:border-[#B8923F]"
+          />
           <button
             type="submit"
-            className="h-9 px-4 rounded-full bg-white/10 text-sm font-semibold text-white hover:bg-white/15 transition-colors cursor-pointer"
+            className="h-9 px-3.5 rounded-xl bg-stone-900 text-white text-xs font-semibold hover:bg-stone-800 cursor-pointer"
           >
             Rechercher
           </button>
         </form>
       </div>
 
-      <OrdersTable orders={orderRows} />
+      <div className="flex flex-wrap gap-1.5">
+        {kindTabs.map((tab) => {
+          const active = tab.value === activeKind;
+          return (
+            <Link
+              key={tab.label}
+              href={hrefFor(activeStatus, tab.value)}
+              className={`px-3 py-1 rounded-full text-xs font-semibold transition-colors ${
+                active
+                  ? "bg-[#C6A664]/20 text-[#7A5D20] border border-[#C6A664]/50"
+                  : "bg-white text-stone-600 border border-stone-200 hover:bg-stone-100"
+              }`}
+            >
+              {tab.label}
+            </Link>
+          );
+        })}
+      </div>
 
-      <p className="text-xs text-zinc-600">
-        Les statuts se mettent à jour automatiquement via les
-        notifications NOWPayments (IPN). La colonne « IPN (brut) »
-        conserve le dernier statut reçu du réseau.
-      </p>
+      {dbError && (
+        <div className="rounded-xl border border-amber-300 bg-amber-50 p-4 text-xs text-amber-900">
+          Lecture impossible : <code className="font-semibold">{dbError}</code>
+        </div>
+      )}
+
+      <OrdersTable rows={rows} />
     </div>
   );
 }

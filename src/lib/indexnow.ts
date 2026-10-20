@@ -131,7 +131,7 @@ export async function notifyBingSitemap(baseUrl: string = siteConfig.url): Promi
 /** URLs publiques principales + fichiers IA/sitemap + toutes les fiches réalisations. */
 export async function pingAllPublicPages(): Promise<void> {
   // Import différé pour éviter tout cycle au chargement du module.
-  const { getSiteDataCached } = await import("@/lib/store");
+  const { getAllKnownDemos, getSiteDataCached } = await import("@/lib/store");
   const { config, content } = await getSiteDataCached();
   const base = config.url.replace(/\/+$/, "");
   const { sectorIds } = await import("@/lib/sectors");
@@ -139,6 +139,8 @@ export async function pingAllPublicPages(): Promise<void> {
   const urls = [
     `${base}/`,
     `${base}/demos`,
+    `${base}/apps`,
+    `${base}/products`,
     `${base}/sectors`,
     `${base}/pricing`,
     `${base}/contact`,
@@ -146,7 +148,7 @@ export async function pingAllPublicPages(): Promise<void> {
     `${base}/llms-full.txt`,
     `${base}/sitemap.xml`,
     ...sectorUrls,
-    ...content.demos.map((d) => `${base}/demos/${d.slug}`),
+    ...getAllKnownDemos(content).map((d) => `${base}/demos/${d.slug}`),
   ];
   await Promise.allSettled([
     notifyIndexNow(urls, config.url),

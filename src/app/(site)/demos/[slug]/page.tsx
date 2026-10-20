@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { getSiteDataCached } from "@/lib/store";
+import { getAllKnownDemos, getSiteDataCached } from "@/lib/store";
 import {
   breadcrumbJsonLd,
   demoJsonLd,
@@ -12,7 +12,7 @@ import { DemoViewer } from "./demo-viewer";
 
 export async function generateStaticParams() {
   const { content } = await getSiteDataCached();
-  return content.demos.map((d) => ({ slug: d.slug }));
+  return getAllKnownDemos(content).map((d) => ({ slug: d.slug }));
 }
 
 export async function generateMetadata({
@@ -22,7 +22,8 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { slug } = await params;
   const { config, content } = await getSiteDataCached();
-  const demo = content.demos.find((d) => d.slug === slug);
+  const allDemos = getAllKnownDemos(content);
+  const demo = allDemos.find((d) => d.slug === slug);
   if (!demo) {
     return pageMetadata(config, {
       path: `/demos/${slug}`,
@@ -32,16 +33,12 @@ export async function generateMetadata({
     });
   }
 
-  // Champs SEO personnalisés depuis l'admin (arabe par défaut) ; s'ils sont
-  // vides, repli automatique sur le titre et la description du projet.
   const seo = demoSeoMeta(demo, "ar");
 
   return pageMetadata(config, {
     path: `/demos/${demo.slug}`,
     title: seo.title,
     description: seo.description,
-    // L'image OG/Twitter est générée dynamiquement par
-    // opengraph-image.tsx / twitter-image.tsx (carte brandée 1200×630).
     image: false,
     keywords: [demo.sectorAr, demo.sectorEn, "تصميم مواقع طرابلس", "نخبة"],
   });
@@ -50,7 +47,8 @@ export async function generateMetadata({
 export default async function DemoPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
   const { config, content } = await getSiteDataCached();
-  const demo = content.demos.find((d) => d.slug === slug);
+  const allDemos = getAllKnownDemos(content);
+  const demo = allDemos.find((d) => d.slug === slug);
   if (!demo) notFound();
 
   return (
@@ -65,7 +63,7 @@ export default async function DemoPage({ params }: { params: Promise<{ slug: str
           demoJsonLd(config, demo),
         ]}
       />
-      <DemoViewer demo={demo} allDemos={content.demos} />
+      <DemoViewer demo={demo} allDemos={allDemos} />
     </>
   );
 }

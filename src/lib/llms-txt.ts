@@ -1,4 +1,5 @@
 import { resolveDemoClassification } from "@/lib/classification";
+import { defaultAppsPage, defaultProductsPage } from "@/lib/content";
 import { sectorSeo } from "@/lib/sectors";
 import type { SiteContent } from "@/lib/site-types";
 import type { siteConfig } from "@/lib/config";
@@ -57,8 +58,16 @@ export function buildLlmsTxt({ config, content }: LlmsSourceData): string {
   lines.push(
     `- [Homepage](${cleanUrl(base, "/")}): services, live portfolio, 5-step process, pricing, client testimonials, FAQ and quote request form`,
   );
+  const appsPage = content.appsPage ?? defaultAppsPage;
+  const productsPage = content.productsPage ?? defaultProductsPage;
   lines.push(
     `- [Live demos & portfolio](${cleanUrl(base, "/demos")}): ${content.demos.length} real, interactive client websites across Libya`,
+  );
+  lines.push(
+    `- [Our Applications — In Preparation / Coming Soon](${cleanUrl(base, "/apps")}): ${appsPage.items.length} mobile & web applications in preparation (${appsPage.statusBadgeEn} / ${appsPage.statusBadgeAr})`,
+  );
+  lines.push(
+    `- [Digital Products & Software — Coming Soon](${cleanUrl(base, "/products")}): ${productsPage.items.length} cloud POS, CRM, ERP & digital software kits (${productsPage.statusBadgeEn} / ${productsPage.statusBadgeAr})`,
   );
   // Pages sectorielles automatiques (/sectors/[sector]) — 10 secteurs
   lines.push(`- [Websites by sector](${cleanUrl(base, "/sectors")}): ${Object.keys(sectorSeo).length} sector pages — medical, restaurant, beauty, furniture, electronics, hardware…`);
@@ -271,6 +280,34 @@ export function buildLlmsFullTxt({ config, content }: LlmsSourceData): string {
     }
     lines.push("");
   }
+
+  const fullAppsPage = content.appsPage ?? defaultAppsPage;
+  const fullProductsPage = content.productsPage ?? defaultProductsPage;
+  lines.push("## 7c. Upcoming Applications — In Preparation / Coming Soon (/apps)");
+  lines.push("");
+  lines.push(`- **Page URL**: ${cleanUrl(base, "/apps")}`);
+  lines.push(`- **Status**: ${fullAppsPage.statusBadgeEn} / ${fullAppsPage.statusBadgeAr}`);
+  lines.push(`- **Overview (EN)**: ${fullAppsPage.subtitleEn}`);
+  lines.push(`- **Overview (AR)**: ${fullAppsPage.subtitleAr}`);
+  for (const app of fullAppsPage.items) {
+    lines.push(
+      `- **${app.titleEn} (${app.titleAr})** [${app.badgeEn} / ${app.badgeAr} — ${app.platforms.join(", ")}]: ${app.descriptionEn} | ${app.descriptionAr}`,
+    );
+  }
+  lines.push("");
+
+  lines.push("## 7d. Upcoming Digital Products & Software — Coming Soon (/products)");
+  lines.push("");
+  lines.push(`- **Page URL**: ${cleanUrl(base, "/products")}`);
+  lines.push(`- **Status**: ${fullProductsPage.statusBadgeEn} / ${fullProductsPage.statusBadgeAr}`);
+  lines.push(`- **Overview (EN)**: ${fullProductsPage.subtitleEn}`);
+  lines.push(`- **Overview (AR)**: ${fullProductsPage.subtitleAr}`);
+  for (const prod of fullProductsPage.items) {
+    lines.push(
+      `- **${prod.titleEn} (${prod.titleAr})** [${prod.badgeEn} / ${prod.badgeAr} — ${prod.platforms.join(", ")}]: ${prod.descriptionEn} | ${prod.descriptionAr}`,
+    );
+  }
+  lines.push("");
 
   lines.push("## 8. Client Testimonials & Results (قصص نجاح من طرابلس)");
   lines.push("");
