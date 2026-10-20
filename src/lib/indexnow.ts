@@ -1,5 +1,6 @@
 import { siteConfig } from "@/lib/config";
 import { notifyGoogleSitemap } from "@/lib/google-indexing";
+import { blogArticles } from "@/lib/blog-articles";
 
 /**
  * IndexNow — notification de contenu nouveau/modifié aux moteurs qui
@@ -118,6 +119,7 @@ export async function pingAllPublicPages(): Promise<void> {
     `${base}/products`,
     `${base}/sectors`,
     `${base}/services`,
+    `${base}/blog`,
     `${base}/pricing`,
     `${base}/contact`,
     `${base}/llms.txt`,
@@ -125,6 +127,7 @@ export async function pingAllPublicPages(): Promise<void> {
     `${base}/sitemap.xml`,
     ...sectorUrls,
     ...config.standaloneServices.map((service) => `${base}/services/${service.id}`),
+    ...blogArticles.map((article) => `${base}/blog/${article.slug}`),
     ...getAllKnownDemos(content).map((d) => `${base}/demos/${d.slug}`),
   ];
   await Promise.allSettled([

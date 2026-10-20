@@ -400,3 +400,126 @@ export async function buildSectorOgImage(
     { ...OG_SIZE, fonts },
   );
 }
+
+/** Carte de partage d'un guide du blog (/blog/[slug]). */
+export async function buildArticleOgImage(
+  article: {
+    titleAr: string;
+    titleEn: string;
+    categoryAr: string;
+    categoryEn: string;
+    readingMinutes: number;
+  },
+  config: OgConfig,
+) {
+  const fonts = await loadFonts();
+  const domain = new URL(config.url).host;
+
+  return new ImageResponse(
+    (
+      <div
+        dir="rtl"
+        style={{
+          width: "100%",
+          height: "100%",
+          display: "flex",
+          flexDirection: "column",
+          justifyContent: "space-between",
+          padding: "64px",
+          background:
+            "radial-gradient(circle at 78% 18%, rgba(198,166,100,0.20), transparent 46%), linear-gradient(160deg, #0B0B0F 0%, #151016 100%)",
+          color: "#F5F3EE",
+          fontFamily: "Cairo",
+          position: "relative",
+        }}
+      >
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "18px" }}>
+            <div
+              style={{
+                width: "58px",
+                height: "58px",
+                borderRadius: "50%",
+                background: "#C6A664",
+                color: "#0C0C0F",
+                fontSize: "32px",
+                fontWeight: 700,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              ن
+            </div>
+            <div style={{ display: "flex", flexDirection: "column" }}>
+              <span style={{ fontSize: "26px", fontWeight: 700 }}>
+                {config.nameAr} {config.name} — مدونة
+              </span>
+              <span style={{ fontSize: "17px", opacity: 0.6, marginTop: "2px" }}>
+                أدلة عملية لرواد الأعمال في ليبيا
+              </span>
+            </div>
+          </div>
+          <div
+            style={{
+              display: "flex",
+              border: "1px solid rgba(198,166,100,0.5)",
+              background: "rgba(198,166,100,0.12)",
+              color: "#D4B978",
+              borderRadius: "999px",
+              padding: "9px 20px",
+              fontSize: "18px",
+              fontWeight: 700,
+            }}
+          >
+            {article.categoryAr}
+          </div>
+        </div>
+
+        <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+          <div
+            style={{
+              fontSize: "48px",
+              fontWeight: 700,
+              lineHeight: 1.3,
+              maxWidth: "1050px",
+            }}
+          >
+            {clamp(article.titleAr, 78)}
+          </div>
+          <div
+            dir="ltr"
+            style={{
+              alignSelf: "flex-start",
+              fontSize: "21px",
+              opacity: 0.6,
+              maxWidth: "1050px",
+              textAlign: "left",
+            }}
+          >
+            {clamp(article.titleEn, 100)}
+          </div>
+        </div>
+
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            borderTop: "1px solid rgba(245,243,238,0.14)",
+            paddingTop: "22px",
+            fontSize: "19px",
+          }}
+        >
+          <span style={{ opacity: 0.8 }}>
+            دليل · {article.readingMinutes} دقائق قراءة · Nukhba Guides
+          </span>
+          <span dir="ltr" style={{ color: "#D4B978", fontWeight: 700 }}>
+            {domain}
+          </span>
+        </div>
+      </div>
+    ),
+    { ...OG_SIZE, fonts },
+  );
+}

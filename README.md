@@ -273,6 +273,13 @@ NOWPayments pour prendre une place en avance dans le planning.
 - `robots.ts` : accès public ouvert, `/api`, `/admin`, `/pay` fermés,
   crawlers IA explicitement autorisés (GPTBot, ClaudeBot, PerplexityBot,
   Google-Extended, CCBot…) ; `sitemap.ts` avec images des réalisations
+- **Blog / guides** `/blog` et `/blog/[slug]` : 5 guides bilingues AR/EN
+  (coût d'un site en Libye, choix d'une agence, lancement d'un e-commerce,
+  visibilité ChatGPT/Google AI, site de clinique). Chaque article : réponse
+  directe `#article-answer` (`speakable`), faits chiffrés, sections ancrées
+  avec sommaire sticky, FAQ `FAQPage`, tableau tarifaire lu en direct depuis
+  l'admin, schéma `BlogPosting` (dates + `wordCount`), carte OG dédiée et
+  maillage vers services, secteurs et réalisations
 - `/llms.txt` et `/llms-full.txt` **dynamiques** (`src/lib/llms-txt.ts`) :
   résumé et base de connaissances bilingue régénérés par requête depuis la
   base admin, avec `ETag` pour la revalidation des crawlers IA
@@ -317,6 +324,10 @@ NOWPayments pour prendre une place en avance dans le planning.
   slides, branding, landing, fix-optimize}` — chaque page porte un `h1`, un
   résumé `speakable` (`#service-answer`), une FAQ `FAQPage`, un schéma `Service`
   + `Offer` synchronisé avec les tarifs admin, et une carte OG 1200×630.
+- **Blog** : le contenu éditorial vit dans `src/lib/blog-articles.ts`
+  (modèle dans `src/lib/blog.ts`) — ajouter un article suffit à le publier :
+  page, sitemap, `/llms.txt`, `/llms-full.txt`, IndexNow, image OG et tests
+  se mettent à jour automatiquement.
 - **GEO Tracker** : `npm run seo:geo` (`scripts/geo-citations.mjs`) interroge
   ChatGPT Search et Perplexity sur 10 requêtes commerciales AR/EN et mesure le
   taux de citation de la marque. Exécution hebdomadaire via

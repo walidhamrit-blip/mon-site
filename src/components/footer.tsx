@@ -43,6 +43,16 @@ export function Footer() {
                   {locale === "ar" ? "منتجاتنا الرقمية وبرامجنا (قريباً)" : "Digital Products & Software (Soon)"}
                 </Link>
               </li>
+              <li>
+                <Link href="/services" className="hover:opacity-100 hover:underline">
+                  {locale === "ar" ? "الخدمات السريعة" : "Open services"}
+                </Link>
+              </li>
+              <li>
+                <Link href="/blog" className="hover:opacity-100 hover:underline">
+                  {locale === "ar" ? "الأدلة والمقالات" : "Guides & blog"}
+                </Link>
+              </li>
               <li><Link href="/pricing" className="hover:opacity-100 hover:underline">{t.nav.pricing}</Link></li>
               <li><Link href="/contact" className="hover:opacity-100 hover:underline">{t.nav.contact}</Link></li>
             </ul>

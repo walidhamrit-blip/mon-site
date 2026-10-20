@@ -38,6 +38,7 @@ export function Navbar() {
       label: locale === "ar" ? "منتجاتنا وبرامجنا" : "Digital Products",
       soon: true,
     },
+    { href: "/blog", label: locale === "ar" ? "أدلة" : "Guides" },
     { href: "/#pricing", label: t.nav.pricing },
     { href: "/contact", label: t.nav.contact },
   ];
