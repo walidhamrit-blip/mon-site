@@ -12,9 +12,7 @@ const SESSION_MS = 7 * 24 * 60 * 60 * 1000; // 7 jours
  * deux noms.
  */
 function cookieCandidates(): string[] {
-  const out = [ADMIN_COOKIE];
-  if (process.env.NODE_ENV === "production") out.unshift(`__Host-${ADMIN_COOKIE}`);
-  return out;
+  return [`__Host-${ADMIN_COOKIE}`, ADMIN_COOKIE];
 }
 
 function getSecret(): string | null {

@@ -633,6 +633,7 @@ export function I18nProvider({
       localStorage.removeItem("nukhba-locale");
       const saved = localStorage.getItem(LOCALE_KEY) as Locale | null;
       if (saved && (saved === "ar" || saved === "en")) {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setLocaleState(saved);
         return;
       }

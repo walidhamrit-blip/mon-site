@@ -1,84 +1,111 @@
-// Protection CSRF « origin check » pour les routes API POST sensibles.
+// Protection CSRF « origin vs host » pour les routes API POST sensibles.
 //
-// Next.js 14+ protège automatiquement les cookies `SameSite=lax`/`strict`
-// des soumissions cross-origin de formulaires HTML : le navigateur ne
-// joint pas le cookie. Cette défense bloque déjà la majorité des attaques
-// CSRF classiques. Pour les requêtes `fetch` JSON (et les bots / scripts
-// serveur-à-serveur), on renforce avec une vérification de l'en-tête
-// `Origin` (renvoyé par tous les navigateurs) ou `Referer`.
+// Next.js protège automatiquement les cookies `SameSite=lax`/`strict`
+// contre les soumissions cross-origin. Pour les requêtes `fetch` JSON sur
+// `/api/lead`, `/api/payments/create` et `/api/payments/reserve`, on vérifie
+// en plus que l'en-tête `Origin` (ou à défaut `Referer`) provient bien du
+// même hôte que la requête entrante (`Host` / `X-Forwarded-Host`) ou d'un
+// domaine canonique configuré (`SITE_URL`, `NEXT_PUBLIC_SITE_URL`,
+// `VERCEL_URL`, `VERCEL_PROJECT_PRODUCTION_URL`, variante `www.` incluse).
 //
-// Whitelist : l'origine de la requête doit correspondre à l'URL
-// canonique du site (production ou preview e2b). Les bots serveur-à-
-// serveur (curl, Postman, scripts d'intégration) n'envoient pas d'Origin
-// : on autorise dans ce cas uniquement si l'en-tête `X-Requested-By` est
-// présent avec une valeur secrète (cf. variable `INTERNAL_API_SECRET`).
-//
-// Routes à protéger : tout endpoint POST qui modifie l'état (paiement,
-// création de lead…). Les webhooks externes (NOWPayments IPN) sont
-// identifiés par leur signature HMAC — pas par l'origine.
+// Ainsi :
+//  - toute requête cross-site depuis `https://attaquant.exemple` est rejetée
+//    avec HTTP 403 (`Origin` ≠ `Host` et hors domaines configurés) ;
+//  - tous les environnements légitimes du site (domaine custom `nokhba.net.ly`,
+//    `www.nokhba.net.ly`, déploiements Vercel `*.vercel.app`, previews Arena
+//    `*.e2b.app`, `localhost`) fonctionnent sans faux positif.
 
 import { siteConfig } from "@/lib/config";
 
 const ENV_KEY = "INTERNAL_API_SECRET";
 
-/** Origines autorisées (calculées depuis la config + Vercel preview). */
-function allowedOriginSet(): Set<string> {
-  const set = new Set<string>();
-  const pushNormalized = (value: string | undefined | null) => {
-    if (!value) return;
-    try {
-      const normalized = new URL(value.trim()).origin.toLowerCase();
-      if (normalized.startsWith("http")) set.add(normalized);
-    } catch {
-      /* URL invalide : ignorée */
-    }
-  };
-  pushNormalized(process.env.SITE_URL);
-  pushNormalized(process.env.NEXT_PUBLIC_SITE_URL);
-  pushNormalized(siteConfig.url);
-  // Aperçus Vercel : on accepte toutes les URLs de préfixe `*.vercel.app`
-  // en dev/prévisualisation, jamais en production.
-  if (process.env.VERCEL_ENV !== "production") {
-    set.add("https://vercel.app");
+function addHostWithWwwAlias(hosts: Set<string>, rawHost: string | undefined | null) {
+  if (!rawHost) return;
+  const cleaned = rawHost.trim().toLowerCase().replace(/\/+$/, "");
+  if (!cleaned) return;
+  hosts.add(cleaned);
+  if (cleaned.startsWith("www.")) {
+    hosts.add(cleaned.slice(4));
+  } else if (!cleaned.includes(":") && cleaned.split(".").length >= 2) {
+    hosts.add(`www.${cleaned}`);
   }
-  return set;
+}
+
+function addUrlHost(hosts: Set<string>, rawUrl: string | undefined | null) {
+  if (!rawUrl) return;
+  const trimmed = rawUrl.trim();
+  if (!trimmed) return;
+  try {
+    const parsed = new URL(
+      /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`,
+    );
+    if (parsed.protocol === "http:" || parsed.protocol === "https:") {
+      addHostWithWwwAlias(hosts, parsed.host);
+    }
+  } catch {
+    /* URL invalide : ignorée */
+  }
+}
+
+/** Ensemble des hôtes légitimes pour cette requête. */
+function allowedHostSet(req: Request): Set<string> {
+  const hosts = new Set<string>();
+
+  // 1. Hôte cible réel de la requête entrante (standard OWASP CSRF Origin=Host).
+  const forwardedHost = req.headers.get("x-forwarded-host")?.split(",")[0]?.trim();
+  const hostHeader = req.headers.get("host")?.split(",")[0]?.trim();
+  addHostWithWwwAlias(hosts, forwardedHost);
+  addHostWithWwwAlias(hosts, hostHeader);
+  try {
+    const reqUrl = new URL(req.url);
+    addHostWithWwwAlias(hosts, reqUrl.host);
+  } catch {
+    /* req.url relative ou invalide */
+  }
+
+  // 2. Domaines canoniques et URLs de déploiement Vercel.
+  addUrlHost(hosts, process.env.SITE_URL);
+  addUrlHost(hosts, process.env.NEXT_PUBLIC_SITE_URL);
+  addUrlHost(hosts, process.env.VERCEL_URL);
+  addUrlHost(hosts, process.env.VERCEL_BRANCH_URL);
+  addUrlHost(hosts, process.env.VERCEL_PROJECT_PRODUCTION_URL);
+  addUrlHost(hosts, siteConfig.url);
+
+  return hosts;
+}
+
+function isOriginAllowed(rawHeader: string, allowedHosts: Set<string>): boolean {
+  try {
+    const parsed = new URL(rawHeader);
+    if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
+      return false;
+    }
+    return allowedHosts.has(parsed.host.toLowerCase());
+  } catch {
+    return false;
+  }
 }
 
 /**
- * Vérifie qu'une requête POST provient bien d'une origine autorisée.
- *  - Si l'en-tête `Origin` est présent et correspond à une origine
- *    autorisée → OK ;
- *  - Sinon, on tombe sur le `Referer` (même politique) ;
- *  - Sinon, on accepte uniquement si `X-Requested-By` correspond au
- *    secret serveur (appels serveur-à-serveur d'outils internes) ;
- *  - Sinon, la requête est rejetée.
- *
- * Retourne `true` quand l'origine est valide, `false` sinon.
+ * Vérifie qu'une requête POST provient bien d'une origine autorisée :
+ *  - `Origin` présent → doit correspondre à un hôte autorisé ;
+ *  - sinon `Referer` présent → doit correspondre à un hôte autorisé ;
+ *  - sinon appel serveur-à-serveur autorisé uniquement avec
+ *    `X-Requested-By: <INTERNAL_API_SECRET>`.
  */
 export function enforceSameOrigin(req: Request): boolean {
-  const allowed = allowedOriginSet();
+  const allowedHosts = allowedHostSet(req);
+
   const origin = req.headers.get("origin")?.trim();
   if (origin) {
-    try {
-      const normalized = new URL(origin).origin.toLowerCase();
-      return allowed.has(normalized);
-    } catch {
-      return false;
-    }
+    return isOriginAllowed(origin, allowedHosts);
   }
-  // Pas d'Origin : on regarde le Referer (souvent présent sur les
-  // navigateurs même quand Origin ne l'est pas, ex. anciennes versions).
+
   const referer = req.headers.get("referer")?.trim();
   if (referer) {
-    try {
-      const normalized = new URL(referer).origin.toLowerCase();
-      return allowed.has(normalized);
-    } catch {
-      return false;
-    }
+    return isOriginAllowed(referer, allowedHosts);
   }
-  // Aucun des deux : on autorise uniquement les appels serveur authentifiés
-  // par le secret partagé (header `X-Requested-By: <secret>`).
+
   const secret = process.env[ENV_KEY]?.trim();
   if (secret) {
     const presented = req.headers.get("x-requested-by")?.trim();
@@ -87,7 +114,7 @@ export function enforceSameOrigin(req: Request): boolean {
   return false;
 }
 
-/** Comparaison à temps constant (évite les attaques par canal auxiliaire). */
+/** Comparaison à temps constant. */
 function timingSafeStringEqual(a: string, b: string): boolean {
   if (a.length !== b.length) return false;
   let diff = 0;

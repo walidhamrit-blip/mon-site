@@ -262,7 +262,7 @@ export function LeadsTable({ leads }: { leads: LeadRow[] }) {
                                         target="_blank"
                                         className="inline-flex h-9 px-4 rounded-xl bg-[#25D366] text-white text-xs font-bold items-center gap-2 hover:brightness-95"
                                       >
-                                        <MessageCircle className="h-3.5 w-3.5" /> Ouvrir WhatsApp — envoyer demande d'avis
+                                        <MessageCircle className="h-3.5 w-3.5" /> Ouvrir WhatsApp — envoyer demande d&apos;avis
                                       </a>
                                     )}
                                     {genResult[lead.id].message && (

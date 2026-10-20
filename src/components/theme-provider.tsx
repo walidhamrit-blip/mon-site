@@ -73,6 +73,7 @@ export function ThemeProvider({
   const explicitPalette = useRef(false);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setMounted(true);
     // Nettoyage des anciennes clés auto-écrites (voir en-tête du fichier).
     try {

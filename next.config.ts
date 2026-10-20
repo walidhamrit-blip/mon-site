@@ -1,51 +1,68 @@
 import type { NextConfig } from "next";
 
+const isVercelProduction = process.env.VERCEL_ENV === "production";
+
 /**
  * En-têtes de sécurité — appliqués à toutes les réponses servies par
- * Next.js (HTML, routes API, assets statiques servis par le CDN Vercel
- * reçoivent ces en-têtes par défaut ; les fichiers `public/` ne les
- * reçoivent pas, c'est attendu : ce sont des images/favicon inoffensifs).
+ * Next.js :
  *
- * - `Strict-Transport-Security` (HSTS) : force HTTPS pendant 1 an, preload
- *   activable côté HSTS Preload List submission.
+ * - `Strict-Transport-Security` (HSTS) : force HTTPS pendant 1 an.
  * - `X-Content-Type-Options: nosniff` : bloque le MIME sniffing.
- * - `X-Frame-Options: DENY` : interdit l'embarquement en <iframe> — bloque
- *   totalement le clickjacking (CSP frame-ancestors renforce ce point).
+ * - `X-Frame-Options: SAMEORIGIN` (production) : interdit l'embarquement
+ *   en <iframe> par des sites tiers (anti-clickjacking) tout en autorisant
+ *   nos propres démos embarquées en même origine (`/live-demos/...`).
+ *   Omis hors production pour permettre l'aperçu temps réel (Vercel Preview
+ *   Toolbar / Arena Live Preview).
  * - `Referrer-Policy: strict-origin-when-cross-origin` : limite la fuite
- *   d'URL complètes vers les sites externes (utile contre la fuite SEO).
- * - `Permissions-Policy` : ferme les API navigateur puissantes non
- *   utilisées (caméra, micro, géoloc, paiement, USB, MIDI, VR…) ; garde
- *   l'autoplay et l'API plein-écrin utiles au site.
+ *   d'URL complètes vers les sites externes.
+ * - `Permissions-Policy` : ferme les API navigateur sensibles non utilisées
+ *   (caméra, micro, géoloc, USB, MIDI, VR…) et conserve `autoplay=(self)`
+ *   ainsi que `fullscreen=*` pour les aperçus interactifs plein écran.
  * - `Content-Security-Policy` :
- *   - `default-src 'self'` : tout fermé par défaut ;
- *   - `script-src` : autorise le code inline (`'unsafe-inline'`) car
- *     Next.js injecte des <script> inline pour l'hydratation et la mise
- *     en place du thème avant le 1er render (cf. `themeBootScript`) ;
- *     on utilise en complément un `nonce` côté serveur (cf. middleware)
- *     pour durcir dans un second temps, mais on garde l'inline pour
- *     rester compatible avec le mode clair/sombre sans clignotement ;
- *   - `style-src` autorise Google Fonts (`fonts.googleapis.com`) + inline
- *     (Tailwind v4 émet du CSS critique inline) ;
- *   - `font-src` autorise `fonts.gstatic.com` (fichiers .woff2 signés) ;
- *   - `img-src` autorise toutes les sources `next/image` configurées
- *     (`images.unsplash.com`, `images.pexels.com`, `i.pravatar.cc`,
- *     `*.vercel.app`, `data:` et `blob:` pour les aperçus) ;
- *   - `connect-src` autorise les appels API paiement/LLM et l'envoi des
- *     Web Vitals de Vercel Speed Insights (`vitals.vercel-insights.com`) ;
- *   - `frame-src` autorise la passerelle crypto (`nowpayments.io`) ;
- *   - `frame-ancestors 'none'` : défense en profondeur contre
- *     le clickjacking ;
- *   - `base-uri 'self'` et `form-action 'self'` : limite les vecteurs
- *     d'injection via <base> ou formulaires externes.
- * - `Cross-Origin-*` : cloisonne les origines pour les embeddings.
+ *   - `default-src 'self'` ;
+ *   - `script-src` : `'self' 'unsafe-inline'` (hydratation Next.js + script
+ *     de thème sans clignotement `themeBootScript`) + Vercel scripts / GTM ;
+ *   - `style-src` : `'self' 'unsafe-inline'` (Tailwind v4) + Google Fonts ;
+ *   - `font-src` : `'self' data: https://fonts.gstatic.com` ;
+ *   - `img-src` : `'self' data: blob: https:` (toutes les miniatures de
+ *     projets, y compris celles ajoutées dynamiquement depuis `/admin`) ;
+ *   - `frame-src` : `'self' https:` — INDISPENSABLE pour afficher en direct
+ *     tous les sites clients réels dans la galerie interactive (`DemosGallery`,
+ *     `IdentityStudio`, `FullscreenLiveViewer`, `/demos/[slug]`), y compris
+ *     `demo-cabinet-medecin.vercel.app`, tous les `*.vercel.app`, les
+ *     domaines clients personnalisés ajoutés depuis `/admin`, et NOWPayments ;
+ *   - `frame-ancestors` : `'self'` en production (anti-clickjacking tout en
+ *     autorisant `/live-demos/*`), élargi hors production pour les aperçus.
  */
+const CSP_DIRECTIVES = [
+  "default-src 'self'",
+  "script-src 'self' 'unsafe-inline' https://va.vercel-scripts.com https://www.googletagmanager.com",
+  "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+  "font-src 'self' data: https://fonts.gstatic.com",
+  "img-src 'self' data: blob: https:",
+  "connect-src 'self' https://vitals.vercel-insights.com https://va.vercel-scripts.com https://api.nowpayments.io https://api-sandbox.nowpayments.io https://api.openai.com https://*.openai.azure.com https://openrouter.ai https://api.indexnow.org https://www.google-analytics.com https://*.ingest.sentry.io",
+  "frame-src 'self' https:",
+  isVercelProduction
+    ? "frame-ancestors 'self'"
+    : "frame-ancestors 'self' https: http:",
+  "base-uri 'self'",
+  "form-action 'self'",
+  "object-src 'none'",
+  "media-src 'self' data: blob: https:",
+  "worker-src 'self' blob:",
+  "manifest-src 'self'",
+  ...(isVercelProduction ? ["upgrade-insecure-requests"] : []),
+];
+
 const SECURITY_HEADERS = [
   {
     key: "Strict-Transport-Security",
     value: "max-age=31536000; includeSubDomains",
   },
   { key: "X-Content-Type-Options", value: "nosniff" },
-  { key: "X-Frame-Options", value: "DENY" },
+  ...(isVercelProduction
+    ? [{ key: "X-Frame-Options", value: "SAMEORIGIN" }]
+    : []),
   { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
   {
     key: "Permissions-Policy",
@@ -55,7 +72,7 @@ const SECURITY_HEADERS = [
       "camera=()",
       "display-capture=()",
       "encrypted-media=(self)",
-      "fullscreen=(self)",
+      "fullscreen=*",
       "geolocation=()",
       "gyroscope=()",
       "magnetometer=()",
@@ -72,51 +89,21 @@ const SECURITY_HEADERS = [
   },
   {
     key: "Content-Security-Policy",
-    value: [
-      "default-src 'self'",
-      // Scripts : 'unsafe-inline' conservé pour les scripts d'hydratation
-      // et de boot de thème émis par Next.js. Les bundles Next.js sont
-      // chargés depuis 'self'. `va.vercel-scripts.com` sert uniquement les
-      // scripts de débogage Vercel Analytics / Speed Insights en local
-      // (en production, ces scripts sont servis depuis 'self').
-      "script-src 'self' 'unsafe-inline' https://va.vercel-scripts.com https://www.googletagmanager.com",
-      // Styles : 'unsafe-inline' requis par Tailwind v4 (CSS critique
-      // inline) ; Google Fonts fourni les .css externes.
-      "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-      "font-src 'self' data: https://fonts.gstatic.com",
-      // Images : `next/image` autorise un large panel d'hôtes distants
-      // (Unsplash, Pexels, démos Pics*); `data:` pour les placeholders
-      // inline, `blob:` pour les aperçus locaux générés côté client.
-      "img-src 'self' data: blob: https://images.unsplash.com https://images.pexels.com https://i.pravatar.cc https://*.vercel.app https://*.public.blob.vercel-storage.com",
-      // Fetch / XHR : endpoints API + passerelle crypto + collecte des
-      // Core Web Vitals (Vercel Speed Insights).
-      "connect-src 'self' https://vitals.vercel-insights.com https://api.nowpayments.io https://api-sandbox.nowpayments.io https://api.openai.com https://*.openai.azure.com https://openrouter.ai https://api.indexnow.org https://www.google-analytics.com https://*.ingest.sentry.io",
-      "frame-src 'self' https://nowpayments.io https://*.nowpayments.io",
-      "frame-ancestors 'none'",
-      "base-uri 'self'",
-      "form-action 'self'",
-      "object-src 'none'",
-      "media-src 'self'",
-      "worker-src 'self' blob:",
-      "manifest-src 'self'",
-      "upgrade-insecure-requests",
-    ].join("; "),
+    value: CSP_DIRECTIVES.join("; "),
   },
-  { key: "Cross-Origin-Opener-Policy", value: "same-origin" },
-  { key: "Cross-Origin-Resource-Policy", value: "same-site" },
+  { key: "Cross-Origin-Opener-Policy", value: "same-origin-allow-popups" },
+  { key: "Cross-Origin-Resource-Policy", value: "cross-origin" },
 ];
 
 const nextConfig: NextConfig = {
   allowedDevOrigins: ["*.e2b.app"],
-  // `poweredByHeader: false` retire l'en-tête `X-Powered-By: Next.js`
-  // qui ne révèle aucun secret mais confirme la pile technique (utile
-  // à masquer pour ne pas faciliter le ciblage de CVE framework).
   poweredByHeader: false,
   images: {
     remotePatterns: [
       { protocol: "https", hostname: "images.unsplash.com" },
       { protocol: "https", hostname: "images.pexels.com" },
       { protocol: "https", hostname: "i.pravatar.cc" },
+      { protocol: "https", hostname: "demo-cabinet-medecin.vercel.app" },
       { protocol: "https", hostname: "al-manhaj-company.vercel.app" },
       { protocol: "https", hostname: "m-et-outillage-modele-3.vercel.app" },
       { protocol: "https", hostname: "tulin-magazin.vercel.app" },
@@ -128,6 +115,8 @@ const nextConfig: NextConfig = {
       { protocol: "https", hostname: "al-bay.vercel.app" },
       { protocol: "https", hostname: "alssadaka-sanitary.vercel.app" },
       { protocol: "https", hostname: "smartphine-demo.vercel.app" },
+      { protocol: "https", hostname: "**.vercel.app" },
+      { protocol: "https", hostname: "**" },
     ],
   },
   async headers() {
@@ -140,7 +129,7 @@ const nextConfig: NextConfig = {
   },
   async redirects() {
     return [
-      // Les variants /ar et /en déclarés en hreflang n'existent pas comme
+      // Les variants /ar et /en déclarés auparavant n'existent pas comme
       // routes (la langue est gérée côté client) : on évite les 404 SEO.
       { source: "/ar", destination: "/", permanent: false },
       { source: "/en", destination: "/", permanent: false },

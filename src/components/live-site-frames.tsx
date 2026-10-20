@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useSyncExternalStore } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
 import {
@@ -57,14 +57,12 @@ export function ScaledLiveIframe({
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(0.5);
-  const [loading, setLoading] = useState(true);
+  const [loadedKey, setLoadedKey] = useState<string | null>(null);
 
   const baseWidth = mode === "desktop" ? 1440 : 390;
   const baseHeight = mode === "desktop" ? 900 : 693;
-
-  useEffect(() => {
-    setLoading(true);
-  }, [url, reloadKey]);
+  const frameKey = `${url}-${reloadKey}`;
+  const loading = loadedKey !== frameKey;
 
   useEffect(() => {
     const el = containerRef.current;
@@ -119,7 +117,7 @@ export function ScaledLiveIframe({
           tabIndex={interactive ? undefined : -1}
           aria-hidden={interactive ? undefined : true}
           onLoad={() => {
-            setLoading(false);
+            setLoadedKey(frameKey);
             onLoaded?.();
           }}
           allow="clipboard-write; fullscreen"
@@ -164,23 +162,22 @@ export function FullscreenLiveViewer({
   const [mode, setMode] = useState<"desktop" | "mobile">(initialMode);
   const [reloadKey, setReloadKey] = useState(0);
   const [loading, setLoading] = useState(true);
-  const [mounted, setMounted] = useState(false);
+  const mounted = useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false,
+  );
   // Proposition de réservation : visible à l'ouverture, masquable pour
   // laisser toute la place au site en démonstration.
   const [offerVisible, setOfferVisible] = useState(true);
 
   useEffect(() => {
-    setMounted(true);
     const prevOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     return () => {
       document.body.style.overflow = prevOverflow;
     };
   }, []);
-
-  useEffect(() => {
-    setMode(initialMode);
-  }, [initialMode]);
 
   const title = locale === "ar" ? demo.title : demo.titleEn;
 
