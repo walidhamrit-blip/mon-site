@@ -4,7 +4,24 @@ import { redirect } from "next/navigation";
 export const ADMIN_COOKIE = "nukhba_admin_session";
 const SESSION_MS = 7 * 24 * 60 * 60 * 1000; // 7 jours
 
+/**
+ * En production, le cookie de session est préfixé `__Host-` (cf. actions.ts) :
+ * ce préfixe empêche un sous-domaine compromis d'écraser le cookie de
+ * l'admin et impose `Path=/` + `Secure`. En développement local (HTTP),
+ * le préfixe `__Host-` casserait l'authentification, donc on lit les
+ * deux noms.
+ */
+function cookieCandidates(): string[] {
+  const out = [ADMIN_COOKIE];
+  if (process.env.NODE_ENV === "production") out.unshift(`__Host-${ADMIN_COOKIE}`);
+  return out;
+}
+
 function getSecret(): string | null {
+  // SESSION_SECRET prime sur ADMIN_PASSWORD : un secret HMAC dédié est
+  // nettement plus sûr que de réutiliser le mot de passe admin. Si les
+  // deux manquent, la signature est impossible → toute session devient
+  // invalide (comportement attendu).
   return process.env.SESSION_SECRET || process.env.ADMIN_PASSWORD || null;
 }
 
@@ -61,9 +78,12 @@ export async function verifySessionToken(token: string): Promise<boolean> {
 export async function isAdminAuthenticated(): Promise<boolean> {
   try {
     const store = await cookies();
-    const token = store.get(ADMIN_COOKIE)?.value;
-    if (!token) return false;
-    return await verifySessionToken(token);
+    for (const name of cookieCandidates()) {
+      const token = store.get(name)?.value;
+      if (!token) continue;
+      if (await verifySessionToken(token)) return true;
+    }
+    return false;
   } catch {
     return false;
   }

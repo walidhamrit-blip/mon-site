@@ -110,7 +110,11 @@ export async function GET() {
       siteUrl: (process.env.SITE_URL?.trim() || siteConfig.url).replace(/\/+$/, ""),
       vercel: {
         env: process.env.VERCEL_ENV ?? process.env.NODE_ENV ?? null,
-        commit: process.env.VERCEL_GIT_COMMIT_SHA?.slice(0, 7) ?? null,
+        // Le SHA du commit est volontairement omis : sur une route publique
+        // il pourrait aider un attaquant à corréler des CVE framework avec
+        // une version précise. On garde `deploymentUrl` (utile au debug
+        // pour savoir si l'utilisateur parle au bon environnement) et
+        // `env` (production/preview).
         deploymentUrl: process.env.VERCEL_URL
           ? `https://${process.env.VERCEL_URL}`
           : null,
