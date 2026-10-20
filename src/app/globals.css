@@ -214,8 +214,9 @@ body {
 @keyframes services-scroll {
   to { transform: translateX(-50%); }
 }
+/* Pause uniquement pendant un vrai survol : `:focus-within` gardait le
+   ruban figé après un simple clic (le focus restait dans la section). */
 .services-ribbon:hover .ribbon-track,
-.services-ribbon:focus-within .ribbon-track,
 .services-ribbon[data-paused="true"] .ribbon-track {
   animation-play-state: paused;
 }
@@ -236,7 +237,10 @@ body {
    la navbar et le contenu se décalent d'autant, donc le bandeau ne
    recouvre jamais la page. */
 :root {
+  /* Position des éléments collants (0 quand le bandeau se replie). */
   --promo-h: 52px;
+  /* Espace réservé en haut du contenu (fixe tant que le bandeau est ouvert). */
+  --promo-space: 52px;
 }
 
 .promo-banner {

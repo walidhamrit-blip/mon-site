@@ -18,6 +18,7 @@ import {
 import { useI18n } from "@/lib/i18n";
 import { useSectionHeading, useSiteConfig } from "@/components/site-provider";
 import { lydLabel } from "@/lib/classification";
+import { whatsappLink } from "@/lib/utils";
 import { formatMainPrice } from "@/lib/installments";
 
 /** Icônes disponibles pour les services libres (config : `standaloneServices`). */
@@ -45,11 +46,12 @@ export function Services() {
   const services = siteConfig.standaloneServices;
 
   const whatsappUrl = (serviceTitle: string) =>
-    `https://wa.me/${siteConfig.whatsapp}?text=${encodeURIComponent(
+    whatsappLink(
+      siteConfig.whatsapp,
       ar
         ? `مرحبا ${siteConfig.nameAr} 👋 أريد طلب الخدمة: ${serviceTitle}`
         : `Hello ${siteConfig.name} 👋 I'd like to request this service: ${serviceTitle}`,
-    )}`;
+    );
 
   return (
     <section id="services" className="py-16 lg:py-24 bg-[var(--secondary)]/40 border-y border-[var(--border)]">

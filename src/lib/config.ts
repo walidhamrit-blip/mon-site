@@ -169,6 +169,12 @@ export const siteConfig = {
     sitesDelivered: "120+",
     satisfaction: "98%",
     support: "24/7",
+    // Note moyenne + nombre d'avis — SOURCE UNIQUE : affichage site,
+    // JSON-LD (aggregateRating, src/lib/seo.ts) et llms.txt lisent ces
+    // deux champs. À garder synchronisés avec les avis réellement
+    // affichés (section témoignages / fiche Google).
+    ratingValue: "4.9",
+    reviewCount: "86",
   },
 
   // Réservation prioritaire — petit acompte pour prendre une place

@@ -26,6 +26,11 @@ jobs:
         run: npm run seo:geo
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          # IMPORTANT : régler la variable OPENAI_MODEL sur un modèle avec
+          # recherche web (famille *-search-preview ou équivalent) pour
+          # mesurer les citations EN LIGNE. Sans elle, le défaut
+          # (gpt-4o-mini, sans navigation) mesure la notoriété mémorisée
+          # du modèle — le rapport signale alors grounded: false.
           OPENAI_MODEL: ${{ vars.OPENAI_MODEL }}
           PERPLEXITY_API_KEY: ${{ secrets.PERPLEXITY_API_KEY }}
           RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}

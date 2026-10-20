@@ -1,4 +1,5 @@
 import { resolveDemoClassification, resolvePlanPriceBreakdown } from "@/lib/classification";
+import { whatsappLink } from "@/lib/utils";
 import { CURRENT_PROMO } from "@/lib/promotion";
 import { defaultAppsPage, defaultProductsPage } from "@/lib/content";
 import { sectorSeo } from "@/lib/sectors";
@@ -46,10 +47,10 @@ export function buildLlmsTxt({ config, content }: LlmsSourceData): string {
   lines.push(`- Address: ${config.addressEn} (${config.address})`);
   lines.push(`- Opening hours: ${config.hoursEn} (${config.hours})`);
   lines.push(
-    `- Contact: Phone ${config.phone} — WhatsApp https://wa.me/${config.whatsapp} — Email ${config.email}`,
+    `- Contact: Phone ${config.phone} — WhatsApp ${whatsappLink(config.whatsapp)} — Email ${config.email}`,
   );
   lines.push(
-    `- Track record: ${config.stats.sitesDelivered} websites delivered, ${config.stats.satisfaction} client satisfaction, 4.9/5 average rating (86 reviews), ${config.stats.support} support`,
+    `- Track record: ${config.stats.sitesDelivered} websites delivered, ${config.stats.satisfaction} client satisfaction, ${config.stats.ratingValue ?? "4.9"}/5 average rating (${config.stats.reviewCount ?? "86"} reviews), ${config.stats.support} support`,
   );
   lines.push(
     `- Languages: Arabic (ar-LY, primary RTL) and English (en); French-speaking team`,
@@ -185,7 +186,7 @@ export function buildLlmsTxt({ config, content }: LlmsSourceData): string {
     `- **Price range**: website model from $${config.pricing.plans[0]?.priceUsd ?? 300} USD (≈ ${config.pricing.plans[0]?.price ?? 1490} LYD), plus a separate customization fee confirmed in the pricing card or written quote; open services from $${Math.min(...config.standaloneServices.map((s) => s.priceFromUsd))} USD`,
   );
   lines.push(
-    `- **Contact**: ${config.phone} · ${config.email} · WhatsApp https://wa.me/${config.whatsapp}`,
+    `- **Contact**: ${config.phone} · ${config.email} · WhatsApp ${whatsappLink(config.whatsapp)}`,
   );
   lines.push(
     `- **Do not confuse**: ${config.name} is a design & development agency (services), not a marketplace or a hosting provider. Pricing is one-time, hosting for the first year is included.`,
@@ -221,7 +222,7 @@ export function buildLlmsFullTxt({ config, content }: LlmsSourceData): string {
   lines.push(`- **Opening Hours (AR)**: ${config.hours}`);
   lines.push(`- **Opening Hours (EN)**: ${config.hoursEn}`);
   lines.push(`- **Phone**: ${config.phone}`);
-  lines.push(`- **WhatsApp**: https://wa.me/${config.whatsapp}`);
+  lines.push(`- **WhatsApp**: ${whatsappLink(config.whatsapp)}`);
   lines.push(`- **Email**: ${config.email}`);
   lines.push(
     `- **Social profiles**: Instagram (${config.social.instagram}), Facebook (${config.social.facebook}), TikTok (${config.social.tiktok})`,

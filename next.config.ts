@@ -133,12 +133,15 @@ const nextConfig: NextConfig = {
       // routes (la langue est gérée côté client) : on évite les 404 SEO.
       { source: "/ar", destination: "/", permanent: false },
       { source: "/en", destination: "/", permanent: false },
-      // Alias conviviaux vers les pages Applications & Produits numériques
-      { source: "/applications", destination: "/apps", permanent: false },
-      { source: "/nos-applications", destination: "/apps", permanent: false },
-      { source: "/produits", destination: "/products", permanent: false },
-      { source: "/nos-produits", destination: "/products", permanent: false },
-      { source: "/logiciels", destination: "/products", permanent: false },
+      // Alias conviviaux vers les pages Applications & Produits numériques.
+      // Permanents (301) : ces alias sont stables, la consolidation SEO est
+      // donc souhaitable. Les /ar et /en ci-dessus restent temporaires —
+      // de vraies routes localisées pourraient exister un jour.
+      { source: "/applications", destination: "/apps", permanent: true },
+      { source: "/nos-applications", destination: "/apps", permanent: true },
+      { source: "/produits", destination: "/products", permanent: true },
+      { source: "/nos-produits", destination: "/products", permanent: true },
+      { source: "/logiciels", destination: "/products", permanent: true },
     ];
   },
 };

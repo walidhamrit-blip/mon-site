@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { resolveDemoClassification, resolvePlanPriceBreakdown } from "@/lib/classification";
-import { getDemoPreviewImages } from "@/lib/preview-manifest";
+import { getDemoCapturedAt, getDemoPreviewImages } from "@/lib/preview-manifest";
 import type { Demo, Faq, ProcessStep, Testimonial } from "@/lib/site-types";
 
 /**
@@ -40,6 +40,10 @@ type SiteConfig = {
       priceUsd?: number | null;
       customizationPercent?: number | null;
     }>;
+  };
+  stats?: {
+    ratingValue?: string;
+    reviewCount?: string;
   };
   standaloneServices?: ReadonlyArray<{
     id: string;
@@ -226,13 +230,15 @@ export function localBusinessJsonLd(
     sameAs: [config.social.instagram, config.social.facebook, config.social.tiktok].filter(
       (u) => u && /^https?:\/\//.test(u),
     ),
-    // Note visible sur le site (section témoignages : « 4.9/5 — 86 avis »).
+    // Note visible sur le site (section témoignages) — source unique :
+    // config.stats (voir src/lib/config.ts), avec repli sur les valeurs
+    // historiques si une configuration ancienne ne les porte pas.
     aggregateRating: {
       "@type": "AggregateRating",
-      ratingValue: "4.9",
+      ratingValue: config.stats?.ratingValue ?? "4.9",
       bestRating: "5",
       worstRating: "1",
-      reviewCount: "86",
+      reviewCount: config.stats?.reviewCount ?? "86",
     },
     ...(testimonials && testimonials.length > 0
       ? {
@@ -438,6 +444,12 @@ export function demoJsonLd(config: SiteConfig, demo: Demo) {
   const primaryImage =
     localPreviews.length > 0 ? absoluteUrl(config, localPreviews[0]) : demo.image;
 
+  // Date réelle de la dernière capture locale (manifeste Playwright) :
+  // elle date la vitrine du projet. À défaut de capture, aucune date
+  // n'est déclarée — mieux vaut s'abstenir qu'annoncer une date fictive.
+  const capturedAt = getDemoCapturedAt(demo);
+  const capturedIso = capturedAt ? capturedAt.toISOString().slice(0, 10) : null;
+
   return {
     "@context": "https://schema.org",
     "@type": "CreativeWork",
@@ -455,7 +467,9 @@ export function demoJsonLd(config: SiteConfig, demo: Demo) {
       : {}),
     url: canonicalUrl,
     inLanguage: ["ar-LY", "en"],
-    datePublished: "2025-01-01",
+    ...(capturedIso
+      ? { datePublished: capturedIso, dateModified: capturedIso }
+      : {}),
     author: { "@id": absoluteUrl(config, ORG_ID) },
     publisher: { "@id": absoluteUrl(config, ORG_ID) },
     isPartOf: { "@id": absoluteUrl(config, WEBSITE_ID) },

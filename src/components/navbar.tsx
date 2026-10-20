@@ -14,9 +14,10 @@ import { whatsappLink } from "@/lib/utils";
 export function Navbar() {
   const router = useRouter();
   const siteConfig = useSiteConfig();
-  const { locale, t, toggleLocale, dir } = useI18n();
+  const { locale, t, toggleLocale } = useI18n();
   const { mode, toggle } = useTheme();
   const [open, setOpen] = useState(false);
+
 
   const links = [
     { href: "/services", label: locale === "ar" ? "خدمات سريعة" : "Open services" },
