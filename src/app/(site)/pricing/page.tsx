@@ -3,7 +3,6 @@ import { getSiteDataCached } from "@/lib/store";
 import {
   breadcrumbJsonLd,
   faqJsonLd,
-  offerCatalogJsonLd,
   pageMetadata,
 } from "@/lib/seo";
 import { JsonLd } from "@/components/json-ld";
@@ -29,13 +28,14 @@ export default async function PricingPage() {
   const { config, content } = await getSiteDataCached();
   return (
     <>
+      {/* Le catalogue d'offres (#offer-catalog) est déjà injecté par le
+          layout racine sur toutes les pages : ne pas le dupliquer ici. */}
       <JsonLd
         data={[
           breadcrumbJsonLd(config, [
             { name: "الرئيسية", path: "/" },
             { name: "الباقات والأسعار", path: "/pricing" },
           ]),
-          offerCatalogJsonLd(config),
           faqJsonLd(content.faqs),
         ]}
       />

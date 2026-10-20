@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 
 /**
- * Middleware de sécurité : applique les en-têtes de sécurité à toutes
+ * Proxy de sécurité (convention Next.js 16, ex-« middleware ») : applique
+ * les en-têtes de sécurité à toutes
  * les réponses, y compris celles servies depuis `public/` (ex.
  * `/live-demos/tulin-magazin/index.html`, manifest, robots, sitemap…).
  *
@@ -35,7 +36,7 @@ function buildPermissionPolicy(): string {
   ].join(", ");
 }
 
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
   if (
     pathname.startsWith("/_next/") ||

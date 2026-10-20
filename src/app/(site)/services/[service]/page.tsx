@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, Check, Clock, MessageCircle, ShieldCheck, Sparkles } from "lucide-react";
 import { getSiteDataCached } from "@/lib/store";
+import { whatsappLink } from "@/lib/utils";
 import {
   absoluteUrl,
   breadcrumbJsonLd,
@@ -71,10 +72,10 @@ export default async function ServicePage({
     .filter((demo) => (landing.relatedSectors ?? []).includes(demo.sector))
     .slice(0, 3);
 
-  const whatsappText = encodeURIComponent(
+  const whatsappUrl = whatsappLink(
+    config.whatsapp,
     `مرحبا نخبة 👋 أريد طلب خدمة: ${service.titleAr} (تبدأ من ${service.priceFromUsd}$)`,
   );
-  const whatsappUrl = `https://wa.me/${config.whatsapp}?text=${whatsappText}`;
   const lyd = lydLabel("ar");
   const canonical = absoluteUrl(config, servicePath(service.id));
 

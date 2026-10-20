@@ -9,6 +9,7 @@ import {
 import { JsonLd } from "@/components/json-ld";
 import { notFound } from "next/navigation";
 import { DemoViewer } from "./demo-viewer";
+import { DemoDetails } from "./demo-details";
 
 export async function generateStaticParams() {
   const { content } = await getSiteDataCached();
@@ -64,6 +65,10 @@ export default async function DemoPage({ params }: { params: Promise<{ slug: str
         ]}
       />
       <DemoViewer demo={demo} allDemos={allDemos} />
+      {/* Contenu éditorial visible (contexte secteur + formule) : la
+          visionneuse plein écran seule laissait la fiche quasi vide
+          pour les moteurs (article sr-only uniquement). */}
+      <DemoDetails demo={demo} config={config} />
     </>
   );
 }

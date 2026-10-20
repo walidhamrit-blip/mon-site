@@ -13,6 +13,14 @@
  * rapport « skipped » et n'échoue jamais) :
  *   OPENAI_API_KEY, OPENAI_MODEL (gpt-4o-mini), OPENAI_BASE_URL
  *   PERPLEXITY_API_KEY, PERPLEXITY_MODEL (sonar)
+ *
+ * « grounded » (ancré web) vs paramétrique : Perplexity (sonar) interroge
+ * le web en direct → il mesure les citations EN LIGNE. Côté OpenAI, seuls
+ * les modèles avec recherche web (famille *-search-preview ou équivalent,
+ * via OPENAI_MODEL) sont ancrés ; le défaut gpt-4o-mini répond de mémoire
+ * (entraînement) — signal de notoriété utile, mais ce n'est PAS une
+ * citation en ligne. Le rapport marque chaque moteur `grounded: true/false`
+ * pour éviter toute mauvaise interprétation des taux de citation.
  *   RESEND_API_KEY + LEAD_NOTIFICATION_EMAIL → envoi du rapport par e-mail
  *
  * Sortie : `reports/geo-citations-YYYY-MM-DD.json` (non versionné) +
@@ -176,9 +184,13 @@ function timeoutFetch(url, init = {}, ms = 45_000) {
 export function configuredProviders(env = process.env) {
   const providers = [];
   if (env.OPENAI_API_KEY?.trim()) {
+    const model = env.OPENAI_MODEL?.trim() || "gpt-4o-mini";
     providers.push({
       name: "openai",
-      model: env.OPENAI_MODEL?.trim() || "gpt-4o-mini",
+      model,
+      // Ancré web uniquement si le modèle sait naviguer (recherche) :
+      // sinon les réponses viennent de la mémoire d'entraînement.
+      grounded: /search/i.test(model),
       baseUrl: (env.OPENAI_BASE_URL?.trim() || "https://api.openai.com/v1").replace(/\/+$/, ""),
       apiKey: env.OPENAI_API_KEY.trim(),
     });
@@ -187,6 +199,8 @@ export function configuredProviders(env = process.env) {
     providers.push({
       name: "perplexity",
       model: env.PERPLEXITY_MODEL?.trim() || "sonar",
+      // Sonar interroge le web en direct : citations en ligne réelles.
+      grounded: true,
       baseUrl: "https://api.perplexity.ai",
       apiKey: env.PERPLEXITY_API_KEY.trim(),
     });
@@ -278,6 +292,15 @@ async function main() {
 
   console.log("\n🌍 GEO Tracker — citations IA de نخبة Nukhba\n");
   console.log(`${PROMPTS.length} requêtes cibles · ${providers.length} moteur(s) configuré(s)`);
+  for (const provider of providers) {
+    if (!provider.grounded) {
+      console.log(
+        `⚠ ${provider.name} (${provider.model}) : modèle SANS recherche web — ` +
+          "les réponses mesurent la notoriété mémorisée, pas les citations en ligne. " +
+          "Réglez OPENAI_MODEL sur un modèle de recherche pour un suivi GEO réel.",
+      );
+    }
+  }
 
   if (dryRun) {
     for (const prompt of PROMPTS) console.log(`- [${prompt.lang}] ${prompt.query}`);
@@ -328,7 +351,11 @@ async function main() {
   const report = {
     generatedAt: new Date().toISOString(),
     brand: { name: "نخبة Nukhba", domain: BRAND_DOMAIN },
-    providers: providers.map((provider) => ({ name: provider.name, model: provider.model })),
+    providers: providers.map((provider) => ({
+      name: provider.name,
+      model: provider.model,
+      grounded: provider.grounded,
+    })),
     skipped: providers.length === 0,
     summary,
     results,

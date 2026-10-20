@@ -8,7 +8,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const rootDir = path.resolve(__dirname, "..");
 
 const nextConfigSrc = fs.readFileSync(path.join(rootDir, "next.config.ts"), "utf8");
-const middlewareSrc = fs.readFileSync(path.join(rootDir, "src/middleware.ts"), "utf8");
+const proxySrc = fs.readFileSync(path.join(rootDir, "src/proxy.ts"), "utf8");
 const contentSrc = fs.readFileSync(path.join(rootDir, "src/lib/content.ts"), "utf8");
 const csrfSrc = fs.readFileSync(path.join(rootDir, "src/lib/csrf.ts"), "utf8");
 
@@ -20,7 +20,7 @@ test("CSP frame-src autorise 'self' et tous les sites clients HTTPS en iframe", 
   );
 });
 
-test("CSP et middleware n'interdisent jamais l'embarquement même-origine (/live-demos/*)", () => {
+test("CSP et proxy n'interdisent jamais l'embarquement même-origine (/live-demos/*)", () => {
   assert.doesNotMatch(
     nextConfigSrc,
     /value:\s*"DENY"/,
@@ -32,15 +32,15 @@ test("CSP et middleware n'interdisent jamais l'embarquement même-origine (/live
     "frame-ancestors ne doit jamais être 'none' (bloquerait /live-demos/tulin-magazin/index.html)",
   );
   assert.doesNotMatch(
-    middlewareSrc,
+    proxySrc,
     /"X-Frame-Options",\s*"DENY"/,
-    "src/middleware.ts ne doit jamais forcer X-Frame-Options: DENY",
+    "src/proxy.ts ne doit jamais forcer X-Frame-Options: DENY",
   );
 });
 
 test("Permissions-Policy autorise le plein écran (fullscreen=*) sans avertissement console", () => {
   assert.match(nextConfigSrc, /fullscreen=\*/);
-  assert.match(middlewareSrc, /fullscreen=\*/);
+  assert.match(proxySrc, /fullscreen=\*/);
 });
 
 test("Toutes les images distantes de démos dans content.ts sont couvertes par next.config.ts", () => {

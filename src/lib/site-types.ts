@@ -125,6 +125,10 @@ export interface SiteConfigData {
     sitesDelivered: string;
     satisfaction: string;
     support: string;
+    /** Note moyenne affichée (ex. "4.9") — source unique SEO/GEO. */
+    ratingValue?: string;
+    /** Nombre d'avis affiché (ex. "86") — source unique SEO/GEO. */
+    reviewCount?: string;
   };
   reservation: {
     enabled: boolean;
