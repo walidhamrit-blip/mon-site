@@ -30,7 +30,8 @@ import type { NextConfig } from "next";
  *   - `img-src` autorise toutes les sources `next/image` configurées
  *     (`images.unsplash.com`, `images.pexels.com`, `i.pravatar.cc`,
  *     `*.vercel.app`, `data:` et `blob:` pour les aperçus) ;
- *   - `connect-src` autorise les appels API paiement/LLM ;
+ *   - `connect-src` autorise les appels API paiement/LLM et l'envoi des
+ *     Web Vitals de Vercel Speed Insights (`vitals.vercel-insights.com`) ;
  *   - `frame-src` autorise la passerelle crypto (`nowpayments.io`) ;
  *   - `frame-ancestors 'none'` : défense en profondeur contre
  *     le clickjacking ;
@@ -75,8 +76,10 @@ const SECURITY_HEADERS = [
       "default-src 'self'",
       // Scripts : 'unsafe-inline' conservé pour les scripts d'hydratation
       // et de boot de thème émis par Next.js. Les bundles Next.js sont
-      // chargés depuis 'self'.
-      "script-src 'self' 'unsafe-inline' https://www.googletagmanager.com",
+      // chargés depuis 'self'. `va.vercel-scripts.com` sert uniquement les
+      // scripts de débogage Vercel Analytics / Speed Insights en local
+      // (en production, ces scripts sont servis depuis 'self').
+      "script-src 'self' 'unsafe-inline' https://va.vercel-scripts.com https://www.googletagmanager.com",
       // Styles : 'unsafe-inline' requis par Tailwind v4 (CSS critique
       // inline) ; Google Fonts fourni les .css externes.
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
@@ -85,8 +88,9 @@ const SECURITY_HEADERS = [
       // (Unsplash, Pexels, démos Pics*); `data:` pour les placeholders
       // inline, `blob:` pour les aperçus locaux générés côté client.
       "img-src 'self' data: blob: https://images.unsplash.com https://images.pexels.com https://i.pravatar.cc https://*.vercel.app https://*.public.blob.vercel-storage.com",
-      // Fetch / XHR : endpoints API + passerelle crypto.
-      "connect-src 'self' https://api.nowpayments.io https://api-sandbox.nowpayments.io https://api.openai.com https://*.openai.azure.com https://openrouter.ai https://api.indexnow.org https://www.google-analytics.com https://*.ingest.sentry.io",
+      // Fetch / XHR : endpoints API + passerelle crypto + collecte des
+      // Core Web Vitals (Vercel Speed Insights).
+      "connect-src 'self' https://vitals.vercel-insights.com https://api.nowpayments.io https://api-sandbox.nowpayments.io https://api.openai.com https://*.openai.azure.com https://openrouter.ai https://api.indexnow.org https://www.google-analytics.com https://*.ingest.sentry.io",
       "frame-src 'self' https://nowpayments.io https://*.nowpayments.io",
       "frame-ancestors 'none'",
       "base-uri 'self'",
