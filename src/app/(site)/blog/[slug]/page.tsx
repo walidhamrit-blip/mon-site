@@ -354,7 +354,7 @@ export default async function ArticlePage({
           </article>
 
           {/* Colonne latérale */}
-          <aside className="lg:sticky lg:top-28 space-y-5">
+          <aside className="lg:sticky lg:top-[calc(var(--promo-h,0px)+112px)] space-y-5">
             {/* Sommaire */}
             <nav
               aria-label="فهرس المقال"

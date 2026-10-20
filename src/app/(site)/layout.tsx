@@ -18,7 +18,7 @@ export default function SiteLayout({ children }: { children: ReactNode }) {
       <Navbar />
       <main
         className="min-h-screen"
-        style={{ paddingTop: "var(--promo-h, 0px)" }}
+        style={{ paddingTop: "var(--promo-space, 0px)" }}
       >
         {children}
       </main>
