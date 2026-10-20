@@ -18,6 +18,8 @@ import {
   newOrderReference,
   trackingQuery,
 } from "@/lib/order-tracking";
+import { checkRateLimit } from "@/lib/rate-limit";
+import { enforceSameOrigin } from "@/lib/csrf";
 
 /**
  * Réservation prioritaire : le client verse un petit acompte (1 $ par
@@ -56,23 +58,18 @@ function databaseDetail(error: unknown): ErrorDetail {
   return { source: "database", status: null, message: errorMessage(error) };
 }
 
-/* Limitation simple par IP : évite qu'une même personne crée des dizaines
- * de factures de 1 $ (le compteur est propre à chaque instance serveur). */
-const attempts = new Map<string, number[]>();
-
-function allowAttempt(ip: string): boolean {
-  const now = Date.now();
-  const windowMs = 10 * 60 * 1000;
-  const max = 8;
-  const list = (attempts.get(ip) ?? []).filter((t) => now - t < windowMs);
-  if (list.length >= max) {
-    attempts.set(ip, list);
-    return false;
-  }
-  list.push(now);
-  attempts.set(ip, list);
-  return true;
-}
+/* Limitation par IP + empreinte UA (cf. src/lib/rate-limit.ts) : évite
+ * qu'une même personne crée des dizaines de factures de 1 $.
+ * Note : sur Vercel serverless, la limite s'applique par instance (la
+ * mémoire n'est pas partagée entre instances) — c'est volontairement
+ * plus permissif que la valeur affichée. */
+const RESERVE_LIMIT = {
+  windowMs: 10 * 60 * 1000,
+  max: 8,
+  // Anti-rafale : bloque les rafales courtes (5 requêtes en 1 s).
+  minIntervalMs: 800,
+  prefix: "reserve",
+} as const;
 
 const reserveSchema = z.object({
   demoSlug: z.string().min(1).max(120),
@@ -84,15 +81,26 @@ const reserveSchema = z.object({
 });
 
 export async function POST(req: Request) {
-  const ip =
-    req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
-    req.headers.get("x-real-ip")?.trim() ||
-    "inconnu";
-  if (!allowAttempt(`reserve:${ip}`)) {
+  // Anti-CSRF : la réservation est déclenchée depuis le site public. On
+  // vérifie l'en-tête `Origin` (renvoyé par les navigateurs pour les
+  // fetch AJAX cross-origin et par les soumissions POST). Les bots
+  // légitimes (curl, Postman) doivent ajouter un en-tête `X-Requested-By`
+  // (cf. lib/csrf.ts) — cela évite les soumissions déclenchées depuis un
+  // site tiers malveillant à l'insu du visiteur.
+  if (!enforceSameOrigin(req)) {
+    return errorResponse("csrf", 403, {
+      source: "input",
+      status: null,
+      message: "Origine non autorisée.",
+    });
+  }
+
+  const decision = checkRateLimit(RESERVE_LIMIT, req);
+  if (!decision.allow) {
     return errorResponse("rate_limited", 429, {
       source: "input",
       status: null,
-      message: "Trop de réservations en peu de temps — réessayez plus tard.",
+      message: `Trop de réservations en peu de temps — réessayez dans ${Math.max(1, decision.retryAfterSec)} s.`,
     });
   }
 

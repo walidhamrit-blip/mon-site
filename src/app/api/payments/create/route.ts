@@ -23,6 +23,18 @@ import {
   trackingAccess,
   trackingQuery,
 } from "@/lib/order-tracking";
+import { checkRateLimit } from "@/lib/rate-limit";
+import { enforceSameOrigin } from "@/lib/csrf";
+
+/* Limite la cadence de création de factures crypto par IP+UA. Bloque
+ * les bots qui tentent de générer des dizaines de liens de paiement
+ * (chaque appel consomme potentiellement du quota NOWPayments). */
+const PAYMENT_LIMIT = {
+  windowMs: 10 * 60 * 1000,
+  max: 6,
+  minIntervalMs: 1500,
+  prefix: "payment",
+} as const;
 
 /**
  * Crée une commande + une facture NOWPayments (page de paiement
@@ -394,6 +406,31 @@ async function createFlexibleOrder(
 }
 
 export async function POST(req: Request) {
+  // Anti-CSRF : la création d'une facture déclenche un paiement crypto
+  // réel chez NOWPayments (coût d'API + éventuellement facturation
+  // échouée côté marchand). On refuse les POST cross-origin non
+  // explicitement autorisés.
+  if (!enforceSameOrigin(req)) {
+    return errorResponse("csrf", 403, {
+      source: "input",
+      status: null,
+      message: "Origine non autorisée.",
+    });
+  }
+
+  const decision = checkRateLimit(PAYMENT_LIMIT, req);
+  if (!decision.allow) {
+    return NextResponse.json(
+      { ok: false, error: "rate_limited", detail: { retryAfterSec: decision.retryAfterSec } },
+      {
+        status: 429,
+        headers: {
+          "Retry-After": String(Math.max(1, decision.retryAfterSec)),
+        },
+      },
+    );
+  }
+
   if (!nowPaymentsConfigured()) {
     return errorResponse("gateway_not_configured", 503, {
       source: "config",

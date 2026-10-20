@@ -13,6 +13,7 @@ import { ensureDemoSeoFields } from "@/lib/ai/seo-generator";
 import { pingAllPublicPages } from "@/lib/indexnow";
 import { sectorSeo } from "@/lib/sectors";
 import { siteConfig } from "@/lib/config";
+import { checkRateLimitHeaders } from "@/lib/rate-limit";
 import {
   contentSchemas,
   leadStatusSchema,
@@ -44,32 +45,21 @@ function dbIssue(error: unknown): string {
 
 /* ---------------- Connexion / déconnexion ---------------- */
 
-const loginAttempts = new Map<string, number[]>();
-
-function allowAttempt(key: string): boolean {
-  const now = Date.now();
-  const windowMs = 15 * 60 * 1000;
-  const max = 10;
-  const list = (loginAttempts.get(key) ?? []).filter((t) => now - t < windowMs);
-  if (list.length >= max) {
-    loginAttempts.set(key, list);
-    return false;
-  }
-  list.push(now);
-  loginAttempts.set(key, list);
-  return true;
-}
+const LOGIN_LIMIT = { windowMs: 15 * 60 * 1000, max: 10, prefix: "login" } as const;
 
 export async function login(
   _prev: ActionResult,
   formData: FormData,
 ): Promise<ActionResult> {
-  const ip =
-    (await headers()).get("x-forwarded-for")?.split(",")[0]?.trim() || "inconnu";
-  if (!allowAttempt(`login:${ip}`)) {
+  // Limite par IP + empreinte UA. Un même attaquant derrière un NAT partagé
+  // n'est pas confondu avec d'autres utilisateurs : la clé composite
+  // (voir src/lib/rate-limit.ts) garde la limite par empreinte UA aussi.
+  const h = await headers();
+  const decision = checkRateLimitHeaders(LOGIN_LIMIT, h);
+  if (!decision.allow) {
     return {
       ok: false,
-      error: "Trop de tentatives. Réessayez dans 15 minutes.",
+      error: `Trop de tentatives. Réessayez dans ${Math.max(1, decision.retryAfterSec)} secondes.`,
     };
   }
 
@@ -86,10 +76,17 @@ export async function login(
 
   const token = await createSessionToken();
   const store = await cookies();
-  store.set(ADMIN_COOKIE, token, {
+  const isProduction = process.env.NODE_ENV === "production";
+  // Préfixe `__Host-` en production : ce préfixe impose `Path=/` et
+  // `Secure`, ce qui empêche un sous-domaine compromis de modifier ce
+  // cookie et empêche son exposition sur un canal HTTP descendant.
+  const cookieName = isProduction ? `__Host-${ADMIN_COOKIE}` : ADMIN_COOKIE;
+  store.set(cookieName, token, {
     httpOnly: true,
+    // `lax` permet au cookie d'accompagner les navigations top-level vers
+    // l'admin ; `strict` casserait les liens directs depuis l'e-mail.
     sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
+    secure: isProduction,
     path: "/",
     maxAge: 7 * 24 * 60 * 60,
   });
@@ -98,8 +95,16 @@ export async function login(
 
 export async function logout(): Promise<void> {
   const store = await cookies();
-  store.delete(ADMIN_COOKIE);
+  // Suppression du cookie utilisé (préfixé `__Host-` en production).
+  for (const name of cookieCandidatesForDelete()) store.delete(name);
   redirect("/admin/login");
+}
+
+// Petit wrapper local pour accéder aux noms de cookie (DRY avec auth.ts).
+function cookieCandidatesForDelete(): string[] {
+  const names = [ADMIN_COOKIE];
+  if (process.env.NODE_ENV === "production") names.unshift(`__Host-${ADMIN_COOKIE}`);
+  return names;
 }
 
 /* ---------------- Demandes (leads) ---------------- */

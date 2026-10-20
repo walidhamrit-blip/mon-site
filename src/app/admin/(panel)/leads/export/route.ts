@@ -3,19 +3,50 @@ import { requireAdmin } from "@/lib/auth";
 import { db, ensureSchema } from "@/db";
 import { leads } from "@/db/schema";
 import { LEAD_STATUS_LABELS, type LeadStatus } from "@/lib/site-types";
+import { checkRateLimit } from "@/lib/rate-limit";
 
 export const dynamic = "force-dynamic";
 
 const BOM = "\uFEFF";
 
 function cell(value: unknown): string {
+  // Échappement CSV conforme RFC 4180 : tout champ entouré de `"` voit
+  // ses guillemets doublés. Les retours à la ligne et le séparateur « ; »
+  // sont neutralisés par les guillemets englobants.
   const s = value == null ? "" : String(value);
   return `"${s.replace(/"/g, '""')}"`;
 }
 
+/* Limite la fréquence de téléchargement des données personnelles (PII :
+ * nom, e-mail, téléphone). Bloque les tentatives d'exfiltration massive
+ * depuis un compte admin compromis. */
+const EXPORT_LIMIT = {
+  windowMs: 60 * 60 * 1000,
+  max: 10,
+  minIntervalMs: 5000,
+  prefix: "leads-export",
+} as const;
+
 /** Exporte toutes les demandes en CSV (séparateur « ; » pour Excel FR). */
-export async function GET() {
+export async function GET(request: Request) {
   await requireAdmin();
+
+  // Rate-limit post-`requireAdmin` : on veut que les administrateurs
+  // légitimes puissent exporter fréquemment, mais qu'un compte admin
+  // compromis ne puisse pas automatiser des téléchargements en masse.
+  const decision = checkRateLimit(EXPORT_LIMIT, request);
+  if (!decision.allow) {
+    return new Response(
+      "Téléchargement trop fréquent. Réessayez dans quelques minutes.",
+      {
+        status: 429,
+        headers: {
+          "Content-Type": "text/plain; charset=utf-8",
+          "Retry-After": String(Math.max(1, decision.retryAfterSec)),
+        },
+      },
+    );
+  }
 
   try {
     await ensureSchema();

@@ -5,8 +5,45 @@ import { leads } from "@/db/schema";
 import { leadInputSchema } from "@/lib/validation";
 import { getSiteData } from "@/lib/store";
 import { leadEmailContext, sendLeadEmails } from "@/lib/lead-emails";
+import { checkRateLimit } from "@/lib/rate-limit";
+import { enforceSameOrigin } from "@/lib/csrf";
+import { isValidWebhookUrl } from "@/lib/webhook-validate";
+
+/* Limite la cadence de soumission du formulaire de contact par IP+UA.
+ * Bloque les bots qui bombardent la base avec des leads factices. */
+const LEAD_LIMIT = {
+  windowMs: 10 * 60 * 1000,
+  max: 5,
+  // Anti-rafale : au moins 3 s entre deux soumissions du même client.
+  minIntervalMs: 3000,
+  prefix: "lead",
+} as const;
 
 export async function POST(req: Request) {
+  // Anti-CSRF : la création de lead déclenche un e-mail et alimente la
+  // base — il est important de vérifier l'Origine (sinon un site tiers
+  // pourrait spammer la base en POSTant vers /api/lead avec le referer
+  // du site Nukhba, ce qui tromperait le webhook tiers éventuel).
+  if (!enforceSameOrigin(req)) {
+    return NextResponse.json(
+      { ok: false, error: "csrf" },
+      { status: 403 },
+    );
+  }
+
+  const decision = checkRateLimit(LEAD_LIMIT, req);
+  if (!decision.allow) {
+    return NextResponse.json(
+      { ok: false, error: "rate_limited" },
+      {
+        status: 429,
+        headers: {
+          "Retry-After": String(Math.max(1, decision.retryAfterSec)),
+        },
+      },
+    );
+  }
+
   let body: unknown;
   try {
     body = await req.json();
@@ -56,19 +93,27 @@ export async function POST(req: Request) {
   }
 
   // Webhook optionnel (Formspree, Make, Zapier…) : WEBHOOK_URL sur Vercel.
-  const webhook = process.env.WEBHOOK_URL;
+  // Validation anti-SSRF : on refuse localhost/RFC1918/loopback pour
+  // éviter qu'un attaquant ayant accès aux variables d'env transforme
+  // le serveur en relais vers des services internes.
+  const webhook = process.env.WEBHOOK_URL?.trim();
   if (webhook) {
-    try {
-      await fetch(webhook, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...data, source: "nukhba-site" }),
-      });
-    } catch (error) {
-      console.warn(
-        "[lead] webhook en échec :",
-        error instanceof Error ? error.message : error,
-      );
+    if (!isValidWebhookUrl(webhook)) {
+      console.warn("[lead] WEBHOOK_URL invalide (protocole/hôte refusé) — ignoré.");
+    } else {
+      try {
+        await fetch(webhook, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ ...data, source: "nukhba-site" }),
+          signal: AbortSignal.timeout(5000),
+        });
+      } catch (error) {
+        console.warn(
+          "[lead] webhook en échec :",
+          error instanceof Error ? error.message : error,
+        );
+      }
     }
   }
 
