@@ -1,4 +1,5 @@
 import { siteConfig } from "@/lib/config";
+import { notifyGoogleSitemap } from "@/lib/google-indexing";
 
 /**
  * IndexNow — notification de contenu nouveau/modifié aux moteurs qui
@@ -83,32 +84,6 @@ export async function notifyIndexNow(
   }
 }
 
-/**
- * Ping Google Sitemap — complète IndexNow.
- * Google ignore IndexNow ; on notifie via  https://www.google.com/ping?sitemap=URL
- * Tolérant aux pannes, production uniquement.
- */
-export async function notifyGoogleSitemap(baseUrl: string = siteConfig.url): Promise<void> {
-  if (!isProductionHost()) return;
-  const origin = baseUrl.replace(/\/+$/, "");
-  const sitemapUrl = `${origin}/sitemap.xml`;
-  try {
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 4000);
-    const res = await fetch(`https://www.google.com/ping?sitemap=${encodeURIComponent(sitemapUrl)}`, {
-      signal: controller.signal,
-    });
-    clearTimeout(timeout);
-    if (!res.ok) {
-      console.warn("[google-ping] réponse non-OK :", res.status);
-    } else {
-      console.log("[google-ping] sitemap notifié :", sitemapUrl);
-    }
-  } catch (error) {
-    console.warn("[google-ping] ping ignoré :", error instanceof Error ? error.message : error);
-  }
-}
-
 /** Ping Bing Sitemap (complément IndexNow, même endpoint Google-like pour Bing). */
 export async function notifyBingSitemap(baseUrl: string = siteConfig.url): Promise<void> {
   if (!isProductionHost()) return;
@@ -142,12 +117,14 @@ export async function pingAllPublicPages(): Promise<void> {
     `${base}/apps`,
     `${base}/products`,
     `${base}/sectors`,
+    `${base}/services`,
     `${base}/pricing`,
     `${base}/contact`,
     `${base}/llms.txt`,
     `${base}/llms-full.txt`,
     `${base}/sitemap.xml`,
     ...sectorUrls,
+    ...config.standaloneServices.map((service) => `${base}/services/${service.id}`),
     ...getAllKnownDemos(content).map((d) => `${base}/demos/${d.slug}`),
   ];
   await Promise.allSettled([

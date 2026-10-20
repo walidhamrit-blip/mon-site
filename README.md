@@ -273,7 +273,13 @@ NOWPayments pour prendre une place en avance dans le planning.
 - `robots.ts` : accès public ouvert, `/api`, `/admin`, `/pay` fermés,
   crawlers IA explicitement autorisés (GPTBot, ClaudeBot, PerplexityBot,
   Google-Extended, CCBot…) ; `sitemap.ts` avec images des réalisations
-- `public/llms.txt` : présentation machine-lisible pour les assistants IA
+- `/llms.txt` et `/llms-full.txt` **dynamiques** (`src/lib/llms-txt.ts`) :
+  résumé et base de connaissances bilingue régénérés par requête depuis la
+  base admin, avec `ETag` pour la revalidation des crawlers IA
+- **Pages services** `/services` et `/services/[service]` : une URL indexable
+  par service à la carte (6 par défaut), avec réponse directe « answer-first »,
+  FAQ bilingue, schéma `Service` + `Offer`, image Open Graph générée et
+  maillage interne vers les secteurs et réalisations
 - `manifest.ts` (PWA), `not-found.tsx` (404 noindex), pages de paiement noindex
 - Les langues sont gérées côté client (pas d'URL /ar /en réelles) : aucun
   hreflang invalide n'est émis ; les redirections /ar et /en restent en place
@@ -294,10 +300,29 @@ NOWPayments pour prendre une place en avance dans le planning.
 - **OG images dynamiques** : `src/app/(site)/demos/[slug]/opengraph-image.tsx`
   génère une image de partage 1200×630 brandée par réalisation avec `next/og`
   (police Cairo TTF vendue dans `src/lib/fonts`, helper `src/lib/og-image.tsx`).
+  Même principe pour chaque page service (`/services/[service]`) et chaque
+  secteur (`/sectors/[sector]`, avec le nombre de réalisations du secteur).
 - **IndexNow** : chaque sauvegarde admin (`src/app/admin/actions.ts`) notifie
   Bing/Yandex via `src/lib/indexnow.ts` (ping uniquement en production, tolérant
   aux pannes). Clé publique dans `public/<clé>.txt`, surcharge possible via
   `INDEXNOW_KEY`.
+- **Google Search Console** : `src/lib/google-indexing.ts` soumet le sitemap à
+  l'API officielle `sitemaps.submit` (le ping historique `google.com/ping` a été
+  supprimé par Google). JWT RS256 signé avec `node:crypto`, sans dépendance.
+  Activation : `GOOGLE_INDEXING_CLIENT_EMAIL` + `GOOGLE_INDEXING_PRIVATE_KEY`
+  (+ éventuellement `GOOGLE_INDEXING_SITE_URL`, `sc-domain:` supporté). Sans
+  configuration, l'appel est ignoré proprement — aucune sauvegarde admin
+  n'échoue. `npm run doctor` affiche l'état de la configuration.
+- **Pages services** : `/services` (hub) et `/services/{restyle, add-section,
+  slides, branding, landing, fix-optimize}` — chaque page porte un `h1`, un
+  résumé `speakable` (`#service-answer`), une FAQ `FAQPage`, un schéma `Service`
+  + `Offer` synchronisé avec les tarifs admin, et une carte OG 1200×630.
+- **GEO Tracker** : `npm run seo:geo` (`scripts/geo-citations.mjs`) interroge
+  ChatGPT Search et Perplexity sur 10 requêtes commerciales AR/EN et mesure le
+  taux de citation de la marque. Exécution hebdomadaire via
+  `.github/workflows/geo-tracker.yml` (lundi 08:00 UTC), rapport JSON en
+  artefact, e-mail optionnel via Resend. Sans clé API, rapport `skipped` sans
+  échec du workflow.
 - Les fiches démos « live » exposent un h1 + une description `sr-only` dans le
   HTML initial (`standalone` de `FullscreenLiveViewer`) car le portail plein
   écran ne se monte qu'après hydratation.

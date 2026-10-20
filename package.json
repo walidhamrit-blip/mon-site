@@ -7,9 +7,10 @@
     "start": "next start",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
-    "test:seo": "node --test scripts/seo-generator.test.mjs scripts/security-headers.test.mjs",
+    "test:seo": "node --test scripts/seo-generator.test.mjs scripts/service-pages.test.mjs scripts/google-indexing.test.mjs scripts/geo-citations.test.mjs scripts/security-headers.test.mjs",
     "doctor": "node scripts/check-setup.mjs",
-    "seo:check": "node scripts/seo-check.mjs"
+    "seo:check": "node scripts/seo-check.mjs",
+    "seo:geo": "node scripts/geo-citations.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.9.1",

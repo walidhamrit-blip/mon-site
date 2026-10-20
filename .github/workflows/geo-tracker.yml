@@ -1,0 +1,39 @@
+name: GEO citations tracker
+
+# Suivi hebdomadaire des citations IA (ChatGPT Search / Perplexity) sur les
+# requêtes commerciales cibles. Le script est tolérant : sans clés API, il
+# écrit un rapport « skipped » et se termine avec succès.
+on:
+  schedule:
+    - cron: "0 8 * * 1" # chaque lundi 08:00 UTC
+  workflow_dispatch:
+
+jobs:
+  track:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Récupération du code
+        uses: actions/checkout@v5
+
+      - name: Installation Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: 22
+
+      - name: Suivi des citations IA
+        run: npm run seo:geo
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          OPENAI_MODEL: ${{ vars.OPENAI_MODEL }}
+          PERPLEXITY_API_KEY: ${{ secrets.PERPLEXITY_API_KEY }}
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          LEAD_NOTIFICATION_EMAIL: ${{ vars.LEAD_NOTIFICATION_EMAIL }}
+
+      - name: Publication du rapport
+        uses: actions/upload-artifact@v4
+        with:
+          name: geo-citations-report
+          path: reports/
+          retention-days: 90

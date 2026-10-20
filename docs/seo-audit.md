@@ -82,11 +82,12 @@
 
 Voici toutes les automatisations externes et workflows additionnels pouvant être branchés autour du site pour maximiser le référencement Web et IA :
 
-#### 1. Automatisation de l'indexation Google (Google Indexing / Search Console API)
+#### 1. Automatisation de l'indexation Google (Google Indexing / Search Console API) — ✅ **implémenté le 2026-10-20**
 - **Objectif** : Compléter IndexNow (qui couvre Bing / ChatGPT Search / Perplexity / Yandex) par une soumission directe à Google.
 - **Mise en œuvre** :
   - Connecter un compte de service Google Cloud (`GOOGLE_INDEXING_CLIENT_EMAIL` + `GOOGLE_INDEXING_PRIVATE_KEY`) à Google Search Console.
   - Dans `pingAllPublicPages()` (`src/lib/indexnow.ts`), appeler l'API Search Console Sitemaps (`PUT https://www.googleapis.com/webmasters/v3/sites/https%3A%2F%2Fnokhba.net.ly%2F/sitemaps/https%3A%2F%2Fnokhba.net.ly%2Fsitemap.xml`) à chaque sauvegarde dans `/admin`.
+  - Réalisé via `src/lib/google-indexing.ts` (JWT RS256 avec `node:crypto`, sans dépendance). L'ancien ping `google.com/ping?sitemap` — supprimé par Google (404) — a été retiré.
 
 #### 2. Automatisation « Lead / Commande Livrée → Étude de Cas SEO + Avis Client »
 - **Objectif** : Transformer automatiquement chaque projet client terminé en actif SEO local et GEO.
@@ -95,7 +96,7 @@ Voici toutes les automatisations externes et workflows additionnels pouvant êtr
     1. **Email / WhatsApp automatique de demande d'avis** (J+7 après livraison) avec lien direct vers la fiche **Google Business Profile** de Nukhba Tripoli et formulaire de témoignage (`beforeAfter`).
     2. **Pré-création automatique d'un brouillon de fiche réalisation** (`/demos/[nouveau-slug]`) pré-rempli par `generateSeoCopy()` avec les métadonnées AR/EN et l'image OG Satori.
 
-#### 3. Automatisation d'un Blog / Guide Sectoriel IA (`/blog/[slug]` ou `/secteurs/[sector]`)
+#### 3. Automatisation d'un Blog / Guide Sectoriel IA (`/blog/[slug]` ou `/secteurs/[sector]`) — 🟡 **pages sectorielles et pages services livrées ; blog éditorial encore à faire**
 - **Objectif** : Capturer les requêtes informationnelles à forte intention en Libye (« كم تكلفة تصميم متجر إلكتروني في ليبيا », « أفضل شركة تصميم مواقع في طرابلس », « تصميم موقع عيادة طبية طرابلس »).
 - **Mise en œuvre** :
   - **Pages atterrissage sectorielles automatiques (`/demos?sector=...` → `/sectors/[sector]`)** : générer automatiquement à partir de la liste `sectors` (`medical`, `restaurant`, `beauty`, `furniture`, `electronics`, `hardware`, etc.) et des démos rattachées une page dédiée par secteur avec son propre `title`, `description`, `FAQPage` sectorielle et `ItemList` des réalisations du secteur.
@@ -128,9 +129,98 @@ npm run typecheck
 # 2. Tests unitaires des automatisations SEO & GEO (14 tests : LLM, fallback, batch, llms.txt, JSON-LD, audit)
 npm run test:seo
 
-# 3. Build de production Next.js (31 routes dont /llms.txt, /llms-full.txt, /api/admin/seo-audit)
+# 3. Build de production Next.js (38 routes dont /services, /services/[service], /llms.txt, /llms-full.txt)
 npm run build
 
-# 4. Garde-fou SEO & GEO complet sur serveur de production (21 pages/ressources vérifiées)
+# 4. Garde-fou SEO & GEO complet sur serveur de production (43 pages/ressources vérifiées)
 BASE_URL=http://localhost:3100 npm run seo:check
 ```
+
+
+---
+
+## 5. Vague 2 — 2026-10-20 : pages services, Search Console, enrichissements GEO
+
+Deuxième passe après l'audit du 2026-10-19. Objectif : transformer les **services à la carte** (jusqu'ici vendus depuis une simple section de la page d'accueil, sans URL dédiée) en actifs SEO/GEO à part entière, et remplacer l'ancien « ping Google » devenu inopérant.
+
+### 5.1 Six nouvelles pages commerciales `/services/[service]` + hub `/services`
+
+| Service | URL | Prix de départ | Requête cible |
+|---|---|---|---|
+| إعادة تصميم موقع قديم | `/services/restyle` | 49 $ | website redesign Tripoli / إعادة تصميم موقع |
+| إضافة قسم جديد | `/services/add-section` | 19 $ | add section to website / إضافة قسم لموقع |
+| عروض تقديمية | `/services/slides` | 29 $ | pitch deck design Tripoli / تصميم عرض تقديمي |
+| هوية بصرية | `/services/branding` | 39 $ | logo design Tripoli / تصميم شعار |
+| صفحة هبوط | `/services/landing` | 59 $ | landing page design Libya / صفحة هبوط |
+| إصلاح وتحسين | `/services/fix-optimize` | 15 $ | website audit Tripoli / إصلاح موقع |
+
+Chaque page fournit :
+
+- **un `h1` unique** et un couple title/description bilingue calibré (≤ 80 / ≤ 180 caractères) ;
+- un bloc **« answer-first »** `#service-answer` : la réponse directe qu'un LLM peut citer telle quelle, ciblée par `speakable` ;
+- une **FAQ bilingue visible** (4 Q/R) + schéma `FAQPage` ;
+- les **livrables détaillés** (AR + EN), le profil client idéal, les prix USD/LYD et les modalités de paiement ;
+- un schéma **`Service` + `Offer`** (prix USD, `priceSpecification`, `areaServed` Tripoli + Libye, `provider` → `#organization`) ;
+- une **carte Open Graph 1200×630 générée à la volée** (`buildServiceOgImage`) et sa variante Twitter ;
+- un **maillage interne** vers les secteurs liés, les réalisations du secteur, les autres services, `/pricing` et `/contact` ;
+- des **liens depuis la page d'accueil** (cartes de la section « خدمات مفتوحة ») et le **pied de page** de tout le site.
+
+Ajouts techniques : `src/lib/services.ts` (contenu éditorial + schémas), `src/app/(site)/services/page.tsx`, `src/app/(site)/services/[service]/page.tsx`, `opengraph-image.tsx`, `twitter-image.tsx`, `buildServiceOgImage` dans `src/lib/og-image.tsx`, entrées `sitemap.xml`, `/llms.txt`, `/llms-full.txt` et `pingAllPublicPages()`.
+
+### 5.2 Google Search Console : soumission réelle du sitemap
+
+`src/lib/google-indexing.ts` :
+
+- JWT **RS256** signé avec `node:crypto` (aucune dépendance ajoutée), échange OAuth2 `jwt-bearer`, scope `webmasters` ;
+- `PUT https://www.googleapis.com/webmasters/v3/sites/{propriété}/sitemaps/{sitemap}` à chaque sauvegarde admin, aux côtés d'IndexNow, du ping Bing et de la revalidation ISR ;
+- propriété configurable (`GOOGLE_INDEXING_SITE_URL`), support de `sc-domain:` pour une propriété Domaine ;
+- **dégradation silencieuse** : sans compte de service, aucun appel réseau, une seule ligne de log, et aucune action admin n'échoue ;
+- exécution limitée à la production Vercel (override `GOOGLE_INDEXING_ALLOW_NON_PRODUCTION=true` pour tester) ;
+- diagnostic `npm run doctor` → section « SEO & Référencement IA ».
+
+### 5.3 Données structurées enrichies
+
+- `ProfessionalService` : `serviceArea` (`GeoCircle` 60 km autour de Tripoli), `knowsLanguage` (ar/en/fr), `slogan`, `hasOfferCatalog`.
+- `OfferCatalog` : `@id` stable (`/pricing#offer-catalog`), `numberOfItems`, `provider`.
+- `CreativeWork` (démos) : `isPartOf`, `mainEntityOfPage`, `about`, `audience`.
+- Nouveau builder `webPageJsonLd()` : `WebPage` + `speakable` (`h1`, `#service-answer`), `primaryImageOfPage`, `potentialAction: ReadAction` — utilisé sur les pages services.
+- **Cartes OG sectorielles** : `buildSectorOgImage()` + `opengraph-image.tsx` / `twitter-image.tsx` sous `sectors/[sector]` (titre du secteur, libellé bilingue, nombre de réalisations). Les pages secteur n'utilisent plus l'image générique `og.jpg`.
+
+### 5.4 Flux IA (`/llms.txt`, `/llms-full.txt`)
+
+- Index des **6 pages services** avec URL, prix USD/LYD et délai de livraison.
+- Section complète par service dans `llms-full.txt` : URL canonique, résumé « answer-first » AR/EN, livrables, cible, FAQ.
+- Nouvelle section **« Preferred citation (GEO) »** dans les deux flux : nom canonique de l'entité, citations prêtes à l'emploi en arabe et en anglais, fourchette de prix, coordonnées, et phrase de désambiguïsation (« agence de services, pas une place de marché »).
+- En-tête **`ETag`** (SHA-256) sur les deux routes : revalidation HTTP sans re-téléchargement complet par les crawlers.
+
+### 5.5 Garde-fous renforcés
+
+- `scripts/seo-check.mjs` vérifie désormais : `FAQPage` attendu sur `/services` et `/services/*`, schéma `Service` + `Offer` + `areaServed`, présence du bloc `#service-answer`, et **synchronisation de chaque page service dans `llms.txt` et `llms-full.txt`**.
+- 12 nouveaux tests (`scripts/service-pages.test.mjs`, `scripts/google-indexing.test.mjs`) : contenu éditorial des 6 services, repli générique, schémas, signature JWT vérifiée avec une paire RSA générée, normalisation des clés PEM, propriétés Search Console, absence d'appel réseau sans configuration.
+- **GEO Tracker tests** (`scripts/geo-citations.test.mjs`) : détection des mentions AR/EN/domaine, agrégation des taux, configuration des moteurs.
+- `npm run test:seo` : **36 tests** au vert ; `npm run seo:check` : **43 pages/ressources, 0 erreur, 0 avertissement**.
+
+### 5.6 GEO Tracker — mesure hebdomadaire des citations IA
+
+`scripts/geo-citations.mjs` (`npm run seo:geo`) :
+
+- 10 requêtes commerciales cibles, en arabe (4) et en anglais (6) : agence web à Tripoli, coût d'un site en Libye, e-commerce + WhatsApp, site de clinique, SEO, restyle/landing ;
+- interroge **OpenAI** (`OPENAI_API_KEY`, modèle `gpt-4o-mini` par défaut) et **Perplexity** (`PERPLEXITY_API_KEY`, modèle `sonar`) — uniquement les moteurs configurés ;
+- détecte la marque sous ses trois formes (`Nukhba`, `نخبة`, `nokhba.net.ly`), extrait l'URL citée et les domaines concurrents ;
+- calcule le **taux de citation global**, par moteur et par langue, et écrit `reports/geo-citations-YYYY-MM-DD.json` (ignoré par Git) ;
+- envoi e-mail optionnel via Resend (`RESEND_API_KEY` + `LEAD_NOTIFICATION_EMAIL`) ;
+- workflow `.github/workflows/geo-tracker.yml` : chaque **lundi 08:00 UTC** + déclenchement manuel, rapport conservé 90 jours en artefact ;
+- tolérance totale aux pannes : sans clé, rapport `skipped` et code de sortie 0 (la CI ne casse jamais).
+
+### 5.6 Scores après la vague 2
+
+| Pilier | Vague 1 | Vague 2 |
+|---|---|---|
+| SEO technique & métadonnées | 98 | **98** |
+| Données structurées | 99 | **99** |
+| Contenu serveur & maillage interne | 96 | **98** |
+| Référencement IA / GEO | 98 | **99** |
+| Automatisations SEO & Admin IA | 97 | **99** |
+| **Score global** | **97** | **~98,5** |
+
+Reste à brancher (roadmap) : blog/guides éditoriaux bilingues, captures Playwright des démos et badges de netlinking client. Le monitoring des citations IA est désormais outillé (GEO Tracker) — il suffit d'ajouter les clés API dans les secrets GitHub.

@@ -138,7 +138,12 @@ function checkPage(pathname, html) {
 
   const schemaTypes = new Set(parsedSchemas.map((s) => s && s["@type"]).filter(Boolean));
   const hasFaqSchema = schemaTypes.has("FAQPage");
-  const isFaqExpected = page === "/" || page === "/pricing" || page.startsWith("/sectors/");
+  const isFaqExpected =
+    page === "/" ||
+    page === "/pricing" ||
+    page === "/services" ||
+    page.startsWith("/sectors/") ||
+    page.startsWith("/services/");
   if (isFaqExpected) {
     if (!hasFaqSchema) {
       record(page, "error", "schéma FAQPage attendu sur cette page mais absent");
@@ -158,6 +163,28 @@ function checkPage(pathname, html) {
     }
     if (!Array.isArray(proService.review) || proService.review.length === 0) {
       record(page, "error", "ProfessionalService sans avis structurés (review)");
+    }
+  }
+
+  if (page.startsWith("/services/") && page !== "/services") {
+    const serviceSchema = parsedSchemas.find((s) => s && s["@type"] === "Service");
+    if (!serviceSchema) {
+      record(page, "error", "schéma Service absent sur la page service");
+    } else {
+      if (!serviceSchema.offers || serviceSchema.offers["@type"] !== "Offer") {
+        record(page, "error", "schéma Service sans bloc Offer tarifaire");
+      }
+      if (!Array.isArray(serviceSchema.areaServed) || serviceSchema.areaServed.length === 0) {
+        record(page, "warn", "schéma Service sans zone desservie (areaServed)");
+      }
+      if (!serviceSchema.provider) {
+        record(page, "warn", "schéma Service sans fournisseur (provider)");
+      }
+    }
+    // Réponse directe « answer-first » : bloc lisible par les assistants IA
+    // et ciblé par le `speakable` de la page.
+    if (!/id=["']service-answer["']/i.test(html)) {
+      record(page, "warn", "bloc de réponse directe #service-answer absent");
     }
   }
 
@@ -276,12 +303,15 @@ async function main() {
   const llmsBody = resourceBodies.get("/llms.txt") || "";
   const llmsFullBody = resourceBodies.get("/llms-full.txt") || "";
   for (const pathname of paths) {
-    if (pathname.startsWith("/demos/") && pathname !== "/demos") {
+    const mustBeInLlms =
+      (pathname.startsWith("/demos/") && pathname !== "/demos") ||
+      (pathname.startsWith("/services/") && pathname !== "/services");
+    if (mustBeInLlms) {
       if (!llmsBody.includes(pathname)) {
-        record("/llms.txt", "error", `réalisation ${pathname} absente de /llms.txt`);
+        record("/llms.txt", "error", `page ${pathname} absente de /llms.txt`);
       }
       if (!llmsFullBody.includes(pathname)) {
-        record("/llms-full.txt", "error", `réalisation ${pathname} absente de /llms-full.txt`);
+        record("/llms-full.txt", "error", `page ${pathname} absente de /llms-full.txt`);
       }
     }
   }

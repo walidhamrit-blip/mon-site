@@ -26,6 +26,8 @@ export async function generateMetadata({
     path: `/sectors/${sector.id}`,
     title: sector.titleAr,
     description: sector.descriptionAr,
+    // opengraph-image.tsx génère une carte 1200×630 propre au secteur.
+    image: false,
     keywords: [...sector.keywordsAr, ...sector.keywordsEn, sector.labelAr, sector.labelEn],
   });
 }

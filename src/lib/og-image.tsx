@@ -1,6 +1,8 @@
 import { readFile } from "node:fs/promises";
 import { ImageResponse } from "next/og";
 import type { Demo } from "@/lib/site-types";
+import type { ServiceLandingContent, ServiceLike } from "@/lib/services";
+import type { SectorSeo } from "@/lib/sectors";
 
 /**
  * Génération des images Open Graph / Twitter (1200×630) à la volée avec
@@ -141,6 +143,254 @@ export async function buildDemoOgImage(demo: Demo, config: OgConfig) {
           }}
         >
           <span style={{ opacity: 0.85 }}>معرض حي قابل للتخصيص — Live Demo</span>
+          <span dir="ltr" style={{ color: "#D4B978", fontWeight: 700 }}>
+            {domain}
+          </span>
+        </div>
+      </div>
+    ),
+    { ...OG_SIZE, fonts },
+  );
+}
+
+/** Carte de partage d'une page service (/services/[service]). */
+export async function buildServiceOgImage(
+  service: ServiceLike,
+  landing: ServiceLandingContent,
+  config: OgConfig,
+) {
+  const fonts = await loadFonts();
+  const domain = new URL(config.url).host;
+
+  return new ImageResponse(
+    (
+      <div
+        dir="rtl"
+        style={{
+          width: "100%",
+          height: "100%",
+          display: "flex",
+          flexDirection: "column",
+          justifyContent: "space-between",
+          padding: "64px",
+          background:
+            "radial-gradient(circle at 85% 12%, rgba(198,166,100,0.24), transparent 45%), linear-gradient(135deg, #0C0C0F 0%, #17131D 100%)",
+          color: "#F5F3EE",
+          fontFamily: "Cairo",
+          position: "relative",
+        }}
+      >
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "18px" }}>
+            <div
+              style={{
+                width: "60px",
+                height: "60px",
+                borderRadius: "50%",
+                background: "#C6A664",
+                color: "#0C0C0F",
+                fontSize: "34px",
+                fontWeight: 700,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              ن
+            </div>
+            <div style={{ display: "flex", flexDirection: "column" }}>
+              <span style={{ fontSize: "28px", fontWeight: 700 }}>
+                {config.nameAr} {config.name}
+              </span>
+              <span style={{ fontSize: "18px", opacity: 0.6, marginTop: "2px" }}>
+                خدمات رقمية — طرابلس، ليبيا
+              </span>
+            </div>
+          </div>
+          <div
+            dir="ltr"
+            style={{
+              display: "flex",
+              border: "1px solid rgba(198,166,100,0.55)",
+              background: "rgba(198,166,100,0.12)",
+              color: "#D4B978",
+              borderRadius: "999px",
+              padding: "10px 22px",
+              fontSize: "20px",
+              fontWeight: 700,
+            }}
+          >
+            from ${service.priceFromUsd}
+          </div>
+        </div>
+
+        <div style={{ display: "flex", flexDirection: "column", gap: "18px" }}>
+          <div
+            style={{
+              alignSelf: "flex-start",
+              display: "flex",
+              borderRadius: "999px",
+              background: "rgba(245,243,238,0.10)",
+              border: "1px solid rgba(245,243,238,0.16)",
+              padding: "8px 20px",
+              fontSize: "18px",
+              opacity: 0.85,
+            }}
+          >
+            {landing.deliveryAr}
+          </div>
+          <div
+            style={{
+              fontSize: "50px",
+              fontWeight: 700,
+              lineHeight: 1.28,
+              maxWidth: "1040px",
+            }}
+          >
+            {clamp(landing.h1Ar, 64)}
+          </div>
+          <div
+            dir="ltr"
+            style={{
+              alignSelf: "flex-start",
+              fontSize: "22px",
+              opacity: 0.62,
+              maxWidth: "1040px",
+              textAlign: "left",
+            }}
+          >
+            {clamp(service.titleEn, 95)}
+          </div>
+        </div>
+
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            borderTop: "1px solid rgba(245,243,238,0.14)",
+            paddingTop: "22px",
+            fontSize: "20px",
+          }}
+        >
+          <span style={{ opacity: 0.85 }}>خدمة سريعة بأسعار معلنة — Open service</span>
+          <span dir="ltr" style={{ color: "#D4B978", fontWeight: 700 }}>
+            {domain}
+          </span>
+        </div>
+      </div>
+    ),
+    { ...OG_SIZE, fonts },
+  );
+}
+
+/** Carte de partage d'une page secteur (/sectors/[sector]). */
+export async function buildSectorOgImage(
+  sector: SectorSeo,
+  config: OgConfig,
+  demoCount: number,
+) {
+  const fonts = await loadFonts();
+  const domain = new URL(config.url).host;
+
+  return new ImageResponse(
+    (
+      <div
+        dir="rtl"
+        style={{
+          width: "100%",
+          height: "100%",
+          display: "flex",
+          flexDirection: "column",
+          justifyContent: "space-between",
+          padding: "64px",
+          background:
+            "radial-gradient(circle at 12% 88%, rgba(198,166,100,0.20), transparent 42%), linear-gradient(140deg, #0B0B0E 0%, #1A1512 100%)",
+          color: "#F5F3EE",
+          fontFamily: "Cairo",
+          position: "relative",
+        }}
+      >
+        <div style={{ display: "flex", alignItems: "center", gap: "18px" }}>
+          <div
+            style={{
+              width: "60px",
+              height: "60px",
+              borderRadius: "50%",
+              background: "#C6A664",
+              color: "#0C0C0F",
+              fontSize: "34px",
+              fontWeight: 700,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            ن
+          </div>
+          <div style={{ display: "flex", flexDirection: "column" }}>
+            <span style={{ fontSize: "28px", fontWeight: 700 }}>
+              {config.nameAr} {config.name}
+            </span>
+            <span style={{ fontSize: "18px", opacity: 0.6, marginTop: "2px" }}>
+              وكالة تصميم مواقع — طرابلس، ليبيا
+            </span>
+          </div>
+        </div>
+
+        <div style={{ display: "flex", flexDirection: "column", gap: "18px" }}>
+          <div
+            style={{
+              alignSelf: "flex-start",
+              display: "flex",
+              border: "1px solid rgba(198,166,100,0.55)",
+              background: "rgba(198,166,100,0.12)",
+              color: "#D4B978",
+              borderRadius: "999px",
+              padding: "9px 22px",
+              fontSize: "20px",
+              fontWeight: 700,
+            }}
+          >
+            {sector.labelAr} · {sector.labelEn}
+          </div>
+          <div
+            style={{
+              fontSize: "50px",
+              fontWeight: 700,
+              lineHeight: 1.28,
+              maxWidth: "1040px",
+            }}
+          >
+            {clamp(sector.h1Ar, 62)}
+          </div>
+          <div
+            dir="ltr"
+            style={{
+              alignSelf: "flex-start",
+              fontSize: "22px",
+              opacity: 0.62,
+              maxWidth: "1040px",
+              textAlign: "left",
+            }}
+          >
+            {clamp(sector.titleEn, 100)}
+          </div>
+        </div>
+
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            borderTop: "1px solid rgba(245,243,238,0.14)",
+            paddingTop: "22px",
+            fontSize: "20px",
+          }}
+        >
+          <span style={{ opacity: 0.85 }}>
+            {demoCount} مشروع حي · Live showcases
+          </span>
           <span dir="ltr" style={{ color: "#D4B978", fontWeight: 700 }}>
             {domain}
           </span>
