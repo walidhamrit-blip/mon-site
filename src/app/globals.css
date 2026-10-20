@@ -230,29 +230,71 @@ body {
 }
 
 /* ── Bandeau promotionnel (solde + coupon) ──────────────────────────────
-   Très fin, une seule ligne défilante, pause au survol. Sa hauteur est
-   publiée dans `--promo-h` : la navbar et le contenu se décalent d'autant,
-   donc le bandeau ne recouvre jamais la page. */
+   Plus grand et plus visible qu'un simple filet : dégradé doré animé
+   (accordé aux palettes du thème), reflet qui balaie la ligne, pastille
+   « PROMO » et coupon copiable. Sa hauteur est publiée dans `--promo-h` :
+   la navbar et le contenu se décalent d'autant, donc le bandeau ne
+   recouvre jamais la page. */
 :root {
-  --promo-h: 34px;
+  --promo-h: 52px;
 }
 
 .promo-banner {
-  background: var(--primary);
-  color: var(--primary-foreground);
-  border-bottom: 1px solid color-mix(in srgb, var(--accent) 45%, transparent);
+  position: relative;
+  overflow: hidden;
+  color: #17110A;
+  border-bottom: 1px solid color-mix(in srgb, var(--accent) 60%, black);
+  background:
+    linear-gradient(105deg,
+      color-mix(in srgb, var(--accent) 92%, black) 0%,
+      #F3D98A 22%,
+      color-mix(in srgb, var(--accent) 85%, white) 42%,
+      #EFC664 62%,
+      color-mix(in srgb, var(--accent) 90%, black) 85%,
+      #F3D98A 100%);
+  background-size: 260% 100%;
+  animation: promo-flow 14s ease-in-out infinite;
+  box-shadow: inset 0 -1px 0 color-mix(in srgb, black 12%, transparent),
+    0 6px 18px color-mix(in srgb, var(--accent) 28%, transparent);
+}
+
+/* Reflet lumineux qui traverse le bandeau. */
+.promo-banner::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(100deg,
+    transparent 20%,
+    rgba(255, 255, 255, 0.55) 48%,
+    rgba(255, 255, 255, 0.1) 60%,
+    transparent 80%);
+  background-size: 220% 100%;
+  animation: promo-shine 7s ease-in-out infinite;
+  mix-blend-mode: soft-light;
+}
+
+.promo-badge {
+  background: #17110A;
+  color: #F6E4AE;
 }
 
 .promo-coupon {
-  color: var(--accent);
+  background: rgba(255, 255, 255, 0.92);
+  color: #17110A;
+  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.12);
+}
+.promo-coupon:hover {
+  background: #17110A;
+  color: #F6E4AE;
 }
 
 .promo-window {
-  mask-image: linear-gradient(to right, transparent, black 4%, black 96%, transparent);
+  mask-image: linear-gradient(to right, transparent, black 3%, black 97%, transparent);
 }
 
 .promo-track {
-  animation: promo-scroll 32s linear infinite;
+  animation: promo-scroll 34s linear infinite;
 }
 
 .promo-banner[dir="rtl"] .promo-track {
@@ -274,7 +316,24 @@ body {
   to { transform: translateX(50%); }
 }
 
+@keyframes promo-flow {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+
+@keyframes promo-shine {
+  0%, 35% { background-position: 120% 50%; }
+  75%, 100% { background-position: -40% 50%; }
+}
+
 @media (prefers-reduced-motion: reduce) {
+  .promo-banner,
+  .promo-banner::after {
+    animation: none;
+  }
+  .promo-banner::after {
+    display: none;
+  }
   .promo-track {
     animation: none;
     width: 100%;
