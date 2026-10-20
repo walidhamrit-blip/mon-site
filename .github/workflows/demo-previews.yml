@@ -3,7 +3,8 @@ name: Demo previews
 # Captures d'écran automatiques des démos (desktop + mobile) et surveillance
 # de disponibilité des sites clients.
 #
-# - chaque lundi 07:00 UTC + déclenchement manuel ;
+# - chaque lundi 07:00 UTC, à chaque changement du pipeline ou des démos sur
+#   main, et déclenchement manuel ;
 # - Playwright + Sharp capturent les 12+ `previewUrl` en WebP ;
 # - les fichiers modifiés sont proposés dans une pull request dédiée ;
 # - un site de démo hors ligne ouvre (ou met à jour) une issue « Démos hors ligne ».
@@ -14,6 +15,15 @@ name: Demo previews
 on:
   schedule:
     - cron: "0 7 * * 1"
+  # Première exécution immédiate dès que le pipeline lui-même ou la liste des
+  # démos change sur main : pas besoin d'attendre le lundi suivant, et pas
+  # besoin de `workflow_dispatch` (souvent bloqué selon le jeton).
+  push:
+    branches: [main]
+    paths:
+      - "scripts/capture-previews.mjs"
+      - "src/lib/content.ts"
+      - ".github/workflows/demo-previews.yml"
   workflow_dispatch:
     inputs:
       only:

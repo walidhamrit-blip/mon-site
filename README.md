@@ -348,7 +348,8 @@ NOWPayments pour prendre une place en avance dans le planning.
   `thumbnailUrl`), avec `?v=<empreinte>` pour invalider le cache sans renommer
   les fichiers. Une démo hors ligne conserve sa dernière capture (entrée
   `down`) au lieu de casser la page. Exécution hebdomadaire via
-  `.github/workflows/demo-previews.yml` (lundi 07:00 UTC), pull request
+  `.github/workflows/demo-previews.yml` (lundi 07:00 UTC, et à chaque
+  changement du pipeline ou des démos sur `main`), pull request
   automatique si des visuels changent, issue `demo-preview` si un site client
   ne répond plus. `--dry-run`, `--force`, `--only=`, `--base=`, `--prune`,
   `--concurrency=`, `--max-age-days=` (codes de sortie 0/1/3/4 documentés dans
@@ -364,9 +365,10 @@ NOWPayments pour prendre une place en avance dans le planning.
   le HTML de chaque site client (racine, puis `/ar` et `/en`), distingue
   dofollow / nofollow / manquant / hors ligne, et n'écrit
   `public/badge/clients.json` que lorsqu'un statut change. Exécution
-  hebdomadaire via `.github/workflows/badge-audit.yml` (lundi 07:30 UTC), avec
-  ouverture/fermeture automatique d'une issue `badge-client` listant les sites
-  à corriger. Aucune clé requise.
+  hebdomadaire via `.github/workflows/badge-audit.yml` (lundi 07:30 UTC, et à
+  chaque changement de l'audit ou des démos sur `main`) : pull request
+  `chore(badge)` quand un statut change, et issue `badge-client` ouverte puis
+  fermée automatiquement selon l'état du parc. Aucune clé requise.
 - Les fiches démos « live » exposent un h1 + une description `sr-only` dans le
   HTML initial (`standalone` de `FullscreenLiveViewer`) car le portail plein
   écran ne se monte qu'après hydratation.

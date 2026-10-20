@@ -92,11 +92,14 @@ de page par langue. Il ignore les imitations de domaine (`nokhba.net.ly.exemple.
 
 ## 5. Automatisation
 
-`.github/workflows/badge-audit.yml` s'exécute **chaque lundi à 07:30 UTC** :
+`.github/workflows/badge-audit.yml` s'exécute **chaque lundi à 07:30 UTC**, à
+chaque modification de l'audit ou de la liste des démos sur `main`, et à la
+demande (`workflow_dispatch`) :
 
 1. audit des 12+ sites clients ;
-2. commit de `public/badge/clients.json` si un statut change (la page `/badge` et
-   `llms-full.txt` §7f suivent automatiquement) ;
+2. pull request `chore(badge)` si un statut change — `public/badge/clients.json`
+   alimente alors `/badge` et `llms-full.txt` §7f. Ce passage par une PR évite
+   les échecs si `main` est protégée et laisse une trace lisible ;
 3. ouverture — ou mise à jour — d'une issue `badge-client` listant les sites à
    corriger, avec l'extrait prêt à coller ;
 4. fermeture automatique de cette issue quand plus aucun site n'est en
