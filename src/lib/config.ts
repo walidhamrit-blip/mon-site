@@ -9,8 +9,8 @@ export const siteConfig = {
   whatsapp: "218912345678", // sans +
   address: "شارع الجمهورية، طرابلس، ليبيا",
   addressEn: "Al Jumhouriya Street, Tripoli, Libya",
-  hours: "السبت - الخميس: 9:00 - 18:00",
-  hoursEn: "Sat - Thu: 9:00 AM - 6:00 PM",
+  hours: "السبت - الخميس: 9:00 - 23:00",
+  hoursEn: "Sat - Thu: 9:00 AM - 11:00 PM",
 
   // Apparence principale du site — modifiable depuis /admin → Réglages.
   // Ce sont les valeurs par DÉFAUT : chaque visiteur peut toujours basculer

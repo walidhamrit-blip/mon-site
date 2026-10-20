@@ -30,6 +30,8 @@ export interface ChatContext {
   currencyEn: string;
   whatsappHref: string;
   reservationUsd: number;
+  /** Horaires affichés dans la langue courante (source : réglages du site). */
+  hours: string;
 }
 
 /** Question de départ proposées à l'ouverture. */
@@ -198,8 +200,8 @@ export function buildChatNodes(ctx: ChatContext): Record<string, ChatNode> {
       id: "human",
       label: ar ? "أريد التحدث مع إنسان" : "Talk to a human",
       answer: ar
-        ? "بكل سرور — راسلنا على واتساب وسنرد خلال دقائق (السبت–الخميس، 9:00–18:00).\nيمكنك أيضًا إرسال طلب عرض سعر من صفحة «اتصل بنا»."
-        : "Of course — message us on WhatsApp and we reply within minutes (Sat–Thu, 9:00–18:00).\nYou can also request a quote from the contact page.",
+        ? `بكل سرور — راسلنا على واتساب وسنرد خلال دقائق (${ctx.hours}).\nيمكنك أيضًا إرسال طلب عرض سعر من صفحة «اتصل بنا».`
+        : `Of course — message us on WhatsApp and we reply within minutes (${ctx.hours}).\nYou can also request a quote from the contact page.`,
       followUps: ["prices", "reservation", "delivery"],
       keywords: ["إنسان", "human", "واتساب", "whatsapp", "contact", "تواصل"],
       action: {
