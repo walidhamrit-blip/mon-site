@@ -142,8 +142,10 @@ function checkPage(pathname, html) {
     page === "/" ||
     page === "/pricing" ||
     page === "/services" ||
+    page === "/blog" ||
     page.startsWith("/sectors/") ||
-    page.startsWith("/services/");
+    page.startsWith("/services/") ||
+    page.startsWith("/blog/");
   if (isFaqExpected) {
     if (!hasFaqSchema) {
       record(page, "error", "schéma FAQPage attendu sur cette page mais absent");
@@ -163,6 +165,33 @@ function checkPage(pathname, html) {
     }
     if (!Array.isArray(proService.review) || proService.review.length === 0) {
       record(page, "error", "ProfessionalService sans avis structurés (review)");
+    }
+  }
+
+  if (page.startsWith("/blog/") && page !== "/blog") {
+    const post = parsedSchemas.find((s) => s && s["@type"] === "BlogPosting");
+    if (!post) {
+      record(page, "error", "schéma BlogPosting absent sur l'article");
+    } else {
+      if (!post.datePublished || !post.dateModified) {
+        record(page, "error", "BlogPosting sans datePublished / dateModified");
+      }
+      if (!post.author || !post.publisher) {
+        record(page, "error", "BlogPosting sans author / publisher");
+      }
+      if (!post.headline || post.headline.length < 20) {
+        record(page, "warn", "BlogPosting avec headline trop courte");
+      }
+      if (!post.speakable) {
+        record(page, "warn", "BlogPosting sans bloc speakable");
+      }
+    }
+    if (!/id=["']article-answer["']/i.test(html)) {
+      record(page, "error", "bloc de réponse directe #article-answer absent");
+    }
+    // Maillage interne : au moins un lien vers /services/* ou /sectors/*
+    if (!/href=["']\/services\//i.test(html) && !/href=["']\/sectors\//i.test(html)) {
+      record(page, "warn", "article sans lien de maillage vers /services ou /sectors");
     }
   }
 
@@ -305,7 +334,8 @@ async function main() {
   for (const pathname of paths) {
     const mustBeInLlms =
       (pathname.startsWith("/demos/") && pathname !== "/demos") ||
-      (pathname.startsWith("/services/") && pathname !== "/services");
+      (pathname.startsWith("/services/") && pathname !== "/services") ||
+      (pathname.startsWith("/blog/") && pathname !== "/blog");
     if (mustBeInLlms) {
       if (!llmsBody.includes(pathname)) {
         record("/llms.txt", "error", `page ${pathname} absente de /llms.txt`);

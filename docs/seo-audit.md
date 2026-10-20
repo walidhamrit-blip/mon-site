@@ -96,7 +96,7 @@ Voici toutes les automatisations externes et workflows additionnels pouvant êtr
     1. **Email / WhatsApp automatique de demande d'avis** (J+7 après livraison) avec lien direct vers la fiche **Google Business Profile** de Nukhba Tripoli et formulaire de témoignage (`beforeAfter`).
     2. **Pré-création automatique d'un brouillon de fiche réalisation** (`/demos/[nouveau-slug]`) pré-rempli par `generateSeoCopy()` avec les métadonnées AR/EN et l'image OG Satori.
 
-#### 3. Automatisation d'un Blog / Guide Sectoriel IA (`/blog/[slug]` ou `/secteurs/[sector]`) — 🟡 **pages sectorielles et pages services livrées ; blog éditorial encore à faire**
+#### 3. Automatisation d'un Blog / Guide Sectoriel IA (`/blog/[slug]` ou `/secteurs/[sector]`) — ✅ **livré le 2026-10-20** (pages sectorielles, pages services et blog bilingue)
 - **Objectif** : Capturer les requêtes informationnelles à forte intention en Libye (« كم تكلفة تصميم متجر إلكتروني في ليبيا », « أفضل شركة تصميم مواقع في طرابلس », « تصميم موقع عيادة طبية طرابلس »).
 - **Mise en œuvre** :
   - **Pages atterrissage sectorielles automatiques (`/demos?sector=...` → `/sectors/[sector]`)** : générer automatiquement à partir de la liste `sectors` (`medical`, `restaurant`, `beauty`, `furniture`, `electronics`, `hardware`, etc.) et des démos rattachées une page dédiée par secteur avec son propre `title`, `description`, `FAQPage` sectorielle et `ItemList` des réalisations du secteur.
@@ -129,10 +129,10 @@ npm run typecheck
 # 2. Tests unitaires des automatisations SEO & GEO (14 tests : LLM, fallback, batch, llms.txt, JSON-LD, audit)
 npm run test:seo
 
-# 3. Build de production Next.js (38 routes dont /services, /services/[service], /llms.txt, /llms-full.txt)
+# 3. Build de production Next.js (45 routes dont /blog, /services, /services/[service], /llms.txt, /llms-full.txt)
 npm run build
 
-# 4. Garde-fou SEO & GEO complet sur serveur de production (43 pages/ressources vérifiées)
+# 4. Garde-fou SEO & GEO complet sur serveur de production (49 pages/ressources vérifiées)
 BASE_URL=http://localhost:3100 npm run seo:check
 ```
 
@@ -198,7 +198,7 @@ Ajouts techniques : `src/lib/services.ts` (contenu éditorial + schémas), `src/
 - `scripts/seo-check.mjs` vérifie désormais : `FAQPage` attendu sur `/services` et `/services/*`, schéma `Service` + `Offer` + `areaServed`, présence du bloc `#service-answer`, et **synchronisation de chaque page service dans `llms.txt` et `llms-full.txt`**.
 - 12 nouveaux tests (`scripts/service-pages.test.mjs`, `scripts/google-indexing.test.mjs`) : contenu éditorial des 6 services, repli générique, schémas, signature JWT vérifiée avec une paire RSA générée, normalisation des clés PEM, propriétés Search Console, absence d'appel réseau sans configuration.
 - **GEO Tracker tests** (`scripts/geo-citations.test.mjs`) : détection des mentions AR/EN/domaine, agrégation des taux, configuration des moteurs.
-- `npm run test:seo` : **36 tests** au vert ; `npm run seo:check` : **43 pages/ressources, 0 erreur, 0 avertissement**.
+- `npm run test:seo` : **48 tests** au vert ; `npm run seo:check` : **49 pages/ressources, 0 erreur, 0 avertissement**.
 
 ### 5.6 GEO Tracker — mesure hebdomadaire des citations IA
 
@@ -224,3 +224,42 @@ Ajouts techniques : `src/lib/services.ts` (contenu éditorial + schémas), `src/
 | **Score global** | **97** | **~98,5** |
 
 Reste à brancher (roadmap) : blog/guides éditoriaux bilingues, captures Playwright des démos et badges de netlinking client. Le monitoring des citations IA est désormais outillé (GEO Tracker) — il suffit d'ajouter les clés API dans les secrets GitHub.
+
+
+---
+
+## 6. Vague 3 — 2026-10-20 : blog / guides éditoriaux bilingues
+
+Dernière brique de contenu de la feuille de route : un blog éditorial pensé pour le **SEO informationnel** et pour le **GEO** (sources citables par ChatGPT, Perplexity, Google AI Overviews).
+
+### 6.1 Cinq guides de lancement (`/blog/[slug]`)
+
+| Article | URL | Intention visée |
+|---|---|---|
+| تكلفة تصميم موقع في ليبيا 2026 | `/blog/prix-site-web-libye-2026` | « كم تكلفة موقع » / « website cost Libya » |
+| اختيار شركة تصميم مواقع في طرابلس | `/blog/choisir-agence-web-tripoli` | « أفضل شركة تصميم مواقع » / « best web agency Tripoli » |
+| إطلاق متجر إلكتروني في ليبيا | `/blog/lancer-boutique-en-ligne-libye` | « إنشاء متجر إلكتروني » / « launch online store Libya » |
+| الظهور في ChatGPT وGoogle AI | `/blog/apparaitre-dans-chatgpt-google-ai-libye` | « الظهور في ChatGPT » / « AI search optimization » |
+| موقع عيادة في طرابلس | `/blog/site-web-clinique-tripoli` | « موقع عيادة » / « clinic website Tripoli » |
+
+Chaque guide contient **4 à 5 sections bilingues** (AR puis EN), des **faits chiffrés** (`keyFacts` : 300/510/880 $, délais 7–21 jours, +20–40% de réservations…), un **encadré « à retenir »**, une **FAQ visible** (3–4 Q/R) balisée `FAQPage`, et **5 à 8 minutes de lecture** (≈ 1 250 mots vérifiés par test).
+
+### 6.2 Structure technique
+
+- `src/lib/blog.ts` : modèle `BlogArticle`, helpers (`findArticle`, `sortArticles`, `relatedArticles`, `formatArticleDate` sans dépendance ICU, `articleWordCount`) et schémas `BlogPosting` + `FAQPage` + `CollectionPage`.
+- `src/lib/blog-articles.ts` : contenu éditorial — **ajouter un article suffit** à le publier partout (page, sitemap, `llms.txt`, `llms-full.txt`, IndexNow, image OG, tests).
+- `/blog` : hub avec résumé « answer-first », liste antéchronologique, FAQ du hub et maillage.
+- `/blog/[slug]` : colonne latérale sticky (sommaire ancré, services liés avec prix live, secteurs, réalisations), **tableau tarifaire synchronisé avec /admin** (`includePricing`), CTA WhatsApp pré-rempli avec le titre du guide, articles liés par catégorie/services/secteurs.
+- `BlogPosting` : `datePublished`, `dateModified`, `author`/`publisher` → `#organization`, `wordCount`, `timeRequired`, `speakable` (`h1` + `#article-answer`), `mainEntityOfPage`.
+- Carte Open Graph 1200×630 par article (`buildArticleOgImage`) + variante Twitter.
+- Entrées ajoutées dans `sitemap.xml`, `/llms.txt` (index avec catégorie et date), `/llms-full.txt` (section 7e : résumé answer-first, faits clés, sections et FAQ de chaque guide), `pingAllPublicPages()` (IndexNow + Search Console) et la navigation (« أدلة » dans la barre supérieure, « Guides & blog » dans le pied de page).
+
+### 6.3 Garde-fous
+
+- `scripts/seo-check.mjs` vérifie sur chaque article : `BlogPosting` présent avec dates, auteur et éditeur, `headline` suffisante, bloc `speakable`, **réponse directe `#article-answer`**, `FAQPage` attendu, et au moins un lien de maillage vers `/services` ou `/sectors` ; il contrôle aussi la présence de **chaque article dans `llms.txt` et `llms-full.txt`**.
+- `scripts/blog.test.mjs` (12 tests) : slugs uniques, longueurs de titres/descriptions, réponse directe bilingue, dates cohérentes, ancres uniques, équilibre AR/EN des sections et puces, qualité des FAQ, existence réelle des services/secteurs liés, schémas, `wordCount`, ordre du `CollectionPage`, articles liés, synchronisation des flux IA.
+- Résultat : `npm run test:seo` **48 tests** au vert · `npm run seo:check` **49 pages/ressources, 0 erreur, 0 avertissement** · `npm run build` 45 routes.
+
+### 6.4 Roadmap restante
+
+Captures Playwright automatiques des démos (WebP desktop/mobile) et badges de netlinking client — les deux seuls points non encore outillés. Le monitoring des citations IA (GEO Tracker) et le blog sont désormais en place.

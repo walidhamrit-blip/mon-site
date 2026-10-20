@@ -1,5 +1,6 @@
 import type { MetadataRoute } from "next";
 import { getAllKnownDemos, getSiteDataCached } from "@/lib/store";
+import { blogArticles } from "@/lib/blog-articles";
 
 const BUILD_DATE = new Date();
 
@@ -29,6 +30,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     },
     {
       url: `${base}/sectors`,
+      lastModified: BUILD_DATE,
+      changeFrequency: "weekly",
+      priority: 0.8,
+    },
+    {
+      url: `${base}/blog`,
       lastModified: BUILD_DATE,
       changeFrequency: "weekly",
       priority: 0.8,
@@ -68,6 +75,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.8,
   }));
 
+  const articleRoutes: MetadataRoute.Sitemap = blogArticles.map((article) => ({
+    url: `${base}/blog/${article.slug}`,
+    lastModified: new Date(article.updatedAt),
+    changeFrequency: "monthly",
+    priority: 0.75,
+  }));
+
   const demoRoutes: MetadataRoute.Sitemap = getAllKnownDemos(content).map((d) => ({
     url: `${base}/demos/${d.slug}`,
     lastModified: BUILD_DATE,
@@ -76,5 +90,5 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     images: d.image && !d.image.includes("&") ? [d.image] : undefined,
   }));
 
-  return [...mainRoutes, ...sectorRoutes, ...serviceRoutes, ...demoRoutes];
+  return [...mainRoutes, ...sectorRoutes, ...serviceRoutes, ...articleRoutes, ...demoRoutes];
 }

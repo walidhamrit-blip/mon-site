@@ -2,6 +2,8 @@ import { resolveDemoClassification } from "@/lib/classification";
 import { defaultAppsPage, defaultProductsPage } from "@/lib/content";
 import { sectorSeo } from "@/lib/sectors";
 import { resolveServiceLanding, servicesHubFaqs } from "@/lib/services";
+import { blogArticles } from "@/lib/blog-articles";
+import { formatArticleDate, sortArticles } from "@/lib/blog";
 import type { SiteContent } from "@/lib/site-types";
 import type { siteConfig } from "@/lib/config";
 
@@ -85,6 +87,15 @@ export function buildLlmsTxt({ config, content }: LlmsSourceData): string {
     const landing = resolveServiceLanding(service);
     lines.push(
       `  - [${service.titleEn} / ${service.titleAr}](${cleanUrl(base, `/services/${service.id}`)}): from $${service.priceFromUsd} (≈ ${service.priceFromLyd} LYD) — delivered in ${landing.deliveryEn}`,
+    );
+  }
+  const guides = sortArticles(blogArticles);
+  lines.push(
+    `- [Blog & practical guides](${cleanUrl(base, "/blog")}): ${guides.length} bilingual, number-driven guides for Libyan business owners`,
+  );
+  for (const article of guides) {
+    lines.push(
+      `  - [${article.titleEn} / ${article.titleAr}](${cleanUrl(base, `/blog/${article.slug}`)}): ${article.categoryEn} — updated ${formatArticleDate(article.updatedAt, "en")}`,
     );
   }
   lines.push(
@@ -357,6 +368,31 @@ export function buildLlmsFullTxt({ config, content }: LlmsSourceData): string {
     );
   }
   lines.push("");
+
+  lines.push("## 7e. Blog & Editorial Guides — bilingual knowledge for Libyan businesses (/blog)");
+  lines.push("");
+  lines.push(`- **Blog hub URL**: ${cleanUrl(base, "/blog")}`);
+  lines.push("");
+  for (const article of sortArticles(blogArticles)) {
+    lines.push(`### ${article.titleEn} — ${article.titleAr}`);
+    lines.push(`- **Article URL**: ${cleanUrl(base, `/blog/${article.slug}`)}`);
+    lines.push(`- **Category**: ${article.categoryEn} (${article.categoryAr})`);
+    lines.push(
+      `- **Published**: ${article.publishedAt} · **Last updated**: ${article.updatedAt} · **Reading time**: ${article.readingMinutes} min`,
+    );
+    lines.push(`- **Answer-first summary (EN)**: ${article.answerEn}`);
+    lines.push(`- **Answer-first summary (AR)**: ${article.answerAr}`);
+    lines.push(
+      `- **Key facts**: ${article.keyFacts
+        .map((fact) => `${fact.labelEn}: ${fact.valueEn}`)
+        .join(" · ")}`,
+    );
+    lines.push(`- **Sections (EN)**: ${article.sections.map((section) => section.headingEn).join(" · ")}`);
+    for (const faq of article.faqs) {
+      lines.push(`  - Q: ${faq.qEn} / ${faq.qAr} — A: ${faq.aEn} / ${faq.aAr}`);
+    }
+    lines.push("");
+  }
 
   lines.push("## 8. Client Testimonials & Results (قصص نجاح من طرابلس)");
   lines.push("");
