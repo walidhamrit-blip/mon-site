@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { resolveDemoClassification } from "@/lib/classification";
+import { getDemoPreviewImages } from "@/lib/preview-manifest";
 import type { Demo, Faq, ProcessStep, Testimonial } from "@/lib/site-types";
 
 /**
@@ -423,6 +424,14 @@ export function demoJsonLd(config: SiteConfig, demo: Demo) {
   const hasLivePreview =
     Boolean(demo.previewUrl) && /^https?:\/\//i.test(demo.previewUrl.trim());
 
+  // Images locales (captures Playwright) prioritaire : elles sont servies par
+  // notre domaine, donc plus rapides à explorer et pérennes. À défaut, on
+  // garde l'image externe du portfolio. `screenshot` est le nom Schema.org
+  // dédié aux captures d'écran d'une œuvre.
+  const localPreviews = getDemoPreviewImages(demo);
+  const primaryImage =
+    localPreviews.length > 0 ? absoluteUrl(config, localPreviews[0]) : demo.image;
+
   return {
     "@context": "https://schema.org",
     "@type": "CreativeWork",
@@ -431,7 +440,13 @@ export function demoJsonLd(config: SiteConfig, demo: Demo) {
     alternateName: demo.titleEn,
     description: demo.description,
     genre: demo.sectorAr,
-    image: demo.image,
+    image: primaryImage,
+    ...(localPreviews.length > 0
+      ? {
+          thumbnailUrl: localPreviews.map((path) => absoluteUrl(config, path)),
+          screenshot: localPreviews.map((path) => absoluteUrl(config, path)),
+        }
+      : {}),
     url: canonicalUrl,
     inLanguage: ["ar-LY", "en"],
     datePublished: "2025-01-01",

@@ -1,6 +1,7 @@
 import type { MetadataRoute } from "next";
 import { getAllKnownDemos, getSiteDataCached } from "@/lib/store";
 import { blogArticles } from "@/lib/blog-articles";
+import { getDemoCapturedAt, getDemoPreviewImages } from "@/lib/preview-manifest";
 
 const BUILD_DATE = new Date();
 
@@ -82,13 +83,21 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.75,
   }));
 
-  const demoRoutes: MetadataRoute.Sitemap = getAllKnownDemos(content).map((d) => ({
-    url: `${base}/demos/${d.slug}`,
-    lastModified: BUILD_DATE,
-    changeFrequency: "weekly",
-    priority: 0.7,
-    images: d.image && !d.image.includes("&") ? [d.image] : undefined,
-  }));
+  // Images : captures locales Playwright (desktop + mobile) quand elles
+  // existent — stables, rapides et servies par notre propre domaine. À défaut,
+  // on retombe sur l'image externe du portfolio.
+  const demoRoutes: MetadataRoute.Sitemap = getAllKnownDemos(content).map((d) => {
+    const localPreviews = getDemoPreviewImages(d).map((path) => `${base}${path}`);
+    const fallback = d.image && !d.image.includes("&") ? [d.image] : [];
+    const images = localPreviews.length > 0 ? localPreviews : fallback;
+    return {
+      url: `${base}/demos/${d.slug}`,
+      lastModified: getDemoCapturedAt(d) ?? BUILD_DATE,
+      changeFrequency: "weekly",
+      priority: 0.7,
+      ...(images.length > 0 ? { images } : {}),
+    };
+  });
 
   return [...mainRoutes, ...sectorRoutes, ...serviceRoutes, ...articleRoutes, ...demoRoutes];
 }

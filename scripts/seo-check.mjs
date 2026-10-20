@@ -270,6 +270,34 @@ async function main() {
     }
   }
 
+  // 1a. Sitemap d'images : les captures locales (public/previews) doivent
+  //     être publiées pour les réalisations — signal d'image pour Google.
+  try {
+    const sitemapBody =
+      resourceBodies.get("/sitemap.xml") || (await fetchText(`${BASE}/sitemap.xml`)).body;
+    const imageLocs = [...sitemapBody.matchAll(/<image:loc>([^<]+)<\/image:loc>/g)].map(
+      (match) => match[1].trim(),
+    );
+    const localPreviews = imageLocs.filter((url) => /\/previews\/[a-z0-9-]+\.webp$/i.test(url));
+    if (imageLocs.length === 0) {
+      record("/sitemap.xml", "warn", "aucune image déclarée dans le sitemap");
+    } else if (localPreviews.length === 0) {
+      record(
+        "/sitemap.xml",
+        "warn",
+        "aucune capture locale /previews/*.webp dans le sitemap d'images",
+      );
+    } else {
+      record(
+        "/sitemap.xml",
+        "pass",
+        `${localPreviews.length} capture(s) locale(s) dans le sitemap d'images`,
+      );
+    }
+  } catch (err) {
+    record("/sitemap.xml", "warn", `images non vérifiées : ${err.message}`);
+  }
+
   // 1b. Garde-fou CSP & iframes de démonstration (évite toute régression
   //     bloquant l'aperçu interactif des sites clients en <iframe>).
   try {

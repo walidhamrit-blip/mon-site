@@ -1,0 +1,195 @@
+name: Demo previews
+
+# Captures d'écran automatiques des démos (desktop + mobile) et surveillance
+# de disponibilité des sites clients.
+#
+# - chaque lundi 07:00 UTC + déclenchement manuel ;
+# - Playwright + Sharp capturent les 12+ `previewUrl` en WebP ;
+# - les fichiers modifiés sont proposés dans une pull request dédiée ;
+# - un site de démo hors ligne ouvre (ou met à jour) une issue « Démos hors ligne ».
+#
+# Aucune clé n'est nécessaire. Le workflow peut être lancé à la main depuis
+# l'onglet Actions (« Run workflow »).
+
+on:
+  schedule:
+    - cron: "0 7 * * 1"
+  workflow_dispatch:
+    inputs:
+      only:
+        description: "Slugs à capturer (séparés par des virgules, vide = toutes)"
+        required: false
+        default: ""
+      force:
+        description: "Recapturer même si la capture est récente"
+        type: boolean
+        default: true
+
+concurrency:
+  group: demo-previews
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+  issues: write
+  pull-requests: write
+
+jobs:
+  capture:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Récupération du code
+        uses: actions/checkout@v5
+
+      - name: Installation Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Installation des dépendances
+        run: npm ci
+
+      - name: Installation de Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Captures des démos
+        id: capture
+        env:
+          CAPTURE_BASE_URL: https://nokhba.net.ly
+        run: |
+          ARGS="--force --concurrency=3"
+          if [ -n "${{ inputs.only }}" ]; then
+            ARGS="$ARGS --only=${{ inputs.only }}"
+          fi
+          set +e
+          npm run previews:capture -- $ARGS
+          CODE=$?
+          set -e
+          if [ "$CODE" -eq 3 ]; then
+            echo "::error::Playwright/Sharp indisponible dans ce runner."
+            exit 1
+          fi
+          # Code 1 = erreurs de capture : le rapport et l'artefact restent
+          # publiés, mais le run est signalé en échec.
+          if [ "$CODE" -eq 1 ]; then
+            echo "::warning::Certaines captures ont échoué (voir le rapport)."
+            echo "capture_errors=1" >> "$GITHUB_OUTPUT"
+          fi
+          if [ "$CODE" -eq 4 ]; then
+            echo "::error::Aucune démo exploitable."
+            exit 1
+          fi
+
+      - name: Synthèse du rapport
+        id: report
+        if: always()
+        run: |
+          node -e '
+            const fs = require("node:fs");
+            const path = require("node:path");
+            const dir = "reports";
+            let summary = { captured: 0, unchanged: 0, down: 0, error: 0, skipped: 0 };
+            let down = [];
+            if (fs.existsSync(dir)) {
+              const files = fs
+                .readdirSync(dir)
+                .filter((name) => name.startsWith("demo-previews-"))
+                .sort();
+              if (files.length > 0) {
+                const report = JSON.parse(
+                  fs.readFileSync(path.join(dir, files[files.length - 1]), "utf8"),
+                );
+                summary = report.summary ?? summary;
+                down = (report.results ?? []).filter((r) => r.outcome === "down");
+              }
+            }
+            const lines = [
+              `- capturées : ${summary.captured}`,
+              `- inchangées : ${summary.unchanged}`,
+              `- hors ligne : ${summary.down}`,
+              `- erreurs : ${summary.error}`,
+            ];
+            for (const item of down) {
+              lines.push(`  - ✖ ${item.slug ?? item.url} — ${item.url} (${item.httpStatus ?? "réseau"})`);
+            }
+            fs.writeFileSync(process.env.GITHUB_OUTPUT, `body<<EOF\n${lines.join("\n")}\nEOF\n`, {
+              flag: "a",
+            });
+            fs.writeFileSync(
+              process.env.GITHUB_OUTPUT,
+              `down_count=${summary.down}\nerror_count=${summary.error}\n`,
+              { flag: "a" },
+            );
+          '
+
+      - name: Publication du rapport
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: demo-previews-report
+          path: reports/
+          retention-days: 90
+
+      - name: Alerte — démos hors ligne
+        if: always() && steps.report.outputs.down_count != '0'
+        uses: actions/github-script@v8
+        with:
+          script: |
+            const title = "Démos hors ligne — captures d'aperçu impossibles";
+            const body = [
+              "Le workflow **Demo previews** n'a pas pu joindre certaines démos.",
+              "",
+              "${{ steps.report.outputs.body }}",
+              "",
+              `Run : ${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`,
+              "",
+              "_La dernière capture connue est conservée : le site reste intact._",
+            ].join("\n");
+            const { data: issues } = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: "open",
+              labels: "demo-preview",
+            });
+            const existing = issues.find((issue) => issue.title === title);
+            if (existing) {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: existing.number,
+                body,
+              });
+            } else {
+              await github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title,
+                body,
+                labels: ["demo-preview"],
+              });
+            }
+
+      - name: Proposition de mise à jour des captures
+        if: always() && steps.report.outputs.down_count == '0' && steps.report.outputs.error_count == '0'
+        uses: peter-evans/create-pull-request@v7
+        with:
+          branch: chore/demo-previews
+          delete-branch: true
+          add-paths: |
+            public/previews
+          commit-message: "chore(previews): captures desktop/mobile des démos"
+          title: "chore(previews): captures desktop/mobile des démos"
+          body: |
+            Captures automatiques des sites clients (Playwright + Sharp) :
+
+            ${{ steps.report.outputs.body }}
+
+            Fichiers WebP : 960×600 (desktop, rendu 1440×900) et 390×693 (mobile),
+            qualité 78. `public/previews/manifest.json` porte l'empreinte
+            anti-cache, la date de capture et le statut de disponibilité.
+
+            Aucun contenu éditorial n'est modifié. Le sitemap d'images et les
+            données structurées (`image`, `screenshot`) suivent ce manifeste.

@@ -270,6 +270,9 @@ NOWPayments pour prendre une place en avance dans le planning.
   WebSite, ProfessionalService (SEO local, horaires, avis agrégé), FAQPage
   (7 Q/R), OfferCatalog (prix USD), BreadcrumbList, CollectionPage,
   CreativeWork pour chaque réalisation
+- Aperçus des réalisations servis depuis `public/previews` (WebP desktop et
+  mobile capturés par Playwright), déclarés dans le sitemap d'images et le
+  JSON-LD ; API publique `GET /api/public/demos` pour les outils de capture
 - `robots.ts` : accès public ouvert, `/api`, `/admin`, `/pay` fermés,
   crawlers IA explicitement autorisés (GPTBot, ClaudeBot, PerplexityBot,
   Google-Extended, CCBot…) ; `sitemap.ts` avec images des réalisations
@@ -328,6 +331,20 @@ NOWPayments pour prendre une place en avance dans le planning.
   (modèle dans `src/lib/blog.ts`) — ajouter un article suffit à le publier :
   page, sitemap, `/llms.txt`, `/llms-full.txt`, IndexNow, image OG et tests
   se mettent à jour automatiquement.
+- **Captures d'aperçu** : `npm run previews:capture`
+  (`scripts/capture-previews.mjs`) vérifie que chaque démo répond en HTTP 200,
+  capture son rendu réel en ordinateur (1440×900 → 960×600) et téléphone
+  (390×693), convertit en WebP q78 et met à jour
+  `public/previews/manifest.json` — source unique du carrousel, du sitemap
+  d'images et du JSON-LD `CreativeWork` (`image`, `screenshot`,
+  `thumbnailUrl`), avec `?v=<empreinte>` pour invalider le cache sans renommer
+  les fichiers. Une démo hors ligne conserve sa dernière capture (entrée
+  `down`) au lieu de casser la page. Exécution hebdomadaire via
+  `.github/workflows/demo-previews.yml` (lundi 07:00 UTC), pull request
+  automatique si des visuels changent, issue `demo-preview` si un site client
+  ne répond plus. `--dry-run`, `--force`, `--only=`, `--base=`, `--prune`,
+  `--concurrency=`, `--max-age-days=` (codes de sortie 0/1/3/4 documentés dans
+  `docs/preview-performance.md`).
 - **GEO Tracker** : `npm run seo:geo` (`scripts/geo-citations.mjs`) interroge
   ChatGPT Search et Perplexity sur 10 requêtes commerciales AR/EN et mesure le
   taux de citation de la marque. Exécution hebdomadaire via

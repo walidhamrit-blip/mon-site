@@ -1,0 +1,92 @@
+{
+  "version": 1,
+  "generatedAt": "2026-10-17T00:00:00.000Z",
+  "viewports": {
+    "desktop": {
+      "width": 1440,
+      "height": 900
+    },
+    "mobile": {
+      "width": 390,
+      "height": 693
+    }
+  },
+  "projects": {
+    "https://al-manhaj-company.vercel.app": {
+      "slug": "al-manhaj-company",
+      "desktop": "/previews/al-manhaj-company-desktop.webp",
+      "mobile": "/previews/al-manhaj-company-mobile.webp",
+      "desktopSize": {
+        "width": 960,
+        "height": 600
+      },
+      "mobileSize": {
+        "width": 390,
+        "height": 693
+      },
+      "hash": "Qczn4Pr0NM",
+      "capturedAt": "2026-10-17T00:00:00.000Z",
+      "httpStatus": 200,
+      "status": "ok",
+      "screenshot": true,
+      "source": "manual"
+    },
+    "https://hala-dun.vercel.app": {
+      "slug": "hala-perfumes",
+      "desktop": "/previews/hala-perfumes-desktop.webp",
+      "mobile": "/previews/hala-perfumes-mobile.webp",
+      "desktopSize": {
+        "width": 960,
+        "height": 600
+      },
+      "mobileSize": {
+        "width": 390,
+        "height": 693
+      },
+      "hash": "mkNYWXBepQ",
+      "capturedAt": "2026-10-17T00:00:00.000Z",
+      "httpStatus": 200,
+      "status": "ok",
+      "screenshot": true,
+      "source": "manual"
+    },
+    "https://m-et-outillage-modele-3.vercel.app": {
+      "slug": "tripo-teck-outillage",
+      "desktop": "/previews/tripo-teck-visual.webp",
+      "mobile": "/previews/tripo-teck-visual.webp",
+      "desktopSize": {
+        "width": 960,
+        "height": 600
+      },
+      "mobileSize": {
+        "width": 390,
+        "height": 693
+      },
+      "hash": "ffFr0e4tIi",
+      "capturedAt": "2026-10-17T00:00:00.000Z",
+      "httpStatus": 200,
+      "status": "ok",
+      "screenshot": false,
+      "source": "manual"
+    },
+    "https://smartphine-demo.vercel.app": {
+      "slug": "myphone-tripoli",
+      "desktop": "/previews/myphone-visual-desktop.webp",
+      "mobile": "/previews/myphone-visual-mobile.webp",
+      "desktopSize": {
+        "width": 960,
+        "height": 600
+      },
+      "mobileSize": {
+        "width": 390,
+        "height": 693
+      },
+      "hash": "8u0mrC9hPV",
+      "capturedAt": "2026-10-17T00:00:00.000Z",
+      "httpStatus": 200,
+      "status": "ok",
+      "screenshot": false,
+      "source": "manual"
+    }
+  }
+}
