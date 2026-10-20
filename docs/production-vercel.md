@@ -398,3 +398,41 @@ base de production n'ont été effectués depuis le sandbox, et la Preview
 Vercel reste protégée par authentification. Le test final reste donc :
 ouvrir la Preview de la PR connecté à Vercel, puis — après fusion —
 effectuer le test de bout en bout du §4 sur la production.
+
+## 8. Observabilité — Vercel Web Analytics & Speed Insights
+
+Les deux mesures sont montées dans `src/app/(site)/layout.tsx` uniquement :
+le panneau `/admin` (hors groupe `(site)`) n'envoie donc ni pages vues ni
+Web Vitals. Aucune variable d'environnement n'est nécessaire.
+
+| Mesure | Paquet | Ce qui est collecté |
+|---|---|---|
+| Web Analytics | `@vercel/analytics` | Pages vues, référents, pays, appareils |
+| Speed Insights | `@vercel/speed-insights` | Core Web Vitals réels : LCP, INP, CLS, FCP, TTFB |
+
+**Activation (une seule fois, propriétaire du projet)** : tableau de bord
+Vercel → projet `mon-site` → onglet **Speed Insights** (puis **Analytics**)
+→ **Enable**. Sans cette activation, les scripts se chargent mais les
+requêtes restent sans effet : aucune donnée n'apparaît.
+
+**Fonctionnement technique**
+
+- En production sur Vercel, les scripts sont servis depuis l'origine du site
+  (`/_vercel/speed-insights/script.js`, `/_vercel/insights/script.js`) : ils
+  sont donc couverts par `script-src 'self'` de la CSP (`next.config.ts`).
+- `connect-src` autorise `https://vitals.vercel-insights.com` (envoi direct
+  des Web Vitals) ; `script-src` autorise `https://va.vercel-scripts.com`,
+  utilisé seulement par les scripts de débogage en local (`next dev`).
+- Le composant s'injecte après hydratation : il est normal de ne pas voir la
+  balise `<script>` dans le HTML servi, mais dans le DOM (onglet Éléments).
+
+**Vérifier sur une Preview ou en production**
+
+1. Ouvrir le site, puis la console réseau : requête
+   `/_vercel/speed-insights/script.js` en 200, puis des POST vers
+   `/_vercel/speed-insights/vitals`.
+2. Tableau de bord Vercel → **Speed Insights** : les premiers points
+   apparaissent après quelques visites (délai de traitement possible).
+3. Les bonnes notes locales (`npm run build` + Lighthouse) ne garantissent
+   pas les Web Vitals terrain : Speed Insights mesure des visiteurs réels,
+   réseau et appareils compris.

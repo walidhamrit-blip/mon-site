@@ -321,7 +321,8 @@ NOWPayments pour prendre une place en avance dans le planning.
 
 ## Performance
 - next/image lazy, SSG, CSS variables, pas de gros JS
-- Lighthouse 90+ visé — testez avec `npm run build && npx serve out` ou Vercel Analytics
+- Lighthouse 90+ visé — testez avec `npm run build && npx serve out`
+- **Vercel Speed Insights** (`@vercel/speed-insights`, monté dans `src/app/(site)/layout.tsx` avec Web Analytics) mesure les Core Web Vitals réels (LCP, INP, CLS) des visiteurs du site public — `/admin` n'est pas mesuré. À activer une fois dans le tableau de bord Vercel (onglet *Speed Insights* → *Enable*), cf. `docs/production-vercel.md` §8
 
 ## RTL parfait
 - dir dynamique, icônes directionnelles, animations inversées via `dir` context
