@@ -8,6 +8,7 @@ import { useSectionHeading, useSiteConfig } from "@/components/site-provider";
 import { CheckoutDialog } from "@/components/checkout-dialog";
 import { formatLyd, lydLabel } from "@/lib/classification";
 import { formatMainPrice, formatUsd } from "@/lib/installments";
+import { CURRENT_PROMO, promoActive } from "@/lib/promotion";
 import type { PricingPlan } from "@/lib/config";
 
 export function Pricing() {
@@ -31,6 +32,14 @@ export function Pricing() {
           </h2>
           <p className="mt-3 opacity-60">{heading.subtitle}</p>
           {heading.note && <p className="mt-2 text-xs opacity-50">{heading.note}</p>}
+          {promoActive(CURRENT_PROMO) && (
+            <div className="mt-4 inline-flex items-center gap-2 rounded-full border border-[var(--accent)]/40 bg-[var(--accent)]/10 px-4 py-1.5 text-xs font-bold">
+              <Sparkles className="h-3.5 w-3.5 text-[var(--accent)]" />
+              {locale === "ar"
+                ? `خصم ${CURRENT_PROMO.percent}% عند الدفع — كوبون ${CURRENT_PROMO.code}`
+                : `${CURRENT_PROMO.percent}% off at checkout — coupon ${CURRENT_PROMO.code}`}
+            </div>
+          )}
         </div>
 
         <div className="mt-10 grid lg:grid-cols-3 gap-6 max-w-[1100px] mx-auto items-start">

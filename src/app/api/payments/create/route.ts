@@ -24,6 +24,12 @@ import {
   trackingQuery,
 } from "@/lib/order-tracking";
 import { checkRateLimit } from "@/lib/rate-limit";
+import {
+  CURRENT_PROMO,
+  discountedAmount,
+  isPromoCode,
+  normalizeCoupon,
+} from "@/lib/promotion";
 import { enforceSameOrigin } from "@/lib/csrf";
 
 /* Limite la cadence de création de factures crypto par IP+UA. Bloque
@@ -68,6 +74,8 @@ const createPaymentSchema = z
     orderRef: z.string().min(3).max(80).optional(),
     /** 1 = paiement total, 2 ou 3 = paiement en tranches. */
     installments: z.number().int().min(1).max(3).optional(),
+    /** Coupon d'achat (ex. NUKHBA50) — remise recalculée côté serveur. */
+    coupon: z.string().max(40).optional(),
     name: z.string().max(120).optional(),
     email: z.string().email().max(254).optional(),
     phone: z.string().max(40).optional(),
@@ -515,8 +523,29 @@ export async function POST(req: Request) {
     data.installments && isInstallmentCount(data.installments)
       ? data.installments
       : 1;
-  const usdTranches = splitAmount(plan.priceUsd, count);
-  const lydTranches = splitAmount(plan.price, count);
+
+  // Coupon d'achat : jamais fait confiance au montant envoyé par le
+  // navigateur — on recalcule la remise ici, à partir du prix admin.
+  // Un coupon fourni mais invalide/expiré est refusé explicitement.
+  const couponProvided = Boolean(data.coupon && data.coupon.trim());
+  const couponValid = isPromoCode(data.coupon);
+  if (couponProvided && !couponValid) {
+    return errorResponse("invalid_coupon", 400, {
+      source: "input",
+      status: null,
+      message: `Coupon « ${data.coupon} » invalide ou expiré`,
+    });
+  }
+  const discountPercent = couponValid ? CURRENT_PROMO.percent : 0;
+  const totalUsd = discountedAmount(plan.priceUsd, discountPercent);
+  const totalLyd = Math.round(discountedAmount(plan.price, discountPercent));
+  const planLabel =
+    discountPercent > 0
+      ? `${plan.nameEn} (-${discountPercent}% ${normalizeCoupon(data.coupon)})`
+      : plan.nameEn;
+
+  const usdTranches = splitAmount(totalUsd, count);
+  const lydTranches = splitAmount(totalLyd, count);
 
   const baseRef = newOrderReference("NKH");
   // Un même jeton pour toutes les tranches du groupe : le lien reçu au
@@ -537,8 +566,8 @@ export async function POST(req: Request) {
           trackingTokenHash: tracking.hash,
           groupRef: baseRef,
           planId: plan.id,
-          planName: plan.nameEn,
-          amountLyd: String(lydTranches[index] ?? plan.price),
+          planName: planLabel,
+          amountLyd: String(lydTranches[index] ?? totalLyd),
           amountUsd: String(usd),
           currency: "usd",
           installments: count,
@@ -570,8 +599,8 @@ export async function POST(req: Request) {
       orderId: baseRef,
       orderDescription:
         count > 1
-          ? `${config.name} — ${plan.nameEn} (1/${count})`
-          : `${config.name} — ${plan.nameEn} plan`,
+          ? `${config.name} — ${planLabel} (1/${count})`
+          : `${config.name} — ${planLabel} plan`,
       ...paymentUrls(req, baseRef, tracking.token),
     });
   } catch (error) {

@@ -228,3 +228,66 @@ body {
   .ribbon-group[aria-hidden="true"], .ribbon-pause { display: none; }
   .ribbon-window { mask-image: none; }
 }
+
+/* ── Bandeau promotionnel (solde + coupon) ──────────────────────────────
+   Très fin, une seule ligne défilante, pause au survol. Sa hauteur est
+   publiée dans `--promo-h` : la navbar et le contenu se décalent d'autant,
+   donc le bandeau ne recouvre jamais la page. */
+:root {
+  --promo-h: 34px;
+}
+
+.promo-banner {
+  background: var(--primary);
+  color: var(--primary-foreground);
+  border-bottom: 1px solid color-mix(in srgb, var(--accent) 45%, transparent);
+}
+
+.promo-coupon {
+  color: var(--accent);
+}
+
+.promo-window {
+  mask-image: linear-gradient(to right, transparent, black 4%, black 96%, transparent);
+}
+
+.promo-track {
+  animation: promo-scroll 32s linear infinite;
+}
+
+.promo-banner[dir="rtl"] .promo-track {
+  animation-name: promo-scroll-rtl;
+}
+
+.promo-banner:hover .promo-track,
+.promo-banner:focus-within .promo-track {
+  animation-play-state: paused;
+}
+
+@keyframes promo-scroll {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+
+@keyframes promo-scroll-rtl {
+  from { transform: translateX(0); }
+  to { transform: translateX(50%); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .promo-track {
+    animation: none;
+    width: 100%;
+  }
+  .promo-track > [aria-hidden="true"] {
+    display: none;
+  }
+  .promo-track > div {
+    width: 100%;
+    justify-content: center;
+    overflow: hidden;
+  }
+  .promo-window {
+    mask-image: none;
+  }
+}

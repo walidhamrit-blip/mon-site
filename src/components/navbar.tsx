@@ -50,7 +50,7 @@ export function Navbar() {
   return (
     <>
       <header
-        className={`fixed top-0 inset-x-0 z-50 transition-all duration-300 ${
+        className={`fixed top-[var(--promo-h,0px)] inset-x-0 z-50 transition-all duration-300 ${
           scrolled ? "py-3" : "py-5"
         }`}
       >
@@ -154,7 +154,7 @@ export function Navbar() {
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
-            className="fixed inset-0 z-40 xl:hidden pt-[92px] px-4 overflow-y-auto pb-8"
+            className="fixed inset-0 z-40 xl:hidden pt-[calc(var(--promo-h,0px)+92px)] px-4 overflow-y-auto pb-8"
           >
             <div className="bg-[var(--card)] rounded-[24px] border border-[var(--border)] p-6 shadow-2xl">
               <nav aria-label={locale === "ar" ? "قائمة الجوال" : "Mobile menu"} className="flex flex-col gap-1.5">

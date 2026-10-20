@@ -26,6 +26,7 @@ import { ProjectPreview } from "@/components/project-preview";
 import { ReservationButton } from "@/components/reservation-dialog";
 import { demoImageAlt, formatLyd, lydLabel, resolveDemoClassification } from "@/lib/classification";
 import { formatMainPrice, formatUsd } from "@/lib/installments";
+import { freeCustomizationLabel } from "@/lib/promotion";
 
 function formatHost(url: string, fallbackSlug: string, domain: string): string {
   if (!isRealUrl(url)) return `${domain}/${fallbackSlug}`;
@@ -152,19 +153,6 @@ function InteractiveShowcase({
                               ? `الفئة ${dClassification.tier}`
                               : `Category ${dClassification.tier}`}
                           </span>
-                          {dClassification.priceUsd != null && (
-                            <span
-                              className="px-2.5 py-1 rounded-full bg-black/70 text-white text-xs font-bold backdrop-blur"
-                              dir="ltr"
-                            >
-                              {formatMainPrice(
-                                dClassification.priceUsd,
-                                locale === "ar"
-                                  ? siteConfig.pricing.currency
-                                  : siteConfig.pricing.currencyEn,
-                              )}
-                            </span>
-                          )}
                         </div>
                       )}
                     </div>
@@ -173,6 +161,28 @@ function InteractiveShowcase({
                       <h3 className="text-lg font-black leading-snug">
                         {locale === "ar" ? d.title : d.titleEn}
                       </h3>
+                      {dClassification?.priceUsd != null && (
+                        <div className="mt-1 flex flex-wrap items-baseline gap-x-2">
+                          <span
+                            className="text-base font-black text-[var(--accent)] leading-none"
+                            dir="ltr"
+                          >
+                            {formatMainPrice(
+                              dClassification.priceUsd,
+                              locale === "ar"
+                                ? siteConfig.pricing.currency
+                                : siteConfig.pricing.currencyEn,
+                            )}
+                          </span>
+                          <span className="text-[11px] opacity-55" dir="ltr">
+                            ≈ {formatLyd(dClassification.priceLyd)} {lydLabel(locale)}
+                          </span>
+                        </div>
+                      )}
+                      <div className="mt-1 inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">
+                        <Sparkles className="h-3 w-3 shrink-0" />
+                        {freeCustomizationLabel(locale)}
+                      </div>
                       <p className="mt-1.5 text-sm opacity-65 line-clamp-2">
                         {locale === "ar" ? d.description : d.descriptionEn}
                       </p>
@@ -307,7 +317,7 @@ function InteractiveShowcase({
 
         <div className="grid lg:grid-cols-[1.35fr_0.75fr] gap-6 items-start">
           {/* Preview Stage */}
-          <div className="rounded-[24px] bg-[var(--card)] border border-[var(--border)] overflow-hidden p-4 sm:p-6 lg:sticky lg:top-24">
+          <div className="rounded-[24px] bg-[var(--card)] border border-[var(--border)] overflow-hidden p-4 sm:p-6 lg:sticky lg:top-[calc(var(--promo-h,0px)+96px)]">
             {/* Browser Top Toolbar */}
             <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
               <div className="flex items-center gap-2 min-w-0 flex-1">
@@ -477,6 +487,10 @@ function InteractiveShowcase({
                       {formatLyd(activeClassification.priceLyd)}{" "}
                       {lydLabel(locale)}
                     </span>
+                    <span className="inline-flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-semibold">
+                      <Sparkles className="h-3 w-3" />
+                      {freeCustomizationLabel(locale)}
+                    </span>
                   </div>
                 )}
               </div>
@@ -577,8 +591,21 @@ function InteractiveShowcase({
                     <div className="text-sm font-bold leading-tight">
                       {locale === "ar" ? d.title : d.titleEn}
                     </div>
-                    <div className="text-xs opacity-60 line-clamp-1 mt-0.5">
-                      {locale === "ar" ? d.description : d.descriptionEn}
+                    {dClassification?.priceUsd != null && (
+                      <div
+                        className="mt-0.5 text-sm font-black text-[var(--accent)] leading-none"
+                        dir="ltr"
+                      >
+                        {formatMainPrice(
+                          dClassification.priceUsd,
+                          locale === "ar"
+                            ? siteConfig.pricing.currency
+                            : siteConfig.pricing.currencyEn,
+                        )}
+                      </div>
+                    )}
+                    <div className="text-[11px] text-emerald-600 dark:text-emerald-400 mt-0.5 line-clamp-1">
+                      {freeCustomizationLabel(locale)}
                     </div>
                   </div>
                 </button>

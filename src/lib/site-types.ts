@@ -245,7 +245,6 @@ export const BUILTIN_SECTION_IDS = [
   "identityStudio",
   "process",
   "pricing",
-  "flexiblePayment",
   "services",
   "testimonials",
   "faq",
