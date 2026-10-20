@@ -151,6 +151,7 @@ export function localBusinessJsonLd(
     url: absoluteUrl(config, "/"),
     logo: absoluteUrl(config, "/icon.svg"),
     image: absoluteUrl(config, "/og.jpg"),
+    slogan: "مواقع ومتاجر إلكترونية فاخرة تُسلَّم في 7 أيام — Tripoli, Libya",
     telephone: config.phone,
     email: config.email,
     priceRange: "$$",
@@ -173,6 +174,19 @@ export function localBusinessJsonLd(
       { "@type": "City", name: "Tripoli" },
       { "@type": "Country", name: "Libya" },
     ],
+    // Zone de service locale : 60 km autour de Tripoli (Tripoli, Tajoura,
+    // Janzour, Ain Zara, Gasr Ben Ghashir…) — signal de SEO local explicite.
+    serviceArea: {
+      "@type": "GeoCircle",
+      geoMidpoint: {
+        "@type": "GeoCoordinates",
+        latitude: 32.8872,
+        longitude: 13.1913,
+      },
+      geoRadius: "60000",
+    },
+    knowsLanguage: ["ar", "en", "fr"],
+    hasOfferCatalog: { "@id": absoluteUrl(config, "/pricing#offer-catalog") },
     knowsAbout: [
       "تصميم مواقع الإنترنت",
       "تطوير متاجر إلكترونية",
@@ -296,8 +310,11 @@ export function offerCatalogJsonLd(config: SiteConfig) {
   return {
     "@context": "https://schema.org",
     "@type": "OfferCatalog",
+    "@id": absoluteUrl(config, "/pricing#offer-catalog"),
     name: "باقات وخدمات تصميم وتطوير المواقع — Nukhba pricing & services",
     url: absoluteUrl(config, "/pricing"),
+    numberOfItems: planOffers.length + serviceOffers.length,
+    provider: { "@id": absoluteUrl(config, ORG_ID) },
     itemListElement: [...planOffers, ...serviceOffers],
   };
 }
@@ -346,6 +363,55 @@ export function breadcrumbJsonLd(
   };
 }
 
+/**
+ * Spécification `speakable` : indique aux assistants vocaux et aux moteurs
+ * de réponse (Google Assistant, Apple Intelligence, Copilot Voice…) la
+ * portion de page à lire à voix haute. Les sélecteurs CSS doivent exister
+ * dans le HTML rendu côté serveur.
+ */
+export interface WebPageSchemaOptions {
+  path: string;
+  name: string;
+  description: string;
+  /** Sélecteurs CSS des blocs à synthétiser (ex. ["h1", "#service-answer"]). */
+  speakable?: string[];
+  about?: string;
+  dateModified?: string;
+}
+
+/** Schéma `WebPage` d'une page interne, avec résumé `speakable` optionnel. */
+export function webPageJsonLd(
+  config: Pick<SiteConfig, "url">,
+  opts: WebPageSchemaOptions,
+) {
+  const url = absoluteUrl(config, opts.path);
+  return {
+    "@context": "https://schema.org",
+    "@type": "WebPage",
+    "@id": `${url}#webpage`,
+    url,
+    name: opts.name,
+    description: metaDescription(opts.description, 300),
+    inLanguage: ["ar-LY", "en"],
+    isPartOf: { "@id": absoluteUrl(config, WEBSITE_ID) },
+    ...(opts.about ? { about: { "@type": "Thing", name: opts.about } } : {}),
+    primaryImageOfPage: {
+      "@type": "ImageObject",
+      url: absoluteUrl(config, "/og.jpg"),
+    },
+    ...(opts.dateModified ? { dateModified: opts.dateModified } : {}),
+    ...(opts.speakable && opts.speakable.length > 0
+      ? {
+          speakable: {
+            "@type": "SpeakableSpecification",
+            cssSelector: opts.speakable,
+          },
+        }
+      : {}),
+    potentialAction: { "@type": "ReadAction", target: [url] },
+  };
+}
+
 /** Schéma d'une réalisation du portfolio (page /demos/[slug]). */
 export function demoJsonLd(config: SiteConfig, demo: Demo) {
   const normalizedPlans = config.pricing.plans.map((p) => ({
@@ -371,6 +437,17 @@ export function demoJsonLd(config: SiteConfig, demo: Demo) {
     datePublished: "2025-01-01",
     author: { "@id": absoluteUrl(config, ORG_ID) },
     publisher: { "@id": absoluteUrl(config, ORG_ID) },
+    isPartOf: { "@id": absoluteUrl(config, WEBSITE_ID) },
+    mainEntityOfPage: { "@type": "WebPage", "@id": canonicalUrl },
+    about: {
+      "@type": "Thing",
+      name: demo.sectorAr,
+      alternateName: demo.sectorEn,
+    },
+    audience: {
+      "@type": "BusinessAudience",
+      name: `${demo.sectorEn} businesses in Tripoli, Libya`,
+    },
     ...(hasLivePreview ? { workExample: demo.previewUrl } : {}),
     ...(cls && cls.priceUsd != null
       ? {

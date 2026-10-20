@@ -26,8 +26,8 @@ export function Navbar() {
   }, []);
 
   const links = [
-    { href: "/#demos", label: t.nav.demos },
-    { href: "/demos", label: locale === "ar" ? "كل المعارض" : "All demos" },
+    { href: "/services", label: locale === "ar" ? "خدمات سريعة" : "Open services" },
+    { href: "/demos", label: t.nav.demos },
     {
       href: "/apps",
       label: locale === "ar" ? "تطبيقاتنا" : "Our Apps",

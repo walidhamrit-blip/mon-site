@@ -203,6 +203,45 @@ if (process.env.RESEND_API_KEY?.trim()) {
   );
 }
 
+/* ───────────────────────── SEO & Référencement IA ───────────────────────── */
+
+section("SEO & Référencement IA (facultatif)");
+
+const googleEmail = process.env.GOOGLE_INDEXING_CLIENT_EMAIL?.trim();
+const googleKey = process.env.GOOGLE_INDEXING_PRIVATE_KEY?.trim();
+if (googleEmail && googleKey) {
+  const normalizedKey = googleKey.replace(/\\n/g, "\n");
+  if (/BEGIN [A-Z ]*PRIVATE KEY/.test(normalizedKey)) {
+    ok(
+      "Google Search Console (soumission sitemap)",
+      `${googleEmail} — propriété ${process.env.GOOGLE_INDEXING_SITE_URL?.trim() || "domaine par défaut"}`,
+    );
+  } else {
+    warn(
+      "Clé Google au format inattendu",
+      "GOOGLE_INDEXING_PRIVATE_KEY doit contenir une clé PEM (BEGIN PRIVATE KEY). Les sauts de ligne littéraux \\n sont acceptés.",
+    );
+  }
+} else {
+  warn(
+    "Google Search Console non configuré",
+    "La soumission automatique du sitemap est désactivée (le ping Google historique n'existe plus). IndexNow (Bing, Yandex, ChatGPT Search) reste actif. Ajoutez GOOGLE_INDEXING_CLIENT_EMAIL + GOOGLE_INDEXING_PRIVATE_KEY pour l'activer.",
+  );
+}
+
+if (process.env.OPENAI_API_KEY?.trim()) {
+  ok("Assistant SEO IA (OpenAI) configuré");
+} else {
+  warn(
+    "Assistant SEO IA désactivé",
+    "Facultatif : la génération de métadonnées utilise le gabarit optimisé local. Ajoutez OPENAI_API_KEY pour activer la rédaction IA.",
+  );
+}
+
+if (!process.env.INDEXNOW_KEY?.trim()) {
+  ok("IndexNow", "clé par défaut intégrée (public/496dc…txt)");
+}
+
 /* ──────────────────────────────── Résumé ───────────────────────────────── */
 
 const failures = results.filter((r) => r.level === "fail");

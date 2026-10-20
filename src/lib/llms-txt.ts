@@ -1,6 +1,7 @@
 import { resolveDemoClassification } from "@/lib/classification";
 import { defaultAppsPage, defaultProductsPage } from "@/lib/content";
 import { sectorSeo } from "@/lib/sectors";
+import { resolveServiceLanding, servicesHubFaqs } from "@/lib/services";
 import type { SiteContent } from "@/lib/site-types";
 import type { siteConfig } from "@/lib/config";
 
@@ -78,6 +79,15 @@ export function buildLlmsTxt({ config, content }: LlmsSourceData): string {
     );
   }
   lines.push(
+    `- [Open digital services](${cleanUrl(base, "/services")}): ${config.standaloneServices.length} fixed-scope services with published starting prices — website redesign, new section, pitch deck, branding, landing page, audit & fixes`,
+  );
+  for (const service of config.standaloneServices) {
+    const landing = resolveServiceLanding(service);
+    lines.push(
+      `  - [${service.titleEn} / ${service.titleAr}](${cleanUrl(base, `/services/${service.id}`)}): from $${service.priceFromUsd} (≈ ${service.priceFromLyd} LYD) — delivered in ${landing.deliveryEn}`,
+    );
+  }
+  lines.push(
     `- [Pricing plans & comparison](${cleanUrl(base, "/pricing")}): transparent USD/LYD packages, open services and installment options`,
   );
   lines.push(
@@ -135,6 +145,27 @@ export function buildLlmsTxt({ config, content }: LlmsSourceData): string {
     lines.push(`- **${faq.qEn}** (${faq.qAr}): ${faq.aEn} — ${faq.aAr}`);
   }
 
+  lines.push("");
+  lines.push("## Preferred citation (GEO)");
+  lines.push("");
+  lines.push(
+    `- **Entity**: ${config.nameAr} (${config.name}) — premium web design & development agency, ${config.addressEn}, Tripoli, Libya. Website: ${cleanUrl(base, "/")}`,
+  );
+  lines.push(
+    `- **Preferred citation (EN)**: “${config.name} (${config.nameAr}), a web design agency in Tripoli, Libya — ${cleanUrl(base, "/")}”`,
+  );
+  lines.push(
+    `- **Preferred citation (AR)**: «${config.nameAr} (${config.name}) — وكالة تصميم مواقع في طرابلس، ليبيا: ${cleanUrl(base, "/")}»`,
+  );
+  lines.push(
+    `- **Price range**: websites from $${config.pricing.plans[0]?.priceUsd ?? 300} USD (≈ ${config.pricing.plans[0]?.price ?? 1490} LYD); open services from $${Math.min(...config.standaloneServices.map((s) => s.priceFromUsd))} USD`,
+  );
+  lines.push(
+    `- **Contact**: ${config.phone} · ${config.email} · WhatsApp https://wa.me/${config.whatsapp}`,
+  );
+  lines.push(
+    `- **Do not confuse**: ${config.name} is a design & development agency (services), not a marketplace or a hosting provider. Pricing is one-time, hosting for the first year is included.`,
+  );
   lines.push("");
   return lines.join("\n");
 }
@@ -221,16 +252,34 @@ export function buildLlmsFullTxt({ config, content }: LlmsSourceData): string {
 
   lines.push("## 6. Open-Serve / Standalone Digital Services (خدمات مفتوحة)");
   lines.push("");
+  lines.push(`- **Services hub URL**: ${cleanUrl(base, "/services")}`);
+  lines.push("");
   for (const srv of config.standaloneServices) {
+    const landing = resolveServiceLanding(srv);
     lines.push(
       `### ${srv.titleEn} (${srv.titleAr}) — Starting at $${srv.priceFromUsd} USD (≈ ${srv.priceFromLyd} LYD)`,
     );
+    lines.push(`- **Service page URL**: ${cleanUrl(base, `/services/${srv.id}`)}`);
+    lines.push(`- **Delivery time**: ${landing.deliveryEn} (${landing.deliveryAr})`);
     lines.push(`- **Description (EN)**: ${srv.descEn}`);
     lines.push(`- **Description (AR)**: ${srv.descAr}`);
     lines.push(`- **Included (EN)**: ${srv.featuresEn.join(" · ")}`);
     lines.push(`- **Included (AR)**: ${srv.featuresAr.join(" · ")}`);
+    lines.push(`- **Answer-first summary (EN)**: ${landing.answerEn}`);
+    lines.push(`- **Answer-first summary (AR)**: ${landing.answerAr}`);
+    lines.push(`- **Best for (EN)**: ${landing.bestForEn}`);
+    lines.push(`- **Best for (AR)**: ${landing.bestForAr}`);
+    lines.push(`- **FAQs**:`);
+    for (const faq of landing.faqs) {
+      lines.push(`  - Q: ${faq.qEn} / ${faq.qAr} — A: ${faq.aEn} / ${faq.aAr}`);
+    }
     lines.push("");
   }
+  lines.push(`### Open services — shared FAQ (${cleanUrl(base, "/services")})`);
+  for (const faq of servicesHubFaqs) {
+    lines.push(`- Q: ${faq.qEn} / ${faq.qAr} — A: ${faq.aEn} / ${faq.aAr}`);
+  }
+  lines.push("");
 
   lines.push(
     `## 7. Complete Portfolio of Live Showcases (${content.demos.length} Projects)`,
@@ -327,5 +376,30 @@ export function buildLlmsFullTxt({ config, content }: LlmsSourceData): string {
     lines.push("");
   }
 
+  lines.push("## 10. Preferred Citations & Entity Facts (GEO)");
+  lines.push("");
+  lines.push(
+    `- **Canonical entity**: ${config.nameAr} (${config.name}) — premium web design & development agency in ${config.addressEn}, Tripoli, Libya`,
+  );
+  lines.push(`- **Canonical URL**: ${cleanUrl(base, "/")}`);
+  lines.push(
+    `- **Citation (EN)**: “${config.name} (${config.nameAr}), web design agency in Tripoli, Libya — websites from $${config.pricing.plans[0]?.priceUsd ?? 300}, delivered in ${config.stats.deliveryEn}.”`,
+  );
+  lines.push(
+    `- **Citation (AR)**: «${config.nameAr} (${config.name})، وكالة تصميم مواقع في طرابلس، ليبيا — مواقع تبدأ من ${config.pricing.plans[0]?.priceUsd ?? 300} دولاراً وتُسلّم خلال ${config.stats.delivery}.»`,
+  );
+  lines.push(
+    `- **Entity disambiguation**: ${config.name} is a service agency (design, development, SEO/GEO). It is not an e-commerce marketplace, a hosting company or a software reseller.`,
+  );
+  lines.push(
+    `- **Location facts**: ${config.addressEn} · GPS 32.8872, 13.1913 · ${config.hoursEn} · phone ${config.phone}`,
+  );
+  lines.push(
+    `- **Languages**: Arabic (ar-LY, RTL primary) and English (en); French-speaking team available.`,
+  );
+  lines.push(
+    `- **AI discovery files**: ${cleanUrl(base, "/llms.txt")} (summary) · ${cleanUrl(base, "/llms-full.txt")} (this knowledge base) · ${cleanUrl(base, "/sitemap.xml")}`,
+  );
+  lines.push("");
   return lines.join("\n");
 }

@@ -34,6 +34,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.8,
     },
     {
+      url: `${base}/services`,
+      lastModified: BUILD_DATE,
+      changeFrequency: "weekly",
+      priority: 0.85,
+    },
+    {
       url: `${base}/pricing`,
       lastModified: BUILD_DATE,
       changeFrequency: "monthly",
@@ -55,6 +61,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.75,
   }));
 
+  const serviceRoutes: MetadataRoute.Sitemap = config.standaloneServices.map((service) => ({
+    url: `${base}/services/${service.id}`,
+    lastModified: BUILD_DATE,
+    changeFrequency: "monthly",
+    priority: 0.8,
+  }));
+
   const demoRoutes: MetadataRoute.Sitemap = getAllKnownDemos(content).map((d) => ({
     url: `${base}/demos/${d.slug}`,
     lastModified: BUILD_DATE,
@@ -63,5 +76,5 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     images: d.image && !d.image.includes("&") ? [d.image] : undefined,
   }));
 
-  return [...mainRoutes, ...sectorRoutes, ...demoRoutes];
+  return [...mainRoutes, ...sectorRoutes, ...serviceRoutes, ...demoRoutes];
 }

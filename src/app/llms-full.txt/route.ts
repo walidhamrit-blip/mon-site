@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { getSiteDataCached } from "@/lib/store";
 import { buildLlmsFullTxt } from "@/lib/llms-txt";
 
@@ -12,12 +13,14 @@ import { buildLlmsFullTxt } from "@/lib/llms-txt";
 export async function GET() {
   const data = await getSiteDataCached();
   const body = buildLlmsFullTxt(data);
+  const etag = `"${createHash("sha256").update(body).digest("base64url").slice(0, 32)}"`;
 
   return new Response(body, {
     status: 200,
     headers: {
       "Content-Type": "text/plain; charset=utf-8",
       "X-Robots-Tag": "all",
+      "ETag": etag,
       "Cache-Control": "public, s-maxage=3600, stale-while-revalidate=86400",
     },
   });

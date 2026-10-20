@@ -106,10 +106,21 @@ export function Services() {
                   </div>
                 </div>
 
-                <h3 className="mt-4 text-lg font-black leading-snug">{title}</h3>
+                <h3 className="mt-4 text-lg font-black leading-snug">
+                  <Link href={`/services/${service.id}`} className="hover:text-[var(--accent)] transition-colors">
+                    {title}
+                  </Link>
+                </h3>
                 <p className="mt-1.5 text-sm opacity-60 leading-6">
                   {ar ? service.descAr : service.descEn}
                 </p>
+                <Link
+                  href={`/services/${service.id}`}
+                  className="mt-2 inline-flex items-center gap-1 text-xs font-bold text-[var(--accent)] hover:underline"
+                >
+                  {ar ? "تفاصيل الخدمة والأسعار" : "Service details & pricing"}
+                  <ArrowUpRight className="h-3.5 w-3.5" />
+                </Link>
 
                 <ul className="mt-4 space-y-2">
                   {(ar ? service.featuresAr : service.featuresEn).map((f) => (
@@ -159,13 +170,21 @@ export function Services() {
               {ar ? t.services.customCtaAr : t.services.customCtaEn}
             </p>
           </div>
-          <Link
-            href="/contact"
-            className="h-10 px-5 rounded-full bg-[var(--accent)] text-[var(--accent-foreground)] text-xs font-black inline-flex items-center gap-1.5 hover:bg-[var(--accent-hover)] transition-colors flex-shrink-0"
-          >
-            {ar ? "تواصل معنا" : "Contact us"}
-            <ArrowUpRight className="h-3.5 w-3.5" />
-          </Link>
+          <div className="flex items-center gap-2 flex-shrink-0">
+            <Link
+              href="/services"
+              className="h-10 px-4 rounded-full border border-[var(--accent)]/40 text-xs font-black inline-flex items-center gap-1.5 hover:bg-[var(--accent)]/10 transition-colors"
+            >
+              {ar ? "كل الخدمات" : "All services"}
+            </Link>
+            <Link
+              href="/contact"
+              className="h-10 px-5 rounded-full bg-[var(--accent)] text-[var(--accent-foreground)] text-xs font-black inline-flex items-center gap-1.5 hover:bg-[var(--accent-hover)] transition-colors"
+            >
+              {ar ? "تواصل معنا" : "Contact us"}
+              <ArrowUpRight className="h-3.5 w-3.5" />
+            </Link>
+          </div>
         </div>
       </div>
     </section>

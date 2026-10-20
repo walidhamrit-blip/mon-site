@@ -14,6 +14,9 @@
 # Scripts de test locaux
 .scratch/
 
+# Rapports GEO générés par scripts/geo-citations.mjs (artefact CI)
+/reports
+
 # Divers
 *.tsbuildinfo
 next-env.d.ts

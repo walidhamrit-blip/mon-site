@@ -300,7 +300,21 @@ test("buildLlmsTxt et buildLlmsFullTxt synchronisent dynamiquement toutes les r�
   for (const srv of siteConfig.standaloneServices) {
     assert.ok(llms.includes(srv.titleEn));
     assert.ok(llmsFull.includes(srv.titleAr));
+    assert.ok(
+      llms.includes(`/services/${srv.id}`),
+      `llms.txt doit contenir la page /services/${srv.id}`,
+    );
+    assert.ok(
+      llmsFull.includes(`/services/${srv.id}`),
+      `llms-full.txt doit contenir la page /services/${srv.id}`,
+    );
+    assert.ok(
+      llmsFull.includes(`$${srv.priceFromUsd}`),
+      `llms-full.txt doit publier le tarif de ${srv.id}`,
+    );
   }
+  assert.ok(llms.includes("Preferred citation"));
+  assert.ok(llmsFull.includes("Preferred Citations & Entity Facts"));
 });
 
 // ── 8. Schémas JSON-LD enrichis & Moteur d'audit SEO/GEO ──────────────────
@@ -308,11 +322,17 @@ test("schémas JSON-LD incluent geo, review, services à la carte, HowTo et Offe
   const lb = localBusinessJsonLd(siteConfig, defaultTestimonials);
   assert.equal(lb.geo["@type"], "GeoCoordinates");
   assert.equal(lb.review.length, defaultTestimonials.length);
+  assert.equal(lb.serviceArea["@type"], "GeoCircle");
+  assert.equal(lb.serviceArea.geoRadius, "60000");
+  assert.ok(lb.hasOfferCatalog["@id"].endsWith("/pricing#offer-catalog"));
+  assert.deepEqual(lb.knowsLanguage, ["ar", "en", "fr"]);
 
   const catalog = offerCatalogJsonLd(siteConfig);
+  assert.ok(catalog["@id"].endsWith("/pricing#offer-catalog"));
   const expectedCount =
     siteConfig.pricing.plans.length + siteConfig.standaloneServices.length;
   assert.equal(catalog.itemListElement.length, expectedCount);
+  assert.equal(catalog.numberOfItems, expectedCount);
 
   const howTo = howToJsonLd(siteConfig, defaultProcess);
   assert.equal(howTo["@type"], "HowTo");
@@ -322,6 +342,9 @@ test("schémas JSON-LD incluent geo, review, services à la carte, HowTo et Offe
   assert.equal(work["@type"], "CreativeWork");
   assert.equal(work.offers["@type"], "Offer");
   assert.ok(Number(work.offers.price) > 0);
+  assert.equal(work.isPartOf["@id"], `${siteConfig.url}/#website`);
+  assert.equal(work.mainEntityOfPage["@type"], "WebPage");
+  assert.equal(work.about["@type"], "Thing");
 });
 
 test("runSeoAudit calcule un score 100/100 quand les réalisations sont auto-complétées", () => {

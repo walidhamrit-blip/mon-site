@@ -51,10 +51,18 @@ export function Footer() {
           <nav aria-label={locale === "ar" ? "خدماتنا" : "Our services"}>
             <div className="font-bold text-sm tracking-wide opacity-90">{t.footer.services}</div>
             <ul className="mt-4 space-y-2 text-sm opacity-70">
-              <li><Link href="/#services" className="hover:opacity-100 hover:underline">{locale === "ar" ? "موقع واجهة" : "Vitrine site"}</Link></li>
-              <li><Link href="/#services" className="hover:opacity-100 hover:underline">{locale === "ar" ? "متجر إلكتروني" : "E-commerce"}</Link></li>
-              <li><Link href="/#services" className="hover:opacity-100 hover:underline">{locale === "ar" ? "حجز مواعيد" : "Booking"}</Link></li>
-              <li><Link href="/#services" className="hover:opacity-100 hover:underline">{locale === "ar" ? "تحسين SEO" : "SEO"}</Link></li>
+              {siteConfig.standaloneServices.slice(0, 4).map((service) => (
+                <li key={service.id}>
+                  <Link href={`/services/${service.id}`} className="hover:opacity-100 hover:underline">
+                    {locale === "ar" ? service.titleAr : service.titleEn}
+                  </Link>
+                </li>
+              ))}
+              <li>
+                <Link href="/services" className="font-bold text-[var(--accent)] hover:opacity-100 hover:underline">
+                  {locale === "ar" ? "كل الخدمات ←" : "All services ←"}
+                </Link>
+              </li>
             </ul>
           </nav>
 

@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { getSiteDataCached } from "@/lib/store";
 import { buildLlmsTxt } from "@/lib/llms-txt";
 
@@ -10,12 +11,16 @@ import { buildLlmsTxt } from "@/lib/llms-txt";
 export async function GET() {
   const data = await getSiteDataCached();
   const body = buildLlmsTxt(data);
+  const etag = `"${createHash("sha256").update(body).digest("base64url").slice(0, 32)}"`;
 
   return new Response(body, {
     status: 200,
     headers: {
       "Content-Type": "text/plain; charset=utf-8",
       "X-Robots-Tag": "all",
+      // ETag : permet aux crawlers IA de revalider sans re-télécharger
+      // l'intégralité de la base de connaissances à chaque passage.
+      ETag: etag,
       "Cache-Control": "public, s-maxage=3600, stale-while-revalidate=86400",
     },
   });
