@@ -50,7 +50,7 @@ function countMatches(regex, html) {
 
 async function fetchText(url) {
   const res = await fetch(url, { redirect: "manual" });
-  return { status: res.status, body: await res.text() };
+  return { status: res.status, headers: res.headers, body: await res.text() };
 }
 
 function checkPage(pathname, html) {
@@ -212,6 +212,41 @@ async function main() {
     } catch (err) {
       record(resource.path, "error", `requête impossible : ${err.message}`);
     }
+  }
+
+  // 1b. Garde-fou CSP & iframes de démonstration (évite toute régression
+  //     bloquant l'aperçu interactif des sites clients en <iframe>).
+  try {
+    const homeRes = await fetchText(`${BASE}/`);
+    const csp = homeRes.headers.get("content-security-policy") || "";
+    const frameSrcMatch = csp.match(/(?:^|;\s*)frame-src\s+([^;]+)/i);
+    const frameSrc = frameSrcMatch ? frameSrcMatch[1] : "";
+    if (!frameSrc.includes("'self'") || !frameSrc.includes("https:")) {
+      record(
+        "/",
+        "error",
+        `CSP frame-src bloque les démos interactives https: (« ${frameSrc || "absent"} »)`,
+      );
+    } else {
+      record("/", "pass", "CSP frame-src autorise les sites clients en direct ('self' https:)");
+    }
+
+    const localDemo = await fetchText(`${BASE}/live-demos/tulin-magazin/index.html`);
+    const localXfo = (localDemo.headers.get("x-frame-options") || "").toUpperCase();
+    const localCsp = localDemo.headers.get("content-security-policy") || "";
+    if (localDemo.status !== 200) {
+      record("/live-demos/tulin-magazin/index.html", "error", `HTTP ${localDemo.status}`);
+    } else if (localXfo === "DENY" || /frame-ancestors\s+'none'/i.test(localCsp)) {
+      record(
+        "/live-demos/tulin-magazin/index.html",
+        "error",
+        `démo locale bloquée en iframe (X-Frame-Options=${localXfo || "none"})`,
+      );
+    } else {
+      record("/live-demos/tulin-magazin/index.html", "pass", "démo locale embarquable en iframe");
+    }
+  } catch (err) {
+    record("CSP/iframes", "error", `vérification impossible : ${err.message}`);
   }
 
   // 2. URLs du sitemap

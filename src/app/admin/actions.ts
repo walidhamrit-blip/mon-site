@@ -76,17 +76,19 @@ export async function login(
 
   const token = await createSessionToken();
   const store = await cookies();
-  const isProduction = process.env.NODE_ENV === "production";
-  // Préfixe `__Host-` en production : ce préfixe impose `Path=/` et
-  // `Secure`, ce qui empêche un sous-domaine compromis de modifier ce
-  // cookie et empêche son exposition sur un canal HTTP descendant.
-  const cookieName = isProduction ? `__Host-${ADMIN_COOKIE}` : ADMIN_COOKIE;
+  const forwardedProto = h.get("x-forwarded-proto")?.split(",")[0]?.trim().toLowerCase();
+  const useSecureCookie =
+    forwardedProto === "https" ||
+    Boolean(process.env.VERCEL) ||
+    (process.env.NODE_ENV === "production" && forwardedProto !== "http");
+  // Préfixe `__Host-` sur HTTPS (Vercel / reverse-proxy TLS) : impose
+  // `Path=/` et `Secure`. Sur HTTP local (`next start` hors TLS), on utilise
+  // le cookie sans préfixe `__Host-` pour éviter un rejet navigateur.
+  const cookieName = useSecureCookie ? `__Host-${ADMIN_COOKIE}` : ADMIN_COOKIE;
   store.set(cookieName, token, {
     httpOnly: true,
-    // `lax` permet au cookie d'accompagner les navigations top-level vers
-    // l'admin ; `strict` casserait les liens directs depuis l'e-mail.
     sameSite: "lax",
-    secure: isProduction,
+    secure: useSecureCookie,
     path: "/",
     maxAge: 7 * 24 * 60 * 60,
   });
@@ -95,16 +97,12 @@ export async function login(
 
 export async function logout(): Promise<void> {
   const store = await cookies();
-  // Suppression du cookie utilisé (préfixé `__Host-` en production).
   for (const name of cookieCandidatesForDelete()) store.delete(name);
   redirect("/admin/login");
 }
 
-// Petit wrapper local pour accéder aux noms de cookie (DRY avec auth.ts).
 function cookieCandidatesForDelete(): string[] {
-  const names = [ADMIN_COOKIE];
-  if (process.env.NODE_ENV === "production") names.unshift(`__Host-${ADMIN_COOKIE}`);
-  return names;
+  return [`__Host-${ADMIN_COOKIE}`, ADMIN_COOKIE];
 }
 
 /* ---------------- Demandes (leads) ---------------- */
