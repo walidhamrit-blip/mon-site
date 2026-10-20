@@ -18,10 +18,26 @@ export function Navbar() {
   const { mode, toggle } = useTheme();
   const [open, setOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  // La barre ne reste pas figée devant les titres : elle s'efface quand on
+  // descend et revient dès qu'on remonte (ou en haut de page).
+  const [hidden, setHidden] = useState(false);
 
   useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 20);
-    window.addEventListener("scroll", onScroll);
+    let lastY = window.scrollY;
+    const onScroll = () => {
+      const y = window.scrollY;
+      setScrolled(y > 20);
+      if (y < 120) {
+        setHidden(false);
+      } else if (y > lastY + 6) {
+        setHidden(true);
+      } else if (y < lastY - 6) {
+        setHidden(false);
+      }
+      lastY = y;
+    };
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
@@ -52,7 +68,9 @@ export function Navbar() {
       <header
         className={`fixed top-[var(--promo-h,0px)] inset-x-0 z-50 transition-all duration-300 ${
           scrolled ? "py-3" : "py-5"
-        }`}
+        } ${hidden && !open ? "-translate-y-[130%] pointer-events-none" : "translate-y-0"}`}
+        aria-hidden={hidden && !open ? "true" : undefined}
+        inert={hidden && !open ? true : undefined}
       >
         <div className="site-container px-4 sm:px-6">
           <div

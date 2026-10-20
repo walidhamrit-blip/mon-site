@@ -14,23 +14,43 @@ import {
  * Bandeau de solde animé : dégradé doré accordé au thème, hauteur 52 px
  * (lisible sans écraser la page), message défilant, pastille « PROMO »,
  * coupon copiable en un clic, fermeture, pause au survol.
- * La hauteur est publiée dans `--promo-h` pour que navbar et contenu se
- * décalent sans recouvrement.
+ *
+ * Il n'est plus figé en permanence : dès que le visiteur fait défiler la
+ * page, le bandeau remonte et libère l'écran (la navbar glisse alors tout
+ * en haut) ; il réapparaît en revenant en haut de page. Sa hauteur est
+ * publiée dans `--promo-h` pour que navbar et contenu restent alignés.
  */
 export function PromoBanner() {
   const { locale } = useI18n();
   const promo = CURRENT_PROMO;
   const enabled = promoActive(promo);
   const [visible, setVisible] = useState(true);
+  const [collapsed, setCollapsed] = useState(false);
   const [copied, setCopied] = useState(false);
 
-  // Réserve (ou libère) la hauteur du bandeau : navbar + contenu suivent.
+  // Effacement au défilement : dès qu'on descend, le bandeau s'en va ;
+  // il revient seulement en haut de page (pas de va-et-vient parasite).
   useEffect(() => {
-    document.documentElement.style.setProperty(
+    const onScroll = () => setCollapsed(window.scrollY > 40);
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
+  // Deux variables distinctes :
+  //  - `--promo-h`   : position de la navbar / des éléments collants
+  //                    (0 quand le bandeau se replie au défilement) ;
+  //  - `--promo-space`: espace réservé en haut du contenu, constant tant
+  //                    que le bandeau n'est pas fermé — sinon la page
+  //                    sauterait de 52 px à chaque défilement.
+  useEffect(() => {
+    const root = document.documentElement.style;
+    root.setProperty(
       "--promo-h",
-      enabled && visible ? "52px" : "0px",
+      enabled && visible && !collapsed ? "52px" : "0px",
     );
-  }, [enabled, visible]);
+    root.setProperty("--promo-space", enabled && visible ? "52px" : "0px");
+  }, [enabled, visible, collapsed]);
 
   if (!enabled) return null;
 
@@ -55,7 +75,9 @@ export function PromoBanner() {
       role="region"
       aria-label={ar ? "عرض ترويجي" : "Promotion"}
       dir={ar ? "rtl" : "ltr"}
-      className="promo-banner fixed inset-x-0 top-0 z-[60] flex h-[52px] items-stretch"
+      className={`promo-banner fixed inset-x-0 top-0 z-[60] flex h-[52px] items-stretch transition-transform duration-300 ease-out ${
+        collapsed ? "-translate-y-full pointer-events-none" : "translate-y-0"
+      }`}
     >
       {/* Pastille « PROMO » fixe — ancre visuelle immédiate. */}
       <div className="relative z-10 hidden shrink-0 items-center ps-3 pe-2 sm:flex">
