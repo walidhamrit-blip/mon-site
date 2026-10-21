@@ -8,8 +8,14 @@
 
 export const SUBSCRIPTION_CURRENCY = "usd";
 
-/** Période de grâce appliquée par NOWPayments et par notre accès (jours). */
-export const SUBSCRIPTION_GRACE_DAYS = 10;
+/**
+ * Période de grâce après l'échéance, en jours.
+ * Limitée à 5 jours par les règles de la passerelle NOWPayments : au-delà,
+ * l'abonnement est suspendu et le client peut s'abonner de nouveau.
+ */
+export const SUBSCRIPTION_GRACE_DAYS = 5;
+/** Plafond de la grâce imposé par NOWPayments (jours). */
+export const GATEWAY_MAX_GRACE_DAYS = 5;
 
 export type SubscriptionCycle = "monthly" | "annual";
 

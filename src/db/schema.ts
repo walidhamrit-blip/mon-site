@@ -125,7 +125,7 @@ export const subscriptions = pgTable("subscriptions", {
   clientName: text("client_name"),
   phone: text("phone"),
   nowpaymentsSubscriptionId: text("nowpayments_subscription_id").unique(),
-  /** inactive | active | past_due | canceled */
+  /** inactive (facture en attente) | active | canceled — grace/expired dérivés de la date. */
   status: text("status").notNull().default("inactive"),
   currentPeriodStart: timestamp("current_period_start", { withTimezone: true }),
   currentPeriodEnd: timestamp("current_period_end", { withTimezone: true }),

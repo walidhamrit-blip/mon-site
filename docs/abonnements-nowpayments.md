@@ -1,6 +1,6 @@
 # Abonnements mensuels en crypto — plan A (abonnements natifs NOWPayments)
 
-> Statut : **étapes 0, 2 et 3 réalisées** (décisions, schéma, catalogue et synchronisation des plans). Les souscriptions client et l'IPN d'abonnement restent à faire (étapes 4 à 6).
+> Statut : **étapes 0 à 6 réalisées** (décisions, schéma, plans, souscription client, IPN d'abonnement, espace abonné). Restent à faire : annulation par le client, relances e-mail, liste admin, lien de navigation, et validation réelle sur sandbox NOWPayments.
 > Périmètre : passerelle NOWPayments (déjà intégrée : facture `/invoice`, IPN signé HMAC-SHA512, table `orders`).
 > Objectif : vendre des abonnements récurrents payés en crypto, sans construire notre propre moteur de facturation.
 
@@ -12,12 +12,51 @@
 | Vitrine+ | 12 $ | 89 $ |
 | Boutique | 25 $ | 199 $ |
 
-- Période de grâce demandée : **10 jours**.
-- ⚠️ **Écart avec NOWPayments** : la documentation consultée limite la grâce à **5 jours** (et non plus que la durée de l'abonnement). Le code applique donc la grâce de 10 jours **côté site** : l'accès reste ouvert jusqu'à `fin de période + 10 jours`. Le réglage de grâce chez NOWPayments doit rester au maximum autorisé (5 jours). **À vérifier en sandbox** : NOWPayments ne doit pas résilier l'abonnement avant la fin de nos 10 jours.
+- Période de grâce : **5 jours**. Décision finale : la passerelle NOWPayments limite la grâce à 5 jours (et à la durée de l'abonnement). Le client en est averti avant de s'abonner (case à cocher obligatoire) et après (page de suivi, réponse de l'API). Une fois la grâce écoulée, l'abonnement est suspendu et le client peut **s'abonner de nouveau**.
 - Le catalogue est défini dans `src/lib/subscription-plans.ts`. Les identifiants locaux sont `vitrine-monthly`, `vitrine-annual`, `vitrine-plus-monthly`, etc.
 - Ces abonnements sont des offres distinctes des tarifs ponctuels de `config.ts` (300 / 510 / 880 $).
 
-## Réalisé (ce commit)
+## Mise à jour — souscription, IPN et espace abonné (étapes 4 à 6)
+
+**Décisions appliquées** : grâce = 5 jours ; client averti et case à cocher obligatoire ; réabonnement possible après expiration.
+
+**Règles de statut** (`src/lib/subscription-lifecycle.ts`)
+- Statut affiché : `inactive` (facture en attente) → `active` (période payée) → `grace` (échéance dépassée, accès maintenu, 5 jours) → `expired` (accès suspendu) ; `canceled`.
+- Un paiement après expiration démarre une nouvelle période à partir du paiement. Un paiement anticipé prolonge la période courante depuis l'échéance (les jours déjà payés ne sont pas perdus).
+- Un abonnement **en attente de paiement** ou **actif/en grâce** bloque une nouvelle souscription à la même formule pour la même adresse (évite les doubles factures). Après expiration ou annulation, le réabonnement est autorisé.
+
+**Souscription** — `POST /api/subscriptions/create`
+- Validation serveur (formule, e-mail, nom, téléphone, acceptation de la grâce) ; origine vérifiée ; limitation de débit.
+- Création de l'abonné en base, puis `POST /v1/subscriptions` chez NOWPayments (qui envoie la facture par e-mail).
+- Échec côté passerelle : 502 avec la cause, et la ligne locale est supprimée (aucun abonné fantôme).
+- Réponse : référence `ABO-…`, lien de suivi `/abonnements/suivi?ref=…&t=…` (jeton affiché une seule fois), rappel de la règle de grâce.
+
+**IPN d'abonnement** — `/api/payments/ipn`
+- Branche séparée, déclenchée par l'identifiant d'abonnement dans la notification (`subscription_id`, ou `recurring_payment_id`). Le flux des commandes ponctuelles n'est pas modifié.
+- Signature vérifiée avant tout traitement (inchangé).
+- Statut « terminé » uniquement, montant et devise contrôlés contre le prix du plan.
+- Idempotence : un même `payment_id` n'est enregistré qu'une fois ; verrou sur la ligne d'abonné pour les notifications simultanées.
+- Chaque paiement crée une commande `kind = subscription` (visible dans l'admin, nouvel onglet « Abonnement »).
+- Première activation : e-mail « paiement confirmé » à l'agence (même gabarit que les commandes).
+- Statuts `failed`/`expired`/`refunded` : aucun changement d'accès. Statuts en cours : ignorés en attente.
+
+**Espace abonné** — `/abonnements/suivi`
+- Accès par référence + jeton (SHA-256 en base, jamais en clair). Mauvais jeton = même réponse que référence inconnue.
+- Affiche statut, fin de période, dernier jour d'accès, grâce de 5 jours, e-mail masqué, et bouton de réabonnement si besoin.
+
+**Tests**
+- `npm run test:subscriptions` : 13 tests (catalogue, périodes, grâce, statuts, identifiant IPN).
+- Scénario d'intégration (`.scratch/subscriptions-integration.ts`, non versionné) : vraie base PostgreSQL, vraies routes, faux serveur NOWPayments. 38 contrôles + notifications simultanées : tous passent.
+
+**À valider sur sandbox NOWPayments avant production** (non testable depuis l'environnement de développement) :
+1. Nom exact du champ identifiant l'abonnement dans l'IPN (`subscription_id` supposé).
+2. Présence de `price_amount` / `price_currency` dans les IPN d'abonnement (exigés par le contrôle de montant ; sans eux, le paiement est refusé et signalé dans les journaux).
+3. En-têtes d'authentification de `POST /v1/subscriptions/plans` (clé API seule, ou JWT).
+4. Que NOWPayments ne résilie pas l'abonnement avant nos 5 jours de grâce.
+
+**Reste à faire** : annulation par le client, relances e-mail (J-3, retard), liste des abonnés dans l'admin, lien « Abonnements » dans la navigation.
+
+## Réalisé (commits précédents)
 
 - `src/lib/subscription-plans.ts` : catalogue et règles pures (fin de période, grâce, état d'accès).
 - `src/lib/nowpayments.ts` : `createSubscriptionPlan`, `updateSubscriptionPlan`, `getSubscriptionPlanRemote`, `createSubscription`.
@@ -48,7 +87,7 @@ Sources : documentation et articles NOWPayments sur les abonnements (voir « Ré
 |---|---|---|
 | **Périodicité** | Un « mois » = intervalle de 30 ou 31 jours, pas une date fixe du calendrier. | Si on veut facturer le 1er de chaque mois, il faut un autre modèle (option B, non retenue). |
 | **Prélèvement automatique** | Disponible via ChangeNOW **uniquement** pour les intervalles 1, 7, 30/31 et 365 jours. Autres intervalles : facture manuelle à chaque cycle. | Pour un plan mensuel (30 ou 31 jours), le prélèvement automatique est possible, mais il dépend de l'autorisation du client. |
-| **Période de grâce** | 0 à 5 jours, et ne peut pas dépasser la période de l'abonnement. | À régler dans le plan. Pendant la grâce, l'accès reste ouvert et une relance part. |
+| **Période de grâce** | 0 à 5 jours, et ne peut pas dépasser la période de l'abonnement. | Fixée à **5 jours** (décision validée). Pendant la grâce, l'accès reste ouvert. |
 | **Devise** | NOWPayments ne supporte pas la LYD. Facturation en USD, avec équivalent LYD indicatif sur le site. | Cohérent avec `NOWPAYMENTS_CURRENCY=usd`. |
 | **Frais** | Environ 0,5 à 1 % par transaction selon la crypto (à confirmer sur le compte). | À intégrer dans la grille tarifaire. |
 | **Annulation** | Nécessite un jeton JWT (identifiants `NOWPAYMENTS_EMAIL` / `NOWPAYMENTS_PASSWORD`), en plus de la clé API. À confirmer dans la doc officielle. | Déjà partiellement géré par `nowPaymentsJwt()`. |
@@ -82,7 +121,7 @@ Nouvelle table `subscriptions` (à créer dans `ensureSchema()`, comme les autre
 | `nowpayments_subscription_id` (unique) | Identifiant de l'abonnement chez NOWPayments |
 | `email`, `client_name`, `phone` | Coordonnées du client |
 | `amount_usd`, `currency` | Montant par cycle |
-| `status` | `inactive` · `active` · `past_due` · `canceled` |
+| `status` | `inactive` (facture en attente) · `active` · `canceled`. Les états `grace` et `expired` sont **dérivés** de `current_period_end` à chaque lecture : pas de cron nécessaire pour l'affichage. |
 | `current_period_end` | Fin de la période payée |
 | `last_payment_id` | Dernier `payment_id` reçu |
 | `created_at`, `updated_at` | Traçabilité |
