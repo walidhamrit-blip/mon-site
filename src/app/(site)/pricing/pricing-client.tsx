@@ -8,8 +8,8 @@ import { CURRENT_PROMO } from "@/lib/promotion";
 export function PricingClient() {
   const { locale } = useI18n();
   return (
-    <div className="pt-6">
-      <section className="section-tight border-b border-[var(--border)] bg-[var(--secondary)]/35">
+    <div className="pt-2">
+      <section className="pb-[calc(var(--section-y)*0.55)] border-b border-[var(--border)] bg-[var(--secondary)]/35">
         <div className="site-container px-4 text-center sm:px-6 lg:px-8">
           <span className="section-eyebrow is-centered justify-center">
             {locale === "ar" ? "الأسعار" : "Pricing"}
