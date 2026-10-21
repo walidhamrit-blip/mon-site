@@ -169,6 +169,15 @@ export function ensureSchema(): Promise<void> {
       await pool.query(
         "CREATE INDEX IF NOT EXISTS subscriptions_status_idx ON subscriptions (status)",
       );
+      // Colonnes ajoutées après la création initiale de la table : une base
+      // déjà créée (par exemple le Preview) doit les recevoir aussi.
+      await pool.query(`
+        ALTER TABLE subscriptions
+          ADD COLUMN IF NOT EXISTS canceled_at timestamptz,
+          ADD COLUMN IF NOT EXISTS reminder_for timestamptz,
+          ADD COLUMN IF NOT EXISTS overdue_notice_for timestamptz,
+          ADD COLUMN IF NOT EXISTS expired_notice_for timestamptz
+      `);
       await pool.query(
         "ALTER TABLE orders ADD COLUMN IF NOT EXISTS subscription_id integer REFERENCES subscriptions(id)",
       );
