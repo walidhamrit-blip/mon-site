@@ -69,20 +69,20 @@ export default async function SectorPage({ params }: { params: Promise<{ sector:
         ]}
       />
 
-      <div className="pt-[96px]">
+      <div className="pt-6">
         {/* Hero sectoriel */}
-        <section className="py-12 bg-[var(--secondary)]/30 border-b border-[var(--border)]">
+        <section className="section-tight border-b border-[var(--border)] bg-[var(--secondary)]/35">
           <div className="site-container px-4 sm:px-6 lg:px-8">
             <div className="flex flex-wrap items-center gap-2 text-xs font-bold">
-              <Link href="/sectors" className="px-3 py-1 rounded-full bg-[var(--card)] border border-[var(--border)] hover:border-[var(--accent)]">
+              <Link href="/sectors" className="rounded-full border border-[var(--border)] bg-[var(--card)] px-3 py-1 transition-colors hover:border-[var(--accent)]">
                 ← كل القطاعات
               </Link>
-              <span className="px-3 py-1 rounded-full bg-[var(--accent)] text-[var(--accent-foreground)]">
+              <span className="rounded-full border border-[var(--accent)]/35 bg-[var(--accent)]/12 px-3 py-1 text-[var(--accent)]">
                 {sector.labelAr} · {sector.labelEn}
               </span>
             </div>
 
-            <h1 className="mt-6 text-[32px] lg:text-[44px] font-black tracking-tight leading-tight">
+            <h1 className="mt-6 max-w-[28ch] text-[clamp(1.8rem,1.2rem+2.2vw,2.85rem)] font-black leading-[1.08] tracking-[-0.03em] text-balance">
               {sector.h1Ar}
             </h1>
             <p className="mt-3 text-lg opacity-70 max-w-[64ch] leading-relaxed">{sector.heroSubtitleAr}</p>
@@ -144,7 +144,7 @@ export default async function SectorPage({ params }: { params: Promise<{ sector:
                     <Link
                       key={d.slug}
                       href={`/demos/${d.slug}`}
-                      className="group rounded-[22px] overflow-hidden bg-[var(--card)] border border-[var(--border)] hover:shadow-xl hover:border-[var(--accent)]/40 transition-all flex flex-col"
+                      className="card-surface card-interactive group flex flex-col overflow-hidden"
                     >
                       <div className="relative aspect-[16/11] overflow-hidden">
                         <Image
@@ -215,7 +215,7 @@ export default async function SectorPage({ params }: { params: Promise<{ sector:
             )}
 
             {/* CTA sectoriel */}
-            <div className="mt-12 rounded-[24px] bg-[var(--primary)] text-[var(--primary-foreground)] p-8 lg:p-10 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+            <div className="mt-12 flex flex-col gap-6 rounded-[var(--radius-lg)] bg-[var(--primary)] p-8 text-[var(--primary-foreground)] shadow-[var(--shadow-lg)] lg:flex-row lg:items-center lg:justify-between lg:p-10">
               <div>
                 <h3 className="text-2xl font-black">جاهز لموقع {sector.labelAr} احترافي؟</h3>
                 <p className="mt-2 opacity-70 max-w-[50ch]">

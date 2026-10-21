@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useMemo, useRef, useState } from "react";
-import Image from "next/image";
+import { ProjectPreview } from "@/components/project-preview";
 import { motion, useInView, useReducedMotion } from "framer-motion";
 import {
   Check,
@@ -20,7 +20,6 @@ import { useSectionHeading, useSiteContent } from "@/components/site-provider";
 import { useTheme } from "@/components/theme-provider";
 import { ThemePreview } from "@/components/theme-switcher";
 import { THEMES } from "@/lib/themes";
-import { demoImageAlt } from "@/lib/classification";
 import { ScaledLiveIframe, FullscreenLiveViewer } from "@/components/live-site-frames";
 import { demos as fallbackDemos } from "@/lib/content";
 import type { Demo } from "@/lib/site-types";
@@ -54,7 +53,9 @@ const styles = [
 ];
 
 /** Les trois pages d'accueil mises en avant dans la bannière. */
-const BANNER_SLUGS = ["al-massa-mattresses", "myphone-tripoli", "toy-store-tripoly"];
+// Trois projets dont l'aperçu local existe (public/previews) : la bannière
+// est donc remplie dès le premier rendu, sans attendre un CDN tiers.
+const BANNER_SLUGS = ["al-manhaj-company", "myphone-tripoli", "hala-perfumes"];
 
 const SLIDE_DURATION = 7000;
 
@@ -75,7 +76,9 @@ export function IdentityStudio() {
   const [hovered, setHovered] = useState(false);
   const [focused, setFocused] = useState(false);
   const [pageVisible, setPageVisible] = useState(true);
-  const [visited, setVisited] = useState<number[]>([0]);
+  // Aucune iframe tierce n'est chargée avant un clic explicite : les
+  // aperçus locaux s'affichent immédiatement et la page reste légère.
+  const [liveSlug, setLiveSlug] = useState<string | null>(null);
   const [fullscreen, setFullscreen] = useState<Demo | null>(null);
 
   const reducedMotion = useReducedMotion();
@@ -103,14 +106,6 @@ export function IdentityStudio() {
     return () => document.removeEventListener("visibilitychange", update);
   }, []);
 
-  // Un site n'est chargé (iframe) que lorsque sa diapositive est affichée,
-  // puis il reste monté pour que le défilement suivant soit fluide.
-  const markVisited = (i: number) => {
-    if (count < 2) return;
-    const target = ((i % count) + count) % count;
-    setVisited((previous) => (previous.includes(target) ? previous : [...previous, target]));
-  };
-
   // Défilement automatique : relancé à chaque diapositive, interrompu dès que
   // le curseur survole la bannière, que la page passe en arrière-plan ou que
   // l'utilisateur préfère un mouvement réduit.
@@ -119,10 +114,9 @@ export function IdentityStudio() {
     const target = (index + 1) % count;
     const timer = window.setTimeout(() => {
       setIndex(target);
-      markVisited(target);
+      setLiveSlug(null);
     }, SLIDE_DURATION);
     return () => window.clearTimeout(timer);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [playing, count, index]);
 
   if (count === 0 || !current) return null;
@@ -130,15 +124,14 @@ export function IdentityStudio() {
   const radius = style.id === "sharp" ? 8 : style.id === "playful" ? 32 : 26;
   const goTo = (next: number) => {
     setPaused(true);
-    const target = (next + count) % count;
-    setIndex(target);
-    markVisited(target);
+    setIndex((next + count) % count);
+    setLiveSlug(null);
   };
 
   return (
     <section
       id="themes"
-      className="py-16 lg:py-24 bg-[var(--primary)] text-[var(--primary-foreground)] relative overflow-hidden"
+      className="section bg-[var(--primary)] text-[var(--primary-foreground)] relative overflow-hidden"
     >
       <div className="absolute inset-0 opacity-20 pointer-events-none">
         <div
@@ -149,19 +142,19 @@ export function IdentityStudio() {
 
       <div ref={ref} className="site-container px-4 sm:px-6 lg:px-8 relative">
         {/* ---------- En-tête ---------- */}
-        <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6 mb-8">
+        <div className="mb-8 flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
           <div>
-            <div
-              className="inline-flex items-center gap-2 text-sm font-semibold tracking-[0.12em]"
+            <span
+              className="inline-flex items-center gap-2.5 text-[11.5px] font-bold uppercase tracking-[0.18em]"
               style={{ color: accent.hex }}
             >
-              <span className="h-px w-8" style={{ background: accent.hex }} />
+              <span className="h-px w-7" style={{ background: accent.hex }} />
               {ar ? "المخصص المباشر × ثيمات جاهزة" : "LIVE CUSTOMIZER × READY-MADE THEMES"}
-            </div>
-            <h2 className="mt-3 text-[30px] lg:text-[42px] font-black tracking-tight leading-none">
+            </span>
+            <h2 className="mt-3 text-[clamp(1.7rem,1.1rem+2vw,2.75rem)] font-black leading-[1.06] tracking-[-0.025em] text-balance">
               {customizerHeading.title}
             </h2>
-            <p className="mt-3 opacity-60 max-w-[60ch]">{customizerHeading.subtitle}</p>
+            <p className="mt-3 max-w-[62ch] text-[15px] leading-7 opacity-65">{customizerHeading.subtitle}</p>
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
@@ -269,29 +262,23 @@ export function IdentityStudio() {
               {slides.map((demo, i) => (
                 <div key={demo.slug} className="w-full shrink-0" aria-hidden={i !== index % count}>
                   <div className="relative aspect-[4/3] sm:aspect-[16/9] lg:aspect-[16/8] bg-white overflow-hidden">
-                    {/* Image du projet : fond immédiat pendant le chargement du site. */}
-                    <Image
-                      src={demo.image}
-                      alt={demoImageAlt(demo, ar ? "ar" : "en")}
-                      fill
-                      sizes="(max-width: 1024px) 100vw, 80vw"
-                      priority={i === 0}
-                      loading={i === 0 ? "eager" : "lazy"}
-                      decoding="async"
-                      className="object-cover object-top"
-                    />
-                    {visited.includes(i) && (
+                    {/* Aperçu local (image du projet) : instantané, sans
+                        requête tierce. L'iframe réelle ne se charge qu'après
+                        un clic sur « معاينة حية », ce qui évite une zone
+                        blanche et un chargement réseau inutile. */}
+                    <div style={{ fontFamily: font.family }} className="absolute inset-0">
+                      <ProjectPreview demo={demo} mode="desktop" priority={i === 0} />
+                    </div>
+                    {liveSlug === demo.slug && (
                       <div
-                        className={`absolute inset-0 ${
-                          i === index % count ? "pointer-events-auto" : "pointer-events-none opacity-90"
-                        }`}
+                        className="absolute inset-0"
                         style={{ fontFamily: font.family }}
                       >
                         <ScaledLiveIframe
                           url={demo.previewUrl}
                           title={ar ? demo.title : demo.titleEn}
                           mode="desktop"
-                          interactive={i === index % count}
+                          interactive
                         />
                       </div>
                     )}
@@ -318,6 +305,14 @@ export function IdentityStudio() {
                   </p>
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setLiveSlug(current.slug)}
+                    className="inline-flex h-9 items-center gap-1.5 rounded-full border border-white/30 bg-white/15 px-4 text-xs font-bold text-white backdrop-blur transition-colors hover:bg-white/25 cursor-pointer"
+                  >
+                    <Play className="h-3.5 w-3.5" />
+                    {ar ? "معاينة حية" : "Live preview"}
+                  </button>
                   <button
                     type="button"
                     onClick={() => setFullscreen(current)}

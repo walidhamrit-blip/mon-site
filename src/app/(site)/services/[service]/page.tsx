@@ -100,9 +100,9 @@ export default async function ServicePage({
         ]}
       />
 
-      <div className="pt-[96px]">
+      <div className="pt-6">
         {/* Hero */}
-        <section className="py-12 bg-[var(--secondary)]/30 border-b border-[var(--border)]">
+        <section className="section-tight border-b border-[var(--border)] bg-[var(--secondary)]/35">
           <div className="site-container px-4 sm:px-6 lg:px-8">
             <nav aria-label="مسار التصفح" className="flex flex-wrap items-center gap-2 text-xs font-bold">
               <Link
@@ -112,7 +112,7 @@ export default async function ServicePage({
                 <ArrowLeft className="h-3 w-3" />
                 كل الخدمات
               </Link>
-              <span className="px-3 py-1 rounded-full bg-[var(--accent)] text-[var(--accent-foreground)]">
+              <span className="rounded-full border border-[var(--accent)]/35 bg-[var(--accent)]/12 px-3 py-1 text-[var(--accent)]">
                 {landing.deliveryAr}
               </span>
             </nav>
@@ -202,7 +202,7 @@ export default async function ServicePage({
         </section>
 
         {/* Prestations + cible */}
-        <section className="py-12">
+        <section className="section-tight">
           <div className="site-container px-4 sm:px-6 lg:px-8">
             <div className="grid lg:grid-cols-2 gap-8">
               <div>
@@ -291,7 +291,7 @@ export default async function ServicePage({
 
         {/* Réalisations liées */}
         {relatedDemos.length > 0 && (
-          <section className="py-12">
+          <section className="section-tight">
             <div className="site-container px-4 sm:px-6 lg:px-8">
               <h2 className="text-2xl font-black">أعمال أنجزناها في هذه القطاعات</h2>
               <p className="mt-1 text-sm opacity-55">Live showcases</p>
@@ -370,7 +370,7 @@ export default async function ServicePage({
                   <Link
                     key={id}
                     href={`/sectors/${id}`}
-                    className="px-3 py-1 rounded-full bg-[var(--card)] border border-[var(--border)] hover:border-[var(--accent)]"
+                    className="rounded-full border border-[var(--border)] bg-[var(--card)] px-3 py-1 transition-colors hover:border-[var(--accent)]"
                   >
                     {sector.labelAr}
                   </Link>

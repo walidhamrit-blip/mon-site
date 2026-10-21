@@ -141,10 +141,13 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
       suppressHydrationWarning
     >
       <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        {/* Police principale auto-hébergée : préchargée pour éviter tout
+            scintillement, et plus aucune requête vers un tiers. */}
         <link
-          rel="preconnect"
-          href="https://fonts.gstatic.com"
+          rel="preload"
+          href="/fonts/cairo-arabic-var.woff2"
+          as="font"
+          type="font/woff2"
           crossOrigin="anonymous"
         />
         {/* Découverte automatique pour les moteurs et agents IA (llmstxt.org) */}
@@ -160,13 +163,6 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
           href="/llms-full.txt"
           title="Nukhba full AI knowledge base (AR/EN)"
         />
-        {/* Polices : uniquement les graisses réellement utilisées.
-            Playfair Display (jamais utilisé) a été retiré ; Tajawal ajouté
-            car référencé par le sélecteur de polices du customisateur. */}
-        <link
-          rel="stylesheet"
-          href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700;900&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=Tajawal:wght@400;500;700&display=swap"
-        />
         {/* Palettes des 8 thèmes (clair + sombre) — générées depuis src/lib/themes.ts */}
         <style dangerouslySetInnerHTML={{ __html: themeCss() }} />
         {/* Applique thème + mode avant le premier rendu (aucun clignotement).
@@ -180,7 +176,7 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
       </head>
       <body
         className="antialiased"
-        style={{ fontFamily: "var(--font-cairo), var(--font-inter), system-ui" }}
+        style={{ fontFamily: "var(--font-cairo), var(--font-plex-ar), system-ui" }}
       >
         <ThemeProvider defaultMode={defaultMode} defaultPalette={defaultPalette}>
           <I18nProvider defaultLocale={defaultLocale}>

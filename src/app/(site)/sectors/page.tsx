@@ -59,8 +59,8 @@ export default async function SectorsIndexPage() {
         ]}
       />
 
-      <div className="pt-[96px]">
-        <section className="py-12 bg-[var(--secondary)]/30 border-b border-[var(--border)]">
+      <div className="pt-6">
+        <section className="section-tight border-b border-[var(--border)] bg-[var(--secondary)]/35">
           <div className="site-container px-4 sm:px-6 lg:px-8">
             <h1 className="text-[36px] lg:text-[44px] font-black tracking-tight leading-none">
               تصميم مواقع حسب قطاعك في طرابلس

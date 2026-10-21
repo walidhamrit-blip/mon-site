@@ -19,7 +19,7 @@ export default async function PaySuccessPage({
   const { ref, t } = await searchParams;
 
   return (
-    <main className="pt-[96px] min-h-[70vh]">
+    <main className="pt-6 min-h-[70vh]">
       <div className="mx-auto max-w-[960px] px-4 sm:px-6 lg:px-8 py-10">
         {/* Prop `orderRef` (et non `ref`) : `ref` est réservée par React 19
             et ferait échouer tout le rendu de cette page. */}

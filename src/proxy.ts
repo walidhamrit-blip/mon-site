@@ -62,7 +62,11 @@ export function proxy(request: NextRequest) {
 }
 
 export const config = {
+  // Toutes les routes internes de Next (`_next/static`, `_next/image` mais
+  // aussi le flux HMR `_next/hmr`) sont exclues : les en-têtes de sécurité
+  // sont déjà posés par `headers()` dans next.config.ts, et intercepter le
+  // WebSocket du HMR en développement casse le runtime client (hydratation).
   matcher: [
-    "/((?!_next/static|_next/image).*)",
+    "/((?!_next/).*)",
   ],
 };

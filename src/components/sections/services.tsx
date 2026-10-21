@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import { useSectionHeading, useSiteConfig } from "@/components/site-provider";
+import { SectionHeading } from "@/components/section-heading";
 import { lydLabel } from "@/lib/classification";
 import { whatsappLink } from "@/lib/utils";
 import { formatMainPrice } from "@/lib/installments";
@@ -54,21 +55,16 @@ export function Services() {
     );
 
   return (
-    <section id="services" className="py-16 lg:py-24 bg-[var(--secondary)]/40 border-y border-[var(--border)]">
+    <section id="services" className="section">
       <div className="site-container px-4 sm:px-6 lg:px-8">
-        <div className="max-w-[760px] mx-auto text-center">
-          <div className="inline-flex items-center gap-2 text-sm font-semibold tracking-[0.12em] text-[var(--accent)]">
-            <span className="h-px w-8 bg-[var(--accent)]" />
-            {ar ? "خدمات مفتوحة" : "OPEN SERVICES"}
-            <span className="h-px w-8 bg-[var(--accent)]" />
-          </div>
-          <h2 className="mt-3 text-[30px] lg:text-[42px] font-black tracking-tight leading-none">
-            {heading.title}
-          </h2>
-          <p className="mt-3 opacity-60">{heading.subtitle}</p>
-        </div>
+        <SectionHeading
+          align="center"
+          eyebrow={ar ? "خدمات مفتوحة" : "Open services"}
+          title={heading.title}
+          lead={heading.subtitle}
+        />
 
-        <div className="mt-10 grid sm:grid-cols-2 lg:grid-cols-3 gap-6 max-w-[1100px] mx-auto">
+        <div className="mx-auto mt-12 grid max-w-[1120px] gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {services.map((service, idx) => {
             const Icon = ICONS[service.icon] ?? Sparkles;
             const title = ar ? service.titleAr : service.titleEn;
@@ -79,7 +75,7 @@ export function Services() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: (idx % 3) * 0.08 }}
-                className="relative rounded-[24px] border border-[var(--border)] bg-[var(--card)] p-6 flex flex-col hover:border-[var(--accent)]/50 hover:shadow-lg transition-all"
+                className="card-surface card-interactive relative flex flex-col p-6"
               >
                 {"badgeAr" in service && service.badgeAr ? (
                   <div className="absolute -top-3 start-6 px-3 py-1 rounded-full bg-[var(--accent)] text-[var(--accent-foreground)] text-[10px] font-black shadow">
@@ -113,7 +109,7 @@ export function Services() {
                     {title}
                   </Link>
                 </h3>
-                <p className="mt-1.5 text-sm opacity-60 leading-6">
+                <p className="mt-1.5 text-[13.5px] leading-6 text-[var(--muted-foreground)]">
                   {ar ? service.descAr : service.descEn}
                 </p>
                 <Link

@@ -115,9 +115,9 @@ export default async function ArticlePage({
         ]}
       />
 
-      <div className="pt-[96px]">
+      <div className="pt-6">
         {/* En-tête */}
-        <section className="py-12 bg-[var(--secondary)]/30 border-b border-[var(--border)]">
+        <section className="section-tight border-b border-[var(--border)] bg-[var(--secondary)]/35">
           <div className="site-container px-4 sm:px-6 lg:px-8">
             <div className="flex flex-wrap items-center gap-2 text-xs font-bold">
               <Link
@@ -127,7 +127,7 @@ export default async function ArticlePage({
                 <ArrowLeft className="h-3 w-3" />
                 كل الأدلة
               </Link>
-              <span className="px-3 py-1 rounded-full bg-[var(--accent)] text-[var(--accent-foreground)]">
+              <span className="rounded-full border border-[var(--accent)]/35 bg-[var(--accent)]/12 px-3 py-1 text-[var(--accent)]">
                 {article.categoryAr} · {article.categoryEn}
               </span>
             </div>
@@ -328,7 +328,7 @@ export default async function ArticlePage({
             )}
 
             {/* CTA */}
-            <div className="mt-12 rounded-[24px] bg-[var(--primary)] text-[var(--primary-foreground)] p-8 lg:p-10 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+            <div className="mt-12 flex flex-col gap-6 rounded-[var(--radius-lg)] bg-[var(--primary)] p-8 text-[var(--primary-foreground)] shadow-[var(--shadow-lg)] lg:flex-row lg:items-center lg:justify-between lg:p-10">
               <div>
                 <h2 className="text-2xl font-black">هل تريد تطبيق هذا على مشروعك؟</h2>
                 <p className="mt-2 opacity-75 max-w-[52ch]">
