@@ -557,7 +557,7 @@ async function subscriptionHeaders(): Promise<Record<string, string>> {
 }
 
 async function nowPaymentsSubscriptionRequest<T>(
-  method: "GET" | "POST" | "PATCH",
+  method: "GET" | "POST" | "PATCH" | "DELETE",
   path: string,
   body?: Record<string, unknown>,
 ): Promise<T> {
@@ -676,5 +676,19 @@ export function createSubscription(input: {
     "POST",
     "/subscriptions",
     { subscription_plan_id: input.planId, email: input.email },
+  );
+}
+
+/**
+ * Annule le renouvellement d'un abonné (`DELETE /v1/subscriptions/{id}`) :
+ * plus aucune facture n'est émise pour lui. Le JWT est envoyé quand il est
+ * disponible ; à confirmer sur sandbox (certains comptes l'exigent).
+ */
+export async function cancelSubscriptionRemote(
+  nowpaymentsSubscriptionId: string,
+): Promise<void> {
+  await nowPaymentsSubscriptionRequest<unknown>(
+    "DELETE",
+    `/subscriptions/${encodeURIComponent(nowpaymentsSubscriptionId)}`,
   );
 }

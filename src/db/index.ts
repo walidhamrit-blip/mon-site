@@ -160,8 +160,10 @@ export function ensureSchema(): Promise<void> {
           current_period_start timestamptz,
           current_period_end timestamptz,
           last_payment_id text,
-          cancel_requested_at timestamptz,
-          canceled_at timestamptz
+          canceled_at timestamptz,
+          reminder_for timestamptz,
+          overdue_notice_for timestamptz,
+          expired_notice_for timestamptz
         )
       `);
       await pool.query(

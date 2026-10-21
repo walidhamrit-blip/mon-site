@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { findSubscriptionForTracking } from "@/lib/subscriptions";
 import { SUBSCRIPTION_GRACE_DAYS } from "@/lib/subscription-plans";
+import { CancelRenewal } from "./cancel-renewal";
 import type { SubscriptionDisplayStatus } from "@/lib/subscription-lifecycle";
 
 export const metadata: Metadata = {
@@ -16,7 +17,6 @@ const STATUS_LABELS: Record<SubscriptionDisplayStatus, { ar: string; en: string;
   active: { ar: "نشط", en: "Active", tone: "text-emerald-500" },
   grace: { ar: "فترة السماح", en: "Grace period", tone: "text-amber-500" },
   expired: { ar: "موقوف", en: "Suspended", tone: "text-red-500" },
-  canceled: { ar: "ملغى", en: "Canceled", tone: "text-[var(--muted-foreground)]" },
 };
 
 function formatDate(iso: string | null): string {
@@ -112,6 +112,20 @@ export default async function SubscriptionTrackingPage({
           <p className="text-sm text-[var(--muted-foreground)]">
             أرسلت NOWPayments رابط الدفع الأول إلى بريدك الإلكتروني. أكمل الدفع لتفعيل الاشتراك.
           </p>
+        )}
+
+        {view.renewalCanceled && view.status !== "expired" && (
+          <section className="rounded-2xl border border-[var(--border)] bg-[var(--secondary)]/40 p-4 text-sm">
+            تم إلغاء التجديد التلقائي. يبقى وصولك مفعّلاً حتى {formatDate(view.accessEndsAt)}.
+            <br />
+            <span className="text-[var(--muted-foreground)]">
+              Renewal canceled. Access stays open until {formatDate(view.accessEndsAt)}. No further invoices will be issued.
+            </span>
+          </section>
+        )}
+
+        {!view.renewalCanceled && (view.status === "active" || view.status === "grace") && (
+          <CancelRenewal reference={view.ref} token={t ?? ""} accessUntil={view.accessEndsAt} />
         )}
 
         {view.canResubscribe && (

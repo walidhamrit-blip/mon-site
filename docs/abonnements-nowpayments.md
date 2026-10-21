@@ -21,7 +21,7 @@
 **Décisions appliquées** : grâce = 5 jours ; client averti et case à cocher obligatoire ; réabonnement possible après expiration.
 
 **Règles de statut** (`src/lib/subscription-lifecycle.ts`)
-- Statut affiché : `inactive` (facture en attente) → `active` (période payée) → `grace` (échéance dépassée, accès maintenu, 5 jours) → `expired` (accès suspendu) ; `canceled`.
+- Statut affiché : `inactive` (facture en attente) → `active` (période payée) → `grace` (échéance dépassée, accès maintenu, 5 jours) → `expired` (accès suspendu). L'annulation par le client est une date (`canceled_at`), détaillée dans la mise à jour suivante.
 - Un paiement après expiration démarre une nouvelle période à partir du paiement. Un paiement anticipé prolonge la période courante depuis l'échéance (les jours déjà payés ne sont pas perdus).
 - Un abonnement **en attente de paiement** ou **actif/en grâce** bloque une nouvelle souscription à la même formule pour la même adresse (évite les doubles factures). Après expiration ou annulation, le réabonnement est autorisé.
 
@@ -54,7 +54,44 @@
 3. En-têtes d'authentification de `POST /v1/subscriptions/plans` (clé API seule, ou JWT).
 4. Que NOWPayments ne résilie pas l'abonnement avant nos 5 jours de grâce.
 
-**Reste à faire** : annulation par le client, relances e-mail (J-3, retard), liste des abonnés dans l'admin, lien « Abonnements » dans la navigation.
+**Reste à faire avant production** : validation sur sandbox NOWPayments (voir la liste « Non confirmé » ci-dessous), et contrôle visuel de la page admin. Le code des points annoncés (annulation, relances, admin, navigation) est en place.
+
+## Mise à jour — annulation, relances, administration, navigation
+
+- **Annulation client** : `POST /api/subscriptions/cancel` (même origine, limitation de débit, référence + jeton de suivi). Elle appelle `DELETE /v1/subscriptions/{id}` (JWT envoyé si configuré).
+  - Échec de la passerelle : **502**, aucune modification locale.
+  - 404 de la passerelle : traité comme annulé (déjà supprimé côté NOWPayments).
+  - Succès : `canceled_at` posé, statut stocké inchangé, accès jusqu'à `current_period_end`, **sans grâce**, **sans remboursement**. Idempotent.
+  - Bouton sur `/abonnements/suivi`, visible si l'abonnement est actif ou en grâce et non annulé.
+- **Relances** : `GET /api/cron/subscriptions`, en `Authorization: Bearer $CRON_SECRET`, planifié chaque jour à 08:00 UTC (`vercel.json`). Sans `CRON_SECRET` : 503. Mauvais secret : 401.
+  - Rappel à J-3 avant l'échéance (`reminder_for`) ;
+  - avis « en retard » pendant la grâce (`overdue_notice_for`) ;
+  - avis « suspendu » après la grâce (`expired_notice_for`).
+  - Une seule relance par échéance. Le marqueur n'est posé qu'après un envoi réussi : un échec est retenté au passage suivant.
+  - Abonnements annulés ou en attente de paiement : aucune relance.
+  - Les e-mails renvoient vers `/abonnements` ; aucun lien de suivi tokenisé n'est envoyé par e-mail.
+  - Gabarits FR et AR dans `src/lib/subscription-emails.ts`.
+- **Administration** : `/admin/subscriptions` (entrée « Abonnements » du menu). Compteurs par statut, revenu mensuel récurrent (prix × 30 ÷ durée du cycle : un cycle annuel de 69 $ compte 5,67 $ par mois), tableau des 300 dernières souscriptions.
+- **Navigation** : lien « Abonnements » dans la barre du site (FR et AR).
+
+**Tests**
+- `npm run test:subscriptions` : 21/21 (catalogue, périodes, grâce, annulation, relances, revenu mensuel, IPN, gabarits).
+- Scénario d'intégration (dans `.scratch/`, non versionné) : 45/45, sur PostgreSQL et un mock NOWPayments qui couvre `POST /v1/auth`, les plans, `POST /v1/subscriptions` et `DELETE /v1/subscriptions/{id}`. Les handlers des routes sont appelés directement, et l'API Resend est simulée.
+
+**Décisions par défaut (à valider)**
+- Après annulation : accès jusqu'à la fin de la période payée, sans grâce, sans remboursement.
+- Relances : J-3, retard pendant la grâce, suspension après la grâce.
+- Pas de lien de suivi dans les e-mails.
+- Revenu mensuel : prix × 30 ÷ durée du cycle (et non ÷ 12).
+
+**Non confirmé en sandbox NOWPayments**
+- Nom du champ identifiant l'abonnement dans l'IPN (`subscription_id` supposé) et présence de `price_amount` / `price_currency`.
+- Méthode d'annulation : `DELETE` retenu ; une source tierce indique `POST`.
+- Authentification de création de plan (clé API ou JWT).
+- Absence de résiliation par NOWPayments avant la fin de la grâce.
+- Envoi par NOWPayments de la facture de renouvellement par e-mail (hypothèse des relances).
+
+---
 
 ## Réalisé (commits précédents)
 
@@ -121,7 +158,9 @@ Nouvelle table `subscriptions` (à créer dans `ensureSchema()`, comme les autre
 | `nowpayments_subscription_id` (unique) | Identifiant de l'abonnement chez NOWPayments |
 | `email`, `client_name`, `phone` | Coordonnées du client |
 | `amount_usd`, `currency` | Montant par cycle |
-| `status` | `inactive` (facture en attente) · `active` · `canceled`. Les états `grace` et `expired` sont **dérivés** de `current_period_end` à chaque lecture : pas de cron nécessaire pour l'affichage. |
+| `status` | `inactive` (facture en attente) · `active`. Les états `grace` et `expired` sont **dérivés** de `current_period_end` à chaque lecture. |
+| `canceled_at` | Renouvellement annulé par le client (l'accès reste ouvert jusqu'à la fin de période). |
+| `reminder_for`, `overdue_notice_for`, `expired_notice_for` | Échéance pour laquelle chaque relance a été envoyée (anti-doublon). |
 | `current_period_end` | Fin de la période payée |
 | `last_payment_id` | Dernier `payment_id` reçu |
 | `created_at`, `updated_at` | Traçabilité |

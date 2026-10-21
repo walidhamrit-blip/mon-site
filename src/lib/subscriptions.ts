@@ -5,7 +5,7 @@
 //  - lecture de l'espace abonné protégé par jeton.
 // Voir docs/abonnements-nowpayments.md.
 
-import { and, eq, inArray } from "drizzle-orm";
+import { and, eq, inArray, isNotNull } from "drizzle-orm";
 import { db, ensureSchema } from "@/db";
 import {
   orders,
@@ -16,6 +16,7 @@ import {
 } from "@/db/schema";
 import { siteBaseUrl } from "@/lib/site-url";
 import {
+  cancelSubscriptionRemote,
   createSubscription,
   createSubscriptionPlan,
   isFailedStatus,
@@ -45,9 +46,12 @@ import {
   displayStatus,
   hasAccess,
   nextBillingPeriod,
+  noticeToSend,
   normalizeEmail,
   type SubscriptionDisplayStatus,
 } from "@/lib/subscription-lifecycle";
+import { buildNoticeEmail } from "@/lib/subscription-emails";
+import type { OutgoingEmail } from "@/lib/mailer";
 
 /** Message d'erreur sans secret (le corps NOWPayments est déjà tronqué). */
 function describeError(error: unknown): string {
@@ -246,9 +250,11 @@ export async function createClientSubscription(
         inArray(subscriptions.status, ["inactive", "active"]),
       ),
     );
-  const blocking = sameOffer.some((row) =>
-    blocksNewSubscription(displayStatus(row, new Date(), SUBSCRIPTION_GRACE_DAYS)),
-  );
+  const blocking = sameOffer.some((row) => {
+    const status = displayStatus(row, new Date(), SUBSCRIPTION_GRACE_DAYS);
+    // Une formule annulée ne bloque le réabonnement qu'en cas d'accès restant.
+    return row.canceledAt ? hasAccess(status) : blocksNewSubscription(status);
+  });
   if (blocking) {
     return {
       ok: false,
@@ -452,6 +458,8 @@ export interface SubscriberView {
   accessEndsAt: string | null;
   graceDays: number;
   canResubscribe: boolean;
+  /** Renouvellement annulé : l'accès s'arrête à `accessEndsAt` (pas de grâce). */
+  renewalCanceled: boolean;
   emailMasked: string | null;
 }
 
@@ -481,6 +489,11 @@ export async function findSubscriptionForTracking(
   const now = new Date();
   const status = displayStatus(row as Subscription, now, SUBSCRIPTION_GRACE_DAYS);
   const end = row.currentPeriodEnd;
+  const accessUntil = end
+    ? row.canceledAt
+      ? end
+      : accessEndsAt(end, SUBSCRIPTION_GRACE_DAYS)
+    : null;
   return {
     ref: row.ref,
     planName: plan.title,
@@ -489,9 +502,158 @@ export async function findSubscriptionForTracking(
     intervalDay: plan.intervalDay,
     status,
     currentPeriodEnd: end ? end.toISOString() : null,
-    accessEndsAt: end ? accessEndsAt(end, SUBSCRIPTION_GRACE_DAYS).toISOString() : null,
+    accessEndsAt: accessUntil ? accessUntil.toISOString() : null,
     graceDays: SUBSCRIPTION_GRACE_DAYS,
     canResubscribe: !blocksNewSubscription(status),
+    renewalCanceled: row.canceledAt !== null,
     emailMasked: maskEmail(row.email),
   };
+}
+
+/* ------------------------------------------------------------------ */
+/* 5. Annulation du renouvellement                                     */
+/* ------------------------------------------------------------------ */
+
+export type CancelResult =
+  | { ok: true; alreadyCanceled: boolean; accessUntil: string | null }
+  | { ok: false; code: "not_found"; status: 404; message: string }
+  | { ok: false; code: "gateway_error"; status: 502; message: string };
+
+/**
+ * Annule le renouvellement : NOWPayments n'émet plus de facture, et l'accès
+ * reste ouvert jusqu'à la fin de la période déjà payée (sans grâce, et sans
+ * remboursement). Si NOWPayments refuse, rien n'est modifié localement.
+ */
+export async function cancelClientSubscription(
+  ref: string,
+  token: string | null | undefined,
+): Promise<CancelResult> {
+  await ensureSchema();
+  const [row] = await db
+    .select()
+    .from(subscriptions)
+    .where(eq(subscriptions.ref, ref.trim()))
+    .limit(1);
+  if (!row || !verifyTrackingToken(token, row.trackingTokenHash)) {
+    return { ok: false, code: "not_found", status: 404, message: "Abonnement introuvable." };
+  }
+
+  const accessUntil = row.currentPeriodEnd ? row.currentPeriodEnd.toISOString() : null;
+  if (row.canceledAt) return { ok: true, alreadyCanceled: true, accessUntil };
+
+  if (row.nowpaymentsSubscriptionId) {
+    try {
+      await cancelSubscriptionRemote(row.nowpaymentsSubscriptionId);
+    } catch (error) {
+      // 404 : déjà supprimé côté NOWPayments → l'annulation est effective.
+      const alreadyGone = isNowPaymentsError(error) && error.status === 404;
+      if (!alreadyGone) {
+        return {
+          ok: false,
+          code: "gateway_error",
+          status: 502,
+          message: `Annulation impossible : ${describeError(error)}`,
+        };
+      }
+    }
+  }
+
+  const now = new Date();
+  await db
+    .update(subscriptions)
+    .set({ canceledAt: now, updatedAt: now })
+    .where(eq(subscriptions.id, row.id));
+  return { ok: true, alreadyCanceled: false, accessUntil };
+}
+
+/* ------------------------------------------------------------------ */
+/* 6. Relances (appelées par le cron)                                  */
+/* ------------------------------------------------------------------ */
+
+export type NoticeSender = (
+  message: OutgoingEmail,
+) => Promise<{ ok: boolean; error?: string }>;
+
+export interface NoticeReport {
+  checked: number;
+  sent: { reminder: number; overdue: number; expired: number };
+  failed: number;
+}
+
+/**
+ * Envoie les relances dues à `now`. Chaque relance part une seule fois par
+ * échéance (colonnes `*_for`, mises à jour seulement après un envoi réussi :
+ * un échec sera retenté au passage suivant). `send` est injectable pour les tests.
+ */
+export async function runSubscriptionNotices(
+  now: Date,
+  send: NoticeSender,
+  siteUrl: string,
+  siteName: string,
+): Promise<NoticeReport> {
+  await ensureSchema();
+  const report: NoticeReport = {
+    checked: 0,
+    sent: { reminder: 0, overdue: 0, expired: 0 },
+    failed: 0,
+  };
+
+  const rows = await db
+    .select()
+    .from(subscriptions)
+    .where(and(eq(subscriptions.status, "active"), isNotNull(subscriptions.currentPeriodEnd)));
+  const plans = new Map(
+    (await db.select().from(subscriptionPlans)).map((plan) => [plan.id, plan]),
+  );
+  const subscribeUrl = `${siteUrl.replace(/\/+$/, "")}/abonnements`;
+
+  for (const row of rows) {
+    report.checked++;
+    const plan = plans.get(row.planId);
+    const end = row.currentPeriodEnd;
+    if (!plan || !end) continue;
+
+    const kind = noticeToSend(row, now, plan.graceDays);
+    if (!kind) continue;
+
+    try {
+      const mail = buildNoticeEmail(kind, {
+        ref: row.ref,
+        planName: plan.title,
+        endsAt: end,
+        accessEndsAt: accessEndsAt(end, plan.graceDays),
+        graceDays: plan.graceDays,
+        subscribeUrl,
+        siteName,
+      });
+      const result = await send({
+        to: row.email,
+        subject: mail.subject,
+        text: mail.text,
+        html: mail.html,
+      });
+      if (!result.ok) {
+        report.failed++;
+        continue;
+      }
+      const marker =
+        kind === "reminder"
+          ? { reminderFor: end }
+          : kind === "overdue"
+            ? { overdueNoticeFor: end }
+            : { expiredNoticeFor: end };
+      await db
+        .update(subscriptions)
+        .set({ ...marker, updatedAt: now })
+        .where(eq(subscriptions.id, row.id));
+      report.sent[kind]++;
+    } catch (error) {
+      report.failed++;
+      console.error(
+        `[relances] ${row.ref} (${kind}) :`,
+        error instanceof Error ? error.message : error,
+      );
+    }
+  }
+  return report;
 }

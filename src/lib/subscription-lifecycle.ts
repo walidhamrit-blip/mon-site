@@ -1,7 +1,8 @@
 // Règles de cycle de vie d'un abonnement — fonctions pures (sans I/O).
-// Utilisées par la souscription, l'IPN d'abonnement, l'espace abonné et
-// les tests. Le statut affiché est DÉRIVÉ de la date de fin de période :
-// une période expirée bascule en « grâce » puis « expiré » sans cron.
+// Utilisées par la souscription, l'IPN d'abonnement, l'annulation, les
+// relances, l'espace abonné et les tests. Le statut affiché est DÉRIVÉ de
+// la date de fin de période : une période expirée bascule en « grâce »
+// puis « expiré » sans état stocké à maintenir.
 
 import {
   SUBSCRIPTION_GRACE_DAYS,
@@ -14,8 +15,12 @@ export type SubscriptionDisplayStatus =
   | "inactive" // souscrit, première facture non réglée
   | "active" // période payée en cours
   | "grace" // échéance dépassée, accès maintenu pendant la grâce
-  | "expired" // grâce écoulée : accès suspendu, réabonnement possible
-  | "canceled";
+  | "expired"; // accès suspendu, réabonnement possible
+
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+/** Relance envoyée avant l'échéance (jours). */
+export const REMINDER_LEAD_DAYS = 3;
 
 /**
  * Période suivant un paiement confirmé. Un paiement anticipé (avant
@@ -37,14 +42,22 @@ export function nextBillingPeriod(
   };
 }
 
+export interface SubscriptionTiming {
+  currentPeriodEnd: Date | null;
+  /** Renouvellement annulé par le client : pas de grâce après la fin de période. */
+  canceledAt?: Date | null;
+}
+
 export function displayStatus(
-  subscription: { status: string; currentPeriodEnd: Date | null },
+  subscription: SubscriptionTiming,
   now: Date,
   graceDays: number = SUBSCRIPTION_GRACE_DAYS,
 ): SubscriptionDisplayStatus {
-  if (subscription.status === "canceled") return "canceled";
   if (!subscription.currentPeriodEnd) return "inactive";
-  const state = accessStateAt(subscription.currentPeriodEnd, now, graceDays);
+  // Après une annulation, l'accès s'arrête à la fin de la période payée :
+  // la grâce ne sert qu'aux renouvellements échoués.
+  const grace = subscription.canceledAt ? 0 : graceDays;
+  const state = accessStateAt(subscription.currentPeriodEnd, now, grace);
   if (state === "current") return "active";
   if (state === "grace") return "grace";
   return "expired";
@@ -57,14 +70,72 @@ export function hasAccess(status: SubscriptionDisplayStatus): boolean {
 
 /**
  * Vrai si un nouvel abonnement à la même formule est interdit pour la même
- * adresse : une facture en attente de paiement (la première facture déjà
- * envoyée par NOWPayments) ou un accès en cours (période ou grâce).
- * Évite les doubles factures ; après expiration ou annulation, on peut
- * de nouveau souscrire.
+ * adresse : une facture en attente de paiement, ou un accès en cours
+ * (période, grâce, ou période payée après annulation). Évite les doubles
+ * factures ; après expiration, on peut de nouveau souscrire.
  */
 export function blocksNewSubscription(status: SubscriptionDisplayStatus): boolean {
   return status === "inactive" || hasAccess(status);
 }
+
+/** Équivalent mensuel d'un prix (ex. 69 $ / 365 j ≈ 5,67 $ / mois), pour le revenu récurrent. */
+export function monthlyEquivalentUsd(priceUsd: number, intervalDay: number): number {
+  if (!Number.isFinite(priceUsd) || intervalDay <= 0) return 0;
+  return Math.round(((priceUsd * 30) / intervalDay) * 100) / 100;
+}
+
+/* ------------------------------------------------------------------ */
+/* Relances                                                            */
+/* ------------------------------------------------------------------ */
+
+export type SubscriptionNotice = "reminder" | "overdue" | "expired";
+
+export interface NoticeState extends SubscriptionTiming {
+  /** Échéance pour laquelle la relance « avant échéance » a été envoyée. */
+  reminderFor: Date | null;
+  /** Échéance pour laquelle l'avis « en retard » a été envoyé. */
+  overdueNoticeFor: Date | null;
+  /** Échéance pour laquelle l'avis « suspendu » a été envoyé. */
+  expiredNoticeFor: Date | null;
+}
+
+function sameInstant(a: Date | null, b: Date): boolean {
+  return a !== null && a.getTime() === b.getTime();
+}
+
+/**
+ * Quelle relance envoyer maintenant, s'il y en a une. Chaque relance n'est
+ * envoyée qu'une fois par échéance : l'appelant enregistre l'échéance
+ * après envoi réussi. Un abonnement annulé ne reçoit aucune relance.
+ */
+export function noticeToSend(
+  sub: NoticeState,
+  now: Date,
+  graceDays: number = SUBSCRIPTION_GRACE_DAYS,
+): SubscriptionNotice | null {
+  const end = sub.currentPeriodEnd;
+  if (!end || sub.canceledAt) return null;
+
+  if (now.getTime() <= end.getTime()) {
+    const untilEnd = end.getTime() - now.getTime();
+    if (untilEnd <= REMINDER_LEAD_DAYS * DAY_MS && !sameInstant(sub.reminderFor, end)) {
+      return "reminder";
+    }
+    return null;
+  }
+  if (now.getTime() <= accessEndOf(end, graceDays).getTime()) {
+    return sameInstant(sub.overdueNoticeFor, end) ? null : "overdue";
+  }
+  return sameInstant(sub.expiredNoticeFor, end) ? null : "expired";
+}
+
+function accessEndOf(end: Date, graceDays: number): Date {
+  return new Date(end.getTime() + graceDays * DAY_MS);
+}
+
+/* ------------------------------------------------------------------ */
+/* Charge utile IPN et e-mails                                         */
+/* ------------------------------------------------------------------ */
 
 /**
  * Identifiant NOWPayments de l'abonnement porté par une notification IPN.
