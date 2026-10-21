@@ -86,7 +86,53 @@ export const orders = pgTable("orders", {
   ipnStatus: text("ipn_status"),
   utm: text("utm"),
   locale: text("locale"),
+  /** Abonné auquel appartient ce paiement (null = paiement ponctuel). */
+  subscriptionId: integer("subscription_id").references(() => subscriptions.id),
 });
 
 export type Order = typeof orders.$inferSelect;
 export type NewOrder = typeof orders.$inferInsert;
+
+// Plans d'abonnement (mensuel / annuel), synchronisés avec NOWPayments.
+export const subscriptionPlans = pgTable("subscription_plans", {
+  /** Identifiant local stable, ex. `vitrine-monthly`. */
+  id: text("id").primaryKey(),
+  /** Identifiant du plan chez NOWPayments (renseigné après création). */
+  nowpaymentsPlanId: text("nowpayments_plan_id").unique(),
+  tier: text("tier").notNull(),
+  cycle: text("cycle").notNull(),
+  title: text("title").notNull(),
+  /** Montant par cycle en USD (texte pour éviter les arrondis). */
+  priceUsd: text("price_usd").notNull(),
+  intervalDay: integer("interval_day").notNull(),
+  graceDays: integer("grace_days").notNull(),
+  syncedAt: timestamp("synced_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+// Abonnés. Le statut est dérivé des événements NOWPayments (IPN).
+export const subscriptions = pgTable("subscriptions", {
+  id: serial("id").primaryKey(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  /** Référence lisible, ex. ABO-…. */
+  ref: text("ref").notNull().unique(),
+  /** SHA-256 du jeton de l'espace abonné (jamais le jeton en clair). */
+  trackingTokenHash: text("tracking_token_hash"),
+  planId: text("plan_id").notNull().references(() => subscriptionPlans.id),
+  email: text("email").notNull(),
+  clientName: text("client_name"),
+  phone: text("phone"),
+  nowpaymentsSubscriptionId: text("nowpayments_subscription_id").unique(),
+  /** inactive | active | past_due | canceled */
+  status: text("status").notNull().default("inactive"),
+  currentPeriodStart: timestamp("current_period_start", { withTimezone: true }),
+  currentPeriodEnd: timestamp("current_period_end", { withTimezone: true }),
+  lastPaymentId: text("last_payment_id"),
+  cancelRequestedAt: timestamp("cancel_requested_at", { withTimezone: true }),
+  canceledAt: timestamp("canceled_at", { withTimezone: true }),
+});
+
+export type SubscriptionPlanRow = typeof subscriptionPlans.$inferSelect;
+export type Subscription = typeof subscriptions.$inferSelect;

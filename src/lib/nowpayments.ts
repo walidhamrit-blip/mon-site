@@ -512,3 +512,169 @@ export const ORDER_STATUS_LABELS: Record<OrderStatus, string> = {
   failed: "Échoué",
   expired: "Expiré",
 };
+
+/* ---------------- Abonnements (plans & abonnés) ---------------- */
+
+export interface CreateSubscriptionPlanInput {
+  title: string;
+  /** Durée d'un cycle en jours (30 = mensuel, 365 = annuel). */
+  intervalDay: number;
+  /** Montant par cycle, en fiat (ex. 10 pour 10 USD). */
+  amount: number;
+  currency?: string;
+  ipnCallbackUrl?: string;
+  successUrl?: string;
+  cancelUrl?: string;
+  partiallyPaidUrl?: string;
+}
+
+export interface SubscriptionPlanRecord {
+  id: string | number;
+  title?: string;
+  interval_day?: string | number;
+  amount?: number | string;
+  currency?: string;
+  ipn_callback_url?: string;
+  success_url?: string;
+  cancel_url?: string;
+  partially_paid_url?: string;
+}
+
+/**
+ * En-têtes d'authentification des endpoints « abonnements ». La clé API
+ * suffit pour la lecture ; la création et la modification d'un plan
+ * acceptent aussi un jeton JWT (identifiants e-mail/mot de passe), envoyé
+ * en `Authorization: Bearer` quand il est disponible.
+ */
+async function subscriptionHeaders(): Promise<Record<string, string>> {
+  const headers: Record<string, string> = {
+    "x-api-key": nowPaymentsApiKey(),
+    "Content-Type": "application/json",
+  };
+  const jwt = await nowPaymentsJwt();
+  if (jwt) headers.Authorization = `Bearer ${jwt}`;
+  return headers;
+}
+
+async function nowPaymentsSubscriptionRequest<T>(
+  method: "GET" | "POST" | "PATCH",
+  path: string,
+  body?: Record<string, unknown>,
+): Promise<T> {
+  if (!nowPaymentsApiKey()) {
+    throw new NowPaymentsError("NOWPAYMENTS_API_KEY manquant", null);
+  }
+
+  let response: Response;
+  try {
+    response = await fetch(`${nowPaymentsApiBase()}${path}`, {
+      method,
+      headers: await subscriptionHeaders(),
+      body: body ? JSON.stringify(body) : undefined,
+      cache: "no-store",
+      signal: AbortSignal.timeout(15000),
+    });
+  } catch (error) {
+    const detail = error instanceof Error ? error.message : String(error);
+    throw new NowPaymentsError(
+      `NOWPayments injoignable — ${detail}`,
+      null,
+      detail,
+    );
+  }
+
+  const text = await response.text().catch(() => "");
+  if (!response.ok) {
+    throw new NowPaymentsError(
+      `NOWPayments ${method} ${path} ${response.status} — ${text.slice(0, 300)}`,
+      response.status,
+      text.slice(0, 300),
+    );
+  }
+  try {
+    return (text ? JSON.parse(text) : {}) as T;
+  } catch {
+    throw new NowPaymentsError(
+      `NOWPayments ${path} : réponse non JSON`,
+      response.status,
+      text.slice(0, 300),
+    );
+  }
+}
+
+/** Crée un plan d'abonnement chez NOWPayments (`POST /v1/subscriptions/plans`). */
+export function createSubscriptionPlan(
+  input: CreateSubscriptionPlanInput,
+): Promise<SubscriptionPlanRecord> {
+  return nowPaymentsSubscriptionRequest<SubscriptionPlanRecord>(
+    "POST",
+    "/subscriptions/plans",
+    {
+      title: input.title,
+      interval_day: input.intervalDay,
+      amount: input.amount,
+      currency: input.currency ?? nowPaymentsFiatCurrency(),
+      ...(input.ipnCallbackUrl ? { ipn_callback_url: input.ipnCallbackUrl } : {}),
+      ...(input.successUrl ? { success_url: input.successUrl } : {}),
+      ...(input.cancelUrl ? { cancel_url: input.cancelUrl } : {}),
+      ...(input.partiallyPaidUrl
+        ? { partially_paid_url: input.partiallyPaidUrl }
+        : {}),
+    },
+  );
+}
+
+/**
+ * Modifie le montant ou l'intervalle d'un plan. Les nouveaux montants ne
+ * touchent que les prochains cycles ; les abonnés déjà payés ne sont pas
+ * affectés (règle NOWPayments).
+ */
+export function updateSubscriptionPlan(
+  planId: string,
+  input: { amount?: number; intervalDay?: number; title?: string },
+): Promise<SubscriptionPlanRecord> {
+  return nowPaymentsSubscriptionRequest<SubscriptionPlanRecord>(
+    "PATCH",
+    `/subscriptions/plans/${encodeURIComponent(planId)}`,
+    {
+      ...(input.amount !== undefined ? { amount: input.amount } : {}),
+      ...(input.intervalDay !== undefined
+        ? { interval_day: input.intervalDay }
+        : {}),
+      ...(input.title ? { title: input.title } : {}),
+    },
+  );
+}
+
+/** Lit un plan (`GET /v1/subscriptions/plans/{id}`). Utile pour vérifier une synchro. */
+export function getSubscriptionPlanRemote(
+  planId: string,
+): Promise<SubscriptionPlanRecord> {
+  return nowPaymentsSubscriptionRequest<SubscriptionPlanRecord>(
+    "GET",
+    `/subscriptions/plans/${encodeURIComponent(planId)}`,
+  );
+}
+
+export interface CreatedSubscription {
+  id: string | number;
+  subscription_plan_id?: string | number;
+  email?: string;
+  status?: string;
+  [key: string]: unknown;
+}
+
+/**
+ * Ajoute un client à un plan (`POST /v1/subscriptions`). NOWPayments envoie
+ * au client le lien de facture de la première échéance par e-mail.
+ */
+export function createSubscription(input: {
+  planId: string;
+  email: string;
+}): Promise<CreatedSubscription> {
+  return nowPaymentsSubscriptionRequest<CreatedSubscription>(
+    "POST",
+    "/subscriptions",
+    { subscription_plan_id: input.planId, email: input.email },
+  );
+}

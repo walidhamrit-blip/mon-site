@@ -1,8 +1,32 @@
 # Abonnements mensuels en crypto — plan A (abonnements natifs NOWPayments)
 
-> Statut : **plan validé, pas encore implémenté**.
+> Statut : **étapes 0, 2 et 3 réalisées** (décisions, schéma, catalogue et synchronisation des plans). Les souscriptions client et l'IPN d'abonnement restent à faire (étapes 4 à 6).
 > Périmètre : passerelle NOWPayments (déjà intégrée : facture `/invoice`, IPN signé HMAC-SHA512, table `orders`).
 > Objectif : vendre des abonnements récurrents payés en crypto, sans construire notre propre moteur de facturation.
+
+## 0. Décisions validées
+
+| Offre | Mensuel (30 j) | Annuel (365 j) |
+|---|---|---|
+| Vitrine | 10 $ | 69 $ |
+| Vitrine+ | 12 $ | 89 $ |
+| Boutique | 25 $ | 199 $ |
+
+- Période de grâce demandée : **10 jours**.
+- ⚠️ **Écart avec NOWPayments** : la documentation consultée limite la grâce à **5 jours** (et non plus que la durée de l'abonnement). Le code applique donc la grâce de 10 jours **côté site** : l'accès reste ouvert jusqu'à `fin de période + 10 jours`. Le réglage de grâce chez NOWPayments doit rester au maximum autorisé (5 jours). **À vérifier en sandbox** : NOWPayments ne doit pas résilier l'abonnement avant la fin de nos 10 jours.
+- Le catalogue est défini dans `src/lib/subscription-plans.ts`. Les identifiants locaux sont `vitrine-monthly`, `vitrine-annual`, `vitrine-plus-monthly`, etc.
+- Ces abonnements sont des offres distinctes des tarifs ponctuels de `config.ts` (300 / 510 / 880 $).
+
+## Réalisé (ce commit)
+
+- `src/lib/subscription-plans.ts` : catalogue et règles pures (fin de période, grâce, état d'accès).
+- `src/lib/nowpayments.ts` : `createSubscriptionPlan`, `updateSubscriptionPlan`, `getSubscriptionPlanRemote`, `createSubscription`.
+- `src/db/index.ts` et `src/db/schema.ts` : tables `subscription_plans` et `subscriptions`, colonne `orders.subscription_id`, migrations idempotentes.
+- `src/lib/subscriptions.ts` : `syncSubscriptionPlans()`, idempotente (création, mise à jour de prix par PATCH, rien si inchangé).
+- `POST /api/admin/subscriptions/sync` : déclenche la synchronisation (admin + même origine).
+- `scripts/subscription-plans.test.mjs` (`npm run test:subscriptions`) : 6 tests sur le catalogue et la grâce.
+
+**Non testé en réel** : l'API NOWPayments n'est pas joignable depuis l'environnement de développement. Les en-têtes d'authentification (clé API, ou jeton JWT quand les identifiants sont présents) et les champs de réponse sont à valider en sandbox avant la mise en production.
 
 ---
 
@@ -69,7 +93,7 @@ Côté `orders` : ajouter `subscription_id` (nullable) pour rattacher chaque pai
 
 ## 5. Découpage en étapes
 
-### Étape 0 — Décisions produit (bloquant)
+### Étape 0 — Décisions produit (✅ validées, voir §0)
 - Liste des plans (noms, prix USD, frais de personnalisation éventuels).
 - Intervalle : **30 jours** (renouvellement automatique possible) ou **31 jours**.
 - Période de grâce (0 à 5 jours) et comportement pendant la grâce.
@@ -82,11 +106,11 @@ Côté `orders` : ajouter `subscription_id` (nullable) pour rattacher chaque pai
 - Clé API **sandbox** et `NOWPAYMENTS_SANDBOX=true` pour les essais.
 - Vérifier le payload réel de l'IPN d'abonnement et la procédure d'annulation sur sandbox.
 
-### Étape 2 — Schéma de données
+### Étape 2 — Schéma de données (✅ réalisée)
 - Ajouter la table `subscriptions` et la colonne `orders.subscription_id` dans `ensureSchema()` et `src/db/schema.ts`.
 - Migration idempotente (`CREATE TABLE IF NOT EXISTS`, `ADD COLUMN IF NOT EXISTS`).
 
-### Étape 3 — Création des plans
+### Étape 3 — Création des plans (✅ réalisée)
 - Fonction `createSubscriptionPlan()` dans `src/lib/nowpayments.ts` (appel `POST /v1/subscriptions/plans`).
 - Plans définis dans `src/lib/config.ts` (ou en admin), avec synchronisation : le plan n'est créé chez NOWPayments qu'une fois, son identifiant est stocké.
 - Une modification de prix ne touche que les nouveaux cycles (règle NOWPayments).
