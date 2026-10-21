@@ -8,6 +8,7 @@ import {
   type SubscriptionDisplayStatus,
 } from "@/lib/subscription-lifecycle";
 import { SUBSCRIPTION_GRACE_DAYS } from "@/lib/subscription-plans";
+import { SyncPlansButton } from "./sync-plans-button";
 
 export const dynamic = "force-dynamic";
 
@@ -83,6 +84,8 @@ export default async function AdminSubscriptionsPage() {
           Abonnés mensuels et annuels payés en crypto (NOWPayments). Grâce de {SUBSCRIPTION_GRACE_DAYS} jours.
         </p>
       </header>
+
+      <SyncPlansButton />
 
       <section className="grid grid-cols-2 gap-3 lg:grid-cols-5">
         {[
