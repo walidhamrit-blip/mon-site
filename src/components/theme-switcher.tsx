@@ -8,30 +8,60 @@ import { THEMES, type SiteTheme } from "@/lib/themes";
 /** Miniature d'un thème : sa version claire et sa version sombre côte à côte. */
 export function ThemePreview({
   theme,
+  compact = false,
   className = "",
 }: {
   theme: SiteTheme;
+  compact?: boolean;
   className?: string;
 }) {
+  if (compact) {
+    const chipHalf = (mode: "light" | "dark") => {
+      const p = theme[mode];
+      return (
+        <span
+          className="flex w-1/2 flex-col justify-between p-1"
+          style={{ background: p.background }}
+        >
+          <span
+            className="block h-1 w-3/4 rounded-full"
+            style={{ background: p.foreground, opacity: 0.85 }}
+          />
+          <span
+            className="block h-1.5 w-4/5 rounded-full"
+            style={{ background: p.accent }}
+          />
+        </span>
+      );
+    };
+
+    return (
+      <span
+        className={`inline-flex overflow-hidden rounded-md border ${className}`}
+        style={{ borderColor: theme.light.border, background: theme.light.background }}
+        aria-hidden="true"
+      >
+        {chipHalf("light")}
+        {chipHalf("dark")}
+      </span>
+    );
+  }
+
   const half = (mode: "light" | "dark") => {
     const p = theme[mode];
     return (
-      <div className="w-1/2 p-2" style={{ background: p.background }}>
+      <div className="w-1/2 p-1.5" style={{ background: p.background }}>
         <div
-          className="h-1.5 w-4/5 rounded-full"
+          className="h-1 w-4/5 rounded-full"
           style={{ background: p.foreground, opacity: 0.9 }}
         />
         <div
-          className="mt-1.5 h-1.5 w-1/2 rounded-full"
-          style={{ background: p["muted-foreground"], opacity: 0.75 }}
-        />
-        <div
-          className="mt-2 h-3 w-9 rounded-full"
+          className="mt-1.5 h-2 w-7 rounded-full"
           style={{ background: p.accent }}
         />
         <div
-          className="mt-2 h-1.5 w-3/5 rounded-full"
-          style={{ background: p["muted-foreground"], opacity: 0.45 }}
+          className="mt-1.5 h-1 w-3/5 rounded-full"
+          style={{ background: p["muted-foreground"], opacity: 0.5 }}
         />
       </div>
     );
@@ -39,7 +69,7 @@ export function ThemePreview({
 
   return (
     <div
-      className={`flex overflow-hidden rounded-xl border ${className}`}
+      className={`flex overflow-hidden rounded-lg border ${className}`}
       style={{ borderColor: theme.light.border, background: theme.light.background }}
       aria-hidden="true"
     >
@@ -92,9 +122,9 @@ export function ThemeSwitcher() {
       </button>
 
       {open && (
-        <div className="absolute top-full end-0 mt-3 z-50 w-[300px] max-w-[calc(100vw-2rem)] rounded-[22px] bg-[var(--card)] border border-[var(--border)] shadow-2xl p-3">
-          <div className="flex items-center justify-between px-2 pb-2">
-            <div className="text-xs font-black opacity-60">
+        <div className="absolute top-full end-0 mt-2.5 z-50 w-[272px] max-w-[calc(100vw-2rem)] rounded-2xl bg-[var(--card)] border border-[var(--border)] shadow-2xl p-2.5">
+          <div className="flex items-center justify-between px-1.5 pb-2">
+            <div className="text-[11px] font-black opacity-60">
               {locale === "ar" ? "ثيمات الموقع" : "Site themes"}
             </div>
             <button
@@ -106,7 +136,7 @@ export function ThemeSwitcher() {
               <X className="h-3 w-3" />
             </button>
           </div>
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-2 gap-1.5">
             {THEMES.map((t) => {
               const active = t.id === palette;
               return (
@@ -117,26 +147,25 @@ export function ThemeSwitcher() {
                     setPalette(t.id);
                     setOpen(false);
                   }}
-                  className={`text-start rounded-2xl border p-2 transition-colors cursor-pointer ${
+                  aria-pressed={active}
+                  className={`flex items-center gap-2 text-start rounded-xl border px-2 py-1.5 transition-colors cursor-pointer ${
                     active
                       ? "border-[var(--accent)] bg-[var(--secondary)]"
                       : "border-[var(--border)] hover:border-[var(--accent)]/60 hover:bg-[var(--secondary)]/60"
                   }`}
                 >
-                  <ThemePreview theme={t} className="w-full" />
-                  <div className="mt-1.5 flex items-center gap-1">
-                    <span className="text-[11px] font-bold truncate">
-                      {locale === "ar" ? t.labelAr : t.labelEn}
-                    </span>
-                    {active && (
-                      <Check className="h-3 w-3 text-[var(--accent)] flex-shrink-0" />
-                    )}
-                  </div>
+                  <ThemePreview theme={t} compact className="h-5 w-7 shrink-0" />
+                  <span className="min-w-0 flex-1 text-[11px] font-bold truncate">
+                    {locale === "ar" ? t.labelAr : t.labelEn}
+                  </span>
+                  {active && (
+                    <Check className="h-3 w-3 text-[var(--accent)] flex-shrink-0" />
+                  )}
                 </button>
               );
             })}
           </div>
-          <p className="mt-2 px-2 pb-1 text-[11px] opacity-55 leading-relaxed">
+          <p className="mt-2 px-1.5 pb-0.5 text-[10.5px] opacity-55 leading-relaxed">
             {locale === "ar"
               ? "الوضع الفاتح/الداكن يُختار بزر منفصل في الشريط العلوي."
               : "Light / dark mode is controlled by its own button in the top bar."}
@@ -153,7 +182,7 @@ export function ThemeList() {
   const { palette, setPalette } = useTheme();
 
   return (
-    <div className="grid grid-cols-2 gap-2">
+    <div className="grid grid-cols-2 gap-1.5">
       {THEMES.map((t) => {
         const active = t.id === palette;
         return (
@@ -161,19 +190,18 @@ export function ThemeList() {
             key={t.id}
             type="button"
             onClick={() => setPalette(t.id)}
-            className={`text-start rounded-2xl border p-2 transition-colors cursor-pointer ${
+            aria-pressed={active}
+            className={`flex items-center gap-2 text-start rounded-xl border px-2.5 py-1.5 transition-colors cursor-pointer ${
               active
                 ? "border-[var(--accent)] bg-[var(--secondary)]"
                 : "border-[var(--border)] hover:border-[var(--accent)]/60"
             }`}
           >
-            <ThemePreview theme={t} className="w-full" />
-            <div className="mt-1.5 flex items-center gap-1">
-              <span className="text-[11px] font-bold truncate">
-                {locale === "ar" ? t.labelAr : t.labelEn}
-              </span>
-              {active && <Check className="h-3 w-3 text-[var(--accent)] flex-shrink-0" />}
-            </div>
+            <ThemePreview theme={t} compact className="h-5 w-7 shrink-0" />
+            <span className="min-w-0 flex-1 text-[11px] font-bold truncate">
+              {locale === "ar" ? t.labelAr : t.labelEn}
+            </span>
+            {active && <Check className="h-3 w-3 text-[var(--accent)] flex-shrink-0" />}
           </button>
         );
       })}
