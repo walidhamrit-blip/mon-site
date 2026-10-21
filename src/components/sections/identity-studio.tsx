@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ProjectPreview } from "@/components/project-preview";
-import { motion, useInView, useReducedMotion } from "framer-motion";
+import { useInView, useReducedMotion } from "framer-motion";
 import {
   Check,
   ChevronLeft,
@@ -20,17 +20,14 @@ import { useSectionHeading, useSiteContent } from "@/components/site-provider";
 import { useTheme } from "@/components/theme-provider";
 import { ThemePreview } from "@/components/theme-switcher";
 import { THEMES } from "@/lib/themes";
-import { ScaledLiveIframe, FullscreenLiveViewer } from "@/components/live-site-frames";
+import { FullscreenLiveViewer } from "@/components/live-site-frames";
 import { demos as fallbackDemos } from "@/lib/content";
 import type { Demo } from "@/lib/site-types";
 
-// Section unique qui fusionne l'ancien « Feel the customization » et
-// « Ready-made themes… pick your identity » :
-//   1. une bannière défilante avec les pages d'accueil réelles de trois sites
-//      (Al-Massa, MyPhone, Toy Store) — vrais iframes, montés à la visite ;
-//   2. les réglages d'identité (couleur / police / style) qui habillent
-//      directement le cadre de la bannière ;
-//   3. la galerie des 8 thèmes prêts à l'emploi (clair + sombre).
+// Studio d'identité compact en largeur contenue (max-w-4xl) :
+//   1. bloc « Personnalisation » côte à côte avec un aperçu compact (sans iframe
+//      capturant le défilement, afin de préserver un scroll fluide partout) ;
+//   2. grille compacte des 8 thèmes prêts à l'emploi (boutons réduits, clair + sombre).
 
 const accents = [
   { name: "ذهبي", nameEn: "Gold", hex: "#C6A664" },
@@ -41,9 +38,9 @@ const accents = [
 ];
 
 const fonts = [
-  { id: "cairo", label: "Cairo • عصري", family: "Cairo, system-ui" },
-  { id: "plex", label: "IBM Plex • أنيق", family: "'IBM Plex Sans Arabic', system-ui" },
-  { id: "tajawal", label: "Tajawal • دافئ", family: "Tajawal, system-ui" },
+  { id: "cairo", label: "Cairo", family: "Cairo, system-ui" },
+  { id: "plex", label: "IBM Plex", family: "'IBM Plex Sans Arabic', system-ui" },
+  { id: "tajawal", label: "Tajawal", family: "Tajawal, system-ui" },
 ];
 
 const styles = [
@@ -52,11 +49,7 @@ const styles = [
   { id: "playful", labelAr: "مرح", labelEn: "Playful" },
 ];
 
-/** Les trois pages d'accueil mises en avant dans la bannière. */
-// Trois projets dont l'aperçu local existe (public/previews) : la bannière
-// est donc remplie dès le premier rendu, sans attendre un CDN tiers.
 const BANNER_SLUGS = ["al-manhaj-company", "myphone-tripoli", "hala-perfumes"];
-
 const SLIDE_DURATION = 7000;
 
 export function IdentityStudio() {
@@ -67,29 +60,24 @@ export function IdentityStudio() {
   const themesHeading = useSectionHeading("identityThemes");
   const { palette, setPalette, mode, toggle } = useTheme();
 
-  const [accent, setAccent] = useState(accents[1]);
+  const [accent, setAccent] = useState(accents[0]);
   const [font, setFont] = useState(fonts[0]);
   const [style, setStyle] = useState(styles[0]);
 
   const [index, setIndex] = useState(0);
   const [paused, setPaused] = useState(false);
   const [hovered, setHovered] = useState(false);
-  const [focused, setFocused] = useState(false);
   const [pageVisible, setPageVisible] = useState(true);
-  // Aucune iframe tierce n'est chargée avant un clic explicite : les
-  // aperçus locaux s'affichent immédiatement et la page reste légère.
-  const [liveSlug, setLiveSlug] = useState<string | null>(null);
   const [fullscreen, setFullscreen] = useState<Demo | null>(null);
 
   const reducedMotion = useReducedMotion();
   const ref = useRef<HTMLDivElement>(null);
-  const inView = useInView(ref, { amount: 0.15 });
+  const inView = useInView(ref, { amount: 0.2 });
 
-  // Contenu éditables depuis /admin d'abord, repli sur le catalogue statique.
   const slides = useMemo<Demo[]>(() => {
     const source = (demos.length ? demos : fallbackDemos) as unknown as Demo[];
     const picked = BANNER_SLUGS.map((slug) => source.find((d) => d.slug === slug)).filter(
-      (d): d is Demo => Boolean(d)
+      (d): d is Demo => Boolean(d),
     );
     return picked.length ? picked : source.slice(0, 3);
   }, [demos]);
@@ -97,7 +85,7 @@ export function IdentityStudio() {
   const count = slides.length;
   const current = slides[index % Math.max(count, 1)];
   const playing =
-    count > 1 && !paused && !hovered && !focused && !reducedMotion && inView && pageVisible;
+    count > 1 && !paused && !hovered && !reducedMotion && inView && pageVisible;
 
   useEffect(() => {
     const update = () => setPageVisible(!document.hidden);
@@ -106,451 +94,335 @@ export function IdentityStudio() {
     return () => document.removeEventListener("visibilitychange", update);
   }, []);
 
-  // Défilement automatique : relancé à chaque diapositive, interrompu dès que
-  // le curseur survole la bannière, que la page passe en arrière-plan ou que
-  // l'utilisateur préfère un mouvement réduit.
   useEffect(() => {
     if (!playing) return;
     const target = (index + 1) % count;
     const timer = window.setTimeout(() => {
       setIndex(target);
-      setLiveSlug(null);
     }, SLIDE_DURATION);
     return () => window.clearTimeout(timer);
   }, [playing, count, index]);
 
   if (count === 0 || !current) return null;
 
-  const radius = style.id === "sharp" ? 8 : style.id === "playful" ? 32 : 26;
+  const radius = style.id === "sharp" ? 6 : style.id === "playful" ? 22 : 16;
   const goTo = (next: number) => {
     setPaused(true);
     setIndex((next + count) % count);
-    setLiveSlug(null);
   };
 
   return (
-    <section
-      id="themes"
-      className="section bg-[var(--primary)] text-[var(--primary-foreground)] relative overflow-hidden"
-    >
-      <div className="absolute inset-0 opacity-20 pointer-events-none">
-        <div
-          className="absolute -top-20 -end-20 w-[600px] h-[600px] rounded-full blur-[80px]"
-          style={{ background: accent.hex }}
-        />
-      </div>
+    <section id="themes" className="py-6 sm:py-8 touch-pan-y">
+      <div
+        ref={ref}
+        className="mx-auto w-full max-w-4xl px-5 sm:px-6 space-y-3.5 sm:space-y-4"
+      >
+        {/* ---------- 1. Personnalisation compacte (largeur contenue, scroll libre) ---------- */}
+        <div className="card-surface p-3.5 sm:p-5">
+          <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_minmax(0,310px)] items-center">
+            {/* Contrôles compacts */}
+            <div className="min-w-0 space-y-2.5">
+              <div>
+                <span
+                  className="inline-flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-[0.16em]"
+                  style={{ color: accent.hex }}
+                >
+                  <Sliders className="h-3 w-3" />
+                  {ar ? "تخصيص مباشر" : "LIVE CUSTOMIZER"}
+                </span>
+                <h2 className="mt-1 text-base sm:text-lg font-black leading-snug tracking-tight">
+                  {customizerHeading.title}
+                </h2>
+                <p className="mt-0.5 text-xs text-[var(--muted-foreground)] line-clamp-1">
+                  {customizerHeading.subtitle}
+                </p>
+              </div>
 
-      <div ref={ref} className="site-container px-4 sm:px-6 lg:px-8 relative">
-        {/* ---------- En-tête ---------- */}
-        <div className="mb-8 flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
-          <div>
-            <span
-              className="inline-flex items-center gap-2.5 text-[11.5px] font-bold uppercase tracking-[0.18em]"
-              style={{ color: accent.hex }}
-            >
-              <span className="h-px w-7" style={{ background: accent.hex }} />
-              {ar ? "المخصص المباشر × ثيمات جاهزة" : "LIVE CUSTOMIZER × READY-MADE THEMES"}
-            </span>
-            <h2 className="mt-3 text-[clamp(1.7rem,1.1rem+2vw,2.75rem)] font-black leading-[1.06] tracking-[-0.025em] text-balance">
-              {customizerHeading.title}
-            </h2>
-            <p className="mt-3 max-w-[62ch] text-[15px] leading-7 opacity-65">{customizerHeading.subtitle}</p>
-          </div>
-
-          <div className="flex flex-wrap items-center gap-2">
-            <button
-              type="button"
-              onClick={toggle}
-              className="h-10 px-4 rounded-full bg-white/10 border border-white/20 text-white inline-flex items-center gap-2 text-xs font-black hover:bg-white/20 transition-colors cursor-pointer"
-            >
-              {mode === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-              <span>
-                {mode === "dark"
-                  ? ar
-                    ? "الوضع الداكن — بدّل للفاتح"
-                    : "Dark mode — switch to light"
-                  : ar
-                    ? "الوضع الفاتح — بدّل للداكن"
-                    : "Light mode — switch to dark"}
-              </span>
-            </button>
-            <button
-              type="button"
-              onClick={() =>
-                document.getElementById("lead-form")?.scrollIntoView({ behavior: "smooth" })
-              }
-              className="h-10 px-4 rounded-full text-xs font-black text-white inline-flex items-center gap-1.5 cursor-pointer shadow-md"
-              style={{ background: accent.hex }}
-            >
-              {ar ? "اطلب الآن" : "Order now"}
-            </button>
-          </div>
-        </div>
-
-        {/* ---------- Bannière : 3 pages d'accueil défilantes ---------- */}
-        <div
-          role="region"
-          aria-roledescription={ar ? "عرض شرائح" : "carousel"}
-          aria-label={
-            ar
-              ? "صفحات الاستقبال لثلاثة مواقع حقيقية: الماسة، ماي فون، توي ستور"
-              : "Home pages of three real websites: Al-Massa, MyPhone, Toy Store"
-          }
-          onMouseEnter={() => setHovered(true)}
-          onMouseLeave={() => setHovered(false)}
-          onFocusCapture={() => setFocused(true)}
-          onBlurCapture={(event) => {
-            if (!event.currentTarget.contains(event.relatedTarget)) setFocused(false);
-          }}
-          className="relative border border-white/15 bg-black/25 p-2 sm:p-3 shadow-2xl"
-          style={{ borderRadius: radius, fontFamily: font.family }}
-        >
-          {/* Barre de navigateur */}
-          <div className="flex flex-wrap items-center justify-between gap-2 px-1 sm:px-2 pb-2">
-            <div className="flex items-center gap-2 min-w-0" dir="ltr">
-              <span className="h-2.5 w-2.5 rounded-full bg-red-400 flex-shrink-0" />
-              <span className="h-2.5 w-2.5 rounded-full bg-yellow-400 flex-shrink-0" />
-              <span className="h-2.5 w-2.5 rounded-full bg-green-400 flex-shrink-0" />
-              <span
-                className="ms-2 text-xs truncate max-w-[42vw] sm:max-w-[320px] rounded-full bg-white/10 px-3 py-1"
-                title={current.previewUrl}
-              >
-                {current.previewUrl.replace(/^https?:\/\//, "").replace(/\/$/, "")}
-              </span>
-            </div>
-
-            <div className="flex items-center gap-2">
-              <span className="text-[11px] font-mono opacity-70" dir="ltr">
-                {String((index % count) + 1).padStart(2, "0")} / {String(count).padStart(2, "0")}
-              </span>
-              <button
-                type="button"
-                onClick={() => setPaused((p) => !p)}
-                aria-label={
-                  paused ? (ar ? "تشغيل العرض التلقائي" : "Play slideshow") : (ar ? "إيقاف العرض التلقائي" : "Pause slideshow")
-                }
-                className="h-8 w-8 rounded-full bg-white/10 border border-white/20 grid place-items-center text-white hover:bg-white/20 transition-colors cursor-pointer"
-              >
-                {paused ? <Play className="h-3.5 w-3.5" /> : <Pause className="h-3.5 w-3.5" />}
-              </button>
-              <button
-                type="button"
-                onClick={() => goTo(index - 1)}
-                aria-label={ar ? "الشريحة السابقة" : "Previous slide"}
-                className="h-8 w-8 rounded-full bg-white/10 border border-white/20 grid place-items-center text-white hover:bg-white/20 transition-colors cursor-pointer"
-              >
-                <ChevronLeft className="h-4 w-4" />
-              </button>
-              <button
-                type="button"
-                onClick={() => goTo(index + 1)}
-                aria-label={ar ? "الشريحة التالية" : "Next slide"}
-                className="h-8 w-8 rounded-full bg-white/10 border border-white/20 grid place-items-center text-white hover:bg-white/20 transition-colors cursor-pointer"
-              >
-                <ChevronRight className="h-4 w-4" />
-              </button>
-            </div>
-          </div>
-
-          {/* Piste défilante */}
-          <div className="relative overflow-hidden bg-white" style={{ borderRadius: radius - 6 }}>
-            <div
-              dir="ltr"
-              className="flex transition-transform duration-700 ease-out"
-              style={{ transform: `translateX(-${(index % count) * 100}%)` }}
-            >
-              {slides.map((demo, i) => (
-                <div key={demo.slug} className="w-full shrink-0" aria-hidden={i !== index % count}>
-                  <div className="relative aspect-[4/3] sm:aspect-[16/9] lg:aspect-[16/8] bg-white overflow-hidden">
-                    {/* Aperçu local (image du projet) : instantané, sans
-                        requête tierce. L'iframe réelle ne se charge qu'après
-                        un clic sur « معاينة حية », ce qui évite une zone
-                        blanche et un chargement réseau inutile. */}
-                    <div style={{ fontFamily: font.family }} className="absolute inset-0">
-                      <ProjectPreview demo={demo} mode="desktop" priority={i === 0} />
-                    </div>
-                    {liveSlug === demo.slug && (
-                      <div
-                        className="absolute inset-0"
-                        style={{ fontFamily: font.family }}
-                      >
-                        <ScaledLiveIframe
-                          url={demo.previewUrl}
-                          title={ar ? demo.title : demo.titleEn}
-                          mode="desktop"
-                          interactive
-                        />
-                      </div>
-                    )}
+              <div className="space-y-2 pt-0.5">
+                {/* Couleur */}
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="text-[11px] font-bold text-[var(--muted-foreground)] min-w-[68px]">
+                    {t.customizer.accent}
+                  </span>
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    {accents.map((a) => (
+                      <button
+                        key={a.hex}
+                        type="button"
+                        onClick={() => setAccent(a)}
+                        aria-label={ar ? a.name : a.nameEn}
+                        aria-pressed={accent.hex === a.hex}
+                        className={`h-5 w-5 rounded-full transition-transform cursor-pointer ${
+                          accent.hex === a.hex
+                            ? "scale-110 ring-2 ring-[var(--foreground)] ring-offset-2 ring-offset-[var(--card)]"
+                            : "opacity-80 hover:scale-105 hover:opacity-100"
+                        }`}
+                        style={{ background: a.hex }}
+                      />
+                    ))}
                   </div>
                 </div>
-              ))}
-            </div>
 
-            {/* Légende de la diapositive active */}
-            <div className="absolute inset-x-0 bottom-0 p-4 sm:p-6 bg-gradient-to-t from-black/85 via-black/45 to-transparent text-white">
-              <div className="flex flex-wrap items-end justify-between gap-3">
-                <div className="min-w-0">
-                  <span
-                    className="inline-flex px-3 py-1 rounded-full text-[11px] font-black text-white"
-                    style={{ background: accent.hex }}
-                  >
-                    {ar ? current.sectorAr : current.sectorEn}
+                {/* Police */}
+                <div className="flex flex-wrap items-center gap-1.5">
+                  <span className="text-[11px] font-bold text-[var(--muted-foreground)] min-w-[68px]">
+                    {t.customizer.font}
                   </span>
-                  <h3 className="mt-2 text-lg sm:text-2xl font-black leading-tight truncate">
-                    {ar ? current.title : current.titleEn}
-                  </h3>
-                  <p className="mt-1 text-xs sm:text-sm opacity-85 max-w-[70ch] line-clamp-2 hidden sm:block">
-                    {ar ? current.description : current.descriptionEn}
-                  </p>
+                  {fonts.map((f) => (
+                    <button
+                      key={f.id}
+                      type="button"
+                      onClick={() => setFont(f)}
+                      aria-pressed={font.id === f.id}
+                      className={`h-6 px-2.5 rounded-full text-[11px] font-semibold border transition-colors cursor-pointer ${
+                        font.id === f.id
+                          ? "bg-[var(--primary)] text-[var(--primary-foreground)] border-[var(--primary)]"
+                          : "bg-[var(--secondary)] text-[var(--foreground)] border-[var(--border)] hover:border-[var(--accent)]"
+                      }`}
+                    >
+                      {f.label}
+                    </button>
+                  ))}
                 </div>
-                <div className="flex flex-wrap items-center gap-2">
+
+                {/* Style + bouton d'action compact */}
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    <span className="text-[11px] font-bold text-[var(--muted-foreground)] min-w-[68px]">
+                      {t.customizer.style}
+                    </span>
+                    {styles.map((s) => (
+                      <button
+                        key={s.id}
+                        type="button"
+                        onClick={() => setStyle(s)}
+                        aria-pressed={style.id === s.id}
+                        className={`h-6 px-2.5 rounded-full text-[11px] font-semibold border transition-colors cursor-pointer ${
+                          style.id === s.id
+                            ? "bg-[var(--primary)] text-[var(--primary-foreground)] border-[var(--primary)]"
+                            : "bg-[var(--secondary)] text-[var(--foreground)] border-[var(--border)] hover:border-[var(--accent)]"
+                        }`}
+                      >
+                        {ar ? s.labelAr : s.labelEn}
+                      </button>
+                    ))}
+                  </div>
+
                   <button
                     type="button"
-                    onClick={() => setLiveSlug(current.slug)}
-                    className="inline-flex h-9 items-center gap-1.5 rounded-full border border-white/30 bg-white/15 px-4 text-xs font-bold text-white backdrop-blur transition-colors hover:bg-white/25 cursor-pointer"
-                  >
-                    <Play className="h-3.5 w-3.5" />
-                    {ar ? "معاينة حية" : "Live preview"}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setFullscreen(current)}
-                    className="h-9 px-4 rounded-full bg-white/15 backdrop-blur border border-white/30 text-xs font-bold text-white inline-flex items-center gap-1.5 cursor-pointer hover:bg-white/25 transition-colors"
-                  >
-                    <Maximize2 className="h-3.5 w-3.5" />
-                    {ar ? "ملء الشاشة" : "Fullscreen"}
-                  </button>
-                  <a
-                    href={current.previewUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="h-9 px-4 rounded-full text-xs font-bold text-white inline-flex items-center gap-1.5"
+                    onClick={() =>
+                      document.getElementById("lead-form")?.scrollIntoView({ behavior: "smooth" })
+                    }
+                    className="h-6 px-2.5 rounded-full text-[11px] font-bold text-white inline-flex items-center gap-1 cursor-pointer shadow-xs"
                     style={{ background: accent.hex }}
                   >
-                    {ar ? "زيارة الموقع" : "Visit site"}
-                    <ExternalLink className="h-3 w-3" />
-                  </a>
+                    {ar ? "اطلب الآن" : "Order now"}
+                  </button>
                 </div>
               </div>
             </div>
 
-            {/* Barre de progression du défilement automatique */}
-            <div className="absolute inset-x-0 top-0 h-1 bg-black/15">
-              {playing && (
-                <div
-                  key={index % count}
-                  className="banner-progress h-full"
-                  style={{ background: accent.hex, animationDuration: `${SLIDE_DURATION}ms` }}
-                />
-              )}
-            </div>
-          </div>
+            {/* Aperçu compact contenu (aucune iframe dans le flux de défilement) */}
+            <div
+              role="region"
+              aria-roledescription={ar ? "عرض شرائح" : "carousel"}
+              aria-label={ar ? "معاينة التخصيص" : "Customization preview"}
+              onMouseEnter={() => setHovered(true)}
+              onMouseLeave={() => setHovered(false)}
+              className="mx-auto w-full max-w-[300px] sm:max-w-[310px] border bg-zinc-950 p-1.5 text-white shadow-md transition-all"
+              style={{
+                borderRadius: radius,
+                fontFamily: font.family,
+                borderColor: `${accent.hex}66`,
+              }}
+            >
+              {/* Barre miniature */}
+              <div className="flex items-center justify-between gap-1.5 px-1.5 pb-1.5" dir="ltr">
+                <div className="flex items-center gap-1 min-w-0">
+                  <span className="h-2 w-2 rounded-full bg-red-400 shrink-0" />
+                  <span className="h-2 w-2 rounded-full bg-yellow-400 shrink-0" />
+                  <span className="h-2 w-2 rounded-full bg-green-400 shrink-0" />
+                  <span className="ms-1 truncate max-w-[125px] rounded-full bg-white/10 px-2 py-0.5 text-[9.5px] text-white/80">
+                    {current.previewUrl.replace(/^https?:\/\//, "").replace(/\/$/, "")}
+                  </span>
+                </div>
 
-          {/* Points de navigation */}
-          <div className="flex items-center justify-center gap-2 pt-3" dir="ltr">
-            {slides.map((demo, i) => (
-              <button
-                key={demo.slug}
-                type="button"
-                onClick={() => goTo(i)}
-                aria-label={ar ? demo.title : demo.titleEn}
-                aria-current={i === index % count}
-                className="h-2 rounded-full transition-all cursor-pointer"
-                style={{
-                  width: i === index % count ? 28 : 10,
-                  background: i === index % count ? accent.hex : "rgba(255,255,255,0.35)",
-                }}
-              />
-            ))}
+                <div className="flex items-center gap-1 shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => setPaused((p) => !p)}
+                    aria-label={
+                      paused
+                        ? ar
+                          ? "تشغيل العرض التلقائي"
+                          : "Play slideshow"
+                        : ar
+                          ? "إيقاف العرض التلقائي"
+                          : "Pause slideshow"
+                    }
+                    className="grid h-5 w-5 place-items-center rounded-full bg-white/10 text-white hover:bg-white/20 cursor-pointer"
+                  >
+                    {paused ? <Play className="h-2.5 w-2.5" /> : <Pause className="h-2.5 w-2.5" />}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => goTo(index - 1)}
+                    aria-label={ar ? "الشريحة السابقة" : "Previous slide"}
+                    className="grid h-5 w-5 place-items-center rounded-full bg-white/10 text-white hover:bg-white/20 cursor-pointer"
+                  >
+                    <ChevronLeft className="h-3 w-3" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => goTo(index + 1)}
+                    aria-label={ar ? "الشريحة التالية" : "Next slide"}
+                    className="grid h-5 w-5 place-items-center rounded-full bg-white/10 text-white hover:bg-white/20 cursor-pointer"
+                  >
+                    <ChevronRight className="h-3 w-3" />
+                  </button>
+                </div>
+              </div>
+
+              {/* Visuel statique sans capture du scroll */}
+              <div
+                className="relative overflow-hidden bg-white"
+                style={{ borderRadius: Math.max(radius - 4, 4) }}
+              >
+                <div
+                  dir="ltr"
+                  className="pointer-events-none select-none flex transition-transform duration-500 ease-out"
+                  style={{ transform: `translateX(-${(index % count) * 100}%)` }}
+                >
+                  {slides.map((demo, i) => (
+                    <div
+                      key={demo.slug}
+                      className="w-full shrink-0"
+                      aria-hidden={i !== index % count}
+                    >
+                      <div className="relative aspect-[16/10] bg-white overflow-hidden">
+                        <ProjectPreview demo={demo} mode="desktop" priority={i === 0} />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Légende et petits boutons */}
+                <div className="absolute inset-x-0 bottom-0 flex items-center justify-between gap-2 bg-gradient-to-t from-black/85 via-black/50 to-transparent px-2.5 py-2 text-white">
+                  <div className="min-w-0">
+                    <span
+                      className="inline-block rounded-full px-1.5 py-0.5 text-[9px] font-bold leading-none text-white"
+                      style={{ background: accent.hex }}
+                    >
+                      {ar ? current.sectorAr : current.sectorEn}
+                    </span>
+                    <div className="mt-0.5 truncate text-xs font-bold leading-tight">
+                      {ar ? current.title : current.titleEn}
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-1 shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => setFullscreen(current)}
+                      aria-label={ar ? "ملء الشاشة" : "Fullscreen"}
+                      className="inline-flex h-6 items-center gap-1 rounded-full border border-white/25 bg-white/15 px-2 text-[10px] font-bold text-white backdrop-blur hover:bg-white/25 cursor-pointer"
+                    >
+                      <Maximize2 className="h-2.5 w-2.5" />
+                      {ar ? "معاينة" : "Preview"}
+                    </button>
+                    <a
+                      href={current.previewUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex h-6 items-center gap-1 rounded-full px-2 text-[10px] font-bold text-white"
+                      style={{ background: accent.hex }}
+                    >
+                      {ar ? "زيارة" : "Visit"}
+                      <ExternalLink className="h-2.5 w-2.5" />
+                    </a>
+                  </div>
+                </div>
+
+                <div className="pointer-events-none absolute inset-x-0 top-0 h-0.5 bg-black/15">
+                  {playing && (
+                    <div
+                      key={index % count}
+                      className="banner-progress h-full"
+                      style={{ background: accent.hex, animationDuration: `${SLIDE_DURATION}ms` }}
+                    />
+                  )}
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 
-        {/* ---------- Réglages d'identité + thèmes prêts à l'emploi ---------- */}
-        <div className="mt-10 grid gap-6 lg:grid-cols-[minmax(0,340px)_minmax(0,1fr)] items-start">
-          {/* Contrôles */}
-          <div className="rounded-[24px] bg-white/5 backdrop-blur border border-white/10 p-6 space-y-6">
-            <div className="flex items-center gap-2 text-sm font-black">
-              <Sliders className="h-4 w-4" style={{ color: accent.hex }} />
-              {ar ? "لمسة التخصيص على الإطار" : "Customize the frame"}
-            </div>
-
-            <div>
-              <div className="text-sm font-bold opacity-80 mb-3">{t.customizer.accent}</div>
-              <div className="flex flex-wrap gap-3">
-                {accents.map((a) => (
-                  <button
-                    key={a.hex}
-                    type="button"
-                    onClick={() => setAccent(a)}
-                    className={`h-10 w-10 rounded-full border-2 transition-all cursor-pointer ${
-                      accent.hex === a.hex
-                        ? "border-white scale-110 shadow-lg"
-                        : "border-white/20 hover:scale-105"
-                    }`}
-                    style={{ background: a.hex }}
-                    aria-label={ar ? a.name : a.nameEn}
-                  />
-                ))}
+        {/* ---------- 2. Section Thèmes compacte + boutons réduits ---------- */}
+        <div className="card-surface p-3.5 sm:p-5">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div className="min-w-0">
+              <div className="flex items-center gap-1.5">
+                <Palette className="h-3.5 w-3.5 shrink-0 text-[var(--accent)]" />
+                <h3 className="text-base sm:text-lg font-black leading-snug tracking-tight truncate">
+                  {themesHeading.title}
+                </h3>
               </div>
-              <p className="mt-2 text-[11px] opacity-55 leading-relaxed">
-                {ar
-                  ? "معاينة العميل فقط — لتغيير ألوان موقعك بالكامل اختر ثيماً بالأسفل."
-                  : "Client preview only — to recolor the whole site, pick a theme below."}
+              <p className="mt-0.5 text-xs text-[var(--muted-foreground)] line-clamp-1">
+                {themesHeading.subtitle}
               </p>
             </div>
 
-            <div>
-              <div className="text-sm font-bold opacity-80 mb-3">{t.customizer.font}</div>
-              <div className="grid gap-2">
-                {fonts.map((f) => (
-                  <button
-                    key={f.id}
-                    type="button"
-                    onClick={() => setFont(f)}
-                    className={`px-4 py-3 rounded-full text-sm font-semibold border transition-colors text-start cursor-pointer ${
-                      font.id === f.id
-                        ? "bg-white text-black border-white"
-                        : "bg-white/10 border-white/20 hover:bg-white/15 text-white"
-                    }`}
-                  >
-                    {f.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div>
-              <div className="text-sm font-bold opacity-80 mb-3">{t.customizer.style}</div>
-              <div className="flex gap-2">
-                {styles.map((s) => (
-                  <button
-                    key={s.id}
-                    type="button"
-                    onClick={() => setStyle(s)}
-                    className={`flex-1 px-3 py-2.5 rounded-full text-sm font-semibold border transition-colors cursor-pointer ${
-                      style.id === s.id
-                        ? "bg-white text-black border-white"
-                        : "bg-white/10 border-white/20 text-white hover:bg-white/15"
-                    }`}
-                  >
-                    {ar ? s.labelAr : s.labelEn}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div className="rounded-2xl bg-white text-black p-4 flex items-center justify-between gap-3">
-              <div>
-                <div className="text-sm font-black">
-                  {ar ? "أعجبك ما تراه؟" : "Like what you see?"}
-                </div>
-                <div className="text-xs opacity-60">
-                  {ar ? "نطبق هذا المستوى على نشاطك فوراً" : "We build this quality for your brand"}
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={() =>
-                  document.getElementById("lead-form")?.scrollIntoView({ behavior: "smooth" })
-                }
-                className="h-9 px-4 rounded-full text-white text-sm font-bold cursor-pointer flex-shrink-0"
-                style={{ background: accent.hex }}
-              >
-                {ar ? "اطلب الآن" : "Order now"}
-              </button>
-            </div>
+            <button
+              type="button"
+              onClick={toggle}
+              className="h-7 px-2.5 rounded-full bg-[var(--secondary)] border border-[var(--border)] text-[var(--foreground)] inline-flex items-center gap-1.5 text-[11px] font-bold hover:border-[var(--accent)] transition-colors cursor-pointer shrink-0"
+            >
+              {mode === "dark" ? <Sun className="h-3 w-3" /> : <Moon className="h-3 w-3" />}
+              <span>
+                {mode === "dark"
+                  ? ar
+                    ? "الوضع الفاتح"
+                    : "Light mode"
+                  : ar
+                    ? "الوضع الداكن"
+                    : "Dark mode"}
+              </span>
+            </button>
           </div>
 
-          {/* Thèmes prêts à l'emploi */}
-          <div className="rounded-[24px] bg-white/5 backdrop-blur border border-white/10 p-6">
-            <div className="flex flex-col xl:flex-row xl:items-end justify-between gap-4">
-              <div>
-                <div
-                  className="inline-flex items-center gap-2 text-sm font-semibold tracking-[0.12em]"
-                  style={{ color: accent.hex }}
+          <div className="mt-3 grid grid-cols-2 sm:grid-cols-4 gap-2">
+            {THEMES.map((theme) => {
+              const active = theme.id === palette;
+              return (
+                <button
+                  key={theme.id}
+                  type="button"
+                  onClick={() => setPalette(theme.id)}
+                  aria-pressed={active}
+                  title={ar ? theme.descAr : theme.descEn}
+                  className={`group flex items-center gap-2 rounded-xl border px-2.5 py-1.5 text-start transition-all cursor-pointer ${
+                    active
+                      ? "border-[var(--accent)] bg-[var(--secondary)] shadow-xs"
+                      : "border-[var(--border)] bg-[var(--background)]/60 hover:border-[var(--accent)]/60 hover:bg-[var(--secondary)]/60"
+                  }`}
                 >
-                  <Palette className="h-4 w-4" />
-                  {ar ? "ثيمات جاهزة للشركات" : "READY-MADE BRAND THEMES"}
-                </div>
-                <h3 className="mt-2 text-2xl lg:text-[28px] font-black tracking-tight leading-none">
-                  {themesHeading.title}
-                </h3>
-                <p className="mt-3 opacity-60 max-w-[64ch] text-sm lg:text-base">
-                  {themesHeading.subtitle}
-                </p>
-              </div>
-              <div
-                className="inline-flex items-center gap-2 text-xs font-bold rounded-full px-3 py-2 border self-start xl:self-auto"
-                style={{ borderColor: `${accent.hex}66`, color: accent.hex }}
-              >
-                {THEMES.length} {ar ? "ثيمات × وضعان (فاتح / داكن)" : "themes × 2 modes (light / dark)"}
-              </div>
-            </div>
-
-            <div className="mt-6 grid sm:grid-cols-2 xl:grid-cols-4 gap-4">
-              {THEMES.map((theme, i) => {
-                const active = theme.id === palette;
-                return (
-                  <motion.button
-                    key={theme.id}
-                    type="button"
-                    onClick={() => setPalette(theme.id)}
-                    initial={{ opacity: 0, y: 16 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true, amount: 0.2 }}
-                    transition={{ duration: 0.4, delay: (i % 4) * 0.05 }}
-                    className={`group text-start rounded-[22px] p-3 bg-[var(--card)] text-[var(--foreground)] border transition-all duration-300 cursor-pointer hover:-translate-y-1 hover:shadow-xl ${
-                      active ? "shadow-lg" : "hover:border-[var(--accent)]/60"
-                    }`}
-                    style={{ borderColor: active ? accent.hex : "var(--border)" }}
-                  >
-                    <ThemePreview theme={theme} className="w-full" />
-
-                    <div className="mt-3 flex items-start justify-between gap-2">
-                      <div className="min-w-0">
-                        <div className="font-black text-[15px] leading-tight truncate">
-                          {ar ? theme.labelAr : theme.labelEn}
-                        </div>
-                        <div className="text-xs opacity-60 mt-1 leading-relaxed">
-                          {ar ? theme.descAr : theme.descEn}
-                        </div>
-                      </div>
-                      {active ? (
-                        <span
-                          className="h-7 w-7 rounded-full grid place-items-center flex-shrink-0 text-white"
-                          style={{ background: accent.hex }}
-                        >
-                          <Check className="h-3.5 w-3.5" />
-                        </span>
-                      ) : (
-                        <span className="h-7 w-7 rounded-full bg-[var(--secondary)] border border-[var(--border)] grid place-items-center flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <Palette className="h-3.5 w-3.5 opacity-70" />
-                        </span>
-                      )}
-                    </div>
-
-                    <div className="mt-3 text-[11px] font-bold">
-                      {active ? (
-                        <span style={{ color: accent.hex }}>
-                          {ar ? "✓ مطبّق الآن" : "✓ Applied now"}
-                        </span>
-                      ) : (
-                        <span className="opacity-55">
-                          {ar ? "طبّق هذا الثيم" : "Apply this theme"}
-                        </span>
-                      )}
-                    </div>
-                  </motion.button>
-                );
-              })}
-            </div>
-
-            <p className="mt-6 text-sm opacity-60 flex items-center gap-2">
-              <Palette className="h-4 w-4 flex-shrink-0" style={{ color: accent.hex }} />
-              {t.themes.note}
-            </p>
+                  <ThemePreview theme={theme} compact className="h-6 w-8 shrink-0" />
+                  <span className="min-w-0 flex-1 text-[11.5px] font-bold leading-tight truncate">
+                    {ar ? theme.labelAr : theme.labelEn}
+                  </span>
+                  {active && (
+                    <span className="grid h-4 w-4 shrink-0 place-items-center rounded-full bg-[var(--accent)] text-[var(--accent-foreground)]">
+                      <Check className="h-2.5 w-2.5" />
+                    </span>
+                  )}
+                </button>
+              );
+            })}
           </div>
+
+          <p className="mt-2.5 flex items-center gap-1.5 text-[11px] text-[var(--muted-foreground)]">
+            <Palette className="h-3 w-3 shrink-0 text-[var(--accent)]" />
+            <span className="line-clamp-1">{t.themes.note}</span>
+          </p>
         </div>
       </div>
 
