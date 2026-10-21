@@ -1,23 +1,22 @@
 "use client";
-import { useState } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { CalendarCheck, Check, Sparkles, ArrowUpRight, Bitcoin } from "lucide-react";
+import { CalendarCheck, Check, Sparkles, ArrowUpRight } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import { useSectionHeading, useSiteConfig } from "@/components/site-provider";
 import { SectionHeading } from "@/components/section-heading";
-import { CheckoutDialog } from "@/components/checkout-dialog";
-import { formatLyd, lydLabel } from "@/lib/classification";
-import { formatMainPrice, formatUsd } from "@/lib/installments";
+import { ModelPriceBreakdown } from "@/components/model-price-breakdown";
+import { ModelPurchaseButton } from "@/components/model-purchase-button";
+import { PromoPriceNote } from "@/components/promo-price";
+import { resolvePlanPriceBreakdown } from "@/lib/classification";
+import { formatUsd } from "@/lib/installments";
 import { CURRENT_PROMO, promoActive } from "@/lib/promotion";
-import type { PricingPlan } from "@/lib/config";
 
 export function Pricing() {
   const siteConfig = useSiteConfig();
   const heading = useSectionHeading("pricing");
   const { locale, t } = useI18n();
   const plans = siteConfig.pricing.plans;
-  const [checkoutPlan, setCheckoutPlan] = useState<PricingPlan | null>(null);
 
   return (
     <section id="pricing" className="section section-muted">
@@ -67,81 +66,32 @@ export function Pricing() {
                 {plan.featured && <span className="h-8 w-8 rounded-full bg-[var(--accent)] grid place-items-center">✦</span>}
               </div>
 
-              {/* Prix principal en DOLLAR (toutes langues) — le montant en
-                  Livre libyenne reste affiché en équivalent indicatif. */}
-              <div className="mt-6 flex items-baseline gap-2">
-                {(plan.priceUsd ?? 0) > 0 ? (
-                  <>
-                    <span className="text-[36px] font-black tracking-tight leading-none" dir="ltr">
-                      {formatMainPrice(plan.priceUsd ?? 0, locale === "ar" ? siteConfig.pricing.currency : siteConfig.pricing.currencyEn)}
-                    </span>
-                    {plan.originalPrice != null && plan.originalPrice > 0 && plan.price > 0 && (
-                      <span className="ms-2 text-sm line-through opacity-40" dir="ltr">
-                        {formatMainPrice(
-                          Math.round((plan.originalPrice * (plan.priceUsd ?? 0)) / plan.price),
-                          locale === "ar" ? siteConfig.pricing.currency : siteConfig.pricing.currencyEn,
-                        )}
-                      </span>
-                    )}
-                  </>
-                ) : (
-                  <>
-                    <span className="text-[36px] font-black tracking-tight leading-none">{formatLyd(plan.price)}</span>
-                    <span className="text-sm opacity-60">{lydLabel(locale)}</span>
-                    {plan.originalPrice != null && plan.originalPrice > 0 && (
-                      <span className="ms-2 text-sm line-through opacity-40">{formatLyd(plan.originalPrice)}</span>
-                    )}
-                  </>
-                )}
+              <div className="mt-6 rounded-2xl border border-[var(--border)]/70 bg-[var(--secondary)]/35 p-4">
+                <ModelPriceBreakdown
+                  breakdown={resolvePlanPriceBreakdown(plan)}
+                  currency={locale === "ar" ? siteConfig.pricing.currency : siteConfig.pricing.currencyEn}
+                />
+                <div className="mt-2 text-[10px] opacity-55">
+                  {locale === "ar" ? t.crypto.lydNoteAr : t.crypto.lydNoteEn}
+                </div>
+                {/* Prix après coupon : même calcul que le serveur de paiement. */}
+                <PromoPriceNote
+                  amountUsd={resolvePlanPriceBreakdown(plan).totalPriceUsd}
+                  currency={locale === "ar" ? siteConfig.pricing.currency : siteConfig.pricing.currencyEn}
+                  className="mt-2"
+                />
               </div>
               <div className="text-xs opacity-60">{locale === "ar" ? plan.period : plan.periodEn}</div>
 
-              {(plan.priceUsd ?? 0) > 0 && (
-                <div
-                  className={`mt-2.5 self-start inline-flex items-baseline gap-1.5 rounded-full px-3 py-1 ${
-                    plan.featured ? "bg-white/10" : "bg-[var(--accent)]/10"
-                  }`}
-                >
-                  <span className="text-sm font-bold opacity-80" dir="ltr">
-                    ≈ {formatLyd(plan.price)} {lydLabel(locale)}
-                  </span>
-                  <span className="text-[11px] opacity-70">
-                    {locale === "ar" ? t.crypto.lydNoteAr : t.crypto.lydNoteEn}
-                  </span>
-                </div>
-              )}
+              <ModelPurchaseButton
+                plan={plan}
+                className={`mt-6 min-h-11 rounded-full px-4 py-2.5 font-bold inline-flex items-center justify-center gap-2 w-full cursor-pointer transition text-center ${plan.featured ? "bg-[var(--accent)] text-[var(--accent-foreground)] hover:bg-[var(--accent-hover)]" : "bg-[var(--primary)] text-[var(--primary-foreground)] hover:opacity-90"}`}
+              />
 
-              {(plan.priceUsd ?? 0) > 0 ? (
-                <button
-                  onClick={() => setCheckoutPlan(plan)}
-                  className={`mt-6 h-11 rounded-full font-bold inline-flex items-center justify-center gap-2 w-full cursor-pointer transition ${plan.featured ? "bg-[var(--accent)] text-[var(--accent-foreground)] hover:bg-[var(--accent-hover)]" : "bg-[var(--primary)] text-[var(--primary-foreground)] hover:opacity-90"}`}
-                >
-                  <Bitcoin className="h-4 w-4" />
-                  {locale === "ar" ? t.crypto.payWithCrypto : t.crypto.payWithCrypto}
-                </button>
-              ) : (
-                <button
-                  onClick={() => document.getElementById("lead-form")?.scrollIntoView({ behavior: "smooth" })}
-                  className={`mt-6 h-11 rounded-full font-bold inline-flex items-center justify-center gap-2 w-full cursor-pointer transition ${plan.featured ? "bg-[var(--accent)] text-[var(--accent-foreground)] hover:bg-[var(--accent-hover)]" : "bg-[var(--primary)] text-[var(--primary-foreground)] hover:opacity-90"}`}
-                >
-                  {locale === "ar" ? plan.cta : plan.ctaEn}
-                  <ArrowUpRight className="h-4 w-4" />
-                </button>
-              )}
-
-              {(plan.priceUsd ?? 0) > 0 && (
+              {resolvePlanPriceBreakdown(plan).totalPriceUsd != null && (
                 <p className="mt-2 text-center text-[11px] opacity-60">
                   {locale === "ar" ? t.crypto.installmentNoteAr : t.crypto.installmentNoteEn}
                 </p>
-              )}
-
-              {(plan.priceUsd ?? 0) > 0 && (
-                <button
-                  onClick={() => document.getElementById("lead-form")?.scrollIntoView({ behavior: "smooth" })}
-                  className="mt-2 w-full text-xs opacity-60 hover:opacity-100 underline underline-offset-4 decoration-[var(--accent)] transition cursor-pointer"
-                >
-                  {locale === "ar" ? t.crypto.orQuote : t.crypto.orQuote}
-                </button>
               )}
 
               <ul className="mt-6 space-y-2.5">
@@ -199,11 +149,6 @@ export function Pricing() {
         </div>
       </div>
 
-      {/* Monté conditionnellement : l'état du dialogue
-          repart à zéro à chaque ouverture. */}
-      {checkoutPlan && (
-        <CheckoutDialog plan={checkoutPlan} onClose={() => setCheckoutPlan(null)} />
-      )}
     </section>
   );
 }

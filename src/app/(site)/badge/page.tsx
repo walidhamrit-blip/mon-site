@@ -88,7 +88,7 @@ export default async function BadgePage() {
         ]}
       />
 
-      <div className="pt-[calc(var(--header-h)+1.5rem)]">
+      <div className="pt-6">
         <section className="section-tight border-b border-[var(--border)] bg-[var(--secondary)]/35">
           <div className="site-container px-4 sm:px-6 lg:px-8">
             <p className="text-xs font-black tracking-[0.2em] text-[var(--accent)] uppercase">

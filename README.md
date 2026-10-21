@@ -10,7 +10,7 @@ npm run dev # http://localhost:3000
 
 ## Configuration unique
 Editez `src/lib/config.ts`:
-- `siteConfig.pricing.plans` : prix, noms, options
+- `siteConfig.pricing.plans` : prix du modèle, frais de personnalisation, noms, options
 - `theme.accent` : couleur d'accent (#C6A664 doré par défaut)
 - `whatsapp` : numéro sans "+"
 - `social` : liens Instagram/Facebook
@@ -213,10 +213,17 @@ Le dialogue de paiement propose trois modes, reflétés dans le prix affiché :
   l'environnement visé (production ⇔ `NOWPAYMENTS_SANDBOX` vide/`false`,
   sandbox ⇔ `true`). `reachable:true` seul ne prouve rien : `GET /status`
   est public et ne contrôle pas la clé.
-- Les prix s'affichent en د.ل mais sont facturés en USD : chaque formule a un
-  `priceUsd` dans `src/lib/config.ts` (éditable aussi dans
-  Admin → Configuration — laissé vide, la formule n'est plus payable en
-  crypto). Ajustez-le selon votre taux de change.
+- Le tarif est ventilé en deux éléments : `priceUsd` = prix du modèle,
+  `customizationUsd` = frais additionnels de personnalisation. Les cartes
+  `/pricing` et `/demos` affichent les deux lignes et l'addition exacte
+  (USD + équivalent LYD indicatif). Dans Admin → Configuration → Tarifs,
+  renseignez le frais pour chaque formule ; champ vide = « devis requis » et
+  le paiement final en ligne reste désactivé tant que le visiteur n'a pas
+  approuvé un montant écrit. Aucun supplément n'est caché au checkout.
+- Pour un site précis, `priceUsd` dans Admin → Contenu → Démos reste une
+  surcharge/variation du prix du modèle (la personnalisation additionnelle
+  vient ensuite du tarif de sa formule). L'API recalcule modèle + personnalisation
+  + coupon côté serveur et crée la facture sur ce total approuvé.
 - **Seul l'IPN (ou le statut `finished`/`confirmed`) confirme un paiement** —
   la redirection `success_url` n'est qu'une indication visuelle.
 - La clé API ne quitte jamais le serveur : création du paiement, IPN et

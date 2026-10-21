@@ -69,7 +69,7 @@ export default async function SectorPage({ params }: { params: Promise<{ sector:
         ]}
       />
 
-      <div className="pt-[calc(var(--header-h)+1.5rem)]">
+      <div className="pt-6">
         {/* Hero sectoriel */}
         <section className="section-tight border-b border-[var(--border)] bg-[var(--secondary)]/35">
           <div className="site-container px-4 sm:px-6 lg:px-8">
@@ -174,13 +174,24 @@ export default async function SectorPage({ params }: { params: Promise<{ sector:
                         </h3>
                         <p className="text-sm opacity-60 mt-1 line-clamp-2">{d.description}</p>
                         {cls && (
-                          <div className="mt-3 text-xs opacity-60 flex items-center gap-2">
-                            <span className="px-2 py-0.5 rounded-full bg-[var(--secondary)] border border-[var(--border)] font-bold">
+                          <div className="mt-3 rounded-xl bg-[var(--secondary)]/60 p-3 text-xs">
+                            <div className="mb-2 inline-flex rounded-full border border-[var(--border)] px-2 py-0.5 font-bold">
                               فئة {cls.tier} · {cls.nameEn}
-                            </span>
-                            <span dir="ltr" className="font-bold">
-                              ${cls.priceUsd ?? "—"} / {formatLyd(cls.priceLyd)} {lydLabel("ar")}
-                            </span>
+                            </div>
+                            <div className="flex justify-between gap-2">
+                              <span className="opacity-60">سعر النموذج</span>
+                              <strong dir="ltr">{cls.priceUsd == null ? "حسب الطلب" : `$${cls.priceUsd} · ≈ ${formatLyd(cls.priceLyd)} ${lydLabel("ar")}`}</strong>
+                            </div>
+                            <div className="mt-1 flex justify-between gap-2">
+                              <span className="opacity-60">
+                                التخصيص{cls.customizationPercent == null ? "" : ` (${cls.customizationPercent}٪)`}
+                              </span>
+                              <strong dir="ltr">{cls.customizationUsd == null ? "عرض سعر" : `$${cls.customizationUsd}`}</strong>
+                            </div>
+                            <div className="mt-1 flex justify-between gap-2 border-t border-[var(--border)]/70 pt-1 font-black">
+                              <span>الإجمالي</span>
+                              <strong dir="ltr">{cls.totalPriceUsd == null ? "يُحدد قبل الدفع" : `$${cls.totalPriceUsd} · ≈ ${formatLyd(cls.totalPriceLyd ?? 0)} ${lydLabel("ar")}`}</strong>
+                            </div>
                           </div>
                         )}
                         <div className="mt-3 flex flex-wrap gap-1.5">

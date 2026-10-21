@@ -16,7 +16,8 @@ import { whatsappLink } from "@/lib/utils";
  * - un seul lien actif surligné (`usePathname`) ;
  * - menu mobile en panneau plein écran, défilement de la page verrouillé ;
  * - fermeture au clavier (Échap) et au changement de page ;
- * - hauteur et décalage alignés sur `--promo-h` / `--header-h`.
+ * - barre DANS LE FLUX de la page (elle défile avec le contenu) : seul le
+ *   bandeau promo, fixe, est dégagé via `--promo-h`.
  */
 export function Navbar() {
   const router = useRouter();
@@ -25,24 +26,7 @@ export function Navbar() {
   const { locale, t, toggleLocale } = useI18n();
   const { mode, toggle } = useTheme();
   const [open, setOpen] = useState(false);
-  const [scrolled, setScrolled] = useState(false);
-  const [hidden, setHidden] = useState(false);
   const ar = locale === "ar";
-
-  useEffect(() => {
-    let lastY = window.scrollY;
-    const onScroll = () => {
-      const y = window.scrollY;
-      setScrolled(y > 20);
-      if (y < 120) setHidden(false);
-      else if (y > lastY + 8) setHidden(true);
-      else if (y < lastY - 8) setHidden(false);
-      lastY = y;
-    };
-    onScroll();
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
-  }, []);
 
   // Panneau mobile : verrouille le fond et laisse Échap fermer.
   useEffect(() => {
@@ -95,21 +79,9 @@ export function Navbar() {
 
   return (
     <>
-      <header
-        className={`fixed inset-x-0 top-[var(--promo-h,0px)] z-50 transition-all duration-300 ${
-          scrolled ? "py-2.5" : "py-4"
-        } ${hidden && !open ? "-translate-y-[130%] pointer-events-none" : "translate-y-0"}`}
-        aria-hidden={hidden && !open ? "true" : undefined}
-        inert={hidden && !open ? true : undefined}
-      >
+      <header className="relative z-50 mt-[var(--promo-h,0px)] py-4 transition-[margin] duration-300">
         <div className="site-container px-4 sm:px-6">
-          <div
-            className={`flex items-center justify-between gap-3 rounded-full px-3 py-2.5 transition-all duration-300 sm:px-4 ${
-              scrolled
-                ? "border border-[var(--border)] bg-[var(--card)]/85 shadow-[var(--shadow-md)] backdrop-blur-xl"
-                : "border border-[var(--border)]/60 bg-[var(--card)]/70 backdrop-blur-md"
-            }`}
-          >
+          <div className="flex items-center justify-between gap-3 rounded-full border border-[var(--border)]/60 bg-[var(--card)]/70 px-3 py-2.5 backdrop-blur-md sm:px-4">
             <Link href="/" className="group flex shrink-0 items-center gap-2.5" aria-label={siteConfig.name}>
               <span className="grid h-9 w-9 place-items-center rounded-full bg-[var(--primary)] text-sm font-black text-[var(--primary-foreground)] transition-transform group-hover:scale-105">
                 {ar ? "ن" : "N"}

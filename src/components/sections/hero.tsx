@@ -54,7 +54,7 @@ export function Hero() {
         />
       </div>
 
-      <div className="site-container px-4 pb-10 pt-[calc(var(--header-h)+2rem)] sm:px-6 lg:px-8 lg:pb-14 lg:pt-[calc(var(--header-h)+3rem)]">
+      <div className="site-container px-4 pb-10 pt-6 sm:px-6 lg:px-8 lg:pb-14 lg:pt-8">
         <div className="grid items-center gap-10 lg:grid-cols-[minmax(0,0.92fr)_minmax(0,1.08fr)] lg:gap-12 xl:gap-16">
           {/* ── Colonne texte ─────────────────────────────────────────── */}
           <motion.div style={{ opacity: reducedMotion ? 1 : opacity }} className="relative min-w-0">

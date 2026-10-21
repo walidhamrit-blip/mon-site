@@ -83,7 +83,7 @@ export function ContactClient() {
   ];
 
   return (
-    <div className="pt-[calc(var(--header-h)+1.5rem)]">
+    <div className="pt-6">
       <section className="section-tight border-b border-[var(--border)] bg-[var(--secondary)]/35">
         <div className="site-container px-4 sm:px-6 lg:px-8">
           <div className="grid items-center gap-8 lg:grid-cols-2 lg:gap-12">

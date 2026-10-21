@@ -11,8 +11,14 @@ import {
   X,
 } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
-import { siteConfig, type PricingPlan } from "@/lib/config";
-import { formatLyd } from "@/lib/classification";
+import { useSiteConfig } from "@/components/site-provider";
+import {
+  formatLyd,
+  resolveDemoClassification,
+  resolvePlanPriceBreakdown,
+  type ClassificationPlan,
+} from "@/lib/classification";
+import type { Demo } from "@/lib/site-types";
 import {
   formatMainPrice,
   formatUsd,
@@ -76,13 +82,16 @@ export interface FlexPaymentIntent {
  */
 export function CheckoutDialog({
   plan,
+  demo,
   flex,
   onClose,
 }: {
-  plan?: PricingPlan | null;
+  plan?: ClassificationPlan | null;
+  demo?: Demo | null;
   flex?: FlexPaymentIntent | null;
   onClose: () => void;
 }) {
+  const config = useSiteConfig();
   const { locale, t } = useI18n();
   const ar = locale === "ar";
   const [step, setStep] = useState<Step>("form");
@@ -123,25 +132,39 @@ export function CheckoutDialog({
   }, [plan, flex, onClose]);
 
   const flexMode = Boolean(flex && !plan);
+  const demoClassification = demo
+    ? resolveDemoClassification(demo, config.pricing.plans)
+    : null;
+  const planBreakdown = plan
+    ? resolvePlanPriceBreakdown(
+        plan,
+        demoClassification?.priceUsd ?? plan.priceUsd,
+        demoClassification?.priceLyd ?? plan.price,
+      )
+    : null;
 
   if (flexMode) {
     if (!Number.isFinite(flexAmount) || flexAmount <= 0) return null;
-  } else if (!plan || !plan.priceUsd) return null;
+  } else if (!plan || planBreakdown?.totalPriceUsd == null) return null;
 
-  // Remise : appliquée uniquement aux formules (pas au montant libre).
-  // Le serveur recalcule le prix : ce calcul ne sert qu'à l'affichage.
+  // Remise : appliquée au modèle + personnalisation configurée (pas au
+  // montant libre). Le serveur recalcule toujours le prix final.
   const discountPercent = appliedCoupon ? CURRENT_PROMO.percent : 0;
-  const baseTotalUsd = flexMode ? flexAmount : plan!.priceUsd!;
+  const baseTotalUsd = flexMode ? flexAmount : planBreakdown!.totalPriceUsd!;
   const totalUsd = discountedAmount(baseTotalUsd, discountPercent);
   const savedUsd = Math.round((baseTotalUsd - totalUsd) * 100) / 100;
-  // Prix de la formule affichés dans le récapitulatif (dollar principal +
-  // équivalent indicatif en Livre libyenne), remise déduite.
-  const planPriceUsd: number | null =
-    plan?.priceUsd != null ? discountedAmount(plan.priceUsd, discountPercent) : null;
+  const planPriceUsd: number | null = plan
+    ? discountedAmount(baseTotalUsd, discountPercent)
+    : null;
   const planPriceLyd: number = plan
-    ? Math.round(discountedAmount(plan.price, discountPercent))
+    ? Math.round(
+        discountedAmount(
+          planBreakdown?.totalPriceLyd ?? planBreakdown?.modelPriceLyd ?? plan.price,
+          discountPercent,
+        ),
+      )
     : 0;
-  const planBasePriceUsd: number | null = plan?.priceUsd ?? null;
+  const planBasePriceUsd: number | null = planBreakdown?.totalPriceUsd ?? null;
 
   /** Applique le coupon saisi (comparaison insensible à la casse). */
   const applyCoupon = () => {
@@ -191,6 +214,7 @@ export function CheckoutDialog({
               }
             : {
                 planId: plan!.id,
+                demoSlug: demo?.slug,
                 installments,
                 coupon: appliedCoupon ?? undefined,
                 name: name.trim() || undefined,
@@ -247,7 +271,7 @@ export function CheckoutDialog({
       return ar ? t.checkout.hintNetworkAr : t.checkout.hintNetworkEn;
     if (code === "order_not_found" || code === "order_already_paid")
       return ar ? t.checkout.hintOrderAr : t.checkout.hintOrderEn;
-    if (code === "plan_not_payable")
+    if (code === "plan_not_payable" || code === "customization_quote_required")
       return ar ? t.checkout.hintPlanAr : t.checkout.hintPlanEn;
     return ar ? t.checkout.hintGenericAr : t.checkout.hintGenericEn;
   };
@@ -314,9 +338,11 @@ export function CheckoutDialog({
                   {flexMode
                     ? flex?.purpose?.trim() ||
                       (ar ? "دفع حر" : "Flexible payment")
-                    : ar
-                      ? plan!.name
-                      : plan!.nameEn}
+                    : demo
+                      ? (ar ? demo.title : demo.titleEn)
+                      : ar
+                        ? plan!.name
+                        : plan!.nameEn}
                 </span>
                 {flexMode && (
               <p className="text-xs opacity-70">
@@ -330,7 +356,7 @@ export function CheckoutDialog({
                   <span className="text-xs opacity-60">
                     {formatMainPrice(
                       planPriceUsd ?? planPriceLyd,
-                      ar ? siteConfig.pricing.currency : siteConfig.pricing.currencyEn,
+                      ar ? config.pricing.currency : config.pricing.currencyEn,
                     )}
                     {planPriceUsd != null && (
                       <span className="opacity-70">
@@ -341,6 +367,28 @@ export function CheckoutDialog({
                   </span>
                 )}
               </div>
+              {!flexMode && planBreakdown && (
+                <div className="mt-2 border-t border-[var(--border)]/70 pt-2 space-y-1 text-xs">
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="opacity-60">{ar ? "سعر النموذج" : "Website model"}</span>
+                    <strong dir="ltr">
+                      {formatMainPrice(planBreakdown.modelPriceUsd ?? 0, ar ? config.pricing.currency : config.pricing.currencyEn)}
+                    </strong>
+                  </div>
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="opacity-60">
+                      {planBreakdown.customizationPercent == null
+                        ? (ar ? "تكلفة التخصيص" : "Customization")
+                        : ar
+                          ? `التخصيص (${planBreakdown.customizationPercent}٪)`
+                          : `Customization (${planBreakdown.customizationPercent}%)`}
+                    </span>
+                    <strong dir="ltr">
+                      {formatMainPrice(planBreakdown.customizationUsd ?? 0, ar ? config.pricing.currency : config.pricing.currencyEn)}
+                    </strong>
+                  </div>
+                </div>
+              )}
               <div className="mt-1.5 flex items-baseline justify-between gap-2">
                 <span className="flex items-baseline gap-2">
                   <span className="text-2xl font-black text-[var(--accent)]" dir="ltr">

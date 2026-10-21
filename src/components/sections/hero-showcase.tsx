@@ -7,8 +7,9 @@ import { useSiteConfig, useSiteContent } from "@/components/site-provider";
 import { isRealUrl } from "@/components/live-site-frames";
 import { ProjectPreview } from "@/components/project-preview";
 import { getProjectPreview } from "@/lib/project-previews";
-import { formatLyd, lydLabel, resolveDemoClassification } from "@/lib/classification";
-import { formatMainPrice } from "@/lib/installments";
+import { resolveDemoClassification } from "@/lib/classification";
+import { ModelPriceBreakdown } from "@/components/model-price-breakdown";
+import { ModelPurchaseButton } from "@/components/model-purchase-button";
 import { useI18n } from "@/lib/i18n";
 
 const SLIDE_DURATION = 8000;
@@ -70,6 +71,9 @@ export function HeroShowcase() {
   if (!project) return null;
   const title = ar ? project.title : project.titleEn;
   const classification = resolveDemoClassification(project, config.pricing.plans);
+  const plan = classification
+    ? config.pricing.plans.find((item) => item.id === classification.planId)
+    : null;
   const step = (direction: number) => {
     setPaused(true);
     setIndex((currentIndex + direction + projects.length) % projects.length);
@@ -154,29 +158,33 @@ export function HeroShowcase() {
           <p className="mb-1 text-[10px] font-bold uppercase tracking-wider text-[var(--accent)]">{ar ? project.sectorAr : project.sectorEn}</p>
           <p className="truncate text-sm font-bold sm:text-base">{title}</p>
           {classification && (
-            <p className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px] text-[var(--muted-foreground)]">
-              <span className="font-bold text-[var(--accent)]">
-                {ar ? `الفئة ${classification.tier}` : `Category ${classification.tier}`}
-              </span>
-              <span>{ar ? classification.name : classification.nameEn}</span>
-              {classification.priceUsd != null && (
-                <span className="font-black text-[var(--foreground)]" dir="ltr">
-                  {formatMainPrice(
-                    classification.priceUsd,
-                    ar ? config.pricing.currency : config.pricing.currencyEn,
-                  )}
+            <div className="mt-2 max-w-[350px] rounded-xl border border-[var(--border)] bg-[var(--card)]/90 p-3">
+              <div className="mb-1.5 flex flex-wrap items-center gap-2 text-[11px]">
+                <span className="font-bold text-[var(--accent)]">
+                  {ar ? `الفئة ${classification.tier}` : `Category ${classification.tier}`}
                 </span>
-              )}
-              <span dir="ltr">
-                {formatLyd(classification.priceLyd)}{" "}
-                {lydLabel(ar ? "ar" : "en")}
-              </span>
-            </p>
+                <span>{ar ? classification.name : classification.nameEn}</span>
+              </div>
+              <ModelPriceBreakdown
+                breakdown={classification}
+                currency={ar ? config.pricing.currency : config.pricing.currencyEn}
+                compact
+              />
+            </div>
           )}
         </div>
-        <a href={project.previewUrl} target="_blank" rel="noopener noreferrer" className="inline-flex shrink-0 items-center gap-2 rounded-full border border-[var(--border)] bg-[var(--card)] px-3 py-2.5 text-xs font-bold transition-colors hover:border-[var(--accent)]">
-          {ar ? "زيارة الموقع" : "Visit site"}<ExternalLink className="h-3.5 w-3.5" />
-        </a>
+        <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
+          {plan && (
+            <ModelPurchaseButton
+              plan={plan}
+              demo={project}
+              className="inline-flex min-h-9 items-center justify-center gap-1.5 rounded-full bg-[var(--accent)] px-3 py-2 text-center text-[11px] font-black text-[var(--accent-foreground)] hover:bg-[var(--accent-hover)] transition-colors"
+            />
+          )}
+          <a href={project.previewUrl} target="_blank" rel="noopener noreferrer" className="inline-flex shrink-0 items-center gap-2 rounded-full border border-[var(--border)] bg-[var(--card)] px-3 py-2.5 text-xs font-bold transition-colors hover:border-[var(--accent)]">
+            {ar ? "زيارة الموقع" : "Visit site"}<ExternalLink className="h-3.5 w-3.5" />
+          </a>
+        </div>
       </div>
 
       {projects.length > 1 && (

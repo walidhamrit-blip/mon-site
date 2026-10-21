@@ -76,6 +76,7 @@ function ChatShell() {
             : "Hello Nukhba 👋 I have a question about a website for my business.",
         ),
         reservationUsd: siteConfig.reservation?.depositUsd ?? 1,
+        hours: ar ? siteConfig.hours : siteConfig.hoursEn,
       }),
     [locale, siteConfig, ar],
   );

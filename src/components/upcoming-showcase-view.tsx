@@ -95,7 +95,7 @@ export function UpcomingShowcaseView({
       : `Hello Nukhba 👋 Please notify me as soon as "${item.titleEn}" launches and share early-access details.`;
 
   return (
-    <div className="pt-[calc(var(--header-h)+1.5rem)]">
+    <div className="pt-6">
       {/* Hero éditorial dans la même esthétique Nukhba */}
       <section className="section-tight relative overflow-hidden border-b border-[var(--border)] bg-[var(--secondary)]/35">
         <div

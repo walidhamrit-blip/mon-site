@@ -279,9 +279,10 @@ body {
   display: none;
 }
 
-/* Les ancres ne passent plus sous la barre fixe. */
+/* Les ancres gardent un peu d'air au-dessus de la cible (la barre de
+   navigation est dans le flux : elle ne recouvre plus le contenu). */
 :where([id]) {
-  scroll-margin-top: calc(var(--header-h) + 1.5rem);
+  scroll-margin-top: 1.5rem;
 }
 
 ::selection {
