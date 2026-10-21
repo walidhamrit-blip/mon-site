@@ -15,7 +15,7 @@ export default async function PayCancelPage({
   const { ref } = await searchParams;
 
   return (
-    <main className="pt-[96px] min-h-[70vh]">
+    <main className="pt-[calc(var(--header-h)+1.5rem)] min-h-[70vh]">
       <div className="mx-auto max-w-[960px] px-4 sm:px-6 lg:px-8 py-10 text-center">
         <div className="rounded-[24px] border border-[var(--border)] bg-[var(--card)] p-8 max-w-md mx-auto">
           <h1 className="text-2xl font-black">Paiement non finalisé</h1>

@@ -58,7 +58,7 @@ export function DemoViewer({ demo, allDemos }: { demo: Demo; allDemos: Demo[] })
     .slice(0, 3);
 
   return (
-    <div className="pt-[96px]">
+    <div className="pt-[calc(var(--header-h)+1.5rem)]">
       <section className="py-8">
         <div className="site-container px-4 sm:px-6 lg:px-8">
           <div className="flex flex-wrap items-center justify-between gap-4">
@@ -130,7 +130,7 @@ export function DemoViewer({ demo, allDemos }: { demo: Demo; allDemos: Demo[] })
             </div>
 
             <div className="space-y-6">
-              <div className="rounded-[24px] bg-[var(--card)] border border-[var(--border)] p-6">
+              <div className="card-surface p-6">
                 <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[var(--accent)] text-[var(--accent-foreground)] text-xs font-bold">
                   <Sparkles className="h-3.5 w-3.5" />
                   {locale === "ar" ? "معرض حي — قابل للتخصيص" : "Live Demo — Customizable"}

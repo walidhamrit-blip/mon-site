@@ -95,9 +95,9 @@ export function UpcomingShowcaseView({
       : `Hello Nukhba 👋 Please notify me as soon as "${item.titleEn}" launches and share early-access details.`;
 
   return (
-    <div className="pt-[96px]">
+    <div className="pt-[calc(var(--header-h)+1.5rem)]">
       {/* Hero éditorial dans la même esthétique Nukhba */}
-      <section className="relative overflow-hidden py-12 lg:py-16 bg-[var(--secondary)]/35 border-b border-[var(--border)]">
+      <section className="section-tight relative overflow-hidden border-b border-[var(--border)] bg-[var(--secondary)]/35">
         <div
           aria-hidden="true"
           className="pointer-events-none absolute -top-24 start-1/2 -translate-x-1/2 h-72 w-[620px] rounded-full blur-3xl opacity-20"
@@ -105,96 +105,98 @@ export function UpcomingShowcaseView({
         />
 
         <div className="site-container px-4 sm:px-6 lg:px-8 relative">
-          <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-8">
-            <div className="max-w-3xl">
-              <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[var(--card)] border border-[var(--border)] text-xs sm:text-sm font-black shadow-sm">
-                <span className="h-2.5 w-2.5 rounded-full bg-[var(--accent)] animate-pulse" />
-                <span className="text-[var(--accent)]">
-                  {ar ? page.statusBadgeAr : page.statusBadgeEn}
-                </span>
-              </div>
+          <div className="max-w-[56rem]">
+            <div className="inline-flex items-center gap-2 rounded-full border border-[var(--border)] bg-[var(--card)] px-4 py-1.5 text-xs font-black shadow-sm sm:text-sm">
+              <span className="h-2.5 w-2.5 rounded-full bg-[var(--accent)] animate-pulse" />
+              <span className="text-[var(--accent)]">
+                {ar ? page.statusBadgeAr : page.statusBadgeEn}
+              </span>
+            </div>
 
-              <h1 className="mt-4 text-[34px] sm:text-[44px] lg:text-[52px] font-black tracking-tight leading-[1.08]">
-                {ar ? page.titleAr : page.titleEn}
-                {(ar ? page.highlightAr : page.highlightEn) && (
-                  <>
-                    {" "}
-                    <span className="text-[var(--accent)]">
-                      — {ar ? page.highlightAr : page.highlightEn}
-                    </span>
-                  </>
-                )}
-              </h1>
-
-              <p className="mt-4 text-base sm:text-lg opacity-70 max-w-[60ch] leading-relaxed">
-                {ar ? page.subtitleAr : page.subtitleEn}
-              </p>
-
-              {(ar ? page.bannerNoteAr : page.bannerNoteEn) && (
-                <div className="mt-6 rounded-2xl bg-[var(--card)]/90 border border-[var(--border)] px-4 py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                  <div className="flex items-start sm:items-center gap-3 text-sm">
-                    <span className="h-8 w-8 rounded-full bg-[var(--accent)]/15 text-[var(--accent)] grid place-items-center shrink-0 mt-0.5 sm:mt-0">
-                      <Clock className="h-4 w-4" />
-                    </span>
-                    <span className="opacity-85 leading-snug">
-                      {ar ? page.bannerNoteAr : page.bannerNoteEn}
-                    </span>
-                  </div>
-                  <a
-                    href={whatsappLink(siteConfig.whatsapp, headerWhatsappMsg)}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="h-10 px-5 rounded-full bg-[var(--accent)] text-[var(--accent-foreground)] text-xs sm:text-sm font-black inline-flex items-center justify-center gap-1.5 hover:bg-[var(--accent-hover)] transition-colors shrink-0 shadow-sm"
-                  >
-                    <BellRing className="h-3.5 w-3.5" />
-                    {ar ? page.ctaLabelAr : page.ctaLabelEn}
-                  </a>
-                </div>
+            <h1 className="mt-4 max-w-[22ch] text-[clamp(1.9rem,1.2rem+2.6vw,3.1rem)] font-black leading-[1.06] tracking-[-0.03em] text-balance">
+              {ar ? page.titleAr : page.titleEn}
+              {(ar ? page.highlightAr : page.highlightEn) && (
+                <>
+                  {" "}
+                  <span className="text-[var(--accent)]">
+                    — {ar ? page.highlightAr : page.highlightEn}
+                  </span>
+                </>
               )}
+            </h1>
+
+            <p className="mt-4 max-w-[62ch] text-[15.5px] leading-8 text-[var(--muted-foreground)]">
+              {ar ? page.subtitleAr : page.subtitleEn}
+            </p>
+          </div>
+
+          {/* Barre utilitaire : recherche, compteur et rappel du CTA sur la
+              même ligne. En colonne à droite, elle creusait un grand vide
+              sous le titre. */}
+          <div className="mt-8 flex flex-col gap-3 lg:flex-row lg:items-center lg:gap-4">
+            <div className="relative w-full lg:max-w-[320px]">
+              <Search className="absolute start-3.5 top-1/2 h-4 w-4 -translate-y-1/2 opacity-40" />
+              <input
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder={
+                  ar
+                    ? kind === "apps"
+                      ? "ابحث في التطبيقات القادمة..."
+                      : "ابحث في البرامج والمنتجات..."
+                    : kind === "apps"
+                      ? "Search upcoming apps..."
+                      : "Search digital products..."
+                }
+                className="h-11 w-full rounded-full border border-[var(--border)] bg-[var(--card)] pe-4 ps-10 text-[13.5px] outline-none focus:border-[var(--accent)]"
+              />
             </div>
 
-            <div className="flex flex-col sm:items-end gap-3 shrink-0">
-              <div className="relative w-full sm:w-[270px]">
-                <Search className="absolute start-3.5 top-1/2 -translate-y-1/2 h-4 w-4 opacity-40" />
-                <input
-                  value={query}
-                  onChange={(e) => setQuery(e.target.value)}
-                  placeholder={
-                    ar
-                      ? kind === "apps"
-                        ? "ابحث في التطبيقات القادمة..."
-                        : "ابحث في البرامج والمنتجات..."
-                      : kind === "apps"
-                        ? "Search upcoming apps..."
-                        : "Search digital products..."
-                  }
-                  className="h-10 ps-10 pe-4 rounded-full border border-[var(--border)] bg-[var(--card)] text-sm w-full outline-none focus:border-[var(--accent)]"
-                />
-              </div>
-              <div className="flex items-center gap-2 text-xs opacity-65">
-                {kind === "apps" ? (
-                  <Smartphone className="h-3.5 w-3.5 text-[var(--accent)]" />
-                ) : (
-                  <Layers className="h-3.5 w-3.5 text-[var(--accent)]" />
-                )}
-                <span>
-                  {ar
-                    ? `${page.items.length} ${kind === "apps" ? "تطبيقات قيد التحضير" : "منتجات وبرامج قادمة"}`
-                    : `${page.items.length} ${kind === "apps" ? "upcoming apps" : "upcoming software products"}`}
-                </span>
-              </div>
+            <div className="flex items-center gap-2 text-[11.5px] text-[var(--muted-foreground)] lg:order-last">
+              {kind === "apps" ? (
+                <Smartphone className="h-3.5 w-3.5 text-[var(--accent)]" />
+              ) : (
+                <Layers className="h-3.5 w-3.5 text-[var(--accent)]" />
+              )}
+              <span>
+                {ar
+                  ? `${page.items.length} ${kind === "apps" ? "تطبيقات قيد التحضير" : "منتجات وبرامج قادمة"}`
+                  : `${page.items.length} ${kind === "apps" ? "upcoming apps" : "upcoming software products"}`}
+              </span>
             </div>
+
+            {(ar ? page.bannerNoteAr : page.bannerNoteEn) && (
+              <div className="flex flex-col gap-3 rounded-[var(--radius-md)] border border-[var(--border)] bg-[var(--card)]/90 p-3 shadow-[var(--shadow-xs)] sm:flex-row sm:items-center sm:justify-between lg:ms-auto lg:max-w-[540px] lg:p-2.5 lg:ps-4">
+                <div className="flex items-start gap-2.5 text-[12.5px] leading-6">
+                  <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-[var(--accent)]/15 text-[var(--accent)]">
+                    <Clock className="h-3.5 w-3.5" />
+                  </span>
+                  <span className="text-[var(--muted-foreground)]">
+                    {ar ? page.bannerNoteAr : page.bannerNoteEn}
+                  </span>
+                </div>
+                <a
+                  href={whatsappLink(siteConfig.whatsapp, headerWhatsappMsg)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex h-9 shrink-0 items-center justify-center gap-1.5 rounded-full bg-[var(--accent)] px-4 text-[12px] font-black text-[var(--accent-foreground)] shadow-sm transition-colors hover:bg-[var(--accent-hover)]"
+                >
+                  <BellRing className="h-3.5 w-3.5" />
+                  {ar ? page.ctaLabelAr : page.ctaLabelEn}
+                </a>
+              </div>
+            )}
           </div>
 
           {categories.length > 1 && (
-            <div className="mt-7 flex flex-wrap gap-2">
+            <div className="scroll-x mt-7 flex gap-2 pb-1">
               <button
                 type="button"
                 onClick={() => setSelectedCategory("all")}
-                className={`px-4 py-2 rounded-full text-sm font-medium border transition-colors cursor-pointer ${
+                className={`chip shrink-0 cursor-pointer transition-colors ${
                   selectedCategory === "all"
-                    ? "bg-[var(--primary)] text-[var(--primary-foreground)] border-[var(--primary)]"
-                    : "bg-[var(--card)] border-[var(--border)] hover:bg-[var(--secondary)]"
+                    ? "!border-[var(--primary)] !bg-[var(--primary)] !text-[var(--primary-foreground)]"
+                    : "hover:border-[var(--accent)]"
                 }`}
               >
                 {ar ? "الكل" : "All"}
@@ -204,10 +206,10 @@ export function UpcomingShowcaseView({
                   key={cat.id}
                   type="button"
                   onClick={() => setSelectedCategory(cat.id)}
-                  className={`px-4 py-2 rounded-full text-sm font-medium border transition-colors cursor-pointer ${
+                  className={`chip shrink-0 cursor-pointer transition-colors ${
                     selectedCategory === cat.id
-                      ? "bg-[var(--primary)] text-[var(--primary-foreground)] border-[var(--primary)]"
-                      : "bg-[var(--card)] border-[var(--border)] hover:bg-[var(--secondary)]"
+                      ? "!border-[var(--primary)] !bg-[var(--primary)] !text-[var(--primary-foreground)]"
+                      : "hover:border-[var(--accent)]"
                   }`}
                 >
                   {ar ? cat.ar : cat.en}
@@ -219,10 +221,10 @@ export function UpcomingShowcaseView({
       </section>
 
       {/* Grille des applications / produits numériques */}
-      <section className="py-12 lg:py-16">
+      <section className="section">
         <div className="site-container px-4 sm:px-6 lg:px-8">
           {filteredItems.length === 0 ? (
-            <div className="rounded-[24px] border border-[var(--border)] bg-[var(--card)] p-12 text-center">
+            <div className="card-surface p-12 text-center">
               <div className="mx-auto h-12 w-12 rounded-2xl bg-[var(--accent)]/15 text-[var(--accent)] grid place-items-center">
                 <Sparkles className="h-6 w-6" />
               </div>
@@ -247,7 +249,7 @@ export function UpcomingShowcaseView({
               </a>
             </div>
           ) : (
-            <div className="grid md:grid-cols-2 gap-6 lg:gap-8">
+            <div className="grid gap-6 md:grid-cols-2 lg:gap-7">
               {filteredItems.map((item, idx) => {
                 const badgeText = ar
                   ? item.badgeAr || defaultStatusLabel(item.status, true)
@@ -262,20 +264,17 @@ export function UpcomingShowcaseView({
                     whileInView={{ opacity: 1, y: 0 }}
                     viewport={{ once: true, margin: "-40px" }}
                     transition={{ duration: 0.35, delay: Math.min(idx * 0.06, 0.24) }}
-                    className="group rounded-[24px] overflow-hidden bg-[var(--card)] border border-[var(--border)] hover:border-[var(--accent)]/50 hover:shadow-xl transition-all flex flex-col justify-between"
+                    className="card-surface card-interactive group flex flex-col justify-between overflow-hidden"
                   >
                     <div>
                       <div className="relative aspect-[16/10] overflow-hidden">
-                        <Image
+                        <ShowcaseImage
                           src={item.image}
                           alt={ar ? item.titleAr : item.titleEn}
-                          fill
-                          sizes="(max-width: 768px) 100vw, 50vw"
-                          loading={idx < 2 ? "eager" : "lazy"}
-                          decoding="async"
-                          className="object-cover group-hover:scale-[1.04] transition-transform duration-500"
+                          title={ar ? item.titleAr : item.titleEn}
+                          color={item.color}
+                          priority={idx < 2}
                         />
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/25 to-transparent" />
 
                         <div className="absolute top-3.5 start-3.5 end-3.5 flex items-center justify-between gap-2">
                           <span className="px-3 py-1 rounded-full bg-white/95 text-zinc-900 text-xs font-bold shadow">
@@ -311,16 +310,16 @@ export function UpcomingShowcaseView({
                         )}
                       </div>
 
-                      <div className="p-6">
-                        <h2 className="text-xl sm:text-2xl font-black tracking-tight leading-snug">
+                      <div className="p-6 sm:p-7">
+                        <h2 className="text-[19px] font-black leading-snug tracking-[-0.02em] sm:text-[21px]">
                           {ar ? item.titleAr : item.titleEn}
                         </h2>
-                        <p className="mt-2.5 text-sm sm:text-[15px] opacity-70 leading-relaxed">
+                        <p className="mt-2.5 text-[13.5px] leading-7 text-[var(--muted-foreground)]">
                           {ar ? item.descriptionAr : item.descriptionEn}
                         </p>
 
                         {typeof item.progress === "number" && item.progress > 0 && (
-                          <div className="mt-4 rounded-xl bg-[var(--secondary)]/70 border border-[var(--border)] p-3">
+                          <div className="mt-4 rounded-[var(--radius-sm)] border border-[var(--border)] bg-[var(--secondary)]/60 p-3">
                             <div className="flex items-center justify-between text-xs font-bold mb-1.5">
                               <span className="opacity-75">
                                 {ar ? "مرحلة الإعداد والاختبار" : "Development & QA readiness"}
@@ -429,5 +428,72 @@ export function UpcomingShowcaseView({
         </div>
       </section>
     </div>
+  );
+}
+
+
+/**
+ * Visuel d'une application / produit à venir.
+ *
+ * Les photos viennent d'un hébergeur externe (Unsplash) : si l'image échoue
+ * (hébergeur en panne, réseau filtré, visuel supprimé côté admin), la carte
+ * affichait un rectangle gris vide. On affiche alors un aplat teinté avec
+ * l'initiale et le nom du produit, lisible et cohérent avec le reste du site.
+ */
+function ShowcaseImage({
+  src,
+  alt,
+  title,
+  color,
+  priority,
+}: {
+  src: string;
+  alt: string;
+  title: string;
+  color?: string;
+  priority?: boolean;
+}) {
+  const [failed, setFailed] = useState(false);
+
+  if (failed || !src) {
+    return (
+      <div
+        className="absolute inset-0 grid place-items-center"
+        style={{
+          background: `radial-gradient(115% 90% at 80% 0%, color-mix(in srgb, ${color || "var(--accent)"} 30%, transparent) 0%, transparent 62%), linear-gradient(160deg, var(--card) 0%, var(--secondary) 100%)`,
+        }}
+      >
+        <div className="flex flex-col items-center gap-2 p-4 text-center">
+          <span
+            className="grid h-11 w-11 place-items-center rounded-2xl text-lg font-black text-white shadow-[var(--shadow-sm)]"
+            style={{ backgroundColor: color || "var(--accent)" }}
+            aria-hidden="true"
+          >
+            {title.trim().charAt(0)}
+          </span>
+          <span className="line-clamp-2 max-w-[24ch] text-[12.5px] font-bold text-[var(--foreground)]/80">
+            {title}
+          </span>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <>
+      <Image
+        src={src}
+        alt={alt}
+        fill
+        sizes="(max-width: 768px) 100vw, 50vw"
+        loading={priority ? "eager" : "lazy"}
+        decoding="async"
+        className="object-cover transition-transform duration-500 group-hover:scale-[1.04]"
+        onError={() => setFailed(true)}
+      />
+      {/* Voile de lisibilité, uniquement sur une vraie photo : sur le visuel
+          de repli, il assombrissait inutilement le bas de la carte. */}
+      <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />
+    </>
   );
 }

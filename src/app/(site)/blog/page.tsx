@@ -1,11 +1,12 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ArrowUpRight, BookOpen, Calendar, Clock } from "lucide-react";
+import { ArrowUpRight } from "lucide-react";
 import { getSiteDataCached } from "@/lib/store";
 import { breadcrumbJsonLd, faqJsonLd, pageMetadata, webPageJsonLd } from "@/lib/seo";
 import { blogCollectionJsonLd, formatArticleDate, sortArticles } from "@/lib/blog";
 import { blogArticles } from "@/lib/blog-articles";
 import { JsonLd } from "@/components/json-ld";
+import { ArticleCard } from "@/components/article-card";
 
 const HUB_FAQS = [
   {
@@ -70,9 +71,9 @@ export default async function BlogPage() {
         ]}
       />
 
-      <div className="pt-[96px]">
+      <div className="pt-[calc(var(--header-h)+1.5rem)]">
         {/* Hero */}
-        <section className="py-12 bg-[var(--secondary)]/30 border-b border-[var(--border)]">
+        <section className="section-tight border-b border-[var(--border)] bg-[var(--secondary)]/35">
           <div className="site-container px-4 sm:px-6 lg:px-8">
             <div className="flex flex-wrap items-center gap-2 text-xs font-bold">
               <Link
@@ -86,34 +87,50 @@ export default async function BlogPage() {
               </span>
             </div>
 
-            <h1 className="mt-6 text-[32px] lg:text-[44px] font-black tracking-tight leading-tight max-w-[24ch]">
-              أدلة عملية لرواد الأعمال في ليبيا
-            </h1>
-            <p className="mt-3 text-lg opacity-70 max-w-[66ch] leading-relaxed">
-              ما تدفعه فعلاً لموقع، كيف تختار من يبنيه، وكيف يظهر بينك وبين منافسك في
-              إجابات الذكاء الاصطناعي — بأرقام من السوق الليبي، لا نصائح عامة.
-            </p>
-            <p className="mt-2 text-sm opacity-50 max-w-[66ch]" dir="ltr">
-              Practical, number-driven guides for Libyan business owners — in Arabic
-              and English.
-            </p>
+            <div className="mt-6 grid gap-8 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)] lg:items-start lg:gap-12">
+              <div>
+                <h1 className="max-w-[24ch] text-[clamp(1.8rem,1.2rem+2.2vw,2.85rem)] font-black leading-[1.06] tracking-[-0.03em] text-balance">
+                  أدلة عملية لرواد الأعمال في ليبيا
+                </h1>
+                <p className="mt-4 max-w-[58ch] text-[15.5px] leading-8 text-[var(--muted-foreground)]">
+                  ما تدفعه فعلاً لموقع، كيف تختار من يبنيه، وكيف يظهر بينك وبين
+                  منافسك في إجابات الذكاء الاصطناعي — بأرقام من السوق الليبي، لا
+                  نصائح عامة.
+                </p>
+                <p className="mt-2 max-w-[58ch] text-[13px] text-[var(--muted-foreground)]/75" dir="ltr">
+                  Practical, number-driven guides for Libyan business owners — in
+                  Arabic and English.
+                </p>
+              </div>
 
-            <div
-              id="blog-answer"
-              className="mt-6 rounded-2xl bg-[var(--card)] border border-[var(--border)] p-5 max-w-[70ch]"
-            >
-              <p className="text-sm leading-7 opacity-80">
-                <strong>باختصار:</strong> المدونة تجمع {articles.length} أدلة مجانية
-                حول تكلفة المواقع في ليبيا (من 300 دولار)، اختيار وكالة في طرابلس،
-                إطلاق متجر إلكتروني بالدفع عند الاستلام، والظهور في ChatGPT وPerplexity
-                وGoogle AI — وكلها مبنية على أسعار ودلائل تسليم حقيقية.
-              </p>
+              {/* Encadré « en bref » : il servait de pavé sous le titre et
+                  laissait la moitié gauche du hero vide. En colonne, il devient
+                  un vrai point d'entrée (réponse courte + accès direct). */}
+              <div
+                id="blog-answer"
+                className="rounded-[var(--radius-lg)] border border-[var(--border)] bg-[var(--card)] p-5 shadow-[var(--shadow-xs)] lg:mt-2"
+              >
+                <span className="section-eyebrow">باختصار</span>
+                <p className="mt-2 text-[13.5px] leading-7 text-[var(--foreground)]/80">
+                  المدونة تجمع {articles.length} أدلة مجانية حول تكلفة المواقع في
+                  ليبيا (من 300 دولار)، اختيار وكالة في طرابلس، إطلاق متجر
+                  إلكتروني بالدفع عند الاستلام، والظهور في ChatGPT وPerplexity
+                  وGoogle AI — وكلها مبنية على أسعار ودلائل تسليم حقيقية.
+                </p>
+                <Link
+                  href="#guides"
+                  className="mt-4 inline-flex h-10 items-center gap-1.5 rounded-full bg-[var(--primary)] px-5 text-[12.5px] font-bold text-[var(--primary-foreground)] transition-opacity hover:opacity-90"
+                >
+                  تصفّح الأدلة
+                  <ArrowUpRight className="h-3.5 w-3.5" />
+                </Link>
+              </div>
             </div>
           </div>
         </section>
 
         {/* Liste des articles */}
-        <section className="py-12">
+        <section id="guides" className="section-tight scroll-mt-28">
           <div className="site-container px-4 sm:px-6 lg:px-8">
             <div className="flex items-end justify-between gap-4 mb-8">
               <h2 className="text-2xl lg:text-3xl font-black">
@@ -124,63 +141,27 @@ export default async function BlogPage() {
               </span>
             </div>
 
-            <div className="grid md:grid-cols-2 gap-6">
+            <div className="grid gap-5 md:grid-cols-2">
               {articles.map((article) => (
-                <article
+                <ArticleCard
                   key={article.slug}
-                  className="group rounded-[24px] bg-[var(--card)] border border-[var(--border)] p-6 flex flex-col hover:border-[var(--accent)]/50 hover:shadow-xl transition-all"
-                >
-                  <div className="flex flex-wrap items-center gap-2 text-[11px] font-bold">
-                    <span className="px-2.5 py-1 rounded-full bg-[var(--accent)]/12 text-[var(--accent)]">
-                      {article.categoryAr}
-                    </span>
-                    <span className="inline-flex items-center gap-1 opacity-50">
-                      <Calendar className="h-3 w-3" />
-                      {formatArticleDate(article.updatedAt, "ar")}
-                    </span>
-                    <span className="inline-flex items-center gap-1 opacity-50">
-                      <Clock className="h-3 w-3" />
-                      {article.readingMinutes} د
-                    </span>
-                  </div>
-
-                  <h3 className="mt-4 text-xl font-black leading-snug">
-                    <Link
-                      href={`/blog/${article.slug}`}
-                      className="hover:text-[var(--accent)] transition-colors"
-                    >
-                      {article.titleAr}
-                    </Link>
-                  </h3>
-                  <p className="mt-1 text-xs opacity-45" dir="ltr">
-                    {article.titleEn}
-                  </p>
-                  <p className="mt-3 text-sm leading-6 opacity-70">{article.excerptAr}</p>
-                  <p className="mt-1 text-xs leading-5 opacity-45" dir="ltr">
-                    {article.excerptEn}
-                  </p>
-
-                  <div className="mt-auto pt-5 flex items-center justify-between gap-3">
-                    <span className="inline-flex items-center gap-1.5 text-xs opacity-50">
-                      <BookOpen className="h-3.5 w-3.5" />
-                      {article.sections.length} أقسام · {article.faqs.length} أسئلة
-                    </span>
-                    <Link
-                      href={`/blog/${article.slug}`}
-                      className="inline-flex items-center gap-1.5 text-sm font-bold text-[var(--accent)] hover:underline"
-                    >
-                      اقرأ الدليل
-                      <ArrowUpRight className="h-4 w-4" />
-                    </Link>
-                  </div>
-                </article>
+                  slug={article.slug}
+                  categoryAr={article.categoryAr}
+                  categoryEn={article.categoryEn}
+                  titleAr={article.titleAr}
+                  titleEn={article.titleEn}
+                  excerptAr={article.excerptAr}
+                  excerptEn={article.excerptEn}
+                  updatedAt={article.updatedAt}
+                  readingMinutes={article.readingMinutes}
+                />
               ))}
             </div>
           </div>
         </section>
 
         {/* FAQ du hub */}
-        <section className="py-12 bg-[var(--secondary)]/25 border-y border-[var(--border)]">
+        <section className="section-tight border-y border-[var(--border)] bg-[var(--secondary)]/25">
           <div className="site-container px-4 sm:px-6 lg:px-8">
             <h2 className="text-2xl font-black">عن المدونة</h2>
             <p className="mt-1 text-sm opacity-55">About the blog</p>
@@ -188,7 +169,7 @@ export default async function BlogPage() {
               {HUB_FAQS.map((faq) => (
                 <div
                   key={faq.qAr}
-                  className="rounded-2xl bg-[var(--card)] border border-[var(--border)] p-6"
+                  className="card-surface p-6"
                 >
                   <h3 className="font-bold leading-6">{faq.qAr}</h3>
                   <p className="mt-1 text-xs opacity-45" dir="ltr">

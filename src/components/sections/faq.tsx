@@ -3,6 +3,7 @@ import { useState } from "react";
 import { Plus, Minus } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import { useSectionHeading, useSiteContent } from "@/components/site-provider";
+import { SectionHeading } from "@/components/section-heading";
 
 export function FAQ() {
   const { faqs } = useSiteContent();
@@ -11,34 +12,29 @@ export function FAQ() {
   const [open, setOpen] = useState<number | null>(0);
 
   return (
-    <section className="py-16 lg:py-20 bg-[var(--secondary)]/40">
-      <div className="mx-auto max-w-[960px] px-4 sm:px-6 lg:px-8">
-        <div className="text-center max-w-[640px] mx-auto">
-          <div className="inline-flex items-center gap-2 text-sm font-semibold tracking-[0.12em] text-[var(--accent)] justify-center w-full">
-            <span className="h-px w-8 bg-[var(--accent)]" />
-            {locale === "ar" ? "الأسئلة الشائعة" : "FAQ"}
-            <span className="h-px w-8 bg-[var(--accent)]" />
-          </div>
-          <h2 className="mt-3 text-[28px] lg:text-[38px] font-black tracking-tight">
-            {heading.title}
-          </h2>
-          <p className="mt-2 opacity-60">{heading.subtitle}</p>
-        </div>
+    <section className="section section-muted">
+      <div className="site-container px-4 sm:px-6 lg:px-8">
+        <SectionHeading
+          align="center"
+          eyebrow={locale === "ar" ? "الأسئلة الشائعة" : "FAQ"}
+          title={heading.title}
+          lead={heading.subtitle}
+        />
 
-        <div className="mt-8 rounded-[24px] bg-[var(--card)] border border-[var(--border)] overflow-hidden divide-y divide-[var(--border)]">
+        <div className="mx-auto mt-10 max-w-[860px] overflow-hidden rounded-[var(--radius-lg)] border border-[var(--border)] bg-[var(--card)] divide-y divide-[var(--border)]">
           {faqs.map((item, idx) => {
             const isOpen = open === idx;
             return (
               <div key={idx} className="group">
                 <button
                   onClick={() => setOpen(isOpen ? null : idx)}
-                  className="w-full flex items-center justify-between gap-4 px-6 py-5 text-start hover:bg-[var(--secondary)]/50 transition-colors cursor-pointer"
+                  className="flex w-full items-center justify-between gap-4 px-5 py-5 text-start transition-colors hover:bg-[var(--secondary)]/60 sm:px-6 cursor-pointer"
                   aria-expanded={isOpen}
                   aria-controls={`faq-panel-${idx}`}
                   id={`faq-trigger-${idx}`}
                 >
                   <span className="font-bold text-[15px] leading-6">{locale === "ar" ? item.qAr : item.qEn}</span>
-                  <span className={`h-8 w-8 rounded-full grid place-items-center flex-shrink-0 border transition-colors ${isOpen ? "bg-[var(--primary)] text-[var(--primary-foreground)] border-[var(--primary)]" : "bg-[var(--secondary)] border-[var(--border)]"}`}>
+                  <span className={`grid h-8 w-8 shrink-0 place-items-center rounded-full border transition-colors ${isOpen ? "bg-[var(--primary)] text-[var(--primary-foreground)] border-[var(--primary)]" : "bg-[var(--secondary)] border-[var(--border)]"}`}>
                     {isOpen ? <Minus className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
                   </span>
                 </button>

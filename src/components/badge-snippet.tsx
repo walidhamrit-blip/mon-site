@@ -45,7 +45,7 @@ export function BadgeSnippet({ tabs }: { tabs: BadgeSnippetTab[] }) {
   }
 
   return (
-    <div id="snippet" className="mt-10 scroll-mt-28">
+    <div id="snippet" className="mt-10 min-w-0 scroll-mt-28">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h2 className="text-2xl font-black">
           {locale === "ar" ? "رمز جاهز للنسخ" : "Snippet prêt à copier"}

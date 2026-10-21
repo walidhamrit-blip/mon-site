@@ -1,10 +1,11 @@
 "use client";
 import { motion } from "framer-motion";
-import { Zap, Palette, SlidersHorizontal, Search, Headset } from "lucide-react";
+import { ArrowUpRight, Zap, Palette, SlidersHorizontal, Search, Headset } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import { useSectionHeading, useSiteContent } from "@/components/site-provider";
+import { SectionHeading } from "@/components/section-heading";
 
-const icons: Record<string, any> = {
+const icons: Record<string, typeof Zap> = {
   zap: Zap,
   palette: Palette,
   sliders: SlidersHorizontal,
@@ -16,49 +17,73 @@ export function WhyUs() {
   const { locale } = useI18n();
   const { whyUs } = useSiteContent();
   const heading = useSectionHeading("why");
-  return (
-    <section className="py-16 lg:py-20 bg-[var(--secondary)]/50">
-      <div className="site-container px-4 sm:px-6 lg:px-8">
-        <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6 mb-10">
-          <div>
-            <div className="inline-flex items-center gap-2 text-sm font-semibold tracking-[0.12em] text-[var(--accent)]">
-              <span className="h-px w-8 bg-[var(--accent)]" />
-              {locale === "ar" ? "قيمنا" : "WHY US"}
-            </div>
-            <h2 className="mt-3 text-[32px] lg:text-[42px] font-black tracking-tight leading-none">
-              {heading.title}
-            </h2>
-            <p className="mt-3 text-[17px] opacity-60 max-w-[50ch]">{heading.subtitle}</p>
-          </div>
-          <div className="hidden lg:block text-sm opacity-40">
-            {locale === "ar" ? "مصمم للموبايل أولاً • سريع كالبرق" : "Mobile-first • Lightning fast"}
-          </div>
-        </div>
 
-        <div className="grid sm:grid-cols-2 lg:grid-cols-5 gap-4">
+  return (
+    <section className="section">
+      <div className="site-container px-4 sm:px-6 lg:px-8">
+        <SectionHeading
+          eyebrow={locale === "ar" ? "قيمنا" : "Why us"}
+          title={heading.title}
+          lead={heading.subtitle}
+          aside={
+            <span className="chip chip-accent">
+              {locale === "ar" ? "مصمم للموبايل أولاً · سريع كالبرق" : "Mobile-first · Lightning fast"}
+            </span>
+          }
+        />
+
+        <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {whyUs.map((item, i) => {
-            const Icon = icons[item.icon] || Zap;
+            const Icon = icons[item.icon] ?? Zap;
             return (
-              <motion.div
+              <motion.article
                 key={item.titleAr}
-                initial={{ opacity: 0, y: 20 }}
+                initial={{ opacity: 0, y: 16 }}
                 whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true, margin: "-50px" }}
-                transition={{ delay: i * 0.08, duration: 0.5 }}
-                whileHover={{ y: -6 }}
-                className="group relative rounded-[20px] bg-[var(--card)] border border-[var(--border)] p-6 overflow-hidden hover:shadow-[0_12px_32px_rgba(0,0,0,0.08)] transition-all"
+                viewport={{ once: true, margin: "-60px" }}
+                transition={{ delay: i * 0.05, duration: 0.5 }}
+                className="card-surface card-interactive group p-6"
               >
-                <div className="absolute inset-0 bg-gradient-to-br from-[var(--accent)]/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                <div className="relative">
-                  <div className="h-11 w-11 rounded-full bg-[var(--primary)] text-[var(--primary-foreground)] grid place-items-center group-hover:bg-[var(--accent)] group-hover:text-[var(--accent-foreground)] transition-colors">
-                    <Icon className="h-5 w-5" />
-                  </div>
-                  <h3 className="mt-5 font-black text-[17px]">{locale === "ar" ? item.titleAr : item.titleEn}</h3>
-                  <p className="mt-2 text-sm leading-6 opacity-60">{locale === "ar" ? item.descAr : item.descEn}</p>
-                </div>
-              </motion.div>
+                <span className="grid h-11 w-11 place-items-center rounded-xl bg-[var(--secondary)] text-[var(--foreground)] transition-colors group-hover:bg-[var(--accent)] group-hover:text-[var(--accent-foreground)]">
+                  <Icon className="h-5 w-5" />
+                </span>
+                <h3 className="mt-5 text-[16px] font-black tracking-tight">
+                  {locale === "ar" ? item.titleAr : item.titleEn}
+                </h3>
+                <p className="mt-2 text-[13.5px] leading-6 text-[var(--muted-foreground)]">
+                  {locale === "ar" ? item.descAr : item.descEn}
+                </p>
+              </motion.article>
             );
           })}
+
+          {/* Sixième tuile : passage à l'action — complète la grille 3 × 2
+              sans laisser de case vide quand il y a cinq valeurs. */}
+          <motion.a
+            href="/contact"
+            initial={{ opacity: 0, y: 16 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: "-60px" }}
+            transition={{ delay: whyUs.length * 0.05, duration: 0.5 }}
+            className="group relative flex flex-col justify-between overflow-hidden rounded-[var(--radius-lg)] bg-[var(--primary)] p-6 text-[var(--primary-foreground)]"
+          >
+            <span
+              aria-hidden="true"
+              className="absolute -end-10 -top-10 h-32 w-32 rounded-full bg-[var(--accent)]/25 blur-2xl transition-transform duration-500 group-hover:scale-125"
+            />
+            <span className="relative text-[15px] font-black leading-snug">
+              {locale === "ar" ? "لديك سؤال قبل البدء؟" : "A question before we start?"}
+            </span>
+            <span className="relative mt-4 text-[13px] opacity-70">
+              {locale === "ar"
+                ? "استشارة مجانية في دقائق — بدون التزام."
+                : "A free consultation in minutes — no commitment."}
+            </span>
+            <span className="relative mt-5 inline-flex items-center gap-2 text-[13px] font-bold text-[var(--accent)]">
+              {locale === "ar" ? "تحدث معنا" : "Talk to us"}
+              <ArrowUpRight className="h-4 w-4 transition-transform duration-200 group-hover:-translate-y-0.5 group-hover:translate-x-0.5 rtl:group-hover:-translate-x-0.5" />
+            </span>
+          </motion.a>
         </div>
       </div>
     </section>

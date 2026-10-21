@@ -22,8 +22,9 @@ const isVercelProduction = process.env.VERCEL_ENV === "production";
  *   - `default-src 'self'` ;
  *   - `script-src` : `'self' 'unsafe-inline'` (hydratation Next.js + script
  *     de thème sans clignotement `themeBootScript`) + Vercel scripts / GTM ;
- *   - `style-src` : `'self' 'unsafe-inline'` (Tailwind v4) + Google Fonts ;
- *   - `font-src` : `'self' data: https://fonts.gstatic.com` ;
+ *   - `style-src` : `'self' 'unsafe-inline'` (Tailwind v4) ;
+ *   - `font-src` : `'self' data:` — les polices sont auto-hébergées
+ *     (`public/fonts`), plus aucune requête vers Google Fonts ;
  *   - `img-src` : `'self' data: blob: https:` (toutes les miniatures de
  *     projets, y compris celles ajoutées dynamiquement depuis `/admin`) ;
  *   - `frame-src` : `'self' https:` — INDISPENSABLE pour afficher en direct
@@ -34,11 +35,19 @@ const isVercelProduction = process.env.VERCEL_ENV === "production";
  *   - `frame-ancestors` : `'self'` en production (anti-clickjacking tout en
  *     autorisant `/live-demos/*`), élargi hors production pour les aperçus.
  */
+// En développement, React compile son JSX à la volée avec `eval()` : sans
+// `'unsafe-eval'` la CSP bloque le runtime, l'hydratation échoue et les
+// composants animés restent invisibles (opacité initiale 0 de Framer Motion).
+// On l'autorise donc uniquement hors production — la CSP déployée reste stricte.
+const isDev = process.env.NODE_ENV !== "production";
+
 const CSP_DIRECTIVES = [
   "default-src 'self'",
-  "script-src 'self' 'unsafe-inline' https://va.vercel-scripts.com https://www.googletagmanager.com",
-  "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-  "font-src 'self' data: https://fonts.gstatic.com",
+  isDev
+    ? "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://va.vercel-scripts.com https://www.googletagmanager.com"
+    : "script-src 'self' 'unsafe-inline' https://va.vercel-scripts.com https://www.googletagmanager.com",
+  "style-src 'self' 'unsafe-inline'",
+  "font-src 'self' data:",
   "img-src 'self' data: blob: https:",
   "connect-src 'self' https://vitals.vercel-insights.com https://va.vercel-scripts.com https://api.nowpayments.io https://api-sandbox.nowpayments.io https://api.openai.com https://*.openai.azure.com https://openrouter.ai https://api.indexnow.org https://www.google-analytics.com https://*.ingest.sentry.io",
   "frame-src 'self' https:",
@@ -96,7 +105,11 @@ const SECURITY_HEADERS = [
 ];
 
 const nextConfig: NextConfig = {
-  allowedDevOrigins: ["*.e2b.app"],
+  // Hôtes autorisés à charger les ressources du serveur de développement.
+  // `*.e2b.app` couvre l'aperçu Arena, `localhost`/`127.0.0.1` le poste local :
+  // sans ces entrées, Next bloque `/_next/hmr` en cross-origin, le runtime
+  // client ne démarre pas et les pages restent figées sans hydratation.
+  allowedDevOrigins: ["*.e2b.app", "localhost", "127.0.0.1", "*.localhost"],
   poweredByHeader: false,
   images: {
     remotePatterns: [

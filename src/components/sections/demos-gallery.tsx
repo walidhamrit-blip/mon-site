@@ -15,6 +15,7 @@ import {
 import { useI18n } from "@/lib/i18n";
 import { sectors } from "@/lib/content";
 import { useSectionHeading, useSiteConfig, useSiteContent } from "@/components/site-provider";
+import { SectionHeading } from "@/components/section-heading";
 import type { CustomSiteSection, Demo } from "@/lib/site-types";
 import {
   isRealUrl,
@@ -27,6 +28,7 @@ import { ReservationButton } from "@/components/reservation-dialog";
 import { demoImageAlt, formatLyd, lydLabel, resolveDemoClassification } from "@/lib/classification";
 import { formatMainPrice, formatUsd } from "@/lib/installments";
 import { freeCustomizationLabel } from "@/lib/promotion";
+import { PromoPriceNote } from "@/components/promo-price";
 
 function formatHost(url: string, fallbackSlug: string, domain: string): string {
   if (!isRealUrl(url)) return `${domain}/${fallbackSlug}`;
@@ -96,28 +98,23 @@ function InteractiveShowcase({
 
   if (variant === "cards") {
     return (
-      <section id={sectionId} className="py-16 lg:py-24">
+      <section id={sectionId} className="section">
         <div className="site-container px-4 sm:px-6 lg:px-8">
-          <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6 mb-8">
-            <div>
-              <div className="inline-flex items-center gap-2 text-sm font-semibold tracking-[0.12em] text-[var(--accent)]">
-                <span className="h-px w-8 bg-[var(--accent)]" />
-                {locale === "ar" ? badgeAr : badgeEn}
-              </div>
-              <h2 className="mt-3 text-[32px] lg:text-[44px] font-black tracking-tight leading-none">
-                {title}
-              </h2>
-              {subtitle && <p className="mt-3 opacity-60 max-w-[56ch]">{subtitle}</p>}
-            </div>
-            {showAllDemosButton && (
+          <SectionHeading
+          eyebrow={locale === "ar" ? badgeAr : badgeEn}
+          title={title}
+          lead={subtitle}
+          aside={
+            showAllDemosButton ? (
               <Link
                 href="/demos"
-                className="h-9 px-5 rounded-full bg-[var(--accent)] text-[var(--accent-foreground)] inline-flex items-center gap-1.5 text-sm font-bold hover:bg-[var(--accent-hover)] self-start lg:self-auto"
+                className="inline-flex h-10 items-center gap-1.5 rounded-full bg-[var(--accent)] px-5 text-sm font-bold text-[var(--accent-foreground)] transition-colors hover:bg-[var(--accent-hover)]"
               >
                 {t.demos.all} <ArrowUpRight className="h-3.5 w-3.5" />
               </Link>
-            )}
-          </div>
+            ) : undefined
+          }
+        />
 
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {items.map((d) => {
@@ -129,7 +126,7 @@ function InteractiveShowcase({
               return (
                 <div
                   key={d.slug}
-                  className="group rounded-[22px] overflow-hidden bg-[var(--card)] border border-[var(--border)] hover:shadow-xl hover:border-[var(--accent)]/45 transition-all flex flex-col justify-between"
+                  className="card-surface card-interactive group flex flex-col justify-between overflow-hidden"
                 >
                   <div>
                     <div className="relative aspect-[16/10] overflow-hidden">
@@ -179,6 +176,15 @@ function InteractiveShowcase({
                           </span>
                         </div>
                       )}
+                      <PromoPriceNote
+                        amountUsd={dClassification?.priceUsd}
+                        currency={
+                          locale === "ar"
+                            ? siteConfig.pricing.currency
+                            : siteConfig.pricing.currencyEn
+                        }
+                        className="mt-1.5"
+                      />
                       <div className="mt-1 inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">
                         <Sparkles className="h-3 w-3 shrink-0" />
                         {freeCustomizationLabel(locale)}
@@ -246,19 +252,14 @@ function InteractiveShowcase({
   }
 
   return (
-    <section id={sectionId} className="py-16 lg:py-24">
+    <section id={sectionId} className="section">
       <div className="site-container px-4 sm:px-6 lg:px-8">
-        <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6 mb-8">
-          <div>
-            <div className="inline-flex items-center gap-2 text-sm font-semibold tracking-[0.12em] text-[var(--accent)]">
-              <span className="h-px w-8 bg-[var(--accent)]" />
-              {locale === "ar" ? badgeAr : badgeEn}
-            </div>
-            <h2 className="mt-3 text-[32px] lg:text-[44px] font-black tracking-tight leading-none">
-              {title}
-            </h2>
-            {subtitle && <p className="mt-3 opacity-60 max-w-[54ch]">{subtitle}</p>}
-          </div>
+        <SectionHeading
+          eyebrow={locale === "ar" ? badgeAr : badgeEn}
+          title={title}
+          lead={subtitle}
+          className="mb-8"
+          aside={
           <div className="flex flex-wrap items-center gap-3">
             <div className="flex items-center gap-1 p-1 rounded-full bg-[var(--secondary)] border border-[var(--border)]">
               <button
@@ -293,17 +294,18 @@ function InteractiveShowcase({
               </Link>
             )}
           </div>
-        </div>
+          }
+        />
 
         {/* Filters */}
         {showSectorFilters && (
-          <div className="flex flex-wrap gap-2 mb-6">
+          <div className="scroll-x -mx-4 mb-6 gap-2 px-4 pb-1 sm:mx-0 sm:flex-wrap sm:px-0">
             {sectors.map((s) => (
               <button
                 key={s.id}
                 type="button"
                 onClick={() => setFilter(s.id)}
-                className={`px-4 py-2 rounded-full text-sm font-medium border transition-colors cursor-pointer ${
+                className={`shrink-0 px-4 py-2 rounded-full text-sm font-medium border transition-colors cursor-pointer ${
                   filter === s.id
                     ? "bg-[var(--primary)] text-[var(--primary-foreground)] border-[var(--primary)]"
                     : "bg-[var(--card)] border-[var(--border)] hover:bg-[var(--secondary)]"
@@ -317,7 +319,7 @@ function InteractiveShowcase({
 
         <div className="grid lg:grid-cols-[1.35fr_0.75fr] gap-6 items-start">
           {/* Preview Stage */}
-          <div className="rounded-[24px] bg-[var(--card)] border border-[var(--border)] overflow-hidden p-4 sm:p-6 lg:sticky lg:top-[calc(var(--promo-h,0px)+96px)]">
+          <div className="overflow-hidden rounded-[var(--radius-lg)] border border-[var(--border)] bg-[var(--card)] p-4 shadow-[var(--shadow-sm)] sm:p-6 lg:sticky lg:top-[calc(var(--promo-h,0px)+96px)]">
             {/* Browser Top Toolbar */}
             <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
               <div className="flex items-center gap-2 min-w-0 flex-1">
@@ -487,6 +489,14 @@ function InteractiveShowcase({
                       {formatLyd(activeClassification.priceLyd)}{" "}
                       {lydLabel(locale)}
                     </span>
+                    <PromoPriceNote
+                      amountUsd={activeClassification.priceUsd}
+                      currency={
+                        locale === "ar"
+                          ? siteConfig.pricing.currency
+                          : siteConfig.pricing.currencyEn
+                      }
+                    />
                     <span className="inline-flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-semibold">
                       <Sparkles className="h-3 w-3" />
                       {freeCustomizationLabel(locale)}
@@ -550,62 +560,54 @@ function InteractiveShowcase({
                   key={d.slug}
                   type="button"
                   onClick={() => setActive(d.slug)}
-                  className={`group text-start rounded-[20px] overflow-hidden border-2 bg-[var(--card)] transition-all cursor-pointer ${
+                  aria-pressed={activeDemo.slug === d.slug}
+                  className={`group overflow-hidden rounded-[var(--radius-md)] border bg-[var(--card)] text-start transition-all cursor-pointer ${
                     activeDemo.slug === d.slug
-                      ? "border-[var(--accent)] shadow-lg"
-                      : "border-[var(--border)] hover:border-[var(--accent)]/50"
+                      ? "border-[var(--accent)] shadow-[var(--shadow-md)] ring-1 ring-[var(--accent)]/30"
+                      : "border-[var(--border)] hover:border-[var(--accent)]/45 hover:shadow-[var(--shadow-sm)]"
                   }`}
                 >
-                  <div className="relative aspect-[4/3] overflow-hidden">
+                  <div className="relative aspect-[16/10] overflow-hidden">
                     <ProjectPreview demo={d} />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/15 to-transparent" />
-                    {dIsLive && (
-                      <div className="absolute top-2 start-2">
-                        <span className="px-2.5 py-1 rounded-full bg-emerald-500 text-white text-[10px] font-black inline-flex items-center gap-1 shadow">
-                          <span className="h-1.5 w-1.5 rounded-full bg-white animate-pulse" />
-                          {locale === "ar" ? "موقع حقيقي حي" : "LIVE SITE"}
-                        </span>
-                      </div>
-                    )}
-                    <div className="absolute bottom-2 start-2 end-2 flex items-center justify-between gap-1">
-                      <div className="flex items-center gap-1 min-w-0">
-                        <span className="px-2 py-1 rounded-full bg-white text-black text-[11px] font-bold truncate">
-                          {locale === "ar" ? d.sectorAr : d.sectorEn}
-                        </span>
-                        {dClassification && (
-                          <span className="px-2 py-1 rounded-full bg-[var(--accent)] text-[var(--accent-foreground)] text-[10px] font-black whitespace-nowrap">
-                            {locale === "ar"
-                              ? `فئة ${dClassification.tier}`
-                              : `Cat. ${dClassification.tier}`}
-                          </span>
-                        )}
-                      </div>
-                      {activeDemo.slug === d.slug && (
-                        <span className="h-6 w-6 rounded-full bg-[var(--accent)] text-[var(--accent-foreground)] grid place-items-center flex-shrink-0">
-                          <Sparkles className="h-3 w-3" />
+                    <div className="absolute bottom-2 start-2 end-2 flex items-center justify-between gap-1.5">
+                      <span className="truncate rounded-full bg-white/95 px-2 py-0.5 text-[10.5px] font-bold text-black">
+                        {locale === "ar" ? d.sectorAr : d.sectorEn}
+                      </span>
+                      {dClassification && (
+                        <span className="shrink-0 rounded-full bg-[var(--accent)] px-2 py-0.5 text-[10px] font-black text-[var(--accent-foreground)]">
+                          {locale === "ar" ? `فئة ${dClassification.tier}` : `Cat. ${dClassification.tier}`}
                         </span>
                       )}
                     </div>
+                    {activeDemo.slug === d.slug && (
+                      <span className="absolute end-2 top-2 grid h-6 w-6 place-items-center rounded-full bg-[var(--accent)] text-[var(--accent-foreground)] shadow">
+                        <Sparkles className="h-3 w-3" />
+                      </span>
+                    )}
                   </div>
                   <div className="p-3">
-                    <div className="text-sm font-bold leading-tight">
+                    {/* Le nom du projet est déjà dans l'aperçu (repli) ; on
+                        garde ici la ligne courte, mais elle ne doit jamais
+                        être tronquée à mi-mot : deux lignes maximum. */}
+                    <div className="line-clamp-2 text-[12.5px] font-bold leading-snug">
                       {locale === "ar" ? d.title : d.titleEn}
                     </div>
-                    {dClassification?.priceUsd != null && (
-                      <div
-                        className="mt-0.5 text-sm font-black text-[var(--accent)] leading-none"
-                        dir="ltr"
-                      >
-                        {formatMainPrice(
-                          dClassification.priceUsd,
-                          locale === "ar"
-                            ? siteConfig.pricing.currency
-                            : siteConfig.pricing.currencyEn,
-                        )}
-                      </div>
-                    )}
-                    <div className="text-[11px] text-emerald-600 dark:text-emerald-400 mt-0.5 line-clamp-1">
-                      {freeCustomizationLabel(locale)}
+                    <div className="mt-1 flex items-baseline justify-between gap-2">
+                      {dClassification?.priceUsd != null ? (
+                        <span className="text-[13.5px] font-black leading-none text-[var(--accent)]" dir="ltr">
+                          {formatMainPrice(
+                            dClassification.priceUsd,
+                            locale === "ar"
+                              ? siteConfig.pricing.currency
+                              : siteConfig.pricing.currencyEn,
+                          )}
+                        </span>
+                      ) : (
+                        <span />
+                      )}
+                      <span className="text-[10.5px] text-[var(--muted-foreground)]">
+                        {locale === "ar" ? "تخصيص مجاني" : "Free customization"}
+                      </span>
                     </div>
                   </div>
                 </button>

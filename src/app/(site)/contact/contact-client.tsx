@@ -1,72 +1,145 @@
 "use client";
-import Image from "next/image";
 import { useI18n } from "@/lib/i18n";
 import { CTAForm } from "@/components/sections/cta-form";
 import { useSiteConfig } from "@/components/site-provider";
-import { MapPin, Phone, Mail, Clock, MessageCircle } from "lucide-react";
+import { ArrowUpRight, Clock, Mail, MapPin, MessageCircle, Phone } from "lucide-react";
 import { whatsappLink } from "@/lib/utils";
+
+/**
+ * Carte de localisation dessinée localement.
+ *
+ * L'ancienne version chargeait une photo d'agence depuis Unsplash (souvent
+ * bloquée ou lente) et affichait une note de développement « remplacer par
+ * une iframe Google Maps ». On affiche désormais un plan schématique net,
+ * généré en SVG, plus un lien direct vers Google Maps.
+ */
+function MapPanel({ label, sublabel }: { label: string; sublabel: string }) {
+  const query = encodeURIComponent("Al Jumhouriya Street, Tripoli, Libya");
+  return (
+    <div className="relative h-full w-full overflow-hidden rounded-[var(--radius-md)] bg-[var(--secondary)]">
+      <svg
+        aria-hidden="true"
+        viewBox="0 0 400 320"
+        className="h-full w-full"
+        preserveAspectRatio="xMidYMid slice"
+      >
+        <rect width="400" height="320" fill="var(--secondary)" />
+        <g stroke="var(--border)" strokeWidth="10" strokeLinecap="round">
+          <path d="M-20 90 L420 60" />
+          <path d="M-20 210 L420 250" />
+          <path d="M90 -20 L60 340" />
+          <path d="M275 -20 L320 340" />
+        </g>
+        <g stroke="var(--accent)" strokeOpacity="0.35" strokeWidth="3" strokeLinecap="round">
+          <path d="M-20 150 L420 150" />
+          <path d="M180 -20 L180 340" />
+        </g>
+        <g fill="var(--background)" opacity="0.75">
+          <rect x="110" y="105" width="45" height="30" rx="4" />
+          <rect x="205" y="100" width="55" height="35" rx="4" />
+          <rect x="215" y="175" width="40" height="25" rx="4" />
+          <rect x="105" y="185" width="50" height="28" rx="4" />
+        </g>
+      </svg>
+
+      <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
+        <span className="relative flex h-12 w-12 items-center justify-center">
+          <span className="absolute h-12 w-12 animate-ping rounded-full bg-[var(--accent)]/25" />
+          <span className="relative grid h-10 w-10 place-items-center rounded-full bg-[var(--accent)] text-[var(--accent-foreground)] shadow-[var(--shadow-md)]">
+            <MapPin className="h-5 w-5" />
+          </span>
+        </span>
+      </div>
+
+      <div className="absolute inset-x-3 bottom-3 flex items-center justify-between gap-3 rounded-[var(--radius-sm)] border border-[var(--border)] bg-[var(--card)]/95 p-3 backdrop-blur">
+        <div className="min-w-0">
+          <div className="truncate text-[13px] font-bold">{label}</div>
+          <div className="truncate text-[11.5px] text-[var(--muted-foreground)]">{sublabel}</div>
+        </div>
+        <a
+          href={`https://www.google.com/maps/search/?api=1&query=${query}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-full bg-[var(--primary)] px-3.5 text-[12px] font-bold text-[var(--primary-foreground)] transition-opacity hover:opacity-90"
+        >
+          Maps
+          <ArrowUpRight className="h-3.5 w-3.5" />
+        </a>
+      </div>
+    </div>
+  );
+}
 
 export function ContactClient() {
   const siteConfig = useSiteConfig();
   const { locale, t } = useI18n();
+  const ar = locale === "ar";
+
+  const details = [
+    { icon: MapPin, label: ar ? siteConfig.address : siteConfig.addressEn },
+    { icon: Phone, label: siteConfig.phone, ltr: true },
+    { icon: Mail, label: siteConfig.email, ltr: true },
+    { icon: Clock, label: ar ? siteConfig.hours : siteConfig.hoursEn },
+  ];
+
   return (
-    <div className="pt-[96px]">
-      <section className="py-10 bg-[var(--secondary)]/30 border-b border-[var(--border)]">
+    <div className="pt-[calc(var(--header-h)+1.5rem)]">
+      <section className="section-tight border-b border-[var(--border)] bg-[var(--secondary)]/35">
         <div className="site-container px-4 sm:px-6 lg:px-8">
-          <div className="grid lg:grid-cols-2 gap-8 items-center">
+          <div className="grid items-center gap-8 lg:grid-cols-2 lg:gap-12">
             <div>
-              <h1 className="text-[36px] lg:text-[48px] font-black leading-none tracking-tight">{t.contactPage.title}</h1>
-              <p className="mt-3 opacity-60">{t.contactPage.subtitle}</p>
-              <div className="mt-6 grid sm:grid-cols-2 gap-3">
-                {[
-                  { icon: MapPin, label: locale === "ar" ? siteConfig.address : siteConfig.addressEn },
-                  { icon: Phone, label: siteConfig.phone },
-                  { icon: Mail, label: siteConfig.email },
-                  { icon: Clock, label: locale === "ar" ? siteConfig.hours : siteConfig.hoursEn },
-                ].map((item) => (
-                  <div key={item.label} className="flex gap-3 rounded-2xl bg-[var(--card)] border border-[var(--border)] p-4">
-                    <item.icon className="h-5 w-5 text-[var(--accent)] flex-shrink-0" />
-                    <span className="text-sm font-medium">{item.label}</span>
+              <span className="section-eyebrow">{ar ? "تواصل" : "Contact"}</span>
+              <h1 className="section-title">{t.contactPage.title}</h1>
+              <p className="section-lead">{t.contactPage.subtitle}</p>
+
+              <div className="mt-7 grid gap-2.5 sm:grid-cols-2">
+                {details.map(({ icon: Icon, label, ltr }) => (
+                  <div
+                    key={label}
+                    className="flex items-center gap-3 rounded-[var(--radius-sm)] border border-[var(--border)] bg-[var(--card)] p-3.5"
+                  >
+                    <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-[var(--accent)]/12 text-[var(--accent)]">
+                      <Icon className="h-4 w-4" />
+                    </span>
+                    <span
+                      className="truncate text-[12.5px] font-semibold"
+                      dir={ltr ? "ltr" : undefined}
+                    >
+                      {label}
+                    </span>
                   </div>
                 ))}
               </div>
-              <a
-                href={whatsappLink(siteConfig.whatsapp, locale === "ar" ? "مرحبا نخبة 👋" : "Hello Nukhba")}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="mt-6 inline-flex h-11 px-6 rounded-full bg-[#25D366] text-white font-bold items-center gap-2"
-              >
-                <MessageCircle className="h-5 w-5" /> {locale === "ar" ? "تواصل واتساب مباشر" : "Direct WhatsApp"}
-              </a>
+
+              <div className="mt-6 flex flex-wrap items-center gap-2.5">
+                <a
+                  href={whatsappLink(
+                    siteConfig.whatsapp,
+                    ar ? "مرحبا نخبة 👋 أريد استشارة" : "Hello Nukhba 👋 I'd like a consult",
+                  )}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex h-11 items-center gap-2 rounded-full bg-[#25D366] px-5 text-[13.5px] font-bold text-white transition-opacity hover:opacity-95"
+                >
+                  <MessageCircle className="h-4 w-4" />
+                  {ar ? "واتساب مباشر" : "WhatsApp"}
+                </a>
+                <a
+                  href={`tel:${siteConfig.phone.replace(/\s/g, "")}`}
+                  className="inline-flex h-11 items-center gap-2 rounded-full border border-[var(--border)] bg-[var(--card)] px-5 text-[13.5px] font-semibold transition-colors hover:border-[var(--accent)]"
+                  dir="ltr"
+                >
+                  <Phone className="h-4 w-4" />
+                  {siteConfig.phone}
+                </a>
+              </div>
             </div>
 
-            <div className="rounded-[24px] overflow-hidden border border-[var(--border)] bg-[var(--card)] p-2">
-              <div className="rounded-[18px] overflow-hidden aspect-[4/3] bg-[var(--secondary)] relative">
-                <Image
-                  src="https://images.unsplash.com/photo-1497366216548-37526070297c?w=1200&q=80&auto=format&fit=crop"
-                  alt={
-                    locale === "ar"
-                      ? "مقر وكالة نخبة في شارع الجمهورية، طرابلس، ليبيا"
-                      : "Nukhba agency office on Al Jumhouriya Street, Tripoli, Libya"
-                  }
-                  fill
-                  sizes="(max-width: 1024px) 100vw, 50vw"
-                  loading="lazy"
-                  decoding="async"
-                  className="w-full h-full object-cover"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
-                <div className="absolute bottom-4 start-4 end-4 bg-[var(--card)] rounded-2xl p-4 flex items-center gap-3 shadow-xl">
-                  <div className="h-10 w-10 rounded-full bg-[var(--accent)] grid place-items-center">📍</div>
-                  <div>
-                    <div className="font-bold text-sm">Tripoli — Al Jumhouriya</div>
-                    <div className="text-xs opacity-60">{locale === "ar" ? "مفتوح • رد سريع" : "Open • Fast reply"}</div>
-                  </div>
-                </div>
-              </div>
-              <div className="p-4 text-xs opacity-60 text-center">
-                {locale === "ar" ? "استبدل الخريطة بـ Google Maps iframe بإحداثياتك" : "Replace with Google Maps iframe with your coords"}
-              </div>
+            <div className="h-[300px] rounded-[var(--radius-lg)] border border-[var(--border)] bg-[var(--card)] p-2 shadow-[var(--shadow-sm)] sm:h-[360px]">
+              <MapPanel
+                label={ar ? "طرابلس — شارع الجمهورية" : "Tripoli — Al Jumhouriya"}
+                sublabel={ar ? "مفتوح الآن · رد سريع" : "Open now · fast reply"}
+              />
             </div>
           </div>
         </div>

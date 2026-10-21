@@ -72,11 +72,11 @@ export function CTAForm() {
     : `Hello Nukhba 👋 I want a quote.\nBusiness: ${watch("business") || "—"}\nSector: ${watch("sector")}\nNeed: ${watch("need")}\nBudget: ${watch("budget")}\nPhone: ${watch("phone") || "—"}`;
 
   return (
-    <section id="lead-form" className="py-16 lg:py-20">
+    <section id="lead-form" className="section">
       <div className="site-container px-4 sm:px-6 lg:px-8">
-        <div className="rounded-[28px] bg-[var(--primary)] text-[var(--primary-foreground)] overflow-hidden grid lg:grid-cols-[1.05fr_1.15fr] gap-0">
+        <div className="grid overflow-hidden rounded-[var(--radius-xl)] border border-[var(--border)] bg-[var(--primary)] text-[var(--primary-foreground)] shadow-[var(--shadow-lg)] lg:grid-cols-[1.05fr_1.15fr]">
           {/* Left copy */}
-          <div className="p-8 lg:p-10 relative overflow-hidden">
+          <div className="relative overflow-hidden p-7 sm:p-9 lg:p-10">
             <div className="absolute inset-0 opacity-20 pointer-events-none">
               <div className="absolute -top-20 -end-20 w-[500px] h-[500px] rounded-full blur-[60px] bg-[var(--accent)]" />
             </div>
@@ -84,24 +84,24 @@ export function CTAForm() {
               <div className="inline-flex px-3 py-1 rounded-full bg-white/10 border border-white/15 text-xs font-bold tracking-widest">
                 {locale === "ar" ? "استشارة مجانية" : "FREE CONSULT"}
               </div>
-              <h2 className="mt-4 text-[32px] lg:text-[42px] font-black leading-[0.95] tracking-tight">
+              <h2 className="mt-4 text-[clamp(1.75rem,1.2rem+1.9vw,2.6rem)] font-black leading-[1.04] tracking-[-0.025em]">
                 {heading.title}
-                <span className="block font-light italic opacity-80 text-[28px] lg:text-[34px] mt-1">
+                <span className="mt-1.5 block text-[0.72em] font-light italic opacity-75">
                   {heading.subtitle}
                 </span>
               </h2>
 
-              <div className="mt-8 space-y-3">
+              <div className="mt-7 space-y-2.5">
                 {[
                   { icon: Clock, title: locale === "ar" ? "رد خلال ساعتين" : "Reply in 2 hours", desc: locale === "ar" ? "حتى في المساء وعطلة نهاية الأسبوع" : "Even evenings & weekends" },
                   { icon: ShieldCheck, title: locale === "ar" ? "بدون التزام" : "No commitment", desc: locale === "ar" ? "عرض سعر مجاني وشفاف" : "Free & transparent quote" },
                   { icon: Headset, title: locale === "ar" ? "دعم واتساب مباشر" : "Direct WhatsApp", desc: siteConfig.phone },
                 ].map((item) => (
-                  <div key={item.title} className="flex gap-3 rounded-2xl bg-white/5 border border-white/10 p-4">
+                  <div key={item.title} className="flex gap-3 rounded-[var(--radius-sm)] border border-white/10 bg-white/[0.06] p-3.5">
                     <item.icon className="h-5 w-5 mt-0.5 text-[var(--accent)] flex-shrink-0" />
                     <div>
-                      <div className="font-bold text-sm">{item.title}</div>
-                      <div className="text-xs opacity-60">{item.desc}</div>
+                      <div className="text-[13.5px] font-bold">{item.title}</div>
+                      <div className="mt-0.5 text-[11.5px] opacity-65">{item.desc}</div>
                     </div>
                   </div>
                 ))}
@@ -120,7 +120,7 @@ export function CTAForm() {
           </div>
 
           {/* Form */}
-          <div className="bg-[var(--card)] text-[var(--foreground)] p-6 lg:p-8">
+          <div className="bg-[var(--card)] p-5 text-[var(--foreground)] sm:p-7 lg:p-8">
             {!submitted ? (
               <>
                 <div className="flex items-center justify-between">
@@ -138,12 +138,12 @@ export function CTAForm() {
                     <motion.div initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} className="space-y-4">
                       <div>
                         <label className="text-sm font-semibold">{locale === "ar" ? "اسم النشاط" : "Business name"} *</label>
-                        <input {...register("business")} placeholder={locale === "ar" ? "مثال: مطعم السرايا" : "e.g. Saraya Restaurant"} className="mt-2 w-full h-11 px-4 rounded-full border border-[var(--border)] bg-[var(--secondary)]/50 focus:bg-[var(--card)] outline-none focus:border-[var(--accent)]" />
+                        <input {...register("business")} placeholder={locale === "ar" ? "مثال: مطعم السرايا" : "e.g. Saraya Restaurant"} className="mt-2 h-11 w-full rounded-full border border-[var(--border)] bg-[var(--secondary)]/50 px-4 outline-none transition-colors focus:border-[var(--accent)] focus:bg-[var(--card)]" />
                         {errors.business && <p className="text-xs text-red-500 mt-1">{errors.business.message}</p>}
                       </div>
                       <div>
                         <label className="text-sm font-semibold">{locale === "ar" ? "القطاع" : "Sector"} *</label>
-                        <select {...register("sector")} className="mt-2 w-full h-11 px-4 rounded-full border border-[var(--border)] bg-[var(--secondary)]/50 outline-none">
+                        <select {...register("sector")} className="mt-2 h-11 w-full rounded-full border border-[var(--border)] bg-[var(--secondary)]/50 px-4 outline-none transition-colors focus:border-[var(--accent)]">
                           <option value="restaurant">{locale === "ar" ? "مطعم / مقهى" : "Restaurant / Café"}</option>
                           <option value="clinic">{locale === "ar" ? "عيادة / مركز" : "Clinic"}</option>
                           <option value="boutique">{locale === "ar" ? "متجر / بوتيك" : "Shop / Boutique"}</option>
@@ -160,7 +160,7 @@ export function CTAForm() {
                     <motion.div initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} className="space-y-4">
                       <div>
                         <label className="text-sm font-semibold">{locale === "ar" ? "ماذا تحتاج؟" : "What do you need?"} *</label>
-                        <select {...register("need")} className="mt-2 w-full h-11 px-4 rounded-full border border-[var(--border)] bg-[var(--secondary)]/50 outline-none">
+                        <select {...register("need")} className="mt-2 h-11 w-full rounded-full border border-[var(--border)] bg-[var(--secondary)]/50 px-4 outline-none transition-colors focus:border-[var(--accent)]">
                           <option value="vitrine">{locale === "ar" ? "موقع واجهة" : "Vitrine site"}</option>
                           <option value="vitrine-plus">{locale === "ar" ? "واجهة بلس + حجز" : "Vitrine+ + booking"}</option>
                           <option value="shop">{locale === "ar" ? "متجر / حجز كامل" : "Full shop / booking"}</option>
@@ -170,7 +170,7 @@ export function CTAForm() {
                       <div className="grid grid-cols-2 gap-3">
                         <div>
                           <label className="text-sm font-semibold">{locale === "ar" ? "الميزانية" : "Budget"}</label>
-                          <select {...register("budget")} className="mt-2 w-full h-11 px-4 rounded-full border border-[var(--border)] bg-[var(--secondary)]/50 outline-none">
+                          <select {...register("budget")} className="mt-2 h-11 w-full rounded-full border border-[var(--border)] bg-[var(--secondary)]/50 px-4 outline-none transition-colors focus:border-[var(--accent)]">
                             <option value="1000-1500">1000-1500 LYD</option>
                             <option value="1500-2500">1500-2500 LYD</option>
                             <option value="2500-4500">2500-4500 LYD</option>
@@ -179,7 +179,7 @@ export function CTAForm() {
                         </div>
                         <div>
                           <label className="text-sm font-semibold">{locale === "ar" ? "الموعد" : "Deadline"}</label>
-                          <select {...register("deadline")} className="mt-2 w-full h-11 px-4 rounded-full border border-[var(--border)] bg-[var(--secondary)]/50 outline-none">
+                          <select {...register("deadline")} className="mt-2 h-11 w-full rounded-full border border-[var(--border)] bg-[var(--secondary)]/50 px-4 outline-none transition-colors focus:border-[var(--accent)]">
                             <option value="urgent">{locale === "ar" ? "مستعجل (أسبوع)" : "Urgent (1 week)"}</option>
                             <option value="7-14">{locale === "ar" ? "7-14 يوم" : "7-14 days"}</option>
                             <option value="flexible">{locale === "ar" ? "مرن" : "Flexible"}</option>
@@ -194,22 +194,22 @@ export function CTAForm() {
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <div>
                           <label className="text-sm font-semibold">{locale === "ar" ? "الاسم" : "Name"} *</label>
-                          <input {...register("name")} placeholder={locale === "ar" ? "الاسم الكامل" : "Full name"} className="mt-2 w-full h-11 px-4 rounded-full border border-[var(--border)] bg-[var(--secondary)]/50 outline-none focus:border-[var(--accent)]" />
+                          <input {...register("name")} placeholder={locale === "ar" ? "الاسم الكامل" : "Full name"} className="mt-2 h-11 w-full rounded-full border border-[var(--border)] bg-[var(--secondary)]/50 px-4 outline-none transition-colors focus:border-[var(--accent)]" />
                           {errors.name && <p className="text-xs text-red-500 mt-1">{errors.name.message}</p>}
                         </div>
                         <div>
                           <label className="text-sm font-semibold">{locale === "ar" ? "واتساب / هاتف" : "WhatsApp / Phone"} *</label>
-                          <input {...register("phone")} placeholder="+218 9X XXX XXXX" className="mt-2 w-full h-11 px-4 rounded-full border border-[var(--border)] bg-[var(--secondary)]/50 outline-none focus:border-[var(--accent)]" dir="ltr" />
+                          <input {...register("phone")} placeholder="+218 9X XXX XXXX" className="mt-2 h-11 w-full rounded-full border border-[var(--border)] bg-[var(--secondary)]/50 px-4 outline-none transition-colors focus:border-[var(--accent)]" dir="ltr" />
                           {errors.phone && <p className="text-xs text-red-500 mt-1">{errors.phone.message}</p>}
                         </div>
                       </div>
                       <div>
                         <label className="text-sm font-semibold">{locale === "ar" ? "البريد (اختياري)" : "Email (optional)"}</label>
-                        <input {...register("email")} placeholder="you@example.com" className="mt-2 w-full h-11 px-4 rounded-full border border-[var(--border)] bg-[var(--secondary)]/50 outline-none" dir="ltr" />
+                        <input {...register("email")} placeholder="you@example.com" className="mt-2 h-11 w-full rounded-full border border-[var(--border)] bg-[var(--secondary)]/50 px-4 outline-none transition-colors focus:border-[var(--accent)]" dir="ltr" />
                       </div>
                       <div>
                         <label className="text-sm font-semibold">{locale === "ar" ? "تفاصيل إضافية" : "Extra details"}</label>
-                        <textarea {...register("message")} rows={3} placeholder={locale === "ar" ? "أخبرنا أكثر عن فكرتك..." : "Tell us more..."} className="mt-2 w-full px-4 py-3 rounded-2xl border border-[var(--border)] bg-[var(--secondary)]/50 outline-none focus:border-[var(--accent)] resize-none" />
+                        <textarea {...register("message")} rows={3} placeholder={locale === "ar" ? "أخبرنا أكثر عن فكرتك..." : "Tell us more..."} className="mt-2 w-full resize-none rounded-[var(--radius-sm)] border border-[var(--border)] bg-[var(--secondary)]/50 px-4 py-3 outline-none transition-colors focus:border-[var(--accent)]" />
                       </div>
                     </motion.div>
                   )}

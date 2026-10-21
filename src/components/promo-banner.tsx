@@ -3,22 +3,17 @@
 import { useEffect, useState } from "react";
 import { Check, Copy, Sparkles, X } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
-import {
-  CURRENT_PROMO,
-  promoActive,
-  promoBannerText,
-  promoLabel,
-} from "@/lib/promotion";
+import { CURRENT_PROMO, promoActive, promoLabel } from "@/lib/promotion";
 
 /**
- * Bandeau de solde animé : dégradé doré accordé au thème, hauteur 52 px
- * (lisible sans écraser la page), message défilant, pastille « PROMO »,
- * coupon copiable en un clic, fermeture, pause au survol.
+ * Bandeau promotionnel — version sobre.
  *
- * Il n'est plus figé en permanence : dès que le visiteur fait défiler la
- * page, le bandeau remonte et libère l'écran (la navbar glisse alors tout
- * en haut) ; il réapparaît en revenant en haut de page. Sa hauteur est
- * publiée dans `--promo-h` pour que navbar et contenu restent alignés.
+ * L'ancienne version faisait défiler le même message en boucle sur quatre
+ * lignes, ce qui saturait le haut de page. Ici : une seule phrase, un
+ * coupon copiable et une fermeture, sur 44 px. Le bandeau se replie dès
+ * qu'on fait défiler la page et sa hauteur reste publiée dans `--promo-h`
+ * (position de la navbar) et `--promo-space` (décalage du contenu), donc
+ * il ne recouvre jamais la page.
  */
 export function PromoBanner() {
   const { locale } = useI18n();
@@ -28,8 +23,6 @@ export function PromoBanner() {
   const [collapsed, setCollapsed] = useState(false);
   const [copied, setCopied] = useState(false);
 
-  // Effacement au défilement : dès qu'on descend, le bandeau s'en va ;
-  // il revient seulement en haut de page (pas de va-et-vient parasite).
   useEffect(() => {
     const onScroll = () => setCollapsed(window.scrollY > 40);
     onScroll();
@@ -37,25 +30,18 @@ export function PromoBanner() {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  // Deux variables distinctes :
-  //  - `--promo-h`   : position de la navbar / des éléments collants
-  //                    (0 quand le bandeau se replie au défilement) ;
-  //  - `--promo-space`: espace réservé en haut du contenu, constant tant
-  //                    que le bandeau n'est pas fermé — sinon la page
-  //                    sauterait de 52 px à chaque défilement.
   useEffect(() => {
     const root = document.documentElement.style;
     root.setProperty(
       "--promo-h",
-      enabled && visible && !collapsed ? "52px" : "0px",
+      enabled && visible && !collapsed ? "44px" : "0px",
     );
-    root.setProperty("--promo-space", enabled && visible ? "52px" : "0px");
+    root.setProperty("--promo-space", enabled && visible ? "44px" : "0px");
   }, [enabled, visible, collapsed]);
 
-  if (!enabled) return null;
+  if (!enabled || !visible) return null;
 
   const ar = locale === "ar";
-  const text = promoBannerText(locale, promo);
   const label = promoLabel(locale, promo.percent);
 
   const copyCode = async () => {
@@ -68,70 +54,51 @@ export function PromoBanner() {
     }
   };
 
-  if (!visible) return null;
-
   return (
     <div
       role="region"
       aria-label={ar ? "عرض ترويجي" : "Promotion"}
       dir={ar ? "rtl" : "ltr"}
-      className={`promo-banner fixed inset-x-0 top-0 z-[60] flex h-[52px] items-stretch transition-transform duration-300 ease-out ${
+      className={`promo-banner fixed inset-x-0 top-0 z-[60] h-11 transition-transform duration-300 ease-out ${
         collapsed ? "-translate-y-full pointer-events-none" : "translate-y-0"
       }`}
     >
-      {/* Pastille « PROMO » fixe — ancre visuelle immédiate. */}
-      <div className="relative z-10 hidden shrink-0 items-center ps-3 pe-2 sm:flex">
-        <span className="promo-badge inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.14em] shadow-sm">
+      <div className="mx-auto flex h-full w-full max-w-[1200px] items-center justify-center gap-2 px-3 sm:gap-3 sm:px-5">
+        <span className="promo-badge hidden shrink-0 items-center gap-1 rounded-full px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.14em] sm:inline-flex">
           <Sparkles className="h-3 w-3" />
           {ar ? "عرض" : "Promo"}
         </span>
+
+        <p className="truncate text-[12.5px] font-bold sm:text-[13px]">
+          <span className="sm:hidden">{label}</span>
+          <span className="hidden sm:inline">
+            {ar
+              ? `${label} على جميع المواقع عند الدفع`
+              : `${label} on every website at checkout`}
+          </span>
+        </p>
+
+        <button
+          type="button"
+          onClick={copyCode}
+          title={ar ? "نسخ الكوبون" : "Copy coupon"}
+          aria-live="polite"
+          className="promo-coupon inline-flex shrink-0 items-center gap-1.5 rounded-full px-2.5 py-1 text-[11.5px] font-black tracking-wider transition-colors cursor-pointer sm:px-3 sm:text-[12.5px]"
+        >
+          <span dir="ltr">{promo.code}</span>
+          {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5 opacity-70" />}
+          <span className="sr-only">{ar ? "نسخ كود الخصم" : "Copy discount code"}</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setVisible(false)}
+          aria-label={ar ? "إغلاق الشريط" : "Dismiss banner"}
+          className="ms-1 grid h-7 w-7 shrink-0 place-items-center rounded-full text-[#17110A]/65 transition-colors hover:bg-black/10 hover:text-[#17110A] cursor-pointer sm:ms-3"
+        >
+          <X className="h-3.5 w-3.5" />
+        </button>
       </div>
-
-      {/* Message défilant (dupliqué pour une boucle sans coupure). */}
-      <div className="relative z-10 flex-1 min-w-0 self-stretch overflow-hidden promo-window">
-        <div className="promo-track flex h-full w-max items-center">
-          {[0, 1].map((copy) => (
-            <div
-              key={copy}
-              className="flex h-full items-center gap-2 whitespace-nowrap px-3 text-[12.5px] font-bold sm:text-[13.5px]"
-              aria-hidden={copy === 1 ? "true" : undefined}
-            >
-              <Sparkles className="h-4 w-4 shrink-0 sm:hidden" />
-              <span>{text}</span>
-              <span className="mx-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-[#17110A]/40" />
-              <span className="font-black tracking-wide">{label}</span>
-              <span className="mx-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-[#17110A]/40" />
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Coupon : lecture + copie en un clic (hors partie animée). */}
-      <button
-        type="button"
-        onClick={copyCode}
-        title={ar ? "نسخ الكوبون" : "Copy coupon"}
-        className="promo-coupon relative z-10 my-2 me-2 inline-flex shrink-0 items-center gap-1.5 rounded-full px-3 text-[12px] font-black tracking-wider transition-colors cursor-pointer sm:text-[13px]"
-      >
-        <span dir="ltr">{promo.code}</span>
-        {copied ? (
-          <Check className="h-4 w-4" />
-        ) : (
-          <Copy className="h-4 w-4 opacity-70" />
-        )}
-        <span className="sr-only">
-          {ar ? "نسخ كود الخصم" : "Copy discount code"}
-        </span>
-      </button>
-
-      <button
-        type="button"
-        onClick={() => setVisible(false)}
-        aria-label={ar ? "إغلاق الشريط" : "Dismiss banner"}
-        className="relative z-10 grid w-9 shrink-0 place-items-center text-[#17110A]/70 hover:text-[#17110A] cursor-pointer"
-      >
-        <X className="h-4 w-4" />
-      </button>
     </div>
   );
 }

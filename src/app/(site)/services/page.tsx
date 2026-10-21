@@ -82,38 +82,38 @@ export default async function ServicesPage() {
         ]}
       />
 
-      <div className="pt-[96px]">
+      <div className="pt-[calc(var(--header-h)+1.5rem)]">
         {/* Hero */}
-        <section className="py-12 bg-[var(--secondary)]/30 border-b border-[var(--border)]">
+        <section className="section-tight border-b border-[var(--border)] bg-[var(--secondary)]/35">
           <div className="site-container px-4 sm:px-6 lg:px-8">
             <div className="flex flex-wrap items-center gap-2 text-xs font-bold">
               <Link
                 href="/"
-                className="px-3 py-1 rounded-full bg-[var(--card)] border border-[var(--border)] hover:border-[var(--accent)]"
+                className="rounded-full border border-[var(--border)] bg-[var(--card)] px-3 py-1 transition-colors hover:border-[var(--accent)]"
               >
                 ← الرئيسية
               </Link>
-              <span className="px-3 py-1 rounded-full bg-[var(--accent)] text-[var(--accent-foreground)]">
+              <span className="rounded-full border border-[var(--accent)]/35 bg-[var(--accent)]/12 px-3 py-1 text-[var(--accent)]">
                 خدمات مفتوحة · Open services
               </span>
             </div>
 
-            <h1 className="mt-6 text-[32px] lg:text-[44px] font-black tracking-tight leading-tight max-w-[24ch]">
+            <h1 className="mt-6 max-w-[26ch] text-[clamp(1.8rem,1.2rem+2.2vw,2.85rem)] font-black leading-[1.08] tracking-[-0.03em] text-balance">
               خدمات رقمية سريعة بأسعار معلنة — طرابلس، ليبيا
             </h1>
-            <p className="mt-3 text-lg opacity-70 max-w-[66ch] leading-relaxed">
+            <p className="mt-4 max-w-[66ch] text-[15.5px] leading-8 text-[var(--muted-foreground)]">
               لا تحتاج مشروعاً كاملاً لكل فكرة. اختر الخدمة التي تحتاجها اليوم: تجديد
               موقعك، إضافة قسم، عرض تقديمي، هوية بصرية، صفحة هبوط أو إصلاح تقني —
               بأسعار تبدأ من <strong>15 دولاراً</strong> وتسليم يبدأ من <strong>24 ساعة</strong>.
             </p>
-            <p className="mt-2 text-sm opacity-50 max-w-[66ch]" dir="ltr">
+            <p className="mt-2 max-w-[66ch] text-[13px] text-[var(--muted-foreground)]/75" dir="ltr">
               Fast, fixed-scope digital services in Tripoli, Libya — from $15 with
               delivery in as little as 24 hours.
             </p>
 
             <div
               id="services-answer"
-              className="mt-6 rounded-2xl bg-[var(--card)] border border-[var(--border)] p-5 max-w-[70ch]"
+              className="mt-7 max-w-[70ch] rounded-[var(--radius-md)] border border-[var(--border)] bg-[var(--card)] p-5 shadow-[var(--shadow-xs)]"
             >
               <p className="text-sm leading-7 opacity-80">
                 <strong>باختصار:</strong> نخبة تقدم {services.length} خدمات رقمية جاهزة
@@ -159,7 +159,7 @@ export default async function ServicesPage() {
         </section>
 
         {/* Grille des services */}
-        <section className="py-12">
+        <section className="section-tight">
           <div className="site-container px-4 sm:px-6 lg:px-8">
             <div className="flex items-end justify-between gap-4 mb-8">
               <div>
@@ -178,7 +178,7 @@ export default async function ServicesPage() {
                 return (
                   <article
                     key={service.id}
-                    className="group flex flex-col rounded-[24px] bg-[var(--card)] border border-[var(--border)] p-6 hover:border-[var(--accent)]/50 hover:shadow-xl transition-all"
+                    className="card-surface card-interactive group flex flex-col p-6"
                   >
                     <div className="flex items-start justify-between gap-3">
                       <div className="flex items-center gap-2">
@@ -280,7 +280,7 @@ export default async function ServicesPage() {
         </section>
 
         {/* FAQ */}
-        <section className="py-12">
+        <section className="section-tight">
           <div className="site-container px-4 sm:px-6 lg:px-8">
             <h2 className="text-2xl font-black">أسئلة شائعة عن الخدمات المفتوحة</h2>
             <p className="mt-1 text-sm opacity-60">Open services — FAQ</p>

@@ -94,16 +94,6 @@ export function HeroShowcase() {
       className="hero-showcase relative mx-auto w-full max-w-[900px]"
     >
       <div className="pointer-events-none absolute inset-[8%] -z-10 rounded-full bg-[var(--accent)]/20 blur-[60px]" />
-      <div className="mb-5 flex items-center justify-between gap-3 text-[11px] font-bold uppercase tracking-[0.16em]">
-        <span className="inline-flex items-center gap-2 text-[var(--muted-foreground)]">
-          <span className="h-1.5 w-1.5 rounded-full bg-[var(--accent)]" />
-          {ar ? "مواقع حقيقية. بكل التفاصيل." : "Real websites. Every detail."}
-        </span>
-        <span className="font-mono text-[var(--accent)]" dir="ltr">
-          {String(currentIndex + 1).padStart(2, "0")} / {String(projects.length).padStart(2, "0")}
-        </span>
-      </div>
-
       <div className="relative pb-[17%]" dir="ltr" aria-hidden="true" inert>
         {/* Static preview: no third-party scripts or iframe downloads. */}
         <div className="relative w-[94%] pt-3">
@@ -190,13 +180,18 @@ export function HeroShowcase() {
       </div>
 
       {projects.length > 1 && (
-        <div className="mt-3 flex items-center justify-between gap-2">
-          <div className="flex flex-wrap items-center gap-0.5" aria-label={ar ? "اختيار الموقع" : "Choose a website"}>
+        <div className="mt-3 flex items-center justify-between gap-3">
+          <div className="flex min-w-0 items-center gap-2">
+            <span className="shrink-0 font-mono text-[11px] font-bold text-[var(--accent)]" dir="ltr">
+              {String(currentIndex + 1).padStart(2, "0")} / {String(projects.length).padStart(2, "0")}
+            </span>
+            <div className="scroll-x items-center gap-0.5" aria-label={ar ? "اختيار الموقع" : "Choose a website"}>
             {projects.map((demo, i) => (
-              <button key={demo.slug} type="button" onClick={() => select(i)} aria-label={ar ? demo.title : demo.titleEn} aria-current={currentIndex === i ? "true" : undefined} className="group grid h-9 w-6 cursor-pointer place-items-center rounded-full sm:w-7">
+              <button key={demo.slug} type="button" onClick={() => select(i)} aria-label={ar ? demo.title : demo.titleEn} aria-current={currentIndex === i ? "true" : undefined} className="group grid h-8 w-5 shrink-0 cursor-pointer place-items-center rounded-full">
                 <span className={`h-1.5 rounded-full transition-all ${currentIndex === i ? "w-5 bg-[var(--accent)]" : "w-1.5 bg-[var(--muted-foreground)]/35 group-hover:bg-[var(--accent)]"}`} />
               </button>
             ))}
+            </div>
           </div>
           <div className="flex shrink-0 items-center gap-1" dir="ltr">
             <button type="button" onClick={() => step(-1)} aria-label={ar ? "الموقع السابق" : "Previous website"} className="showcase-control"><ArrowLeft className="h-4 w-4" /></button>

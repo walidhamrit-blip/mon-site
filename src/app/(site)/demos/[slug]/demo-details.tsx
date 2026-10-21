@@ -9,6 +9,7 @@ import {
   resolveDemoClassification,
 } from "@/lib/classification";
 import { formatMainPrice } from "@/lib/installments";
+import { PromoPriceNote } from "@/components/promo-price";
 import { whatsappLink } from "@/lib/utils";
 
 /**
@@ -125,7 +126,7 @@ export function DemoDetails({
           </div>
 
           {/* Faits clés + CTA */}
-          <aside className="rounded-[24px] bg-[var(--card)] border border-[var(--border)] p-6">
+          <aside className="card-surface p-6">
             <h3 className="text-sm font-black uppercase tracking-wider opacity-60">
               حقائق سريعة — Quick facts
             </h3>
@@ -164,6 +165,11 @@ export function DemoDetails({
                     <span className="opacity-60 font-medium">
                       ≈ {formatLyd(classification.priceLyd)} {lydLabel("ar")}
                     </span>
+                    <PromoPriceNote
+                      amountUsd={classification.priceUsd}
+                      currency={config.pricing.currency}
+                      className="mt-1.5 flex w-fit ms-auto"
+                    />
                   </dd>
                 </div>
               )}

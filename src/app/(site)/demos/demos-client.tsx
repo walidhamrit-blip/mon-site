@@ -1,7 +1,6 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import Image from "next/image";
 import Link from "next/link";
 import { useSiteConfig, useSiteContent } from "@/components/site-provider";
 import { collectAllDemos } from "@/lib/site-types";
@@ -15,6 +14,8 @@ import {
 } from "@/lib/classification";
 import { formatMainPrice } from "@/lib/installments";
 import { freeCustomizationLabel } from "@/lib/promotion";
+import { PromoPriceNote } from "@/components/promo-price";
+import { ProjectPreview } from "@/components/project-preview";
 import {
   ArrowUpRight,
   ExternalLink,
@@ -112,7 +113,7 @@ export function DemosClient() {
   const totalVisible = visibleGroups.reduce((sum, g) => sum + g.entries.length, 0);
 
   return (
-    <div className="pt-[96px]">
+    <div className="pt-[calc(var(--header-h)+1.5rem)]">
       {/* En-tête compact : un titre, une phrase, une recherche. */}
       <section className="pb-6 border-b border-[var(--border)]">
         <div className="site-container px-4 sm:px-6 lg:px-8">
@@ -205,7 +206,7 @@ export function DemosClient() {
             aria-labelledby={`tier-${group.tier}`}
             className={index === 0 ? "pt-8" : "pt-10"}
           >
-            <div className="flex flex-wrap items-end justify-between gap-3 pb-4 mb-5 border-b border-[var(--border)]">
+            <div className="mb-5 flex flex-wrap items-end justify-between gap-x-6 gap-y-3 border-b border-[var(--border)] pb-4">
               <div className="flex items-center gap-3">
                 <span className="grid h-10 w-10 sm:h-11 sm:w-11 shrink-0 place-items-center rounded-full bg-[var(--accent)]/15 text-[var(--accent)] text-sm font-black">
                   {group.tier}
@@ -223,7 +224,7 @@ export function DemosClient() {
                 </div>
               </div>
 
-              <div className="text-end">
+              <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1 text-start sm:justify-end">
                 {group.priceUsd != null && (
                   <div
                     className="text-xl sm:text-2xl font-black text-[var(--accent)] leading-none"
@@ -238,31 +239,37 @@ export function DemosClient() {
                 <div className="mt-1 text-[11px] opacity-55" dir="ltr">
                   ≈ {formatLyd(group.priceLyd)} {lydLabel(locale)}
                 </div>
+                <PromoPriceNote
+                  amountUsd={group.priceUsd}
+                  currency={ar ? config.pricing.currency : config.pricing.currencyEn}
+                  className="mt-1.5"
+                />
               </div>
             </div>
 
-            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
               {group.entries.map(({ demo, classification }) => {
                 const live = isRealUrl(demo.previewUrl);
+                // Une catégorie peut ne contenir qu'un seul site : sur trois
+                // colonnes, la carte seule laissait les deux tiers de la ligne
+                // vides. Elle passe alors en carte large (image + texte côte à
+                // côte), ce qui remplit la ligne sans mentir sur le contenu.
+                const solo = group.entries.length === 1;
                 return (
                   <article
                     key={demo.slug}
-                    className="group flex flex-col overflow-hidden rounded-[20px] bg-[var(--card)] border border-[var(--border)] hover:border-[var(--accent)]/45 hover:shadow-lg transition-all"
+                    className={`card-surface card-interactive group flex overflow-hidden ${
+                      solo ? "flex-col lg:col-span-2 lg:flex-row" : "flex-col"
+                    }`}
                   >
                     <Link
                       href={`/demos/${demo.slug}`}
-                      className="relative block aspect-[16/10] overflow-hidden"
+                      className={`relative block shrink-0 overflow-hidden bg-[var(--secondary)] ${
+                        solo ? "aspect-[16/10] lg:aspect-auto lg:w-[52%]" : "aspect-[16/10]"
+                      }`}
                     >
-                      <Image
-                        src={demo.image}
-                        alt={demoImageAlt(demo, locale)}
-                        fill
-                        sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-                        loading="lazy"
-                        decoding="async"
-                        className="object-cover transition-transform duration-500 group-hover:scale-[1.04]"
-                      />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-transparent to-transparent" />
+                      <ProjectPreview demo={demo} />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/45 via-transparent to-transparent" />
                       <span className="absolute top-2.5 start-2.5 rounded-full bg-white px-2.5 py-1 text-[11px] font-bold text-black">
                         {ar ? demo.sectorAr : demo.sectorEn}
                       </span>

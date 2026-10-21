@@ -88,8 +88,8 @@ export default async function BadgePage() {
         ]}
       />
 
-      <div className="pt-[96px]">
-        <section className="py-12 bg-[var(--secondary)]/30 border-b border-[var(--border)]">
+      <div className="pt-[calc(var(--header-h)+1.5rem)]">
+        <section className="section-tight border-b border-[var(--border)] bg-[var(--secondary)]/35">
           <div className="site-container px-4 sm:px-6 lg:px-8">
             <p className="text-xs font-black tracking-[0.2em] text-[var(--accent)] uppercase">
               Netlinking · شارة نخبة
@@ -122,9 +122,12 @@ export default async function BadgePage() {
           </div>
         </section>
 
-        <section className="py-12">
-          <div className="site-container px-4 sm:px-6 lg:px-8 grid gap-10 lg:grid-cols-[1.15fr_0.85fr]">
-            <div>
+        <section className="section-tight">
+          <div className="site-container grid gap-10 px-4 sm:px-6 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)] lg:px-8">
+            {/* min-w-0 : sans lui, le bloc de code (largeur intrinsèque
+                élevée) élargissait la colonne et créait un débordement
+                horizontal de la page entière. */}
+            <div className="min-w-0">
               <h2 className="text-2xl font-black">الشارة</h2>
               <p className="mt-2 opacity-60 text-sm leading-7">
                 نسختان: داكنة للتذييلات الفاتحة، وواضحة للتذييلات الداكنة. كلتاهما
@@ -132,7 +135,7 @@ export default async function BadgePage() {
                 المظهر.
               </p>
               <div className="mt-6 grid gap-4 sm:grid-cols-2">
-                <div className="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-5">
+                <div className="card-surface p-5">
                   <p className="text-[11px] font-bold uppercase tracking-widest opacity-45">
                     Dark · تذييل فاتح
                   </p>
@@ -146,7 +149,7 @@ export default async function BadgePage() {
                     />
                   </div>
                 </div>
-                <div className="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-5">
+                <div className="card-surface p-5">
                   <p className="text-[11px] font-bold uppercase tracking-widest opacity-45">
                     Light · تذييل داكن
                   </p>
@@ -200,8 +203,8 @@ export default async function BadgePage() {
               </p>
             </div>
 
-            <aside className="space-y-6">
-              <div className="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-6">
+            <aside className="min-w-0 space-y-6">
+              <div className="card-surface p-6">
                 <h2 className="text-lg font-black">حالة الارتباط</h2>
                 <p className="mt-1 text-xs opacity-50">
                   يُحدَّث أسبوعياً آلياً عبر <code dir="ltr">npm run badge:audit</code>.

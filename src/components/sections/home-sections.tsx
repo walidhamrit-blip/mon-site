@@ -14,6 +14,7 @@ import { Services } from "@/components/sections/services";
 import { Testimonials } from "@/components/sections/testimonials";
 import { FAQ } from "@/components/sections/faq";
 import { CTAForm } from "@/components/sections/cta-form";
+import { MidPageCta } from "@/components/sections/mid-page-cta";
 import { useSiteConfig, useSiteContent } from "@/components/site-provider";
 import type { BuiltInSectionId } from "@/lib/site-types";
 
@@ -36,7 +37,12 @@ function renderBuiltInSection(id: BuiltInSectionId) {
     case "services":
       return <Services />;
     case "testimonials":
-      return <Testimonials />;
+      return (
+        <>
+          <Testimonials />
+          <MidPageCta />
+        </>
+      );
     case "faq":
       return <FAQ />;
     case "cta":
