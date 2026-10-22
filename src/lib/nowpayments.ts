@@ -591,8 +591,9 @@ async function nowPaymentsSubscriptionRequest<T>(
       text.slice(0, 300),
     );
   }
+  let parsed: unknown;
   try {
-    return (text ? JSON.parse(text) : {}) as T;
+    parsed = text ? JSON.parse(text) : {};
   } catch {
     throw new NowPaymentsError(
       `NOWPayments ${path} : réponse non JSON`,
@@ -600,6 +601,17 @@ async function nowPaymentsSubscriptionRequest<T>(
       text.slice(0, 300),
     );
   }
+  // NOWPayments enveloppe souvent l'objet dans { "result": { ... } }.
+  if (
+    parsed &&
+    typeof parsed === "object" &&
+    "result" in parsed &&
+    parsed.result &&
+    typeof parsed.result === "object"
+  ) {
+    return parsed.result as T;
+  }
+  return parsed as T;
 }
 
 /** Crée un plan d'abonnement chez NOWPayments (`POST /v1/subscriptions/plans`). */
