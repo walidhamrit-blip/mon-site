@@ -58,8 +58,31 @@ const TIERS = [
   },
 ] as const;
 
+/**
+ * Formule de test à 1 $ (30 jours), pour valider souscription, IPN et annulation
+ * avec un paiement réel minimal. Activée seulement si SUBSCRIPTION_TEST_PLAN=1
+ * et jamais sur la production (VERCEL_ENV=production). Retirer ensuite.
+ */
+const TEST_PLAN: SubscriptionPlanDef = {
+  id: "test-monthly",
+  tier: "vitrine",
+  cycle: "monthly",
+  name: "Test",
+  nameEn: "Test",
+  priceUsd: 1,
+  intervalDay: 30,
+  graceDays: SUBSCRIPTION_GRACE_DAYS,
+};
+
+export function isTestPlanEnabled(): boolean {
+  return (
+    process.env.SUBSCRIPTION_TEST_PLAN === "1" &&
+    process.env.VERCEL_ENV !== "production"
+  );
+}
+
 /** Catalogue complet : chaque offre existe en mensuel (30 j) et annuel (365 j). */
-export const SUBSCRIPTION_PLANS: readonly SubscriptionPlanDef[] = TIERS.flatMap(
+const CATALOG_PLANS: readonly SubscriptionPlanDef[] = TIERS.flatMap(
   (t) => [
     {
       id: `${t.tier}-monthly`,
@@ -83,6 +106,11 @@ export const SUBSCRIPTION_PLANS: readonly SubscriptionPlanDef[] = TIERS.flatMap(
     },
   ],
 );
+
+/** Catalogue utilisé partout : offres validées, plus la formule de test si activée. */
+export const SUBSCRIPTION_PLANS: readonly SubscriptionPlanDef[] = isTestPlanEnabled()
+  ? [...CATALOG_PLANS, TEST_PLAN]
+  : CATALOG_PLANS;
 
 export function getSubscriptionPlan(id: string): SubscriptionPlanDef | undefined {
   return SUBSCRIPTION_PLANS.find((plan) => plan.id === id);
