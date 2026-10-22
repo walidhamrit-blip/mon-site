@@ -23,7 +23,7 @@ export interface SubscriptionPlanDef {
   /** Identifiant local stable (clé en base), ex. `vitrine-monthly`. */
   id: string;
   /** Offre commerciale : vitrine, vitrine-plus, boutique. */
-  tier: "vitrine" | "vitrine-plus" | "boutique";
+  tier: "vitrine" | "vitrine-plus" | "boutique" | "test";
   cycle: SubscriptionCycle;
   name: string;
   nameEn: string;
@@ -65,7 +65,7 @@ const TIERS = [
  */
 const TEST_PLAN: SubscriptionPlanDef = {
   id: "test-monthly",
-  tier: "vitrine",
+  tier: "test",
   cycle: "monthly",
   name: "Test",
   nameEn: "Test",

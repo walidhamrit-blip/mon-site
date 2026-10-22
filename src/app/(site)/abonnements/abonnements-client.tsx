@@ -5,7 +5,7 @@ import { useI18n } from "@/lib/i18n";
 
 export interface SubscriptionPlanView {
   id: string;
-  tier: "vitrine" | "vitrine-plus" | "boutique";
+  tier: "vitrine" | "vitrine-plus" | "boutique" | "test";
   cycle: "monthly" | "annual";
   name: string;
   nameEn: string;
