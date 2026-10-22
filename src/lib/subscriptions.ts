@@ -212,6 +212,18 @@ export interface SubscribeInput {
  * d'échec côté passerelle, la ligne locale est supprimée (aucun abonné
  * fantôme).
  */
+/** Identifiant de l'abonnement dans la réponse NOWPayments (objet ou tableau). */
+function extractRemoteSubscriptionId(remote: unknown): string {
+  const candidates: unknown[] = Array.isArray(remote) ? remote : [remote];
+  for (const candidate of candidates) {
+    if (!candidate || typeof candidate !== "object") continue;
+    const record = candidate as Record<string, unknown>;
+    const id = record.id ?? record.subscription_id ?? record.subscriptionId;
+    if (id != null && String(id) !== "") return String(id);
+  }
+  return "";
+}
+
 export async function createClientSubscription(
   input: SubscribeInput,
 ): Promise<SubscribeResult> {
@@ -285,9 +297,12 @@ export async function createClientSubscription(
       planId: plan.nowpaymentsPlanId,
       email,
     });
-    const remoteId = remote.id != null ? String(remote.id) : "";
+    const remoteId = extractRemoteSubscriptionId(remote);
     if (!remoteId) {
-      throw new Error("NOWPayments n'a pas renvoyé l'identifiant de l'abonnement");
+      const snippet = JSON.stringify(remote ?? null).slice(0, 200);
+      throw new Error(
+        `NOWPayments n'a pas renvoyé l'identifiant de l'abonnement (réponse : ${snippet})`,
+      );
     }
     await db
       .update(subscriptions)
