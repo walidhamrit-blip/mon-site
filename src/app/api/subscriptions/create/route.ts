@@ -64,8 +64,11 @@ export async function POST(req: Request) {
   try {
     const result = await createClientSubscription(parsed.data);
     if (!result.ok) {
+      // Détail de la passerelle : affiché hors production seulement (diagnostic).
+      const showDetail =
+        process.env.VERCEL_ENV !== "production" || result.code !== "gateway_error";
       return NextResponse.json(
-        { ok: false, error: result.code, message: result.message },
+        { ok: false, error: result.code, message: showDetail ? result.message : undefined },
         { status: result.status },
       );
     }

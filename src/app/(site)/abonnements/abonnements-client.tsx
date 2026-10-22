@@ -108,6 +108,10 @@ export function AbonnementsClient({
       }
       const failure = data as { error?: string; message?: string };
       const known = failure.error ? ERROR_MESSAGES[failure.error] : undefined;
+      if (failure.error === "gateway_error" && failure.message) {
+        setError(failure.message);
+        return;
+      }
       setError(known ? (ar ? known.ar : known.en) : failure.message ?? (ar ? "حدث خطأ." : "Something went wrong."));
     } catch {
       setError(ar ? "تعذّر الاتصال بالخادم." : "Could not reach the server.");
