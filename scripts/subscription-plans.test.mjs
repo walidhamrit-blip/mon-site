@@ -78,6 +78,7 @@ test("identifiants uniques ; plan inconnu → undefined", () => {
   const ids = mod.SUBSCRIPTION_PLANS.map((p) => p.id);
   assert.equal(new Set(ids).size, ids.length);
   assert.equal(mod.getSubscriptionPlan("vitrine"), undefined);
+  assert.equal(mod.getSubscriptionPlan("test-monthly"), undefined);
   assert.equal(mod.getSubscriptionPlan("../../etc"), undefined);
 });
 
