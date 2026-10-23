@@ -59,7 +59,7 @@ export function AbonnementsClient({
   const { locale } = useI18n();
   const ar = locale === "ar";
 
-  const [cycle, setCycle] = useState<Cycle>("monthly");
+  const [cycle, setCycle] = useState<Cycle>("annual");
   const [selected, setSelected] = useState<string>("vitrine");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -170,7 +170,7 @@ export function AbonnementsClient({
             : "Pay with crypto through NOWPayments. Choose a plan and a billing cycle."}
         </p>
         <div className="inline-flex rounded-2xl border border-[var(--border)] p-1" role="tablist">
-          {(["monthly", "annual"] as const).map((value) => (
+          {(["annual", "monthly"] as const).map((value) => (
             <button
               key={value}
               type="button"
@@ -211,14 +211,23 @@ export function AbonnementsClient({
             >
               <div className="text-lg font-black">{ar ? tier.name : tier.nameEn}</div>
               <div className="mt-3 text-3xl font-black">
-                ${plan?.priceUsd ?? "—"}
+                {cycle === "annual" && plan
+                  ? `$${(plan.priceUsd / 12).toFixed(2)}`
+                  : `$${plan?.priceUsd ?? "—"}`}
                 <span className="text-sm font-normal text-[var(--muted-foreground)]">
-                  {" "}/ {cycle === "monthly" ? (ar ? "شهر" : "month") : ar ? "سنة" : "year"}
+                  {" "}/ {ar ? "شهر" : "month"}
                 </span>
               </div>
+              {cycle === "annual" && plan && (
+                <div className="mt-2 text-sm text-[var(--muted-foreground)]">
+                  {ar
+                    ? `الدفع السنوي: $${plan.priceUsd} / سنة`
+                    : `Billed yearly: $${plan.priceUsd} / year`}
+                </div>
+              )}
               {cycle === "annual" && saving > 0 && (
-                <div className="mt-2 text-sm text-[var(--accent)]">
-                  {ar ? `توفير $${saving} مقارنة بالشهري` : `Save $${saving} vs monthly`}
+                <div className="mt-1 text-sm font-bold text-[var(--accent)]">
+                  {ar ? `توفير $${saving} في السنة` : `You save $${saving} per year`}
                 </div>
               )}
             </button>
