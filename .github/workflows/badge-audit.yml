@@ -4,7 +4,7 @@ name: Client badge audit
 # « Website by Nukhba » (lien dofollow vers nokhba.net.ly dans le pied de page).
 #
 # - mesure : `verified` / `nofollow` / `missing` / `down` par client ;
-# - commit `public/badge/clients.json` quand un statut change (page /badge) ;
+# - pull request `chore(badge)` quand un statut change (page /badge) ;
 # - ouvre ou met à jour une issue listant les sites à corriger.
 #
 # Aucune clé n'est nécessaire.
@@ -12,6 +12,16 @@ name: Client badge audit
 on:
   schedule:
     - cron: "30 7 * * 1"
+  # Relance immédiate quand l'audit ou la liste des démos change sur main.
+  # `public/badge/clients.json` est volontairement absent : ce fichier est
+  # produit par l'audit, l'inclure créerait une boucle.
+  push:
+    branches: [main]
+    paths:
+      - "scripts/badge-audit.mjs"
+      - "src/lib/badge.ts"
+      - "src/lib/content.ts"
+      - ".github/workflows/badge-audit.yml"
   workflow_dispatch:
     inputs:
       only:
@@ -124,20 +134,26 @@ jobs:
           path: reports/
           retention-days: 90
 
-      - name: Commit du statut des clients
-        id: commit
-        run: |
-          if [ -z "$(git status --porcelain public/badge/clients.json)" ]; then
-            echo "changed=false" >> "$GITHUB_OUTPUT"
-            echo "Aucun changement de statut."
-            exit 0
-          fi
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add public/badge/clients.json
-          git commit -m "chore(badge): statut des badges clients"
-          git push
-          echo "changed=true" >> "$GITHUB_OUTPUT"
+      # Pull request plutôt que push direct : main peut être protégée, et un
+      # changement de statut mérite une trace lisible dans l'historique.
+      # L'action ne fait rien (sortie propre) si le fichier est inchangé.
+      - name: Proposition de mise à jour du statut
+        id: pr
+        uses: peter-evans/create-pull-request@v7
+        with:
+          branch: chore/badge-status
+          delete-branch: true
+          add-paths: |
+            public/badge/clients.json
+          commit-message: "chore(badge): statut des badges clients"
+          title: "chore(badge): statut des badges clients"
+          body: |
+            Statut du badge « Website by Nukhba » sur chaque site client, mis à
+            jour par `npm run badge:audit` (audit automatique du HTML).
+
+            ${{ steps.summary.outputs.body }}
+
+            Extrait à transmettre aux clients concernés : https://nokhba.net.ly/badge
 
       - name: Issue — sites sans badge
         if: steps.summary.outputs.missing != '0' || steps.summary.outputs.nofollow != '0'

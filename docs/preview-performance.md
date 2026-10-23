@@ -75,7 +75,7 @@ L’association se fait sur l’URL exacte du projet (hors slash terminal) : cha
 
 ### Exécution planifiée
 
-`.github/workflows/demo-previews.yml` : lundi 07:00 UTC + `workflow_dispatch` (avec `only` et `force`). Le workflow installe Chromium (`npx playwright install --with-deps chromium`), lance la capture avec `--base=https://nokhba.net.ly`, publie le rapport en artefact, ouvre une pull request `chore(previews)` quand des WebP changent, et une issue `demo-preview` en cas de démo morte. Aucune clé n’est requise.
+`.github/workflows/demo-previews.yml` : lundi 07:00 UTC, à chaque changement du pipeline ou de `src/lib/content.ts` sur `main`, et `workflow_dispatch` (avec `only` et `force`). Le déclencheur `push` garantit une première capture réelle dès le merge, sans dépendre d'un jeton autorisé à lancer un workflow. Le workflow installe Chromium (`npx playwright install --with-deps chromium`), lance la capture avec `--base=https://nokhba.net.ly`, publie le rapport en artefact, ouvre une pull request `chore(previews)` quand des WebP changent, et une issue `demo-preview` en cas de démo morte. Aucune clé n’est requise.
 
 En local, Playwright n’a pas de navigateur installé par défaut : exécuter `npx playwright install chromium` (non versionné). Sans navigateur, le script sort en code 3 avec un message explicite ; `--dry-run` reste utilisable partout.
 
