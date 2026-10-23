@@ -2,6 +2,7 @@ import type { MetadataRoute } from "next";
 import { getAllKnownDemos, getSiteDataCached } from "@/lib/store";
 import { blogArticles } from "@/lib/blog-articles";
 import { getDemoCapturedAt, getDemoPreviewImages } from "@/lib/preview-manifest";
+import { getDigitalCatalog } from "@/lib/digital-store";
 
 const BUILD_DATE = new Date();
 
@@ -71,6 +72,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: "yearly",
       priority: 0.3,
     },
+    {
+      url: `${base}/codes`,
+      lastModified: BUILD_DATE,
+      changeFrequency: "weekly",
+      priority: 0.8,
+    },
   ];
 
   const { sectorIds } = await import("@/lib/sectors");
@@ -111,5 +118,22 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     };
   });
 
-  return [...mainRoutes, ...sectorRoutes, ...serviceRoutes, ...articleRoutes, ...demoRoutes];
+  // Catalogue digital : une entrée par fiche publiée (codes logiciels,
+  // cartes cadeaux gaming, recharges).
+  const digitalProducts = await getDigitalCatalog({ publicOnly: true });
+  const digitalRoutes: MetadataRoute.Sitemap = digitalProducts.map((product) => ({
+    url: `${base}/codes/${product.slug}`,
+    lastModified: BUILD_DATE,
+    changeFrequency: "weekly",
+    priority: 0.75,
+  }));
+
+  return [
+    ...mainRoutes,
+    ...sectorRoutes,
+    ...serviceRoutes,
+    ...articleRoutes,
+    ...demoRoutes,
+    ...digitalRoutes,
+  ];
 }

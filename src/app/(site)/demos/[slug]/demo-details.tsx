@@ -8,7 +8,7 @@ import {
   lydLabel,
   resolveDemoClassification,
 } from "@/lib/classification";
-import { formatMainPrice } from "@/lib/installments";
+import { Price } from "@/components/price";
 import { PromoPriceNote } from "@/components/promo-price";
 import { whatsappLink } from "@/lib/utils";
 
@@ -157,17 +157,14 @@ export function DemoDetails({
               {classification?.priceUsd != null && (
                 <div className="flex items-center justify-between gap-3">
                   <dt className="opacity-60">السعر</dt>
-                  <dd className="font-bold text-end" dir="ltr">
-                    {formatMainPrice(
-                      classification.priceUsd,
-                      config.pricing.currency,
-                    )}{" "}
+                  <dd className="font-bold text-end">
+                    <Price usd={classification.priceUsd} />
                     <span className="opacity-60 font-medium">
-                      ≈ {formatLyd(classification.priceLyd)} {lydLabel("ar")}
+                      {" · "}
+                      <Price usd={classification.priceUsd} showLocal compact />
                     </span>
                     <PromoPriceNote
                       amountUsd={classification.priceUsd}
-                      currency={config.pricing.currency}
                       className="mt-1.5 flex w-fit ms-auto"
                     />
                   </dd>

@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { findSubscriptionForTracking } from "@/lib/subscriptions";
+import { getSiteDataCached } from "@/lib/store";
+import { resolveMarket } from "@/lib/market";
 import { SUBSCRIPTION_GRACE_DAYS } from "@/lib/subscription-plans";
 import { CancelRenewal } from "./cancel-renewal";
 import type { SubscriptionDisplayStatus } from "@/lib/subscription-lifecycle";
@@ -19,13 +21,13 @@ const STATUS_LABELS: Record<SubscriptionDisplayStatus, { ar: string; en: string;
   expired: { ar: "موقوف", en: "Suspended", tone: "text-red-500" },
 };
 
-function formatDate(iso: string | null): string {
+function formatDate(iso: string | null, timeZone: string): string {
   if (!iso) return "—";
   return new Date(iso).toLocaleDateString("fr-FR", {
     day: "2-digit",
     month: "2-digit",
     year: "numeric",
-    timeZone: "Africa/Tripoli",
+    timeZone,
   });
 }
 
@@ -40,6 +42,10 @@ export default async function SubscriptionTrackingPage({
 }) {
   const { ref, t } = await searchParams;
   const view = ref ? await findSubscriptionForTracking(ref, t ?? null) : null;
+  // Les dates sont affichées dans le fuseau du marché configuré (et non un
+  // fuseau figé) : un abonné à l'étranger voit des dates cohérentes.
+  const { config } = await getSiteDataCached();
+  const market = resolveMarket(config.market);
 
   if (!view) {
     return (
@@ -84,11 +90,11 @@ export default async function SubscriptionTrackingPage({
           </div>
           <div>
             <div className="text-[var(--muted-foreground)]">نهاية الفترة المدفوعة / Paid until</div>
-            <div className="font-bold">{formatDate(view.currentPeriodEnd)}</div>
+            <div className="font-bold">{formatDate(view.currentPeriodEnd, market.timezone)}</div>
           </div>
           <div>
             <div className="text-[var(--muted-foreground)]">آخر يوم للوصول / Access until</div>
-            <div className="font-bold">{formatDate(view.accessEndsAt)}</div>
+            <div className="font-bold">{formatDate(view.accessEndsAt, market.timezone)}</div>
           </div>
           {view.emailMasked && (
             <div className="sm:col-span-2">
@@ -116,10 +122,10 @@ export default async function SubscriptionTrackingPage({
 
         {view.renewalCanceled && view.status !== "expired" && (
           <section className="rounded-2xl border border-[var(--border)] bg-[var(--secondary)]/40 p-4 text-sm">
-            تم إلغاء التجديد التلقائي. يبقى وصولك مفعّلاً حتى {formatDate(view.accessEndsAt)}.
+            تم إلغاء التجديد التلقائي. يبقى وصولك مفعّلاً حتى {formatDate(view.accessEndsAt, market.timezone)}.
             <br />
             <span className="text-[var(--muted-foreground)]">
-              Renewal canceled. Access stays open until {formatDate(view.accessEndsAt)}. No further invoices will be issued.
+              Renewal canceled. Access stays open until {formatDate(view.accessEndsAt, market.timezone)}. No further invoices will be issued.
             </span>
           </section>
         )}

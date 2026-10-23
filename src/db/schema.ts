@@ -147,3 +147,69 @@ export const subscriptions = pgTable("subscriptions", {
 
 export type SubscriptionPlanRow = typeof subscriptionPlans.$inferSelect;
 export type Subscription = typeof subscriptions.$inferSelect;
+
+/* ---------- Catalogue digital (codes logiciels & cartes cadeaux) ---------- */
+
+// Fiches produits du catalogue digital : codes d'activation, cartes cadeaux
+// gaming, recharges de monnaie de jeu, codes d'abonnement.
+// La fiche porte son contenu bilingue ; les « dénominations » (le prix
+// concret de chaque code) vivent dans la table `digital_denominations`,
+// une ligne par montant et par région.
+
+export const digitalProducts = pgTable("digital_products", {
+  /** Identifiant stable (ex. « steam-wallet »). */
+  id: text("id").primaryKey(),
+  /** Slug d'URL — `/codes/<slug>`. */
+  slug: text("slug").notNull().unique(),
+  /** software_key | gift_card | game_topup | subscription_code. */
+  kind: text("kind").notNull(),
+  /** draft | coming_soon | available | archived. */
+  status: text("status").notNull().default("coming_soon"),
+  /** Plateforme / marque (« Steam », « PlayStation », « Roblox »…). */
+  platform: text("platform").notNull().default(""),
+  /** Couleur de la carte (hex). */
+  color: text("color").notNull().default("#C6A664"),
+  titleAr: text("title_ar").notNull(),
+  titleEn: text("title_en").notNull(),
+  descriptionAr: text("description_ar").notNull().default(""),
+  descriptionEn: text("description_en").notNull().default(""),
+  /** Visuel de la carte (URL absolue ou chemin `/...`). */
+  image: text("image").notNull().default(""),
+  /** Régions couvertes (jsonb : ["global","US"]…). */
+  regions: jsonb("regions").notNull().default([]),
+  featuresAr: jsonb("features_ar").notNull().default([]),
+  featuresEn: jsonb("features_en").notNull().default([]),
+  deliveryNoteAr: text("delivery_note_ar").notNull().default(""),
+  deliveryNoteEn: text("delivery_note_en").notNull().default(""),
+  sortOrder: integer("sort_order").notNull().default(0),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
+export const digitalDenominations = pgTable("digital_denominations", {
+  id: serial("id").primaryKey(),
+  /** Fiche parente. */
+  productId: text("product_id")
+    .notNull()
+    .references(() => digitalProducts.id, { onDelete: "cascade" }),
+  /** Libellé affiché (« $10 », « 500 Robux »). */
+  label: text("label").notNull(),
+  /** Valeur faciale (« 10 USD »). */
+  faceValue: text("face_value").notNull().default(""),
+  /** Région de validité du code (« global », « US »…). */
+  region: text("region").notNull().default("global"),
+  /** Prix de vente en USD (texte pour éviter les arrondis). */
+  priceUsd: text("price_usd").notNull(),
+  noteAr: text("note_ar"),
+  noteEn: text("note_en"),
+  /** Disponible à la vente. */
+  available: integer("available").notNull().default(1),
+  sortOrder: integer("sort_order").notNull().default(0),
+});
+
+export type DigitalProductRow = typeof digitalProducts.$inferSelect;
+export type DigitalDenominationRow = typeof digitalDenominations.$inferSelect;

@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import { useSiteConfig } from "@/components/site-provider";
+import { MarketPrice, Price } from "@/components/price";
 import {
   formatLyd,
   lydLabel,
@@ -252,7 +253,6 @@ export function ReservationDialog({
                 <div className="mt-3 rounded-xl bg-[var(--card)]/60 p-3">
                   <ModelPriceBreakdown
                     breakdown={classification}
-                    currency={ar ? config.pricing.currency : config.pricing.currencyEn}
                     compact
                   />
                 </div>
@@ -269,16 +269,12 @@ export function ReservationDialog({
                       : "Deducted from the approved final total after the customization quote"}
                   </div>
                 </div>
-                <div className="text-end" dir="ltr">
+                <div className="text-end">
                   <div className="text-lg font-black text-[var(--accent)]">
-                    {formatMainPrice(
-                      depositUsd,
-                      ar ? config.pricing.currency : config.pricing.currencyEn,
-                    )}
+                    <Price usd={depositUsd} />
                   </div>
                   <div className="text-[10px] opacity-60">
-                    {formatLyd(depositLyd)}{" "}
-                    {lydLabel(ar ? "ar" : "en")}
+                    <MarketPrice usd={depositUsd} />
                   </div>
                 </div>
               </div>

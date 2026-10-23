@@ -1,7 +1,7 @@
 export const siteConfig = {
   name: "Nukhba",
   nameAr: "نخبة",
-  tagline: "Agence Web Premium — Tripoli",
+  tagline: "Agence Web Premium — Tripoli, pour le monde",
   domain: "nokhba.net.ly",
   url: "https://nokhba.net.ly",
   email: "hello@nukhba.ly",
@@ -11,6 +11,59 @@ export const siteConfig = {
   addressEn: "Al Jumhouriya Street, Tripoli, Libya",
   hours: "السبت - الخميس: 9:00 - 23:00",
   hoursEn: "Sat - Thu: 9:00 AM - 11:00 PM",
+
+  /**
+   * Marché de référence du site.
+   *
+   * Tout ce qui était codé en dur sur Tripoli / Libye (SEO local, fuseau
+   * horaire, indicatif, devise locale, zone de service) est regroupé ici.
+   * Changer de marché se fait depuis /admin → Réglages, sans toucher au
+   * code : le site reste alors cohérent partout (métadonnées, JSON-LD,
+   * contact, horodatage des abonnements).
+   *
+   * `globalReach` garde le positionnement international : même ancré à
+   * Tripoli, le site s'adresse au monde entier (zone desservie « Worldwide »,
+   * devise de facturation en USD, sélecteur de devises).
+   */
+  market: {
+    id: "ly",
+    countryCode: "LY",
+    countryAr: "ليبيا",
+    countryEn: "Libya",
+    cityAr: "طرابلس",
+    cityEn: "Tripoli",
+    timezone: "Africa/Tripoli",
+    locale: "ar-LY",
+    currency: "LYD",
+    currencyAr: "د.ل",
+    currencyEn: "LYD",
+    phonePrefix: "+218",
+    lat: 32.8872,
+    lng: 13.1913,
+    localRadiusKm: 60,
+    /** true = le site se déclare accessible internationalement. */
+    globalReach: true,
+  },
+
+  /**
+   * Affichage des prix dans plusieurs devises.
+   *
+   * - `base` : devise de facturation (celle encaissée par NOWPayments).
+   * - `rates` : 1 USD = X, modifiable depuis /admin → Réglages.
+   * - `enabled` : devises proposées dans le sélecteur de la barre supérieure.
+   */
+  currency: {
+    base: "USD",
+    rates: {
+      USD: 1,
+      EUR: 0.92,
+      SAR: 3.75,
+      AED: 3.6725,
+      EGP: 48.5,
+      LYD: 4.83,
+    },
+    enabled: ["USD", "EUR", "SAR", "AED", "EGP", "LYD"],
+  },
 
   // Apparence principale du site — modifiable depuis /admin → Réglages.
   // Ce sont les valeurs par DÉFAUT : chaque visiteur peut toujours basculer

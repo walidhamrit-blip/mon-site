@@ -2,6 +2,7 @@
 import { useI18n } from "@/lib/i18n";
 import { CTAForm } from "@/components/sections/cta-form";
 import { useSiteConfig } from "@/components/site-provider";
+import { marketLabels, resolveMarket } from "@/lib/market";
 import { ArrowUpRight, Clock, Mail, MapPin, MessageCircle, Phone } from "lucide-react";
 import { whatsappLink } from "@/lib/utils";
 
@@ -13,8 +14,16 @@ import { whatsappLink } from "@/lib/utils";
  * une iframe Google Maps ». On affiche désormais un plan schématique net,
  * généré en SVG, plus un lien direct vers Google Maps.
  */
-function MapPanel({ label, sublabel }: { label: string; sublabel: string }) {
-  const query = encodeURIComponent("Al Jumhouriya Street, Tripoli, Libya");
+function MapPanel({
+  label,
+  sublabel,
+  address,
+}: {
+  label: string;
+  sublabel: string;
+  address: string;
+}) {
+  const query = encodeURIComponent(address);
   return (
     <div className="relative h-full w-full overflow-hidden rounded-[var(--radius-md)] bg-[var(--secondary)]">
       <svg
@@ -73,6 +82,7 @@ function MapPanel({ label, sublabel }: { label: string; sublabel: string }) {
 export function ContactClient() {
   const siteConfig = useSiteConfig();
   const { locale, t } = useI18n();
+  const marketText = marketLabels(resolveMarket(siteConfig.market), locale);
   const ar = locale === "ar";
 
   const details = [
@@ -137,8 +147,9 @@ export function ContactClient() {
 
             <div className="h-[300px] rounded-[var(--radius-lg)] border border-[var(--border)] bg-[var(--card)] p-2 shadow-[var(--shadow-sm)] sm:h-[360px]">
               <MapPanel
-                label={ar ? "طرابلس — شارع الجمهورية" : "Tripoli — Al Jumhouriya"}
+                label={marketText.place}
                 sublabel={ar ? "مفتوح الآن · رد سريع" : "Open now · fast reply"}
+                address={siteConfig.addressEn}
               />
             </div>
           </div>

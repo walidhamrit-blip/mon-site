@@ -3,6 +3,7 @@ import Link from "next/link";
 import { ArrowUpRight, Clock, Mail, MapPin, MessageCircle, Phone } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import { useSiteConfig } from "@/components/site-provider";
+import { marketLabels, resolveMarket } from "@/lib/market";
 import { whatsappLink } from "@/lib/utils";
 
 /**
@@ -17,6 +18,11 @@ export function Footer() {
   const siteConfig = useSiteConfig();
   const { locale, t } = useI18n();
   const ar = locale === "ar";
+  // Libellés de lieu : ils suivent le marché configuré dans /admin.
+  const market = resolveMarket(siteConfig.market);
+  const marketText = marketLabels(market, locale);
+  const withPlace = (text: string) =>
+    text.replaceAll("{place}", marketText.place).replaceAll("{city}", marketText.city);
 
   // lucide v1 ne fournit plus les logos de marques : les réseaux sociaux
   // utilisent un monogramme typographique, cohérent avec l'identité du site.
@@ -78,10 +84,14 @@ export function Footer() {
               </span>
               <div>
                 <div className="font-black tracking-tight">NUKHBA · نخبة</div>
-                <div className="text-[11.5px] opacity-60">Tripoli · Premium Web Agency</div>
+                <div className="text-[11.5px] opacity-60">
+                  {marketText.city} · Premium Web Agency
+                </div>
               </div>
             </div>
-            <p className="mt-4 max-w-[38ch] text-[13px] leading-6 opacity-70">{t.footer.desc}</p>
+            <p className="mt-4 max-w-[38ch] text-[13px] leading-6 opacity-70">
+              {withPlace(t.footer.desc)}
+            </p>
             <div className="mt-5 flex gap-2">
               {socials.map(({ href, label, short }) => (
                 <a
@@ -110,6 +120,7 @@ export function Footer() {
                 { href: "/services", label: ar ? "الخدمات السريعة" : "Open services" },
                 { href: "/pricing", label: t.nav.pricing },
                 { href: "/blog", label: ar ? "الأدلة والمقالات" : "Guides & blog" },
+                { href: "/codes", label: ar ? "الأكواد وبطاقات الهدايا" : "Codes & gift cards" },
                 { href: "/badge", label: ar ? "شارة نخبة" : "Client badge" },
                 { href: "/contact", label: t.nav.contact },
                 { href: "/conditions", label: ar ? "شروط الخدمة" : "Terms of service" },
@@ -179,10 +190,10 @@ export function Footer() {
         </div>
 
         <div className="flex flex-col items-center justify-between gap-3 border-t border-white/10 py-6 text-[11.5px] opacity-55 sm:flex-row">
-          <span>{t.footer.rights}</span>
+          <span>{withPlace(t.footer.rights)}</span>
           <span className="flex items-center gap-2">
             <span className="h-1.5 w-1.5 rounded-full bg-[var(--accent)]" />
-            {t.footer.madeIn}
+            {withPlace(t.footer.madeIn)}
           </span>
         </div>
       </div>

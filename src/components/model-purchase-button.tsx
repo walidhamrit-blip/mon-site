@@ -11,7 +11,8 @@ import {
   type ClassificationPlan,
 } from "@/lib/classification";
 import type { Demo } from "@/lib/site-types";
-import { formatMainPrice } from "@/lib/installments";
+import { Price } from "@/components/price";
+import { useCurrency } from "@/components/currency-provider";
 import { whatsappLink } from "@/lib/utils";
 
 /**
@@ -42,12 +43,12 @@ export function ModelPurchaseButton({
     classification?.priceLyd ?? checkoutPlan.price,
   );
   const title = demo ? (ar ? demo.title : demo.titleEn) : (ar ? plan.name : plan.nameEn);
-  const currency = ar ? config.pricing.currency : config.pricing.currencyEn;
+  const { format } = useCurrency();
 
   if (breakdown.totalPriceUsd == null) {
     const message = ar
-      ? `مرحبا نخبة، أريد عرض سعر نهائي لموقع «${title}». سعر النموذج ${formatMainPrice(breakdown.modelPriceUsd ?? 0, currency)}، وأحتاج معرفة تكلفة التخصيص قبل الدفع.`
-      : `Hello Nukhba, please send me a final written quote for “${title}”. The model is ${formatMainPrice(breakdown.modelPriceUsd ?? 0, currency)}; I would like the customization fee confirmed before payment.`;
+      ? `مرحبا نخبة، أريد عرض سعر نهائي لموقع «${title}». سعر النموذج ${format(breakdown.modelPriceUsd ?? 0)}، وأحتاج معرفة تكلفة التخصيص قبل الدفع.`
+      : `Hello Nukhba, please send me a final written quote for “${title}”. The model is ${format(breakdown.modelPriceUsd ?? 0)}; I would like the customization fee confirmed before payment.`;
     return (
       <a
         href={whatsappLink(config.whatsapp, message)}
@@ -70,7 +71,8 @@ export function ModelPurchaseButton({
       >
         <Bitcoin className="h-4 w-4 shrink-0" />
         {ar ? "اشترِ الموقع والتخصيص" : "Buy model + customization"}
-        <span dir="ltr">— {formatMainPrice(breakdown.totalPriceUsd, currency)}</span>
+        <span dir="ltr">— </span>
+        <Price usd={breakdown.totalPriceUsd} />
       </button>
       {open && (
         <CheckoutDialog

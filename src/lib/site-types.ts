@@ -101,6 +101,14 @@ export interface SiteConfigData {
   addressEn: string;
   hours: string;
   hoursEn: string;
+  /**
+   * Marché de référence (ville, pays, fuseau, devise locale, zone de
+   * service). C'est ce bloc qui rend le site « réglable » hors Libye :
+   * tout le SEO local, l'horodatage et les libellés en découlent.
+   */
+  market: MarketConfigData;
+  /** Affichage des prix dans plusieurs devises (facturation toujours en USD). */
+  currency: CurrencyConfigData;
   pricing: {
     currency: string;
     currencyEn: string;
@@ -139,6 +147,34 @@ export interface SiteConfigData {
   };
   flexiblePayment: FlexiblePaymentConfig;
   standaloneServices: StandaloneService[];
+}
+
+/** Profil de marché éditable depuis /admin → Réglages. */
+export interface MarketConfigData {
+  id: string;
+  countryCode: string;
+  countryAr: string;
+  countryEn: string;
+  cityAr: string;
+  cityEn: string;
+  timezone: string;
+  locale: string;
+  currency: string;
+  currencyAr: string;
+  currencyEn: string;
+  phonePrefix: string;
+  lat: number;
+  lng: number;
+  localRadiusKm: number;
+  /** true = le site se déclare accessible internationalement. */
+  globalReach: boolean;
+}
+
+/** Devises d'affichage + taux de conversion (1 USD = X). */
+export interface CurrencyConfigData {
+  base: string;
+  rates: Record<string, number>;
+  enabled: string[];
 }
 
 export interface FlexiblePaymentConfig {

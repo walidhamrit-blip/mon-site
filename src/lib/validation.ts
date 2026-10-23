@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { LEAD_STATUSES } from "@/lib/site-types";
+import { DIGITAL_KINDS, DIGITAL_STATUSES } from "@/lib/digital-types";
 import { DEFAULT_THEME_ID } from "@/lib/themes";
 
 /* ---------- Nouvelle demande (formulaire public -> /api/lead) ---------- */
@@ -312,6 +313,33 @@ const planSchema = z.object({
   featuresEn: z.array(z.string().max(300)).max(20),
 });
 
+/* ---------- Marché & devises ---------- */
+
+export const marketSchema = z.object({
+  id: z.string().min(1).max(40),
+  countryCode: z.string().min(2).max(4),
+  countryAr: z.string().min(1).max(80),
+  countryEn: z.string().min(1).max(80),
+  cityAr: z.string().min(1).max(80),
+  cityEn: z.string().min(1).max(80),
+  timezone: z.string().min(1).max(60),
+  locale: z.string().min(2).max(12),
+  currency: z.string().min(2).max(8),
+  currencyAr: z.string().max(12),
+  currencyEn: z.string().max(12),
+  phonePrefix: z.string().max(12),
+  lat: z.coerce.number().min(-90).max(90),
+  lng: z.coerce.number().min(-180).max(180),
+  localRadiusKm: z.coerce.number().min(0).max(20_000),
+  globalReach: z.boolean().default(true),
+});
+
+export const currencyConfigSchema = z.object({
+  base: z.string().min(2).max(8),
+  rates: z.record(z.string(), z.coerce.number().positive().max(1_000_000)),
+  enabled: z.array(z.string().min(2).max(8)).min(1).max(12),
+});
+
 export const siteConfigSchema = z.object({
   name: z.string().min(1).max(100),
   nameAr: z.string().min(1).max(100),
@@ -375,6 +403,13 @@ export const siteConfigSchema = z.object({
       message: "Le montant maximum doit être supérieur ou égal au minimum.",
       path: ["maxUsd"],
     }),
+  /**
+   * Marché de référence (ville, pays, fuseau, devise locale…) :
+   * c'est ce qui permet d'ouvrir le site à d'autres pays sans redéploiement.
+   */
+  market: marketSchema,
+  /** Affichage des prix dans plusieurs devises (la facturation reste en USD). */
+  currency: currencyConfigSchema,
   /** Services libres / à la carte vendus au forfait. */
   standaloneServices: z
     .array(
@@ -399,3 +434,46 @@ export const siteConfigSchema = z.object({
 /* ---------- Statut d'une demande ---------- */
 
 export const leadStatusSchema = z.enum(LEAD_STATUSES);
+
+/* ---------- Catalogue digital (codes logiciels & cartes cadeaux) ---------- */
+
+export const digitalDenominationSchema = z.object({
+  id: z.string().min(1).max(100),
+  label: z.string().min(1).max(120),
+  faceValue: z.string().max(120).default(""),
+  region: z.string().min(1).max(20),
+  priceUsd: z.coerce.number().min(0).max(1_000_000),
+  noteAr: z.string().max(300).optional(),
+  noteEn: z.string().max(300).optional(),
+  available: z.boolean(),
+});
+
+export const digitalProductSchema = z.object({
+  id: z
+    .string()
+    .min(1)
+    .max(100)
+    .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, "Identifiant invalide (minuscules, chiffres, tirets)"),
+  slug: z
+    .string()
+    .min(1)
+    .max(120)
+    .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, "Slug invalide (minuscules, chiffres, tirets)"),
+  kind: z.enum(DIGITAL_KINDS),
+  status: z.enum(DIGITAL_STATUSES),
+  platform: z.string().max(120),
+  color: z.string().regex(/^#[0-9a-fA-F]{3,8}$/, "Couleur hexadécimale attendue (#RRGGBB)"),
+  titleAr: z.string().min(1).max(240),
+  titleEn: z.string().min(1).max(240),
+  descriptionAr: z.string().max(1200),
+  descriptionEn: z.string().max(1200),
+  image: z.string().max(1000),
+  regions: z.array(z.string().max(20)).max(20),
+  featuresAr: z.array(z.string().max(300)).max(20),
+  featuresEn: z.array(z.string().max(300)).max(20),
+  deliveryNoteAr: z.string().max(500),
+  deliveryNoteEn: z.string().max(500),
+  denominations: z.array(digitalDenominationSchema).max(60),
+  sortOrder: z.coerce.number().int().min(0).max(9999),
+});
+

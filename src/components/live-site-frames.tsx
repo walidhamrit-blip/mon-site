@@ -19,7 +19,8 @@ import type { Demo } from "@/lib/site-types";
 import { useI18n } from "@/lib/i18n";
 import { useSiteConfig } from "@/components/site-provider";
 import { ReservationButton } from "@/components/reservation-dialog";
-import { formatLyd, lydLabel, resolveDemoClassification } from "@/lib/classification";
+import { formatLyd, resolveDemoClassification } from "@/lib/classification";
+import { MarketPrice, Price } from "@/components/price";
 import { formatMainPrice, formatUsd } from "@/lib/installments";
 import { ModelPriceBreakdown } from "@/components/model-price-breakdown";
 import { ModelPurchaseButton } from "@/components/model-purchase-button";
@@ -270,17 +271,16 @@ export function FullscreenLiveViewer({
               <Tag className="h-3.5 w-3.5 text-[var(--accent)]" />
               {locale === "ar" ? "الفئة" : "Cat."} {classification.tier}
               <span className="text-white/30">·</span>
-              {classification.totalPriceUsd != null
-                ? formatMainPrice(
-                    classification.totalPriceUsd,
-                    locale === "ar" ? config.pricing.currency : config.pricing.currencyEn,
-                  )
-                : classification.priceUsd != null
-                  ? `${locale === "ar" ? "النموذج" : "Model"} ${formatMainPrice(
-                      classification.priceUsd,
-                      locale === "ar" ? config.pricing.currency : config.pricing.currencyEn,
-                    )}`
-                  : `${formatLyd(classification.priceLyd)} ${lydLabel(locale)}`}
+              {classification.totalPriceUsd != null ? (
+                <Price usd={classification.totalPriceUsd} />
+              ) : classification.priceUsd != null ? (
+                <>
+                  {locale === "ar" ? "النموذج" : "Model"}{" "}
+                  <Price usd={classification.priceUsd} />
+                </>
+              ) : (
+                <MarketPrice usd={classification.priceUsd ?? 0} />
+              )}
             </span>
           )}
 
@@ -401,7 +401,6 @@ export function FullscreenLiveViewer({
               </div>
               <ModelPriceBreakdown
                 breakdown={classification}
-                currency={locale === "ar" ? config.pricing.currency : config.pricing.currencyEn}
                 compact
                 className="text-white"
               />

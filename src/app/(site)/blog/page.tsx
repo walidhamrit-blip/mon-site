@@ -33,15 +33,15 @@ export async function generateMetadata(): Promise<Metadata> {
   const { config } = await getSiteDataCached();
   return pageMetadata(config, {
     path: "/blog",
-    title: "مدونة نخبة — أدلة عملية لرواد الأعمال في ليبيا",
+    title: "مدونة نخبة — أدلة عملية لرواد الأعمال في {country}",
     description:
       "أدلة عملية بالعربية والإنجليزية: تكلفة تصميم موقع في ليبيا، اختيار وكالة في طرابلس، إطلاق متجر إلكتروني، والظهور في ChatGPT وGoogle AI — بأرقام واقعية.",
     keywords: [
-      "مدونة تصميم مواقع ليبيا",
-      "أدلة تسويق رقمي طرابلس",
-      "تكلفة موقع ليبيا",
-      "web design blog Libya",
-      "business guides Tripoli",
+      "مدونة تصميم مواقع {country}",
+      "أدلة تسويق رقمي {city}",
+      "تكلفة موقع {country}",
+      "web design blog {countryEn}",
+      "business guides {cityEn}",
     ],
   });
 }

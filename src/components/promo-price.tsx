@@ -2,7 +2,7 @@
 
 import { Ticket } from "lucide-react";
 import { CURRENT_PROMO, discountedAmount, promoActive } from "@/lib/promotion";
-import { formatMainPrice } from "@/lib/installments";
+import { useCurrency } from "@/components/currency-provider";
 import { useI18n } from "@/lib/i18n";
 
 /**
@@ -19,14 +19,13 @@ import { useI18n } from "@/lib/i18n";
  */
 export function PromoPriceNote({
   amountUsd,
-  currency,
   className = "",
 }: {
   amountUsd: number | null | undefined;
-  currency: string;
   className?: string;
 }) {
   const { locale } = useI18n();
+  const { format } = useCurrency();
   const ar = locale === "ar";
   if (!promoActive(CURRENT_PROMO)) return null;
   if (typeof amountUsd !== "number" || !Number.isFinite(amountUsd) || amountUsd <= 0) {
@@ -34,7 +33,7 @@ export function PromoPriceNote({
   }
 
   const discounted = discountedAmount(amountUsd);
-  const price = formatMainPrice(discounted, currency);
+  const price = format(discounted);
 
   return (
     <span

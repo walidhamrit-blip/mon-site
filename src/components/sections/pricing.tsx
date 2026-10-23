@@ -67,17 +67,13 @@ export function Pricing() {
               </div>
 
               <div className="mt-6 rounded-2xl border border-[var(--border)]/70 bg-[var(--secondary)]/35 p-4">
-                <ModelPriceBreakdown
-                  breakdown={resolvePlanPriceBreakdown(plan)}
-                  currency={locale === "ar" ? siteConfig.pricing.currency : siteConfig.pricing.currencyEn}
-                />
+                <ModelPriceBreakdown breakdown={resolvePlanPriceBreakdown(plan)} />
                 <div className="mt-2 text-[10px] opacity-55">
                   {locale === "ar" ? t.crypto.lydNoteAr : t.crypto.lydNoteEn}
                 </div>
                 {/* Prix après coupon : même calcul que le serveur de paiement. */}
                 <PromoPriceNote
                   amountUsd={resolvePlanPriceBreakdown(plan).totalPriceUsd}
-                  currency={locale === "ar" ? siteConfig.pricing.currency : siteConfig.pricing.currencyEn}
                   className="mt-2"
                 />
               </div>

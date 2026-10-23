@@ -166,18 +166,12 @@ function InteractiveShowcase({
                         <div className="mt-2 rounded-xl bg-[var(--secondary)]/50 p-3">
                           <ModelPriceBreakdown
                             breakdown={dClassification}
-                            currency={locale === "ar" ? siteConfig.pricing.currency : siteConfig.pricing.currencyEn}
                             compact
                           />
                         </div>
                       )}
                       <PromoPriceNote
                         amountUsd={dClassification?.totalPriceUsd}
-                        currency={
-                          locale === "ar"
-                            ? siteConfig.pricing.currency
-                            : siteConfig.pricing.currencyEn
-                        }
                         className="mt-1.5"
                       />
                       <p className="mt-1.5 text-sm opacity-65 line-clamp-2">
@@ -477,12 +471,10 @@ function InteractiveShowcase({
                     </div>
                     <ModelPriceBreakdown
                       breakdown={activeClassification}
-                      currency={locale === "ar" ? siteConfig.pricing.currency : siteConfig.pricing.currencyEn}
                       compact
                     />
                     <PromoPriceNote
                       amountUsd={activeClassification.totalPriceUsd}
-                      currency={locale === "ar" ? siteConfig.pricing.currency : siteConfig.pricing.currencyEn}
                       className="mt-1.5"
                     />
                   </div>

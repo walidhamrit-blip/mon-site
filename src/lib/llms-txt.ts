@@ -9,12 +9,16 @@ import { formatArticleDate, sortArticles } from "@/lib/blog";
 import { BADGE_ANCHOR_EN, BADGE_CANONICAL, badgeStats, linkedClients } from "@/lib/badge";
 import type { SiteContent } from "@/lib/site-types";
 import type { siteConfig } from "@/lib/config";
+import type { DigitalProduct } from "@/lib/digital-types";
+import { marketLabels, resolveMarket } from "@/lib/market";
 
 type LlmsConfig = typeof siteConfig;
 
 export interface LlmsSourceData {
   config: LlmsConfig;
   content: SiteContent;
+  /** Catalogue digital publié (codes logiciels & cartes cadeaux). */
+  digitalProducts?: DigitalProduct[];
 }
 
 function cleanUrl(base: string, path = "/"): string {
@@ -31,14 +35,23 @@ function cleanUrl(base: string, path = "/"): string {
  * réalisation dans l'administration se reflète immédiatement pour les
  * crawlers IA (ChatGPT/OAI-SearchBot, Perplexity, Claude, Gemini…).
  */
-export function buildLlmsTxt({ config, content }: LlmsSourceData): string {
+export function buildLlmsTxt({
+  config,
+  content,
+  digitalProducts = [],
+}: LlmsSourceData): string {
   const base = config.url.replace(/\/+$/, "");
   const lines: string[] = [];
+  const market = resolveMarket(config.market);
+  const marketEn = marketLabels(market, "en");
+  const globalReach = Boolean(config.market?.globalReach) || market.id === "global";
 
-  lines.push(`# ${config.nameAr} ${config.name} — Premium Web Agency in Tripoli, Libya`);
+  lines.push(
+    `# ${config.nameAr} ${config.name} — Premium Web Agency in ${marketEn.place}${globalReach ? " & worldwide" : ""}`,
+  );
   lines.push("");
   lines.push(
-    `> ${config.name} (${config.nameAr}) is a premium web design and development agency based in Tripoli, Libya (${config.addressEn} / ${config.address}). We design and build fast, luxury-branded showcase websites, e-commerce stores and online booking systems for Libyan businesses — delivered in ${config.stats.deliveryEn} (${config.stats.delivery}) with Next.js, 90+ Lighthouse scores, full Arabic (RTL) and English support, local & AI search optimization (SEO + GEO), WhatsApp ordering and crypto payment options (full or 2–3 installments via NOWPayments).`,
+    `> ${config.name} (${config.nameAr}) is a premium web design and development agency based in ${marketEn.place} (${config.addressEn} / ${config.address}). We design and build fast, luxury-branded showcase websites, e-commerce stores and online booking systems for ${globalReach ? "businesses worldwide" : `businesses in ${marketEn.country}`} — delivered in ${config.stats.deliveryEn} (${config.stats.delivery}) with Next.js, 90+ Lighthouse scores, full Arabic (RTL) and English support, local & AI search optimization (SEO + GEO), multi-currency display, WhatsApp ordering and crypto payment options (full or 2–3 installments via NOWPayments). We also publish a catalogue of digital software codes and gaming gift cards with electronic delivery.`,
   );
   lines.push("");
   lines.push("## Key facts");
@@ -75,6 +88,21 @@ export function buildLlmsTxt({ config, content }: LlmsSourceData): string {
   lines.push(
     `- [Digital Products & Software — Coming Soon](${cleanUrl(base, "/products")}): ${productsPage.items.length} cloud POS, CRM, ERP & digital software kits (${productsPage.statusBadgeEn} / ${productsPage.statusBadgeAr})`,
   );
+  lines.push(
+    `- [Digital Codes & Gift Cards](${cleanUrl(base, "/codes")}): catalogue of software activation codes, gaming gift cards and in-game currency top-ups (Steam, PlayStation, Xbox, Roblox, Google Play, Amazon, Spotify) — priced in USD, region-tagged, electronic delivery`,
+  );
+  for (const code of digitalProducts) {
+    const from = code.denominations
+      .filter((denomination) => denomination.available)
+      .reduce<number | null>(
+        (min, denomination) =>
+          min == null ? denomination.priceUsd : Math.min(min, denomination.priceUsd),
+        null,
+      );
+    lines.push(
+      `  - [${code.titleEn} / ${code.titleAr}](${cleanUrl(base, `/codes/${code.slug}`)}): ${code.platform}${from != null ? ` — from $${from}` : ""} — digital code, electronic delivery`,
+    );
+  }
   // Pages sectorielles automatiques (/sectors/[sector]) — 10 secteurs
   lines.push(`- [Websites by sector](${cleanUrl(base, "/sectors")}): ${Object.keys(sectorSeo).length} sector pages — medical, restaurant, beauty, furniture, electronics, hardware…`);
   for (const [id, sector] of Object.entries(sectorSeo)) {
@@ -200,7 +228,11 @@ export function buildLlmsTxt({ config, content }: LlmsSourceData): string {
  * bilingue (Arabe + Anglais) destinée aux moteurs de réponse IA (RAG,
  * ChatGPT, Perplexity, Claude, Google AI Overviews).
  */
-export function buildLlmsFullTxt({ config, content }: LlmsSourceData): string {
+export function buildLlmsFullTxt({
+  config,
+  content,
+  digitalProducts = [],
+}: LlmsSourceData): string {
   const base = config.url.replace(/\/+$/, "");
   const lines: string[] = [];
 
@@ -424,6 +456,30 @@ export function buildLlmsFullTxt({ config, content }: LlmsSourceData): string {
     for (const { url, entry } of credited) {
       lines.push(`  - ${entry.titleEn || entry.title} — ${url}`);
     }
+  }
+  lines.push("");
+
+  lines.push("## 7g. Digital Codes & Gift Cards Catalogue (/codes)");
+  lines.push("");
+  lines.push(`- **Page URL**: ${cleanUrl(base, "/codes")}`);
+  lines.push(
+    `- **Overview (EN)**: Software activation codes, gaming gift cards and in-game currency top-ups, with published prices in USD and a region per amount. Electronic delivery.`,
+  );
+  lines.push(
+    `- **Overview (AR)**: أكواد برمجية وبطاقات هدايا gaming وشحن عملات الألعاب، بأسعار معلنة بالدولار ومنطقة لكل مبلغ، وتسليم إلكتروني.`,
+  );
+  for (const code of digitalProducts) {
+    const amounts = code.denominations
+      .filter((denomination) => denomination.available)
+      .map(
+        (denomination) =>
+          `${denomination.label} (${denomination.region}) $${denomination.priceUsd}`,
+      )
+      .join(", ");
+    lines.push(
+      `- **${code.titleEn} (${code.titleAr})** [${code.platform}]: ${code.descriptionEn} | ${code.descriptionAr}`,
+    );
+    if (amounts) lines.push(`  - Amounts: ${amounts}`);
   }
   lines.push("");
 

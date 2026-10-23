@@ -1,19 +1,21 @@
 "use client";
 
 import type { PlanPriceBreakdown } from "@/lib/classification";
-import { formatLyd, lydLabel } from "@/lib/classification";
-import { formatMainPrice } from "@/lib/installments";
+import { Price } from "@/components/price";
 import { useI18n } from "@/lib/i18n";
 
-/** Itemized model + customization + total, shared by pricing and demo pages. */
+/**
+ * Itemized model + customization + total, shared by pricing and demo pages.
+ *
+ * Les montants sont affichés dans la devise choisie par le visiteur
+ * (`<Price />`) : la devise de facturation reste l'USD.
+ */
 export function ModelPriceBreakdown({
   breakdown,
-  currency,
   compact = false,
   className = "",
 }: {
   breakdown: PlanPriceBreakdown;
-  currency: string;
   compact?: boolean;
   className?: string;
 }) {
@@ -22,16 +24,11 @@ export function ModelPriceBreakdown({
   const row = compact ? "flex items-start justify-between gap-3 text-[11px]" : "flex items-start justify-between gap-3 text-sm";
   const muted = compact ? "opacity-60" : "opacity-65";
 
-  const price = (usd: number | null, lyd: number | null) => {
+  const price = (usd: number | null) => {
     if (usd == null) return ar ? "حسب الطلب" : "On request";
     return (
       <span className="text-end" dir="ltr">
-        <span className="font-bold">{formatMainPrice(usd, currency)}</span>
-        {lyd != null && (
-          <span className={`ms-1 ${muted}`}>
-            ≈ {formatLyd(lyd)} {lydLabel(locale)}
-          </span>
-        )}
+        <Price usd={usd} className="font-bold" showLocal />
       </span>
     );
   };
@@ -40,7 +37,7 @@ export function ModelPriceBreakdown({
     <dl className={`space-y-1.5 ${compact ? "text-xs" : "text-sm"} ${className}`}>
       <div className={row}>
         <dt className={muted}>{ar ? "سعر النموذج" : "Website model"}</dt>
-        <dd>{price(breakdown.modelPriceUsd, breakdown.modelPriceLyd)}</dd>
+        <dd>{price(breakdown.modelPriceUsd)}</dd>
       </div>
       <div className={row}>
         <dt className={muted}>
@@ -53,7 +50,7 @@ export function ModelPriceBreakdown({
         <dd>
           {breakdown.customizationUsd == null
             ? <span className="text-end opacity-70">{ar ? "يُحدد في عرض السعر" : "Quoted before payment"}</span>
-            : price(breakdown.customizationUsd, breakdown.customizationLyd)}
+            : price(breakdown.customizationUsd)}
         </dd>
       </div>
       <div className={`${row} border-t border-[var(--border)]/70 pt-1.5 font-black`}>
@@ -61,7 +58,7 @@ export function ModelPriceBreakdown({
         <dd className="text-[var(--accent)]">
           {breakdown.totalPriceUsd == null
             ? <span className="text-end text-[11px] font-semibold opacity-75">{ar ? "بعد اعتماد عرض السعر" : "Confirmed in your quote"}</span>
-            : price(breakdown.totalPriceUsd, breakdown.totalPriceLyd)}
+            : price(breakdown.totalPriceUsd)}
         </dd>
       </div>
       {breakdown.totalPriceUsd == null && (

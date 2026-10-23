@@ -13,6 +13,8 @@ import {
 import { resetSiteConfig, saveSiteConfig } from "@/app/admin/actions";
 import { useTheme } from "@/components/theme-provider";
 import { THEMES } from "@/lib/themes";
+import { MARKET_PRESETS } from "@/lib/market";
+import { CURRENCY_CATALOG, DEFAULT_RATES } from "@/lib/currency";
 
 const SERVICE_ICON_IDS = [
   "Palette",
@@ -30,7 +32,7 @@ import type {
 } from "@/lib/site-types";
 import { ADMIN_INPUT_CLS, ADMIN_TEXTAREA_CLS } from "../site-item-editor";
 
-type SettingsTab = "appearance" | "contact" | "pricing" | "flex";
+type SettingsTab = "appearance" | "contact" | "market" | "pricing" | "flex";
 
 interface Props {
   initial: SiteConfigData;
@@ -42,6 +44,7 @@ export function SettingsForm({ initial, initialTab }: Props) {
   const { resetToSiteDefaults } = useTheme();
   const resolveTab = (raw?: string): SettingsTab => {
     if (raw === "contact") return "contact";
+    if (raw === "market" || raw === "currency") return "market";
     if (raw === "pricing") return "pricing";
     if (raw === "flex" || raw === "services") return "flex";
     return "appearance";
@@ -117,6 +120,7 @@ export function SettingsForm({ initial, initialTab }: Props) {
   const tabs: { id: SettingsTab; label: string }[] = [
     { id: "appearance", label: "Apparence & Chiffres clés" },
     { id: "contact", label: "Identité, Contact & Réseaux" },
+    { id: "market", label: "Marché & Devises" },
     { id: "pricing", label: "Formules & Réservation 1 $" },
     { id: "flex", label: "Paiement libre & Services à la carte" },
   ];
@@ -486,6 +490,272 @@ export function SettingsForm({ initial, initialTab }: Props) {
                 className={ADMIN_INPUT_CLS}
               />
             </Field>
+          </div>
+        </div>
+      )}
+
+      {/* --- ONGLET : MARCHÉ & DEVISES (portée mondiale) --- */}
+      {tab === "market" && (
+        <div className="space-y-5">
+          <div className="rounded-2xl border border-stone-200 bg-white p-5 sm:p-6 space-y-5 shadow-2xs">
+            <div>
+              <h2 className="text-sm font-black text-stone-900">
+                Marché de référence
+              </h2>
+              <p className="mt-1 text-[12.5px] leading-5 text-stone-500">
+                Tout ce qui était codé en dur sur Tripoli / Libye en découle :
+                métadonnées SEO, données structurées, fuseau horaire des
+                échéances, lien Google Maps et libellés du site. Changer de
+                marché ici suffit — aucun redéploiement nécessaire.
+              </p>
+            </div>
+
+            <Field label="Marché prédéfini (applique un profil complet)">
+              <select
+                value={form.market.id}
+                onChange={(e) => {
+                  const preset = MARKET_PRESETS.find((m) => m.id === e.target.value);
+                  if (!preset) return;
+                  patch({
+                    market: {
+                      ...form.market,
+                      ...preset,
+                      globalReach: form.market.globalReach,
+                    },
+                  });
+                }}
+                className={ADMIN_INPUT_CLS}
+              >
+                {MARKET_PRESETS.map((preset) => (
+                  <option key={preset.id} value={preset.id}>
+                    {preset.cityEn} — {preset.countryEn} ({preset.currency})
+                  </option>
+                ))}
+              </select>
+            </Field>
+
+            <label className="flex items-start gap-2.5 rounded-xl border border-stone-200 bg-[#FAF9F6] p-3.5">
+              <input
+                type="checkbox"
+                checked={form.market.globalReach}
+                onChange={(e) =>
+                  patch({ market: { ...form.market, globalReach: e.target.checked } })
+                }
+                className="mt-0.5 h-4 w-4 accent-[#B8923F]"
+              />
+              <span className="text-[12.5px] leading-5 text-stone-700">
+                <strong className="font-black">Positionnement international</strong>
+                <br />
+                Le site se déclare accessible mondialement : zone desservie
+                « Worldwide » dans les données structurées, formulation
+                internationale dans les descriptions, et devise de facturation
+                en dollars. Gardez-le actif même en restant ancré à Tripoli.
+              </span>
+            </label>
+
+            <div className="grid gap-3.5 sm:grid-cols-2">
+              <Field label="Ville (arabe)">
+                <input
+                  dir="rtl"
+                  value={form.market.cityAr}
+                  onChange={(e) =>
+                    patch({ market: { ...form.market, cityAr: e.target.value } })
+                  }
+                  className={ADMIN_INPUT_CLS}
+                />
+              </Field>
+              <Field label="Ville (anglais)">
+                <input
+                  value={form.market.cityEn}
+                  onChange={(e) =>
+                    patch({ market: { ...form.market, cityEn: e.target.value } })
+                  }
+                  className={ADMIN_INPUT_CLS}
+                />
+              </Field>
+              <Field label="Pays (arabe)">
+                <input
+                  dir="rtl"
+                  value={form.market.countryAr}
+                  onChange={(e) =>
+                    patch({ market: { ...form.market, countryAr: e.target.value } })
+                  }
+                  className={ADMIN_INPUT_CLS}
+                />
+              </Field>
+              <Field label="Pays (anglais)">
+                <input
+                  value={form.market.countryEn}
+                  onChange={(e) =>
+                    patch({ market: { ...form.market, countryEn: e.target.value } })
+                  }
+                  className={ADMIN_INPUT_CLS}
+                />
+              </Field>
+              <Field label="Code pays (ISO)">
+                <input
+                  value={form.market.countryCode}
+                  onChange={(e) =>
+                    patch({
+                      market: {
+                        ...form.market,
+                        countryCode: e.target.value.toUpperCase().slice(0, 4),
+                      },
+                    })
+                  }
+                  className={ADMIN_INPUT_CLS}
+                />
+              </Field>
+              <Field label="Fuseau horaire (IANA)">
+                <input
+                  value={form.market.timezone}
+                  onChange={(e) =>
+                    patch({ market: { ...form.market, timezone: e.target.value } })
+                  }
+                  className={ADMIN_INPUT_CLS}
+                />
+              </Field>
+              <Field label="Langue du marché (BCP-47)">
+                <input
+                  value={form.market.locale}
+                  onChange={(e) =>
+                    patch({ market: { ...form.market, locale: e.target.value } })
+                  }
+                  className={ADMIN_INPUT_CLS}
+                />
+              </Field>
+              <Field label="Indicatif téléphonique">
+                <input
+                  value={form.market.phonePrefix}
+                  onChange={(e) =>
+                    patch({ market: { ...form.market, phonePrefix: e.target.value } })
+                  }
+                  className={ADMIN_INPUT_CLS}
+                />
+              </Field>
+              <Field label="Latitude">
+                <input
+                  type="number"
+                  step="0.0001"
+                  value={form.market.lat}
+                  onChange={(e) =>
+                    patch({
+                      market: { ...form.market, lat: Number(e.target.value) || 0 },
+                    })
+                  }
+                  className={ADMIN_INPUT_CLS}
+                />
+              </Field>
+              <Field label="Longitude">
+                <input
+                  type="number"
+                  step="0.0001"
+                  value={form.market.lng}
+                  onChange={(e) =>
+                    patch({
+                      market: { ...form.market, lng: Number(e.target.value) || 0 },
+                    })
+                  }
+                  className={ADMIN_INPUT_CLS}
+                />
+              </Field>
+              <Field label="Rayon de service local (km) — 0 = aucune zone locale">
+                <input
+                  type="number"
+                  value={form.market.localRadiusKm}
+                  onChange={(e) =>
+                    patch({
+                      market: {
+                        ...form.market,
+                        localRadiusKm: Number(e.target.value) || 0,
+                      },
+                    })
+                  }
+                  className={ADMIN_INPUT_CLS}
+                />
+              </Field>
+            </div>
+          </div>
+
+          <div className="rounded-2xl border border-stone-200 bg-white p-5 sm:p-6 space-y-5 shadow-2xs">
+            <div>
+              <h2 className="text-sm font-black text-stone-900">
+                Devises d&apos;affichage
+              </h2>
+              <p className="mt-1 text-[12.5px] leading-5 text-stone-500">
+                La facturation reste en dollars (c&apos;est ce qu&apos;encaisse la
+                passerelle). Ces taux servent uniquement à convertir les prix
+                affichés dans la devise choisie par le visiteur. 1 USD = X.
+              </p>
+            </div>
+
+            <Field label="Devises proposées dans le sélecteur">
+              <div className="flex flex-wrap gap-2 pt-1">
+                {(Object.keys(CURRENCY_CATALOG) as (keyof typeof CURRENCY_CATALOG)[]).map(
+                  (code) => {
+                    const active = form.currency.enabled.includes(code);
+                    return (
+                      <button
+                        key={code}
+                        type="button"
+                        onClick={() =>
+                          patch({
+                            currency: {
+                              ...form.currency,
+                              enabled: active
+                                ? form.currency.enabled.filter((c) => c !== code)
+                                : [...form.currency.enabled, code],
+                              rates: {
+                                ...form.currency.rates,
+                                [code]: form.currency.rates[code] ?? DEFAULT_RATES[code],
+                              },
+                            },
+                          })
+                        }
+                        className={`rounded-full border px-3 py-1.5 text-[12px] font-bold transition-colors ${
+                          active
+                            ? "border-[#B8923F] bg-[#C6A664]/25 text-stone-900"
+                            : "border-stone-300 bg-white text-stone-500"
+                        }`}
+                      >
+                        {CURRENCY_CATALOG[code].shortEn} ·{" "}
+                        {CURRENCY_CATALOG[code].labelEn}
+                      </button>
+                    );
+                  },
+                )}
+              </div>
+            </Field>
+
+            <div className="grid gap-3.5 sm:grid-cols-2 lg:grid-cols-3">
+              {form.currency.enabled.map((code) => (
+                <Field key={code} label={`Taux — 1 USD = ? ${code}`}>
+                  <input
+                    type="number"
+                    step="0.0001"
+                    min="0"
+                    value={form.currency.rates[code] ?? 1}
+                    onChange={(e) =>
+                      patch({
+                        currency: {
+                          ...form.currency,
+                          rates: {
+                            ...form.currency.rates,
+                            [code]: Number(e.target.value) || 1,
+                          },
+                        },
+                      })
+                    }
+                    className={ADMIN_INPUT_CLS}
+                  />
+                </Field>
+              ))}
+            </div>
+
+            <p className="rounded-xl border border-amber-200 bg-amber-50 p-3.5 text-[12px] leading-5 text-amber-900">
+              Un taux erroné affiche un prix faux : vérifiez les taux avant de
+              publier. Le taux du dollar est toujours forcé à 1.
+            </p>
           </div>
         </div>
       )}

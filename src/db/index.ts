@@ -193,6 +193,52 @@ export function ensureSchema(): Promise<void> {
       await pool.query(
         "CREATE INDEX IF NOT EXISTS subscriptions_first_invoice_id_idx ON subscriptions (first_invoice_id)",
       );
+
+      // Catalogue digital : fiches produits (codes logiciels, cartes cadeaux
+      // gaming, recharges) + une ligne par dénomination (montant/région).
+      await pool.query(`
+        CREATE TABLE IF NOT EXISTS digital_products (
+          id text PRIMARY KEY,
+          slug text NOT NULL UNIQUE,
+          kind text NOT NULL,
+          status text NOT NULL DEFAULT 'coming_soon',
+          platform text NOT NULL DEFAULT '',
+          color text NOT NULL DEFAULT '#C6A664',
+          title_ar text NOT NULL,
+          title_en text NOT NULL,
+          description_ar text NOT NULL DEFAULT '',
+          description_en text NOT NULL DEFAULT '',
+          image text NOT NULL DEFAULT '',
+          regions jsonb NOT NULL DEFAULT '[]'::jsonb,
+          features_ar jsonb NOT NULL DEFAULT '[]'::jsonb,
+          features_en jsonb NOT NULL DEFAULT '[]'::jsonb,
+          delivery_note_ar text NOT NULL DEFAULT '',
+          delivery_note_en text NOT NULL DEFAULT '',
+          sort_order integer NOT NULL DEFAULT 0,
+          created_at timestamptz NOT NULL DEFAULT now(),
+          updated_at timestamptz NOT NULL DEFAULT now()
+        )
+      `);
+      await pool.query(`
+        CREATE TABLE IF NOT EXISTS digital_denominations (
+          id serial PRIMARY KEY,
+          product_id text NOT NULL REFERENCES digital_products(id) ON DELETE CASCADE,
+          label text NOT NULL,
+          face_value text NOT NULL DEFAULT '',
+          region text NOT NULL DEFAULT 'global',
+          price_usd text NOT NULL,
+          note_ar text,
+          note_en text,
+          available integer NOT NULL DEFAULT 1,
+          sort_order integer NOT NULL DEFAULT 0
+        )
+      `);
+      await pool.query(
+        "CREATE INDEX IF NOT EXISTS digital_products_status_idx ON digital_products (status, sort_order)",
+      );
+      await pool.query(
+        "CREATE INDEX IF NOT EXISTS digital_denominations_product_idx ON digital_denominations (product_id)",
+      );
     })().catch((error) => {
       schemaReady = null; // permet de réessayer au prochain accès
       throw error;

@@ -7,8 +7,8 @@ import { getSiteDataCached } from "@/lib/store";
 import { breadcrumbJsonLd, pageMetadata } from "@/lib/seo";
 import { JsonLd } from "@/components/json-ld";
 import { getSectorSeo, getDemosForSector, sectorCollectionJsonLd, sectorFaqJsonLd, sectorIds } from "@/lib/sectors";
-import { demoImageAlt, formatLyd, lydLabel, resolveDemoClassification } from "@/lib/classification";
-import { formatMainPrice } from "@/lib/installments";
+import { demoImageAlt, resolveDemoClassification } from "@/lib/classification";
+import { Price } from "@/components/price";
 
 export async function generateStaticParams() {
   return sectorIds.map((sector) => ({ sector }));
@@ -180,7 +180,7 @@ export default async function SectorPage({ params }: { params: Promise<{ sector:
                             </div>
                             <div className="flex justify-between gap-2">
                               <span className="opacity-60">سعر النموذج</span>
-                              <strong dir="ltr">{cls.priceUsd == null ? "حسب الطلب" : `$${cls.priceUsd} · ≈ ${formatLyd(cls.priceLyd)} ${lydLabel("ar")}`}</strong>
+                              <strong>{cls.priceUsd == null ? "حسب الطلب" : <Price usd={cls.priceUsd} showLocal compact />}</strong>
                             </div>
                             <div className="mt-1 flex justify-between gap-2">
                               <span className="opacity-60">
@@ -190,7 +190,7 @@ export default async function SectorPage({ params }: { params: Promise<{ sector:
                             </div>
                             <div className="mt-1 flex justify-between gap-2 border-t border-[var(--border)]/70 pt-1 font-black">
                               <span>الإجمالي</span>
-                              <strong dir="ltr">{cls.totalPriceUsd == null ? "يُحدد قبل الدفع" : `$${cls.totalPriceUsd} · ≈ ${formatLyd(cls.totalPriceLyd ?? 0)} ${lydLabel("ar")}`}</strong>
+                              <strong>{cls.totalPriceUsd == null ? "يُحدد قبل الدفع" : <Price usd={cls.totalPriceUsd} showLocal compact />}</strong>
                             </div>
                           </div>
                         )}

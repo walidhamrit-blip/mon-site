@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { HomeSections } from "@/components/sections/home-sections";
 import { getSiteDataCached } from "@/lib/store";
 import {
-  DEFAULT_META_DESCRIPTION,
+  defaultMetaDescription,
   faqJsonLd,
   howToJsonLd,
   pageMetadata,
@@ -13,13 +13,20 @@ export async function generateMetadata(): Promise<Metadata> {
   const { config } = await getSiteDataCached();
   return pageMetadata(config, {
     path: "/",
-    title: "تصميم مواقع ومتاجر إلكترونية في طرابلس — تسليم في 7 أيام",
-    description: DEFAULT_META_DESCRIPTION,
+    title: "تصميم مواقع ومتاجر إلكترونية في {city} — تسليم في 7 أيام",
+    description: defaultMetaDescription(config),
     keywords: [
-      "تصميم مواقع طرابلس",
-      "شركة تصميم مواقع ليبيا",
-      "متجر إلكتروني ليبيا",
-      "web design Tripoli Libya",
+      "تصميم مواقع {city}",
+      "شركة تصميم مواقع {country}",
+      "متجر إلكتروني {country}",
+      "تصميم متجر إلكتروني {city}",
+      "تحسين SEO {country}",
+      "وكالة ويب {city}",
+      "web design {cityEn}",
+      "web design {countryEn}",
+      "e-commerce {countryEn}",
+      "Nukhba web agency",
+      "web design agency worldwide",
     ],
   });
 }

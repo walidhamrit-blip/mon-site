@@ -1,6 +1,9 @@
-# نخبة Nukhba — Agence Web Premium Tripoli
+# نخبة Nukhba — Agence Web Premium
 
 Site vitrine haut de gamme construit avec Next.js 16 + Tailwind + Framer Motion.
+**Portée mondiale** : Tripoli / Libye est le *marché par défaut*, pas une
+constante — ville, pays, fuseau, devise et libellés se règlent dans
+`/admin → Réglages → Marché & Devises`, sans toucher au code.
 
 ## Installation
 ```bash
@@ -15,6 +18,55 @@ Editez `src/lib/config.ts`:
 - `whatsapp` : numéro sans "+"
 - `social` : liens Instagram/Facebook
 - `email`, `phone`, `address`
+- `siteConfig.market` : **marché de référence** (ville, pays, fuseau horaire,
+  locale, devise locale, indicatif, coordonnées GPS, rayon de service local) —
+  c'est la source unique de la géographie du site (SEO, données structurées,
+  horodatage des abonnements, lien Google Maps, libellés). Modifiable depuis
+  `/admin → Réglages → Marché & Devises`.
+- `siteConfig.currency` : **devises d'affichage** — devise de facturation
+  (`base`, toujours USD en pratique), taux de conversion (`rates`, 1 USD = X)
+  et devises proposées dans le sélecteur (`enabled`).
+
+> Les prix sont **stockés en USD** (c'est la devise encaissée par NOWPayments).
+> L'affichage est converti dans la devise choisie par le visiteur — le taux
+> est une donnée pilotable, pas une formule cachée dans le code.
+
+## Portée mondiale (marché & devises)
+- **Marché** (`src/lib/market.ts`) — profils prêts à l'emploi : Tripoli
+  (défaut), Dubaï, Riyad, Le Caire, Casablanca, Tunis, « Worldwide ».
+  Changer de marché met à jour les métadonnées, le JSON-LD
+  (`address`, `geo`, `areaServed`, `serviceArea`, `inLanguage`, `slogan`), les
+  titres de pages (via les jetons `{city}`, `{country}`, `{cityEn}`,
+  `{countryEn}`), le fuseau des échéances d'abonnement, le lien Maps et les
+  libellés de la barre de navigation et du pied de page.
+- **Positionnement international** (`market.globalReach`) — à garder actif :
+  zone desservie « Worldwide », formulation internationale, devise de
+  facturation en dollars.
+- **Devises** (`src/lib/currency.ts`) — USD, EUR, SAR, AED, EGP, LYD.
+  Sélecteur en barre supérieure (et dans le menu mobile), mémorisé sur
+  l'appareil (`nukhba-currency`). Un taux absent, nul ou négatif retombe
+  sur 1 : le site n'affiche jamais un prix converti faux.
+- Les montants sont affichés par le composant unique `<Price usd={…} />`
+  (`src/components/price.tsx`), utilisable depuis un composant serveur comme
+  client. Le checkout affiche explicitement le montant **facturé en USD**.
+
+## Catalogue digital — codes logiciels & cartes cadeaux
+Socle prêt pour une boutique de codes (Steam, PlayStation, Xbox, Roblox,
+Google Play, Amazon, Spotify…) :
+- **Domaine** `src/lib/digital-types.ts` — natures (`software_key`,
+  `gift_card`, `game_topup`, `subscription_code`), statuts, **régions**
+  (`global`, `US`, `EU`, `SA`…), montants.
+- **Base** — tables `digital_products` et `digital_denominations`, créées
+  automatiquement au premier accès (comme le reste du schéma).
+- **Vitrine** — `/codes` (catalogue filtrable) et `/codes/[slug]` (fiche).
+- **API publique** — `GET /api/digital/products` et
+  `GET /api/digital/products/[slug]` (lecture seule, prices en USD).
+- **Admin** — `/admin/digital` : édition des fiches et des montants.
+- **Périmètre actuel : catalogue.** Les fiches sont publiées avec leurs prix,
+  leurs régions et leurs montants ; l'appel à l'action renvoie vers la liste
+  d'attente. **La caisse, le stock de codes et la livraison automatique ne
+  sont pas encore implémentés** — la feuille de route est dans
+  `docs/audit-global-2026-10.md` §3.4.
 
 ## Thèmes du site (8 thèmes, clair + sombre)
 `src/lib/themes.ts` contient le catalogue des thèmes. Chaque thème définit **sa palette claire ET sa palette sombre** : le mode clair/sombre reste donc un réglage totalement indépendant (un bouton dédié ☀/☾ dans la barre supérieure), et n'importe quel thème se voit dans les deux modes.
@@ -412,6 +464,8 @@ NOWPayments pour prendre une place en avance dans le planning.
   - **Tableau de bord** — statistiques (total, nouveaux, en cours, traités), activité 14 jours, dernières demandes
   - **Demandes** — les formulaires du site sont enregistrés en base (table `leads`, créée automatiquement) : filtres, recherche, statuts, notes internes, contact WhatsApp/email, export CSV
   - **Configuration** — apparence (thème, mode, langue), coordonnées, réseaux sociaux, chiffres, tarifs/catégories, **paiement flexible**, **services à la carte** et réservation prioritaire éditables, visibles immédiatement sur le site
+  - **Marché & Devises** — profil de marché (ville, pays, fuseau, locale, devise locale, indicatif, GPS, rayon de service), positionnement international, et taux de conversion des devises d'affichage
+  - **Codes & Cartes cadeaux** — catalogue digital : fiches (nature, plateforme, titres AR/EN, régions, statut) et montants (libellé, région, prix USD, disponibilité)
   - **Contenu & sections** — toutes les sections du site public : **accueil (Hero)**, **bandeau de services**, **Pourquoi nous**, **démos**, **processus**, **témoignages**, **FAQ**, ainsi que les **titres/sous-titres de chaque section**. Listes à réordonner, ajouter ou supprimer, avec bouton « Réinitialiser » par section
 - Les réglages sont stockés dans la table `settings` ; par défaut le site utilise les valeurs de `src/lib/config.ts` et `src/lib/content.ts`
 - Après chaque enregistrement, le site public est régénéré automatiquement (revalidation Next.js)

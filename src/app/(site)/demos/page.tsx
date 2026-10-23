@@ -8,14 +8,14 @@ export async function generateMetadata(): Promise<Metadata> {
   const { config } = await getSiteDataCached();
   return pageMetadata(config, {
     path: "/demos",
-    title: "معارض الأعمال الحية — مواقع حقيقية صممتها نخبة في طرابلس",
+    title: "معارض الأعمال الحية — مواقع حقيقية صمّمتها نخبة في {city}",
     description:
       "تصفّح مواقع حقيقية أنجزتها وكالة نخبة: متاجر إلكترونية، مطاعم، عيادات، شركات عقارية وتقنية في طرابلس وليبيا — جرّب كل موقع مباشرة وخصّصه على هويتك.",
     keywords: [
-      "أمثلة تصميم مواقع ليبيا",
-      "معارض أعمال وكالة ويب طرابلس",
-      "نماذج متاجر إلكترونية ليبيا",
-      "web design portfolio Tripoli",
+      "أمثلة تصميم مواقع {country}",
+      "معارض أعمال وكالة ويب {city}",
+      "نماذج متاجر إلكترونية {country}",
+      "web design portfolio {cityEn}",
     ],
   });
 }
