@@ -170,7 +170,7 @@ export function AbonnementsClient({
             : "Pay with crypto through NOWPayments. Choose a plan and a billing cycle."}
         </p>
         <div className="inline-flex rounded-2xl border border-[var(--border)] p-1" role="tablist">
-          {(["monthly", "annual"] as const).map((value) => (
+          {(["annual", "monthly"] as const).map((value) => (
             <button
               key={value}
               type="button"
@@ -216,8 +216,15 @@ export function AbonnementsClient({
                   {" "}/ {cycle === "monthly" ? (ar ? "شهر" : "month") : ar ? "سنة" : "year"}
                 </span>
               </div>
+              {cycle === "annual" && plan && (
+                <div className="mt-2 text-sm font-bold">
+                  {ar
+                    ? `أي $${(plan.priceUsd / 12).toFixed(2)} / شهر`
+                    : `That is $${(plan.priceUsd / 12).toFixed(2)} / month`}
+                </div>
+              )}
               {cycle === "annual" && saving > 0 && (
-                <div className="mt-2 text-sm text-[var(--accent)]">
+                <div className="mt-1 text-sm text-[var(--accent)]">
                   {ar ? `توفير $${saving} مقارنة بالشهري` : `Save $${saving} vs monthly`}
                 </div>
               )}
