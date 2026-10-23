@@ -4,7 +4,9 @@ name: Client badge audit
 # « Website by Nukhba » (lien dofollow vers nokhba.net.ly dans le pied de page).
 #
 # - mesure : `verified` / `nofollow` / `missing` / `down` par client ;
-# - pull request `chore(badge)` quand un statut change (page /badge) ;
+# - publie `public/badge/clients.json` directement sur `main` quand un statut
+#   change (page /badge) — sans dépendre de l'autorisation GitHub de création
+#   de Pull Requests ;
 # - ouvre ou met à jour une issue listant les sites à corriger.
 #
 # Aucune clé n'est nécessaire.
@@ -36,7 +38,6 @@ concurrency:
 permissions:
   contents: write
   issues: write
-  pull-requests: write
 
 jobs:
   audit:
@@ -128,53 +129,64 @@ jobs:
 
       - name: Publication du rapport
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: badge-audit-report
           path: reports/
           retention-days: 90
 
-      # Pull request plutôt que push direct : main peut être protégée, et un
-      # changement de statut mérite une trace lisible dans l'historique.
-      # L'action ne fait rien (sortie propre) si le fichier est inchangé.
-      - name: Proposition de mise à jour du statut
-        id: pr
-        uses: peter-evans/create-pull-request@v7
-        with:
-          branch: chore/badge-status
-          delete-branch: true
-          add-paths: |
-            public/badge/clients.json
-          commit-message: "chore(badge): statut des badges clients"
-          title: "chore(badge): statut des badges clients"
-          body: |
-            Statut du badge « Website by Nukhba » sur chaque site client, mis à
-            jour par `npm run badge:audit` (audit automatique du HTML).
-
-            ${{ steps.summary.outputs.body }}
-
-            Extrait à transmettre aux clients concernés : https://nokhba.net.ly/badge
+      # Commit direct sur `main` : fonctionne nativement avec `contents: write`
+      # sans exiger l'option « Allow GitHub Actions to create pull requests ».
+      # Aucun risque de boucle : `GITHUB_TOKEN` ne redéclenche pas `on.push` et
+      # `public/badge/clients.json` est hors des chemins surveillés.
+      - name: Mise à jour du statut sur main
+        run: |
+          git add public/badge/clients.json
+          if git diff --cached --quiet; then
+            echo "Aucun changement de statut à publier."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "chore(badge): statut des badges clients"
+          git checkout -- .
+          for attempt in 1 2 3; do
+            git fetch origin main
+            if git rebase origin/main && git push origin HEAD:main; then
+              echo "public/badge/clients.json publié sur main."
+              exit 0
+            fi
+            git rebase --abort 2>/dev/null || true
+            sleep $((attempt * 2))
+          done
+          echo "::error::Impossible de pousser public/badge/clients.json sur main après 3 tentatives."
+          exit 1
 
       - name: Issue — sites sans badge
         if: steps.summary.outputs.missing != '0' || steps.summary.outputs.nofollow != '0'
         uses: actions/github-script@v8
+        env:
+          SUMMARY_BODY: ${{ steps.summary.outputs.body }}
         with:
           script: |
             const title = "Badge client : sites à corriger (netlinking)";
+            const summaryBody = process.env.SUMMARY_BODY ?? "";
             const body = [
               "Audit hebdomadaire du badge « Website by Nukhba ».",
               "",
-              "${{ steps.summary.outputs.body }}",
+              summaryBody,
             ].join("\n");
             const { data: issues } = await github.rest.issues.listForRepo({
               owner: context.repo.owner,
               repo: context.repo.repo,
               state: "open",
-              labels: "badge-client",
+              per_page: 100,
             });
-            const existing = issues.find((issue) => issue.title === title);
+            const existing = issues.find(
+              (issue) => !issue.pull_request && issue.title === title,
+            );
             if (existing) {
-              await github.rest.issues.createComment({
+              await github.rest.issues.update({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
                 issue_number: existing.number,
@@ -200,9 +212,11 @@ jobs:
               owner: context.repo.owner,
               repo: context.repo.repo,
               state: "open",
-              labels: "badge-client",
+              per_page: 100,
             });
-            const existing = issues.find((issue) => issue.title === title);
+            const existing = issues.find(
+              (issue) => !issue.pull_request && issue.title === title,
+            );
             if (existing) {
               await github.rest.issues.createComment({
                 owner: context.repo.owner,

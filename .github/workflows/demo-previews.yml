@@ -5,8 +5,9 @@ name: Demo previews
 #
 # - chaque lundi 07:00 UTC, à chaque changement du pipeline ou des démos sur
 #   main, et déclenchement manuel ;
-# - Playwright + Sharp capturent les 12+ `previewUrl` en WebP ;
-# - les fichiers modifiés sont proposés dans une pull request dédiée ;
+# - Playwright + Sharp capturent les `previewUrl` en WebP ;
+# - les fichiers modifiés sont publiés directement sur `main` (sans dépendre
+#   de l'autorisation GitHub de création de Pull Requests) ;
 # - un site de démo hors ligne ouvre (ou met à jour) une issue « Démos hors ligne ».
 #
 # Aucune clé n'est nécessaire. Le workflow peut être lancé à la main depuis
@@ -42,7 +43,6 @@ concurrency:
 permissions:
   contents: write
   issues: write
-  pull-requests: write
 
 jobs:
   capture:
@@ -70,7 +70,12 @@ jobs:
         env:
           CAPTURE_BASE_URL: https://nokhba.net.ly
         run: |
-          ARGS="--force --concurrency=3"
+          ARGS="--concurrency=3"
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ "${{ inputs.force }}" = "true" ]; then
+            ARGS="$ARGS --force"
+          elif [ "${{ github.event_name }}" = "schedule" ]; then
+            ARGS="$ARGS --max-age-days=6"
+          fi
           if [ -n "${{ inputs.only }}" ]; then
             ARGS="$ARGS --only=${{ inputs.only }}"
           fi
@@ -130,14 +135,14 @@ jobs:
             });
             fs.writeFileSync(
               process.env.GITHUB_OUTPUT,
-              `down_count=${summary.down}\nerror_count=${summary.error}\n`,
+              `captured_count=${summary.captured ?? 0}\ndown_count=${summary.down ?? 0}\nerror_count=${summary.error ?? 0}\n`,
               { flag: "a" },
             );
           '
 
       - name: Publication du rapport
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: demo-previews-report
           path: reports/
@@ -146,13 +151,16 @@ jobs:
       - name: Alerte — démos hors ligne
         if: always() && steps.report.outputs.down_count != '0'
         uses: actions/github-script@v8
+        env:
+          REPORT_BODY: ${{ steps.report.outputs.body }}
         with:
           script: |
             const title = "Démos hors ligne — captures d'aperçu impossibles";
+            const reportBody = process.env.REPORT_BODY ?? "";
             const body = [
               "Le workflow **Demo previews** n'a pas pu joindre certaines démos.",
               "",
-              "${{ steps.report.outputs.body }}",
+              reportBody,
               "",
               `Run : ${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`,
               "",
@@ -162,11 +170,13 @@ jobs:
               owner: context.repo.owner,
               repo: context.repo.repo,
               state: "open",
-              labels: "demo-preview",
+              per_page: 100,
             });
-            const existing = issues.find((issue) => issue.title === title);
+            const existing = issues.find(
+              (issue) => !issue.pull_request && issue.title === title,
+            );
             if (existing) {
-              await github.rest.issues.createComment({
+              await github.rest.issues.update({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
                 issue_number: existing.number,
@@ -182,24 +192,59 @@ jobs:
               });
             }
 
-      - name: Proposition de mise à jour des captures
+      - name: Clôture de l'alerte quand toutes les démos répondent
         if: always() && steps.report.outputs.down_count == '0' && steps.report.outputs.error_count == '0'
-        uses: peter-evans/create-pull-request@v7
+        uses: actions/github-script@v8
         with:
-          branch: chore/demo-previews
-          delete-branch: true
-          add-paths: |
-            public/previews
-          commit-message: "chore(previews): captures desktop/mobile des démos"
-          title: "chore(previews): captures desktop/mobile des démos"
-          body: |
-            Captures automatiques des sites clients (Playwright + Sharp) :
+          script: |
+            const title = "Démos hors ligne — captures d'aperçu impossibles";
+            const { data: issues } = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: "open",
+              per_page: 100,
+            });
+            const existing = issues.find(
+              (issue) => !issue.pull_request && issue.title === title,
+            );
+            if (existing) {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: existing.number,
+                body: "Toutes les démos suivies répondent à nouveau. Fermeture automatique. ✅",
+              });
+              await github.rest.issues.update({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: existing.number,
+                state: "closed",
+              });
+            }
 
-            ${{ steps.report.outputs.body }}
-
-            Fichiers WebP : 960×600 (desktop, rendu 1440×900) et 390×693 (mobile),
-            qualité 78. `public/previews/manifest.json` porte l'empreinte
-            anti-cache, la date de capture et le statut de disponibilité.
-
-            Aucun contenu éditorial n'est modifié. Le sitemap d'images et les
-            données structurées (`image`, `screenshot`) suivent ce manifeste.
+      # Commit direct sur `main` uniquement si au moins une nouvelle capture
+      # WebP a été produite (évite un commit bruit quand seul `generatedAt`
+      # change). Rebase automatique si un autre workflow a poussé entre-temps.
+      - name: Mise à jour des captures sur main
+        if: always() && steps.report.outputs.down_count == '0' && steps.report.outputs.error_count == '0' && steps.report.outputs.captured_count != '0'
+        run: |
+          git add public/previews
+          if git diff --cached --quiet; then
+            echo "Aucune capture modifiée à publier."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "chore(previews): captures desktop/mobile des démos"
+          git checkout -- .
+          for attempt in 1 2 3; do
+            git fetch origin main
+            if git rebase origin/main && git push origin HEAD:main; then
+              echo "Captures publiées sur main."
+              exit 0
+            fi
+            git rebase --abort 2>/dev/null || true
+            sleep $((attempt * 2))
+          done
+          echo "::error::Impossible de pousser les captures sur main après 3 tentatives."
+          exit 1
