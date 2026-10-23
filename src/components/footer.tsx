@@ -112,6 +112,7 @@ export function Footer() {
                 { href: "/blog", label: ar ? "الأدلة والمقالات" : "Guides & blog" },
                 { href: "/badge", label: ar ? "شارة نخبة" : "Client badge" },
                 { href: "/contact", label: t.nav.contact },
+                { href: "/conditions", label: ar ? "شروط الخدمة" : "Terms of service" },
               ].map((link) => (
                 <li key={link.href}>
                   <Link href={link.href} className="opacity-75 transition-opacity hover:opacity-100">
