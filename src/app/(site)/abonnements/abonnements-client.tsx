@@ -59,7 +59,7 @@ export function AbonnementsClient({
   const { locale } = useI18n();
   const ar = locale === "ar";
 
-  const [cycle, setCycle] = useState<Cycle>("monthly");
+  const [cycle, setCycle] = useState<Cycle>("annual");
   const [selected, setSelected] = useState<string>("vitrine");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
