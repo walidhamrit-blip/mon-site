@@ -58,6 +58,7 @@ export function Navbar() {
     { href: "/products", label: ar ? "منتجاتنا" : "Products", soon: true },
     { href: "/blog", label: ar ? "أدلة" : "Guides" },
     { href: "/#pricing", label: t.nav.pricing },
+    { href: "/abonnements", label: ar ? "الاشتراكات" : "Abonnements" },
     { href: "/contact", label: t.nav.contact },
   ];
 

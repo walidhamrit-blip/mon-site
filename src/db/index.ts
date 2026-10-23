@@ -126,6 +126,64 @@ export function ensureSchema(): Promise<void> {
       await pool.query(
         "ALTER TABLE orders ADD COLUMN IF NOT EXISTS tracking_token_hash text",
       );
+      // Abonnements (mensuel / annuel) : plans synchronisés avec NOWPayments
+      // et abonnés. Un paiement d'abonnement reste une ligne `orders`,
+      // rattachée à son abonné par `subscription_id`.
+      await pool.query(`
+        CREATE TABLE IF NOT EXISTS subscription_plans (
+          id text PRIMARY KEY,
+          nowpayments_plan_id text UNIQUE,
+          tier text NOT NULL,
+          cycle text NOT NULL,
+          title text NOT NULL,
+          price_usd text NOT NULL,
+          interval_day integer NOT NULL,
+          grace_days integer NOT NULL,
+          synced_at timestamptz,
+          created_at timestamptz NOT NULL DEFAULT now(),
+          updated_at timestamptz NOT NULL DEFAULT now()
+        )
+      `);
+      await pool.query(`
+        CREATE TABLE IF NOT EXISTS subscriptions (
+          id serial PRIMARY KEY,
+          created_at timestamptz NOT NULL DEFAULT now(),
+          updated_at timestamptz NOT NULL DEFAULT now(),
+          ref text NOT NULL UNIQUE,
+          tracking_token_hash text,
+          plan_id text NOT NULL REFERENCES subscription_plans(id),
+          email text NOT NULL,
+          client_name text,
+          phone text,
+          nowpayments_subscription_id text UNIQUE,
+          status text NOT NULL DEFAULT 'inactive',
+          current_period_start timestamptz,
+          current_period_end timestamptz,
+          last_payment_id text,
+          canceled_at timestamptz,
+          reminder_for timestamptz,
+          overdue_notice_for timestamptz,
+          expired_notice_for timestamptz
+        )
+      `);
+      await pool.query(
+        "CREATE INDEX IF NOT EXISTS subscriptions_status_idx ON subscriptions (status)",
+      );
+      // Colonnes ajoutées après la création initiale de la table : une base
+      // déjà créée (par exemple le Preview) doit les recevoir aussi.
+      await pool.query(`
+        ALTER TABLE subscriptions
+          ADD COLUMN IF NOT EXISTS canceled_at timestamptz,
+          ADD COLUMN IF NOT EXISTS reminder_for timestamptz,
+          ADD COLUMN IF NOT EXISTS overdue_notice_for timestamptz,
+          ADD COLUMN IF NOT EXISTS expired_notice_for timestamptz
+      `);
+      await pool.query(
+        "ALTER TABLE orders ADD COLUMN IF NOT EXISTS subscription_id integer REFERENCES subscriptions(id)",
+      );
+      await pool.query(
+        "CREATE INDEX IF NOT EXISTS orders_subscription_id_idx ON orders (subscription_id)",
+      );
     })().catch((error) => {
       schemaReady = null; // permet de réessayer au prochain accès
       throw error;

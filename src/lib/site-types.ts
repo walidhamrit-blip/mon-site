@@ -419,13 +419,14 @@ export interface LeadRow {
 
 /* ---------- Commandes (paiements crypto) ---------- */
 
-export const ORDER_KINDS = ["plan", "reservation", "flex"] as const;
+export const ORDER_KINDS = ["plan", "reservation", "flex", "subscription"] as const;
 export type OrderKind = (typeof ORDER_KINDS)[number];
 
 export const ORDER_KIND_LABELS: Record<OrderKind, string> = {
   plan: "Formule",
   reservation: "Réservation",
   flex: "Paiement flexible",
+  subscription: "Abonnement",
 };
 
 export const ORDER_STATUSES = ["pending", "paid", "failed", "expired"] as const;

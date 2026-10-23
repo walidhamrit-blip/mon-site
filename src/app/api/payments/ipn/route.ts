@@ -12,6 +12,8 @@ import {
 } from "@/lib/nowpayments";
 import { orderRefCandidates } from "@/lib/installments";
 import { sendPaymentConfirmedEmail } from "@/lib/order-emails";
+import { applySubscriptionIpn } from "@/lib/subscriptions";
+import { subscriptionIdFromPayload } from "@/lib/subscription-lifecycle";
 
 /**
  * Webhook IPN NOWPayments.
@@ -51,6 +53,44 @@ export async function POST(req: Request) {
 
   if (!paymentId || !ipnStatus) {
     return NextResponse.json({ ok: false, error: "missing_fields" }, { status: 400 });
+  }
+
+  // Paiement d'abonnement (mensuel / annuel) : traité à part, il ne passe
+  // pas par le flux des commandes ponctuelles ci-dessous.
+  const subscriptionRemoteId = subscriptionIdFromPayload(payload);
+  if (subscriptionRemoteId) {
+    try {
+      const result = await applySubscriptionIpn(payload, subscriptionRemoteId);
+      if (result.outcome === "activated" || result.outcome === "renewed") {
+        console.info(
+          `[ipn][abonnement] ${result.outcome} — ${result.order.ref} (${ipnStatus})`,
+        );
+        if (result.firstActivation) {
+          const { config } = await getSiteData();
+          const outcome = await sendPaymentConfirmedEmail(
+            result.order,
+            config.name,
+            config.url,
+            config.email,
+          );
+          if (!outcome.ok) {
+            console.warn("[ipn][abonnement] e-mail non envoyé :", outcome.error);
+          }
+        }
+      } else if (result.outcome === "amount_mismatch") {
+        console.warn(`[ipn][abonnement] montant refusé : ${result.reason}`);
+      } else {
+        console.info(`[ipn][abonnement] ignoré : ${result.outcome}`);
+      }
+      return NextResponse.json({ ok: true, subscription: result.outcome });
+    } catch (error) {
+      console.error(
+        "[ipn][abonnement] traitement impossible :",
+        error instanceof Error ? error.message : error,
+      );
+      // 500 → NOWPayments réessaiera plus tard.
+      return NextResponse.json({ ok: false, error: "processing_failed" }, { status: 500 });
+    }
   }
 
   try {
