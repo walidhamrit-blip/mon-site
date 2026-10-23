@@ -211,21 +211,23 @@ export function AbonnementsClient({
             >
               <div className="text-lg font-black">{ar ? tier.name : tier.nameEn}</div>
               <div className="mt-3 text-3xl font-black">
-                ${plan?.priceUsd ?? "—"}
+                {cycle === "annual" && plan
+                  ? `$${(plan.priceUsd / 12).toFixed(2)}`
+                  : `$${plan?.priceUsd ?? "—"}`}
                 <span className="text-sm font-normal text-[var(--muted-foreground)]">
-                  {" "}/ {cycle === "monthly" ? (ar ? "شهر" : "month") : ar ? "سنة" : "year"}
+                  {" "}/ {ar ? "شهر" : "month"}
                 </span>
               </div>
               {cycle === "annual" && plan && (
-                <div className="mt-2 text-sm font-bold">
+                <div className="mt-2 text-sm text-[var(--muted-foreground)]">
                   {ar
-                    ? `أي $${(plan.priceUsd / 12).toFixed(2)} / شهر`
-                    : `That is $${(plan.priceUsd / 12).toFixed(2)} / month`}
+                    ? `الدفع السنوي: $${plan.priceUsd} / سنة`
+                    : `Billed yearly: $${plan.priceUsd} / year`}
                 </div>
               )}
               {cycle === "annual" && saving > 0 && (
-                <div className="mt-1 text-sm text-[var(--accent)]">
-                  {ar ? `توفير $${saving} مقارنة بالشهري` : `Save $${saving} vs monthly`}
+                <div className="mt-1 text-sm font-bold text-[var(--accent)]">
+                  {ar ? `توفير $${saving} في السنة` : `You save $${saving} per year`}
                 </div>
               )}
             </button>
