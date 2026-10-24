@@ -207,11 +207,30 @@ jobs:
               "",
               "${{ steps.summary.outputs.body }}",
             ].join("\n");
+            // Le label n'est pas créé avec le dépôt : l'API refuse de
+            // rattacher une issue à un label inexistant (422). On s'assure
+            // donc qu'il existe avant de l'utiliser.
+            const LABEL = "badge-client";
+            try {
+              await github.rest.issues.getLabel({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                name: LABEL,
+              });
+            } catch {
+              await github.rest.issues.createLabel({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                name: LABEL,
+                color: "C6A664",
+                description: "Site client sans badge « Website by Nukhba » (netlinking)",
+              });
+            }
             const { data: issues } = await github.rest.issues.listForRepo({
               owner: context.repo.owner,
               repo: context.repo.repo,
               state: "open",
-              labels: "badge-client",
+              labels: LABEL,
             });
             const existing = issues.find((issue) => issue.title === title);
             if (existing) {
@@ -227,7 +246,7 @@ jobs:
                 repo: context.repo.repo,
                 title,
                 body,
-                labels: ["badge-client"],
+                labels: [LABEL],
               });
             }
 
@@ -237,11 +256,29 @@ jobs:
         with:
           script: |
             const title = "Badge client : sites à corriger (netlinking)";
+            // Même garde-fou que dans l'étape d'ouverture : le label doit
+            // exister pour que le filtre trouve une éventuelle issue.
+            const LABEL = "badge-client";
+            try {
+              await github.rest.issues.getLabel({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                name: LABEL,
+              });
+            } catch {
+              await github.rest.issues.createLabel({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                name: LABEL,
+                color: "C6A664",
+                description: "Site client sans badge « Website by Nukhba » (netlinking)",
+              });
+            }
             const { data: issues } = await github.rest.issues.listForRepo({
               owner: context.repo.owner,
               repo: context.repo.repo,
               state: "open",
-              labels: "badge-client",
+              labels: LABEL,
             });
             const existing = issues.find((issue) => issue.title === title);
             if (existing) {
