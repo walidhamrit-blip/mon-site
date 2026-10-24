@@ -114,6 +114,13 @@ Dans l'admin → **Codes & Cartes cadeaux** :
 3. Pour **chaque montant**, renseignez **Valeur Reloadly** (`unitPrice` exact
    attendu par Reloadly : `50`, `25`, `10`…). Sans ce champ, la valeur est
    déduite du premier nombre de la valeur faciale (« 50 USD » → 50).
+
+   ⚠️ **Reloadly n'accepte que les valeurs de son produit** : les montants
+   listés pour un produit `FIXED` (ex. `10, 20, 50, 100`), ou toute valeur
+   dans la fourchette d'un produit `RANGE`. Envoyer autre chose renvoie
+   `WRONG_PRODUCT_PRICE` (« Invalid price »). Sous la recherche Reloadly, le
+   bloc **« Valeurs acceptées »** affiche la vérité du fournisseur et signale
+   en rouge chaque montant refusé **avant** l'enregistrement.
 4. Statut de la fiche : `Disponible`, et au moins un montant `Disponible`.
 
 > Une fiche en mode `Automatique` sans ID produit retombe en livraison manuelle
@@ -192,8 +199,12 @@ Statuts internes :
   automatiquement.
 - `404` produit : l'ID Reloadly n'existe plus ou n'est plus vendu dans ce pays
   → retirer le montant de la vente (bouton `Disponible`).
-- `400` sur `unitPrice` : la valeur n'appartient pas aux dénominations du
-  produit → corriger **Valeur Reloadly** (valeurs fixes du produit).
+- `400` sur `unitPrice` (`WRONG_PRODUCT_PRICE`) : la valeur n'appartient pas
+  aux dénominations du produit → corriger **Valeur Reloadly**. Ce contrôle est
+  désormais fait **avant** l'achat : la caisse refuse la vente (message neutre
+  pour le client) et la livraison bascule en manuel avec le motif explicite
+  (« 5 USD n'est pas une valeur acceptée… valeurs possibles : 10, 20, 50 »).
+  Aucun débit n'a lieu pour un prix refusé.
 
 ---
 

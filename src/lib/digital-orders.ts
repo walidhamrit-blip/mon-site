@@ -20,6 +20,7 @@ import { digitalOrders, orders, type DigitalOrder } from "@/db/schema";
 import { getDigitalProductBySlug } from "@/lib/digital-store";
 import { denominationUnitPrice, effectiveFulfillment } from "@/lib/digital-types";
 import {
+  checkSupplierUnitPrice,
   maskEmail,
   normalizeDigitalStatus,
   parseManualCodes,
@@ -36,6 +37,7 @@ import {
 import {
   createGiftCardOrder,
   getGiftCardCodes,
+  getGiftCardProduct,
   isReloadlyError,
   reloadlyConfigured,
   reloadlyErrorMessage,
@@ -63,6 +65,33 @@ export {
 } from "@/lib/digital-order-core";
 export type { DigitalOrderStatus, DigitalQuote } from "@/lib/digital-order-core";
 export { digitalCodesKey, encryptDigitalCodes, decryptDigitalCodes } from "@/lib/digital-codes";
+
+/* ------------------------ Valeur faciale vs Reloadly ---------------------- */
+
+/**
+ * Contrôle la valeur faciale auprès du produit Reloadly AVANT l'achat.
+ *
+ * Renvoie un motif lisible quand le fournisseur refuse cette valeur
+ * (`WRONG_PRODUCT_PRICE` côté API, message incompréhensible pour l'admin),
+ * `null` quand elle est acceptable — ou quand la vérification est
+ * impossible (panne du catalogue) : on ne bloque jamais un achat sur une
+ * vérification facultative.
+ */
+async function supplierPriceIssue(productId: number, unitPrice: number): Promise<string | null> {
+  try {
+    const product = await getGiftCardProduct(productId);
+    const check = checkSupplierUnitPrice(product, unitPrice);
+    return check.ok
+      ? null
+      : `${check.message} Corrigez la « Valeur Reloadly » de ce montant dans la fiche, puis relancez.`;
+  } catch (error) {
+    console.warn(
+      "[digital] vérification de la valeur faciale impossible :",
+      error instanceof Error ? error.message : error,
+    );
+    return null;
+  }
+}
 
 /* ------------------------------- Création -------------------------------- */
 
@@ -116,6 +145,21 @@ export async function createDigitalCheckout(
       503,
       "Vente momentanément indisponible en ligne pour ce code. Contactez-nous sur WhatsApp : nous vous le fournissons manuellement.",
     );
+  }
+
+  // Prix accepté par le fournisseur : on refuse la vente AVANT d'encaisser
+  // plutôt que de découvrir `WRONG_PRODUCT_PRICE` une fois le client payé.
+  if (fulfillment === "auto" && quote.reloadlyUnitPrice != null) {
+    const productId = Number(product.reloadlyProductId);
+    const issue = await supplierPriceIssue(productId, quote.reloadlyUnitPrice);
+    if (issue) {
+      console.error(`[digital][checkout] valeur refusée (${product.slug}) : ${issue}`);
+      throw new DigitalOrderError(
+        "supplier_price_unsupported",
+        409,
+        "Ce montant n'est pas disponible à la vente en ligne pour le moment. Écrivez-nous sur WhatsApp : nous vous le fournissons autrement.",
+      );
+    }
   }
 
   const ref = newOrderReference("DGC");
@@ -468,6 +512,9 @@ export async function deliverPaidDigitalOrder(
 
   try {
     if (!transactionId) {
+      const priceIssue = await supplierPriceIssue(productId, unitPrice);
+      if (priceIssue) return flagManual(order, priceIssue);
+
       const purchase = await createGiftCardOrder({
         productId,
         quantity: order.quantity,

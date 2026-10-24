@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { isAdminAuthenticated } from "@/lib/auth";
 import {
+  getGiftCardProduct,
   isReloadlyError,
   listGiftCardProducts,
   reloadlyConfigured,
@@ -11,6 +12,26 @@ import {
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
+
+/**
+ * Forme publique (admin) d'un produit Reloadly : aucune donnée de compte,
+ * seulement ce qu'il faut pour relier un montant correctement.
+ */
+function toClientProduct(product: ReloadlyGiftCardProduct) {
+  return {
+    productId: product.productId,
+    name: product.productName,
+    country: product.countryCode,
+    currency: product.currencyCode,
+    brand: product.brandName,
+    type: product.denominationType,
+    fixedDenominations: product.fixedDenominations,
+    minDenomination: product.minDenomination,
+    maxDenomination: product.maxDenomination,
+    status: product.status,
+    logo: product.logoUrls[0] ?? null,
+  };
+}
 
 /**
  * Recherche de produits dans le catalogue Reloadly — réservé à l'admin.
@@ -38,11 +59,18 @@ export async function GET(req: Request) {
   }
 
   const url = new URL(req.url);
+  const id = Number(url.searchParams.get("id") ?? 0);
   const search = (url.searchParams.get("q") ?? "").trim();
   const country = (url.searchParams.get("country") ?? "").trim().toUpperCase();
   const page = Number(url.searchParams.get("page") ?? 1);
 
   try {
+    // `?id=` : relit un produit déjà relié (valeurs faciales acceptées).
+    if (Number.isInteger(id) && id > 0) {
+      const product = await getGiftCardProduct(id);
+      return NextResponse.json({ ok: true, mode: reloadlyMode(), product: toClientProduct(product) });
+    }
+
     const { products, total } = await listGiftCardProducts({
       productName: search || undefined,
       countryCode: country || undefined,
@@ -54,19 +82,7 @@ export async function GET(req: Request) {
       ok: true,
       mode: reloadlyMode(),
       total,
-      products: products.map((product: ReloadlyGiftCardProduct) => ({
-        productId: product.productId,
-        name: product.productName,
-        country: product.countryCode,
-        currency: product.currencyCode,
-        brand: product.brandName,
-        type: product.denominationType,
-        fixedDenominations: product.fixedDenominations,
-        minDenomination: product.minDenomination,
-        maxDenomination: product.maxDenomination,
-        status: product.status,
-        logo: product.logoUrls[0] ?? null,
-      })),
+      products: products.map(toClientProduct),
     });
   } catch (error) {
     console.error(

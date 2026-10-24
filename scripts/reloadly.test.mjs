@@ -750,3 +750,80 @@ test("livraison : la configuration de livraison est relue depuis la fiche", () =
     "la resynchronisation ne touche jamais au prix payé",
   );
 });
+
+/* --------------------- Valeur faciale acceptée par Reloadly ------------------ */
+
+test("valeur faciale : refus explicite quand le produit ne l'accepte pas", () => {
+  const fixed = {
+    denominationType: "FIXED",
+    fixedDenominations: [10, 20, 50, 100],
+    minDenomination: null,
+    maxDenomination: null,
+    currencyCode: "USD",
+    productId: 11828,
+  };
+  assert.equal(core.checkSupplierUnitPrice(fixed, 10).ok, true);
+  assert.equal(core.checkSupplierUnitPrice(fixed, 100).ok, true);
+
+  const refused = core.checkSupplierUnitPrice(fixed, 5);
+  assert.equal(refused.ok, false);
+  // Message actionnable : valeur fautive, valeurs possibles, produit visé.
+  assert.match(refused.message, /5 USD n'est pas une valeur acceptée/);
+  assert.match(refused.message, /10, 20, 50, 100/);
+  assert.match(refused.message, /#11828/);
+
+  const range = {
+    denominationType: "RANGE",
+    fixedDenominations: [],
+    minDenomination: 10,
+    maxDenomination: 100,
+    currencyCode: "EUR",
+    productId: 7,
+  };
+  assert.equal(core.checkSupplierUnitPrice(range, 25).ok, true);
+  assert.equal(core.checkSupplierUnitPrice(range, 10).ok, true);
+  assert.match(core.checkSupplierUnitPrice(range, 5).message, /hors de la fourchette/);
+  assert.match(core.checkSupplierUnitPrice(range, 150).message, /hors de la fourchette/);
+
+  // Valeur absente : refus explicite, jamais un achat à l'aveugle.
+  assert.equal(core.checkSupplierUnitPrice(fixed, 0).ok, false);
+
+  // Données incomplètes chez le fournisseur : on ne bloque pas une vente.
+  assert.equal(
+    core.checkSupplierUnitPrice({
+      denominationType: "FIXED",
+      fixedDenominations: [],
+      minDenomination: null,
+      maxDenomination: null,
+    }, 5).ok,
+    true,
+  );
+  assert.equal(
+    core.checkSupplierUnitPrice({
+      denominationType: "INCONNU",
+      fixedDenominations: [],
+      minDenomination: null,
+      maxDenomination: null,
+    }, 5).ok,
+    true,
+  );
+});
+
+test("achat : le prix est contrôlé chez Reloadly AVANT la commande", () => {
+  const source = readFileSync(join(srcRoot, "lib/digital-orders.ts"), "utf8");
+  const delivery = source.slice(source.indexOf("export async function deliverPaidDigitalOrder"));
+  assert.match(delivery, /const priceIssue = await supplierPriceIssue\(productId, unitPrice\)/);
+  assert.ok(
+    delivery.indexOf("supplierPriceIssue(productId, unitPrice)") <
+      delivery.indexOf("createGiftCardOrder({"),
+    "le contrôle doit précéder l'achat (aucun débit pour un prix refusé)",
+  );
+
+  // Et la caisse refuse la vente avant d'émettre la facture.
+  const checkout = source.slice(
+    source.indexOf("export async function createDigitalCheckout"),
+    source.indexOf("export async function deliverPaidDigitalOrder"),
+  );
+  assert.match(checkout, /const issue = await supplierPriceIssue\(/);
+  assert.ok(checkout.indexOf("supplierPriceIssue(") < checkout.indexOf("newOrderReference("));
+});
