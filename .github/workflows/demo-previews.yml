@@ -146,13 +146,37 @@ jobs:
       - name: Alerte — démos hors ligne
         if: always() && steps.report.outputs.down_count != '0'
         uses: actions/github-script@v8
+        env:
+          # Le corps du rapport est multi-ligne : l'injecter dans une chaîne
+          # JS produirait des retours à la ligne dans le source et une
+          # SyntaxError. Une variable d'environnement le transporte intact.
+          REPORT_BODY: ${{ steps.report.outputs.body }}
         with:
           script: |
             const title = "Démos hors ligne — captures d'aperçu impossibles";
+            // Le label n'est pas créé avec le dépôt : l'API refuse de
+            // rattacher une issue à un label inexistant (422). On s'assure
+            // donc qu'il existe avant de l'utiliser.
+            const LABEL = "demo-preview";
+            try {
+              await github.rest.issues.getLabel({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                name: LABEL,
+              });
+            } catch {
+              await github.rest.issues.createLabel({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                name: LABEL,
+                color: "C6A664",
+                description: "Démo hors ligne — capture d'aperçu impossible",
+              });
+            }
             const body = [
               "Le workflow **Demo previews** n'a pas pu joindre certaines démos.",
               "",
-              "${{ steps.report.outputs.body }}",
+              process.env.REPORT_BODY,
               "",
               `Run : ${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`,
               "",
@@ -162,7 +186,7 @@ jobs:
               owner: context.repo.owner,
               repo: context.repo.repo,
               state: "open",
-              labels: "demo-preview",
+              labels: LABEL,
             });
             const existing = issues.find((issue) => issue.title === title);
             if (existing) {
@@ -178,11 +202,34 @@ jobs:
                 repo: context.repo.repo,
                 title,
                 body,
-                labels: ["demo-preview"],
+                labels: [LABEL],
               });
             }
 
+      # Une branche de mise à jour laissée par un run précédent empêche
+      # l'ouverture de la PR au run suivant : on la supprime, sauf si une PR
+      # ouverte y est encore rattachée.
+      - name: Nettoyage de la branche de mise à jour
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          open_prs=$(gh pr list --head chore/demo-previews --state open --json number --jq 'length' 2>/dev/null || echo 0)
+          if [ "$open_prs" != "0" ]; then
+            echo "PR ouverte sur chore/demo-previews : branche conservée."
+          else
+            git push origin --delete chore/demo-previews 2>/dev/null \
+              && echo "Branche de mise à jour obsolète supprimée." \
+              || echo "Aucune branche de mise à jour à supprimer."
+          fi
+
+      # La PR de mise à jour est une *proposition* : le verdict du workflow
+      # passe par le rapport et par l'issue « démos hors ligne ». Son échec ne
+      # doit donc pas rendre le run entier rouge — il est signalé en
+      # avertissement, pas masqué.
       - name: Proposition de mise à jour des captures
+        id: pr
+        continue-on-error: true
         if: always() && steps.report.outputs.down_count == '0' && steps.report.outputs.error_count == '0'
         uses: peter-evans/create-pull-request@v7
         with:
@@ -203,3 +250,8 @@ jobs:
 
             Aucun contenu éditorial n'est modifié. Le sitemap d'images et les
             données structurées (`image`, `screenshot`) suivent ce manifeste.
+
+      - name: Avertissement — PR de mise à jour non ouverte
+        if: always() && steps.pr.outcome == 'failure'
+        run: |
+          echo "::warning::La PR de mise à jour des captures n'a pas pu être ouverte (étape non bloquante). Le rapport est publié et l'issue « démos hors ligne » fait foi."
