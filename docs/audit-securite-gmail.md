@@ -31,6 +31,7 @@ Autrement dit : **le compte n'est probablement pas piraté aujourd'hui, mais il 
 | C7 | « Applications moins sécurisées » activées historiquement (2016) | 🟡 Moyen |
 | C8 | Volume élevé de spam / scam affectif russophone | 🟡 Moyen |
 | C9 | Signaux faibles d'hygiène : abonnements suspendus, comptes tiers fermés | 🟡 Moyen |
+| C10 | **Adresses de retrait OKX ajoutées et validées (23–24/10) + retraits tests** | 🔴 Critique |
 
 ---
 
@@ -51,7 +52,13 @@ Autrement dit : **le compte n'est probablement pas piraté aujourd'hui, mais il 
 | **16/10/2026 21:54** | **Compte récupéré + 3 alertes** | `…2022` | Récupération n°3 en 5 semaines |
 | 20/10/2026 16:24 | Nouvelle connexion depuis un Windows | principal | Vérifier |
 | 21/10/2026 14:25–14:39 | 4 autorisations OAuth en 14 minutes | principal | `Merge` ×3 puis `Merge Agent Handler` |
-| 21/10/2026 17:59 | Dépôt crypto 48 255 USDT (OKX) | — | Montant élevé transitant via la boîte |
+| 21/10/2026 17:59 | Dépôt OKX `48,255 USDT` (lecture ambiguë, voir correctif) | principal | Volume inhabituel à confirmer |
+| **23/10/2026 02:48** | **Adresse de retrait ajoutée : `Gm56kP7JCHDnqFJmhQwJKXX1MBsLsof1rgiWvkpG2NnF` (Solana)** | OKX | **Adresse validée 30 j sans code** |
+| 23/10/2026 02:58 | Retrait test 2 USDT → `Gm56…` | OKX | Validation d'adresse |
+| 23/10/2026 05:43 | Retrait test 4 USDT → `Gm56…` | OKX | Validation d'adresse |
+| **23/10/2026 23:30** | **Adresse de retrait ajoutée : `0xc6bAC933e94CD27b412239BeB032c1fa461db5d0` (EVM)** | OKX | **Adresse validée 30 j sans code** |
+| 23/10/2026 23:32 | Retrait test 2 USDT → `0xc6bA…` | OKX | Validation d'adresse |
+| 24/10/2026 08:02 | Nouvel ordre P2P 4 348 $ (20 000 TND) | OKX | Compte marchand toujours actif |
 
 > **À confirmer par vous (point bloquant de l'audit) :**
 > - Le 26/09 à 16:47, avez-vous constaté une activité anormale ?
@@ -107,9 +114,18 @@ En 90 jours, les applications suivantes ont reçu un accès aux données Google 
 La boîte est l'identifiant et/ou l'adresse de récupération de : **OKX, HTX (Huobi), KuCoin, Skrill, Deriv, Whop, Zoho Payments**, plus les plateformes de paiement du site (**NOWPayments**).
 
 Éléments relevés :
-- Dépôt **48 255 USDT** en cours de traitement sur OKX le 21/10/2026 (`1a15f9e39d59c5c1`)
-- Ordre P2P OKX de **1 669 $** le 10/10
+- Dépôt OKX le 21/10/2026 à 19:59:55 (`1a15f9eabb027cca`) — **montant à vérifier** (voir encadré ci-dessous)
+- Ordre P2P OKX de **1 669 $** le 10/10 ; compte marchand P2P actif « Vendre USDT/TND » avec des ordres de 1 400 $ à 9 950 $
+- **Deux adresses de retrait ajoutées et validées les 23 et 24/10** (voir constat C10)
 - Migrations d'API KuCoin v2 → v3 non traitées (relances hebdomadaires depuis avril 2026)
+
+> ### ⚠️ Correctif du 24/10 — montant du dépôt OKX
+>
+> La première version de ce rapport indiquait « 48 255 USDT ». **Cette lecture était erronée.**
+>
+> L'e-mail est authentique (SPF `pass`, DKIM `pass` ×2, DMARC `pass p=QUARANTINE`, envoyé depuis l'infrastructure SendGrid d'OKX `em7586.mailer2.okx.com`), mais le montant est ambigu à l'affichage. Dans la même série d'e-mails « Dépôt reçu » du 21/10, OKX affiche `32,9 USDT` et `19,1011 USDT` : la virgule y est donc le **séparateur décimal**. Par cohérence, `48,255 USDT` se lit **48,255 USDT (≈ 48 $)** et non 48 255 $.
+>
+> **Vérification à faire dans l'app OKX** : Historique → Dépôts → entrée du 21/10/2026 19:59:55 (UID `702980538277471174`). Le montant exact y figure avec la précision complète.
 
 **Risque :** le mail est le facteur de récupération universel. Un accès à la boîte = accès à l'ensemble de ces actifs *via* les procédures « mot de passe oublié ».
 
@@ -139,6 +155,27 @@ Ce n'est pas une compromission, mais **c'est un vecteur classique de phishing ci
 - **Compte eBay définitivement suspendu** (28/01).
 - Multiples comptes créés via « Se connecter avec Google » sans revue ultérieure.
 
+### C10 — Adresses de retrait OKX ajoutées et validées (🔴 Critique)
+
+Découvert lors de la vérification du montant du dépôt. Les 23 et 24 octobre 2026, **deux adresses de retrait ont été ajoutées au compte OKX, puis validées pour 30 jours sans exigence de code de vérification**, chacune suivie d'un petit retrait de test :
+
+| Date (UTC) | Action | Adresse | Montant test |
+|---|---|---|---|
+| 23/10 02:48 | Adresse vérifiée 30 j | `Gm56kP7JCHDnqFJmhQwJKXX1MBsLsof1rgiWvkpG2NnF` (Solana) | — |
+| 23/10 02:58 | Retrait exécuté | `Gm56…G2NnF` | 2 USDT |
+| 23/10 05:43 | Retrait exécuté | `Gm56…G2NnF` | 4 USDT |
+| 23/10 23:30 | Adresse vérifiée 30 j | `0xc6bAC933e94CD27b412239BeB032c1fa461db5d0` (EVM) | — |
+| 23/10 23:32 | Retrait exécuté | `0xc6bA…1db5d0` | 2 USDT |
+
+Les e-mails de demande indiquent « effectuée à Tripoli, Libye », ce qui est cohérent avec votre localisation — mais **une origine géographique ne prouve pas l'identité de l'opérateur** (VPN, proxy, ou session détournée depuis votre propre appareil).
+
+**Pourquoi c'est critique :** le schéma « ajouter une adresse → la faire valider 30 jours → envoyer 2 USDT de test → gros retrait » est la séquence préparatoire standard d'un drain. Une fois l'adresse en liste blanche, **plus aucun code n'est demandé** pour retirer vers elle. Si ces deux adresses ne sont pas les vôtres, le solde est **exposé** dès maintenant.
+
+**Question bloquante :** reconnaissez-vous `Gm56kP7JCHDnqFJmhQwJKXX1MBsLsof1rgiWvkpG2NnF` et `0xc6bAC933e94CD27b412239BeB032c1fa461db5d0` ?
+
+- **Si oui** (vos propres portefeuilles) : risque écarté, ces lignes sont normales.
+- **Si non** : traiter immédiatement comme un compte compromis — voir action 0 du plan ci-dessous.
+
 ---
 
 ## 4. Points positifs vérifiés
@@ -155,6 +192,15 @@ L'audit a cherché activement des indicateurs de compromission ; ceux-ci sont **
 ---
 
 ## 5. Plan d'action
+
+### Immédiatement — action 0 (OKX)
+
+0. **Si vous ne reconnaissez pas les deux adresses de retrait du C10 :**
+   - Ouvrez l'app OKX → **Retrait → Adresses enregistrées** et **supprimez** `Gm56kP7JCHDnqFJmhQwJKXX1MBsLsof1rgiWvkpG2NnF` et `0xc6bAC933e94CD27b412239BeB032c1fa461db5d0`.
+   - **Changez le mot de passe OKX** et **déconnectez toutes les sessions** (Sécurité → Gérer les appareils).
+   - **Désactivez le trading et les retraits** (gel temporaire) le temps de l'investigation, puis contactez le support OKX en signalant une activité non autorisée.
+   - Vérifiez l'historique complet des retraits depuis le 21/10 : aucun montant supérieur aux tests de 2–4 USDT ne doit apparaître.
+   - Vérifiez que l'**authentificateur 2FA** n'a pas été réenregistré et que l'e-mail/numéro de téléphone du compte n'ont pas changé.
 
 ### Sous 24 heures — actions critiques
 
@@ -206,9 +252,13 @@ Un audit complet nécessite également l'accès aux comptes `walidhamrit2022@gma
 
 ## 7. Conclusion
 
-Le compte **ne présente pas de compromission active démontrée** : pas d'envoi frauduleux, pas de règle de transfert cachée, pas d'accès depuis l'étranger. Le risque est ailleurs : **un événement de sécurité critique non traité (26/09), une récupération de compte non expliquée (14/10), et une surface d'autorisation OAuth de plus de 35 applications** — le tout sur la boîte qui contrôle vos exchanges et votre infrastructure de production.
+Le compte e-mail **ne présente pas de compromission active démontrée** : pas d'envoi frauduleux, pas de règle de transfert cachée, pas d'accès depuis l'étranger. Le risque documenté se situe à trois niveaux :
 
-Les actions 1 à 8 du plan d'action réduisent l'essentiel du risque et prennent moins d'une heure.
+1. **Côté Gmail** : un événement de sécurité critique non traité (26/09), une récupération de compte non expliquée (14/10), et plus de 35 applications OAuth autorisées.
+2. **Côté OKX** : deux adresses de retrait ajoutées et validées les 23–24/10, précédées de retraits de test de 2 à 4 USDT (constat C10) — **c'est le point le plus urgent de tout l'audit**.
+3. **Côté architecture** : la boîte est le point unique de défaillance de vos exchanges et de votre infrastructure de production.
+
+**Action 0 (OKX) et actions 1 à 8 du plan** couvrent l'essentiel et prennent moins d'une heure.
 
 ---
 
