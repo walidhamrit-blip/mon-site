@@ -13,6 +13,15 @@ export async function generateStaticParams() {
   return products.map((product) => ({ slug: product.slug }));
 }
 
+/**
+ * Filet de sécurité : les fiches sont pré-générées au build, et l'admin peut
+ * modifier statut / prix / montants à tout moment. Sans fenêtre de
+ * revalidation, une fiche reste figée sur l'état du dernier déploiement
+ * (statut « bientôt disponible », aucun bouton d'achat) jusqu'au build
+ * suivant. On rafraîchit donc au plus tard une minute après un changement.
+ */
+export const revalidate = 60;
+
 export async function generateMetadata({
   params,
 }: {
