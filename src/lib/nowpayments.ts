@@ -704,3 +704,29 @@ export async function cancelSubscriptionRemote(
     `/subscriptions/${encodeURIComponent(nowpaymentsSubscriptionId)}`,
   );
 }
+
+/**
+ * Détail d'un abonnement (`GET /v1/subscriptions/{id}`), y compris ses
+ * factures/paiements. Utilisé pour rattacher une IPN anonyme (qui ne
+ * contient que `invoice_id`) à son abonné quand l'iid n'est pas mémorisé.
+ */
+export function getRemoteSubscription(
+  subscriptionId: string,
+): Promise<unknown> {
+  return nowPaymentsSubscriptionRequest<unknown>(
+    "GET",
+    `/subscriptions/${encodeURIComponent(subscriptionId)}`,
+  );
+}
+
+/**
+ * Liste les abonnements récurrents du marchand (`GET /v1/subscriptions`).
+ * Réponse potentiellement enveloppée dans `{ result: [...] }`, déjà gérée
+ * par la couche de requête.
+ */
+export function listRemoteSubscriptions(limit = 100): Promise<unknown> {
+  return nowPaymentsSubscriptionRequest<unknown>(
+    "GET",
+    `/subscriptions?limit=${limit}`,
+  );
+}

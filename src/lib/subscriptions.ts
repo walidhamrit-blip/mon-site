@@ -5,7 +5,7 @@
 //  - lecture de l'espace abonné protégé par jeton.
 // Voir docs/abonnements-nowpayments.md.
 
-import { and, eq, inArray, isNotNull } from "drizzle-orm";
+import { and, desc, eq, inArray, isNotNull } from "drizzle-orm";
 import { db, ensureSchema } from "@/db";
 import {
   orders,
@@ -13,12 +13,14 @@ import {
   subscriptions,
   type Order,
   type Subscription,
+  type SubscriptionPlanRow,
 } from "@/db/schema";
 import { siteBaseUrl } from "@/lib/site-url";
 import {
   cancelSubscriptionRemote,
   createSubscription,
   createSubscriptionPlan,
+  getRemoteSubscription,
   isFailedStatus,
   isNowPaymentsError,
   isPaidStatus,
@@ -45,9 +47,11 @@ import {
   blocksNewSubscription,
   displayStatus,
   hasAccess,
+  invoiceIdFromSubscriptionRecord,
   nextBillingPeriod,
   noticeToSend,
   normalizeEmail,
+  recordReferencesInvoiceId,
   type SubscriptionDisplayStatus,
 } from "@/lib/subscription-lifecycle";
 import { buildNoticeEmail } from "@/lib/subscription-emails";
@@ -304,9 +308,24 @@ export async function createClientSubscription(
         `NOWPayments n'a pas renvoyé l'identifiant de l'abonnement (réponse : ${snippet})`,
       );
     }
+    // L'iid de la première facture, extrait du lien de paiement renvoyé par
+    // NOWPayments : les IPN ne portant pas d'identifiant d'abonnement, c'est
+    // lui qui rattachera les prochains paiements sans appel d'API.
+    const invoiceId = invoiceIdFromSubscriptionRecord(remote);
+    if (!invoiceId) {
+      console.warn(
+        `[abonnements] ${ref}: iid de facture absent de la réponse NOWPayments — ` +
+          "réconciliation d'API utilisée en repli. Réponse :",
+        JSON.stringify(remote ?? null).slice(0, 300),
+      );
+    }
     await db
       .update(subscriptions)
-      .set({ nowpaymentsSubscriptionId: remoteId, updatedAt: new Date() })
+      .set({
+        nowpaymentsSubscriptionId: remoteId,
+        ...(invoiceId ? { firstInvoiceId: invoiceId } : {}),
+        updatedAt: new Date(),
+      })
       .where(eq(subscriptions.id, row.id));
   } catch (error) {
     await db.delete(subscriptions).where(eq(subscriptions.id, row.id));
@@ -350,38 +369,22 @@ function text(value: unknown): string {
 }
 
 /**
- * Applique un paiement d'abonnement confirmé. Idempotent : un même
- * `payment_id` n'est enregistré qu'une fois (contrainte unique + verrou sur
- * la ligne d'abonnement). Le montant et la devise doivent correspondre au
- * prix du plan. Une notification `failed`/`expired` ne modifie pas l'accès.
+ * Cœur d'activation partagé par les deux entrées IPN :
+ *  - `applySubscriptionIpn` quand l'IPN porte un identifiant d'abonnement ;
+ *  - `reconcileSubscriptionInvoice` quand elle ne porte qu'un `invoice_id`.
+ *
+ * Idempotent : un même `payment_id` n'est enregistré qu'une fois
+ * (contrainte unique + verrou sur la ligne d'abonnement). Le montant et la
+ * devise doivent correspondre au prix du plan.
  */
-export async function applySubscriptionIpn(
+async function applyPaidIpnToSubscription(
+  sub: Subscription,
+  plan: SubscriptionPlanRow,
   payload: Record<string, unknown>,
-  nowpaymentsSubscriptionId: string,
+  status: string,
 ): Promise<SubscriptionIpnOutcome> {
-  await ensureSchema();
-
   const paymentId = text(payload.payment_id);
-  const status = text(payload.payment_status);
-  if (!paymentId || !status) return { outcome: "missing_fields" };
-
-  const [sub] = await db
-    .select({ planId: subscriptions.planId })
-    .from(subscriptions)
-    .where(eq(subscriptions.nowpaymentsSubscriptionId, nowpaymentsSubscriptionId))
-    .limit(1);
-  if (!sub) return { outcome: "unknown_subscription" };
-
-  const [plan] = await db
-    .select()
-    .from(subscriptionPlans)
-    .where(eq(subscriptionPlans.id, sub.planId))
-    .limit(1);
-  if (!plan) return { outcome: "unknown_plan" };
-
-  if (!isPaidStatus(status)) {
-    return { outcome: isFailedStatus(status) ? "payment_failed" : "pending" };
-  }
+  if (!paymentId) return { outcome: "missing_fields" };
 
   const check = validatePaidAmount(
     { amountUsd: plan.priceUsd, currency: SUBSCRIPTION_CURRENCY },
@@ -394,7 +397,7 @@ export async function applySubscriptionIpn(
     const [current] = await tx
       .select()
       .from(subscriptions)
-      .where(eq(subscriptions.nowpaymentsSubscriptionId, nowpaymentsSubscriptionId))
+      .where(eq(subscriptions.id, sub.id))
       .for("update")
       .limit(1);
     if (!current) return { outcome: "unknown_subscription" as const };
@@ -456,6 +459,123 @@ export async function applySubscriptionIpn(
       firstActivation: !wasAccessible,
     };
   });
+}
+
+/**
+ * Applique un IPN d'abonnement identifié par son identifiant NOWPayments
+ * (champ `subscription_id` ou variante, quand la passerelle le fournit).
+ * Une notification `failed`/`expired` ne modifie pas l'accès.
+ */
+export async function applySubscriptionIpn(
+  payload: Record<string, unknown>,
+  nowpaymentsSubscriptionId: string,
+): Promise<SubscriptionIpnOutcome> {
+  await ensureSchema();
+
+  const paymentId = text(payload.payment_id);
+  const status = text(payload.payment_status);
+  if (!paymentId || !status) return { outcome: "missing_fields" };
+
+  const [sub] = await db
+    .select()
+    .from(subscriptions)
+    .where(eq(subscriptions.nowpaymentsSubscriptionId, nowpaymentsSubscriptionId))
+    .limit(1);
+  if (!sub) return { outcome: "unknown_subscription" };
+
+  const [plan] = await db
+    .select()
+    .from(subscriptionPlans)
+    .where(eq(subscriptionPlans.id, sub.planId))
+    .limit(1);
+  if (!plan) return { outcome: "unknown_plan" };
+
+  if (!isPaidStatus(status)) {
+    return { outcome: isFailedStatus(status) ? "payment_failed" : "pending" };
+  }
+
+  return applyPaidIpnToSubscription(sub, plan, payload, status);
+}
+
+/**
+ * Rattache une IPN anonyme (les abonnements NOWPayments n'émettent ni
+ * `subscription_id` ni `order_id`, seulement `invoice_id`) à l'abonné local.
+ *
+ * Stratégie en deux temps :
+ *  1. correspondance directe sur `subscriptions.first_invoice_id` (capturé à
+ *     la création, ou replié après une première réconciliation) ;
+ *  2. sinon, lecture `GET /v1/subscriptions/{id}` des abonnés récents pour
+ *     trouver celui dont l'enregistrement distant référence cette facture.
+ *
+ * Réservé aux statuts payants : les notifications intermédiaires d'un
+ * paiement anonyme restent ignorées, le `finished` suivant activera
+ * l'abonnement. Renvoie `null` si aucun abonné ne correspond.
+ */
+export async function reconcileSubscriptionInvoice(
+  payload: Record<string, unknown>,
+): Promise<SubscriptionIpnOutcome | null> {
+  await ensureSchema();
+
+  const invoiceId = text(payload.invoice_id);
+  const status = text(payload.payment_status);
+  if (!invoiceId || !isPaidStatus(status)) return null;
+
+  // 1) Chemin rapide : la facture est déjà connue en base.
+  let sub = (
+    await db
+      .select()
+      .from(subscriptions)
+      .where(eq(subscriptions.firstInvoiceId, invoiceId))
+      .limit(1)
+  )[0];
+
+  // 2) Repli : interroger la passerelle sur les abonnés récents.
+  if (!sub) {
+    const candidates = await db
+      .select()
+      .from(subscriptions)
+      .where(isNotNull(subscriptions.nowpaymentsSubscriptionId))
+      .orderBy(desc(subscriptions.createdAt))
+      .limit(10);
+
+    for (const candidate of candidates) {
+      const remoteId = candidate.nowpaymentsSubscriptionId;
+      if (!remoteId) continue;
+      try {
+        const remote = await getRemoteSubscription(remoteId);
+        if (!recordReferencesInvoiceId(remote, invoiceId)) continue;
+        sub = candidate;
+        // On mémorise l'iid seulement si aucun n'était stocké : la colonne
+        // garde la première facture, les renouvellements repasseront par ce
+        // repli (un seul appel d'API par échéance).
+        if (!candidate.firstInvoiceId) {
+          await db
+            .update(subscriptions)
+            .set({ firstInvoiceId: invoiceId, updatedAt: new Date() })
+            .where(eq(subscriptions.id, candidate.id));
+        }
+        break;
+      } catch (error) {
+        // Un abonné illisible (JWT manquant, 404…) ne doit pas bloquer
+        // l'examen des autres candidats.
+        console.warn(
+          `[ipn][abonnement] lecture distante impossible pour ${candidate.ref} :`,
+          error instanceof Error ? error.message : error,
+        );
+      }
+    }
+  }
+
+  if (!sub) return null;
+
+  const [plan] = await db
+    .select()
+    .from(subscriptionPlans)
+    .where(eq(subscriptionPlans.id, sub.planId))
+    .limit(1);
+  if (!plan) return { outcome: "unknown_plan" };
+
+  return applyPaidIpnToSubscription(sub, plan, payload, status);
 }
 
 /* ------------------------------------------------------------------ */

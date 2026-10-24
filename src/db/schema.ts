@@ -125,6 +125,13 @@ export const subscriptions = pgTable("subscriptions", {
   clientName: text("client_name"),
   phone: text("phone"),
   nowpaymentsSubscriptionId: text("nowpayments_subscription_id").unique(),
+  /**
+   * Identifiant de la première facture (iid NOWPayments) rattachée à
+   * l'abonnement. Les IPN d'abonnement ne portent aucun identifiant
+   * d'abonnement : c'est cet iid (ou une réconciliation d'API) qui permet
+   * de rattacher le paiement à l'abonné.
+   */
+  firstInvoiceId: text("first_invoice_id"),
   /** inactive (facture en attente) | active — grace/expired dérivés de la date. */
   status: text("status").notNull().default("inactive"),
   currentPeriodStart: timestamp("current_period_start", { withTimezone: true }),

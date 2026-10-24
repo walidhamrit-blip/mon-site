@@ -4,6 +4,7 @@ import { db, ensureSchema } from "@/db";
 import { orders, type Order } from "@/db/schema";
 import { getSiteData } from "@/lib/store";
 import {
+  isPaidStatus,
   nextOrderStatus,
   orderStatusFromIpn,
   validatePaidAmount,
@@ -12,7 +13,10 @@ import {
 } from "@/lib/nowpayments";
 import { orderRefCandidates } from "@/lib/installments";
 import { sendPaymentConfirmedEmail } from "@/lib/order-emails";
-import { applySubscriptionIpn } from "@/lib/subscriptions";
+import {
+  applySubscriptionIpn,
+  reconcileSubscriptionInvoice,
+} from "@/lib/subscriptions";
 import { subscriptionIdFromPayload } from "@/lib/subscription-lifecycle";
 
 /**
@@ -121,6 +125,65 @@ export async function POST(req: Request) {
     }
 
     if (!order) {
+      // Les IPN d'abonnement ne portent ni order_id ni identifiant
+      // d'abonnement, seulement invoice_id : on tente la réconciliation
+      // par facture avant de déclarer le paiement inconnu.
+      if (isPaidStatus(ipnStatus)) {
+        try {
+          const reconciled = await reconcileSubscriptionInvoice(payload);
+          if (reconciled) {
+            if (
+              reconciled.outcome === "activated" ||
+              reconciled.outcome === "renewed"
+            ) {
+              console.info(
+                `[ipn][abonnement] ${reconciled.outcome} par facture — ${reconciled.order.ref} (${ipnStatus})`,
+              );
+              if (reconciled.firstActivation) {
+                const { config } = await getSiteData();
+                const outcome = await sendPaymentConfirmedEmail(
+                  reconciled.order,
+                  config.name,
+                  config.url,
+                  config.email,
+                );
+                if (!outcome.ok) {
+                  console.warn(
+                    "[ipn][abonnement] e-mail non envoyé :",
+                    outcome.error,
+                  );
+                }
+              }
+              return NextResponse.json({
+                ok: true,
+                subscription: reconciled.outcome,
+                reconciledViaInvoice: true,
+              });
+            }
+            if (reconciled.outcome === "amount_mismatch") {
+              console.warn(
+                `[ipn][abonnement] montant refusé (facture ${payload.invoice_id ?? "?"}) : ${reconciled.reason}`,
+              );
+            }
+            return NextResponse.json({
+              ok: true,
+              subscription: reconciled.outcome,
+              reconciledViaInvoice: true,
+            });
+          }
+        } catch (error) {
+          console.error(
+            "[ipn][abonnement] réconciliation impossible :",
+            error instanceof Error ? error.message : error,
+          );
+          // 500 → NOWPayments réessaiera plus tard.
+          return NextResponse.json(
+            { ok: false, error: "processing_failed" },
+            { status: 500 },
+          );
+        }
+      }
+
       // Paiement inconnu (ex. commande créée sur un autre
       // environnement) : on accepte la notification sans rien
       // modifier, pour que NOWPayments ne la renvoie pas.

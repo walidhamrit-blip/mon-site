@@ -91,6 +91,21 @@
 - Absence de résiliation par NOWPayments avant la fin de la grâce.
 - Envoi par NOWPayments de la facture de renouvellement par e-mail (hypothèse des relances).
 
+## Mise à jour — validation en production (24 oct. 2026)
+
+Test réel d'une souscription Vitrine mensuelle (10 $, paiement `finished`). Constats observés sur les IPN reçues par `/api/payments/ipn` :
+
+- **Aucun champ d'identifiant d'abonnement** dans l'IPN : ni `subscription_id`, ni `recurring_payment_id`, ni `subscriptionPaymentId`. La charge utile est celle d'un paiement standard, avec `order_id: null` et `order_description: null`.
+- Le seul pont vers l'abonnement est **`invoice_id`** (l'iid de la facture, ex. `5267182715`, aussi visible dans l'URL `nowpayments.io/payment?iid=…`).
+- `price_amount` / `price_currency` **sont bien présents** et exacts (10 / `usd`) : le contrôle de montant fonctionne sans adaptation.
+- La facture de première échéance n'a **pas été reçue par e-mail** : le lien de paiement est accessible depuis le tableau NOWPayments (Outils de paiement → historique) et, côté API, dans la réponse de `POST /v1/subscriptions`.
+
+Correctif appliqué :
+- `subscriptions.first_invoice_id` : iid capté dès la création (parsing du lien de paiement de la réponse d'abonnement), migration idempotente.
+- `reconcileSubscriptionInvoice()` : une IPN payante inconnue mais porteuse d'un `invoice_id` est d'abord cherchée par iid en base ; sinon, `GET /v1/subscriptions/{id}` est appelé sur les abonnés récents (max 10) pour trouver celui dont l'enregistrement distant référence la facture (`recordReferencesInvoiceId`), puis l'activation existante s'applique (période, grâce, commande, e-mail).
+- L'IPN est acceptée en 200 même sans rattachement (pas de renvoi inutile) ; le diagnostic complet (clés + corps tronqué) reste journalisé.
+- Tests : `npm run test:subscriptions` (25 tests, parsing d'iid et réconciliation inclus).
+
 ---
 
 ## Réalisé (commits précédents)
