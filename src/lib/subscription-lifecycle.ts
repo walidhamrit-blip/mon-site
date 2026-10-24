@@ -139,18 +139,49 @@ function accessEndOf(end: Date, graceDays: number): Date {
 
 /**
  * Identifiant NOWPayments de l'abonnement porté par une notification IPN.
- * Le nom exact du champ est à confirmer sur sandbox ; on accepte les
- * variantes connues plutôt que d'échouer silencieusement.
+ * Le nom exact du champ varie selon les versions de l'API : on accepte les
+ * variantes scalaires connues, puis les objets imbriqués, plutôt que
+ * d'échouer silencieusement et de laisser le paiement sans rattachement.
  */
-const SUBSCRIPTION_ID_KEYS = ["subscription_id", "recurring_payment_id"] as const;
+const SUBSCRIPTION_ID_KEYS = [
+  "subscription_id",
+  "recurring_payment_id",
+  "subscriptionId",
+  "recurringPaymentId",
+] as const;
+
+/**
+ * Racines d'un éventuel objet imbriqué portant l'identifiant. Noms
+ * volontairement spécifiques aux abonnements : un racine générique
+ * (`data`, `payload`) risquerait un faux positif qui détournerait un
+ * paiement ponctuel vers la branche abonnement.
+ */
+const SUBSCRIPTION_NESTED_ROOTS = [
+  "subscription",
+  "recurring_payment",
+  "recurringPayment",
+] as const;
+
+function asIdText(value: unknown): string | null {
+  if (value === null || value === undefined) return null;
+  const text = String(value).trim();
+  return text || null;
+}
 
 export function subscriptionIdFromPayload(
   payload: Record<string, unknown>,
 ): string | null {
   for (const key of SUBSCRIPTION_ID_KEYS) {
-    const value = payload[key];
-    if (value === null || value === undefined) continue;
-    const text = String(value).trim();
+    const text = asIdText(payload[key]);
+    if (text) return text;
+  }
+  for (const root of SUBSCRIPTION_NESTED_ROOTS) {
+    const node = payload[root];
+    if (!node || typeof node !== "object" || Array.isArray(node)) continue;
+    const record = node as Record<string, unknown>;
+    const text = asIdText(
+      record.id ?? record.subscription_id ?? record.subscriptionId,
+    );
     if (text) return text;
   }
   return null;

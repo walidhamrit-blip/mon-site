@@ -124,7 +124,19 @@ export async function POST(req: Request) {
       // Paiement inconnu (ex. commande créée sur un autre
       // environnement) : on accepte la notification sans rien
       // modifier, pour que NOWPayments ne la renvoie pas.
-      console.warn("[ipn] paiement inconnu :", paymentId, orderId);
+      // Diagnostic : le corps de l'IPN ne contient aucun secret
+      // (la signature HMAC voyage dans l'en-tête), on le journalise
+      // donc tronqué pour identifier les champs réellement envoyés,
+      // notamment l'identifiant d'abonnement si sa clé diffère.
+      console.warn(
+        "[ipn] paiement inconnu :",
+        paymentId,
+        orderId,
+        "| clés:",
+        Object.keys(payload).join(","),
+        "| corps:",
+        rawBody.slice(0, 1200),
+      );
       return NextResponse.json({ ok: true, ignored: true });
     }
 

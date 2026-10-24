@@ -195,6 +195,45 @@ test("identifiant d'abonnement lu dans l'IPN", () => {
   assert.equal(mod.subscriptionIdFromPayload({ subscription_id: null }), null);
 });
 
+test("identifiant d'abonnement : variantes camelCase et imbriquées", () => {
+  assert.equal(
+    mod.subscriptionIdFromPayload({ subscriptionId: "9001" }),
+    "9001",
+  );
+  assert.equal(
+    mod.subscriptionIdFromPayload({ recurringPaymentId: "9002" }),
+    "9002",
+  );
+  assert.equal(
+    mod.subscriptionIdFromPayload({ subscription: { id: "9003" } }),
+    "9003",
+  );
+  assert.equal(
+    mod.subscriptionIdFromPayload({
+      recurring_payment: { subscription_id: "9004" },
+    }),
+    "9004",
+  );
+  assert.equal(
+    mod.subscriptionIdFromPayload({ recurringPayment: { id: 9005 } }),
+    "9005",
+  );
+  // Un objet imbriqué sans identifiant exploitable ne doit pas faire de faux positif.
+  assert.equal(
+    mod.subscriptionIdFromPayload({ subscription: { status: "active" } }),
+    null,
+  );
+  // Une charge utile de paiement ponctuel classique ne doit jamais être détournée.
+  assert.equal(
+    mod.subscriptionIdFromPayload({
+      payment_id: "1",
+      payment_status: "finished",
+      order_id: "RSV-1",
+    }),
+    null,
+  );
+});
+
 test("normalisation de l'e-mail", () => {
   assert.equal(mod.normalizeEmail("  Client@Example.COM "), "client@example.com");
 });
