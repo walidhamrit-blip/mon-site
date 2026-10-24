@@ -142,6 +142,25 @@ jobs:
           path: reports/
           retention-days: 90
 
+      # Une branche de mise à jour laissée par un run précédent (PR non
+      # créée, run interrompu) empêche l'ouverture de la PR au run suivant :
+      # la branche existe déjà et diverge de main. On la supprime donc avant
+      # de tenter la PR — sauf si une PR ouverte y est encore rattachée, auquel
+      # cas sa branche doit être conservée.
+      - name: Nettoyage de la branche de mise à jour
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          open_prs=$(gh pr list --head chore/badge-status --state open --json number --jq 'length' 2>/dev/null || echo 0)
+          if [ "$open_prs" != "0" ]; then
+            echo "PR ouverte sur chore/badge-status : branche conservée."
+          else
+            git push origin --delete chore/badge-status 2>/dev/null \
+              && echo "Branche de mise à jour obsolète supprimée." \
+              || echo "Aucune branche de mise à jour à supprimer."
+          fi
+
       # Pull request plutôt que push direct : main peut être protégée, et un
       # changement de statut mérite une trace lisible dans l'historique.
       # L'action ne fait rien (sortie propre) si le fichier est inchangé.
