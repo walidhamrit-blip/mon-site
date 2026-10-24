@@ -88,6 +88,12 @@ export const orders = pgTable("orders", {
   locale: text("locale"),
   /** Abonné auquel appartient ce paiement (null = paiement ponctuel). */
   subscriptionId: integer("subscription_id").references(() => subscriptions.id),
+  /**
+   * Commande digitale (codes / cartes cadeaux achetés à la commande).
+   * Renseigné pour les commandes `kind = "digital"` : c'est le lien vers
+   * la fiche de livraison (produit, destinataire, codes reçus).
+   */
+  digitalOrderId: integer("digital_order_id").references(() => digitalOrders.id),
 });
 
 export type Order = typeof orders.$inferSelect;
@@ -182,6 +188,22 @@ export const digitalProducts = pgTable("digital_products", {
   deliveryNoteAr: text("delivery_note_ar").notNull().default(""),
   deliveryNoteEn: text("delivery_note_en").notNull().default(""),
   sortOrder: integer("sort_order").notNull().default(0),
+
+  /* ---------- Livraison à la commande (fournisseur Reloadly) ---------- */
+
+  /**
+   * Mode de livraison :
+   *  - `manual`   : le client paie, l'agence achète le code à la main dans
+   *    le tableau Reloadly puis le transmet (aucun débit automatique) ;
+   *  - `auto`     : le serveur achète et livre le code dès le paiement
+   *    confirmé (le produit Reloadly doit être renseigné ci-dessous).
+   */
+  fulfillment: text("fulfillment").notNull().default("manual"),
+  /** Identifiant du produit chez Reloadly (ex. 1234). */
+  reloadlyProductId: integer("reloadly_product_id"),
+  /** Pays du produit Reloadly (ISO 2 lettres, ex. « US »). */
+  reloadlyCountryCode: text("reloadly_country_code").notNull().default(""),
+
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),
@@ -209,7 +231,81 @@ export const digitalDenominations = pgTable("digital_denominations", {
   /** Disponible à la vente. */
   available: integer("available").notNull().default(1),
   sortOrder: integer("sort_order").notNull().default(0),
+  /**
+   * Valeur faciale à transmettre à Reloadly (`unitPrice`) : par exemple
+   * 50 pour une carte « 50 USD ». Vide = déduite de `faceValue`.
+   */
+  reloadlyUnitPrice: text("reloadly_unit_price"),
 });
 
 export type DigitalProductRow = typeof digitalProducts.$inferSelect;
 export type DigitalDenominationRow = typeof digitalDenominations.$inferSelect;
+
+/* ------------------- Commandes digitales (livrées à la commande) ------------------- */
+
+/**
+ * Une commande de code / carte cadeau.
+ *
+ * Cycle : `pending` (facture crypto émise) → `paid` (paiement confirmé,
+ * livraison à faire) → `delivered` (code transmis au client).
+ * `manual` = paiement reçu mais livraison humaine requise (Reloadly non
+ * configuré, plafond dépassé, produit non relié, échec fournisseur) ;
+ * `failed` = achat refusé définitivement.
+ *
+ * Les codes eux-mêmes ne sont JAMAIS stockés en clair : `codes_cipher`
+ * contient un JSON chiffré (AES-256-GCM) déchiffrable uniquement côté
+ * serveur, avec la clé dérivée de `DIGITAL_CODES_SECRET`/`SESSION_SECRET`.
+ */
+export const digitalOrders = pgTable("digital_orders", {
+  id: serial("id").primaryKey(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  /** Référence publique (ex. DGC-…), identique au `ref` de la table orders. */
+  ref: text("ref").notNull().unique(),
+  /** SHA-256 du jeton de suivi (jamais le jeton en clair). */
+  trackingTokenHash: text("tracking_token_hash"),
+
+  productId: text("product_id").notNull(),
+  productSlug: text("product_slug").notNull().default(""),
+  /** Instantané du libellé (le catalogue peut changer après la vente). */
+  productTitle: text("product_title").notNull(),
+  kind: text("kind").notNull().default("gift_card"),
+  platform: text("platform").notNull().default(""),
+  denominationId: text("denomination_id").notNull().default(""),
+  denominationLabel: text("denomination_label").notNull().default(""),
+  region: text("region").notNull().default("global"),
+  faceValue: text("face_value").notNull().default(""),
+  quantity: integer("quantity").notNull().default(1),
+
+  unitPriceUsd: text("unit_price_usd").notNull(),
+  totalUsd: text("total_usd").notNull(),
+
+  recipientEmail: text("recipient_email").notNull().default(""),
+  recipientName: text("recipient_name"),
+  recipientPhone: text("recipient_phone"),
+  locale: text("locale").notNull().default("ar"),
+
+  /** pending | paid | manual | delivered | failed */
+  status: text("status").notNull().default("pending"),
+  /** manual | auto */
+  fulfillment: text("fulfillment").notNull().default("manual"),
+
+  reloadlyProductId: integer("reloadly_product_id"),
+  reloadlyUnitPrice: text("reloadly_unit_price"),
+  reloadlyCountryCode: text("reloadly_country_code").notNull().default(""),
+  reloadlyTransactionId: text("reloadly_transaction_id").unique(),
+  reloadlyStatus: text("reloadly_status"),
+  /** Réponse normalisée du fournisseur (jamais de code carte). */
+  reloadlyResponse: jsonb("reloadly_response"),
+
+  /** JSON chiffré des codes livrés ([{cardNumber,pinCode,redemptionUrl}]). */
+  codesCipher: text("codes_cipher"),
+  deliveredAt: timestamp("delivered_at", { withTimezone: true }),
+  emailSentAt: timestamp("email_sent_at", { withTimezone: true }),
+
+  attempts: integer("attempts").notNull().default(0),
+  lastError: text("last_error"),
+});
+
+export type DigitalOrder = typeof digitalOrders.$inferSelect;
+export type NewDigitalOrder = typeof digitalOrders.$inferInsert;

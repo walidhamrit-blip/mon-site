@@ -15,6 +15,7 @@ import {
   saveDigitalProduct,
 } from "@/app/admin/actions";
 import {
+  DIGITAL_FULFILLMENTS,
   DIGITAL_KINDS,
   DIGITAL_KIND_LABELS,
   DIGITAL_REGIONS,
@@ -25,6 +26,7 @@ import {
   type DigitalDenomination,
   type DigitalProduct,
 } from "@/lib/digital-types";
+import { ReloadlyProductSearch } from "./reloadly-product-search";
 
 /**
  * Éditeur du catalogue digital (admin).
@@ -144,6 +146,9 @@ export function DigitalEditor({
       deliveryNoteEn: "",
       denominations: [],
       sortOrder: products.length * 10 + 10,
+      fulfillment: "manual",
+      reloadlyProductId: null,
+      reloadlyCountryCode: "",
     };
     setProducts((prev) => [...prev, product]);
     setExpandedId(id);
@@ -396,7 +401,87 @@ export function DigitalEditor({
                         }
                       />
                     </label>
+                    <label className="block">
+                      <span className={labelCls}>Livraison</span>
+                      <select
+                        className={inputCls}
+                        value={product.fulfillment ?? "manual"}
+                        onChange={(event) =>
+                          patch(product.id, {
+                            fulfillment: event.target.value as "manual" | "auto",
+                          })
+                        }
+                      >
+                        {DIGITAL_FULFILLMENTS.map((mode) => (
+                          <option key={mode} value={mode}>
+                            {mode === "auto"
+                              ? "Automatique (achat Reloadly)"
+                              : "Manuelle (agence)"}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                    <label className="block">
+                      <span className={labelCls}>Produit Reloadly (ID)</span>
+                      <input
+                        type="number"
+                        inputMode="numeric"
+                        placeholder="ex. 1234"
+                        className={inputCls}
+                        value={product.reloadlyProductId ?? ""}
+                        onChange={(event) =>
+                          patch(product.id, {
+                            reloadlyProductId: event.target.value
+                              ? Number(event.target.value)
+                              : null,
+                          })
+                        }
+                      />
+                    </label>
+                    <label className="block">
+                      <span className={labelCls}>Pays Reloadly (ISO)</span>
+                      <input
+                        maxLength={2}
+                        placeholder="US"
+                        className={`${inputCls} uppercase`}
+                        value={product.reloadlyCountryCode ?? ""}
+                        onChange={(event) =>
+                          patch(product.id, {
+                            reloadlyCountryCode: event.target.value
+                              .replace(/[^a-zA-Z]/g, "")
+                              .toUpperCase(),
+                          })
+                        }
+                      />
+                    </label>
                   </div>
+
+                  <ReloadlyProductSearch
+                    defaultCountry={product.reloadlyCountryCode}
+                    onSelect={({ productId, countryCode }) =>
+                      patch(product.id, {
+                        reloadlyProductId: productId,
+                        reloadlyCountryCode: countryCode,
+                      })
+                    }
+                  />
+
+                  <p className="rounded-lg border border-stone-200 bg-white px-3 py-2 text-[11.5px] leading-5 text-stone-600">
+                    <strong>Vente à la commande :</strong> en mode automatique, le
+                    serveur achète le code chez Reloadly{" "}
+                    <em>après</em> confirmation du paiement (solde marchand requis) ;
+                    l&apos;ID produit et la « valeur Reloadly » de chaque montant
+                    doivent correspondre au catalogue Reloadly. Sans ID produit, la
+                    fiche retombe en livraison manuelle. Les commandes se pilotent
+                    dans{" "}
+                    <a
+                      href="/admin/digital/orders"
+                      className="font-bold text-[#7A5D20] underline"
+                    >
+                      Commandes de codes
+                    </a>
+                    .
+                  </p>
 
                   <label className="block">
                     <span className={labelCls}>Description (AR)</span>
@@ -476,7 +561,7 @@ export function DigitalEditor({
                         {product.denominations.map((denomination) => (
                           <div
                             key={denomination.id}
-                            className="grid items-end gap-2 rounded-lg border border-stone-200 bg-white p-2.5 sm:grid-cols-[1fr_1fr_1fr_1fr_auto]"
+                            className="grid items-end gap-2 rounded-lg border border-stone-200 bg-white p-2.5 sm:grid-cols-[1fr_1fr_1fr_0.8fr_1fr_auto]"
                           >
                             <label className="block">
                               <span className="text-[10px] font-bold uppercase text-stone-400">
@@ -524,6 +609,26 @@ export function DigitalEditor({
                                 onChange={(event) =>
                                   patchDenomination(product.id, denomination.id, {
                                     priceUsd: Number(event.target.value) || 0,
+                                  })
+                                }
+                              />
+                            </label>
+                            <label className="block">
+                              <span className="text-[10px] font-bold uppercase text-stone-400">
+                                Valeur Reloadly
+                              </span>
+                              <input
+                                type="number"
+                                step="0.01"
+                                inputMode="decimal"
+                                placeholder={denomination.faceValue || "50"}
+                                className="h-9 w-full rounded-md border border-stone-300 px-2 text-[13px] outline-none focus:border-[#B8923F]"
+                                value={denomination.reloadlyUnitPrice ?? ""}
+                                onChange={(event) =>
+                                  patchDenomination(product.id, denomination.id, {
+                                    reloadlyUnitPrice: event.target.value
+                                      ? Number(event.target.value)
+                                      : null,
                                   })
                                 }
                               />

@@ -25,6 +25,11 @@ import {
   deleteDigitalProduct,
   upsertDigitalProduct,
 } from "@/lib/digital-store";
+import {
+  deliverDigitalOrderManually,
+  deliverPaidDigitalOrder,
+  resendDigitalCodesEmail,
+} from "@/lib/digital-orders";
 import type { DigitalProduct } from "@/lib/digital-types";
 
 export interface ActionResult {
@@ -575,6 +580,90 @@ export async function deleteDigitalProductAction(id: string): Promise<ActionResu
     revalidatePath("/admin/digital");
     void pingAllPublicPages();
     return { ok: true, message: "Fiche supprimée du catalogue." };
+  } catch (error) {
+    return { ok: false, error: dbIssue(error) };
+  }
+}
+
+/* ---------------- Commandes digitales (livraison Reloadly) ---------------- */
+
+/**
+ * Relance la livraison d'une commande de code.
+ *
+ * Sans achat préalable : achète le code chez Reloadly (si la fiche est en
+ * livraison automatique) puis envoie l'e-mail au client.
+ * Avec un achat déjà enregistré mais sans codes : récupère seulement les
+ * codes — jamais de second débit.
+ */
+export async function retryDigitalDeliveryAction(ref: string): Promise<ActionResult> {
+  await requireAdmin();
+  const orderRef = String(ref ?? "").trim().toUpperCase();
+  if (!orderRef) return { ok: false, error: "Référence manquante." };
+
+  try {
+    const result = await deliverPaidDigitalOrder(orderRef, { force: true });
+    revalidatePath("/admin/digital/orders");
+    switch (result.outcome) {
+      case "delivered":
+        return { ok: true, message: `Commande ${orderRef} livrée — e-mail envoyé au client.` };
+      case "already_delivered":
+        return { ok: true, message: `Commande ${orderRef} déjà livrée.` };
+      case "awaiting_codes":
+        return {
+          ok: false,
+          error: result.message ?? "Le fournisseur n'a pas encore émis le code — réessayez dans quelques minutes.",
+        };
+      case "manual":
+        return { ok: false, error: result.message ?? "Livraison manuelle requise (voir le motif)." };
+      case "failed":
+        return { ok: false, error: result.message ?? "Achat refusé par le fournisseur." };
+      case "not_paid":
+        return { ok: false, error: "Le paiement n'est pas encore confirmé." };
+      default:
+        return { ok: false, error: "Commande introuvable." };
+    }
+  } catch (error) {
+    return { ok: false, error: dbIssue(error) };
+  }
+}
+
+/** Renvoie l'e-mail contenant les codes d'une commande livrée. */
+export async function resendDigitalEmailAction(ref: string): Promise<ActionResult> {
+  await requireAdmin();
+  const orderRef = String(ref ?? "").trim().toUpperCase();
+  if (!orderRef) return { ok: false, error: "Référence manquante." };
+  try {
+    const result = await resendDigitalCodesEmail(orderRef);
+    if (!result.ok) {
+      return { ok: false, error: result.error ?? "Envoi impossible." };
+    }
+    return { ok: true, message: `Codes renvoyés au client (${orderRef}).` };
+  } catch (error) {
+    return { ok: false, error: dbIssue(error) };
+  }
+}
+
+/**
+ * Enregistre des codes achetés à la main et les transmet au client.
+ * L'e-mail part automatiquement (comme pour une livraison Reloadly).
+ */
+export async function manualDigitalDeliveryAction(
+  ref: string,
+  codes: string,
+): Promise<ActionResult> {
+  await requireAdmin();
+  const orderRef = String(ref ?? "").trim().toUpperCase();
+  if (!orderRef) return { ok: false, error: "Référence manquante." };
+  try {
+    const result = await deliverDigitalOrderManually(orderRef, String(codes ?? ""));
+    revalidatePath("/admin/digital/orders");
+    if (!result.ok) return { ok: false, error: result.error ?? "Enregistrement impossible." };
+    return {
+      ok: true,
+      message: result.error
+        ? `${result.delivered} code(s) enregistré(s). ${result.error}`
+        : `${result.delivered} code(s) enregistré(s) et envoyé(s) au client.`,
+    };
   } catch (error) {
     return { ok: false, error: dbIssue(error) };
   }

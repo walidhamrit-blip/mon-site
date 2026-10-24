@@ -80,11 +80,19 @@ Google Play, Amazon, Spotify…) :
 - **API publique** — `GET /api/digital/products` et
   `GET /api/digital/products/[slug]` (lecture seule, prices en USD).
 - **Admin** — `/admin/digital` : édition des fiches et des montants.
-- **Périmètre actuel : catalogue.** Les fiches sont publiées avec leurs prix,
-  leurs régions et leurs montants ; l'appel à l'action renvoie vers la liste
-  d'attente. **La caisse, le stock de codes et la livraison automatique ne
-  sont pas encore implémentés** — la feuille de route est dans
-  `docs/audit-global-2026-10.md` §3.4.
+- **Vente à la commande (Reloadly)** — une fiche `Disponible` est vendable :
+  le client choisit un montant, paie en crypto, et le code est **acheté chez
+  Reloadly après confirmation du paiement** puis livré par e-mail. Aucun stock
+  n'est acheté d'avance, aucun achat n'a lieu avant l'encaissement.
+  - `POST /api/digital/checkout` → commande + facture NOWPayments ;
+  - IPN → achat Reloadly + codes chiffrés + e-mail client ;
+  - suivi client `/codes/commande` (référence + jeton) ;
+  - admin `/admin/digital/orders` : solde marchand, relances, saisie manuelle
+    des codes, renvoi de l'e-mail ;
+  - identifiants serveur `RELOADLY_CLIENT_ID` / `RELOADLY_CLIENT_SECRET`
+    (sandbox par défaut), plafond `RELOADLY_MAX_ORDER_USD`.
+  Guide complet : **`docs/reloadly.md`**. Les fiches `Bientôt disponible`
+  restent en liste d'attente WhatsApp.
 
 ## Thèmes du site (8 thèmes, clair + sombre)
 `src/lib/themes.ts` contient le catalogue des thèmes. Chaque thème définit **sa palette claire ET sa palette sombre** : le mode clair/sombre reste donc un réglage totalement indépendant (un bouton dédié ☀/☾ dans la barre supérieure), et n'importe quel thème se voit dans les deux modes.

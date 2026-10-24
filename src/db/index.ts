@@ -239,6 +239,74 @@ export function ensureSchema(): Promise<void> {
       await pool.query(
         "CREATE INDEX IF NOT EXISTS digital_denominations_product_idx ON digital_denominations (product_id)",
       );
+
+      // Livraison à la commande : colonnes de mappage vers le fournisseur
+      // Reloadly (produit, pays) et mode de livraison de la fiche.
+      await pool.query(
+        "ALTER TABLE digital_products ADD COLUMN IF NOT EXISTS fulfillment text NOT NULL DEFAULT 'manual'",
+      );
+      await pool.query(
+        "ALTER TABLE digital_products ADD COLUMN IF NOT EXISTS reloadly_product_id integer",
+      );
+      await pool.query(
+        "ALTER TABLE digital_products ADD COLUMN IF NOT EXISTS reloadly_country_code text NOT NULL DEFAULT ''",
+      );
+      await pool.query(
+        "ALTER TABLE digital_denominations ADD COLUMN IF NOT EXISTS reloadly_unit_price text",
+      );
+
+      // Commandes digitales : le client paie d'abord, le serveur achète le
+      // code chez Reloadly ensuite. Les codes livrés sont chiffrés.
+      await pool.query(`
+        CREATE TABLE IF NOT EXISTS digital_orders (
+          id serial PRIMARY KEY,
+          created_at timestamptz NOT NULL DEFAULT now(),
+          updated_at timestamptz NOT NULL DEFAULT now(),
+          ref text NOT NULL UNIQUE,
+          tracking_token_hash text,
+          product_id text NOT NULL,
+          product_slug text NOT NULL DEFAULT '',
+          product_title text NOT NULL,
+          kind text NOT NULL DEFAULT 'gift_card',
+          platform text NOT NULL DEFAULT '',
+          denomination_id text NOT NULL DEFAULT '',
+          denomination_label text NOT NULL DEFAULT '',
+          region text NOT NULL DEFAULT 'global',
+          face_value text NOT NULL DEFAULT '',
+          quantity integer NOT NULL DEFAULT 1,
+          unit_price_usd text NOT NULL,
+          total_usd text NOT NULL,
+          recipient_email text NOT NULL DEFAULT '',
+          recipient_name text,
+          recipient_phone text,
+          locale text NOT NULL DEFAULT 'ar',
+          status text NOT NULL DEFAULT 'pending',
+          fulfillment text NOT NULL DEFAULT 'manual',
+          reloadly_product_id integer,
+          reloadly_unit_price text,
+          reloadly_country_code text NOT NULL DEFAULT '',
+          reloadly_transaction_id text UNIQUE,
+          reloadly_status text,
+          reloadly_response jsonb,
+          codes_cipher text,
+          delivered_at timestamptz,
+          email_sent_at timestamptz,
+          attempts integer NOT NULL DEFAULT 0,
+          last_error text
+        )
+      `);
+      await pool.query(
+        "CREATE INDEX IF NOT EXISTS digital_orders_status_idx ON digital_orders (status, created_at DESC)",
+      );
+      await pool.query(
+        "CREATE INDEX IF NOT EXISTS digital_orders_recipient_idx ON digital_orders (recipient_email)",
+      );
+      await pool.query(
+        "ALTER TABLE orders ADD COLUMN IF NOT EXISTS digital_order_id integer",
+      );
+      await pool.query(
+        "CREATE INDEX IF NOT EXISTS orders_digital_order_id_idx ON orders (digital_order_id)",
+      );
     })().catch((error) => {
       schemaReady = null; // permet de réessayer au prochain accès
       throw error;
