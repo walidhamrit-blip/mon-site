@@ -135,17 +135,17 @@ export const sectorSeo: Record<string, SectorSeo> = {
     h1Ar: "متاجر عطور وتجميل فاخر في طرابلس",
     h1En: "Perfume & Luxury Beauty Stores in Tripoli",
     heroSubtitleAr:
-      "عطور، مكياج وعناية بشرة في واجهة فاخرة — باقات 3 بـ 99 د.ل، أكواد خصم، وتجربة AR/EN تمنح الثقة وتزيد السلة المتوسطة.",
+      "عطور، مكياج وعناية بشرة في واجهة فاخرة — باقات «3 بسعر واحد»، أكواد خصم داخل المتجر، وتجربة AR/EN تمنح الثقة وتزيد السلة المتوسطة.",
     heroSubtitleEn:
-      "Fragrances, makeup & skincare in premium storefront — 3 for 99 LYD bundles, promo codes & bilingual AR/EN experience boosting average cart.",
+      "Fragrances, makeup & skincare in premium storefront — 3-for-one-price bundles, in-store promo codes & bilingual AR/EN experience boosting average cart.",
     keywordsAr: ["تصميم متجر عطور طرابلس", "متجر تجميل ليبيا"],
     keywordsEn: ["perfume store Tripoli", "beauty e-commerce Libya"],
     faqsAr: [
       {
         qAr: "هل يدعم المتجر عروض Mix & Match؟",
         qEn: "Does it support Mix & Match bundles?",
-        aAr: "نعم — العملاء يختارون 3 منتجات بـ 99 د.ل مع احتساب تلقائي للسعر وتحديث السلة لحظياً.",
-        aEn: "Yes — shoppers pick 3 for 99 LYD with auto-priced cart & live updates.",
+        aAr: "نعم — العملاء يختارون 3 منتجات بسعر باقة واحد مع احتساب تلقائي للسعر وتحديث السلة لحظياً.",
+        aEn: "Yes — shoppers pick any 3 items at one bundle price with auto-priced cart & live updates.",
       },
       {
         qAr: "كيف نعرض الأكواد الترويجية؟",
@@ -432,7 +432,7 @@ export function sectorCollectionJsonLd(
     alternateName: sector.titleEn,
     description: sector.descriptionAr,
     url,
-    inLanguage: ["ar-LY", "en"],
+    inLanguage: ["en", "ar"],
     isPartOf: { "@id": `${base}/#website` },
     about: {
       "@type": "Thing",
@@ -458,7 +458,7 @@ export function sectorFaqJsonLd(sector: SectorSeo) {
   return {
     "@context": "https://schema.org",
     "@type": "FAQPage",
-    inLanguage: "ar-LY",
+    inLanguage: "en",
     mainEntity: sector.faqsAr.map((f) => ({
       "@type": "Question",
       name: f.qAr,

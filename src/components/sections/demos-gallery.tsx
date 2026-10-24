@@ -29,7 +29,6 @@ import { demoImageAlt, resolveDemoClassification } from "@/lib/classification";
 import { formatMainPrice, formatUsd } from "@/lib/installments";
 import { ModelPriceBreakdown } from "@/components/model-price-breakdown";
 import { ModelPurchaseButton } from "@/components/model-purchase-button";
-import { PromoPriceNote } from "@/components/promo-price";
 
 function formatHost(url: string, fallbackSlug: string, domain: string): string {
   if (!isRealUrl(url)) return `${domain}/${fallbackSlug}`;
@@ -171,15 +170,6 @@ function InteractiveShowcase({
                           />
                         </div>
                       )}
-                      <PromoPriceNote
-                        amountUsd={dClassification?.totalPriceUsd}
-                        currency={
-                          locale === "ar"
-                            ? siteConfig.pricing.currency
-                            : siteConfig.pricing.currencyEn
-                        }
-                        className="mt-1.5"
-                      />
                       <p className="mt-1.5 text-sm opacity-65 line-clamp-2">
                         {locale === "ar" ? d.description : d.descriptionEn}
                       </p>
@@ -317,7 +307,7 @@ function InteractiveShowcase({
 
         <div className="grid lg:grid-cols-[1.35fr_0.75fr] gap-6 items-start">
           {/* Preview Stage */}
-          <div className="overflow-hidden rounded-[var(--radius-lg)] border border-[var(--border)] bg-[var(--card)] p-4 shadow-[var(--shadow-sm)] sm:p-6 lg:sticky lg:top-[calc(var(--promo-h,0px)+96px)]">
+          <div className="overflow-hidden rounded-[var(--radius-lg)] border border-[var(--border)] bg-[var(--card)] p-4 shadow-[var(--shadow-sm)] sm:p-6 lg:sticky lg:top-24">
             {/* Browser Top Toolbar */}
             <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
               <div className="flex items-center gap-2 min-w-0 flex-1">
@@ -479,11 +469,6 @@ function InteractiveShowcase({
                       breakdown={activeClassification}
                       currency={locale === "ar" ? siteConfig.pricing.currency : siteConfig.pricing.currencyEn}
                       compact
-                    />
-                    <PromoPriceNote
-                      amountUsd={activeClassification.totalPriceUsd}
-                      currency={locale === "ar" ? siteConfig.pricing.currency : siteConfig.pricing.currencyEn}
-                      className="mt-1.5"
                     />
                   </div>
                 )}

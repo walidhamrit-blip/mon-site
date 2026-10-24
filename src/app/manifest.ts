@@ -6,16 +6,16 @@ import type { MetadataRoute } from "next";
  */
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "نخبة — وكالة تصميم مواقع طرابلس | Nukhba Web Agency Tripoli",
-    short_name: "نخبة Nukhba",
+    name: "Nukhba نخبة — Premium Web Agency Worldwide",
+    short_name: "Nukhba نخبة",
     description:
-      "وكالة تصميم وتطوير مواقع ومتاجر إلكترونية في طرابلس — تسليم في 7 أيام.",
+      "Premium web design & e-commerce agency for clients worldwide — delivered in 7 days.",
     id: "/",
     start_url: "/",
     scope: "/",
     display: "standalone",
-    lang: "ar",
-    dir: "rtl",
+    lang: "en",
+    dir: "ltr",
     orientation: "portrait-primary",
     background_color: "#08080A",
     theme_color: "#C6A664",

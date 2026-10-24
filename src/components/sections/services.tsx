@@ -18,7 +18,6 @@ import {
 import { useI18n } from "@/lib/i18n";
 import { useSectionHeading, useSiteConfig } from "@/components/site-provider";
 import { SectionHeading } from "@/components/section-heading";
-import { lydLabel } from "@/lib/classification";
 import { whatsappLink } from "@/lib/utils";
 import { formatMainPrice } from "@/lib/installments";
 
@@ -98,8 +97,7 @@ export function Services() {
                       )}
                     </div>
                     <div className="text-[10px] opacity-50 mt-0.5" dir="ltr">
-                      ≈ {service.priceFromLyd.toLocaleString("en-LY")}{" "}
-                      {lydLabel(ar ? "ar" : "en")}
+                      USD · = USDT
                     </div>
                   </div>
                 </div>

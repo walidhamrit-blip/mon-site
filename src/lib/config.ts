@@ -1,7 +1,7 @@
 export const siteConfig = {
   name: "Nukhba",
   nameAr: "نخبة",
-  tagline: "Agence Web Premium — Tripoli",
+  tagline: "Premium Web Agency — Worldwide",
   domain: "nokhba.net.ly",
   url: "https://nokhba.net.ly",
   email: "hello@nukhba.ly",
@@ -22,14 +22,13 @@ export const siteConfig = {
     /** Mode d'affichage principal : "light" (clair) ou "dark" (sombre). */
     mode: "light",
     /** Langue principale du site : "ar" (arabe) ou "en" (anglais). */
-    defaultLocale: "ar",
+    defaultLocale: "en",
   },
 
   // Prix modifiables ici — source unique.
-  // La devise principale est le DOLLAR ($) dans toutes les langues : les
-  // prix principaux s'affichent en USD (c'est aussi la devise facturée via
-  // la passerelle de paiement). Les montants en Livre libyenne restent
-  // affichés comme équivalent indicatif (« ≈ … د.ل / LYD »).
+  // Devise UNIQUE du site : le dollar américain (USD), dans toutes les
+  // langues. Au paiement crypto, 1 USD = 1 USDT : le client règle le
+  // montant affiché, sans conversion ni équivalent local.
   pricing: {
     currency: "$",
     currencyEn: "$",
@@ -38,12 +37,10 @@ export const siteConfig = {
         id: "vitrine",
         name: "الواجهة",
         nameEn: "Vitrine",
-        price: 1490,
         // Prix du modèle hors personnalisation, facturé en USD.
         priceUsd: 300,
         // Frais de personnalisation calculés en pourcentage du prix modèle.
         customizationPercent: 20,
-        originalPrice: 1900,
         period: "/ مرة واحدة",
         periodEn: "/ one-time",
         description: "مثالي للانطلاقة الاحترافية",
@@ -74,10 +71,8 @@ export const siteConfig = {
         id: "vitrine-plus",
         name: "الواجهة بلس",
         nameEn: "Vitrine+",
-        price: 2490,
         priceUsd: 510,
         customizationPercent: 20,
-        originalPrice: 3200,
         period: "/ مرة واحدة",
         periodEn: "/ one-time",
         description: "الأكثر طلباً — توازن مثالي",
@@ -112,10 +107,8 @@ export const siteConfig = {
         id: "boutique",
         name: "المتجر / الحجز",
         nameEn: "Boutique",
-        price: 4290,
         priceUsd: 880,
         customizationPercent: 20,
-        originalPrice: null,
         period: "/ مرة واحدة",
         periodEn: "/ one-time",
         description: "للبيع والحجز عبر الإنترنت",
@@ -182,7 +175,6 @@ export const siteConfig = {
   reservation: {
     enabled: true,
     depositUsd: 1,
-    depositLyd: 6,
   },
 
   // Paiement flexible 1 $+ — montant éditable pour contourner les
@@ -209,7 +201,6 @@ export const siteConfig = {
       descAr: "نحوّل موقعك القديم إلى واجهة عصرية سريعة ومتجاوبة — بدون فقدان المحتوى أو الـ SEO.",
       descEn: "Turn your outdated site into a modern, fast, responsive showcase — no content or SEO loss.",
       priceFromUsd: 49,
-      priceFromLyd: 290,
       badgeAr: "الأكثر طلباً",
       badgeEn: "Most requested",
       featuresAr: ["تصميم جديد على هويتك", "تسريع + تحسين SEO", "نقل المحتوى مجاناً"],
@@ -223,7 +214,6 @@ export const siteConfig = {
       descAr: "قسم جديد لموقعك الحالي: معرض أعمال، مدونة، حجز مواعيد، متجر مصغّر، أسئلة شائعة...",
       descEn: "A new section for your current site: portfolio, blog, booking, mini-shop, FAQ…",
       priceFromUsd: 19,
-      priceFromLyd: 110,
       featuresAr: ["متجاوب 100%", "لوحة تحكم لو احتجت", "تسليم 48–72 ساعة"],
       featuresEn: ["100% responsive", "Admin if needed", "Delivery in 48–72h"],
     },
@@ -235,7 +225,6 @@ export const siteConfig = {
       descAr: "عروض PowerPoint / Google Slides / Keynote فاخرة: بيتش ديك، بروفايل شركة، عرض مبيعات.",
       descEn: "Premium PowerPoint / Google Slides / Keynote decks: pitch deck, company profile, sales deck.",
       priceFromUsd: 29,
-      priceFromLyd: 170,
       featuresAr: ["تصميم على الهوية", "إنفوغرافيك وأيقونات", "ملف قابل للتعديل + PDF"],
       featuresEn: ["On-brand design", "Infographics & icons", "Editable file + PDF"],
     },
@@ -247,7 +236,6 @@ export const siteConfig = {
       descAr: "شعار، ألوان، خطوط، بطاقات، فلاير، منشورات سوشيال — هوية متكاملة جاهزة للطباعة والويب.",
       descEn: "Logo, colors, fonts, cards, flyers, social posts — complete identity ready for print & web.",
       priceFromUsd: 39,
-      priceFromLyd: 230,
       featuresAr: ["شعار + دليل ألوان", "قوالب سوشيال", "ملفات AI/SVG/PNG"],
       featuresEn: ["Logo + color guide", "Social templates", "AI/SVG/PNG files"],
     },
@@ -259,7 +247,6 @@ export const siteConfig = {
       descAr: "صفحة هبوط واحدة عالية التحويل لإطلاق منتج، حملة، أو حدث — مع فورم وواتساب.",
       descEn: "One high-converting landing page to launch a product, campaign or event — with form & WhatsApp.",
       priceFromUsd: 59,
-      priceFromLyd: 350,
       featuresAr: ["كوبي رايتنغ مقنع", "فورم + واتساب + تحليلات", "تسليم 3–5 أيام"],
       featuresEn: ["Persuasive copy", "Form + WhatsApp + analytics", "Delivery in 3–5 days"],
     },
@@ -271,7 +258,6 @@ export const siteConfig = {
       descAr: "حل مشاكل السرعة، التجاوب، الأخطاء، الـ SEO، أو الأمان — تدقيق + إصلاح + تقرير.",
       descEn: "Fix speed, responsiveness, bugs, SEO or security — audit + fix + report.",
       priceFromUsd: 15,
-      priceFromLyd: 90,
       featuresAr: ["تدقيق شامل", "إصلاح فوري", "تقرير قبل/بعد"],
       featuresEn: ["Full audit", "Instant fix", "Before/after report"],
     },

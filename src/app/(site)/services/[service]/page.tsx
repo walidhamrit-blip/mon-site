@@ -19,7 +19,6 @@ import {
 } from "@/lib/services";
 import { getSectorSeo, sectorIds } from "@/lib/sectors";
 import { JsonLd } from "@/components/json-ld";
-import { formatLyd, lydLabel } from "@/lib/classification";
 import { formatMainPrice } from "@/lib/installments";
 
 export async function generateStaticParams() {
@@ -76,7 +75,6 @@ export default async function ServicePage({
     config.whatsapp,
     `مرحبا نخبة 👋 أريد طلب خدمة: ${service.titleAr} (تبدأ من ${service.priceFromUsd}$)`,
   );
-  const lyd = lydLabel("ar");
   const canonical = absoluteUrl(config, servicePath(service.id));
 
   return (
@@ -160,7 +158,7 @@ export default async function ServicePage({
                   {formatMainPrice(service.priceFromUsd, "$")}
                 </p>
                 <p className="mt-1 text-sm opacity-50" dir="ltr">
-                  ≈ {formatLyd(service.priceFromLyd)} {lyd} · LYD indicative
+                  USD · pay the same in USDT
                 </p>
                 <ul className="mt-4 space-y-2 text-xs opacity-70">
                   <li className="flex items-center gap-2">
@@ -236,7 +234,7 @@ export default async function ServicePage({
                   <h2 className="text-lg font-black">الأسعار والدفع</h2>
                   <p className="mt-2 text-sm leading-6 opacity-70">
                     تبدأ الخدمة من <strong dir="ltr">{formatMainPrice(service.priceFromUsd, "$")}</strong>{" "}
-                    (≈ {formatLyd(service.priceFromLyd)} {lyd}). السعر النهائي يعتمد على
+                    (يُدفع نفس المبلغ بـ USDT). السعر النهائي يعتمد على
                     حجم العمل ويُثبَّت كتابياً قبل البدء. نعمل بدفعة مقدمة 50% والباقي
                     عند التسليم، مع إمكانية الدفع بالتحويل البنكي أو نقداً أو بالعملات
                     الرقمية عبر NOWPayments — كاملاً أو على دفعتين/ثلاث.

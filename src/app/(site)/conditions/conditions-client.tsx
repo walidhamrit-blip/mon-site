@@ -20,7 +20,7 @@ const CONTENT: Record<"ar" | "en", { title: string; updated: string; intro: stri
         title: "1. الأسعار والدفع",
         items: [
           "الأسعار معروضة بالدولار الأمريكي (USD).",
-          "يتم الدفع بالعملات الرقمية عبر بوابة NOWPayments. الدينار الليبي غير مدعوم حالياً في هذه البوابة.",
+          "يتم الدفع بالعملات الرقمية عبر بوابة NOWPayments، وتُحتسب المبالغ بالدولار وتُدفع بنفس القيمة بـ USDT (1 USD = 1 USDT) أو بعملات أخرى يدعمها البوابة.",
           "يُعتبر الطلب مؤكداً بعد استلام الدفعة المطلوبة (العربون أو أول دفعة للاشتراك).",
         ],
       },
@@ -105,7 +105,7 @@ const CONTENT: Record<"ar" | "en", { title: string; updated: string; intro: stri
         title: "1. Prices and payment",
         items: [
           "Prices are shown in US dollars (USD).",
-          "Payments are made in cryptocurrency through the NOWPayments gateway. The Libyan dinar is not currently supported by this gateway.",
+          "Payments are made in cryptocurrency through the NOWPayments gateway; amounts are priced in USD and paid at the same value in USDT (1 USD = 1 USDT) or another supported coin.",
           "An order is confirmed once the required payment (deposit or first subscription payment) is received.",
         ],
       },

@@ -26,12 +26,6 @@ import {
   trackingQuery,
 } from "@/lib/order-tracking";
 import { checkRateLimit } from "@/lib/rate-limit";
-import {
-  CURRENT_PROMO,
-  discountedAmount,
-  isPromoCode,
-  normalizeCoupon,
-} from "@/lib/promotion";
 import { enforceSameOrigin } from "@/lib/csrf";
 
 /* Limite la cadence de création de factures crypto par IP+UA. Bloque
@@ -78,8 +72,6 @@ const createPaymentSchema = z
     orderRef: z.string().min(3).max(80).optional(),
     /** 1 = paiement total, 2 ou 3 = paiement en tranches. */
     installments: z.number().int().min(1).max(3).optional(),
-    /** Coupon d'achat (ex. NUKHBA50) — remise recalculée côté serveur. */
-    coupon: z.string().max(40).optional(),
     name: z.string().max(120).optional(),
     email: z.string().email().max(254).optional(),
     phone: z.string().max(40).optional(),
@@ -327,11 +319,9 @@ async function createFlexibleOrder(
     });
   }
 
-  // Taux implicite USD → LYD d'après les prix affichés (pour la colonne
-  // « montant LYD » des commandes admin) — NOWPayments facture en USD.
-  const ratePlan = config.pricing.plans.find((p) => p.priceUsd && p.priceUsd > 0);
-  const usdToLyd =
-    ratePlan && ratePlan.priceUsd ? ratePlan.price / ratePlan.priceUsd : 4.97;
+  // Devise unique : USD (= USDT au paiement). La colonne historique
+  // `amount_lyd` (NOT NULL, commandes anciennes) reçoit le montant USD ;
+  // elle n'est plus affichée nulle part.
 
   const ref = newOrderReference("NKH");
   const tracking = createTrackingToken();
@@ -350,7 +340,7 @@ async function createFlexibleOrder(
         kind: "flex",
         planId: "flexible",
         planName: label.slice(0, 190),
-        amountLyd: (amount * usdToLyd).toFixed(2),
+        amountLyd: String(amount),
         amountUsd: String(amount),
         currency: "usd",
         installments: 1,
@@ -544,7 +534,6 @@ export async function POST(req: Request) {
   }
 
   const modelPriceUsd = demoClassification?.priceUsd ?? plan.priceUsd;
-  const modelPriceLyd = demoClassification?.priceLyd ?? plan.price;
   if (typeof modelPriceUsd !== "number" || !Number.isFinite(modelPriceUsd) || modelPriceUsd <= 0) {
     return errorResponse("plan_not_payable", 400, {
       source: "input",
@@ -555,11 +544,10 @@ export async function POST(req: Request) {
 
   // Recalcul partagé avec l'affichage public : le navigateur ne peut pas
   // modifier le prix du modèle, le pourcentage ni le total facturé.
-  const priceBreakdown = resolvePlanPriceBreakdown(plan, modelPriceUsd, modelPriceLyd);
+  const priceBreakdown = resolvePlanPriceBreakdown(plan, modelPriceUsd);
   const customizationUsd = priceBreakdown.customizationUsd;
   const grossTotalUsd = priceBreakdown.totalPriceUsd;
-  const grossTotalLyd = priceBreakdown.totalPriceLyd;
-  if (customizationUsd == null || grossTotalUsd == null || grossTotalLyd == null) {
+  if (customizationUsd == null || grossTotalUsd == null) {
     return errorResponse("customization_quote_required", 400, {
       source: "config",
       status: null,
@@ -572,29 +560,14 @@ export async function POST(req: Request) {
       ? data.installments
       : 1;
 
-  // Coupon d'achat : jamais fait confiance au montant envoyé par le
-  // navigateur — on recalcule la remise ici, à partir du prix admin.
-  // Un coupon fourni mais invalide/expiré est refusé explicitement.
-  const couponProvided = Boolean(data.coupon && data.coupon.trim());
-  const couponValid = isPromoCode(data.coupon);
-  if (couponProvided && !couponValid) {
-    return errorResponse("invalid_coupon", 400, {
-      source: "input",
-      status: null,
-      message: `Coupon « ${data.coupon} » invalide ou expiré`,
-    });
-  }
-  const discountPercent = couponValid ? CURRENT_PROMO.percent : 0;
-  const totalUsd = discountedAmount(grossTotalUsd, discountPercent);
-  const totalLyd = Math.round(discountedAmount(grossTotalLyd, discountPercent));
+  // Prix final : jamais fait confiance au montant envoyé par le
+  // navigateur — le total est recalculé ici, à partir du prix admin.
+  const totalUsd = grossTotalUsd;
   const projectName = demo?.titleEn || plan.nameEn;
   const priceDetails = `model $${modelPriceUsd} + customization $${customizationUsd}`;
-  const planLabel = `${projectName} (${priceDetails})${
-    discountPercent > 0 ? ` (-${discountPercent}% ${normalizeCoupon(data.coupon)})` : ""
-  }`.slice(0, 190);
+  const planLabel = `${projectName} (${priceDetails})`.slice(0, 190);
 
   const usdTranches = splitAmount(totalUsd, count);
-  const lydTranches = splitAmount(totalLyd, count);
 
   const baseRef = newOrderReference("NKH");
   // Un même jeton pour toutes les tranches du groupe : le lien reçu au
@@ -616,7 +589,8 @@ export async function POST(req: Request) {
           groupRef: baseRef,
           planId: plan.id,
           planName: planLabel,
-          amountLyd: String(lydTranches[index] ?? totalLyd),
+          // Colonne historique NOT NULL : montant USD (devise unique).
+          amountLyd: String(usd),
           amountUsd: String(usd),
           currency: "usd",
           installments: count,

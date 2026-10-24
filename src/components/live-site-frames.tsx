@@ -19,7 +19,7 @@ import type { Demo } from "@/lib/site-types";
 import { useI18n } from "@/lib/i18n";
 import { useSiteConfig } from "@/components/site-provider";
 import { ReservationButton } from "@/components/reservation-dialog";
-import { formatLyd, lydLabel, resolveDemoClassification } from "@/lib/classification";
+import { resolveDemoClassification } from "@/lib/classification";
 import { formatMainPrice, formatUsd } from "@/lib/installments";
 import { ModelPriceBreakdown } from "@/components/model-price-breakdown";
 import { ModelPurchaseButton } from "@/components/model-purchase-button";
@@ -280,7 +280,7 @@ export function FullscreenLiveViewer({
                       classification.priceUsd,
                       locale === "ar" ? config.pricing.currency : config.pricing.currencyEn,
                     )}`
-                  : `${formatLyd(classification.priceLyd)} ${lydLabel(locale)}`}
+                  : locale === "ar" ? "السعر عند الطلب" : "Price on request"}
             </span>
           )}
 
@@ -423,12 +423,8 @@ export function FullscreenLiveViewer({
               />
               <p className="mt-2 text-[10px] text-zinc-500 leading-relaxed">
                 {locale === "ar"
-                  ? `العربون ${formatUsd(depositUsd)} $ (${formatLyd(
-                      config.reservation?.depositLyd ?? 0,
-                    )} د.ل) يُخصم من الإجمالي بعد اعتماد التخصيص.`
-                  : `$${formatUsd(depositUsd)} deposit (${formatLyd(
-                      config.reservation?.depositLyd ?? 0,
-                    )} LYD) is deducted from the final total after customization is approved.`}
+                  ? `العربون ${formatUsd(depositUsd)} $ (= ${formatUsd(depositUsd)} USDT) يُخصم من الإجمالي بعد اعتماد التخصيص.`
+                  : `$${formatUsd(depositUsd)} deposit (= ${formatUsd(depositUsd)} USDT) is deducted from the final total after customization is approved.`}
               </p>
             </>
           )}
@@ -463,7 +459,7 @@ export function FullscreenLiveViewer({
             <p>
               {demo.sectorAr} ({demo.sectorEn})
               {classification
-                ? ` — الفئة ${classification.tier}: ${classification.name} (${classification.nameEn}) · نموذج الموقع: ${classification.priceUsd != null ? `$${formatUsd(classification.priceUsd)} USD (≈ ${formatLyd(classification.priceLyd)} LYD)` : "حسب الطلب"} · التخصيص${classification.customizationPercent != null ? ` (${classification.customizationPercent}٪)` : ""}: ${classification.customizationUsd != null ? `$${formatUsd(classification.customizationUsd)} USD` : "عرض سعر مكتوب قبل الدفع"} · الإجمالي: ${classification.totalPriceUsd != null ? `$${formatUsd(classification.totalPriceUsd)} USD (≈ ${formatLyd(classification.totalPriceLyd ?? 0)} LYD)` : "يُحدد ويُعتمد قبل الدفع النهائي"}`
+                ? ` — الفئة ${classification.tier}: ${classification.name} (${classification.nameEn}) · نموذج الموقع: ${classification.priceUsd != null ? `$${formatUsd(classification.priceUsd)} USD (= USDT)` : "حسب الطلب"} · التخصيص${classification.customizationPercent != null ? ` (${classification.customizationPercent}٪)` : ""}: ${classification.customizationUsd != null ? `$${formatUsd(classification.customizationUsd)} USD` : "عرض سعر مكتوب قبل الدفع"} · الإجمالي: ${classification.totalPriceUsd != null ? `$${formatUsd(classification.totalPriceUsd)} USD (= USDT)` : "يُحدد ويُعتمد قبل الدفع النهائي"}`
                 : ""}
             </p>
           </section>

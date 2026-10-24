@@ -306,7 +306,7 @@ export function LeadsTable({ rows }: { rows: LeadRow[] }) {
                       onChange={(e) =>
                         setNotesDraft({ ...notesDraft, [lead.id]: e.target.value })
                       }
-                      placeholder="Rappel prévu mardi, devis 1 490 LYD envoyé…"
+                      placeholder="Rappel prévu mardi, devis 300 $ envoyé…"
                       className="w-full rounded-xl bg-white border border-stone-300 p-3 text-sm text-stone-900 placeholder:text-stone-400 focus:outline-none focus:border-[#B8923F]"
                     />
                   </div>

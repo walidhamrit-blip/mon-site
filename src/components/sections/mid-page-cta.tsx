@@ -11,7 +11,7 @@ import { whatsappLink } from "@/lib/utils";
  * La page enchaînait avis → FAQ → formulaire sans relance commerciale :
  * un visiteur convaincu devait chercher le formulaire en bas de page.
  * Cette section propose deux sorties (devis / WhatsApp) au moment où la
- * preuve sociale vient d'être lue, avec la promotion en cours rappelée.
+ * preuve sociale vient d'être lue.
  */
 export function MidPageCta() {
   const { locale } = useI18n();
@@ -46,12 +46,12 @@ export function MidPageCta() {
             <div className="max-w-[56ch]">
               <span className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1 text-[10.5px] font-black uppercase tracking-[0.18em] text-[var(--accent)]">
                 <Sparkles className="h-3 w-3" />
-                {ar ? "عرض محدود" : "Limited offer"}
+                {ar ? "ابدأ اليوم" : "Start today"}
               </span>
               <h2 className="mt-4 text-[clamp(1.6rem,1.1rem+1.8vw,2.4rem)] font-black leading-[1.1] tracking-[-0.025em]">
                 {ar
-                  ? "موقعك الاحترافي في 7 أيام — خصم 50% عند الدفع."
-                  : "Your professional site in 7 days — 50% off at checkout."}
+                  ? "موقعك الاحترافي في 7 أيام — بسعر واضح بالدولار."
+                  : "Your professional site in 7 days — one clear USD price."}
               </h2>
               <p className="mt-3 text-[14px] leading-7 opacity-70">
                 {ar
@@ -72,8 +72,8 @@ export function MidPageCta() {
                 href={whatsappLink(
                   siteConfig.whatsapp,
                   ar
-                    ? "مرحبا نخبة 👋 أريد استغلال عرض الخصم لموقع نشاطي."
-                    : "Hello Nukhba 👋 I'd like to use the discount for my business site.",
+                    ? "مرحبا نخبة 👋 أريد عرض سعر لموقع نشاطي."
+                    : "Hello Nukhba 👋 I'd like a quote for my business website.",
                 )}
                 target="_blank"
                 rel="noopener noreferrer"

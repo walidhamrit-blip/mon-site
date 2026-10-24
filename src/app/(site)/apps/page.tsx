@@ -30,7 +30,7 @@ export default async function AppsPage() {
     "@id": `${absoluteUrl(config, "/apps")}#collection`,
     name: `${page.titleAr} — ${page.statusBadgeAr}`,
     url: absoluteUrl(config, "/apps"),
-    inLanguage: ["ar-LY", "en"],
+    inLanguage: ["en", "ar"],
     isPartOf: { "@id": absoluteUrl(config, "#website") },
     mainEntity: {
       "@type": "ItemList",

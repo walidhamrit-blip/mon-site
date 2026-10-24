@@ -37,7 +37,7 @@ export default async function ContactPage() {
             url: absoluteUrl(config, "/contact"),
             description:
               "واتساب، هاتف وبريد إلكتروني — استشارة مجانية لمشروع موقعك في طرابلس.",
-            inLanguage: ["ar-LY", "en"],
+            inLanguage: ["en", "ar"],
             isPartOf: { "@id": absoluteUrl(config, "#website") },
           },
         ]}

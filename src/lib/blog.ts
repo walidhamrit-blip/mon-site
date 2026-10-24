@@ -3,10 +3,11 @@ import type { Faq } from "./site-types";
 /**
  * Blog / guides éditoriaux bilingues (`/blog`, `/blog/[slug]`).
  *
- * Objectif GEO + SEO : capter les requêtes informationnelles à forte intention
- * en Libye (« كم تكلفة تصميم موقع في ليبيا », « comment choisir une agence à
- * Tripoli », « هل يظهر موقعي في ChatGPT ») et fournir aux moteurs de réponse
- * des passages courts, datés, chiffrés et citables.
+ * Objectif GEO + SEO international : capter les requêtes informationnelles
+ * à forte intention (« how much does a website cost », « how to pay with
+ * USDT », « كم تكلفة تصميم موقع ») et fournir aux moteurs de réponse des
+ * passages courts, datés, chiffrés et citables. L'anglais est la langue
+ * principale d'affichage ; l'arabe reste disponible intégralement.
  *
  * Le contenu éditorial vit dans `src/lib/blog-articles.ts` ; ce fichier expose
  * le modèle, les helpers de lecture et les générateurs de données structurées.
@@ -24,6 +25,14 @@ export interface ArticleSection {
   /** Encadré « à retenir » affiché après la section. */
   calloutAr?: string;
   calloutEn?: string;
+  /** Photo de démonstration de l'étape (guides pratiques pas à pas). */
+  image?: {
+    src: string;
+    altAr: string;
+    altEn: string;
+    captionAr?: string;
+    captionEn?: string;
+  };
 }
 
 export interface ArticleKeyFact {
@@ -70,6 +79,10 @@ export interface BlogArticle {
   /** Identifiants de secteurs (/sectors/[sector]) à lier. */
   relatedSectors?: string[];
 }
+
+/** Guide crypto mis en premier : paiement USDT pas à pas, avec photos. */
+export const CRYPTO_GUIDE_SLUG = "how-to-pay-with-crypto-usdt";
+export const CRYPTO_GUIDE_PATH = `/blog/${CRYPTO_GUIDE_SLUG}`;
 
 /** URL canonique relative d'un article. */
 export function articlePath(slug: string): string {
@@ -160,17 +173,17 @@ export function articleJsonLd(
     "@context": "https://schema.org",
     "@type": "BlogPosting",
     "@id": `${url}#article`,
-    headline: article.titleAr,
-    alternateHeadline: article.titleEn,
-    name: article.h1Ar,
-    description: article.descriptionAr,
+    headline: article.titleEn,
+    alternateHeadline: article.titleAr,
+    name: article.h1En,
+    description: article.descriptionEn,
     url,
     mainEntityOfPage: { "@type": "WebPage", "@id": url },
     isPartOf: { "@id": `${base}/#website` },
-    inLanguage: ["ar-LY", "en"],
+    inLanguage: ["en", "ar"],
     datePublished: article.publishedAt,
     dateModified: article.updatedAt,
-    articleSection: article.categoryAr,
+    articleSection: article.categoryEn,
     keywords: [...article.keywordsAr, ...article.keywordsEn].join(", "),
     wordCount: articleWordCount(article),
     timeRequired: `PT${article.readingMinutes}M`,
@@ -197,7 +210,7 @@ export function articleFaqJsonLd(article: BlogArticle) {
   return {
     "@context": "https://schema.org",
     "@type": "FAQPage",
-    inLanguage: ["ar-LY", "en"],
+    inLanguage: ["en", "ar"],
     mainEntity: article.faqs.map((faq) => ({
       "@type": "Question",
       name: faq.qAr,
@@ -222,11 +235,11 @@ export function blogCollectionJsonLd(
     "@context": "https://schema.org",
     "@type": "CollectionPage",
     "@id": `${url}#collection`,
-    name: "مدونة نخبة — أدلة تصميم المواقع والتسويق الرقمي في ليبيا",
+    name: "Nukhba Blog — Website, E-Commerce & Crypto Payment Guides",
     description:
-      "أدلة عملية بالعربية والإنجليزية لرواد الأعمال في ليبيا: تكلفة الموقع، اختيار الوكالة، المتاجر الإلكترونية، الظهور في الذكاء الاصطناعي وسرعة المواقع.",
+      "Practical English and Arabic guides for business owners worldwide: paying with USDT step by step, website costs in USD, choosing an agency, online stores and AI search visibility.",
     url,
-    inLanguage: ["ar-LY", "en"],
+    inLanguage: ["en", "ar"],
     isPartOf: { "@id": `${base}/#website` },
     numberOfItems: sorted.length,
     mainEntity: {
@@ -236,8 +249,8 @@ export function blogCollectionJsonLd(
         "@type": "ListItem",
         position: index + 1,
         url: `${base}${articlePath(article.slug)}`,
-        name: article.titleAr,
-        description: article.descriptionAr,
+        name: article.titleEn,
+        description: article.descriptionEn,
       })),
     },
   };

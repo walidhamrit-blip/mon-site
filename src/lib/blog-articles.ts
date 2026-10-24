@@ -1,8 +1,9 @@
 import type { BlogArticle } from "./blog";
 
 /**
- * Contenu éditorial du blog — guides bilingues (AR / EN) ciblant les requêtes
- * informationnelles à forte intention commerciale en Libye.
+ * Contenu éditorial du blog — guides bilingues (EN principal / AR) ciblant
+ * les requêtes informationnelles internationales à forte intention.
+ * Devise unique affichée : USD (= USDT au paiement).
  *
  * Règles de rédaction (à conserver pour les prochains articles) :
  *  1. **Answer-first** : `answerAr` / `answerEn` répondent à la question du
@@ -19,32 +20,255 @@ import type { BlogArticle } from "./blog";
  *     dans /admin → Réglages, pour éviter toute divergence de prix.
  */
 export const blogArticles: BlogArticle[] = [
+  /* ─────────── 0. Guide crypto USDT — PREMIER guide affiché ─────────── */
+  {
+    slug: "how-to-pay-with-crypto-usdt",
+    titleAr: "كيف تدفع بالعملات الرقمية (USDT) خطوة بخطوة — دليل مصوّر 2026",
+    titleEn: "How to Pay with Crypto (USDT) Step by Step — Photo Guide 2026",
+    h1Ar: "كيف تدفع بالعملات الرقمية (USDT) خطوة بخطوة؟",
+    h1En: "How to Pay with Crypto (USDT), Step by Step",
+    descriptionAr:
+      "ادفع بالدولار عبر USDT في 4 خطوات مصوّرة: افتح الفاتورة، انسخ المبلغ والعنوان بدقة، أرسل على الشبكة الصحيحة TRC20، وأكّد — 1 دولار = 1 USDT.",
+    descriptionEn:
+      "Pay a USD price with USDT in 4 pictured steps: open the invoice, copy the exact amount and address, send on the right network (TRC20), and confirm.",
+    excerptAr:
+      "أول دفعة كريبتو لك؟ هذا الدليل المصوّر يأخذك من اختيار الباقة حتى تأكيد الشبكة: ماذا تحتاج، أين تنسخ العنوان، أيّ شبكة تختار، والأخطاء التي يجب تجنّبها.",
+    excerptEn:
+      "First crypto payment? This photo guide takes you from picking a plan to network confirmation: what you need, where to copy the address, which network to choose, and the mistakes to avoid.",
+    answerAr:
+      "كل أسعار نخبة بالدولار الأمريكي، وتدفع نفس المبلغ تماماً بـ USDT لأن 1 دولار = 1 USDT. الدفع يتم في 4 خطوات: اختر الباقة وافتح نافذة الدفع، اختر USDT في صفحة فاتورة NOWPayments، أرسل المبلغ الدقيق من محفظتك إلى العنوان المعروض على نفس الشبكة (TRC20 عادةً الأرخص بنحو 1 USDT رسوم)، ثم انتظر تأكيد الشبكة — غالباً أقل من 10 دقائق. يمكنك الدفع دفعة واحدة أو على 2–3 أقساط.",
+    answerEn:
+      "All Nukhba prices are in US dollars, and you pay the exact same amount in USDT because 1 USD = 1 USDT. Payment takes 4 steps: pick your plan and open checkout, choose USDT on the NOWPayments invoice page, send the exact amount from your wallet to the address shown on the same network (TRC20 is usually cheapest, about 1 USDT in fees), then wait for network confirmation — typically under 10 minutes. You can pay in full or in 2–3 installments.",
+    categoryAr: "الدفع بالكريبتو",
+    categoryEn: "Crypto Payments",
+    publishedAt: "2026-10-24",
+    updatedAt: "2026-10-24",
+    readingMinutes: 6,
+    authorAr: "فريق نخبة",
+    authorEn: "Nukhba team",
+    keywordsAr: [
+      "كيف ادفع USDT",
+      "الدفع بالعملات الرقمية خطوة بخطوة",
+      "شراء موقع بالكريبتو",
+      "محفظة USDT شبكة TRC20",
+    ],
+    keywordsEn: [
+      "how to pay with USDT",
+      "pay with crypto step by step",
+      "USDT TRC20 payment guide",
+      "buy a website with crypto",
+    ],
+    keyFacts: [
+      { labelAr: "سعر الصرف عند الدفع", labelEn: "Rate at checkout", valueAr: "1 $ = 1 USDT", valueEn: "1 USD = 1 USDT" },
+      { labelAr: "عدد الخطوات", labelEn: "Steps", valueAr: "4 خطوات", valueEn: "4 steps" },
+      { labelAr: "رسوم شبكة TRC20 النموذجية", labelEn: "Typical TRC20 fee", valueAr: "≈ 1 USDT", valueEn: "≈ 1 USDT" },
+      { labelAr: "تأكيد الشبكة", labelEn: "Network confirmation", valueAr: "غالباً < 10 دقائق", valueEn: "Usually < 10 min" },
+      { labelAr: "الأقساط المتاحة", labelEn: "Installments", valueAr: "1 أو 2–3 أقساط", valueEn: "1 or 2–3 payments" },
+    ],
+    sections: [
+      {
+        id: "what-is-usdt",
+        headingAr: "1. ما هو USDT ولماذا الأسعار بالدولار؟",
+        headingEn: "1. What Is USDT, and Why Are Prices in USD?",
+        paragraphsAr: [
+          "USDT (تيثر) عملة رقمية «مستقرة» مربوطة بالدولار الأمريكي: قيمتها تبقى 1 دولار تقريباً دائماً، بخلاف بيتكوين المتقلبة. لهذا نعرض كل أسعارنا بالدولار فقط — سعر 360 $ يعني أنك ترسل 360 USDT، بدون أي حسابات تحويل وبدون مفاجآت في يوم الدفع.",
+          "تحتاج فقط إلى محفظة أو حساب منصة فيه رصيد USDT (مثل تطبيق محفظة على هاتفك أو حساب منصة تداول). إن لم يكن لديك USDT بعد، اشترِ مبلغاً يغطي الفاتورة زائد نحو 1–2 USDT لرسوم الشبكة. لا تحتاج بطاقة بنكية دولية ولا حساباً بنكياً أجنبياً.",
+        ],
+        paragraphsEn: [
+          "USDT (Tether) is a «stablecoin» pegged to the US dollar: its value stays at roughly $1 at all times, unlike volatile Bitcoin. That is why all our prices are in USD only — a $360 price means you send 360 USDT, with no conversion maths and no surprises on payment day.",
+          "You only need a wallet or an exchange account holding USDT (a wallet app on your phone, or an exchange account). If you do not hold USDT yet, buy enough to cover the invoice plus about 1–2 USDT for network fees. No international bank card or foreign bank account is required.",
+        ],
+        bulletsAr: [
+          "1 USDT ≈ 1 دولار دائماً — المبلغ المعروض هو المبلغ المُرسَل",
+          "جهّز رصيداً يغطي الفاتورة + رسوم الشبكة (1–2 USDT)",
+          "أبقِ هاتفك (المحفظة) وجهاز الدفع جاهزين قبل فتح الفاتورة",
+        ],
+        bulletsEn: [
+          "1 USDT ≈ $1 at all times — the amount shown is the amount you send",
+          "Hold enough to cover the invoice + network fee (1–2 USDT)",
+          "Have your phone (wallet) ready before opening the invoice",
+        ],
+        image: {
+          src: "/guide-crypto/step-1-choose-plan.jpg",
+          altAr: "صفحة أسعار بالدولار مع زر الدفع بالعملات الرقمية وعملة USDT بجانب الحاسوب",
+          altEn: "USD pricing page with a Pay with crypto button and a USDT coin beside the laptop",
+          captionAr: "خطوة 1 — اختر باقتك بالدولار ثم اضغط «ادفع بالكريبتو». شاشة توضيحية: الأسعار الفعلية في صفحة الباقات.",
+          captionEn: "Step 1 — pick your USD plan, then press “Pay with crypto”. Demo screen: live prices are on the pricing page.",
+        },
+        calloutAr:
+          "قاعدة ذهبية: لا ترسل أي مبلغ قبل إنشاء الفاتورة من موقعنا. العنوان والمبلغ الصحيحان يظهران فقط داخل صفحة الفاتورة الرسمية بعد تعبئة نافذة الدفع.",
+        calloutEn:
+          "Golden rule: never send anything before generating the invoice on our site. The correct address and amount only appear inside the official invoice page after you complete the checkout window.",
+      },
+      {
+        id: "open-invoice",
+        headingAr: "2. افتح الفاتورة وانسخ المبلغ والعنوان والشبكة",
+        headingEn: "2. Open the Invoice and Copy Amount, Address and Network",
+        paragraphsAr: [
+          "بعد اختيار الموقع أو الباقة وتعبئة بريدك الإلكتروني في نافذة الدفع، تُحوَّل تلقائياً إلى صفحة فاتورة NOWPayments الآمنة. هناك اختر USDT من قائمة العملات — ستظهر لك ثلاثة عناصر حاسمة: المبلغ الدقيق (مثلاً 245.50 USDT)، عنوان الاستلام، واسم الشبكة (مثلاً Tron TRC20)، مع رمز QR يمكنك مسحه بهاتفك بدل النسخ اليدوي.",
+          "انسخ العنوان بزر النسخ ولا تكتبه يدوياً أبداً: حرف واحد خاطئ يعني ضياع المبلغ نهائياً، لأن تحويلات الكريبتو لا يمكن التراجع عنها. وانتبه لعدّاد الفاتورة: أكمل الإرسال قبل انتهائها، وإذا انتهت أنشئ فاتورة جديدة من موقعنا بدل الإرسال إلى عنوان قديم.",
+        ],
+        paragraphsEn: [
+          "After picking your site or plan and entering your email in the checkout window, you are redirected to the secure NOWPayments invoice page. There, choose USDT from the coin list — you will see three critical items: the exact amount (for example 245.50 USDT), the receiving address, and the network name (for example Tron TRC20), plus a QR code you can scan instead of copying by hand.",
+          "Copy the address with the copy button and never type it manually: one wrong character means the funds are lost forever, because crypto transfers cannot be reversed. Watch the invoice timer: send before it expires, and if it does, create a fresh invoice on our site instead of sending to an old address.",
+        ],
+        bulletsAr: [
+          "اختر USDT في صفحة الفاتورة ودوّن: المبلغ + العنوان + الشبكة",
+          "انسخ بالزر أو امسح QR — لا تكتب العنوان يدوياً",
+          "أرسل قبل انتهاء عدّاد الفاتورة؛ الفاتورة المنتهية = فاتورة جديدة",
+        ],
+        bulletsEn: [
+          "Choose USDT on the invoice and note: amount + address + network",
+          "Copy with the button or scan the QR — never type the address",
+          "Send before the timer ends; an expired invoice means a new invoice",
+        ],
+        image: {
+          src: "/guide-crypto/step-2-invoice-usdt.jpg",
+          altAr: "شاشة فاتورة دفع USDT على الهاتف مع رمز QR وعنوان ومبلغ دقيق وشبكة TRC20",
+          altEn: "USDT invoice screen on a phone with QR code, exact amount, address and TRC20 network",
+          captionAr: "خطوة 2 — صفحة الفاتورة: المبلغ الدقيق، العنوان، ورمز QR. شاشة توضيحية: انسخ دائماً بيانات فاتورتك أنت.",
+          captionEn: "Step 2 — the invoice page: exact amount, address and QR code. Demo screen: always copy your own invoice details.",
+        },
+      },
+      {
+        id: "send-from-wallet",
+        headingAr: "3. أرسل من محفظتك على نفس الشبكة وبنفس المبلغ",
+        headingEn: "3. Send From Your Wallet on the Same Network, Exact Amount",
+        paragraphsAr: [
+          "افتح محفظتك واختر إرسال USDT، الصق العنوان الذي نسخته، وأدخل المبلغ الدقيق رقماً برقم كما في الفاتورة (245.50 وليس 245 أو 246). ثم اختر الشبكة نفسها المكتوبة في الفاتورة — إذا كانت الفاتورة TRC20 اختر Tron (TRC20) في محفظتك؛ الإرسال على شبكة مختلفة (ERC20 مثلاً) إلى عنوان TRC20 يعني فقدان المبلغ.",
+          "قبل التأكيد قارن أول 6 أحرف وآخر 6 أحرف من العنوان الملصوق مع شاشة الفاتورة، وتأكد أن الرسوم تُخصم من رصيدك الإضافي لا من مبلغ الفاتورة نفسه. رسوم TRC20 عادة نحو 1 USDT وتأكيدها خلال دقائق؛ شبكة Ethereum (ERC20) أغلى بكثير ولا ننصح بها إلا إذا طلبتها فاتورتك تحديداً.",
+        ],
+        paragraphsEn: [
+          "Open your wallet, choose Send USDT, paste the copied address, and enter the exact amount digit for digit as shown on the invoice (245.50, not 245 or 246). Then select the same network written on the invoice — if the invoice says TRC20, pick Tron (TRC20) in your wallet; sending on a different network (for example ERC20) to a TRC20 address loses the funds.",
+          "Before confirming, compare the first 6 and last 6 characters of the pasted address against the invoice screen, and make sure the fee comes out of your extra balance, not out of the invoice amount itself. TRC20 fees are usually about 1 USDT with confirmation in minutes; Ethereum (ERC20) costs far more and we only recommend it if your invoice specifically asks for it.",
+        ],
+        bulletsAr: [
+          "الصق العنوان، أدخل المبلغ الدقيق، اختر نفس الشبكة حرفياً",
+          "تحقق من أول 6 وآخر 6 أحرف قبل الضغط على تأكيد",
+          "TRC20: رسوم ≈ 1 USDT — تجنّب ERC20 إلا إذا طلبته الفاتورة",
+        ],
+        bulletsEn: [
+          "Paste the address, enter the exact amount, pick the identical network",
+          "Check the first 6 and last 6 characters before confirming",
+          "TRC20: ≈ 1 USDT fee — avoid ERC20 unless your invoice requires it",
+        ],
+        image: {
+          src: "/guide-crypto/step-3-send-from-wallet.jpg",
+          altAr: "إرسال USDT من محفظة هاتف مع عنوان المستلم والمبلغ واختيار الشبكة",
+          altEn: "Sending USDT from a phone wallet with recipient address, amount and network selection",
+          captionAr: "خطوة 3 — في محفظتك: العنوان الملصوق، المبلغ الدقيق، ونفس شبكة الفاتورة قبل التأكيد.",
+          captionEn: "Step 3 — in your wallet: pasted address, exact amount, and the invoice's network before you confirm.",
+        },
+        calloutAr:
+          "أرسلت مبلغاً مختلفاً عن الفاتورة؟ لا تُكمل بتحويل ثانٍ من تلقاء نفسك — راسلنا على واتساب برقم الطلب ولقطة المعاملة وسنرشدك، فبعض النواقص يمكن تسويتها يدوياً.",
+        calloutEn:
+          "Sent a different amount than the invoice? Do not top it up with a second transfer on your own — message us on WhatsApp with your order reference and a screenshot of the transaction and we will guide you; some shortfalls can be settled manually.",
+      },
+      {
+        id: "confirmation",
+        headingAr: "4. انتظر التأكيد وتابع طلبك",
+        headingEn: "4. Wait for Confirmation and Track Your Order",
+        paragraphsAr: [
+          "بعد الإرسال تعرض صفحة متابعة الطلب الحالة مباشرة: «بانتظار التأكيد» ثم «تم استلام الدفع» فور تأكيد الشبكة — عادة أقل من 10 دقائق على TRC20، وقد تطول عند ازدحام الشبكة. يصلك في الوقت نفسه إيصال بالبريد الإلكتروني الذي أدخلته، ونتواصل معك خلال ساعتين في أوقات العمل لبدء مشروعك.",
+          "إذا اخترت الدفع على 2–3 أقساط، تُدفع اليوم أول دفعة فقط، وتبقى بقية الأقساط ظاهرة في صفحة المتابعة برابط دفع خاص لكل قسط عند استحقاقه — بنفس الخطوات الأربع في هذا الدليل. احتفظ برابط المتابعة ورقم المعاملة (TXID) حتى يكتمل مشروعك.",
+        ],
+        paragraphsEn: [
+          "After sending, the order tracking page updates live: “waiting for confirmation”, then “payment received” as soon as the network confirms — usually under 10 minutes on TRC20, longer if the network is congested. An email receipt arrives at the address you entered, and we contact you within 2 working hours to start your project.",
+          "If you chose 2–3 installments, only the first payment is due today; the remaining installments stay visible on the tracking page, each with its own payment link when due — using the same four steps in this guide. Keep your tracking link and transaction ID (TXID) until your project is complete.",
+        ],
+        image: {
+          src: "/guide-crypto/step-4-payment-confirmed.jpg",
+          altAr: "صفحة متابعة طلب تؤكد استلام دفعة USDT بنجاح مع إشعار على الهاتف",
+          altEn: "Order tracking page confirming a successful USDT payment with a phone notification",
+          captionAr: "خطوة 4 — «تم استلام الدفع»: طلبك مؤكد ونبدأ التنفيذ. شاشة توضيحية لحالة المتابعة.",
+          captionEn: "Step 4 — “Payment received”: your order is confirmed and we start building. Demo tracking screen.",
+        },
+      },
+      {
+        id: "mistakes-to-avoid",
+        headingAr: "أخطاء يجب تجنّبها قبل أول دفعة",
+        headingEn: "Mistakes to Avoid Before Your First Payment",
+        paragraphsAr: [
+          "أغلب مشاكل الدفع بالكريبتو سببها ثلاث لحظات تسرّع: اختيار شبكة مختلفة عن الفاتورة، تقريب المبلغ، أو كتابة العنوان يدوياً. تجنّبها وستمرّ دفعتك الأولى بسلاسة كأي تحويل بنكي — بل أسرع، ومتاحة من أي بلد في العالم دون بطاقة دولية.",
+          "وللأمان: لن نطلب منك أبداً عبارة استرداد محفظتك (Seed Phrase) أو كلمة مرورك، ولن نرسل لك عناوين دفع عبر واتساب. العنوان الوحيد الموثوق هو الذي يظهر داخل صفحة الفاتورة بعد إنشائها من موقعنا الرسمي — من يطلب غير ذلك فهو محتال.",
+        ],
+        paragraphsEn: [
+          "Most crypto payment problems come from three rushed moments: picking a different network than the invoice, rounding the amount, or typing the address by hand. Avoid those and your first payment flows as smoothly as a bank transfer — only faster, and available from any country without an international card.",
+          "For safety: we will never ask for your wallet recovery phrase (seed phrase) or your password, and we never send payment addresses over WhatsApp. The only trusted address is the one shown inside the invoice page generated from our official website — anyone asking otherwise is a scammer.",
+        ],
+        bulletsAr: [
+          "لا شبكة مختلفة، لا تقريب للمبلغ، لا كتابة يدوية للعنوان",
+          "لا تُعد استخدام عنوان فاتورة منتهية — أنشئ فاتورة جديدة",
+          "لا تشارك عبارة الاسترداد مع أي أحد، أبداً",
+          "عنوان الدفع يأتي من صفحة الفاتورة فقط، لا من الرسائل",
+        ],
+        bulletsEn: [
+          "No different network, no rounded amount, no hand-typed address",
+          "Never reuse an expired invoice address — generate a new invoice",
+          "Never share your seed phrase with anyone, ever",
+          "Payment addresses come from the invoice page only, never from messages",
+        ],
+        calloutAr:
+          "جاهز؟ اختر موقعاً من المعارض أو باقة من صفحة الأسعار، واضغط «ادفع بالكريبتو» — هذا الدليل يبقى مفتوحاً بجانبك خطوة بخطوة.",
+        calloutEn:
+          "Ready? Pick a site from the showcase or a plan on the pricing page and press “Pay with crypto” — keep this guide open beside you, step by step.",
+      },
+    ],
+    faqs: [
+      {
+        qAr: "هل يجب أن أدفع بـ USDT حصراً، أم يمكنني استخدام عملات أخرى؟",
+        qEn: "Must I pay in USDT, or can I use other coins?",
+        aAr: "يمكنك الدفع بأكثر من 300 عملة في صفحة الفاتورة (بيتكوين، إيثريوم وغيرها) وسيُحسب المقابل تلقائياً بسعر الدولار المعروض. ننصح بـ USDT للمبتدئين لأنه ثابت القيمة: المبلغ بالدولار هو نفسه بعدد USDT، فلا مجال لخطأ في التحويل أثناء تقلّب السوق.",
+        aEn: "You can pay with 300+ coins on the invoice page (Bitcoin, Ethereum and more) and the equivalent is calculated automatically from the USD price shown. We recommend USDT for first-timers because its value is stable: the dollar amount equals the USDT amount, so there is no conversion mistake while markets move.",
+      },
+      {
+        qAr: "أيّ شبكة أختار عند إرسال USDT: TRC20 أم ERC20؟",
+        qEn: "Which network should I choose for USDT: TRC20 or ERC20?",
+        aAr: "اختر دائماً الشبكة المكتوبة في فاتورتك تحديداً. عملياً تكون Tron (TRC20) في أغلب الفواتير: رسومها نحو 1 USDT وتأكيدها خلال دقائق، بينما Ethereum (ERC20) قد تكلّف عدة دولارات رسوماً. الأهم من الرخص هو التطابق: شبكة الإرسال يجب أن تطابق شبكة الفاتورة حرفياً وإلا ضاع المبلغ.",
+        aEn: "Always choose the exact network written on your invoice. In practice that is usually Tron (TRC20): about 1 USDT in fees and confirmation within minutes, while Ethereum (ERC20) can cost several dollars in fees. Matching matters more than cheapness: the sending network must match the invoice network exactly or the funds are lost.",
+      },
+      {
+        qAr: "كم تستغرق الدفعة حتى تظهر مؤكدة؟",
+        qEn: "How long until my payment shows as confirmed?",
+        aAr: "على شبكة TRC20 تظهر الدفعة مؤكدة غالباً خلال أقل من 10 دقائق، وتتحدث صفحة متابعة الطلب تلقائياً كل بضع ثوانٍ. عند ازدحام الشبكة قد تمتد إلى نحو 30 دقيقة. إذا تجاوزت ساعة دون تأكيد، راسلنا برقم المعاملة (TXID) وسنتحقق معك فوراً من حالة التحويل على الشبكة.",
+        aEn: "On TRC20, payments usually show as confirmed in under 10 minutes, and the tracking page refreshes automatically every few seconds. Network congestion can stretch this to about 30 minutes. If an hour passes with no confirmation, send us your transaction ID (TXID) and we will check the transfer status on-chain with you right away.",
+      },
+      {
+        qAr: "هل يمكنني التقسيط بالكريبتو؟ وكيف أدفع بقية الأقساط؟",
+        qEn: "Can I pay in installments with crypto? How do I pay the rest?",
+        aAr: "نعم: في نافذة الدفع اختر دفعة واحدة أو قسطين أو ثلاثة. تُنشأ فاتورة اليوم للقسط الأول فقط بنفس خطوات هذا الدليل، وتبقى الأقساط التالية في صفحة متابعة الطلب مع زر «ادفع هذا القسط» الذي يفتح فاتورة جديدة بمبلغ القسط وعنوان جديد عند كل استحقاق.",
+        aEn: "Yes: in the checkout window choose one payment, or 2 or 3 installments. Today's invoice covers only the first installment, using the same steps in this guide; the remaining installments stay on your tracking page with a “Pay this installment” button that opens a fresh invoice with that installment's amount and a new address each time.",
+      },
+    ],
+    relatedServices: ["landing", "restyle"],
+    relatedSectors: ["beauty", "restaurant"],
+  },
   /* ───────────────────────── 1. Coût d'un site ───────────────────────── */
   {
     slug: "prix-site-web-libye-2026",
-    titleAr: "كم تكلفة تصميم موقع إلكتروني في ليبيا 2026؟ الأسعار الحقيقية",
-    titleEn: "How Much Does a Website Cost in Libya in 2026? Real Prices",
-    h1Ar: "كم تكلفة تصميم موقع إلكتروني في ليبيا سنة 2026؟",
-    h1En: "What Does a Website Really Cost in Libya in 2026?",
+    titleAr: "كم تكلفة تصميم موقع إلكتروني في 2026؟ الأسعار الحقيقية بالدولار",
+    titleEn: "How Much Does a Website Cost in 2026? Real Prices in USD",
+    h1Ar: "كم تكلفة تصميم موقع إلكتروني في 2026؟",
+    h1En: "What Does a Website Really Cost in 2026?",
     descriptionAr:
-      "أسعار تصميم المواقع في ليبيا 2026: من 300 $ لموقع الواجهة إلى 880 $ للمتجر الإلكتروني الكامل — ما يشمله السعر، وما يرفعه، وكيف تتفادى التكاليف الخفية.",
+      "أسعار تصميم المواقع في 2026 بالدولار: من 300 $ لموقع الواجهة إلى 880 $ للمتجر الإلكتروني الكامل — ما يشمله السعر، وما يرفعه، وكيف تتفادى التكاليف الخفية.",
     descriptionEn:
-      "Website pricing in Libya 2026: from $300 for a showcase site to $880 for a full e-commerce store — what the price includes, what pushes it up, and how to avoid hidden costs.",
+      "Website pricing in 2026 in USD: from $300 for a showcase site to $880 for a full e-commerce store — what the price includes, what pushes it up, and how to avoid hidden costs.",
     excerptAr:
-      "جدول أسعار واضح لثلاث فئات من المواقع في السوق الليبي، مع ما يشمله كل سعر فعلاً وما يرفعه — بدون مبالغة ولا أسعار مخفية.",
+      "جدول أسعار واضح لثلاث فئات من المواقع بالدولار، مع ما يشمله كل سعر فعلاً وما يرفعه — بدون مبالغة ولا أسعار مخفية.",
     excerptEn:
-      "A clear price grid for three website tiers in the Libyan market, what each price really includes, and what pushes it up — no inflation, no hidden costs.",
+      "A clear USD price grid for three website tiers, what each price really includes, and what pushes it up — no inflation, no hidden costs.",
     answerAr:
-      "في السوق الليبي سنة 2026 تتراوح تكلفة موقع إلكتروني احترافي بين 300 دولار (≈ 1٬490 د.ل) لموقع واجهة من 5 صفحات، و510 دولاراً (≈ 2٬490 د.ل) لموقع مع حجز مواعيد ومدونة، و880 دولاراً (≈ 4٬290 د.ل) لمتجر إلكتروني كامل بنظام دفع وإدارة. السعر يشمل التصميم والتطوير والاستضافة للسنة الأولى، ويُسلَّم في 7 إلى 21 يوماً.",
+      "في 2026 تتراوح تكلفة موقع إلكتروني احترافي لدينا بين 300 دولار لموقع واجهة من 5 صفحات، و510 دولاراً لموقع مع حجز مواعيد ومدونة، و880 دولاراً لمتجر إلكتروني كامل بنظام دفع وإدارة. السعر يشمل التصميم والتطوير والاستضافة للسنة الأولى، ويُسلَّم في 7 إلى 21 يوماً.",
     answerEn:
-      "In the Libyan market in 2026 a professional website costs between $300 (≈ 1,490 LYD) for a five-page showcase site, $510 (≈ 2,490 LYD) for a site with booking and a blog, and $880 (≈ 4,290 LYD) for a full e-commerce store with payments and an admin panel. The price includes design, development and first-year hosting, with delivery in 7 to 21 days.",
+      "In 2026 a professional website with us costs between $300 for a five-page showcase site, $510 for a site with booking and a blog, and $880 for a full e-commerce store with payments and an admin panel. The price includes design, development and first-year hosting, with delivery in 7 to 21 days.",
     categoryAr: "أسعار وميزانيات",
     categoryEn: "Pricing & Budgets",
     publishedAt: "2026-10-20",
     updatedAt: "2026-10-20",
     readingMinutes: 7,
-    authorAr: "فريق نخبة — طرابلس",
-    authorEn: "Nukhba team — Tripoli",
+    authorAr: "فريق نخبة",
+    authorEn: "Nukhba team",
     keywordsAr: [
       "كم تكلفة تصميم موقع في ليبيا",
       "أسعار تصميم المواقع طرابلس",
@@ -58,9 +282,9 @@ export const blogArticles: BlogArticle[] = [
       "how much does a website cost 2026",
     ],
     keyFacts: [
-      { labelAr: "موقع واجهة (5 صفحات)", labelEn: "Showcase site (5 pages)", valueAr: "300 $ · 1٬490 د.ل", valueEn: "$300 · 1,490 LYD" },
-      { labelAr: "موقع + حجز ومدونة", labelEn: "Site + booking + blog", valueAr: "510 $ · 2٬490 د.ل", valueEn: "$510 · 2,490 LYD" },
-      { labelAr: "متجر إلكتروني كامل", labelEn: "Full e-commerce store", valueAr: "880 $ · 4٬290 د.ل", valueEn: "$880 · 4,290 LYD" },
+      { labelAr: "موقع واجهة (5 صفحات)", labelEn: "Showcase site (5 pages)", valueAr: "$300 = 300 USDT", valueEn: "$300 = 300 USDT" },
+      { labelAr: "موقع + حجز ومدونة", labelEn: "Site + booking + blog", valueAr: "$510 = 510 USDT", valueEn: "$510 = 510 USDT" },
+      { labelAr: "متجر إلكتروني كامل", labelEn: "Full e-commerce store", valueAr: "$880 = 880 USDT", valueEn: "$880 = 880 USDT" },
       { labelAr: "مدة التسليم", labelEn: "Delivery time", valueAr: "7 – 21 يوماً", valueEn: "7 – 21 days" },
       { labelAr: "الاستضافة السنة الأولى", labelEn: "First-year hosting", valueAr: "مشمولة", valueEn: "Included" },
     ],
@@ -70,11 +294,11 @@ export const blogArticles: BlogArticle[] = [
         headingAr: "ما الذي يحدد السعر فعلاً؟",
         headingEn: "What Actually Drives the Price?",
         paragraphsAr: [
-          "السعر في ليبيا لا يُحدَّد بعدد الصفحات فقط، بل بثلاثة عوامل: حجم المحتوى الذي يجب كتابته وتصويره، عدد الوظائف التفاعلية (حجز، سلة، دفع، لوحة تحكم)، ومستوى التخصيص البصري المطلوب. موقع من 5 صفحات بمحتوى جاهز أرخص بكثير من موقع من 5 صفحات نكتب له المحتوى ونصوّر المنتجات.",
+          "السعر لا يُحدَّد بعدد الصفحات فقط، بل بثلاثة عوامل: حجم المحتوى الذي يجب كتابته وتصويره، عدد الوظائف التفاعلية (حجز، سلة، دفع، لوحة تحكم)، ومستوى التخصيص البصري المطلوب. موقع من 5 صفحات بمحتوى جاهز أرخص بكثير من موقع من 5 صفحات نكتب له المحتوى ونصوّر المنتجات.",
           "العامل الثاني هو التقنية: قالب جاهز معدّل يبدأ من 150 دولاراً، لكنه يبقى بطيئاً ومقيداً؛ بينما الموقع المبني على Next.js مع تحسين SEO وسرعة 90+ يكلّف أكثر في البداية وأقل بكثير على المدى الطويل (لا تحديثات أمنية شهرية، ولا إضافات مدفوعة).",
         ],
         paragraphsEn: [
-          "In Libya, price is not driven by page count alone but by three factors: how much content must be written and photographed, how many interactive features are needed (booking, cart, payments, admin panel), and how much visual customisation is required. A five-page site with ready content costs far less than the same five pages where we write the copy and shoot the products.",
+          "Price is not driven by page count alone but by three factors: how much content must be written and photographed, how many interactive features are needed (booking, cart, payments, admin panel), and how much visual customisation is required. A five-page site with ready content costs far less than the same five pages where we write the copy and shoot the products.",
           "The second factor is technology: a modified off-the-shelf template starts at $150, but stays slow and constrained; a Next.js build with technical SEO and 90+ speed costs more upfront and much less over time (no monthly security patches, no paid plugins).",
         ],
         bulletsAr: [
@@ -175,7 +399,7 @@ export const blogArticles: BlogArticle[] = [
       },
       {
         qAr: "هل يوجد أرخص من ذلك في السوق الليبي؟",
-        qEn: "Is there anything cheaper in the Libyan market?",
+        qEn: "Is there anything cheaper on the market?",
         aAr: "نعم، قوالب جاهزة من 100 إلى 150 دولاراً، لكنها غالباً بطيئة، غير محسّنة لمحركات البحث، وبدون دعم أو لوحة تحكم. احسب تكلفة إعادة بنائها بعد سنة قبل المقارنة.",
         aEn: "Yes, ready-made templates from $100–150, but they are usually slow, not search-optimised, and come without support or an admin panel. Count the cost of rebuilding in a year before comparing.",
       },
@@ -188,29 +412,29 @@ export const blogArticles: BlogArticle[] = [
   /* ────────────────────── 2. Choisir une agence ────────────────────── */
   {
     slug: "choisir-agence-web-tripoli",
-    titleAr: "كيف تختار أفضل شركة تصميم مواقع في طرابلس؟ 7 معايير عملية",
-    titleEn: "How to Choose a Web Design Agency in Tripoli: 7 Practical Criteria",
-    h1Ar: "كيف تختار شركة تصميم مواقع في طرابلس؟",
-    h1En: "How to Choose a Web Design Agency in Tripoli",
+    titleAr: "كيف تختار أفضل شركة تصميم مواقع؟ 7 معايير عملية قبل التعاقد",
+    titleEn: "How to Choose a Web Design Agency: 7 Practical Criteria",
+    h1Ar: "كيف تختار شركة تصميم مواقع تثق بها؟",
+    h1En: "How to Choose a Web Design Agency You Can Trust",
     descriptionAr:
-      "سبعة معايير لحسم الاختيار بين وكالات تصميم المواقع في طرابلس: أعمال حية لا صور، ملكية الدومين، السرعة، عقد واضح، دعم بعد التسليم، وشفافية الأسعار.",
+      "سبعة معايير لحسم الاختيار بين وكالات تصميم المواقع أينما كانت: أعمال حية لا صور، ملكية الدومين، السرعة، عقد واضح، دعم بعد التسليم، وشفافية الأسعار.",
     descriptionEn:
-      "Seven criteria to pick a web design agency in Tripoli: live work over screenshots, domain ownership, speed, a clear contract, after-delivery support and transparent pricing.",
+      "Seven criteria to pick a web design agency anywhere: live work over screenshots, domain ownership, speed, a clear contract, after-delivery support and transparent pricing.",
     excerptAr:
       "معايير قابلة للفحص في مكالمة واحدة — تفرّق بين وكالة تبني لك أصلاً رقمياً ووكالة تبيع لك قالباً.",
     excerptEn:
       "Criteria you can check in a single call — they separate an agency building you a digital asset from one selling you a template.",
     answerAr:
-      "أفضل شركة تصميم مواقع في طرابلس هي التي تُظهر أعمالاً حية قابلة للتصفح (لا صور فقط)، تُسلّم ملكية الدومين والاستضافة والملفات لك، وتُقدّم سعراً مكتوباً بنطاق محدد ودعم بعد التسليم. اسأل عن هذه النقاط الأربع في أول مكالمة: الأغلبية تتضح خلال عشر دقائق.",
+      "أفضل شركة تصميم مواقع هي التي تُظهر أعمالاً حية قابلة للتصفح (لا صور فقط)، تُسلّم ملكية الدومين والاستضافة والملفات لك، وتُقدّم سعراً مكتوباً بنطاق محدد ودعم بعد التسليم. اسأل عن هذه النقاط الأربع في أول مكالمة: الأغلبية تتضح خلال عشر دقائق.",
     answerEn:
-      "The best web design agency in Tripoli is the one that shows live, browsable work (not just screenshots), hands you ownership of the domain, hosting and source files, and provides a written quote with a defined scope plus after-delivery support. Ask these four points in the first call: most of the answer becomes clear within ten minutes.",
+      "The best web design agency is the one that shows live, browsable work (not just screenshots), hands you ownership of the domain, hosting and source files, and provides a written quote with a defined scope plus after-delivery support. Ask these four points in the first call: most of the answer becomes clear within ten minutes.",
     categoryAr: "اختيار الشريك",
     categoryEn: "Choosing a Partner",
     publishedAt: "2026-10-20",
     updatedAt: "2026-10-20",
     readingMinutes: 6,
-    authorAr: "فريق نخبة — طرابلس",
-    authorEn: "Nukhba team — Tripoli",
+    authorAr: "فريق نخبة",
+    authorEn: "Nukhba team",
     keywordsAr: [
       "أفضل شركة تصميم مواقع طرابلس",
       "اختيار وكالة ويب ليبيا",
@@ -254,7 +478,7 @@ export const blogArticles: BlogArticle[] = [
           "اشترط كتابياً: الدومين باسمك، والاستضافة باسمك، والملفات المصدرية تُسلَّم عند اكتمال الدفع، والوصول الكامل (FTP/لوحة التحكم/Git) يبقى معك.",
         ],
         paragraphsEn: [
-          "The biggest problem we see in the Libyan market: a client discovers two years later that the domain is registered to the agency, or the admin panel is withheld. Changing providers then becomes impossible without paying a technical ransom.",
+          "The biggest problem we see again and again: a client discovers two years later that the domain is registered to the agency, or the admin panel is withheld. Changing providers then becomes impossible without paying a technical ransom.",
           "Require in writing: domain in your name, hosting in your name, source files handed over once payment completes, and full access (FTP/control panel/Git) kept with you.",
         ],
         bulletsAr: [
@@ -336,10 +560,10 @@ export const blogArticles: BlogArticle[] = [
         aEn: "Not always. A very low price usually means a template with no support, and a very high price may pay for appearances. What matters is what the proposal states: scope, ownership, speed, support.",
       },
       {
-        qAr: "هل يمكن العمل مع وكالة في طرابلس وأنا في مدينة أخرى؟",
-        qEn: "Can I work with a Tripoli agency from another city?",
-        aAr: "نعم — العمل عن بُعد هو الوضع الطبيعي: اجتماعات فيديو، تسليم أونلاين، ودفع عبر تحويل بنكي أو عملات رقمية. وجود الوكالة في طرابلس يفيد في المعرفة بالسوق المحلي والقوانين والدفع عند الاستلام.",
-        aEn: "Yes — remote work is the norm: video calls, online delivery, and payment via bank transfer or crypto. Being based in Tripoli helps with local market knowledge, regulations and cash-on-delivery.",
+        qAr: "هل يمكن العمل مع وكالة عن بُعد وأنا في بلد آخر؟",
+        qEn: "Can I work with an agency remotely from another country?",
+        aAr: "نعم — العمل عن بُعد هو الوضع الطبيعي لدينا مع عملاء من بلدان مختلفة: اجتماعات فيديو، معاينات حية، تسليم أونلاين، ودفع بالدولار عبر USDT أو تحويل بنكي. المهم هو وضوح العقد وملكية الأصول، لا مكان الوكالة.",
+        aEn: "Yes — remote work is our norm with clients in several countries: video calls, live previews, online delivery, and payment in USD via USDT or bank transfer. What matters is a clear contract and asset ownership, not the agency's location.",
       },
     ],
     relatedServices: ["restyle", "branding"],
@@ -349,29 +573,29 @@ export const blogArticles: BlogArticle[] = [
   /* ─────────────────────── 3. Boutique en ligne ─────────────────────── */
   {
     slug: "lancer-boutique-en-ligne-libye",
-    titleAr: "كيف تطلق متجراً إلكترونياً في ليبيا 2026؟ دليل خطوة بخطوة",
-    titleEn: "How to Launch an Online Store in Libya in 2026: Step-by-Step",
-    h1Ar: "كيف تطلق متجراً إلكترونياً في ليبيا؟",
-    h1En: "How to Launch an Online Store in Libya",
+    titleAr: "كيف تطلق متجراً إلكترونياً في 2026؟ دليل عملي خطوة بخطوة",
+    titleEn: "How to Launch an Online Store in 2026: Practical Step-by-Step",
+    h1Ar: "كيف تطلق متجراً إلكترونياً يبيع فعلاً؟",
+    h1En: "How to Launch an Online Store That Actually Sells",
     descriptionAr:
-      "دليل عملي لإطلاق متجر إلكتروني في ليبيا: الدفع عند الاستلام، الطلب عبر واتساب، التوصيل، التصوير، والتكلفة من 880 $ — مع أخطاء شائعة يجب تجنبها.",
+      "دليل عملي لإطلاق متجر إلكتروني: الدفع بالكريبتو وعند الاستلام، الطلب عبر واتساب، التوصيل، التصوير، والتكلفة من 880 $ — مع أخطاء شائعة يجب تجنبها.",
     descriptionEn:
-      "A practical guide to launching an online store in Libya: cash on delivery, WhatsApp ordering, shipping, product photography and costs from $880 — plus mistakes to avoid.",
+      "A practical guide to launching an online store: crypto and cash-on-delivery payments, WhatsApp ordering, shipping, product photography and costs from $880.",
     excerptAr:
       "من اختيار المنتجات إلى أول 100 طلب: البنية التي تعمل فعلاً في السوق الليبي، بأرقام وتكاليف واقعية.",
     excerptEn:
-      "From picking products to your first 100 orders: the setup that actually works in the Libyan market, with realistic numbers and costs.",
+      "From picking products to your first 100 orders: the setup that actually works today, with realistic numbers and USD costs.",
     answerAr:
-      "إطلاق متجر إلكتروني في ليبيا يبدأ باختيار 20 إلى 50 منتجاً سريع الدوران، ثم بناء متجر بـ 880 دولاراً (≈ 4٬290 د.ل) يشمل السلة والدفع عند الاستلام وربط واتساب ولوحة تحكم، خلال 14 إلى 21 يوماً. النقطة الحاسمة ليست التصميم بل الثقة: صور واضحة، سعر شامل للتوصيل، وسياسة إرجاع مكتوبة.",
+      "إطلاق متجر إلكتروني يبدأ باختيار 20 إلى 50 منتجاً سريع الدوران، ثم بناء متجر بـ 880 دولاراً يشمل السلة والدفع عند الاستلام وربط واتساب ولوحة تحكم، خلال 14 إلى 21 يوماً. النقطة الحاسمة ليست التصميم بل الثقة: صور واضحة، سعر شامل للتوصيل، وسياسة إرجاع مكتوبة.",
     answerEn:
-      "Launching an online store in Libya starts with 20 to 50 fast-moving products, then building a store for $880 (≈ 4,290 LYD) including cart, cash-on-delivery, WhatsApp ordering and an admin panel, in 14 to 21 days. The decisive factor is not design but trust: clear photos, a price that includes delivery, and a written return policy.",
+      "Launching an online store starts with 20 to 50 fast-moving products, then building a store for $880 including cart, cash-on-delivery, WhatsApp ordering and an admin panel, in 14 to 21 days. The decisive factor is not design but trust: clear photos, a price that includes delivery, and a written return policy.",
     categoryAr: "تجارة إلكترونية",
     categoryEn: "E-commerce",
     publishedAt: "2026-10-20",
     updatedAt: "2026-10-20",
     readingMinutes: 8,
-    authorAr: "فريق نخبة — طرابلس",
-    authorEn: "Nukhba team — Tripoli",
+    authorAr: "فريق نخبة",
+    authorEn: "Nukhba team",
     keywordsAr: [
       "إنشاء متجر إلكتروني ليبيا",
       "متجر أونلاين طرابلس",
@@ -385,7 +609,7 @@ export const blogArticles: BlogArticle[] = [
       "e-commerce website cost",
     ],
     keyFacts: [
-      { labelAr: "تكلفة المتجر الكامل", labelEn: "Full store cost", valueAr: "880 $ · 4٬290 د.ل", valueEn: "$880 · 4,290 LYD" },
+      { labelAr: "تكلفة المتجر الكامل", labelEn: "Full store cost", valueAr: "$880 = 880 USDT", valueEn: "$880 = 880 USDT" },
       { labelAr: "عدد المنتجات للانطلاق", labelEn: "Products to start", valueAr: "20 – 50 منتجاً", valueEn: "20 – 50 products" },
       { labelAr: "نسبة الإرجاع المتوقعة", labelEn: "Expected return rate", valueAr: "10 – 20%", valueEn: "10 – 20%" },
       { labelAr: "مدة البناء", labelEn: "Build time", valueAr: "14 – 21 يوماً", valueEn: "14 – 21 days" },
@@ -396,11 +620,11 @@ export const blogArticles: BlogArticle[] = [
         headingAr: "لماذا 2026 هو وقت مناسب؟",
         headingEn: "Why 2026 Is the Right Moment",
         paragraphsAr: [
-          "الشراء عبر الهاتف أصبح سلوكاً يومياً في ليبيا، لكن كثيراً من المتاجر ما زالت تعمل بصفحات إنستغرام فقط: لا سلة، لا مخزون، ولا أرشيف للطلبات. المتجر الإلكتروني يمنحك ثلاثة أشياء لا يعطيها إنستغرام: بحث وفلاتر، حفظ للسلة، وتقارير بما يُباع فعلاً.",
+          "الشراء عبر الهاتف أصبح سلوكاً يومياً في كل مكان، لكن كثيراً من المتاجر ما زالت تعمل بصفحات إنستغرام فقط: لا سلة، لا مخزون، ولا أرشيف للطلبات. المتجر الإلكتروني يمنحك ثلاثة أشياء لا يعطيها إنستغرام: بحث وفلاتر، حفظ للسلة، وتقارير بما يُباع فعلاً.",
           "الأهم: الظهور في جوجل. صفحة منتج واحدة قد تجلب طلبات لسنوات، بينما منشور إنستغرام يختفي بعد 48 ساعة.",
         ],
         paragraphsEn: [
-          "Buying on mobile is a daily habit in Libya, yet many stores still run on Instagram pages only: no cart, no stock, no order history. An online store gives you three things Instagram does not: search and filters, a saved cart, and reporting on what actually sells.",
+          "Buying on mobile is a daily habit everywhere, yet many stores still run on Instagram pages only: no cart, no stock, no order history. An online store gives you three things Instagram does not: search and filters, a saved cart, and reporting on what actually sells.",
           "Most importantly: Google visibility. A single product page can bring orders for years, while an Instagram post disappears in 48 hours.",
         ],
       },
@@ -422,19 +646,19 @@ export const blogArticles: BlogArticle[] = [
       {
         id: "paiement-livraison",
         headingAr: "2. الدفع والتوصيل: واقع السوق الليبي",
-        headingEn: "2. Payment and Shipping: Libya's Reality",
+        headingEn: "2. Payment and Shipping: What Works Today",
         paragraphsAr: [
-          "الدفع عند الاستلام هو الملك في ليبيا، ويجب أن يكون الخيار الأول. أضف إليه التحويل البنكي أو المحفظة، والدفع بالعملات الرقمية للعملاء الذين يفضّلونه. البطاقات الدولية أقل انتشاراً؛ لا تبنِ المتجر حولها.",
-          "للتوصيل: حدد مناطق واضحة (طرابلس، بنغازي، مصراتة…) وسعراً لكل منطقة، وموعداً متوقعاً. الشفافية هنا تقلل الإرجاع أكثر من أي خصم.",
+          "نوّع خيارات الدفع حسب عملائك: العملات الرقمية (USDT) للعملاء الدوليين ومن يفضّل الدفع المسبق، والدفع عند الاستلام أو التحويل حيث يناسب سوقك. القاعدة: كلما قلّ الاحتكاك عند الدفع زادت الطلبات المكتملة.",
+          "للتوصيل: حدد مناطق واضحة (مدينتك، مدن قريبة، دولي…) وسعراً لكل منطقة، وموعداً متوقعاً. الشفافية هنا تقلل الإرجاع أكثر من أي خصم.",
         ],
         paragraphsEn: [
-          "Cash on delivery dominates in Libya and must be the primary option. Add bank or wallet transfer, and crypto for customers who prefer it. International cards are less common; do not build the store around them.",
-          "For shipping: define clear zones (Tripoli, Benghazi, Misrata…) with a price per zone and an expected date. This transparency reduces returns more than any discount.",
+          "Match payment options to your customers: crypto (USDT) for international buyers and anyone who prefers paying upfront, plus cash-on-delivery or transfer where your market expects it. The rule: the less friction at checkout, the more completed orders.",
+          "For shipping: define clear zones (your city, nearby cities, international…) with a price per zone and an expected date. This transparency reduces returns more than any discount.",
         ],
         bulletsAr: [
           "الدفع عند الاستلام: الخيار الأول دائماً",
           "تحويل بنكي/محفظة: للطلبات الكبيرة",
-          "عملات رقمية: للعملاء خارج ليبيا أو الراغبين في الخصوصية",
+          "عملات رقمية (USDT): للعملاء الدوليين والدفع المسبق الآمن",
           "سعر توصيل واضح لكل منطقة قبل إتمام الطلب",
         ],
         bulletsEn: [
@@ -477,14 +701,14 @@ export const blogArticles: BlogArticle[] = [
       {
         qAr: "كم أحتاج من المال لإطلاق متجر؟",
         qEn: "How much money do I need to launch a store?",
-        aAr: "المتجر الكامل يبدأ من 880 دولاراً (≈ 4٬290 د.ل). أضف ميزانية تصوير 100–200 دولار، ومخزوناً أولياً، وميزانية إعلانات تجريبية 100 دولار للشهر الأول.",
-        aEn: "A full store starts at $880 (≈ 4,290 LYD). Add a $100–200 photography budget, initial stock, and a $100 test-ads budget for month one.",
+        aAr: "المتجر الكامل يبدأ من 880 دولاراً. أضف ميزانية تصوير 100–200 دولار، ومخزوناً أولياً، وميزانية إعلانات تجريبية 100 دولار للشهر الأول.",
+        aEn: "A full store starts at $880. Add a $100–200 photography budget, initial stock, and a $100 test-ads budget for month one.",
       },
       {
         qAr: "هل أحتاج شركة شحن أم أوصّل بنفسي؟",
         qEn: "Do I need a shipping company or deliver myself?",
         aAr: "ابدأ بنفسك داخل مدينتك، وأضف شركة شحن للمدن الأخرى بعد أول 30 طلباً. كثير من المتاجر الليبية تتعامل مع شركتين حسب المنطقة.",
-        aEn: "Start delivering yourself inside your city and add a shipping company for other cities after the first 30 orders. Many Libyan stores work with two companies by zone.",
+        aEn: "Start delivering yourself inside your city and add a shipping company for other cities after the first 30 orders. Many stores work with two companies by zone.",
       },
       {
         qAr: "هل يمكن ربط المتجر بإنستغرام؟",
@@ -506,14 +730,14 @@ export const blogArticles: BlogArticle[] = [
   /* ──────────────────── 4. Visibilité dans les IA (GEO) ──────────────────── */
   {
     slug: "apparaitre-dans-chatgpt-google-ai-libye",
-    titleAr: "كيف يظهر موقعك في ChatGPT وGoogle AI؟ دليل GEO لشركات ليبيا",
-    titleEn: "How to Get Your Website Cited by ChatGPT and Google AI: GEO for Libyan Businesses",
+    titleAr: "كيف يظهر موقعك في ChatGPT وGoogle AI؟ دليل GEO العملي 2026",
+    titleEn: "How to Get Your Website Cited by ChatGPT and Google AI: 2026 GEO Guide",
     h1Ar: "كيف يظهر موقعك في ChatGPT وGoogle AI؟",
     h1En: "How to Get Your Site Cited by ChatGPT and Google AI",
     descriptionAr:
-      "دليل عملي للظهور في محركات الذكاء الاصطناعي: بيانات منظمة، llms.txt، إجابات مباشرة، مراجعات، واستشهادات — خطوات قابلة للقياس لشركات ليبيا في 2026.",
+      "دليل عملي للظهور في محركات الذكاء الاصطناعي: بيانات منظمة، llms.txt، إجابات مباشرة، مراجعات، واستشهادات — خطوات قابلة للقياس لأي شركة في 2026.",
     descriptionEn:
-      "A practical guide to AI search visibility: structured data, llms.txt, answer-first content, reviews and citations — measurable steps for Libyan businesses in 2026.",
+      "A practical guide to AI search visibility: structured data, llms.txt, answer-first content, reviews and citations — measurable steps for any business in 2026.",
     excerptAr:
       "لماذا تذكر ChatGPT منافسك ولا تذكرك؟ وما الخطوات التقنية والتحريرية التي تغيّر ذلك خلال أسابيع.",
     excerptEn:
@@ -527,8 +751,8 @@ export const blogArticles: BlogArticle[] = [
     publishedAt: "2026-10-20",
     updatedAt: "2026-10-20",
     readingMinutes: 7,
-    authorAr: "فريق نخبة — طرابلس",
-    authorEn: "Nukhba team — Tripoli",
+    authorAr: "فريق نخبة",
+    authorEn: "Nukhba team",
     keywordsAr: [
       "الظهور في ChatGPT",
       "تحسين محركات البحث بالذكاء الاصطناعي",
@@ -609,11 +833,11 @@ export const blogArticles: BlogArticle[] = [
         headingEn: "3. Trust Signals: Reviews, Directories, Consistency",
         paragraphsAr: [
           "المحركات تتحقق من وجودك خارج موقعك: ملف Google Business Profile، صفحات الأدلة الليبية، حسابات التواصل الاجتماعي، وذكر اسمك في مقالات أو مواقع أخرى. تطابق الاسم والعنوان والهاتف بين كل هذه المصادر شرط أساسي.",
-          "اطلب من كل عميل راضٍ مراجعة على Google، واذكر عدد المراجعات والتقييم في موقعك بصيغة قابلة للقراءة الآلية. التقييم 4.9/5 مع 86 مراجعة أقوى من شعار «الأفضل في ليبيا».",
+          "اطلب من كل عميل راضٍ مراجعة على Google، واذكر عدد المراجعات والتقييم في موقعك بصيغة قابلة للقراءة الآلية. التقييم 4.9/5 مع 86 مراجعة أقوى من أي شعار «الأفضل».",
         ],
         paragraphsEn: [
-          "Engines verify you exist outside your site: a Google Business Profile, Libyan directory listings, social accounts, and mentions of your name in articles or other sites. Consistent name, address and phone across all sources is a prerequisite.",
-          "Ask every satisfied client for a Google review, and state your review count and rating on your site in machine-readable form. A 4.9/5 with 86 reviews is stronger than a 'best in Libya' badge.",
+          "Engines verify you exist outside your site: a Google Business Profile, directory listings in your market, social accounts, and mentions of your name in articles or other sites. Consistent name, address and phone across all sources is a prerequisite.",
+          "Ask every satisfied client for a Google review, and state your review count and rating on your site in machine-readable form. A 4.9/5 with 86 reviews is stronger than any 'best agency' badge.",
         ],
         calloutAr: "اسم وعنوان وهاتف متطابقون في كل مكان — أصغر اختلاف يضعف الثقة الآلية.",
         calloutEn: "Identical name, address and phone everywhere — the smallest mismatch weakens machine trust.",
@@ -659,29 +883,29 @@ export const blogArticles: BlogArticle[] = [
   /* ───────────────────────── 5. Site clinique ───────────────────────── */
   {
     slug: "site-web-clinique-tripoli",
-    titleAr: "موقع عيادة في طرابلس: حجز مواعيد أونلاين يملأ جدولك",
-    titleEn: "A Clinic Website in Tripoli: Online Booking That Fills Your Schedule",
-    h1Ar: "موقع عيادة في طرابلس: كيف يزيد الحجوزات فعلاً؟",
-    h1En: "A Clinic Website in Tripoli: What Actually Increases Bookings",
+    titleAr: "موقع عيادة ناجح: حجز مواعيد أونلاين يملأ جدولك فعلاً",
+    titleEn: "A Clinic Website That Works: Online Booking That Fills Your Schedule",
+    h1Ar: "موقع عيادة: كيف يزيد الحجوزات فعلاً؟",
+    h1En: "A Clinic Website: What Actually Increases Bookings",
     descriptionAr:
-      "ما يحتاجه موقع العيادة في ليبيا: حجز 24/7، ملف الطبيب، الخدمات والأسعار، ثقة المرضى، وظهور في جوجل وخرائط — بتكلفة من 510 $ وتسليم 10 أيام.",
+      "ما يحتاجه موقع العيادة الناجح: حجز 24/7، ملف الطبيب، الخدمات والأسعار، ثقة المرضى، وظهور في جوجل وخرائط — بتكلفة من 510 $ وتسليم 10 أيام.",
     descriptionEn:
-      "What a clinic website in Libya needs: 24/7 booking, doctor profile, services and prices, patient trust, and visibility on Google and Maps — from $510, delivered in 10 days.",
+      "What a successful clinic website needs: 24/7 booking, doctor profile, services and prices, patient trust, and visibility on Google and Maps — from $510, delivered in 10 days.",
     excerptAr:
       "لماذا يفقد كثير من العيادات مرضى جدداً قبل أن يصلوا إلى الهاتف — وكيف يحل الموقع هذه المشكلة.",
     excerptEn:
       "Why many clinics lose new patients before they even call — and how a website solves it.",
     answerAr:
-      "موقع العيادة في طرابلس يزيد الحجوزات عندما يجيب على ثلاثة أسئلة فوراً: من الطبيب؟ ما الخدمات والأسعار؟ كيف أحجز الآن؟ الحجز الذاتي 24/7 مع تأكيد واتساب، وصفحة تعريف بالطبيب، وتقييمات مرضى ظاهرة، ترفع الحجوزات عادةً بين 20 و40% خلال ثلاثة أشهر. التكلفة تبدأ من 510 دولاراً (≈ 2٬490 د.ل) مع تسليم في 10 أيام.",
+      "موقع العيادة في طرابلس يزيد الحجوزات عندما يجيب على ثلاثة أسئلة فوراً: من الطبيب؟ ما الخدمات والأسعار؟ كيف أحجز الآن؟ الحجز الذاتي 24/7 مع تأكيد واتساب، وصفحة تعريف بالطبيب، وتقييمات مرضى ظاهرة، ترفع الحجوزات عادةً بين 20 و40% خلال ثلاثة أشهر. التكلفة تبدأ من 510 دولاراً مع تسليم في 10 أيام.",
     answerEn:
-      "A clinic website in Tripoli increases bookings when it answers three questions immediately: who is the doctor? what are the services and prices? how do I book now? 24/7 self-booking with WhatsApp confirmation, a doctor profile page and visible patient reviews typically raise bookings by 20–40% within three months. Costs start at $510 (≈ 2,490 LYD) with ten-day delivery.",
+      "A clinic website in Tripoli increases bookings when it answers three questions immediately: who is the doctor? what are the services and prices? how do I book now? 24/7 self-booking with WhatsApp confirmation, a doctor profile page and visible patient reviews typically raise bookings by 20–40% within three months. Costs start at $510 with ten-day delivery.",
     categoryAr: "قطاع طبي",
     categoryEn: "Healthcare",
     publishedAt: "2026-10-20",
     updatedAt: "2026-10-20",
     readingMinutes: 6,
-    authorAr: "فريق نخبة — طرابلس",
-    authorEn: "Nukhba team — Tripoli",
+    authorAr: "فريق نخبة",
+    authorEn: "Nukhba team",
     keywordsAr: [
       "تصميم موقع عيادة طرابلس",
       "حجز مواعيد أونلاين للأطباء",
@@ -695,7 +919,7 @@ export const blogArticles: BlogArticle[] = [
       "clinic marketing Libya",
     ],
     keyFacts: [
-      { labelAr: "تكلفة موقع العيادة", labelEn: "Clinic website cost", valueAr: "من 510 $ · 2٬490 د.ل", valueEn: "from $510 · 2,490 LYD" },
+      { labelAr: "تكلفة موقع العيادة", labelEn: "Clinic website cost", valueAr: "من $510 = 510 USDT", valueEn: "from $510 = 510 USDT" },
       { labelAr: "زيادة الحجوزات المتوقعة", labelEn: "Expected booking lift", valueAr: "+20% إلى +40%", valueEn: "+20% to +40%" },
       { labelAr: "الحجز متاح", labelEn: "Booking availability", valueAr: "24/7", valueEn: "24/7" },
       { labelAr: "مدة التسليم", labelEn: "Delivery", valueAr: "7 – 10 أيام", valueEn: "7 – 10 days" },

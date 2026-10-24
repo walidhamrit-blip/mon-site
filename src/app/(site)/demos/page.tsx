@@ -32,7 +32,7 @@ export default async function DemosPage() {
     "@id": `${absoluteUrl(config, "/demos")}#collection`,
     name: "معارض الأعمال الحية — نخبة",
     url: absoluteUrl(config, "/demos"),
-    inLanguage: ["ar-LY", "en"],
+    inLanguage: ["en", "ar"],
     isPartOf: { "@id": absoluteUrl(config, "#website") },
     mainEntity: {
       "@type": "ItemList",

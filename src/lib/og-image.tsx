@@ -85,7 +85,7 @@ export async function buildDemoOgImage(demo: Demo, config: OgConfig) {
               {config.nameAr} {config.name}
             </span>
             <span style={{ fontSize: "20px", opacity: 0.65, marginTop: "2px" }}>
-              وكالة تصميم مواقع — طرابلس، ليبيا
+              Web Agency — Worldwide
             </span>
           </div>
         </div>
@@ -142,7 +142,7 @@ export async function buildDemoOgImage(demo: Demo, config: OgConfig) {
             fontSize: "22px",
           }}
         >
-          <span style={{ opacity: 0.85 }}>معرض حي قابل للتخصيص — Live Demo</span>
+          <span style={{ opacity: 0.85 }}>Live Demo — Customizable</span>
           <span dir="ltr" style={{ color: "#D4B978", fontWeight: 700 }}>
             {domain}
           </span>
@@ -203,7 +203,7 @@ export async function buildServiceOgImage(
                 {config.nameAr} {config.name}
               </span>
               <span style={{ fontSize: "18px", opacity: 0.6, marginTop: "2px" }}>
-                خدمات رقمية — طرابلس، ليبيا
+                Digital Services — Worldwide
               </span>
             </div>
           </div>
@@ -333,7 +333,7 @@ export async function buildSectorOgImage(
               {config.nameAr} {config.name}
             </span>
             <span style={{ fontSize: "18px", opacity: 0.6, marginTop: "2px" }}>
-              وكالة تصميم مواقع — طرابلس، ليبيا
+              Web Agency — Worldwide
             </span>
           </div>
         </div>
@@ -418,7 +418,7 @@ export async function buildArticleOgImage(
   return new ImageResponse(
     (
       <div
-        dir="rtl"
+        dir="ltr"
         style={{
           width: "100%",
           height: "100%",
@@ -453,10 +453,10 @@ export async function buildArticleOgImage(
             </div>
             <div style={{ display: "flex", flexDirection: "column" }}>
               <span style={{ fontSize: "26px", fontWeight: 700 }}>
-                {config.nameAr} {config.name} — مدونة
+                {config.name} {config.nameAr} — Blog
               </span>
               <span style={{ fontSize: "17px", opacity: 0.6, marginTop: "2px" }}>
-                أدلة عملية لرواد الأعمال في ليبيا
+                Practical guides for businesses worldwide
               </span>
             </div>
           </div>
@@ -472,7 +472,7 @@ export async function buildArticleOgImage(
               fontWeight: 700,
             }}
           >
-            {article.categoryAr}
+            {article.categoryEn}
           </div>
         </div>
 
@@ -485,7 +485,7 @@ export async function buildArticleOgImage(
               maxWidth: "1050px",
             }}
           >
-            {clamp(article.titleAr, 78)}
+            {clamp(article.titleEn, 90)}
           </div>
           <div
             dir="ltr"
@@ -497,7 +497,7 @@ export async function buildArticleOgImage(
               textAlign: "left",
             }}
           >
-            {clamp(article.titleEn, 100)}
+            {clamp(article.titleAr, 78)}
           </div>
         </div>
 
@@ -512,7 +512,7 @@ export async function buildArticleOgImage(
           }}
         >
           <span style={{ opacity: 0.8 }}>
-            دليل · {article.readingMinutes} دقائق قراءة · Nukhba Guides
+            Guide · {article.readingMinutes} min read · Nukhba Guides
           </span>
           <span dir="ltr" style={{ color: "#D4B978", fontWeight: 700 }}>
             {domain}
