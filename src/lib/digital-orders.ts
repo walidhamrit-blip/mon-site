@@ -18,11 +18,12 @@ import { desc, eq } from "drizzle-orm";
 import { db, ensureSchema } from "@/db";
 import { digitalOrders, orders, type DigitalOrder } from "@/db/schema";
 import { getDigitalProductBySlug } from "@/lib/digital-store";
-import { effectiveFulfillment } from "@/lib/digital-types";
+import { denominationUnitPrice, effectiveFulfillment } from "@/lib/digital-types";
 import {
   maskEmail,
   normalizeDigitalStatus,
   parseManualCodes,
+  pickOrderDenomination,
   quoteDigitalOrder,
   type DigitalOrderStatus,
   type DigitalQuote,
@@ -305,6 +306,82 @@ async function flagManual(
   return { outcome: "manual", ref: order.ref, message: reason };
 }
 
+/** Clé de comparaison d'un prix (« 5 », « 5.00 », null → ""). */
+function priceKey(value: string | null | undefined): string {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed.toFixed(2) : "";
+}
+
+/**
+ * Réaligne la configuration de LIVRAISON d'une commande sur la fiche
+ * actuelle (mode, produit Reloadly, pays, valeur faciale).
+ *
+ * Le prix payé n'est JAMAIS recalculé : le client a payé le tarif du moment
+ * et le plafond d'achat se juge sur ce montant-là. Seuls les champs de
+ * livraison sont rafraîchis.
+ *
+ * Sans ce réalignement, une commande payée AVANT la configuration de la
+ * fiche restait bloquée en livraison manuelle pour toujours : « Relancer la
+ * livraison » relisait le mode figé à la caisse, même après correction.
+ */
+async function resyncFulfillmentConfig(order: DigitalOrder): Promise<DigitalOrder> {
+  let product: Awaited<ReturnType<typeof getDigitalProductBySlug>> = null;
+  try {
+    product = await getDigitalProductBySlug(order.productSlug);
+  } catch (error) {
+    // Fiche illisible : on garde la configuration figée plutôt que d'échouer.
+    console.warn(
+      "[digital] resynchronisation impossible :",
+      error instanceof Error ? error.message : error,
+    );
+    return order;
+  }
+  if (!product) return order;
+
+  const fulfillment = effectiveFulfillment(product);
+  const reloadlyProductId =
+    product.reloadlyProductId != null && Number(product.reloadlyProductId) > 0
+      ? Math.trunc(Number(product.reloadlyProductId))
+      : null;
+  const denomination = pickOrderDenomination(product.denominations, {
+    denominationId: order.denominationId,
+    denominationLabel: order.denominationLabel,
+    region: order.region,
+  });
+  const unitPrice = denomination ? denominationUnitPrice(denomination) : null;
+  const reloadlyUnitPrice = unitPrice != null ? String(unitPrice) : null;
+  const reloadlyCountryCode = (product.reloadlyCountryCode ?? "").toUpperCase().slice(0, 2);
+
+  const unchanged =
+    order.fulfillment === fulfillment &&
+    (order.reloadlyProductId ?? null) === reloadlyProductId &&
+    priceKey(order.reloadlyUnitPrice) === priceKey(reloadlyUnitPrice) &&
+    (order.reloadlyCountryCode ?? "") === reloadlyCountryCode;
+  if (unchanged) return order;
+
+  const updated = await db
+    .update(digitalOrders)
+    .set({
+      fulfillment,
+      reloadlyProductId,
+      reloadlyUnitPrice,
+      reloadlyCountryCode,
+      updatedAt: new Date(),
+    })
+    .where(eq(digitalOrders.id, order.id))
+    .returning();
+
+  return (
+    updated[0] ?? {
+      ...order,
+      fulfillment,
+      reloadlyProductId,
+      reloadlyUnitPrice,
+      reloadlyCountryCode,
+    }
+  );
+}
+
 /**
  * Livre une commande déjà payée (l'achat n'a lieu que si la ligne de
  * paiement `orders` est bien passée à `paid`).
@@ -317,21 +394,26 @@ export async function deliverPaidDigitalOrder(
   idOrRef: number | string,
   options: { force?: boolean } = {},
 ): Promise<DigitalDeliveryResult> {
-  const order = await loadDigitalOrder(idOrRef);
-  if (!order) return { outcome: "not_found", ref: String(idOrRef) };
+  const loaded = await loadDigitalOrder(idOrRef);
+  if (!loaded) return { outcome: "not_found", ref: String(idOrRef) };
 
-  if (order.status === "delivered") {
-    return { outcome: "already_delivered", ref: order.ref };
+  if (loaded.status === "delivered") {
+    return { outcome: "already_delivered", ref: loaded.ref };
   }
   // Garde-fou absolu : jamais d'achat sans paiement confirmé, même forcé.
   const payment = await db
     .select({ status: orders.status })
     .from(orders)
-    .where(eq(orders.ref, order.ref))
+    .where(eq(orders.ref, loaded.ref))
     .limit(1);
   if (payment[0]?.status !== "paid") {
-    return { outcome: "not_paid", ref: order.ref, message: "Paiement non confirmé." };
+    return { outcome: "not_paid", ref: loaded.ref, message: "Paiement non confirmé." };
   }
+
+  // La fiche a pu être configurée APRÈS la vente (produit Reloadly, mode
+  // automatique, valeur faciale) : on relit la configuration avant de
+  // décider. Le prix payé reste figé.
+  const order = await resyncFulfillmentConfig(loaded);
 
   const key = digitalCodesKey();
   if (!key) {

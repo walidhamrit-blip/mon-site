@@ -337,7 +337,7 @@ export function DigitalOrdersTable({ rows }: { rows: AdminDigitalOrderRow[] }) {
                       ? "Code acheté et transmis — rien d'autre à faire."
                       : row.fulfillment === "auto"
                         ? "La relance achète le code chez Reloadly (débit du solde marchand). Aucun second achat si une transaction existe déjà."
-                        : "Mode manuel : achetez le code dans le tableau Reloadly, puis saisissez-le ci-dessous — le client reçoit l'e-mail automatiquement."}
+                        : "Mode manuel : achetez le code dans le tableau Reloadly, puis saisissez-le ci-dessous — le client reçoit l'e-mail automatiquement. Si la fiche vient d'être passée en automatique, « Relancer la livraison » relit la fiche et achète le code, sans nouveau paiement."}
                   </p>
 
                   {manualRef === row.ref && status !== "delivered" && (
