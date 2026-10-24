@@ -166,6 +166,13 @@ Statuts internes :
 1. Ouvrir la commande dans l'admin et lire le **motif**.
 2. Si l'achat n'a pas été fait : corriger la cause (identifiants, ID produit,
    solde, plafond) puis **Relancer la livraison**.
+
+   La relance **relit la fiche** (mode de livraison, produit Reloadly, pays,
+   valeur faciale) : une commande payée *avant* la configuration de la fiche
+   (mode manuel, aucun produit relié) devient donc livrable automatiquement
+   après correction, **sans nouveau paiement client**. Le prix payé
+   (`unit_price_usd`, `total_usd`) reste figé, et le plafond
+   `RELOADLY_MAX_ORDER_USD` se juge sur ce montant-là.
 3. Si l'achat a été fait dans le tableau Reloadly : **Saisir les codes
    manuellement**, une carte par ligne :
 

@@ -140,6 +140,35 @@ export function quoteDigitalOrder(
   };
 }
 
+/* --------------------- Réalignement sur la fiche actuelle -------------------- */
+
+/** Référence figée dans la commande, à retrouver dans la fiche actuelle. */
+export interface OrderDenominationRef {
+  denominationId: string;
+  denominationLabel: string;
+  region: string;
+}
+
+/**
+ * Retrouve, dans la fiche ACTUELLE, le montant qui a été commandé.
+ *
+ * L'admin réécrit les dénominations à chaque enregistrement : l'identifiant
+ * de ligne change donc régulièrement. On retombe alors sur le libellé + la
+ * région, puis sur le libellé seul — sans jamais deviner un autre montant.
+ */
+export function pickOrderDenomination<D extends { id: string; label: string; region: string }>(
+  denominations: D[],
+  ref: OrderDenominationRef,
+): D | undefined {
+  return (
+    denominations.find((item) => item.id === ref.denominationId) ??
+    denominations.find(
+      (item) => item.label === ref.denominationLabel && item.region === ref.region,
+    ) ??
+    denominations.find((item) => item.label === ref.denominationLabel)
+  );
+}
+
 /** Masque une adresse e-mail (affichage public). */
 export function maskEmail(email: string): string {
   const [local, domain] = email.split("@");

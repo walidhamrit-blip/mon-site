@@ -9,7 +9,7 @@
  */
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { existsSync, statSync, mkdtempSync, rmSync } from "node:fs";
+import { existsSync, readFileSync, statSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
@@ -690,4 +690,63 @@ test("contrat Reloadly : identifiants refusés → erreur explicite, pas de fuit
   } finally {
     await new Promise((resolve) => mock.server.close(resolve));
   }
+});
+
+/* ------------- Relance d'une commande payée avant configuration ------------- */
+
+test("relance : le montant est retrouvé même si l'admin a réécrit les lignes", () => {
+  const denominations = [
+    { id: "41", label: "$5", faceValue: "5 USD", region: "US" },
+    { id: "42", label: "$10", faceValue: "10 USD", region: "US" },
+  ];
+  const sameId = core.pickOrderDenomination(denominations, {
+    denominationId: "42",
+    denominationLabel: "$5",
+    region: "US",
+  });
+  assert.equal(sameId.id, "42");
+  // Identifiant de ligne périmé (les dénominations sont réécrites à chaque
+  // enregistrement) → repli sur libellé + région, jamais sur un autre montant.
+  const byLabel = core.pickOrderDenomination(denominations, {
+    denominationId: "999",
+    denominationLabel: "$10",
+    region: "US",
+  });
+  assert.equal(byLabel.id, "42");
+  // Région changée entre-temps (global → US) → repli sur le libellé seul.
+  const byLabelOnly = core.pickOrderDenomination(denominations, {
+    denominationId: "999",
+    denominationLabel: "$5",
+    region: "global",
+  });
+  assert.equal(byLabelOnly.id, "41");
+  // Aucun montant correspondant : on n'invente rien.
+  assert.equal(
+    core.pickOrderDenomination(denominations, {
+      denominationId: "999",
+      denominationLabel: "$25",
+      region: "US",
+    }),
+    undefined,
+  );
+});
+
+test("livraison : la configuration de livraison est relue depuis la fiche", () => {
+  const source = readFileSync(join(srcRoot, "lib/digital-orders.ts"), "utf8");
+  const delivery = source.slice(source.indexOf("export async function deliverPaidDigitalOrder"));
+  assert.match(
+    delivery,
+    /const order = await resyncFulfillmentConfig\(/,
+    "deliverPaidDigitalOrder doit relire la fiche avant de décider",
+  );
+  // Le prix payé ne doit jamais être recalculé à la relance.
+  const resync = source.slice(
+    source.indexOf("async function resyncFulfillmentConfig"),
+    source.indexOf("export async function deliverPaidDigitalOrder"),
+  );
+  assert.equal(
+    /unitPriceUsd|totalUsd/.test(resync),
+    false,
+    "la resynchronisation ne touche jamais au prix payé",
+  );
 });
