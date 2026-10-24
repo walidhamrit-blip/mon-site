@@ -131,6 +131,14 @@ const nextConfig: NextConfig = {
       { protocol: "https", hostname: "**.vercel.app" },
       { protocol: "https", hostname: "**" },
     ],
+    // Captures locales servies avec un hash anti-cache (`?v=…`) : autorise
+    // l'optimisation Next (srcset retina) malgré la query string.
+    localPatterns: [
+      { pathname: "/previews/**" },
+      { pathname: "/guide-crypto/**" },
+    ],
+    // Qualités utilisées par les visuels nets (bannière, guide crypto).
+    qualities: [75, 88, 90],
   },
   async headers() {
     return [

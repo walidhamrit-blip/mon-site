@@ -14,7 +14,6 @@ import {
 import { Price } from "@/components/price";
 import { ModelPriceBreakdown } from "@/components/model-price-breakdown";
 import { ModelPurchaseButton } from "@/components/model-purchase-button";
-import { PromoPriceNote } from "@/components/promo-price";
 import { ProjectPreview } from "@/components/project-preview";
 import {
   ArrowUpRight,
@@ -37,7 +36,6 @@ interface Group {
   name: string;
   nameEn: string;
   priceUsd: number | null;
-  priceLyd: number;
   breakdown: PlanPriceBreakdown;
   entries: Entry[];
 }
@@ -82,7 +80,6 @@ export function DemosClient() {
           name: plan.name,
           nameEn: plan.nameEn,
           priceUsd: breakdown.modelPriceUsd,
-          priceLyd: breakdown.modelPriceLyd,
           breakdown,
           entries: byTier.get(t) ?? [],
         };
@@ -237,10 +234,6 @@ export function DemosClient() {
                 </p>
                 {/* Remise du coupon : calculée sur le total affiché ci-dessus,
                     avec la même fonction que le serveur de paiement. */}
-                <PromoPriceNote
-                  amountUsd={group.breakdown.totalPriceUsd}
-                  className="mt-1.5"
-                />
               </div>
             </div>
 
@@ -293,10 +286,6 @@ export function DemosClient() {
                           <ModelPriceBreakdown
                             breakdown={classification}
                             compact
-                          />
-                          <PromoPriceNote
-                            amountUsd={classification.totalPriceUsd}
-                            className="mt-1.5"
                           />
                         </div>
                       ) : (

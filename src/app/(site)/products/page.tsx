@@ -30,7 +30,7 @@ export default async function ProductsPage() {
     "@id": `${absoluteUrl(config, "/products")}#collection`,
     name: `${page.titleAr} — ${page.statusBadgeAr}`,
     url: absoluteUrl(config, "/products"),
-    inLanguage: ["ar-LY", "en"],
+    inLanguage: ["en", "ar"],
     isPartOf: { "@id": absoluteUrl(config, "#website") },
     mainEntity: {
       "@type": "ItemList",

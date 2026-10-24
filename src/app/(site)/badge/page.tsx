@@ -54,7 +54,7 @@ export default async function BadgePage() {
     description:
       "Page officielle de la شارة نخبة : extraits HTML et React, ancres bilingues et liste des sites clients validés.",
     url: absoluteUrl(config, "/badge"),
-    inLanguage: ["ar-LY", "en"],
+    inLanguage: ["en", "ar"],
     isPartOf: { "@id": absoluteUrl(config, "#website") },
     about: {
       "@type": "ImageObject",

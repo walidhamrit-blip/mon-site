@@ -3,13 +3,8 @@ import { ArrowUpRight, Check } from "lucide-react";
 import type { Demo } from "@/lib/site-types";
 import type { siteConfig } from "@/lib/config";
 import { getSectorSeo } from "@/lib/sectors";
-import {
-  formatLyd,
-  lydLabel,
-  resolveDemoClassification,
-} from "@/lib/classification";
+import { resolveDemoClassification } from "@/lib/classification";
 import { Price } from "@/components/price";
-import { PromoPriceNote } from "@/components/promo-price";
 import { whatsappLink } from "@/lib/utils";
 
 /**
@@ -161,12 +156,8 @@ export function DemoDetails({
                     <Price usd={classification.priceUsd} />
                     <span className="opacity-60 font-medium">
                       {" · "}
-                      <Price usd={classification.priceUsd} showLocal compact />
+                      <Price usd={classification.priceUsd} compact />
                     </span>
-                    <PromoPriceNote
-                      amountUsd={classification.priceUsd}
-                      className="mt-1.5 flex w-fit ms-auto"
-                    />
                   </dd>
                 </div>
               )}

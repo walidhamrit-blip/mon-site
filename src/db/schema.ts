@@ -60,7 +60,7 @@ export const orders = pgTable("orders", {
   demoSlug: text("demo_slug"),
   planId: text("plan_id").notNull(),
   planName: text("plan_name").notNull(),
-  /** Montant affiché sur le site (Livre libyenne, texte pour éviter les arrondis). */
+  /** Colonne historique (ancien montant LYD). Devise unique USD : on y écrit désormais le montant USD ; plus aucun affichage ne la lit. */
   amountLyd: text("amount_lyd").notNull(),
   /** Montant facturé à NOWPayments (devise fiat, ex. USD). */
   amountUsd: text("amount_usd").notNull(),

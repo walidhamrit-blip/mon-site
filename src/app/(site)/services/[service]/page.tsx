@@ -159,7 +159,7 @@ export default async function ServicePage({
                   <Price usd={service.priceFromUsd} />
                 </p>
                 <p className="mt-1 text-sm opacity-50" dir="ltr">
-                  <Price usd={service.priceFromUsd} showLocal compact />
+                  <Price usd={service.priceFromUsd} compact />
                 </p>
                 <ul className="mt-4 space-y-2 text-xs opacity-70">
                   <li className="flex items-center gap-2">
@@ -235,7 +235,7 @@ export default async function ServicePage({
                   <h2 className="text-lg font-black">الأسعار والدفع</h2>
                   <p className="mt-2 text-sm leading-6 opacity-70">
                     تبدأ الخدمة من <strong><Price usd={service.priceFromUsd} /></strong>{" "}
-                    (<Price usd={service.priceFromUsd} showLocal compact />). السعر النهائي يعتمد على
+                    (<Price usd={service.priceFromUsd} compact />). السعر النهائي يعتمد على
                     حجم العمل ويُثبَّت كتابياً قبل البدء. نعمل بدفعة مقدمة 50% والباقي
                     عند التسليم، مع إمكانية الدفع بالتحويل البنكي أو نقداً أو بالعملات
                     الرقمية عبر NOWPayments — كاملاً أو على دفعتين/ثلاث.

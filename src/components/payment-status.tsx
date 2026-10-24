@@ -243,11 +243,9 @@ export function PaymentStatus({
           </div>
           <div className="flex justify-between gap-4">
             <dt className="opacity-60">{ar ? t.pay.amountAr : t.pay.amountEn}</dt>
-            <dd className="font-bold">
-              {Number(order.amountLyd).toLocaleString("en-LY")} LYD{" "}
-              <span className="opacity-50 font-normal">
-                / ${order.amountUsd}
-              </span>
+            <dd className="font-bold" dir="ltr">
+              ${order.amountUsd}{" "}
+              <span className="opacity-50 font-normal">USD · = USDT</span>
             </dd>
           </div>
           {order.payCurrency && (

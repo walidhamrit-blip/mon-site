@@ -282,13 +282,11 @@ const planSchema = z.object({
   id: z.string().min(1).max(60),
   name: z.string().min(1).max(200),
   nameEn: z.string().min(1).max(200),
-  price: z.coerce.number().int().min(0).max(10_000_000),
   /**
-   * Équivalent USD pour le paiement crypto (NOWPayments ne facture
-   * pas en LYD). `null` / absent = formule non payable en crypto
-   * (le bouton « Pay with crypto » et les paiements en tranches
-   * ne s'affichent pas). Sans ce champ, l'enregistrement supprimait
-   * silencieusement le prix USD saisi dans l'admin.
+   * Prix USD de la formule — devise unique du site, facturée telle
+   * quelle par NOWPayments (1 USD = 1 USDT). `null` / absent = formule
+   * non payable en crypto (le bouton « Pay with crypto » et les
+   * paiements en tranches ne s'affichent pas).
    */
   priceUsd: z.coerce
     .number()
@@ -299,7 +297,6 @@ const planSchema = z.object({
     .optional(),
   /** Personnalisation en pourcentage du prix modèle ; null/absent = devis avant paiement. */
   customizationPercent: z.coerce.number().min(0).max(100).nullable().optional(),
-  originalPrice: z.coerce.number().int().min(0).max(10_000_000).nullable(),
   period: z.string().max(100),
   periodEn: z.string().max(100),
   description: z.string().max(500),
@@ -396,7 +393,6 @@ export const siteConfigSchema = z.object({
   reservation: z.object({
     enabled: z.boolean(),
     depositUsd: z.coerce.number().min(0).max(10_000),
-    depositLyd: z.coerce.number().min(0).max(1_000_000),
   }),
   /**
    * Apparence principale du site : thème principal, mode clair/sombre et
@@ -406,9 +402,9 @@ export const siteConfigSchema = z.object({
     .object({
       themeId: z.string().min(1).max(40).default(DEFAULT_THEME_ID),
       mode: z.enum(["light", "dark"]).default("light"),
-      defaultLocale: z.enum(["ar", "en"]).default("ar"),
+      defaultLocale: z.enum(["ar", "en"]).default("en"),
     })
-    .default({ themeId: DEFAULT_THEME_ID, mode: "light", defaultLocale: "ar" }),
+    .default({ themeId: DEFAULT_THEME_ID, mode: "light", defaultLocale: "en" }),
   /** Paiement flexible « 1 $ ou plus » (section dédiée du site). */
   flexiblePayment: z
     .object({
@@ -443,7 +439,6 @@ export const siteConfigSchema = z.object({
         descAr: z.string().max(1000),
         descEn: z.string().max(1000),
         priceFromUsd: z.coerce.number().min(0).max(1_000_000),
-        priceFromLyd: z.coerce.number().min(0).max(10_000_000),
         badgeAr: z.string().max(100).optional(),
         badgeEn: z.string().max(100).optional(),
         featuresAr: z.array(z.string().max(300)).max(30),

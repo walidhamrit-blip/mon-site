@@ -808,22 +808,6 @@ export function SettingsForm({ initial, initialTab }: Props) {
                   className={ADMIN_INPUT_CLS}
                 />
               </Field>
-              <Field label="Équivalent indicatif LYD">
-                <input
-                  type="number"
-                  min={0}
-                  value={form.reservation.depositLyd}
-                  onChange={(e) =>
-                    patch({
-                      reservation: {
-                        ...form.reservation,
-                        depositLyd: Number(e.target.value),
-                      },
-                    })
-                  }
-                  className={ADMIN_INPUT_CLS}
-                />
-              </Field>
             </div>
           </div>
 
@@ -849,10 +833,8 @@ export function SettingsForm({ initial, initialTab }: Props) {
                         id: `formule-${n}`,
                         name: "باقة جديدة",
                         nameEn: "New Package",
-                        price: 1500,
                         priceUsd: 290,
                         customizationPercent: 20,
-                        originalPrice: null,
                         period: "دفعة واحدة",
                         periodEn: "one-time",
                         description: "وصف مختصر للباقة",
@@ -994,17 +976,6 @@ export function SettingsForm({ initial, initialTab }: Props) {
                       })
                     }
                     placeholder="20 %"
-                    className={ADMIN_INPUT_CLS}
-                  />
-                </Field>
-                <Field label="Prix LYD (équivalent)">
-                  <input
-                    type="number"
-                    min={0}
-                    value={plan.price}
-                    onChange={(e) =>
-                      updatePlan(idx, { price: Number(e.target.value) })
-                    }
                     className={ADMIN_INPUT_CLS}
                   />
                 </Field>
@@ -1170,7 +1141,6 @@ export function SettingsForm({ initial, initialTab }: Props) {
                       descAr: "وصف مختصر للخدمة",
                       descEn: "Short description of the standalone service",
                       priceFromUsd: 49,
-                      priceFromLyd: 290,
                       featuresAr: ["تسليم سريع"],
                       featuresEn: ["Fast delivery"],
                     },
@@ -1229,19 +1199,6 @@ export function SettingsForm({ initial, initialTab }: Props) {
                     onChange={(e) =>
                       updateService(idx, {
                         priceFromUsd: Number(e.target.value),
-                      })
-                    }
-                    className={ADMIN_INPUT_CLS}
-                  />
-                </Field>
-                <Field label="Prix dès LYD">
-                  <input
-                    type="number"
-                    min={0}
-                    value={srv.priceFromLyd}
-                    onChange={(e) =>
-                      updateService(idx, {
-                        priceFromLyd: Number(e.target.value),
                       })
                     }
                     className={ADMIN_INPUT_CLS}

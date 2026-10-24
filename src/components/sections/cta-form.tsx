@@ -171,10 +171,10 @@ export function CTAForm() {
                         <div>
                           <label className="text-sm font-semibold">{locale === "ar" ? "الميزانية" : "Budget"}</label>
                           <select {...register("budget")} className="mt-2 h-11 w-full rounded-full border border-[var(--border)] bg-[var(--secondary)]/50 px-4 outline-none transition-colors focus:border-[var(--accent)]">
-                            <option value="1000-1500">1000-1500 LYD</option>
-                            <option value="1500-2500">1500-2500 LYD</option>
-                            <option value="2500-4500">2500-4500 LYD</option>
-                            <option value="4500+">4500+ LYD</option>
+                            <option value="under-300">{locale === "ar" ? "أقل من 300 $" : "Under $300"}</option>
+                            <option value="300-600">$300–600</option>
+                            <option value="600-1000">$600–1,000</option>
+                            <option value="1000+">{locale === "ar" ? "أكثر من 1000 $" : "$1,000+"}</option>
                           </select>
                         </div>
                         <div>

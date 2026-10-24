@@ -28,7 +28,7 @@ export function ModelPriceBreakdown({
     if (usd == null) return ar ? "حسب الطلب" : "On request";
     return (
       <span className="text-end" dir="ltr">
-        <Price usd={usd} className="font-bold" showLocal />
+        <Price usd={usd} className="font-bold" />
       </span>
     );
   };
@@ -61,13 +61,15 @@ export function ModelPriceBreakdown({
             : price(breakdown.totalPriceUsd)}
         </dd>
       </div>
-      {breakdown.totalPriceUsd == null && (
-        <p className={`${compact ? "text-[10px]" : "text-[11px]"} leading-relaxed ${muted}`}>
-          {ar
+      <p className={`${compact ? "text-[10px]" : "text-[11px]"} leading-relaxed ${muted}`}>
+        {breakdown.totalPriceUsd == null
+          ? ar
             ? "لا يتم تحصيل المبلغ النهائي إلا بعد اعتمادك عرضاً مكتوباً يشمل التخصيص."
-            : "No final payment is taken until you approve a written quote including customization."}
-        </p>
-      )}
+            : "No final payment is taken until you approve a written quote including customization."
+          : ar
+            ? "بالدولار الأمريكي — تدفع نفس المبلغ بـ USDT (1 دولار = 1 USDT)."
+            : "In US dollars — pay the same amount in USDT (1 USD = 1 USDT)."}
+      </p>
     </dl>
   );
 }

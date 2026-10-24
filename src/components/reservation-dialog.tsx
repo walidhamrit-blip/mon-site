@@ -12,12 +12,8 @@ import {
 } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import { useSiteConfig } from "@/components/site-provider";
-import { MarketPrice, Price } from "@/components/price";
-import {
-  formatLyd,
-  lydLabel,
-  resolveDemoClassification,
-} from "@/lib/classification";
+import { Price } from "@/components/price";
+import { resolveDemoClassification } from "@/lib/classification";
 import { formatMainPrice, formatUsd } from "@/lib/installments";
 import { PaymentGuarantee } from "@/components/payment-guarantee";
 import { ModelPriceBreakdown } from "@/components/model-price-breakdown";
@@ -34,7 +30,6 @@ interface ReserveResponse {
   orderRef?: string;
   paymentUrl?: string;
   depositUsd?: number;
-  depositLyd?: number;
 }
 
 interface Failure {
@@ -63,7 +58,6 @@ export function ReservationDialog({
 
   const classification = resolveDemoClassification(demo, config.pricing.plans);
   const depositUsd = config.reservation?.depositUsd ?? 1;
-  const depositLyd = config.reservation?.depositLyd ?? 0;
 
   const [step, setStep] = useState<Step>("form");
   const [name, setName] = useState("");
@@ -152,8 +146,8 @@ export function ReservationDialog({
 
   const whatsappNumber = (config.whatsapp || "218912345678").replace(/\D/g, "");
   const whatsappText = ar
-    ? `أريد حجز أولوية لموقع « ${demo.title} » — الفئة ${classification?.tier ?? "؟"}. العربون ${formatUsd(depositUsd)} $ / ${formatLyd(depositLyd)} د.ل.`
-    : `I'd like to reserve a priority slot for "${demo.titleEn}" — category ${classification?.tier ?? "?"}. Deposit $${formatUsd(depositUsd)} / ${formatLyd(depositLyd)} LYD.`;
+    ? `أريد حجز أولوية لموقع « ${demo.title} » — الفئة ${classification?.tier ?? "؟"}. العربون ${formatUsd(depositUsd)} $ (= ${formatUsd(depositUsd)} USDT).`
+    : `I'd like to reserve a priority slot for "${demo.titleEn}" — category ${classification?.tier ?? "?"}. Deposit $${formatUsd(depositUsd)} (= ${formatUsd(depositUsd)} USDT).`;
   const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(whatsappText)}`;
 
   const failureHint = (): string => {
@@ -272,9 +266,11 @@ export function ReservationDialog({
                 <div className="text-end">
                   <div className="text-lg font-black text-[var(--accent)]">
                     <Price usd={depositUsd} />
+                    {" · = "}
+                    {formatUsd(depositUsd)} USDT
                   </div>
                   <div className="text-[10px] opacity-60">
-                    <MarketPrice usd={depositUsd} />
+                    <Price usd={depositUsd} />
                   </div>
                 </div>
               </div>

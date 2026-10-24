@@ -12,14 +12,19 @@ export async function generateMetadata(): Promise<Metadata> {
   const { config } = await getSiteDataCached();
   return pageMetadata(config, {
     path: "/pricing",
-    title: "باقات أسعار تصميم المواقع والمتاجر — {city} {country}",
+    title: "Website & Store Pricing Plans in USD — Pay in USDT",
     description:
-      "أسعار مواقع في {country}: سعر نموذج كل فئة بالدولار والدينار الليبي، ورسوم تخصيص منفصلة، وإجمالي واضح قبل الدفع أو عرض مكتوب للموافقة — دفع كامل أو أقساط.",
+      "Transparent USD pricing in {countryEn}: model price, a separate customization fee, a clear total before checkout (1 USD = 1 USDT) — full or 2–3 installments.",
     keywords: [
+      "website pricing USD",
+      "e-commerce website price",
+      "pay for a website with USDT",
+      "باقات تصميم مواقع بالدولار",
+      "website pricing {countryEn}",
       "أسعار تصميم المواقع {country}",
       "تكلفة متجر إلكتروني {city}",
       "باقات تصميم مواقع",
-      "website pricing {countryEn}",
+      "website pricing Libya",
     ],
   });
 }
@@ -33,8 +38,8 @@ export default async function PricingPage() {
       <JsonLd
         data={[
           breadcrumbJsonLd(config, [
-            { name: "الرئيسية", path: "/" },
-            { name: "الباقات والأسعار", path: "/pricing" },
+            { name: "Home", path: "/" },
+            { name: "Pricing", path: "/pricing" },
           ]),
           faqJsonLd(content.faqs),
         ]}

@@ -28,10 +28,16 @@ const NEED: Record<string, Labels> = {
 };
 
 const BUDGET: Record<string, Labels> = {
-  "1000-1500": { ar: "1000-1500 د.ل", en: "1000-1500 LYD" },
-  "1500-2500": { ar: "1500-2500 د.ل", en: "1500-2500 LYD" },
-  "2500-4500": { ar: "2500-4500 د.ل", en: "2500-4500 LYD" },
-  "4500+": { ar: "أكثر من 4500 د.ل", en: "4500+ LYD" },
+  "under-300": { ar: "أقل من 300 $", en: "Under $300" },
+  "300-600": { ar: "300–600 $", en: "$300–600" },
+  "600-1000": { ar: "600–1000 $", en: "$600–1,000" },
+  "1000+": { ar: "أكثر من 1000 $", en: "$1,000+" },
+  // Anciennes clés (demandes reçues avant le passage USD uniquement) :
+  // conservées pour afficher correctement l'historique en administration.
+  "1000-1500": { ar: "1000-1500 (قديم)", en: "1000-1500 (legacy)" },
+  "1500-2500": { ar: "1500-2500 (قديم)", en: "1500-2500 (legacy)" },
+  "2500-4500": { ar: "2500-4500 (قديم)", en: "2500-4500 (legacy)" },
+  "4500+": { ar: "4500+ (قديم)", en: "4500+ (legacy)" },
 };
 
 const DEADLINE: Record<string, Labels> = {

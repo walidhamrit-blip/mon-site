@@ -40,7 +40,6 @@ export function ModelPurchaseButton({
   const breakdown = resolvePlanPriceBreakdown(
     checkoutPlan,
     classification?.priceUsd ?? checkoutPlan.priceUsd,
-    classification?.priceLyd ?? checkoutPlan.price,
   );
   const title = demo ? (ar ? demo.title : demo.titleEn) : (ar ? plan.name : plan.nameEn);
   const { format } = useCurrency();

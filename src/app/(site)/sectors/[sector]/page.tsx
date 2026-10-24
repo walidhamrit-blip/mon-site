@@ -180,7 +180,7 @@ export default async function SectorPage({ params }: { params: Promise<{ sector:
                             </div>
                             <div className="flex justify-between gap-2">
                               <span className="opacity-60">سعر النموذج</span>
-                              <strong>{cls.priceUsd == null ? "حسب الطلب" : <Price usd={cls.priceUsd} showLocal compact />}</strong>
+                              <strong>{cls.priceUsd == null ? "حسب الطلب" : <Price usd={cls.priceUsd} compact />}</strong>
                             </div>
                             <div className="mt-1 flex justify-between gap-2">
                               <span className="opacity-60">
@@ -190,7 +190,7 @@ export default async function SectorPage({ params }: { params: Promise<{ sector:
                             </div>
                             <div className="mt-1 flex justify-between gap-2 border-t border-[var(--border)]/70 pt-1 font-black">
                               <span>الإجمالي</span>
-                              <strong>{cls.totalPriceUsd == null ? "يُحدد قبل الدفع" : <Price usd={cls.totalPriceUsd} showLocal compact />}</strong>
+                              <strong>{cls.totalPriceUsd == null ? "يُحدد قبل الدفع" : <Price usd={cls.totalPriceUsd} compact />}</strong>
                             </div>
                           </div>
                         )}

@@ -135,7 +135,7 @@ export const demos = [
       "معرض مفروشات فاخرة وتصميم داخلي حسب الطلب — كتالوج تفاعلي، اختيار الخامات والأخشاب، طلب تسعير وحجز زيارة خاصة للمعرض",
     descriptionEn:
       "Bespoke luxury furniture & interior architecture showroom — interactive wood/stone selector, custom quote cart & private showroom booking",
-    image: "https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?auto=format&fit=crop&w=1200&q=85",
+    image: "https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?auto=format&fit=crop&w=1600&q=90",
     color: "#8B5A2B",
     features: ["تخصيص الأخشاب والرخام", "طلب تسعير ومقاسات خاصة", "حجز زيارة خاصة للمعرض", "معرض أعمال القصور والفلل"],
     featuresEn: ["Material & Wood Selector", "Custom Quote Builder", "Private Showroom Booking", "Luxury Villa Portfolio"],
@@ -151,7 +151,7 @@ export const demos = [
     title: "حلا للعطور والتجميل الفاخر",
     titleEn: "HALA Perfumes & Luxury Beauty",
     description:
-      "متجر عطور ومستحضرات تجميل وعناية بالبشرة — باقات وعروض (3 بـ 99 د.ل)، أكواد خصم، مجموعات هدايا، وتجربة ثنائية اللغة",
+      "متجر عطور ومستحضرات تجميل وعناية بالبشرة — باقات «3 بسعر واحد»، أكواد خصم داخل المتجر، مجموعات هدايا، وتجربة ثنائية اللغة",
     descriptionEn:
       "Luxury fragrances, cosmetics & skincare e-commerce — Mix & Match bundles, promo codes, gift sets & bilingual AR/EN experience",
     image: "https://hala-dun.vercel.app/images/hero-perfume.jpg",
@@ -389,8 +389,8 @@ export const faqs = [
   {
     qAr: "هل السعر يشمل الاستضافة والدومين؟",
     qEn: "Does price include hosting & domain?",
-    aAr: "السعر يشمل سنة استضافة فائقة السرعة (Vercel) + ربط الدومين. الدومين نفسه (~50 د.ل/سنة) تشتريه باسمك ونحن نربطه مجاناً.",
-    aEn: "Includes 1 year ultra-fast hosting (Vercel) + domain connect. Domain itself (~50 LYD/year) you own, we connect free.",
+    aAr: "السعر يشمل سنة استضافة فائقة السرعة (Vercel) + ربط الدومين. الدومين نفسه (~12 $/سنة) تشتريه باسمك ونحن نربطه مجاناً.",
+    aEn: "Includes 1 year ultra-fast hosting (Vercel) + domain connect. Domain itself (~$12/year) you own, we connect free.",
   },
   {
     qAr: "هل أستطيع تعديل المحتوى بنفسي؟",
@@ -401,8 +401,8 @@ export const faqs = [
   {
     qAr: "ماذا عن الدفع؟ تقسيط؟",
     qEn: "Payment? Installments?",
-    aAr: "يمكنك أولاً حجز مكانك بعربون 1 $ (يُخصم من سعر المشروع). ثم 50% عند التعاقد و50% عند التسليم. نقبل تحويل مصرفي، دفع كاش، وحتى تقسيط على دفعتين للباقات العليا.",
-    aEn: "You can first reserve your slot with a $1 deposit (deducted from the project price). Then 50% at signing and 50% on delivery. Bank transfer, cash, or 2 installments for higher plans.",
+    aAr: "يمكنك أولاً حجز مكانك بعربون 1 $ (يُخصم من سعر المشروع). ثم تدفع الإجمالي بالدولار عبر العملات الرقمية — نفس المبلغ بـ USDT (1 دولار = 1 USDT) — دفعة واحدة أو على 2–3 أقساط عبر NOWPayments.",
+    aEn: "You can first reserve your slot with a $1 deposit (deducted from the project price). Then pay the USD total in crypto — the same amount in USDT (1 USD = 1 USDT) — in one payment or 2–3 installments via NOWPayments.",
   },
   {
     qAr: "ماذا لو لم يعجبني التصميم؟",
@@ -413,14 +413,14 @@ export const faqs = [
   {
     qAr: "هل الموقع يظهر في جوجل؟",
     qEn: "Will site show on Google?",
-    aAr: "نعم. نبني هيكلة SEO احترافية: عناوين، خرائط، بيانات منظمة، وسرعة 90+. موقعك جاهز ليتصدر منطقتك في طرابلس.",
-    aEn: "Yes. Pro SEO structure: titles, sitemaps, structured data & 90+ speed. Ready to rank in Tripoli.",
+    aAr: "نعم. نبني هيكلة SEO احترافية: عناوين، خرائط، بيانات منظمة، وسرعة 90+. موقعك جاهز ليتصدر نتائج سوقك أينما كنت.",
+    aEn: "Yes. Pro SEO structure: titles, sitemaps, structured data & 90+ speed. Ready to rank in your market, anywhere in the world.",
   },
   {
     qAr: "ماذا بعد التسليم؟ صيانة؟",
     qEn: "After delivery? Maintenance?",
-    aAr: "دعم مجاني 30-90 يوم حسب الباقة. بعدها صيانة اختيارية 99 د.ل/شهر تشمل تحديثات، نسخ احتياطي، وحماية.",
-    aEn: "Free 30-90 days support by plan. Then optional 99 LYD/mo for updates, backups & security.",
+    aAr: "دعم مجاني 30-90 يوم حسب الباقة. بعدها صيانة اختيارية 19 $/شهر تشمل تحديثات، نسخ احتياطي، وحماية.",
+    aEn: "Free 30-90 days support by plan. Then optional $19/mo for updates, backups & security.",
   },
 ] as const;
 
@@ -428,8 +428,8 @@ export const faqs = [
 
 /** Textes par défaut du Hero (modifiables dans /admin → Contenu → Accueil). */
 export const heroContent: HeroContent = {
-  badgeAr: "✦ وكالة طرابلس الأولى للمواقع الفاخرة",
-  badgeEn: "✦ Tripoli's #1 Premium Web Agency",
+  badgeAr: "✦ وكالة مواقع فاخرة — عملاء من كل العالم",
+  badgeEn: "✦ Premium Web Agency — Clients Worldwide",
   title1Ar: "موقعك الاحترافي",
   title1En: "Your pro website",
   title2Ar: "جاهز في أيام",
@@ -444,8 +444,8 @@ export const heroContent: HeroContent = {
   ctaPrimaryEn: "Get free quote",
   ctaSecondaryAr: "شاهد المعارض الحية",
   ctaSecondaryEn: "View live demos",
-  trustedAr: "يثق بنا 120+ نشاط في طرابلس",
-  trustedEn: "Trusted by 120+ businesses in Tripoli",
+  trustedAr: "يثق بنا 120+ نشاط حول العالم",
+  trustedEn: "Trusted by 120+ businesses worldwide",
   ratingAr: "تقييم 4.9/5",
   ratingEn: "4.9/5 rating",
   chipsAr: ["✓ تسليم 7 أيام", "✓ بدون دفعة كبيرة", "✓ دعم واتساب"],
@@ -517,7 +517,7 @@ export const defaultSectionHeadings: SectionHeadings = {
   pricing: {
     titleAr: "استثمار يعود أضعافاً",
     titleEn: "Investment that pays back",
-    subtitleAr: "أسعار واضحة، بلا مفاجآت — وكل دينار محسوب ليجلب عملاء",
+    subtitleAr: "أسعار واضحة بالدولار، بلا مفاجآت — وكل دولار محسوب ليجلب عملاء",
     subtitleEn: "Clear pricing, no surprises — every dinar calculated to bring clients",
     noteAr: "دفع مرة واحدة + استضافة سنة مجاناً",
     noteEn: "One-time + 1 year hosting free",
@@ -539,8 +539,8 @@ export const defaultSectionHeadings: SectionHeadings = {
       "Small tasks, clear prices — restyle an old site, add a section, build slides & decks, branding & design and more.",
   },
   testimonials: {
-    titleAr: "قصص نجاح من طرابلس",
-    titleEn: "Success stories from Tripoli",
+    titleAr: "قصص نجاح عملائنا",
+    titleEn: "Client success stories",
     subtitleAr: "قبل وبعد — كيف غيّر الموقع أعمالهم",
     subtitleEn: "Before & after — how the site transformed them",
   },
@@ -580,9 +580,9 @@ export const defaultAppsPage: ShowcasePageConfig = {
   highlightAr: "قيد التحضير للإطلاق القريب",
   highlightEn: "Currently in final preparation",
   subtitleAr:
-    "نطوّر الجيل القادم من تطبيقات الجوال والويب للشركات والعيادات والمتاجر في طرابلس وليبيا — تجربة سريعة، إشعارات فورية، وربط مباشر بواتساب ونظام الإدارة.",
+    "نطوّر الجيل القادم من تطبيقات الجوال والويب للشركات والعيادات والمتاجر حول العالم — تجربة سريعة، إشعارات فورية، وربط مباشر بواتساب ونظام الإدارة.",
   subtitleEn:
-    "We are crafting our flagship line of iOS, Android & Web applications for clinics, stores and restaurants across Tripoli & Libya — fast native feel, instant alerts and seamless WhatsApp sync.",
+    "We are crafting our flagship line of iOS, Android & Web applications for clinics, stores and restaurants worldwide — fast native feel, instant alerts and seamless WhatsApp sync.",
   bannerNoteAr:
     "هذه التطبيقات قيد التحضير حالياً — سجّل اهتمامك لتكون أول من يجرّب النسخة التجريبية أو اطلب تطبيقاً مخصّصاً لهويتك.",
   bannerNoteEn:
@@ -738,9 +738,9 @@ export const defaultProductsPage: ShowcasePageConfig = {
   highlightAr: "قريباً للشركات والروّاد",
   highlightEn: "Coming soon for modern businesses",
   subtitleAr:
-    "حزمة متكاملة من البرامج السحابية والأنظمة الإدارية والمنتجات الرقمية الجاهزة — مصممة خصيصاً لبيئة العمل في طرابلس وليبيا بواجهة عربية وإنجليزية فائقة السلاسة.",
+    "حزمة متكاملة من البرامج السحابية والأنظمة الإدارية والمنتجات الرقمية الجاهزة — مصممة لبيئات العمل حول العالم بواجهة عربية وإنجليزية فائقة السلاسة.",
   subtitleEn:
-    "A curated suite of cloud software, POS & ERP systems, and ready-to-launch digital assets tailored for businesses in Tripoli & across Libya.",
+    "A curated suite of cloud software, POS & ERP systems, and ready-to-launch digital assets tailored for businesses worldwide.",
   bannerNoteAr:
     "جميع البرامج والمنتجات الرقمية أدناه تُطرح قريباً — احجز نسختك المبكرة بسعر الإطلاق التفضيلي.",
   bannerNoteEn:
@@ -759,9 +759,9 @@ export const defaultProductsPage: ShowcasePageConfig = {
       titleAr: "نخبة POS السحابي — نظام المبيعات والمخزون والفوترة",
       titleEn: "Nukhba Cloud POS — Billing, Barcode & Multi-Store Stock",
       descriptionAr:
-        "برنامج كاشير ومخازن سريع يعمل على الحاسوب والتابلت مع دعم قارئ الباركود، تعدد العملات (د.ل / $)، جرد الفروع، وتقارير الأرباح اليومية بضغطة زر.",
+        "برنامج كاشير ومخازن سريع يعمل على الحاسوب والتابلت مع دعم قارئ الباركود، تعدد العملات ($ / USDT)، جرد الفروع، وتقارير الأرباح اليومية بضغطة زر.",
       descriptionEn:
-        "Fast desktop & tablet POS software supporting barcode scanners, dual LYD/USD pricing, multi-branch stock transfers and instant daily profit reports.",
+        "Fast desktop & tablet POS software supporting barcode scanners, USD & USDT pricing, multi-branch stock transfers and instant daily profit reports.",
       image:
         "https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?auto=format&fit=crop&w=1200&q=80",
       color: "#C6A664",
@@ -769,13 +769,13 @@ export const defaultProductsPage: ShowcasePageConfig = {
       featuresAr: [
         "فواتير سريعة ودعم قارئ الباركود",
         "إدارة مخزون وتنبيهات النفاد",
-        "حسابات بالدينار الليبي والدولار",
+        "حسابات بالدولار وUSDT",
         "يعمل أونلاين وبدون انقطاع",
       ],
       featuresEn: [
         "Instant invoicing & barcode scanning",
         "Multi-warehouse stock & low-stock alerts",
-        "Dual LYD & USD accounting",
+        "USD & USDT accounting",
         "Offline-resilient cloud sync",
       ],
       progress: 80,

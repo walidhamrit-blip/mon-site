@@ -18,8 +18,7 @@ import { whatsappLink } from "@/lib/utils";
  * - un seul lien actif surligné (`usePathname`) ;
  * - menu mobile en panneau plein écran, défilement de la page verrouillé ;
  * - fermeture au clavier (Échap) et au changement de page ;
- * - barre DANS LE FLUX de la page (elle défile avec le contenu) : seul le
- *   bandeau promo, fixe, est dégagé via `--promo-h`.
+ * - barre DANS LE FLUX de la page (elle défile avec le contenu).
  */
 export function Navbar() {
   const router = useRouter();
@@ -86,7 +85,7 @@ export function Navbar() {
 
   return (
     <>
-      <header className="relative z-50 mt-[var(--promo-h,0px)] py-4 transition-[margin] duration-300">
+      <header className="relative z-50 py-4">
         <div className="site-container px-4 sm:px-6">
           <div className="flex items-center justify-between gap-3 rounded-full border border-[var(--border)]/60 bg-[var(--card)]/70 px-3 py-2.5 backdrop-blur-md sm:px-4">
             <Link href="/" className="group flex shrink-0 items-center gap-2.5" aria-label={siteConfig.name}>
@@ -198,7 +197,7 @@ export function Navbar() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.2 }}
-            className="fixed inset-0 z-40 flex flex-col bg-[var(--background)]/95 pt-[calc(var(--promo-h,0px)+84px)] backdrop-blur-xl lg:hidden"
+            className="fixed inset-0 z-40 flex flex-col bg-[var(--background)]/95 pt-[84px] backdrop-blur-xl lg:hidden"
           >
             <div className="site-container flex-1 overflow-y-auto px-4 pb-10 sm:px-6">
               <div className="rounded-[var(--radius-lg)] border border-[var(--border)] bg-[var(--card)] p-4 shadow-[var(--shadow-lg)] sm:p-6">

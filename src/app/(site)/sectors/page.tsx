@@ -27,7 +27,7 @@ export default async function SectorsIndexPage() {
     alternateName: "Website Design by Sector — Nukhba",
     description: "تصفح خدمات نخبة حسب قطاع نشاطك في طرابلس",
     url: absoluteUrl(config, "/sectors"),
-    inLanguage: ["ar-LY", "en"],
+    inLanguage: ["en", "ar"],
     isPartOf: { "@id": absoluteUrl(config, "#website") },
     mainEntity: {
       "@type": "ItemList",

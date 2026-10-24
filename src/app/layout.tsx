@@ -37,16 +37,16 @@ export async function generateMetadata(): Promise<Metadata> {
   const globalReach = Boolean(config.market?.globalReach) || market.id === "global";
   const baseUrl = config.url || siteConfig.url;
 
-  const title = `تصميم مواقع في ${labels.city} — نخبة Nukhba | ${
-    globalReach ? "وكالة ويب عالمية" : "وكالة ويب بريميوم"
-  }، متاجر وحجز`;
+  const title = `Nukhba نخبة — Premium Web Agency in ${labelsEn.city} | ${
+    globalReach ? "Websites, E-Commerce & Booking Worldwide" : "Websites, E-Commerce & Booking"
+  }`;
   const description = defaultMetaDescription(config);
 
   return {
     metadataBase: new URL(baseUrl),
     title: {
       default: title,
-      template: "%s | نخبة Nukhba",
+      template: "%s | Nukhba نخبة",
     },
     description,
     keywords: [
@@ -62,6 +62,9 @@ export async function generateMetadata(): Promise<Metadata> {
       `e-commerce ${labelsEn.country}`,
       "Nukhba web agency",
       `création site web ${labelsEn.city}`,
+      "premium website design",
+      "online booking website",
+      "pay with USDT website",
       ...(globalReach
         ? ["web design agency worldwide", "international web design", "تصميم مواقع عالمي"]
         : []),

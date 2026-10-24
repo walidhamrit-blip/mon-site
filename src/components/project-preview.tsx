@@ -24,11 +24,14 @@ export function ProjectPreview({
   mode = "desktop",
   priority = false,
   label = false,
+  sizes = "(max-width: 768px) 100vw, (max-width: 1280px) 50vw, 640px",
 }: {
   demo: Demo;
   mode?: "desktop" | "mobile";
   priority?: boolean;
   label?: boolean;
+  /** Largeurs d'affichage réelles : sert un fichier net, sans surpoids. */
+  sizes?: string;
 }) {
   const { locale } = useI18n();
   const { src, screenshot } = getProjectPreview(demo, mode);
@@ -84,9 +87,13 @@ export function ProjectPreview({
           src={src}
           alt={title}
           fill
-          // Les WebP locaux sont déjà dimensionnés. Les images distantes
-          // restent prises en charge sans dépendre d'un proxy d'images.
-          unoptimized
+          sizes={sizes}
+          quality={90}
+          // Captures locales (`/previews/*.webp`, désormais 1440×900 / 780×1386
+          // q90) : optimisées par Next (srcset net sur retina). Les images
+          // distantes restent servies telles quelles, sans dépendre d'un
+          // proxy d'images qu'un hébergeur tiers pourrait bloquer.
+          unoptimized={!src.startsWith("/")}
           loading={priority ? "eager" : "lazy"}
           fetchPriority={priority ? "high" : "auto"}
           decoding="async"

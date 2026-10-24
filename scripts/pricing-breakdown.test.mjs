@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-/** Tests du calcul modèle + personnalisation + total, source des affichages et du checkout. */
+/** Tests du calcul modèle + personnalisation + total en USD (devise unique, = USDT). */
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { existsSync, statSync, mkdtempSync, rmSync } from "node:fs";
@@ -41,47 +41,46 @@ async function compileModule() {
 
 const { resolveDemoClassification, resolvePlanPriceBreakdown } = await compileModule();
 
-test("total = prix du modèle + frais de personnalisation", () => {
+test.after(() => {
+  rmSync(outDir, { recursive: true, force: true });
+});
+
+test("total USD = prix du modèle + frais de personnalisation (aucun champ LYD)", () => {
   const plan = {
     id: "vitrine",
     name: "الواجهة",
     nameEn: "Vitrine",
-    price: 1490,
     priceUsd: 300,
     customizationPercent: 25,
   };
   assert.deepEqual(resolvePlanPriceBreakdown(plan), {
     modelPriceUsd: 300,
-    modelPriceLyd: 1490,
     customizationPercent: 25,
     customizationUsd: 75,
-    customizationLyd: 373,
     totalPriceUsd: 375,
-    totalPriceLyd: 1863,
   });
 });
 
-test("applique 20 % aux trois formules et ignore les anciens montants fixes", () => {
+test("applique 20 % aux trois formules", () => {
   const plans = [
-    { id: "vitrine", price: 1490, priceUsd: 300 },
-    { id: "vitrine-plus", price: 2490, priceUsd: 510 },
-    { id: "boutique", price: 4290, priceUsd: 880 },
+    { id: "vitrine", priceUsd: 300 },
+    { id: "vitrine-plus", priceUsd: 510 },
+    { id: "boutique", priceUsd: 880 },
   ].map((plan) => ({
     ...plan,
     name: plan.id,
     nameEn: plan.id,
     customizationPercent: 20,
-    customizationUsd: 75,
   }));
   assert.deepEqual(
     plans.map((plan) => {
-      const { customizationPercent, customizationUsd, customizationLyd, totalPriceUsd, totalPriceLyd } = resolvePlanPriceBreakdown(plan);
-      return { customizationPercent, customizationUsd, customizationLyd, totalPriceUsd, totalPriceLyd };
+      const { customizationPercent, customizationUsd, totalPriceUsd } = resolvePlanPriceBreakdown(plan);
+      return { customizationPercent, customizationUsd, totalPriceUsd };
     }),
     [
-      { customizationPercent: 20, customizationUsd: 60, customizationLyd: 298, totalPriceUsd: 360, totalPriceLyd: 1788 },
-      { customizationPercent: 20, customizationUsd: 102, customizationLyd: 498, totalPriceUsd: 612, totalPriceLyd: 2988 },
-      { customizationPercent: 20, customizationUsd: 176, customizationLyd: 858, totalPriceUsd: 1056, totalPriceLyd: 5148 },
+      { customizationPercent: 20, customizationUsd: 60, totalPriceUsd: 360 },
+      { customizationPercent: 20, customizationUsd: 102, totalPriceUsd: 612 },
+      { customizationPercent: 20, customizationUsd: 176, totalPriceUsd: 1056 },
     ],
   );
 });
@@ -91,7 +90,6 @@ test("prix de personnalisation absent = devis, jamais un total trompeur", () => 
     id: "vitrine",
     name: "الواجهة",
     nameEn: "Vitrine",
-    price: 1490,
     priceUsd: 300,
     customizationPercent: null,
   };
@@ -99,7 +97,6 @@ test("prix de personnalisation absent = devis, jamais un total trompeur", () => 
   assert.equal(breakdown.modelPriceUsd, 300);
   assert.equal(breakdown.customizationUsd, null);
   assert.equal(breakdown.totalPriceUsd, null);
-  assert.equal(breakdown.totalPriceLyd, null);
 });
 
 test("un tarif de personnalisation explicitement nul reste un total payable sans supplément", () => {
@@ -107,7 +104,6 @@ test("un tarif de personnalisation explicitement nul reste un total payable sans
     id: "vitrine",
     name: "الواجهة",
     nameEn: "Vitrine",
-    price: 1490,
     priceUsd: 300,
     customizationPercent: 0,
   };
@@ -115,7 +111,6 @@ test("un tarif de personnalisation explicitement nul reste un total payable sans
   assert.equal(breakdown.customizationPercent, 0);
   assert.equal(breakdown.customizationUsd, 0);
   assert.equal(breakdown.totalPriceUsd, 300);
-  assert.equal(breakdown.totalPriceLyd, 1490);
 });
 
 test("un tarif propre à une démo modifie le modèle, puis ajoute le frais de sa catégorie", () => {
@@ -123,7 +118,6 @@ test("un tarif propre à une démo modifie le modèle, puis ajoute le frais de s
     id: "boutique",
     name: "المتجر",
     nameEn: "Shop",
-    price: 4290,
     priceUsd: 880,
     customizationPercent: 20,
   }];
@@ -134,7 +128,5 @@ test("un tarif propre à une démo modifie le modèle, puis ajoute le frais de s
   assert.equal(result?.priceUsd, 1000);
   assert.equal(result?.customizationPercent, 20);
   assert.equal(result?.customizationUsd, 200);
-  assert.equal(result?.customizationLyd, 975);
   assert.equal(result?.totalPriceUsd, 1200);
-  assert.equal(result?.totalPriceLyd, 5850);
 });

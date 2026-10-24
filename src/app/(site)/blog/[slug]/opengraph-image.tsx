@@ -5,7 +5,7 @@ import { findArticle } from "@/lib/blog";
 import { blogArticles } from "@/lib/blog-articles";
 
 export const runtime = "nodejs";
-export const alt = "دليل عملي من مدونة نخبة — Nukhba guide";
+export const alt = "Practical guide from the Nukhba blog";
 export const size = OG_SIZE;
 export const contentType = "image/png";
 

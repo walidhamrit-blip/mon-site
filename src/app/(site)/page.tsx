@@ -13,9 +13,14 @@ export async function generateMetadata(): Promise<Metadata> {
   const { config } = await getSiteDataCached();
   return pageMetadata(config, {
     path: "/",
-    title: "تصميم مواقع ومتاجر إلكترونية في {city} — تسليم في 7 أيام",
+    title: "Website & Store Design in {cityEn} — 7 Days, Paid in USDT",
     description: defaultMetaDescription(config),
     keywords: [
+      "web design agency",
+      "website design USD",
+      "e-commerce website",
+      "pay for a website with USDT",
+      "تصميم مواقع",
       "تصميم مواقع {city}",
       "شركة تصميم مواقع {country}",
       "متجر إلكتروني {country}",

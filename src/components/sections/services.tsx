@@ -18,7 +18,6 @@ import {
 import { useI18n } from "@/lib/i18n";
 import { useSectionHeading, useSiteConfig } from "@/components/site-provider";
 import { SectionHeading } from "@/components/section-heading";
-import { lydLabel } from "@/lib/classification";
 import { whatsappLink } from "@/lib/utils";
 import { Price } from "@/components/price";
 
@@ -95,7 +94,7 @@ export function Services() {
                       <Price usd={service.priceFromUsd} />
                     </div>
                     <div className="text-[10px] opacity-50 mt-0.5">
-                      <Price usd={service.priceFromUsd} showLocal compact />
+                      <Price usd={service.priceFromUsd} compact />
                     </div>
                   </div>
                 </div>

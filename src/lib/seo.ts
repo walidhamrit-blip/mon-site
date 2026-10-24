@@ -48,7 +48,6 @@ type SiteConfig = {
       id: string;
       name: string;
       nameEn: string;
-      price: number;
       description: string;
       descriptionEn: string;
       priceUsd?: number | null;
@@ -66,7 +65,6 @@ type SiteConfig = {
     descAr: string;
     descEn: string;
     priceFromUsd: number;
-    priceFromLyd: number;
   }>;
 };
 
@@ -83,7 +81,7 @@ const BUSINESS_ID = "#business";
  * en produit une variante adossée au marché configuré.
  */
 export const DEFAULT_META_DESCRIPTION =
-  "وكالة نخبة لتصميم المواقع في طرابلس: مواقع واجهة، متاجر إلكترونية وأنظمة حجز — تسليم في 7 أيام، سرعة 90+، تحسين SEO لمحركات البحث والذكاء الاصطناعي، ودعم واتساب.";
+  "Nukhba builds premium websites, e-commerce stores and booking systems for clients worldwide — delivered in 7 days, 90+ speed, SEO + AI-search ready, USD pricing payable in USDT.";
 
 /**
  * Description meta par défaut, adossée au marché actif.
@@ -98,7 +96,7 @@ export function defaultMetaDescription(config: Pick<SiteConfig, "market">): stri
   const reach = config.market?.globalReach ? " وللعالم" : "";
   // ~160 caractères : la description doit rester dans la zone d'affichage
   // des résultats Google (le contrôle SEO le vérifie à chaque build).
-  return `وكالة نخبة لتصميم المواقع في ${ar.city}: مواقع واجهة، متاجر إلكترونية وأنظمة حجز${reach} — تسليم في 7 أيام، سرعة 90+، تحسين SEO، ودعم واتساب.`;
+  return `وكالة نخبة لتصميم المواقع في ${ar.city}: مواقع واجهة، متاجر إلكترونية وأنظمة حجز${reach} — تسليم في 7 أيام، سرعة 90+، تحسين SEO، والأسعار بالدولار.`;
 }
 
 /**
@@ -238,8 +236,8 @@ export function localBusinessJsonLd(
     telephone: config.phone,
     email: config.email,
     priceRange: "$$",
-    currenciesAccepted: "USD, LYD",
-    paymentAccepted: "Cash, Bank Transfer, Cryptocurrency",
+    currenciesAccepted: "USD",
+    paymentAccepted: "Cryptocurrency (USDT), Bank Transfer",
     address: {
       "@type": "PostalAddress",
       streetAddress: config.address,
@@ -517,11 +515,7 @@ export function demoJsonLd(config: SiteConfig, demo: Demo) {
   const market = resolveMarket(config.market);
   const marketEn = marketLabels(market, "en");
   const globalReach = Boolean(config.market?.globalReach) || market.id === "global";
-  const normalizedPlans = config.pricing.plans.map((p) => ({
-    ...p,
-    price: typeof p.price === "number" ? p.price : 0,
-  }));
-  const cls = resolveDemoClassification(demo, normalizedPlans);
+  const cls = resolveDemoClassification(demo, config.pricing.plans);
   const canonicalUrl = absoluteUrl(config, `/demos/${demo.slug}`);
   const hasLivePreview =
     Boolean(demo.previewUrl) && /^https?:\/\//i.test(demo.previewUrl.trim());
@@ -609,7 +603,7 @@ export function demoJsonLd(config: SiteConfig, demo: Demo) {
  * description du projet. La description est toujours tronquée pour rester
  * dans la zone d'affichage Google.
  */
-export function demoSeoMeta(demo: Demo, locale: "ar" | "en" = "ar"): { title: string; description: string } {
+export function demoSeoMeta(demo: Demo, locale: "ar" | "en" = "en"): { title: string; description: string } {
   if (locale === "en") {
     return {
       title: demo.metaTitleEn?.trim() || `${demo.titleEn} — live website showcase by Nukhba`,
@@ -668,7 +662,7 @@ export function applyMarketTokens(
 
 /**
  * Construit les métadonnées Next.js complètes d'une page : canonical,
- * Open Graph (ar_LY + alternate en_US), Twitter Card et robots.
+ * Open Graph (en_US + alternate ar), Twitter Card et robots.
  */
 export function pageMetadata(config: SiteConfig, opts: PageSeoOptions): Metadata {
   const canonical = absoluteUrl(config, opts.path);

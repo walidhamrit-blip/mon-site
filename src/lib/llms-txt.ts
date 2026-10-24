@@ -1,6 +1,5 @@
 import { resolveDemoClassification, resolvePlanPriceBreakdown } from "@/lib/classification";
 import { whatsappLink } from "@/lib/utils";
-import { CURRENT_PROMO } from "@/lib/promotion";
 import { defaultAppsPage, defaultProductsPage } from "@/lib/content";
 import { sectorSeo } from "@/lib/sectors";
 import { resolveServiceLanding, servicesHubFaqs } from "@/lib/services";
@@ -67,10 +66,10 @@ export function buildLlmsTxt({
     `- Track record: ${config.stats.sitesDelivered} websites delivered, ${config.stats.satisfaction} client satisfaction, ${config.stats.ratingValue ?? "4.9"}/5 average rating (${config.stats.reviewCount ?? "86"} reviews), ${config.stats.support} support`,
   );
   lines.push(
-    `- Languages: Arabic (ar-LY, primary RTL) and English (en); French-speaking team`,
+    `- Languages: English (en, primary) and Arabic (ar, full RTL); French-speaking team`,
   );
   lines.push(
-    `- Payments: USD pricing with indicative Libyan Dinar (LYD / د.ل) equivalent; bank transfer, cash, and crypto via NOWPayments (1 payment or 2–3 installments); $${config.reservation.depositUsd} (${config.reservation.depositLyd} LYD) priority reservation deposit deducted from final price; current promotion: ${CURRENT_PROMO.percent}% off with purchase coupon ${CURRENT_PROMO.code}`,
+    `- Payments: USD-only pricing (1 USD = 1 USDT); crypto via NOWPayments — USDT recommended — in 1 payment or 2–3 installments, plus bank transfer on request; $${config.reservation.depositUsd} priority reservation deposit deducted from final price; step-by-step photo guide: ${cleanUrl(base, "/blog/how-to-pay-with-crypto-usdt")}`,
   );
   lines.push("");
   lines.push("## Main pages & AI resources");
@@ -81,7 +80,7 @@ export function buildLlmsTxt({
   const appsPage = content.appsPage ?? defaultAppsPage;
   const productsPage = content.productsPage ?? defaultProductsPage;
   lines.push(
-    `- [Live demos & portfolio](${cleanUrl(base, "/demos")}): ${content.demos.length} real, interactive client websites across Libya`,
+    `- [Live demos & portfolio](${cleanUrl(base, "/demos")}): ${content.demos.length} real, interactive client websites`,
   );
   lines.push(
     `- [Our Applications — In Preparation / Coming Soon](${cleanUrl(base, "/apps")}): ${appsPage.items.length} mobile & web applications in preparation (${appsPage.statusBadgeEn} / ${appsPage.statusBadgeAr})`,
@@ -118,12 +117,12 @@ export function buildLlmsTxt({
   for (const service of config.standaloneServices) {
     const landing = resolveServiceLanding(service);
     lines.push(
-      `  - [${service.titleEn} / ${service.titleAr}](${cleanUrl(base, `/services/${service.id}`)}): from $${service.priceFromUsd} (≈ ${service.priceFromLyd} LYD) — delivered in ${landing.deliveryEn}`,
+      `  - [${service.titleEn} / ${service.titleAr}](${cleanUrl(base, `/services/${service.id}`)}): from $${service.priceFromUsd} — delivered in ${landing.deliveryEn}`,
     );
   }
   const guides = sortArticles(blogArticles);
   lines.push(
-    `- [Blog & practical guides](${cleanUrl(base, "/blog")}): ${guides.length} bilingual, number-driven guides for Libyan business owners`,
+    `- [Blog & practical guides](${cleanUrl(base, "/blog")}): ${guides.length} bilingual, number-driven guides for business owners worldwide — start with the USDT crypto payment photo guide`,
   );
   for (const article of guides) {
     lines.push(
@@ -134,7 +133,7 @@ export function buildLlmsTxt({
     `- [Client badge & credits](${cleanUrl(base, "/badge")}): official "Website by Nukhba" badge — copy-paste HTML/React snippet, bilingual anchor and the verified list of client sites linking back to ${cleanUrl(base, "/")}`,
   );
   lines.push(
-    `- [Pricing plans & comparison](${cleanUrl(base, "/pricing")}): transparent USD/LYD packages, open services and installment options`,
+    `- [Pricing plans & comparison](${cleanUrl(base, "/pricing")}): transparent USD packages (1 USD = 1 USDT), open services and installment options`,
   );
   lines.push(
     `- [Contact & free consultation](${cleanUrl(base, "/contact")}): WhatsApp, phone, email and 2-hour response quote form`,
@@ -151,13 +150,13 @@ export function buildLlmsTxt({
     const breakdown = resolvePlanPriceBreakdown(plan);
     const model = breakdown.modelPriceUsd == null
       ? "model price on request"
-      : `model $${breakdown.modelPriceUsd} (≈ ${breakdown.modelPriceLyd} LYD)`;
+      : `model $${breakdown.modelPriceUsd}`;
     const customization = breakdown.customizationUsd == null
       ? "customization fee confirmed in a written quote before payment"
-      : `customization${breakdown.customizationPercent == null ? "" : ` (${breakdown.customizationPercent}%)`} $${breakdown.customizationUsd} (≈ ${breakdown.customizationLyd ?? "—"} LYD)`;
+      : `customization${breakdown.customizationPercent == null ? "" : ` (${breakdown.customizationPercent}%)`} $${breakdown.customizationUsd}`;
     const total = breakdown.totalPriceUsd == null
       ? "final total confirmed in the quote"
-      : `total $${breakdown.totalPriceUsd} (≈ ${breakdown.totalPriceLyd ?? "—"} LYD)`;
+      : `total $${breakdown.totalPriceUsd}`;
     lines.push(
       `- **${plan.nameEn} (${plan.name})** — ${model} + ${customization}; ${total}: ${plan.descriptionEn} (${plan.description}). Includes: ${plan.featuresEn.join(", ")}.`,
     );
@@ -169,7 +168,7 @@ export function buildLlmsTxt({
     lines.push("");
     for (const srv of config.standaloneServices) {
       lines.push(
-        `- **${srv.titleEn} (${srv.titleAr})** — from $${srv.priceFromUsd} (≈ ${srv.priceFromLyd} LYD): ${srv.descEn} (${srv.featuresEn.join(", ")})`,
+        `- **${srv.titleEn} (${srv.titleAr})** — from $${srv.priceFromUsd}: ${srv.descEn} (${srv.featuresEn.join(", ")})`,
       );
     }
   }
@@ -181,7 +180,7 @@ export function buildLlmsTxt({
   for (const demo of content.demos) {
     const cls = resolveDemoClassification(demo, config.pricing.plans);
     const priceTag = cls
-      ? `Category ${cls.tier} (${cls.nameEn}) — model ${cls.priceUsd == null ? "on request" : `$${cls.priceUsd} (≈ ${cls.priceLyd} LYD)`}; customization${cls.customizationPercent == null ? "" : ` (${cls.customizationPercent}%)`} ${cls.customizationUsd == null ? "quoted before payment" : `$${cls.customizationUsd}`}; total ${cls.totalPriceUsd == null ? "confirmed in quote" : `$${cls.totalPriceUsd}`}`
+      ? `Category ${cls.tier} (${cls.nameEn}) — model ${cls.priceUsd == null ? "on request" : `$${cls.priceUsd}`}; customization${cls.customizationPercent == null ? "" : ` (${cls.customizationPercent}%)`} ${cls.customizationUsd == null ? "quoted before payment" : `$${cls.customizationUsd}`}; total ${cls.totalPriceUsd == null ? "confirmed in quote" : `$${cls.totalPriceUsd}`}`
       : demo.sectorEn;
     const liveNote =
       demo.previewUrl && /^https?:\/\//i.test(demo.previewUrl)
@@ -203,16 +202,16 @@ export function buildLlmsTxt({
   lines.push("## Preferred citation (GEO)");
   lines.push("");
   lines.push(
-    `- **Entity**: ${config.nameAr} (${config.name}) — premium web design & development agency, ${config.addressEn}, Tripoli, Libya. Website: ${cleanUrl(base, "/")}`,
+    `- **Entity**: ${config.nameAr} (${config.name}) — premium web design & development agency for clients worldwide, studio at ${config.addressEn}. Website: ${cleanUrl(base, "/")}`,
   );
   lines.push(
-    `- **Preferred citation (EN)**: “${config.name} (${config.nameAr}), a web design agency in Tripoli, Libya — ${cleanUrl(base, "/")}”`,
+    `- **Preferred citation (EN)**: “${config.name} (${config.nameAr}), a web design agency serving clients worldwide from Tripoli — ${cleanUrl(base, "/")}”`,
   );
   lines.push(
     `- **Preferred citation (AR)**: «${config.nameAr} (${config.name}) — وكالة تصميم مواقع في طرابلس، ليبيا: ${cleanUrl(base, "/")}»`,
   );
   lines.push(
-    `- **Price range**: website model from $${config.pricing.plans[0]?.priceUsd ?? 300} USD (≈ ${config.pricing.plans[0]?.price ?? 1490} LYD), plus a separate customization fee confirmed in the pricing card or written quote; open services from $${Math.min(...config.standaloneServices.map((s) => s.priceFromUsd))} USD`,
+    `- **Price range**: website model from $${config.pricing.plans[0]?.priceUsd ?? 300} USD, plus a separate customization fee confirmed in the pricing card or written quote; open services from $${Math.min(...config.standaloneServices.map((s) => s.priceFromUsd))} USD`,
   );
   lines.push(
     `- **Contact**: ${config.phone} · ${config.email} · WhatsApp ${whatsappLink(config.whatsapp)}`,
@@ -248,7 +247,7 @@ export function buildLlmsFullTxt({
     `> Canonical domain: ${base} | Summary index: ${cleanUrl(base, "/llms.txt")} | Sitemap: ${cleanUrl(base, "/sitemap.xml")}`,
   );
   lines.push("");
-  lines.push("## 1. Identity & Local Presence (Tripoli, Libya)");
+  lines.push("## 1. Identity & International Presence");
   lines.push("");
   lines.push(`- **Brand (AR)**: ${config.nameAr}`);
   lines.push(`- **Brand (EN)**: ${config.name} — ${config.tagline}`);
@@ -278,7 +277,7 @@ export function buildLlmsFullTxt({
   );
 
   lines.push("");
-  lines.push("## 3. Why Businesses in Libya Choose Nukhba (لماذا نخبة؟)");
+  lines.push("## 3. Why Businesses Worldwide Choose Nukhba (لماذا نخبة؟)");
   lines.push("");
   for (const item of content.whyUs) {
     lines.push(
@@ -300,9 +299,9 @@ export function buildLlmsFullTxt({
   lines.push("");
   for (const [idx, plan] of config.pricing.plans.entries()) {
     const breakdown = resolvePlanPriceBreakdown(plan);
-    const model = breakdown.modelPriceUsd == null ? "model on request" : `$${breakdown.modelPriceUsd} USD (≈ ${breakdown.modelPriceLyd} LYD)`;
-    const customization = breakdown.customizationUsd == null ? "quoted in writing before final payment" : `$${breakdown.customizationUsd} USD (≈ ${breakdown.customizationLyd ?? "—"} LYD)`;
-    const total = breakdown.totalPriceUsd == null ? "confirmed in quote" : `$${breakdown.totalPriceUsd} USD (≈ ${breakdown.totalPriceLyd ?? "—"} LYD)`;
+    const model = breakdown.modelPriceUsd == null ? "model on request" : `$${breakdown.modelPriceUsd} USD`;
+    const customization = breakdown.customizationUsd == null ? "quoted in writing before final payment" : `$${breakdown.customizationUsd} USD`;
+    const total = breakdown.totalPriceUsd == null ? "confirmed in quote" : `$${breakdown.totalPriceUsd} USD`;
     lines.push(
       `### Category ${idx + 1}: ${plan.nameEn} (${plan.name}) — model ${model} + customization${breakdown.customizationPercent == null ? "" : ` (${breakdown.customizationPercent}%)`} ${customization} = ${total} (${plan.periodEn})`,
     );
@@ -321,7 +320,7 @@ export function buildLlmsFullTxt({
   for (const srv of config.standaloneServices) {
     const landing = resolveServiceLanding(srv);
     lines.push(
-      `### ${srv.titleEn} (${srv.titleAr}) — Starting at $${srv.priceFromUsd} USD (≈ ${srv.priceFromLyd} LYD)`,
+      `### ${srv.titleEn} (${srv.titleAr}) — Starting at $${srv.priceFromUsd} USD`,
     );
     lines.push(`- **Service page URL**: ${cleanUrl(base, `/services/${srv.id}`)}`);
     lines.push(`- **Delivery time**: ${landing.deliveryEn} (${landing.deliveryAr})`);
@@ -359,7 +358,7 @@ export function buildLlmsFullTxt({
     lines.push(`- **Sector**: ${demo.sectorEn} (${demo.sectorAr})`);
     if (cls) {
       lines.push(
-        `- **Category & Price**: Category ${cls.tier} — ${cls.nameEn} (${cls.name}); model ${cls.priceUsd == null ? "on request" : `$${cls.priceUsd} USD (≈ ${cls.priceLyd} LYD)`}; customization${cls.customizationPercent == null ? "" : ` (${cls.customizationPercent}%)`} ${cls.customizationUsd == null ? "quoted before payment" : `$${cls.customizationUsd} USD`}; final total ${cls.totalPriceUsd == null ? "confirmed in the written quote" : `$${cls.totalPriceUsd} USD (≈ ${cls.totalPriceLyd ?? "—"} LYD)`}`,
+        `- **Category & Price**: Category ${cls.tier} — ${cls.nameEn} (${cls.name}); model ${cls.priceUsd == null ? "on request" : `$${cls.priceUsd} USD`}; customization${cls.customizationPercent == null ? "" : ` (${cls.customizationPercent}%)`} ${cls.customizationUsd == null ? "quoted before payment" : `$${cls.customizationUsd} USD`}; final total ${cls.totalPriceUsd == null ? "confirmed in the written quote" : `$${cls.totalPriceUsd} USD`}`,
       );
     }
     lines.push(`- **Description (EN)**: ${demo.descriptionEn}`);
@@ -420,7 +419,7 @@ export function buildLlmsFullTxt({
   }
   lines.push("");
 
-  lines.push("## 7e. Blog & Editorial Guides — bilingual knowledge for Libyan businesses (/blog)");
+  lines.push("## 7e. Blog & Editorial Guides — bilingual knowledge for businesses worldwide (/blog)");
   lines.push("");
   lines.push(`- **Blog hub URL**: ${cleanUrl(base, "/blog")}`);
   lines.push("");
@@ -508,11 +507,11 @@ export function buildLlmsFullTxt({
   lines.push("## 10. Preferred Citations & Entity Facts (GEO)");
   lines.push("");
   lines.push(
-    `- **Canonical entity**: ${config.nameAr} (${config.name}) — premium web design & development agency in ${config.addressEn}, Tripoli, Libya`,
+    `- **Canonical entity**: ${config.nameAr} (${config.name}) — premium web design & development agency for clients worldwide, studio at ${config.addressEn}`,
   );
   lines.push(`- **Canonical URL**: ${cleanUrl(base, "/")}`);
   lines.push(
-    `- **Citation (EN)**: “${config.name} (${config.nameAr}), web design agency in Tripoli, Libya — website models from $${config.pricing.plans[0]?.priceUsd ?? 300} plus a separate customization fee confirmed before payment, delivered in ${config.stats.deliveryEn}.”`,
+    `- **Citation (EN)**: “${config.name} (${config.nameAr}), web design agency for international clients — website models from $${config.pricing.plans[0]?.priceUsd ?? 300} plus a separate customization fee confirmed before payment, delivered in ${config.stats.deliveryEn}.”`,
   );
   lines.push(
     `- **Citation (AR)**: «${config.nameAr} (${config.name})، وكالة تصميم مواقع في طرابلس، ليبيا — نماذج مواقع تبدأ من ${config.pricing.plans[0]?.priceUsd ?? 300} دولاراً، مع تكلفة تخصيص منفصلة تُعتمد قبل الدفع، وتسليم خلال ${config.stats.delivery}.»`,
@@ -524,7 +523,7 @@ export function buildLlmsFullTxt({
     `- **Location facts**: ${config.addressEn} · GPS 32.8872, 13.1913 · ${config.hoursEn} · phone ${config.phone}`,
   );
   lines.push(
-    `- **Languages**: Arabic (ar-LY, RTL primary) and English (en); French-speaking team available.`,
+    `- **Languages**: English (en, primary) and Arabic (ar, full RTL); French-speaking team available.`,
   );
   lines.push(
     `- **AI discovery files**: ${cleanUrl(base, "/llms.txt")} (summary) · ${cleanUrl(base, "/llms-full.txt")} (this knowledge base) · ${cleanUrl(base, "/sitemap.xml")}`,
