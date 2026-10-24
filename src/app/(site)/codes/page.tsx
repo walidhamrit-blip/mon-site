@@ -30,6 +30,14 @@ export async function generateMetadata(): Promise<Metadata> {
   });
 }
 
+/**
+ * Le catalogue est pré-généré : sans fenêtre de revalidation, un changement
+ * de statut ou de prix en admin resterait invisible jusqu'au déploiement
+ * suivant. L'admin revalide déjà `/codes` (layout) ; ce délai n'est qu'un
+ * filet de sécurité.
+ */
+export const revalidate = 60;
+
 export default async function CodesPage() {
   const { config } = await getSiteDataCached();
   const products = await getDigitalCatalog({ publicOnly: true });

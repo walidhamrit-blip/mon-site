@@ -557,7 +557,13 @@ export async function saveDigitalProduct(input: unknown): Promise<ActionResult> 
   }
   try {
     await upsertDigitalProduct(parsed.data as DigitalProduct);
-    revalidatePath("/codes");
+    // La fiche produit est pré-générée (`generateStaticParams`) : sans
+    // revalidation de son chemin, elle reste servie depuis le cache du build
+    // — statut « bientôt disponible » et aucun bouton d'achat, même après
+    // enregistrement. `type: "layout"` couvre /codes ET toutes les fiches
+    // /codes/<slug> ; la seconde ligne vise explicitement la fiche modifiée.
+    revalidatePath("/codes", "layout");
+    revalidatePath(`/codes/${parsed.data.slug}`);
     revalidatePath("/admin/digital");
     void pingAllPublicPages();
     return {
@@ -576,7 +582,9 @@ export async function deleteDigitalProductAction(id: string): Promise<ActionResu
   if (!productId) return { ok: false, error: "Fiche non identifiée." };
   try {
     await deleteDigitalProduct(productId);
-    revalidatePath("/codes");
+    // Même raison que pour l'enregistrement : supprimer une fiche doit aussi
+    // invalider son URL publique /codes/<slug> déjà pré-générée.
+    revalidatePath("/codes", "layout");
     revalidatePath("/admin/digital");
     void pingAllPublicPages();
     return { ok: true, message: "Fiche supprimée du catalogue." };
