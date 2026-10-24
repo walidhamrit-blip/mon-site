@@ -9,8 +9,9 @@
  *
  * Ce que fait le script, pour chaque démo (`content.demos`) :
  *   1. vérifie que `previewUrl` répond en HTTP 200 (alerte si la démo tombe) ;
- *   2. capture le rendu réel en 1440×900 (desktop) et 390×693 (mobile) ;
- *   3. convertit en WebP q78, respectivement 960×600 et 390×693 ;
+ *   2. capture le rendu réel en 1440×900 (desktop, pleine résolution) et
+ *      390×693 @2x (mobile retina) ;
+ *   3. convertit en WebP q90, respectivement 1440×900 et 780×1386 ;
  *   4. écrit `public/previews/<slug>-{desktop,mobile}.webp` ;
  *   5. met à jour `public/previews/manifest.json` (hash anti-cache, statut,
  *      date de capture) — source unique lue par le site, le sitemap d'images
@@ -39,16 +40,16 @@ const MANIFEST_PATH = join(PREVIEWS_DIR, "manifest.json");
 const REPORTS_DIR = join(ROOT, "reports");
 
 export const MANIFEST_VERSION = 1;
-export const WEBP_QUALITY = 78;
-/** Viewports de rendu (le desktop est réduit ensuite à 960×600). */
+export const WEBP_QUALITY = 90;
+/** Viewports de rendu CSS (le mobile est capturé @2x, voir `deviceScaleFactor`). */
 export const VIEWPORTS = {
   desktop: { width: 1440, height: 900 },
   mobile: { width: 390, height: 693 },
 };
 /** Tailles finales des fichiers WebP servis. */
 export const OUTPUT_SIZES = {
-  desktop: { width: 960, height: 600 },
-  mobile: { width: 390, height: 693 },
+  desktop: { width: 1440, height: 900 },
+  mobile: { width: 780, height: 1386 },
 };
 
 /* ─────────────────────────── Helpers purs ─────────────────────────── */
@@ -547,7 +548,9 @@ async function main() {
     deps.capture = async ({ url, variant, viewport }) => {
       const context = await browser.newContext({
         viewport,
-        deviceScaleFactor: 1,
+        // Mobile retina (@2x) : même mise en page 390 px, image deux fois
+        // plus nette dans le cadre téléphone de la bannière principale.
+        deviceScaleFactor: variant === "mobile" ? 2 : 1,
         isMobile: variant === "mobile",
         hasTouch: variant === "mobile",
         locale: "ar-LY",

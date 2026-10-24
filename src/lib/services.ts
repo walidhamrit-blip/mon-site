@@ -27,7 +27,6 @@ export interface ServiceLike {
   descAr: string;
   descEn: string;
   priceFromUsd: number;
-  priceFromLyd: number;
   badgeAr?: string;
   badgeEn?: string;
   featuresAr: readonly string[];
@@ -636,10 +635,11 @@ export function serviceJsonLd(
     image: absoluteUrl(config, "/og.jpg"),
     provider: { "@id": absoluteUrl(config, "#organization") },
     areaServed: [
-      { "@type": "City", name: "Tripoli" },
+      { "@type": "Place", name: "Worldwide" },
       { "@type": "Country", name: "Libya" },
+      { "@type": "City", name: "Tripoli" },
     ],
-    availableLanguage: ["ar", "en"],
+    availableLanguage: ["en", "ar"],
     ...(service.featuresAr.length > 0
       ? {
           serviceOutput: {
@@ -665,16 +665,6 @@ export function serviceJsonLd(
       availability: "https://schema.org/InStock",
       seller: { "@id": absoluteUrl(config, "#organization") },
     },
-    ...(service.priceFromLyd > 0
-      ? {
-          additionalProperty: {
-            "@type": "PropertyValue",
-            name: "Indicative price in Libyan Dinar (LYD)",
-            value: service.priceFromLyd,
-            unitText: "LYD",
-          },
-        }
-      : {}),
   };
 }
 
@@ -683,7 +673,7 @@ export function serviceFaqJsonLd(landing: ServiceLandingContent) {
   return {
     "@context": "https://schema.org",
     "@type": "FAQPage",
-    inLanguage: ["ar-LY", "en"],
+    inLanguage: ["en", "ar"],
     mainEntity: landing.faqs.map((faq) => ({
       "@type": "Question",
       name: faq.qAr,
@@ -714,7 +704,7 @@ export function servicesCollectionJsonLd(
     description:
       "خدمات رقمية سريعة في طرابلس: إعادة تصميم موقع، إضافة قسم، عروض تقديمية، هوية بصرية، صفحة هبوط، وإصلاح وتحسين — بأسعار معلنة وتسليم سريع.",
     url,
-    inLanguage: ["ar-LY", "en"],
+    inLanguage: ["en", "ar"],
     isPartOf: { "@id": absoluteUrl(config, "#website") },
     mainEntity: {
       "@type": "ItemList",

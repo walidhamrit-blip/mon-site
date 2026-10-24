@@ -3,7 +3,7 @@ import Link from "next/link";
 import { Pricing } from "@/components/sections/pricing";
 import { FAQ } from "@/components/sections/faq";
 import { useI18n } from "@/lib/i18n";
-import { CURRENT_PROMO } from "@/lib/promotion";
+import { CRYPTO_GUIDE_PATH } from "@/lib/blog";
 
 export function PricingClient() {
   const { locale } = useI18n();
@@ -24,12 +24,12 @@ export function PricingClient() {
           </p>
           <div className="mt-6 flex flex-wrap items-center justify-center gap-2">
             <Link
-              href="/demos"
+              href={CRYPTO_GUIDE_PATH}
               className="inline-flex max-w-full items-center justify-center rounded-full border border-[var(--accent)]/40 bg-[var(--accent)]/10 px-4 py-2 text-center text-[12.5px] font-bold leading-snug text-[color-mix(in_srgb,var(--accent)_72%,var(--foreground))] transition-colors hover:bg-[var(--accent)]/15"
             >
               {locale === "ar"
-                ? `خصم ${CURRENT_PROMO.percent}% بكوبون ${CURRENT_PROMO.code}`
-                : `${CURRENT_PROMO.percent}% off with coupon ${CURRENT_PROMO.code}`}
+                ? "دليل الدفع بالكريبتو خطوة بخطوة — بالصور"
+                : "Step-by-step crypto payment guide — with photos"}
             </Link>
             <Link
               href="/services"

@@ -29,7 +29,7 @@ interface Message {
 
 /**
  * Petit assistant du site : il propose des questions, répond avec les
- * données réelles (prix, délais, coupon) puis enchaîne sur les questions
+ * données réelles (prix, délais, paiement crypto) puis enchaîne sur les questions
  * de suivi. Aucun appel réseau, aucune clé API — la conversation est un
  * arbre de décision local (voir src/lib/chatbot.ts).
  */

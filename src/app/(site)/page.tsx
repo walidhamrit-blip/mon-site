@@ -13,12 +13,14 @@ export async function generateMetadata(): Promise<Metadata> {
   const { config } = await getSiteDataCached();
   return pageMetadata(config, {
     path: "/",
-    title: "تصميم مواقع ومتاجر إلكترونية في طرابلس — تسليم في 7 أيام",
+    title: "Website & Online Store Design — Delivered in 7 Days, Paid in USDT",
     description: DEFAULT_META_DESCRIPTION,
     keywords: [
-      "تصميم مواقع طرابلس",
-      "شركة تصميم مواقع ليبيا",
-      "متجر إلكتروني ليبيا",
+      "web design agency",
+      "website design USD",
+      "e-commerce website",
+      "pay for a website with USDT",
+      "تصميم مواقع",
       "web design Tripoli Libya",
     ],
   });

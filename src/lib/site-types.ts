@@ -66,15 +66,14 @@ export interface PricingPlanData {
   id: string;
   name: string;
   nameEn: string;
-  price: number;
   /**
-   * Équivalent en devise fiat (USD par défaut) pour le paiement crypto.
-   * `null` (champ vidé dans l'admin) = formule non payable en crypto.
+   * Prix du modèle en USD — devise unique du site (1 USD = 1 USDT au
+   * paiement crypto). `null` (champ vidé dans l'admin) = formule non
+   * payable en ligne.
    */
   priceUsd?: number | null;
   /** Pourcentage appliqué au prix du modèle pour calculer les frais de personnalisation. */
   customizationPercent?: number | null;
-  originalPrice: number | null;
   period: string;
   periodEn: string;
   description: string;
@@ -135,7 +134,6 @@ export interface SiteConfigData {
   reservation: {
     enabled: boolean;
     depositUsd: number;
-    depositLyd: number;
   };
   flexiblePayment: FlexiblePaymentConfig;
   standaloneServices: StandaloneService[];
@@ -158,7 +156,6 @@ export interface StandaloneService {
   descAr: string;
   descEn: string;
   priceFromUsd: number;
-  priceFromLyd: number;
   badgeAr?: string;
   badgeEn?: string;
   featuresAr: string[];

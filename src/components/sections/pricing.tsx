@@ -7,10 +7,8 @@ import { useSectionHeading, useSiteConfig } from "@/components/site-provider";
 import { SectionHeading } from "@/components/section-heading";
 import { ModelPriceBreakdown } from "@/components/model-price-breakdown";
 import { ModelPurchaseButton } from "@/components/model-purchase-button";
-import { PromoPriceNote } from "@/components/promo-price";
 import { resolvePlanPriceBreakdown } from "@/lib/classification";
 import { formatUsd } from "@/lib/installments";
-import { CURRENT_PROMO, promoActive } from "@/lib/promotion";
 
 export function Pricing() {
   const siteConfig = useSiteConfig();
@@ -27,14 +25,12 @@ export function Pricing() {
           title={heading.title}
           lead={heading.subtitle}
           note={
-            promoActive(CURRENT_PROMO) ? (
-              <span className="chip chip-accent mx-auto mt-1">
-                <Sparkles className="h-3.5 w-3.5" />
-                {locale === "ar"
-                  ? `خصم ${CURRENT_PROMO.percent}% عند الدفع — كوبون ${CURRENT_PROMO.code}`
-                  : `${CURRENT_PROMO.percent}% off at checkout — coupon ${CURRENT_PROMO.code}`}
-              </span>
-            ) : undefined
+            <span className="chip chip-accent mx-auto mt-1">
+              <Sparkles className="h-3.5 w-3.5" />
+              {locale === "ar"
+                ? "كل الأسعار بالدولار — 1 دولار = 1 USDT عند الدفع"
+                : "All prices in USD — 1 USD = 1 USDT at checkout"}
+            </span>
           }
         />
 
@@ -72,14 +68,8 @@ export function Pricing() {
                   currency={locale === "ar" ? siteConfig.pricing.currency : siteConfig.pricing.currencyEn}
                 />
                 <div className="mt-2 text-[10px] opacity-55">
-                  {locale === "ar" ? t.crypto.lydNoteAr : t.crypto.lydNoteEn}
+                  {locale === "ar" ? t.crypto.usdNoteAr : t.crypto.usdNoteEn}
                 </div>
-                {/* Prix après coupon : même calcul que le serveur de paiement. */}
-                <PromoPriceNote
-                  amountUsd={resolvePlanPriceBreakdown(plan).totalPriceUsd}
-                  currency={locale === "ar" ? siteConfig.pricing.currency : siteConfig.pricing.currencyEn}
-                  className="mt-2"
-                />
               </div>
               <div className="text-xs opacity-60">{locale === "ar" ? plan.period : plan.periodEn}</div>
 

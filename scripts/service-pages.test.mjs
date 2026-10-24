@@ -130,9 +130,10 @@ test("serviceJsonLd expose Service + Offer + zone desservie + fournisseur", () =
   assert.equal(schema.offers.price, String(service.priceFromUsd));
   assert.equal(schema.offers.priceCurrency, "USD");
   assert.equal(schema.provider["@id"], `${siteConfig.url}/#organization`);
-  assert.equal(schema.areaServed.length, 2);
-  assert.equal(schema.areaServed[0].name, "Tripoli");
+  assert.equal(schema.areaServed.length, 3);
+  assert.equal(schema.areaServed[0].name, "Worldwide");
   assert.equal(schema.areaServed[1].name, "Libya");
+  assert.equal(schema.areaServed[2].name, "Tripoli");
   assert.equal(schema.availableLanguage.length, 2);
 });
 

@@ -156,10 +156,6 @@ export async function POST(req: Request) {
       message: `Acompte invalide : ${reservation.depositUsd}`,
     });
   }
-  const depositLyd =
-    Number.isFinite(Number(reservation.depositLyd)) && Number(reservation.depositLyd) >= 0
-      ? Number(reservation.depositLyd)
-      : 0;
 
   if (!nowPaymentsConfigured()) {
     return errorResponse("gateway_not_configured", 503, {
@@ -193,7 +189,8 @@ export async function POST(req: Request) {
         planName: `Réservation — ${demo.titleEn}${
           categoryLabel ? ` (${categoryLabel})` : ""
         }`.slice(0, 190),
-        amountLyd: String(depositLyd),
+        // Colonne historique NOT NULL : montant USD (devise unique).
+        amountLyd: String(depositUsd),
         amountUsd: String(depositUsd),
         currency: "usd",
         installments: 1,
@@ -257,11 +254,9 @@ export async function POST(req: Request) {
           name: classification.name,
           nameEn: classification.nameEn,
           priceUsd: classification.priceUsd,
-          priceLyd: classification.priceLyd,
         }
       : null,
     depositUsd,
-    depositLyd,
     paymentUrl: invoice.invoice_url,
     priceAmount: invoice.price_amount,
     priceCurrency: invoice.price_currency,

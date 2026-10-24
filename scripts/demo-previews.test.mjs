@@ -388,8 +388,8 @@ test("un rendu identique est marqué inchangé (aucun commit de binaires)", asyn
         desktop: "/previews/ok-demo-desktop.webp",
         mobile: "/previews/ok-demo-mobile.webp",
         hash: hashBuffers(
-          Buffer.from("webp:960x600:png:https://ok.vercel.app"),
-          Buffer.from("webp:390x693:png:https://ok.vercel.app"),
+          Buffer.from("webp:1440x900:png:https://ok.vercel.app"),
+          Buffer.from("webp:780x1386:png:https://ok.vercel.app"),
         ),
         capturedAt: "2026-10-19T00:00:00.000Z",
         status: "ok",

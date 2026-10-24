@@ -34,7 +34,6 @@ type SiteConfig = {
       id: string;
       name: string;
       nameEn: string;
-      price: number;
       description: string;
       descriptionEn: string;
       priceUsd?: number | null;
@@ -52,7 +51,6 @@ type SiteConfig = {
     descAr: string;
     descEn: string;
     priceFromUsd: number;
-    priceFromLyd: number;
   }>;
 };
 
@@ -66,7 +64,7 @@ const BUSINESS_ID = "#business";
  * mots-clés, dans la zone d'affichage des résultats Google.
  */
 export const DEFAULT_META_DESCRIPTION =
-  "وكالة نخبة لتصميم المواقع في طرابلس: مواقع واجهة، متاجر إلكترونية وأنظمة حجز — تسليم في 7 أيام، سرعة 90+، تحسين SEO لمحركات البحث والذكاء الاصطناعي، ودعم واتساب.";
+  "Nukhba builds premium websites, e-commerce stores and booking systems for clients worldwide — delivered in 7 days, 90+ speed, SEO + AI-search ready, USD pricing payable in USDT.";
 
 /**
  * Code de vérification Google Search Console (méthode balise HTML meta).
@@ -115,8 +113,8 @@ export function organizationJsonLd(config: SiteConfig) {
     email: config.email,
     telephone: config.phone,
     description:
-      "وكالة تصميم وتطوير مواقع في طرابلس — ليبيا: مواقع واجهة، متاجر إلكترونية، أنظمة حجز، تحسين SEO وتسليم في 7 أيام.",
-    inLanguage: ["ar-LY", "en"],
+      "Premium web design & development agency for clients worldwide: showcase sites, e-commerce stores, booking systems, SEO and 7-day delivery. Arabic + English.",
+    inLanguage: ["en", "ar"],
     sameAs: [config.social.instagram, config.social.facebook, config.social.tiktok].filter(
       (u) => u && /^https?:\/\//.test(u),
     ),
@@ -131,7 +129,7 @@ export function websiteJsonLd(config: SiteConfig) {
     "@id": absoluteUrl(config, WEBSITE_ID),
     name: `${config.nameAr} ${config.name}`,
     url: absoluteUrl(config, "/"),
-    inLanguage: ["ar-LY", "en"],
+    inLanguage: ["en", "ar"],
     publisher: { "@id": absoluteUrl(config, ORG_ID) },
     // Pas de SearchAction : le site n'expose pas de recherche publique par
     // URL (la recherche des démos est purement côté client). Déclarer une
@@ -153,16 +151,16 @@ export function localBusinessJsonLd(
     "@type": "ProfessionalService",
     "@id": absoluteUrl(config, BUSINESS_ID),
     name: `${config.nameAr} — ${config.name} Premium Web Agency`,
-    alternateName: "Nukhba Web Agency Tripoli",
+    alternateName: "Nukhba Web Agency — Worldwide",
     url: absoluteUrl(config, "/"),
     logo: absoluteUrl(config, "/icon.svg"),
     image: absoluteUrl(config, "/og.jpg"),
-    slogan: "مواقع ومتاجر إلكترونية فاخرة تُسلَّم في 7 أيام — Tripoli, Libya",
+    slogan: "Premium websites & stores delivered in 7 days — for clients worldwide",
     telephone: config.phone,
     email: config.email,
     priceRange: "$$",
-    currenciesAccepted: "USD, LYD",
-    paymentAccepted: "Cash, Bank Transfer, Cryptocurrency",
+    currenciesAccepted: "USD",
+    paymentAccepted: "Cryptocurrency (USDT), Bank Transfer",
     address: {
       "@type": "PostalAddress",
       streetAddress: config.address,
@@ -177,8 +175,9 @@ export function localBusinessJsonLd(
     },
     hasMap: "https://www.google.com/maps/search/?api=1&query=32.8872,13.1913",
     areaServed: [
-      { "@type": "City", name: "Tripoli" },
+      { "@type": "Place", name: "Worldwide" },
       { "@type": "Country", name: "Libya" },
+      { "@type": "City", name: "Tripoli" },
     ],
     // Zone de service locale : 60 km autour de Tripoli (Tripoli, Tajoura,
     // Janzour, Ain Zara, Gasr Ben Ghashir…) — signal de SEO local explicite.
@@ -199,6 +198,7 @@ export function localBusinessJsonLd(
       "أنظمة الحجز والمواعيد",
       "تحسين محركات البحث SEO",
       "تحسين الظهور في الذكاء الاصطناعي GEO",
+      "International Web Design",
       "Web Design Tripoli Libya",
       "E-Commerce Development",
       "Next.js Web Development",
@@ -273,7 +273,7 @@ export function faqJsonLd(faqs: ReadonlyArray<Faq>) {
   return {
     "@context": "https://schema.org",
     "@type": "FAQPage",
-    inLanguage: "ar-LY",
+    inLanguage: "en",
     mainEntity: faqs.map((f) => ({
       "@type": "Question",
       name: f.qAr,
@@ -347,7 +347,7 @@ export function howToJsonLd(
     name: "كيف نصمم ونطلق موقعك الاحترافي في 7 إلى 14 يوماً — How Nukhba builds your website",
     description:
       "5 خطوات واضحة من جلسة الاكتشاف والتصميم الحي إلى الإطلاق والتدريب.",
-    inLanguage: ["ar-LY", "en"],
+    inLanguage: ["en", "ar"],
     totalTime: "P14D",
     step: steps.map((s, idx) => ({
       "@type": "HowToStep",
@@ -405,7 +405,7 @@ export function webPageJsonLd(
     url,
     name: opts.name,
     description: metaDescription(opts.description, 300),
-    inLanguage: ["ar-LY", "en"],
+    inLanguage: ["en", "ar"],
     isPartOf: { "@id": absoluteUrl(config, WEBSITE_ID) },
     ...(opts.about ? { about: { "@type": "Thing", name: opts.about } } : {}),
     primaryImageOfPage: {
@@ -427,11 +427,7 @@ export function webPageJsonLd(
 
 /** Schéma d'une réalisation du portfolio (page /demos/[slug]). */
 export function demoJsonLd(config: SiteConfig, demo: Demo) {
-  const normalizedPlans = config.pricing.plans.map((p) => ({
-    ...p,
-    price: typeof p.price === "number" ? p.price : 0,
-  }));
-  const cls = resolveDemoClassification(demo, normalizedPlans);
+  const cls = resolveDemoClassification(demo, config.pricing.plans);
   const canonicalUrl = absoluteUrl(config, `/demos/${demo.slug}`);
   const hasLivePreview =
     Boolean(demo.previewUrl) && /^https?:\/\//i.test(demo.previewUrl.trim());
@@ -466,7 +462,7 @@ export function demoJsonLd(config: SiteConfig, demo: Demo) {
         }
       : {}),
     url: canonicalUrl,
-    inLanguage: ["ar-LY", "en"],
+    inLanguage: ["en", "ar"],
     ...(capturedIso
       ? { datePublished: capturedIso, dateModified: capturedIso }
       : {}),
@@ -481,7 +477,7 @@ export function demoJsonLd(config: SiteConfig, demo: Demo) {
     },
     audience: {
       "@type": "BusinessAudience",
-      name: `${demo.sectorEn} businesses in Tripoli, Libya`,
+      name: `${demo.sectorEn} businesses worldwide`,
     },
     ...(hasLivePreview ? { workExample: demo.previewUrl } : {}),
     ...(cls && cls.totalPriceUsd != null
@@ -503,6 +499,7 @@ export function demoJsonLd(config: SiteConfig, demo: Demo) {
       ...(demo.features ?? []),
       ...(demo.featuresEn ?? []),
       "تصميم مواقع",
+      "web design",
       "web design Tripoli",
     ],
   };
@@ -516,7 +513,7 @@ export function demoJsonLd(config: SiteConfig, demo: Demo) {
  * description du projet. La description est toujours tronquée pour rester
  * dans la zone d'affichage Google.
  */
-export function demoSeoMeta(demo: Demo, locale: "ar" | "en" = "ar"): { title: string; description: string } {
+export function demoSeoMeta(demo: Demo, locale: "ar" | "en" = "en"): { title: string; description: string } {
   if (locale === "en") {
     return {
       title: demo.metaTitleEn?.trim() || `${demo.titleEn} — live website showcase by Nukhba`,
@@ -548,7 +545,7 @@ export interface PageSeoOptions {
 
 /**
  * Construit les métadonnées Next.js complètes d'une page : canonical,
- * Open Graph (ar_LY + alternate en_US), Twitter Card et robots.
+ * Open Graph (en_US + alternate ar), Twitter Card et robots.
  */
 export function pageMetadata(config: SiteConfig, opts: PageSeoOptions): Metadata {
   const canonical = absoluteUrl(config, opts.path);
@@ -586,8 +583,8 @@ export function pageMetadata(config: SiteConfig, opts: PageSeoOptions): Metadata
       description: opts.description,
       url: canonical,
       siteName: `${config.nameAr} ${config.name}`,
-      locale: "ar_LY",
-      alternateLocale: ["en_US"],
+      locale: "en_US",
+      alternateLocale: ["ar"],
       type: "website",
       ...(ogImage
         ? { images: [{ url: ogImage, width: 1376, height: 768, alt: opts.title }] }

@@ -1,13 +1,13 @@
 // Petit moteur de conversation pour l'assistant du site (sans IA externe,
 // sans clé API). Chaque nœud = une question proposée + sa réponse + les
 // questions de suivi pertinentes. Les réponses sont construites à partir
-// des vraies données du site (formules tarifaires, coupon en cours) pour
-// rester exactes si un prix change depuis l'administration.
+// des vraies données du site (formules tarifaires en USD) pour rester
+// exactes si un prix change depuis l'administration.
 
 import type { PricingPlan } from "@/lib/config";
-import { formatLyd, lydLabel, resolvePlanPriceBreakdown } from "@/lib/classification";
+import { resolvePlanPriceBreakdown } from "@/lib/classification";
 import { formatMainPrice } from "@/lib/installments";
-import { CURRENT_PROMO, discountedAmount, promoActive } from "@/lib/promotion";
+import { CRYPTO_GUIDE_PATH } from "@/lib/blog";
 
 export interface ChatNode {
   id: string;
@@ -39,7 +39,7 @@ export const START_NODES = [
   "prices",
   "delivery",
   "custom",
-  "promo",
+  "payment",
 ] as const;
 
 /** Nœuds de secours. */
@@ -52,32 +52,19 @@ function price(amount: number, ctx: ChatContext) {
   );
 }
 
-function lyd(amount: number, ctx: ChatContext) {
-  return `${formatLyd(amount)} ${lydLabel(ctx.locale)}`;
-}
-
 function planLine(plan: PricingPlan, ctx: ChatContext): string {
   const ar = ctx.locale === "ar";
   const breakdown = resolvePlanPriceBreakdown(plan);
   const model = breakdown.modelPriceUsd ?? 0;
   const customization = breakdown.customizationUsd;
-  const line = breakdown.totalPriceUsd == null
-    ? `• ${ar ? plan.name : plan.nameEn} — ${ar ? "النموذج" : "model"} ${price(model, ctx)} (≈ ${lyd(breakdown.modelPriceLyd, ctx)}) + ${ar ? "تخصيص بعرض سعر" : "customization quoted"}`
-    : `• ${ar ? plan.name : plan.nameEn} — ${ar ? "النموذج" : "model"} ${price(model, ctx)} + ${ar ? "التخصيص" : "customization"}${breakdown.customizationPercent == null ? "" : ` (${breakdown.customizationPercent}${ar ? "٪" : "%"})`} ${price(customization ?? 0, ctx)} = ${price(breakdown.totalPriceUsd, ctx)} (≈ ${lyd(breakdown.totalPriceLyd ?? 0, ctx)})`;
-  const promo = breakdown.totalPriceUsd != null && promoActive(CURRENT_PROMO)
-    ? ` → ${price(discountedAmount(breakdown.totalPriceUsd, CURRENT_PROMO.percent), ctx)} ${ar ? "بعد الكوبون" : "with coupon"}`
-    : "";
-  return line + promo;
+  return breakdown.totalPriceUsd == null
+    ? `• ${ar ? plan.name : plan.nameEn} — ${ar ? "النموذج" : "model"} ${price(model, ctx)} + ${ar ? "تخصيص بعرض سعر" : "customization quoted"}`
+    : `• ${ar ? plan.name : plan.nameEn} — ${ar ? "النموذج" : "model"} ${price(model, ctx)} + ${ar ? "التخصيص" : "customization"}${breakdown.customizationPercent == null ? "" : ` (${breakdown.customizationPercent}${ar ? "٪" : "%"})`} ${price(customization ?? 0, ctx)} = ${price(breakdown.totalPriceUsd, ctx)}`;
 }
 
 export function buildChatNodes(ctx: ChatContext): Record<string, ChatNode> {
   const ar = ctx.locale === "ar";
   const plans = ctx.plans;
-  const promo = CURRENT_PROMO;
-  const hasPromo = promoActive(promo);
-  const firstPlanBreakdown = plans[0] ? resolvePlanPriceBreakdown(plans[0]) : null;
-  const promoBaseUsd =
-    firstPlanBreakdown?.totalPriceUsd ?? firstPlanBreakdown?.modelPriceUsd ?? 300;
 
   const nodes: ChatNode[] = [
     {
@@ -85,15 +72,10 @@ export function buildChatNodes(ctx: ChatContext): Record<string, ChatNode> {
       label: ar ? "كم سعر الموقع؟" : "How much is a website?",
       answer:
         (ar
-          ? "أسعارنا 3 فئات واضحة:\n"
-          : "We have 3 clear categories:\n") +
-        plans.map((p) => planLine(p, ctx)).join("\n") +
-        (hasPromo
-          ? ar
-            ? `\n\nعرض حالي: خصم ${promo.percent}% بكوبون الشراء ${promo.code}.`
-            : `\n\nCurrent offer: ${promo.percent}% off with purchase coupon ${promo.code}.`
-          : ""),
-      followUps: ["plans-diff", "promo", "reservation", "human"],
+          ? "أسعارنا 3 فئات واضحة، كلها بالدولار (1 دولار = 1 USDT عند الدفع):\n"
+          : "We have 3 clear categories, all in USD (1 USD = 1 USDT at checkout):\n") +
+        plans.map((p) => planLine(p, ctx)).join("\n"),
+      followUps: ["plans-diff", "payment", "reservation", "human"],
       keywords: [
         "prix",
         "سعر",
@@ -149,7 +131,7 @@ export function buildChatNodes(ctx: ChatContext): Record<string, ChatNode> {
       answer: ar
         ? "السعر يتكوّن من جزأين: سعر نموذج الموقع حسب الفئة، ثم تكلفة التخصيص حسب الهوية والمحتوى المطلوب. نعرض الإجمالي النهائي أو نرسل عرضاً مكتوباً للموافقة قبل أي دفعة نهائية. إذا كان سعر التخصيص مضبوطاً للباقة، يمكنك دفع الإجمالي مباشرة من صفحة الأسعار؛ وإلا اطلب عرض السعر عبر واتساب.\n\n" + plans.map((plan) => planLine(plan, ctx)).join("\n")
         : "The price has two parts: the website model price for the chosen category, then a separate customization fee based on your brand and requested content. We show the final total or send a written quote for approval before any final payment. If the fee is configured for a plan, you can pay its total online; otherwise request a quote on WhatsApp.\n\n" + plans.map((plan) => planLine(plan, ctx)).join("\n"),
-      followUps: ["prices", "reservation", "promo", "human"],
+      followUps: ["prices", "reservation", "payment", "human"],
       keywords: [
         "تخصيص",
         "تكلفة",
@@ -161,26 +143,30 @@ export function buildChatNodes(ctx: ChatContext): Record<string, ChatNode> {
       ],
     },
     {
-      id: "promo",
-      label: ar ? "كيف أستفيد من خصم 50%؟" : "How do I get 50% off?",
-      answer: hasPromo
-        ? ar
-          ? `الخصم ${promo.percent}% فعّال الآن على كل المواقع:\n1. اختر موقعًا أو باقة.\n2. في نافذة الدفع أدخل الكوبون ${promo.code} واضغط «تطبيق».\n3. السعر يُحدَّث فورًا (مثال: ${price(promoBaseUsd, ctx)} ← ${price(discountedAmount(promoBaseUsd, promo.percent), ctx)}.\n\nالكوبون يُطبَّق مرة واحدة لكل طلب.`
-          : `The ${promo.percent}% discount is live on every website:\n1. Pick a site or a plan.\n2. In the checkout window, enter coupon ${promo.code} and press “Apply”.\n3. The price updates instantly (e.g. ${price(promoBaseUsd, ctx)} → ${price(discountedAmount(promoBaseUsd, promo.percent), ctx)}).\n\nThe coupon applies once per order.`
-        : ar
-          ? "لا يوجد خصم فعّال حاليًا — تابعنا قريبًا."
-          : "No active discount right now — stay tuned.",
-      followUps: ["prices", "payment", "reservation", "human"],
-      keywords: ["خصم", "كوبون", "coupon", "promo", "remise", "solde", "50"],
-    },
-    {
       id: "payment",
       label: ar ? "كيف يتم الدفع؟" : "How do I pay?",
       answer: ar
-        ? "الدفع بالعملات الرقمية عبر NOWPayments (أكثر من 300 عملة):\n• دفعة واحدة، أو\n• 2–3 أقساط.\n\nالعربون 1$ فقط لحجز مكانك، ويُخصم من السعر النهائي. لا نخزّن بيانات محفظتك."
-        : "Payment is crypto via NOWPayments (300+ coins):\n• one payment, or\n• 2–3 installments.\n\nThe priority deposit is only $1 and it is deducted from the final price. We never store your wallet data.",
-      followUps: ["promo", "reservation", "prices", "human"],
-      keywords: ["دفع", "pay", "paiement", "crypto", "عملات", "أقساط"],
+        ? "كل أسعارنا بالدولار الأمريكي، وتدفع نفس المبلغ بـ USDT (1 دولار = 1 USDT) أو بأكثر من 300 عملة عبر NOWPayments:\n• دفعة واحدة، أو\n• 2–3 أقساط.\n\nالعربون 1$ فقط لحجز مكانك، ويُخصم من السعر النهائي. لا نخزّن بيانات محفظتك.\n\nأول مرة؟ افتح دليل الدفع المصوّر خطوة بخطوة من الزر بالأسفل."
+        : "All our prices are in US dollars, and you pay the same amount in USDT (1 USD = 1 USDT) or 300+ coins via NOWPayments:\n• one payment, or\n• 2–3 installments.\n\nThe priority deposit is only $1 and it is deducted from the final price. We never store your wallet data.\n\nFirst time? Open the step-by-step photo guide from the button below.",
+      followUps: ["crypto-guide", "reservation", "prices", "human"],
+      keywords: ["دفع", "pay", "paiement", "crypto", "عملات", "أقساط", "usdt", "tether"],
+      action: {
+        label: ar ? "دليل الدفع بالصور" : "Photo payment guide",
+        href: CRYPTO_GUIDE_PATH,
+      },
+    },
+    {
+      id: "crypto-guide",
+      label: ar ? "كيف أدفع بـ USDT خطوة بخطوة؟" : "How do I pay with USDT, step by step?",
+      answer: ar
+        ? "باختصار:\n1. اختر موقعاً أو باقة واضغط «ادفع بالكريبتو».\n2. في صفحة الفاتورة اختر USDT وانسخ العنوان والمبلغ الدقيق (أو امسح QR).\n3. من محفظتك أرسل نفس المبلغ على نفس الشبكة المكتوبة في الفاتورة (TRC20 غالباً الأرخص).\n4. انتظر تأكيد الشبكة (عادة أقل من 10 دقائق) — يصلك إيصال بالبريد ونبدأ العمل.\n\nالدليل الكامل بالصور والأخطاء التي يجب تجنبها في الزر بالأسفل."
+        : "In short:\n1. Pick a site or plan and press “Pay with crypto”.\n2. On the invoice page choose USDT and copy the exact address and amount (or scan the QR).\n3. From your wallet send that exact amount on the same network shown on the invoice (TRC20 is usually cheapest).\n4. Wait for network confirmation (usually under 10 minutes) — you get an email receipt and we start.\n\nThe full photo guide, including mistakes to avoid, is in the button below.",
+      followUps: ["payment", "prices", "reservation", "human"],
+      keywords: ["usdt", "tether", "محفظة", "wallet", "trc20", "شبكة", "network", "guide", "دليل", "خطوة"],
+      action: {
+        label: ar ? "افتح دليل USDT المصوّر" : "Open the USDT photo guide",
+        href: CRYPTO_GUIDE_PATH,
+      },
     },
     {
       id: "reservation",
@@ -225,7 +211,7 @@ export function buildChatNodes(ctx: ChatContext): Record<string, ChatNode> {
       answer: ar
         ? "لم أجد إجابة دقيقة لسؤالك. اختر أحد المواضيع التالية، أو راسلنا على واتساب وسنجيبك شخصيًا."
         : "I don't have an exact answer for that. Pick one of the topics below, or message us on WhatsApp and we'll answer personally.",
-      followUps: ["prices", "delivery", "custom", "promo", "human"],
+      followUps: ["prices", "delivery", "custom", "payment", "human"],
       keywords: [],
       action: {
         label: ar ? "فتح واتساب" : "Open WhatsApp",

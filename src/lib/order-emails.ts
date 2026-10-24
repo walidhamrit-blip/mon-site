@@ -99,7 +99,7 @@ export async function sendPaymentConfirmedEmail(
     `Type : ${kindLabel}${isReservation ? " — acompte prioritaire" : ""}`,
     ...(order.demoSlug ? [`Site : /demos/${order.demoSlug}`] : []),
     `Boutique : ${order.planName}`,
-    `Montant : ${order.amountLyd} LYD / ${order.amountUsd} ${order.currency.toUpperCase()}`,
+    `Montant : ${order.amountUsd} ${order.currency.toUpperCase()} (= USDT)`,
     ...(trancheInfo ? [`Tranche : ${trancheInfo}`] : []),
     `Client : ${order.clientName || "—"} <${order.email || "—"}>`,
     `Téléphone : ${order.phone || "—"}`,
@@ -129,7 +129,7 @@ export async function sendPaymentConfirmedEmail(
             : ""
         }
         <tr><td style="padding:8px 12px;background:#f6f3ec;font-weight:700">Boutique</td><td style="padding:8px 12px;border-bottom:1px solid #eee">${escapeHtml(order.planName)}</td></tr>
-        <tr><td style="padding:8px 12px;background:#f6f3ec;font-weight:700">Montant</td><td style="padding:8px 12px;border-bottom:1px solid #eee"><strong>${escapeHtml(order.amountLyd)} LYD</strong> / ${escapeHtml(order.amountUsd)} ${escapeHtml(order.currency.toUpperCase())}</td></tr>
+        <tr><td style="padding:8px 12px;background:#f6f3ec;font-weight:700">Montant</td><td style="padding:8px 12px;border-bottom:1px solid #eee"><strong>${escapeHtml(order.amountUsd)} ${escapeHtml(order.currency.toUpperCase())}</strong> (= USDT)</td></tr>
         ${trancheInfo ? `<tr><td style="padding:8px 12px;background:#f6f3ec;font-weight:700">Tranche</td><td style="padding:8px 12px;border-bottom:1px solid #eee">${escapeHtml(trancheInfo)}</td></tr>` : ""}
         <tr><td style="padding:8px 12px;background:#f6f3ec;font-weight:700">Client</td><td style="padding:8px 12px;border-bottom:1px solid #eee">${escapeHtml(order.clientName || "—")} &lt;${escapeHtml(order.email || "—")}&gt;</td></tr>
         <tr><td style="padding:8px 12px;background:#f6f3ec;font-weight:700">Téléphone</td><td style="padding:8px 12px;border-bottom:1px solid #eee">${escapeHtml(order.phone || "—")}</td></tr>

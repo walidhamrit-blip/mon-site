@@ -62,7 +62,7 @@ export function OrdersTable({ rows }: { rows: OrderRow[] }) {
                     )}
                   </div>
                   <div className="text-xs text-stone-500 truncate mt-0.5">
-                    {order.ref} · {order.amountUsd} $ · {order.amountLyd} LYD
+                    {order.ref} · {order.amountUsd} $ (= USDT)
                     {order.demoSlug ? ` · ${order.demoSlug}` : ""}
                     {order.payAmount && order.payCurrency
                       ? ` · ${order.payAmount} ${order.payCurrency.toUpperCase()}`
@@ -100,7 +100,6 @@ export function OrdersTable({ rows }: { rows: OrderRow[] }) {
                   {order.groupRef && (
                     <Detail label="Dossier (tranches)" value={order.groupRef} />
                   )}
-                  <Detail label="Montant" value={`${order.amountLyd} LYD`} />
                   <Detail
                     label="Montant facturé"
                     value={`${order.amountUsd} ${order.currency}`}

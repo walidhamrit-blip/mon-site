@@ -11,7 +11,6 @@ import {
   type ServiceLike,
 } from "@/lib/services";
 import { JsonLd } from "@/components/json-ld";
-import { formatLyd, lydLabel } from "@/lib/classification";
 import { formatMainPrice } from "@/lib/installments";
 
 /** Prix « à partir de » d'un service, lu dans la configuration vivante. */
@@ -51,7 +50,6 @@ export async function generateMetadata(): Promise<Metadata> {
 export default async function ServicesPage() {
   const { config } = await getSiteDataCached();
   const services: ReadonlyArray<ServiceLike> = config.standaloneServices;
-  const lyd = lydLabel("ar");
   const price = (id: string, fallback: number) =>
     formatMainPrice(startingPrice(services, id, fallback), "$");
   const lowestPrice = services.reduce(
@@ -117,12 +115,12 @@ export default async function ServicesPage() {
             >
               <p className="text-sm leading-7 opacity-80">
                 <strong>باختصار:</strong> نخبة تقدم {services.length} خدمات رقمية جاهزة
-                للتنفيذ في طرابلس — إعادة تصميم موقع ({price("restyle", 49)})،
+                للتنفيذ عن بُعد حول العالم — إعادة تصميم موقع ({price("restyle", 49)})،
                 إضافة قسم جديد ({price("add-section", 19)})، عروض تقديمية (
                 {price("slides", 29)})، هوية بصرية ({price("branding", 39)})،
                 صفحة هبوط ({price("landing", 59)})، وإصلاح وتحسين (
-                {price("fix-optimize", 15)}). الأسعار بالدولار مع مقابل إرشادي بالدينار
-                الليبي، والدفع كامل أو على دفعتين/ثلاث.
+                {price("fix-optimize", 15)}). كل الأسعار بالدولار فقط وتُدفع بنفس
+                المبلغ بـ USDT، كاملة أو على دفعتين/ثلاث.
               </p>
             </div>
 
@@ -167,7 +165,7 @@ export default async function ServicesPage() {
                   كل الخدمات — {services.length} مهمة جاهزة للتنفيذ
                 </h2>
                 <p className="mt-1 text-sm opacity-60">
-                  أسعار بالدولار ومقابل إرشادي بالدينار الليبي · USD pricing with indicative LYD
+                  أسعار بالدولار فقط — 1 دولار = 1 USDT · USD pricing only — 1 USD = 1 USDT
                 </p>
               </div>
             </div>
@@ -222,7 +220,7 @@ export default async function ServicesPage() {
                           {formatMainPrice(service.priceFromUsd, "$")}
                         </span>
                         <span className="text-xs opacity-50" dir="ltr">
-                          ≈ {formatLyd(service.priceFromLyd)} {lyd}
+                          USD · = USDT
                         </span>
                       </div>
                       <p className="mt-1 text-[11px] opacity-50">

@@ -14,7 +14,6 @@ import {
 import { formatMainPrice } from "@/lib/installments";
 import { ModelPriceBreakdown } from "@/components/model-price-breakdown";
 import { ModelPurchaseButton } from "@/components/model-purchase-button";
-import { PromoPriceNote } from "@/components/promo-price";
 import { ProjectPreview } from "@/components/project-preview";
 import {
   ArrowUpRight,
@@ -37,7 +36,6 @@ interface Group {
   name: string;
   nameEn: string;
   priceUsd: number | null;
-  priceLyd: number;
   breakdown: PlanPriceBreakdown;
   entries: Entry[];
 }
@@ -82,7 +80,6 @@ export function DemosClient() {
           name: plan.name,
           nameEn: plan.nameEn,
           priceUsd: breakdown.modelPriceUsd,
-          priceLyd: breakdown.modelPriceLyd,
           breakdown,
           entries: byTier.get(t) ?? [],
         };
@@ -235,15 +232,8 @@ export function DemosClient() {
                   compact
                 />
                 <p className="mt-1 text-[10px] opacity-50">
-                  {ar ? "الدينار الليبي مقابل إرشادي" : "LYD equivalent is indicative"}
+                  {ar ? "بالدولار — 1 دولار = 1 USDT" : "In USD — 1 USD = 1 USDT"}
                 </p>
-                {/* Remise du coupon : calculée sur le total affiché ci-dessus,
-                    avec la même fonction que le serveur de paiement. */}
-                <PromoPriceNote
-                  amountUsd={group.breakdown.totalPriceUsd}
-                  currency={ar ? config.pricing.currency : config.pricing.currencyEn}
-                  className="mt-1.5"
-                />
               </div>
             </div>
 
@@ -297,11 +287,6 @@ export function DemosClient() {
                             breakdown={classification}
                             currency={ar ? config.pricing.currency : config.pricing.currencyEn}
                             compact
-                          />
-                          <PromoPriceNote
-                            amountUsd={classification.totalPriceUsd}
-                            currency={ar ? config.pricing.currency : config.pricing.currencyEn}
-                            className="mt-1.5"
                           />
                         </div>
                       ) : (

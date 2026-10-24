@@ -14,13 +14,33 @@ import { useI18n } from "@/lib/i18n";
 
 const SLIDE_DURATION = 8000;
 
+/** Bannière principale : 5 sites maximum, les plus nets d'abord. */
+const HERO_SHOWCASE_LIMIT = 5;
+/** Ordre éditorial des 5 vitrines (captures locales d'abord, secteurs variés). */
+const HERO_SHOWCASE_SLUGS = [
+  "al-manhaj-company",
+  "hala-perfumes",
+  "myphone-tripoli",
+  "maison-tripoli-meubles",
+  "tripo-teck-outillage",
+] as const;
+
 /** Synchronized lightweight previews. Live websites only open on request. */
 export function HeroShowcase() {
   const { demos } = useSiteContent();
   const config = useSiteConfig();
   const { locale } = useI18n();
   const ar = locale === "ar";
-  const projects = demos.filter((demo) => isRealUrl(demo.previewUrl));
+  const liveDemos = demos.filter((demo) => isRealUrl(demo.previewUrl));
+  // 5 photos maximum dans la bannière : sélection éditoriale d'abord,
+  // complétée par les autres sites en ligne si un slug a disparu de l'admin.
+  const curated = HERO_SHOWCASE_SLUGS.map((slug) =>
+    liveDemos.find((demo) => demo.slug === slug),
+  ).filter((demo): demo is NonNullable<typeof demo> => Boolean(demo));
+  const fill = liveDemos.filter(
+    (demo) => !curated.some((picked) => picked.slug === demo.slug),
+  );
+  const projects = [...curated, ...fill].slice(0, HERO_SHOWCASE_LIMIT);
   const [index, setIndex] = useState(0);
   const [paused, setPaused] = useState(false);
   const [hovered, setHovered] = useState(false);
@@ -118,7 +138,7 @@ export function HeroShowcase() {
                 transition={{ duration: 0.65, ease: "easeOut" }}
                 className="absolute inset-0 pointer-events-none"
               >
-                <ProjectPreview demo={project} mode="desktop" priority={currentIndex === 0} label />
+                <ProjectPreview demo={project} mode="desktop" priority={currentIndex === 0} label sizes="(max-width: 1024px) 94vw, 920px" />
               </motion.div>
             </div>
           </div>
@@ -138,7 +158,7 @@ export function HeroShowcase() {
                 transition={{ duration: 0.65, delay: 0.1 }}
                 className="absolute inset-0 pointer-events-none"
               >
-                <ProjectPreview demo={project} mode="mobile" priority={currentIndex === 0} label />
+                <ProjectPreview demo={project} mode="mobile" priority={currentIndex === 0} label sizes="(max-width: 640px) 34vw, 270px" />
               </motion.div>
             </div>
             <div className="flex h-3 items-center justify-center bg-white sm:h-4">

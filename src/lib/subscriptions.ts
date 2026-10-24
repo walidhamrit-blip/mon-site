@@ -421,7 +421,8 @@ async function applyPaidIpnToSubscription(
         kind: "subscription",
         planId: plan.id,
         planName: plan.title,
-        amountLyd: "",
+        // Colonne historique NOT NULL : montant USD (devise unique).
+        amountLyd: plan.priceUsd,
         amountUsd: plan.priceUsd,
         currency: SUBSCRIPTION_CURRENCY,
         installments: 1,
