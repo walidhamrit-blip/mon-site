@@ -1,15 +1,9 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import Image from "next/image";
 import { AnimatePresence, motion } from "framer-motion";
-import {
-  ArrowRight,
-  MessageSquare,
-  RotateCcw,
-  Send,
-  Sparkles,
-  X,
-} from "lucide-react";
+import { ArrowRight, RotateCcw, Send, X } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import { useSiteConfig } from "@/components/site-provider";
 import { whatsappLink } from "@/lib/utils";
@@ -25,6 +19,38 @@ interface Message {
   role: "bot" | "user";
   text: string;
   action?: ChatNode["action"];
+}
+
+/**
+ * Avatar Einstein du assistant. L'image est harmonisée avec le thème
+ * actif : un calque couleur (`mix-blend-mode: color`) teinté par
+ * `--accent` se superpose au portrait, et l'anneau suit la palette
+ * choisie (or, bleu, émeraude…). Aucun code couleur en dur.
+ */
+function EinsteinAvatar({
+  className = "",
+  imgClassName = "",
+}: {
+  className?: string;
+  imgClassName?: string;
+}) {
+  return (
+    <span
+      aria-hidden="true"
+      className={`isolate relative block overflow-hidden rounded-full bg-[var(--secondary)] ${className}`}
+    >
+      <Image
+        src="/chatbot/einstein-96.webp"
+        alt=""
+        width={96}
+        height={96}
+        loading="eager"
+        decoding="async"
+        className={`h-full w-full object-cover ${imgClassName}`}
+      />
+      <span className="chatbot-tint pointer-events-none absolute inset-0" />
+    </span>
+  );
 }
 
 /**
@@ -58,6 +84,10 @@ function ChatShell() {
     },
   ]);
   const [suggestions, setSuggestions] = useState<string[]>([...START_NODES]);
+  const [bubble, setBubble] = useState(false);
+  // Le visiteur a-t-il déjà ouvert l'assistant ? La bulle d'accueil
+  // n'a plus lieu d'être après une première ouverture.
+  const openedOnce = useRef(false);
   const listRef = useRef<HTMLDivElement | null>(null);
   const inputRef = useRef<HTMLInputElement | null>(null);
   const nextKey = useRef(1);
@@ -95,6 +125,26 @@ function ChatShell() {
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
+  }, [open]);
+
+  // Petite bulle d'accueil : elle apparaît peu après l'arrivée sur le
+  // site puis repasse de temps en temps, pour signaler le assistant.
+  // Dès que le visiteur ouvre la conversation une première fois, elle
+  // ne revient plus (les minuteries sont aussi arrêtées à l'ouverture).
+  useEffect(() => {
+    if (open || openedOnce.current) return;
+    let hide: number | undefined;
+    const show = () => {
+      setBubble(true);
+      hide = window.setTimeout(() => setBubble(false), 9000);
+    };
+    const first = window.setTimeout(show, 1600);
+    const loop = window.setInterval(show, 26000);
+    return () => {
+      window.clearTimeout(first);
+      if (hide) window.clearTimeout(hide);
+      window.clearInterval(loop);
+    };
   }, [open]);
 
   const answer = (nodeId: string, userLabel?: string) => {
@@ -164,9 +214,7 @@ function ChatShell() {
           >
             {/* En-tête */}
             <header className="flex items-center gap-2.5 border-b border-[var(--border)] bg-[var(--primary)] px-3 py-2.5 text-[var(--primary-foreground)]">
-              <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-[var(--accent)] text-[var(--accent-foreground)]">
-                <Sparkles className="h-4 w-4" />
-              </span>
+              <EinsteinAvatar className="h-9 w-9 shrink-0 ring-2 ring-[var(--accent)]" />
               <div className="min-w-0 flex-1 leading-tight">
                 <div className="text-[13px] font-black">
                   {ar ? "مساعد نخبة" : "Nukhba assistant"}
@@ -203,21 +251,24 @@ function ChatShell() {
             >
               {messages.map((message) =>
                 message.role === "bot" ? (
-                  <div key={message.key} className="space-y-1.5">
-                    <div className="max-w-[92%] whitespace-pre-line rounded-2xl rounded-ss-sm bg-[var(--secondary)] px-3 py-2 text-[12.5px] leading-5">
-                      {message.text}
+                  <div key={message.key} className="flex items-end gap-1.5">
+                    <EinsteinAvatar className="h-6 w-6 shrink-0" />
+                    <div className="min-w-0 space-y-1.5">
+                      <div className="max-w-[92%] whitespace-pre-line rounded-2xl rounded-ss-sm bg-[var(--secondary)] px-3 py-2 text-[12.5px] leading-5">
+                        {message.text}
+                      </div>
+                      {message.action && (
+                        <a
+                          href={message.action.href}
+                          target={message.action.external ? "_blank" : undefined}
+                          rel={message.action.external ? "noopener noreferrer" : undefined}
+                          className="inline-flex items-center gap-1 rounded-full bg-[var(--accent)] px-3 py-1.5 text-[11.5px] font-black text-[var(--accent-foreground)] hover:bg-[var(--accent-hover)] transition-colors"
+                        >
+                          {message.action.label}
+                          <ArrowRight className="h-3 w-3 rtl:rotate-180" />
+                        </a>
+                      )}
                     </div>
-                    {message.action && (
-                      <a
-                        href={message.action.href}
-                        target={message.action.external ? "_blank" : undefined}
-                        rel={message.action.external ? "noopener noreferrer" : undefined}
-                        className="inline-flex items-center gap-1 rounded-full bg-[var(--accent)] px-3 py-1.5 text-[11.5px] font-black text-[var(--accent-foreground)] hover:bg-[var(--accent-hover)] transition-colors"
-                      >
-                        {message.action.label}
-                        <ArrowRight className="h-3 w-3 rtl:rotate-180" />
-                      </a>
-                    )}
                   </div>
                 ) : (
                   <div key={message.key} className="flex justify-end">
@@ -229,14 +280,17 @@ function ChatShell() {
               )}
 
               {typing && (
-                <div className="flex w-14 items-center justify-center gap-1 rounded-2xl bg-[var(--secondary)] px-3 py-2.5">
-                  {[0, 150, 300].map((delay) => (
-                    <span
-                      key={delay}
-                      className="h-1.5 w-1.5 animate-bounce rounded-full bg-[var(--muted-foreground)]"
-                      style={{ animationDelay: `${delay}ms` }}
-                    />
-                  ))}
+                <div className="flex items-end gap-1.5">
+                  <EinsteinAvatar className="h-6 w-6 shrink-0" />
+                  <div className="flex w-14 items-center justify-center gap-1 rounded-2xl bg-[var(--secondary)] px-3 py-2.5">
+                    {[0, 150, 300].map((delay) => (
+                      <span
+                        key={delay}
+                        className="h-1.5 w-1.5 animate-bounce rounded-full bg-[var(--muted-foreground)]"
+                        style={{ animationDelay: `${delay}ms` }}
+                      />
+                    ))}
+                  </div>
                 </div>
               )}
             </div>
@@ -287,28 +341,65 @@ function ChatShell() {
         )}
       </AnimatePresence>
 
-      {/* Lanceur */}
-      <button
-        type="button"
-        onClick={() => {
-          setOpen((v) => !v);
-          window.setTimeout(() => inputRef.current?.focus(), 120);
-        }}
-        aria-expanded={open}
-        aria-label={ar ? "افتح مساعد نخبة" : "Open the Nukhba assistant"}
-        className="group relative grid h-12 w-12 place-items-center rounded-full bg-[var(--primary)] text-[var(--primary-foreground)] shadow-[0_8px_24px_rgba(0,0,0,0.25)] ring-2 ring-[var(--accent)]/60 transition-transform hover:scale-105 cursor-pointer"
-      >
-        {open ? (
-          <X className="h-5 w-5" />
-        ) : (
-          <MessageSquare className="h-5 w-5" />
-        )}
+      {/* Lanceur — avatar Einstein flottant : lévitation douce, halo
+          pulsant aux couleurs du thème, dandinement au survol et petite
+          bulle d'accueil périodique. */}
+      <div className={`relative ${open ? "" : "chatbot-float"}`}>
         {!open && (
-          <span className="absolute -top-1 -end-1 grid h-4 w-4 place-items-center rounded-full bg-[var(--accent)] text-[9px] font-black text-[var(--accent-foreground)]">
-            ?
-          </span>
+          <span
+            aria-hidden="true"
+            className="chatbot-halo pointer-events-none absolute inset-0 rounded-full"
+          />
         )}
-      </button>
+
+        {/* Bulle d'accueil */}
+        <AnimatePresence>
+          {bubble && !open && (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.85 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.9 }}
+              transition={{ duration: 0.22, ease: "easeOut" }}
+              className="pointer-events-none absolute bottom-2.5 end-[calc(100%+12px)] whitespace-nowrap rounded-full border border-[var(--border)] bg-[var(--popover)] px-3 py-1.5 text-[11.5px] font-bold text-[var(--popover-foreground)] shadow-[0_10px_25px_rgba(0,0,0,0.18)]"
+            >
+              {ar ? "مرحبًا 👋 عندك سؤال؟" : "Hi 👋 Got a question?"}
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        <button
+          type="button"
+          onClick={() => {
+            setOpen((v) => {
+              if (!v) openedOnce.current = true;
+              return !v;
+            });
+            setBubble(false);
+            window.setTimeout(() => inputRef.current?.focus(), 120);
+          }}
+          aria-expanded={open}
+          aria-label={ar ? "افتح مساعد نخبة" : "Open the Nukhba assistant"}
+          className="group relative block h-14 w-14 cursor-pointer overflow-hidden rounded-full bg-[var(--secondary)] shadow-[0_8px_24px_rgba(0,0,0,0.25)] ring-2 ring-[var(--accent)] transition-transform hover:scale-105 focus-visible:outline-2 focus-visible:outline-[var(--ring)]"
+        >
+          <EinsteinAvatar
+            className="chatbot-wiggle h-full w-full"
+            imgClassName="transition-transform duration-200 group-hover:scale-110"
+          />
+          {open && (
+            <span
+              aria-hidden="true"
+              className="absolute inset-0 bg-[var(--background)]/45"
+            />
+          )}
+          <span className="absolute -top-1 -end-1 grid h-5 w-5 place-items-center rounded-full bg-[var(--accent)] text-[var(--accent-foreground)] ring-2 ring-[var(--background)]">
+            {open ? (
+              <X className="h-3 w-3" />
+            ) : (
+              <span className="text-[10px] font-black">?</span>
+            )}
+          </span>
+        </button>
+      </div>
     </div>
   );
 }

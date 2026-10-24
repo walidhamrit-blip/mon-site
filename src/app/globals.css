@@ -375,6 +375,59 @@ body {
   margin-inline: auto;
 }
 
+/* ── Assistant flottant (chatbot) ─────────────────────────────────────
+   Le lanceur « Einstein » lévite doucement, un halo aux couleurs du
+   thème actif pulse autour de lui et un léger dandinement répond au
+   survol. Toutes les couleurs passent par les variables du thème
+   (--accent / --popover…) : le widget suit donc la palette choisie. */
+@keyframes chatbot-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-7px); }
+}
+.chatbot-float {
+  animation: chatbot-float 5.5s ease-in-out infinite;
+}
+
+@keyframes chatbot-halo {
+  0% { transform: scale(0.92); opacity: 0.55; }
+  70% { transform: scale(1.42); opacity: 0; }
+  100% { transform: scale(1.42); opacity: 0; }
+}
+.chatbot-halo {
+  background: color-mix(in srgb, var(--accent) 55%, transparent);
+  animation: chatbot-halo 2.8s ease-out infinite;
+}
+
+@keyframes chatbot-wiggle {
+  0%, 100% { transform: rotate(0deg); }
+  25% { transform: rotate(-5deg); }
+  60% { transform: rotate(4deg); }
+}
+.group:hover .chatbot-wiggle {
+  animation: chatbot-wiggle 0.6s ease-in-out;
+}
+
+/* Teinte de l'avatar : mélange l'image avec la couleur d'accent du
+   thème actif (mode « color » = teinte + saturation du thème, luminance
+   de l'image). L'opacité pilote la force de l'harmonisation. */
+.chatbot-tint {
+  background: var(--accent);
+  mix-blend-mode: color;
+  opacity: 0.3;
+}
+.dark .chatbot-tint {
+  opacity: 0.42;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chatbot-float,
+  .chatbot-halo,
+  .group:hover .chatbot-wiggle {
+    animation: none;
+  }
+  .chatbot-halo { opacity: 0.35; transform: scale(1.12); }
+}
+
 /* Progress bar of the home-page banner (identity studio section). */
 @keyframes banner-progress {
   from { width: 0%; }
