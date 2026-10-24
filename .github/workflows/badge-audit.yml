@@ -164,8 +164,14 @@ jobs:
       # Pull request plutôt que push direct : main peut être protégée, et un
       # changement de statut mérite une trace lisible dans l'historique.
       # L'action ne fait rien (sortie propre) si le fichier est inchangé.
+      # La PR de mise à jour est une *proposition* de mise à jour des
+      # statuts : le verdict de l'audit passe par le rapport publié et par
+      # l'issue « sites à corriger » (créée ci-dessous, quoi qu'il arrive).
+      # Son échec ne doit donc pas rendre l'audit entier rouge — il est
+      # signalé en avertissement, pas masqué.
       - name: Proposition de mise à jour du statut
         id: pr
+        continue-on-error: true
         uses: peter-evans/create-pull-request@v7
         with:
           branch: chore/badge-status
@@ -182,8 +188,16 @@ jobs:
 
             Extrait à transmettre aux clients concernés : ${{ env.SITE_URL }}/badge
 
+      # `always()` : ces deux étapes portent le résultat utile de l'audit.
+      # Sans lui, l'échec d'une étape précédente les fait sauter — et
+      # l'audit ne signalerait plus jamais les sites à corriger.
+      - name: Avertissement — PR de mise à jour non ouverte
+        if: always() && steps.pr.outcome == 'failure'
+        run: |
+          echo "::warning::La PR de mise à jour des statuts n'a pas pu être ouverte (étape non bloquante). L'audit a bien abouti : le rapport est publié et l'issue « sites à corriger » fait foi."
+
       - name: Issue — sites sans badge
-        if: steps.summary.outputs.missing != '0' || steps.summary.outputs.nofollow != '0'
+        if: always() && (steps.summary.outputs.missing != '0' || steps.summary.outputs.nofollow != '0')
         uses: actions/github-script@v8
         with:
           script: |
@@ -218,7 +232,7 @@ jobs:
             }
 
       - name: Clôture de l'issue quand tout est bon
-        if: steps.summary.outputs.missing == '0' && steps.summary.outputs.nofollow == '0'
+        if: always() && steps.summary.outputs.missing == '0' && steps.summary.outputs.nofollow == '0'
         uses: actions/github-script@v8
         with:
           script: |
