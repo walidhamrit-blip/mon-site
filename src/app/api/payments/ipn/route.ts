@@ -18,6 +18,7 @@ import {
   reconcileSubscriptionInvoice,
 } from "@/lib/subscriptions";
 import { subscriptionIdFromPayload } from "@/lib/subscription-lifecycle";
+import { deliverPaidDigitalOrder } from "@/lib/digital-orders";
 
 /**
  * Webhook IPN NOWPayments.
@@ -315,8 +316,31 @@ export async function POST(req: Request) {
       }
     }
 
+    // Commande de code / carte cadeau : l'achat se fait MAINTENANT, chez
+    // Reloadly, avec le solde du compte marchand. Idempotent : une
+    // commande déjà livrée n'est jamais rachetée (voir deliverPaidDigitalOrder).
+    let digital: string | null = null;
+    if (order.digitalOrderId) {
+      try {
+        const delivery = await deliverPaidDigitalOrder(order.digitalOrderId);
+        digital = delivery.outcome;
+        console.info(
+          `[ipn][digital] ${order.ref} → ${delivery.outcome}${
+            delivery.message ? ` (${delivery.message})` : ""
+          }`,
+        );
+      } catch (error) {
+        // La commande reste payée ; l'admin peut relancer la livraison.
+        digital = "error";
+        console.error(
+          "[ipn][digital] livraison impossible :",
+          error instanceof Error ? error.message : error,
+        );
+      }
+    }
+
     console.info(`[ipn] commande ${order.ref} → ${ipnStatus}`);
-    return NextResponse.json({ ok: true });
+    return NextResponse.json({ ok: true, ...(digital ? { digital } : {}) });
   } catch (error) {
     console.error("[ipn] traitement impossible :", error instanceof Error ? error.message : error);
     // 500 → NOWPayments réessaiera plus tard.

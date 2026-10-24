@@ -2,6 +2,11 @@ import { db } from "@/db";
 import { sql } from "drizzle-orm";
 import { siteConfig } from "@/lib/config";
 import {
+  checkReloadlyCredentials,
+  reloadlyConfigured,
+  reloadlyMode,
+} from "@/lib/reloadly";
+import {
   checkNowPaymentsApiKey,
   nowPaymentsApiBase,
   nowPaymentsApiKey,
@@ -99,6 +104,33 @@ export async function GET() {
     error: statusProbe.error,
   };
 
+  // ── Fournisseur de codes (Reloadly) ──
+  // Aucune donnée financière ici : ni solde, ni identifiants. Seulement
+  // « configuré ou non », l'environnement visé et la validité des
+  // identifiants (utile quand une commande payée n'a pas pu être livrée).
+  const reloadlyCheck = reloadlyConfigured()
+    ? await checkReloadlyCredentials().catch((error) => ({
+        configured: true,
+        mode: reloadlyMode(),
+        valid: null,
+        balance: null,
+        error: errorMessage(error),
+      }))
+    : {
+        configured: false,
+        mode: reloadlyMode(),
+        valid: false,
+        balance: null,
+        error: "RELOADLY_CLIENT_ID / RELOADLY_CLIENT_SECRET absents",
+      };
+
+  const reloadly = {
+    configured: reloadlyCheck.configured,
+    mode: reloadlyCheck.mode,
+    credentialsValid: reloadlyCheck.valid,
+    error: reloadlyCheck.error,
+  };
+
   // `ok` n'est vrai que si un paiement peut réellement être créé :
   // base connectée ET clé acceptée (pas seulement présente/joignable).
   const ok = database.connected && nowpayments.apiKeyValid === true;
@@ -121,6 +153,7 @@ export async function GET() {
       },
       database,
       nowpayments,
+      reloadly,
     },
     { status: ok ? 200 : 500 },
   );

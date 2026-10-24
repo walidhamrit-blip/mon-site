@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useState } from "react";
 import {
   ArrowUpRight,
   BellRing,
@@ -9,6 +10,7 @@ import {
   Clock,
   Globe2,
   ShieldCheck,
+  ShoppingBag,
   Tag,
 } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
@@ -18,17 +20,19 @@ import { whatsappLink } from "@/lib/utils";
 import {
   DIGITAL_KIND_LABELS,
   DIGITAL_STATUS_LABELS,
+  isSellable,
   regionLabel,
   type DigitalProduct,
 } from "@/lib/digital-types";
+import { DigitalBuyDialog } from "@/components/digital-buy-dialog";
 
 /**
  * Fiche d'un produit du catalogue digital.
  *
- * Périmètre : CATALOGUE. Les dénominations, les régions et les prix sont
- * affichés (le catalogue est réel), mais l'appel à l'action est une
- * inscription à la liste d'attente — la caisse arrive plus tard, sur les
- * mêmes données.
+ * Une fiche `available` est VENDABLE À LA COMMANDE : le client choisit un
+ * montant, paie en crypto, et le code est acheté chez notre fournisseur
+ * puis livré dès la confirmation du paiement (aucun stock acheté
+ * d'avance). Les fiches `coming_soon` restent en liste d'attente.
  */
 export function DigitalProductDetails({ product }: { product: DigitalProduct }) {
   const siteConfig = useSiteConfig();
@@ -36,6 +40,8 @@ export function DigitalProductDetails({ product }: { product: DigitalProduct }) 
   const ar = locale === "ar";
   const features = ar ? product.featuresAr : product.featuresEn;
   const available = product.denominations.filter((denomination) => denomination.available);
+  const sellable = isSellable(product);
+  const [buyDenomination, setBuyDenomination] = useState<string | null>(null);
 
   const waitlistMessage = ar
     ? `مرحبا نخبة 👋 أرغب في «${product.titleAr}» (${product.platform}). أرجو إشعارني عند فتح البيع أو إرسال طلب مخصص.`
@@ -143,8 +149,20 @@ export function DigitalProductDetails({ product }: { product: DigitalProduct }) 
                           {regionLabel(denomination.region, locale)}
                         </span>
                       </span>
-                      <span className="shrink-0 text-[15px] font-black text-[var(--accent)]">
-                        <Price usd={denomination.priceUsd} />
+                      <span className="flex shrink-0 items-center gap-2.5">
+                        <span className="text-[15px] font-black text-[var(--accent)]">
+                          <Price usd={denomination.priceUsd} />
+                        </span>
+                        {sellable && (
+                          <button
+                            type="button"
+                            onClick={() => setBuyDenomination(denomination.id)}
+                            className="inline-flex h-8 items-center gap-1 rounded-full bg-[var(--accent)] px-3 text-[11.5px] font-black text-[var(--accent-foreground)] transition-colors hover:bg-[var(--accent-hover)]"
+                          >
+                            <ShoppingBag className="h-3.5 w-3.5" />
+                            {ar ? "شراء" : "Buy"}
+                          </button>
+                        )}
                       </span>
                     </li>
                   ))}
@@ -157,21 +175,39 @@ export function DigitalProductDetails({ product }: { product: DigitalProduct }) 
                 </p>
               )}
 
-              <a
-                href={whatsappLink(siteConfig.whatsapp, waitlistMessage)}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="mt-5 inline-flex h-12 w-full items-center justify-center gap-2 rounded-full bg-[var(--accent)] text-sm font-black text-[var(--accent-foreground)] shadow-sm transition-colors hover:bg-[var(--accent-hover)]"
-              >
-                <BellRing className="h-4 w-4" />
-                {ar ? "أخبرني عند فتح البيع" : "Notify me when it opens"}
-              </a>
+              {sellable ? (
+                <button
+                  type="button"
+                  onClick={() => setBuyDenomination(available[0]?.id ?? null)}
+                  className="mt-5 inline-flex h-12 w-full items-center justify-center gap-2 rounded-full bg-[var(--accent)] text-sm font-black text-[var(--accent-foreground)] shadow-sm transition-colors hover:bg-[var(--accent-hover)]"
+                >
+                  <ShoppingBag className="h-4 w-4" />
+                  {ar ? "اشترِ الآن — تسليم إلكتروني" : "Buy now — instant delivery"}
+                </button>
+              ) : (
+                <a
+                  href={whatsappLink(siteConfig.whatsapp, waitlistMessage)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="mt-5 inline-flex h-12 w-full items-center justify-center gap-2 rounded-full bg-[var(--accent)] text-sm font-black text-[var(--accent-foreground)] shadow-sm transition-colors hover:bg-[var(--accent-hover)]"
+                >
+                  <BellRing className="h-4 w-4" />
+                  {ar ? "أخبرني عند فتح البيع" : "Notify me when it opens"}
+                </a>
+              )}
 
               <p className="mt-3 text-center text-[11px] leading-5 text-[var(--muted-foreground)]">
                 {ar
                   ? "البيع بالدولار الأمريكي · التسليم إلكتروني بعد تأكيد الدفع."
                   : "Priced in USD — electronic delivery right after payment confirmation."}
               </p>
+              {sellable && (
+                <p className="mt-2 text-center text-[11px] leading-5 text-[var(--muted-foreground)]">
+                  {ar
+                    ? "تنبيه: رمز البطاقة صالح فقط في المنطقة المذكورة."
+                    : "Note: the code is only valid in the region shown."}
+                </p>
+              )}
 
               <Link
                 href="/contact"
@@ -184,6 +220,14 @@ export function DigitalProductDetails({ product }: { product: DigitalProduct }) 
           </div>
         </div>
       </section>
+
+      {buyDenomination && (
+        <DigitalBuyDialog
+          product={product}
+          denominationId={buyDenomination}
+          onClose={() => setBuyDenomination(null)}
+        />
+      )}
     </div>
   );
 }

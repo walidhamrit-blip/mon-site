@@ -74,18 +74,19 @@ export async function sendPaymentConfirmedEmail(
       : null;
 
   const isReservation = order.kind === "reservation";
-  const kindLabel = isReservation
-    ? ORDER_KIND_LABELS.reservation
-    : order.kind === "flex"
-      ? ORDER_KIND_LABELS.flex
-      : ORDER_KIND_LABELS.plan;
+  const isDigital = order.kind === "digital";
+  const kindLabel =
+    ORDER_KIND_LABELS[order.kind as keyof typeof ORDER_KIND_LABELS] ??
+    ORDER_KIND_LABELS.plan;
 
   const subject = `✓ ${
     isReservation
       ? "Réservation prioritaire confirmée"
       : order.kind === "flex"
         ? "Paiement flexible confirmé"
-        : "Paiement crypto confirmé"
+        : isDigital
+          ? "Commande de code payée"
+          : "Paiement crypto confirmé"
   } — ${order.ref} (${order.planName}${trancheInfo ? ` — ${trancheInfo}` : ""})`;
 
   const text = [

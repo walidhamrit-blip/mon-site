@@ -49,6 +49,16 @@ export const DIGITAL_KIND_LABELS: Record<
   },
 };
 
+/**
+ * Mode de livraison d'une fiche.
+ *  - `manual` : le client paie, l'agence achète le code dans le tableau
+ *    Reloadly puis le transmet (aucun débit automatique) ;
+ *  - `auto`   : achat et livraison automatiques dès le paiement confirmé
+ *    (nécessite un produit Reloadly relié à la fiche).
+ */
+export const DIGITAL_FULFILLMENTS = ["manual", "auto"] as const;
+export type DigitalFulfillment = (typeof DIGITAL_FULFILLMENTS)[number];
+
 /** Cycle de vie d'une fiche du catalogue. */
 export const DIGITAL_STATUSES = ["draft", "coming_soon", "available", "archived"] as const;
 
@@ -142,6 +152,11 @@ export interface DigitalDenomination {
   noteEn?: string;
   /** Disponible à la vente. */
   available: boolean;
+  /**
+   * Valeur faciale envoyée au fournisseur Reloadly (`unitPrice`), ex. 50
+   * pour une carte « 50 USD ». Vide = déduite de `faceValue`.
+   */
+  reloadlyUnitPrice?: number | null;
 }
 
 /** Fiche produit du catalogue digital. */
@@ -175,6 +190,15 @@ export interface DigitalProduct {
   denominations: DigitalDenomination[];
   /** Ordre d'affichage dans le catalogue. */
   sortOrder: number;
+
+  /* ---------- Livraison à la commande (Reloadly) ---------- */
+
+  /** Mode de livraison (défaut : `manual`). */
+  fulfillment?: DigitalFulfillment;
+  /** Identifiant du produit chez Reloadly. */
+  reloadlyProductId?: number | null;
+  /** Pays du produit Reloadly (ISO 2 lettres). */
+  reloadlyCountryCode?: string;
 }
 
 /** Statuts visibles publiquement (le catalogue public ignore les brouillons). */
@@ -226,4 +250,48 @@ export function slugify(value: string): string {
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "")
     .slice(0, 80);
+}
+
+/**
+ * Mode de livraison effectif : un produit n'est acheté automatiquement
+ * que si la fiche est en `auto` ET qu'un produit Reloadly est relié. Un
+ * oubli de mappage retombe donc sur une livraison manuelle — jamais sur
+ * un achat au hasard.
+ */
+export function effectiveFulfillment(product: DigitalProduct): DigitalFulfillment {
+  if (product.fulfillment === "auto" && Number(product.reloadlyProductId) > 0) {
+    return "auto";
+  }
+  return "manual";
+}
+
+/**
+ * Vrai si la fiche peut être vendue en ligne : publiée (`available`) et
+ * au moins un montant disponible. Les fiches « bientôt » restent en
+ * liste d'attente.
+ */
+export function isSellable(product: DigitalProduct): boolean {
+  return (
+    product.status === "available" &&
+    product.denominations.some(
+      (denomination) =>
+        denomination.available &&
+        Number.isFinite(denomination.priceUsd) &&
+        denomination.priceUsd > 0,
+    )
+  );
+}
+
+/**
+ * Valeur faciale (Reloadly `unitPrice`) d'une dénomination : champ dédié
+ * s'il est renseigné, sinon premier nombre trouvé dans `faceValue`
+ * (« 50 USD », « 500 Robux » → 50 / 500).
+ */
+export function denominationUnitPrice(denomination: DigitalDenomination): number | null {
+  const explicit = Number(denomination.reloadlyUnitPrice);
+  if (Number.isFinite(explicit) && explicit > 0) return explicit;
+  const match = denomination.faceValue.match(/\d+(?:[.,]\d+)?/);
+  if (!match) return null;
+  const parsed = Number(match[0].replace(",", "."));
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
 }

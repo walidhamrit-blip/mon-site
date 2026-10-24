@@ -463,6 +463,8 @@ export const digitalDenominationSchema = z.object({
   noteAr: z.string().max(300).optional(),
   noteEn: z.string().max(300).optional(),
   available: z.boolean(),
+  /** Valeur faciale Reloadly (unitPrice) ; vide = déduite de faceValue. */
+  reloadlyUnitPrice: z.coerce.number().min(0).max(100_000).nullable().optional(),
 });
 
 export const digitalProductSchema = z.object({
@@ -492,5 +494,10 @@ export const digitalProductSchema = z.object({
   deliveryNoteEn: z.string().max(500),
   denominations: z.array(digitalDenominationSchema).max(60),
   sortOrder: z.coerce.number().int().min(0).max(9999),
+  /** Livraison : `manual` (agence) ou `auto` (achat Reloadly). */
+  fulfillment: z.enum(["manual", "auto"]).optional(),
+  /** Produit Reloadly relié à la fiche (achat automatique). */
+  reloadlyProductId: z.coerce.number().int().min(0).max(9_999_999).nullable().optional(),
+  reloadlyCountryCode: z.string().max(2).optional(),
 });
 

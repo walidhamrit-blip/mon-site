@@ -5,6 +5,7 @@ import { defaultDigitalProducts } from "@/lib/digital-seed";
 import {
   PUBLIC_DIGITAL_STATUSES,
   type DigitalDenomination,
+  type DigitalFulfillment,
   type DigitalProduct,
   type DigitalStatus,
 } from "@/lib/digital-types";
@@ -52,6 +53,9 @@ async function ensureSeeded(): Promise<void> {
             deliveryNoteAr: product.deliveryNoteAr,
             deliveryNoteEn: product.deliveryNoteEn,
             sortOrder: product.sortOrder,
+            fulfillment: product.fulfillment ?? "manual",
+            reloadlyProductId: product.reloadlyProductId ?? null,
+            reloadlyCountryCode: product.reloadlyCountryCode ?? "",
           })
           .onConflictDoNothing();
         if (product.denominations.length > 0) {
@@ -66,6 +70,10 @@ async function ensureSeeded(): Promise<void> {
               noteEn: denomination.noteEn ?? null,
               available: denomination.available ? 1 : 0,
               sortOrder: index,
+              reloadlyUnitPrice:
+                denomination.reloadlyUnitPrice != null
+                  ? String(denomination.reloadlyUnitPrice)
+                  : null,
             })),
           );
         }
@@ -93,6 +101,7 @@ function rowToDenomination(row: typeof digitalDenominations.$inferSelect): Digit
     noteAr: row.noteAr ?? undefined,
     noteEn: row.noteEn ?? undefined,
     available: row.available !== 0,
+    reloadlyUnitPrice: row.reloadlyUnitPrice != null ? Number(row.reloadlyUnitPrice) : null,
   };
 }
 
@@ -119,6 +128,9 @@ function rowToProduct(
     deliveryNoteEn: row.deliveryNoteEn,
     denominations,
     sortOrder: row.sortOrder,
+    fulfillment: (row.fulfillment === "auto" ? "auto" : "manual") as DigitalFulfillment,
+    reloadlyProductId: row.reloadlyProductId ?? null,
+    reloadlyCountryCode: row.reloadlyCountryCode ?? "",
   };
 }
 
@@ -214,6 +226,12 @@ export async function upsertDigitalProduct(product: DigitalProduct): Promise<voi
       deliveryNoteAr: product.deliveryNoteAr,
       deliveryNoteEn: product.deliveryNoteEn,
       sortOrder: product.sortOrder,
+      fulfillment: product.fulfillment === "auto" ? "auto" : "manual",
+      reloadlyProductId:
+        product.reloadlyProductId != null && Number(product.reloadlyProductId) > 0
+          ? Math.trunc(Number(product.reloadlyProductId))
+          : null,
+      reloadlyCountryCode: (product.reloadlyCountryCode ?? "").toUpperCase().slice(0, 2),
       updatedAt: new Date(),
     })
     .onConflictDoUpdate({
@@ -235,6 +253,12 @@ export async function upsertDigitalProduct(product: DigitalProduct): Promise<voi
         deliveryNoteAr: product.deliveryNoteAr,
         deliveryNoteEn: product.deliveryNoteEn,
         sortOrder: product.sortOrder,
+        fulfillment: product.fulfillment === "auto" ? "auto" : "manual",
+        reloadlyProductId:
+          product.reloadlyProductId != null && Number(product.reloadlyProductId) > 0
+            ? Math.trunc(Number(product.reloadlyProductId))
+            : null,
+        reloadlyCountryCode: (product.reloadlyCountryCode ?? "").toUpperCase().slice(0, 2),
         updatedAt: new Date(),
       },
     });
@@ -254,6 +278,11 @@ export async function upsertDigitalProduct(product: DigitalProduct): Promise<voi
         noteEn: denomination.noteEn ?? null,
         available: denomination.available ? 1 : 0,
         sortOrder: index,
+        reloadlyUnitPrice:
+          denomination.reloadlyUnitPrice != null &&
+          Number(denomination.reloadlyUnitPrice) > 0
+            ? String(Number(denomination.reloadlyUnitPrice))
+            : null,
       })),
     );
   }
