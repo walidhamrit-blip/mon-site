@@ -9,6 +9,7 @@ import {
 } from "@/lib/subscription-lifecycle";
 import { SUBSCRIPTION_GRACE_DAYS } from "@/lib/subscription-plans";
 import { SyncPlansButton } from "./sync-plans-button";
+import { TrackingLinkButton } from "../tracking-link-button";
 
 export const dynamic = "force-dynamic";
 
@@ -112,13 +113,14 @@ export default async function AdminSubscriptionsPage() {
               <th className="px-4 py-3 text-start">Statut</th>
               <th className="px-4 py-3 text-start">Fin de période</th>
               <th className="px-4 py-3 text-start">Renouvellement</th>
+              <th className="px-4 py-3 text-start">Lien de suivi</th>
               <th className="px-4 py-3 text-start">Créé le</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-stone-100">
             {items.length === 0 && (
               <tr>
-                <td colSpan={7} className="px-4 py-10 text-center text-stone-500">
+                <td colSpan={8} className="px-4 py-10 text-center text-stone-500">
                   Aucun abonné pour le moment.
                 </td>
               </tr>
@@ -144,6 +146,9 @@ export default async function AdminSubscriptionsPage() {
                   ) : (
                     <span className="text-stone-600">Actif</span>
                   )}
+                </td>
+                <td className="px-4 py-3">
+                  <TrackingLinkButton kind="subscription" reference={item.ref} />
                 </td>
                 <td className="px-4 py-3">{frDate(item.createdAt)}</td>
               </tr>

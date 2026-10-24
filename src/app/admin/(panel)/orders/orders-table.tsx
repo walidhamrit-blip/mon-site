@@ -4,6 +4,7 @@ import { useState } from "react";
 import { ChevronDown, ExternalLink, Mail, MessageCircle } from "lucide-react";
 import { ORDER_KIND_LABELS, type OrderRow } from "@/lib/site-types";
 import { OrderStatusBadge } from "../status-badge";
+import { TrackingLinkButton } from "../tracking-link-button";
 
 function whatsappHref(phone: string, ref: string): string {
   const digits = phone.replace(/[^0-9]/g, "");
@@ -143,14 +144,7 @@ export function OrdersTable({ rows }: { rows: OrderRow[] }) {
                       <ExternalLink className="h-3.5 w-3.5" /> Page NOWPayments
                     </a>
                   )}
-                  <a
-                    href={`/payment/success?order=${encodeURIComponent(order.ref)}`}
-                    target="_blank"
-                    rel="noopener"
-                    className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-xl border border-stone-300 bg-white text-stone-700 text-xs font-semibold hover:bg-stone-50"
-                  >
-                    <ExternalLink className="h-3.5 w-3.5" /> Suivi client
-                  </a>
+                  <TrackingLinkButton kind="order" reference={order.ref} label="Lien de suivi" />
                   {order.phone && (
                     <a
                       href={whatsappHref(order.phone, order.ref)}
