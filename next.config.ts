@@ -136,6 +136,8 @@ const nextConfig: NextConfig = {
     localPatterns: [
       { pathname: "/previews/**" },
       { pathname: "/guide-crypto/**" },
+      // Avatar Einstein du assistant flottant (src/components/site-chatbot.tsx).
+      { pathname: "/chatbot/**" },
     ],
     // Qualités utilisées par les visuels nets (bannière, guide crypto).
     qualities: [75, 88, 90],
