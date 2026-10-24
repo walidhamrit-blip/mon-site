@@ -26,6 +26,8 @@ export interface MailResult {
   error?: string;
 }
 
+import { domainFromOrigin, resolveSiteOrigin } from "@/lib/site-identity";
+
 const RESEND_ENDPOINT = "https://api.resend.com/emails";
 const TIMEOUT_MS = 8000;
 
@@ -37,10 +39,11 @@ function errorMessage(error: unknown): string {
 export function mailFromAddress(): string {
   const explicit = process.env.EMAIL_FROM?.trim();
   if (explicit) return explicit;
-  const domain = (process.env.EMAIL_DOMAIN?.trim() || "nokhba.net.ly").replace(
-    /^https?:\/\//,
-    "",
-  );
+  // Sans EMAIL_DOMAIN explicite, on envoie depuis le domaine canonique du
+  // site (SPF/DKIM doivent y être configurés).
+  const domain = (
+    process.env.EMAIL_DOMAIN?.trim() || domainFromOrigin(resolveSiteOrigin())
+  ).replace(/^https?:\/\//, "");
   return `Nukhba <no-reply@${domain}>`;
 }
 

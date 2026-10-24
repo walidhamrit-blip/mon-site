@@ -344,8 +344,30 @@ export const siteConfigSchema = z.object({
   name: z.string().min(1).max(100),
   nameAr: z.string().min(1).max(100),
   tagline: z.string().max(200),
-  domain: z.string().max(200),
-  url: z.string().min(4).max(500),
+  domain: z
+    .string()
+    .trim()
+    .max(200)
+    .regex(
+      /^(?=.{1,200}$)[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)+$/i,
+      "domaine invalide (ex. exemple.com)",
+    ),
+  url: z
+    .string()
+    .trim()
+    .min(8)
+    .max(500)
+    .refine(
+      (value) => {
+        try {
+          const parsed = new URL(value);
+          return parsed.protocol === "https:" || parsed.protocol === "http:";
+        } catch {
+          return false;
+        }
+      },
+      "URL absolue invalide (ex. https://exemple.com)",
+    ),
   email: z.string().max(200),
   phone: z.string().max(100),
   whatsapp: z.string().max(100),

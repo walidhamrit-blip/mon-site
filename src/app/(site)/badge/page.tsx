@@ -9,14 +9,15 @@ import {
   BADGE_ANCHOR_AR,
   BADGE_ANCHOR_EN,
   BADGE_ASSET,
-  BADGE_CANONICAL,
   BADGE_HEIGHT,
   BADGE_WIDTH,
+  badgeCanonical,
   badgeHtmlSnippet,
   badgeReactSnippet,
   badgeStats,
   linkedClients,
 } from "@/lib/badge";
+import { resolveSiteOrigin } from "@/lib/site-identity";
 
 export async function generateMetadata(): Promise<Metadata> {
   const { config } = await getSiteDataCached();
@@ -24,7 +25,7 @@ export async function generateMetadata(): Promise<Metadata> {
     path: "/badge",
     title: "شارة نخبة — Badge « Website by Nukhba » للمواقع المنجزة",
     description:
-      "Extraits HTML وReact لشارة « Website by Nukhba » — رابط موثّق نحو nokhba.net.ly في تذييل المواقع المنجزة. رمز جاهز للنسخ بالعربية والإنجليزية.",
+      `Extraits HTML وReact لشارة « Website by Nukhba » — رابط موثّق نحو ${resolveSiteOrigin({ url: config.url, domain: config.domain })} في تذييل المواقع المنجزة. رمز جاهز للنسخ بالعربية والإنجليزية.`,
     image: "/badge/nukhba-badge.svg",
     keywords: [
       "شارة نخبة",
@@ -39,6 +40,9 @@ export async function generateMetadata(): Promise<Metadata> {
 export default async function BadgePage() {
   const { config } = await getSiteDataCached();
   const stats = badgeStats();
+  // Origine canonique : suit le domaine configuré dans /admin.
+  const origin = resolveSiteOrigin({ url: config.url, domain: config.domain });
+  const canonical = badgeCanonical(origin);
   const linked = linkedClients();
 
   const schema = {
@@ -100,7 +104,7 @@ export default async function BadgePage() {
             <p className="mt-4 opacity-70 max-w-[68ch] leading-8">
               كل موقع نُنجزه يحمل في تذييله رابطاً حقيقياً إلى{" "}
               <span dir="ltr" className="font-bold">
-                nokhba.net.ly
+                {origin.replace(/^https?:\/\//i, "")}
               </span>
               . هذه الشارة الرسمية: صورة واحدة خفيفة (SVG أقل من 4 كوبايت)، رابط
               متوافق مع محركات البحث، ووصف بديل ثنائي اللغة. انسخ الرمز المناسب لموقعك.
@@ -171,26 +175,26 @@ export default async function BadgePage() {
                     id: "html",
                     label: "HTML",
                     language: "html",
-                    code: badgeHtmlSnippet({ withText: true }),
+                    code: badgeHtmlSnippet({ withText: true, origin }),
                   },
                   {
                     id: "react",
                     label: "React / Next.js",
                     language: "tsx",
-                    code: badgeReactSnippet(),
+                    code: badgeReactSnippet({ origin }),
                   },
                   {
                     id: "minimal",
                     label: "HTML — badge seul",
                     language: "html",
-                    code: badgeHtmlSnippet(),
+                    code: badgeHtmlSnippet({ origin }),
                   },
                 ]}
               />
 
               <h2 className="mt-12 text-2xl font-black">قواعد الشارة</h2>
               <ul className="mt-3 space-y-2 text-sm opacity-70 leading-7">
-                <li>— رابط <span dir="ltr" className="font-bold">nokhba.net.ly</span> ظاهر في تذييل كل صفحة (على الأقل الصفحة الرئيسية).</li>
+                <li>— رابط <span dir="ltr" className="font-bold">{origin.replace(/^https?:\/\//i, "")}</span> ظاهر في تذييل كل صفحة (على الأقل الصفحة الرئيسية).</li>
                 <li>— بدون <code dir="ltr">rel=&quot;nofollow&quot;</code>: الرابط يجب أن ينقل السلطة (dofollow).</li>
                 <li>— وصف بديل ثنائي اللغة على الصورة، أو نص ظاهر «{BADGE_ANCHOR_AR}».</li>
                 <li>— لا تعديل على الصورة أو نسبها لجهة أخرى، ولا وضعها في صفحات لا علاقة لها بالموقع.</li>
@@ -230,7 +234,7 @@ export default async function BadgePage() {
                 <p className="mt-5 text-xs opacity-50 leading-6">
                   الرابط الموثّق الوحيد هو{" "}
                   <span dir="ltr" className="font-bold text-[var(--accent)]">
-                    {BADGE_CANONICAL}
+                    {canonical}
                   </span>{" "}
                   — أي نطاق مشابه لا يُعدّ شارة رسمية.
                 </p>

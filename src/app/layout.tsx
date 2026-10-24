@@ -10,7 +10,7 @@ import { siteConfig } from "@/lib/config";
 import { isThemeId, themeBootScript, themeCss } from "@/lib/themes";
 import { JsonLd } from "@/components/json-ld";
 import {
-  GOOGLE_SITE_VERIFICATION,
+  googleSiteVerification,
   defaultMetaDescription,
   localBusinessJsonLd,
   ogLocale,
@@ -116,10 +116,11 @@ export async function generateMetadata(): Promise<Metadata> {
       },
     },
     // Vérification Google Search Console : balise meta émise sur toutes les
-    // pages (code par défaut en dur — cf. src/lib/seo.ts — surchargeable via
-    // GOOGLE_SITE_VERIFICATION). La vérification fichier historique
+    // pages. Le code n'est valide que pour le domaine qu'il a été émis
+    // pour : dès que le domaine change, il faut en demander un nouveau
+    // (GOOGLE_SITE_VERIFICATION). La vérification fichier historique
     // (public/googleaf….html) reste active en complément.
-    verification: { google: GOOGLE_SITE_VERIFICATION },
+    verification: { google: googleSiteVerification(config.domain) },
   };
 }
 

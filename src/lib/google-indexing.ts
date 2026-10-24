@@ -15,7 +15,7 @@ import { siteConfig } from "@/lib/config";
  *   GOOGLE_INDEXING_CLIENT_EMAIL   → `xxx@projet.iam.gserviceaccount.com`
  *   GOOGLE_INDEXING_PRIVATE_KEY    → clé privée du compte de service (PEM)
  *   GOOGLE_INDEXING_SITE_URL       → propriété Search Console
- *                                    (`https://nokhba.net.ly/` ou `sc-domain:nokhba.net.ly`)
+ *                                    (`https://exemple.com/` ou `sc-domain:exemple.com`)
  *   GOOGLE_INDEXING_ALLOW_NON_PRODUCTION=true → autorise l'appel hors Vercel prod
  *
  * Le compte de service doit être ajouté comme utilisateur (au moins
@@ -92,8 +92,11 @@ export function buildServiceAccountAssertion(
 
 /**
  * Normalise la propriété Search Console :
- *   - `nokhba.net.ly` → `https://nokhba.net.ly/`
- *   - `sc-domain:nokhba.net.ly` conservé tel quel (propriété Domaine).
+ *   - `exemple.com` → `https://exemple.com/`
+ *   - `sc-domain:exemple.com` conservé tel quel (propriété Domaine).
+ *
+ * La propriété suit le domaine configuré : `GOOGLE_INDEXING_SITE_URL` pour la
+ * surcharger, sinon l'URL canonique du site.
  */
 export function searchConsoleProperty(siteUrl: string, override?: string): string {
   const value = (override?.trim() || siteUrl).trim();

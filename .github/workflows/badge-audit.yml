@@ -1,7 +1,8 @@
 name: Client badge audit
 
 # Vérifie chaque semaine que les sites clients livrés portent bien le badge
-# « Website by Nukhba » (lien dofollow vers nokhba.net.ly dans le pied de page).
+# « Website by Nukhba » (lien dofollow vers le domaine de l'agence dans le
+# pied de page). L'URL du site vient de la variable de dépôt `SITE_URL`.
 #
 # - mesure : `verified` / `nofollow` / `missing` / `down` par client ;
 # - pull request `chore(badge)` quand un statut change (page /badge) ;
@@ -59,7 +60,7 @@ jobs:
       - name: Audit du badge
         id: audit
         env:
-          BADGE_BASE_URL: https://nokhba.net.ly
+          BADGE_BASE_URL: ${{ vars.SITE_URL || 'https://nokhba.net.ly' }}
         run: |
           ARGS="--concurrency=3"
           if [ -n "${{ inputs.only }}" ]; then

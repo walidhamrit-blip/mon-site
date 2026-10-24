@@ -1,9 +1,13 @@
+import { DEFAULT_SITE_DOMAIN, DEFAULT_SITE_ORIGIN } from "@/lib/site-identity";
+
 export const siteConfig = {
   name: "Nukhba",
   nameAr: "نخبة",
   tagline: "Agence Web Premium — Tripoli, pour le monde",
-  domain: "nokhba.net.ly",
-  url: "https://nokhba.net.ly",
+  // Domaine canonique : la source de vérité est `src/lib/site-identity.ts`.
+  // Ces deux champs sont surchargeables depuis /admin (domaine + URL).
+  domain: DEFAULT_SITE_DOMAIN,
+  url: DEFAULT_SITE_ORIGIN,
   email: "hello@nukhba.ly",
   phone: "+218 91 234 5678",
   whatsapp: "218912345678", // sans +

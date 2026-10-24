@@ -9,6 +9,7 @@ import {
   type MarketConfig,
 } from "@/lib/market";
 import type { Demo, Faq, ProcessStep, Testimonial } from "@/lib/site-types";
+import { DEFAULT_SITE_DOMAIN, domainFromOrigin } from "@/lib/site-identity";
 
 /**
  * Central SEO + structured-data (JSON-LD) helpers.
@@ -101,15 +102,34 @@ export function defaultMetaDescription(config: Pick<SiteConfig, "market">): stri
 }
 
 /**
+ * Code de vérification Search Console du domaine **par défaut**.
+ *
+ * Google n'émet un code que pour une propriété donnée : ce code n'a donc de
+ * valeur que si le site reste sur le domaine par défaut. Dès que le domaine
+ * change, il faut réémettre un code (ou poser GOOGLE_SITE_VERIFICATION).
+ */
+export const DEFAULT_GOOGLE_SITE_VERIFICATION =
+  "POB624EdzYiqxSgcA5PYaLyZDBbjBVx3mnAgEeUjKcg";
+
+/**
  * Code de vérification Google Search Console (méthode balise HTML meta).
+ *
  * Émis par le layout racine (<meta name="google-site-verification">) et
- * contrôlé par l'audit SEO admin. Le code par défaut est celui de la
- * propriété https://nokhba.net.ly/ ; la variable d'environnement
+ * contrôlé par l'audit SEO admin. La variable d'environnement
  * GOOGLE_SITE_VERIFICATION permet de le remplacer sans redéployer de code
  * (même motif que DEFAULT_INDEXNOW_KEY dans src/lib/indexnow.ts).
+ *
+ * Le code par défaut n'est renvoyé que si le domaine courant est encore le
+ * domaine par défaut : sur un autre domaine, il serait invalide — mieux vaut
+ * ne rien émettre et laisser l'audit admin signaler la vérification comme
+ * manquante.
  */
-export const GOOGLE_SITE_VERIFICATION =
-  process.env.GOOGLE_SITE_VERIFICATION?.trim() || "POB624EdzYiqxSgcA5PYaLyZDBbjBVx3mnAgEeUjKcg";
+export function googleSiteVerification(domain?: string | null): string {
+  const fromEnv = process.env.GOOGLE_SITE_VERIFICATION?.trim();
+  if (fromEnv) return fromEnv;
+  const current = domain ? domainFromOrigin(domain) : DEFAULT_SITE_DOMAIN;
+  return current === DEFAULT_SITE_DOMAIN ? DEFAULT_GOOGLE_SITE_VERIFICATION : "";
+}
 
 /**
  * Tronque une description dynamique (ex. fiche réalisation venue de la base)

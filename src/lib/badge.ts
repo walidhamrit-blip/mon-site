@@ -1,11 +1,20 @@
 import clientsFile from "../../public/badge/clients.json";
+// Import relatif (et non `@/lib/…`) : ce module est empaqueté par esbuild
+// dans `scripts/badge-audit.mjs`, qui ne résout pas les alias de tsconfig.
+import {
+  DEFAULT_SITE_DOMAIN,
+  domainFromOrigin,
+  normalizeOrigin,
+  normalizeOrigins,
+  resolveSiteOrigin,
+} from "./site-identity";
 
 /**
  * Badge de netlinking client (« شارة نخبة » / « Nukhba badge »).
  *
- * Chaque site livré affiche un lien réel vers nokhba.net.ly dans son pied de
- * page. Ce module est la source unique côté site :
- *   - constantes (URL de crédit, assets, ancres bilingues) ;
+ * Chaque site livré affiche un lien réel vers le domaine de l'agence dans
+ * son pied de page. Ce module est la source unique côté site :
+ *   - résolution de l'URL de crédit (elle suit le domaine configuré) ;
  *   - lecture de `public/badge/clients.json`, mis à jour par
  *     `scripts/badge-audit.mjs` (vérification hebdomadaire en CI) ;
  *   - génération des extraits de code copiables depuis `/badge`.
@@ -15,12 +24,20 @@ import clientsFile from "../../public/badge/clients.json";
  * d'audit peuvent reconnaître un badge officiel.
  */
 
-/** URL canonique de crédit — celle que doivent utiliser les sites clients. */
-export const BADGE_LINK =
-  "https://nokhba.net.ly/?utm_source=client_footer&utm_medium=badge&utm_campaign=client_credit";
+/**
+ * URL canonique de crédit — celle que doivent utiliser les sites clients.
+ * Suit le domaine configuré (`/admin` → Réglages → Domaine / URL canonique).
+ */
+export function badgeCanonical(origin?: string): string {
+  const base = normalizeOrigin(origin ?? "") || resolveSiteOrigin();
+  return `${base}/`;
+}
 
-/** Même URL sans paramètres de campagne (canonical, llms.txt, vérification). */
-export const BADGE_CANONICAL = "https://nokhba.net.ly/";
+/** Variante avec paramètres de campagne (lien à coller dans le pied de page). */
+export function badgeLink(origin?: string): string {
+  const base = normalizeOrigin(origin ?? "") || resolveSiteOrigin();
+  return `${base}/?utm_source=client_footer&utm_medium=badge&utm_campaign=client_credit`;
+}
 
 /** Assets servis par notre domaine (aucune dépendance externe). */
 export const BADGE_ASSET = "/badge/nukhba-badge.svg";
@@ -113,7 +130,7 @@ export interface SnippetOptions {
   variant?: "dark" | "light";
   /** Ajoute une ancre texte visible sous l'image (recommandé). */
   withText?: boolean;
-  /** URL de crédit (par défaut BADGE_LINK). */
+  /** URL de crédit (par défaut : lien de crédit de l'origine configurée). */
   href?: string;
   /** Domaine absolu pour l'asset (snippet destiné à un autre site). */
   origin?: string;
@@ -121,8 +138,8 @@ export interface SnippetOptions {
 
 function snippetParts(options: SnippetOptions = {}) {
   const variant = options.variant === "light" ? "light" : "dark";
-  const href = options.href ?? BADGE_LINK;
-  const origin = (options.origin ?? "https://nokhba.net.ly").replace(/\/+$/, "");
+  const origin = normalizeOrigin(options.origin ?? "") || resolveSiteOrigin();
+  const href = options.href ?? badgeLink(origin);
   const asset = `${origin}${variant === "light" ? BADGE_ASSET_LIGHT : BADGE_ASSET}`;
   return { variant, href, asset, withText: options.withText ?? false };
 }
@@ -186,7 +203,30 @@ function stripTags(html: string): string {
     .trim();
 }
 
-export function detectBadge(html: string): BadgeDetection {
+export interface BadgeDetectOptions {
+  /**
+   * Origines reconnues comme badge officiel. Par défaut : le domaine
+   * configuré. Pendant une migration de domaine, on y ajoute l'ancien
+   * domaine — les pieds de page clients qui pointent encore vers l'ancien
+   * lien restent alors valides au lieu d'être signalés « manquants ».
+   */
+  origins?: string[];
+}
+
+/**
+ * Motif de reconnaissance des liens de badge :/http(s) + domaine(s)
+ * accepté(s), `www.` facultatif. Les domaines sont échappés.
+ */
+export function badgeHostPattern(origins: string[] = []): RegExp {
+  const hosts = normalizeOrigins(origins)
+    .map((origin) => domainFromOrigin(origin))
+    .filter(Boolean);
+  const list = hosts.length > 0 ? hosts : [DEFAULT_SITE_DOMAIN];
+  const escaped = list.map((host) => host.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"));
+  return new RegExp(`^https?:\\/\\/(www\\.)?(?:${escaped.join("|")})(?:\\/|$|\\?|#)`, "i");
+}
+
+export function detectBadge(html: string, options: BadgeDetectOptions = {}): BadgeDetection {
   const empty: BadgeDetection = {
     found: false,
     href: null,
@@ -199,13 +239,15 @@ export function detectBadge(html: string): BadgeDetection {
   const source = String(html ?? "");
   if (!source) return empty;
 
-  // Toutes les balises <a …> … </a> qui pointent vers nokhba.net.ly (http/https,
-  // www facultatif). Les attributs peuvent être dans n'importe quel ordre.
+  // Toutes les balises <a …> … </a> qui pointent vers le domaine de l'agence
+  // (http/https, www facultatif). Les attributs peuvent être dans n'importe
+  // quel ordre.
+  const hostPattern = badgeHostPattern(options.origins ?? []);
   const anchors = [...source.matchAll(/<a\b([^>]*)>([\s\S]*?)<\/a\s*>/gi)];
   for (const [, rawAttrs, inner] of anchors) {
     const hrefMatch = rawAttrs.match(/\bhref\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s>]+))/i);
     const href = (hrefMatch?.[1] ?? hrefMatch?.[2] ?? hrefMatch?.[3] ?? "").trim();
-    if (!/^https?:\/\/(www\.)?nokhba\.net\.ly(\/|$|\?|#)/i.test(href)) continue;
+    if (!hostPattern.test(href)) continue;
 
     const relMatch = rawAttrs.match(/\brel\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s>]+))/i);
     const rel = (relMatch?.[1] ?? relMatch?.[2] ?? relMatch?.[3] ?? "").trim();

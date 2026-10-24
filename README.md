@@ -50,6 +50,24 @@ Editez `src/lib/config.ts`:
   (`src/components/price.tsx`), utilisable depuis un composant serveur comme
   client. Le checkout affiche explicitement le montant **facturé en USD**.
 
+## Domaine & portabilité
+- **Source de vérité** : `src/lib/site-identity.ts` — `DEFAULT_SITE_DOMAIN` et
+  `DEFAULT_SITE_ORIGIN`. C'est le seul endroit du code où le domaine est écrit ;
+  `npm run test:seo` échoue s'il est re-fossilisé ailleurs.
+- **Modification depuis l'admin** : `/admin` → Réglages → « Domaine affiché » et
+  « URL canonique ». Ils alimentent le sitemap, les métadonnées, les canoniques,
+  le JSON-LD, les URL de crédit du badge (`/badge`) et le domaine d'envoi.
+- **Précédence de résolution** : configuration admin modifiée → variables
+  d'environnement (`SITE_URL`, `NEXT_PUBLIC_SITE_URL`) → valeur par défaut.
+- **Code de vérification Search Console** : `googleSiteVerification()` n'émet le
+  code intégré que si le domaine est encore celui du code. Sur un autre domaine,
+  il faut renseigner `GOOGLE_SITE_VERIFICATION` (le méta-tag est volontairement
+  omis plutôt que d'émettre un code invalide).
+- **Migration de domaine** : [`docs/migration-domaine.md`](docs/migration-domaine.md)
+  — runbook complet (DNS, 301, Search Console, NOWPayments, badge des sites
+  clients, rollback). Pendant une transition, `npm run badge:audit -- --accept=<ancien-domaine>`
+  évite de signaler les pieds de page clients qui pointent encore vers l'ancien lien.
+
 ## Catalogue digital — codes logiciels & cartes cadeaux
 Socle prêt pour une boutique de codes (Steam, PlayStation, Xbox, Roblox,
 Google Play, Amazon, Spotify…) :
@@ -96,7 +114,7 @@ Google Play, Amazon, Spotify…) :
 Remplacez les URLs Unsplash par vos images dans `content.ts` et sections. Placez mockups dans `public/images/` et référencez `/images/...`.
 
 ## Déploiement
-- **Vercel** : `vercel --prod` — SSG automatique, 90+ Lighthouse. Ajoutez `nokhba.net.ly` dans Settings → Domains et configurez les DNS chez votre registrar.
+- **Vercel** : `vercel --prod` — SSG automatique, 90+ Lighthouse. Ajoutez le domaine dans Settings → Domains et configurez les DNS chez votre registrar. Le domaine se règle aussi depuis `/admin` → Réglages (« Domaine affiché », « URL canonique ») — voir [`docs/migration-domaine.md`](docs/migration-domaine.md) pour le runbook complet.
 - **VPS** : `npm run build` + `npm start` derrière Nginx + PM2. Ajoutez `DATABASE_URL` si vous activez formulaire DB.
 
 ## Mise en service — sortir du mode « dégradé »
@@ -187,8 +205,8 @@ Aucun fournisseur d'e-mail n'est obligatoire : sans configuration, le formulaire
 | Variable | Effet |
 | --- | --- |
 | `RESEND_API_KEY` | Envoi via l'API Resend (appel REST, aucune dépendance supplémentaire) |
-| `EMAIL_FROM` | Expéditeur — par défaut `Nukhba <no-reply@nokhba.net.ly>` (domaine à vérifier chez Resend) |
-| `EMAIL_DOMAIN` | Domaine de l'expéditeur par défaut — `nokhba.net.ly` |
+| `EMAIL_FROM` | Expéditeur — par défaut `Nukhba <no-reply@<domaine canonique>>` (domaine à vérifier chez Resend) |
+| `EMAIL_DOMAIN` | Domaine de l'expéditeur — vide = domaine canonique du site |
 | `SMTP_HOST` | Serveur SMTP — utilisé à la place de Resend si défini |
 | `SMTP_PORT` | Port SMTP — `587` par défaut |
 | `SMTP_USER` / `SMTP_PASS` | Authentification SMTP |
@@ -235,7 +253,7 @@ Le dialogue de paiement propose trois modes, reflétés dans le prix affiché :
 3. **Settings → Payouts / Crypto accounts** : ajoutez les adresses de
    réception (BTC, USDT-TRC20, ETH…) — sans wallet, aucun paiement ne peut
    être crédité.
-4. **Settings → IPN** : ajoutez `https://nokhba.net.ly/api/payments/ipn`
+4. **Settings → IPN** : ajoutez l'URL d'IPN du site (`https://<domaine>/api/payments/ipn`)
    (l'URL est aussi envoyée à chaque paiement, ce double la fiabilité).
 5. Si votre compte est en mode test, activez le sandbox (voir `NOWPAYMENTS_SANDBOX`).
 
@@ -345,7 +363,7 @@ NOWPayments pour prendre une place en avance dans le planning.
 - **Badge de netlinking client** `/badge` : page officielle avec extraits
   copiables (HTML, React/Next.js) et visuels SVG auto-hébergés
   (`public/badge/nukhba-badge{,-light}.svg`) à poser dans le pied de page de
-  chaque site livré — lien dofollow vers `nokhba.net.ly`
+  chaque site livré — lien dofollow vers le domaine de l'agence
   (`?utm_source=client_footer`, traçable). `npm run badge:audit` vérifie
   chaque site client (dofollow / nofollow / manquant / hors ligne) et alimente
   `public/badge/clients.json` ; workflow hebdomadaire + issue de suivi.
@@ -420,7 +438,7 @@ NOWPayments pour prendre une place en avance dans le planning.
   artefact, e-mail optionnel via Resend. Sans clé API, rapport `skipped` sans
   échec du workflow.
 - **Badge client** : `npm run badge:audit` (`scripts/badge-audit.mjs`) lit les
-  démos (`--base=https://nokhba.net.ly` en CI), cherche le lien de crédit dans
+  démos (`--base=$SITE_URL` en CI), cherche le lien de crédit dans
   le HTML de chaque site client (racine, puis `/ar` et `/en`), distingue
   dofollow / nofollow / manquant / hors ligne, et n'écrit
   `public/badge/clients.json` que lorsqu'un statut change. Exécution
@@ -443,7 +461,7 @@ NOWPayments pour prendre une place en avance dans le planning.
 3. Adresse/email/horaires
 4. Images réelles (remplacer Unsplash)
 5. Logos clients (bande de confiance)
-6. Domaine officiel (`nokhba.net.ly`) dans `src/lib/config.ts` (`domain` et `url`), utilisé aussi pour les métadonnées SEO.
+6. Domaine officiel : `/admin` → Réglages (« Domaine affiché », « URL canonique ») ou `src/lib/site-identity.ts` (`DEFAULT_SITE_DOMAIN` / `DEFAULT_SITE_ORIGIN`) — c'est la source de vérité du domaine, utilisée par les métadonnées SEO, le sitemap, le badge et l'envoi d'e-mails.
 7. GA/Plausible ID
 8. Favicon/OG image dans public/
 9. Textes légaux si besoin
