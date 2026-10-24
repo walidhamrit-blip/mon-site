@@ -9,10 +9,10 @@ export async function generateMetadata(): Promise<Metadata> {
   const { config } = await getSiteDataCached();
   return pageMetadata(config, {
     path: "/sectors",
-    title: "تصميم مواقع حسب القطاع في طرابلس — نخبة",
+    title: "تصميم مواقع حسب القطاع في {city} — نخبة",
     description:
       "اختر قطاعك: عيادات، مطاعم، عطور، مفروشات، ألعاب، إلكترونيات، مواد بناء، قرطاسية، أطقم صحية — مواقع مخصصة في طرابلس مع حجز وبيع أونلاين.",
-    keywords: ["تصميم مواقع قطاعات طرابلس", "شركة تصميم مواقع ليبيا", "قطاعات نخبة"],
+    keywords: ["تصميم مواقع قطاعات {city}", "شركة تصميم مواقع {country}", "قطاعات نخبة"],
   });
 }
 

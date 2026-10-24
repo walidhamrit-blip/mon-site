@@ -1,7 +1,15 @@
 import type { Metadata } from "next";
 import { resolveDemoClassification, resolvePlanPriceBreakdown } from "@/lib/classification";
 import { getDemoCapturedAt, getDemoPreviewImages } from "@/lib/preview-manifest";
+import {
+  marketAreaServed,
+  marketLanguages,
+  marketLabels,
+  resolveMarket,
+  type MarketConfig,
+} from "@/lib/market";
 import type { Demo, Faq, ProcessStep, Testimonial } from "@/lib/site-types";
+import { DEFAULT_SITE_DOMAIN, domainFromOrigin } from "@/lib/site-identity";
 
 /**
  * Central SEO + structured-data (JSON-LD) helpers.
@@ -11,6 +19,10 @@ import type { Demo, Faq, ProcessStep, Testimonial } from "@/lib/site-types";
  * utilisés par Google Search et les moteurs IA (ChatGPT, Perplexity,
  * Google AI Overviews…). Les builders acceptent la configuration vivante
  * lue depuis la base (/admin → Réglages) avec repli sur les défauts code.
+ *
+ * Aucune ville ni aucun pays n'est écrit en dur : tout provient du
+ * « marché » (`config.market`), ce qui permet d'ouvrir le site à d'autres
+ * pays sans redéploiement, et d'y injecter un positionnement international.
  */
 
 type SiteConfig = {
@@ -23,6 +35,8 @@ type SiteConfig = {
   whatsapp: string;
   address: string;
   addressEn: string;
+  /** Profil de marché (ville, pays, fuseau, devise locale…). */
+  market?: (MarketConfig & { globalReach?: boolean }) | null;
   social: {
     instagram: string;
     facebook: string;
@@ -62,20 +76,58 @@ const BUSINESS_ID = "#business";
  * Description meta par défaut du site (source unique, utilisée par le layout
  * racine et la page d'accueil). ~155 caractères arabe : assez riche en
  * mots-clés, dans la zone d'affichage des résultats Google.
+ *
+ * Conservée telle quelle pour les marchés francophones ; `defaultMetaDescription`
+ * en produit une variante adossée au marché configuré.
  */
 export const DEFAULT_META_DESCRIPTION =
   "Nukhba builds premium websites, e-commerce stores and booking systems for clients worldwide — delivered in 7 days, 90+ speed, SEO + AI-search ready, USD pricing payable in USDT.";
 
 /**
+ * Description meta par défaut, adossée au marché actif.
+ *
+ * Le texte reste «(libyen + international) » : on garde le mot-clé local qui
+ * fait la force du référencement de longue date, et on ajoute la formule
+ * internationale qui attire la clientèle hors du pays d'origine.
+ */
+export function defaultMetaDescription(config: Pick<SiteConfig, "market">): string {
+  const market = resolveMarket(config.market);
+  const ar = marketLabels(market, "ar");
+  const reach = config.market?.globalReach ? " وللعالم" : "";
+  // ~160 caractères : la description doit rester dans la zone d'affichage
+  // des résultats Google (le contrôle SEO le vérifie à chaque build).
+  return `وكالة نخبة لتصميم المواقع في ${ar.city}: مواقع واجهة، متاجر إلكترونية وأنظمة حجز${reach} — تسليم في 7 أيام، سرعة 90+، تحسين SEO، والأسعار بالدولار.`;
+}
+
+/**
+ * Code de vérification Search Console du domaine **par défaut**.
+ *
+ * Google n'émet un code que pour une propriété donnée : ce code n'a donc de
+ * valeur que si le site reste sur le domaine par défaut. Dès que le domaine
+ * change, il faut réémettre un code (ou poser GOOGLE_SITE_VERIFICATION).
+ */
+export const DEFAULT_GOOGLE_SITE_VERIFICATION =
+  "POB624EdzYiqxSgcA5PYaLyZDBbjBVx3mnAgEeUjKcg";
+
+/**
  * Code de vérification Google Search Console (méthode balise HTML meta).
+ *
  * Émis par le layout racine (<meta name="google-site-verification">) et
- * contrôlé par l'audit SEO admin. Le code par défaut est celui de la
- * propriété https://nokhba.net.ly/ ; la variable d'environnement
+ * contrôlé par l'audit SEO admin. La variable d'environnement
  * GOOGLE_SITE_VERIFICATION permet de le remplacer sans redéployer de code
  * (même motif que DEFAULT_INDEXNOW_KEY dans src/lib/indexnow.ts).
+ *
+ * Le code par défaut n'est renvoyé que si le domaine courant est encore le
+ * domaine par défaut : sur un autre domaine, il serait invalide — mieux vaut
+ * ne rien émettre et laisser l'audit admin signaler la vérification comme
+ * manquante.
  */
-export const GOOGLE_SITE_VERIFICATION =
-  process.env.GOOGLE_SITE_VERIFICATION?.trim() || "POB624EdzYiqxSgcA5PYaLyZDBbjBVx3mnAgEeUjKcg";
+export function googleSiteVerification(domain?: string | null): string {
+  const fromEnv = process.env.GOOGLE_SITE_VERIFICATION?.trim();
+  if (fromEnv) return fromEnv;
+  const current = domain ? domainFromOrigin(domain) : DEFAULT_SITE_DOMAIN;
+  return current === DEFAULT_SITE_DOMAIN ? DEFAULT_GOOGLE_SITE_VERIFICATION : "";
+}
 
 /**
  * Tronque une description dynamique (ex. fiche réalisation venue de la base)
@@ -94,14 +146,29 @@ export function absoluteUrl(config: Pick<SiteConfig, "url">, path = "/"): string
   return `${base}${path === "/" ? "/" : path.replace(/\/+$/, "")}`;
 }
 
+/**
+ * Convertit une étiquette BCP-47 (« ar-LY ») en locale Open Graph
+ * (« ar_LY »). Open Graph attend un underscore ; les graphes sociaux
+ * refusent le format hyphenisé.
+ */
+export function ogLocale(locale: string): string {
+  const cleaned = locale.replace(/-/g, "_");
+  const [lang, region] = cleaned.split("_");
+  if (!lang) return "ar";
+  return region ? `${lang}_${region.toUpperCase()}` : lang;
+}
+
 /** Schéma Organization — entité marque référencée par les autres nœuds. */
 export function organizationJsonLd(config: SiteConfig) {
+  const market = resolveMarket(config.market);
+  const en = marketLabels(market, "en");
+  const globalReach = Boolean(config.market?.globalReach) || market.id === "global";
   return {
     "@context": "https://schema.org",
     "@type": "Organization",
     "@id": absoluteUrl(config, ORG_ID),
     name: `${config.nameAr} — ${config.name}`,
-    alternateName: "Nukhba Premium Web Agency",
+    alternateName: `Nukhba Premium Web Agency ${en.city}`,
     url: absoluteUrl(config, "/"),
     logo: {
       "@type": "ImageObject",
@@ -112,9 +179,10 @@ export function organizationJsonLd(config: SiteConfig) {
     image: absoluteUrl(config, "/og.jpg"),
     email: config.email,
     telephone: config.phone,
-    description:
-      "Premium web design & development agency for clients worldwide: showcase sites, e-commerce stores, booking systems, SEO and 7-day delivery. Arabic + English.",
-    inLanguage: ["en", "ar"],
+    description: globalReach
+      ? `وكالة تصميم وتطوير مواقع${en.city === "Worldwide" ? "" : ` في ${en.city}`} تعمل لأسواق عربية وعالمية: مواقع واجهة، متاجر إلكترونية، أنظمة حجز، تحسين SEO وتسليم في 7 أيام.`
+      : `وكالة تصميم وتطوير مواقع في ${en.city} — ${en.country}: مواقع واجهة، متاجر إلكترونية، أنظمة حجز، تحسين SEO وتسليم في 7 أيام.`,
+    inLanguage: marketLanguages(market),
     sameAs: [config.social.instagram, config.social.facebook, config.social.tiktok].filter(
       (u) => u && /^https?:\/\//.test(u),
     ),
@@ -123,13 +191,14 @@ export function organizationJsonLd(config: SiteConfig) {
 
 /** Schéma WebSite — présence web, langues, éditeur. */
 export function websiteJsonLd(config: SiteConfig) {
+  const market = resolveMarket(config.market);
   return {
     "@context": "https://schema.org",
     "@type": "WebSite",
     "@id": absoluteUrl(config, WEBSITE_ID),
     name: `${config.nameAr} ${config.name}`,
     url: absoluteUrl(config, "/"),
-    inLanguage: ["en", "ar"],
+    inLanguage: marketLanguages(market),
     publisher: { "@id": absoluteUrl(config, ORG_ID) },
     // Pas de SearchAction : le site n'expose pas de recherche publique par
     // URL (la recherche des démos est purement côté client). Déclarer une
@@ -139,23 +208,31 @@ export function websiteJsonLd(config: SiteConfig) {
 
 /**
  * Schéma ProfessionalService (sous-type de LocalBusiness) — riche pour le
- * SEO local (Tripoli) et les réponses IA : coordonnées GPS, horaires,
- * contact, avis individuels synchronisés depuis l'admin, réseaux et expertises.
+ * SEO local et les réponses IA : coordonnées GPS, horaires, contact, avis
+ * individuels synchronisés depuis l'admin, réseaux et expertises.
+ *
+ * Tout le volet géographique vient du marché configuré ; `globalReach` ouvre
+ * en plus la zone desservie au monde entier (le SEO local reste déclaré).
  */
 export function localBusinessJsonLd(
   config: SiteConfig,
   testimonials?: ReadonlyArray<Testimonial>,
 ) {
+  const market = resolveMarket(config.market);
+  const en = marketLabels(market, "en");
+  const ar = marketLabels(market, "ar");
+  const globalReach = Boolean(config.market?.globalReach) || market.id === "global";
+  const hasGeo = market.localRadiusKm > 0 && (market.lat !== 0 || market.lng !== 0);
   return {
     "@context": "https://schema.org",
     "@type": "ProfessionalService",
     "@id": absoluteUrl(config, BUSINESS_ID),
     name: `${config.nameAr} — ${config.name} Premium Web Agency`,
-    alternateName: "Nukhba Web Agency — Worldwide",
+    alternateName: `Nukhba Web Agency ${en.city}`,
     url: absoluteUrl(config, "/"),
     logo: absoluteUrl(config, "/icon.svg"),
     image: absoluteUrl(config, "/og.jpg"),
-    slogan: "Premium websites & stores delivered in 7 days — for clients worldwide",
+    slogan: `مواقع ومتاجر إلكترونية فاخرة تُسلَّم في 7 أيام — ${ar.city}${globalReach ? " وللعالم" : ""}`,
     telephone: config.phone,
     email: config.email,
     priceRange: "$$",
@@ -164,32 +241,36 @@ export function localBusinessJsonLd(
     address: {
       "@type": "PostalAddress",
       streetAddress: config.address,
-      addressLocality: "Tripoli",
-      addressRegion: "Tripoli",
-      addressCountry: "LY",
+      addressLocality: en.city,
+      addressRegion: en.city,
+      addressCountry: market.countryCode,
     },
-    geo: {
-      "@type": "GeoCoordinates",
-      latitude: 32.8872,
-      longitude: 13.1913,
-    },
-    hasMap: "https://www.google.com/maps/search/?api=1&query=32.8872,13.1913",
-    areaServed: [
-      { "@type": "Place", name: "Worldwide" },
-      { "@type": "Country", name: "Libya" },
-      { "@type": "City", name: "Tripoli" },
-    ],
-    // Zone de service locale : 60 km autour de Tripoli (Tripoli, Tajoura,
+    ...(hasGeo
+      ? {
+          geo: {
+            "@type": "GeoCoordinates",
+            latitude: market.lat,
+            longitude: market.lng,
+          },
+          hasMap: `https://www.google.com/maps/search/?api=1&query=${market.lat},${market.lng}`,
+        }
+      : {}),
+    areaServed: marketAreaServed(market, globalReach),
+    // Zone de service locale : autour du point d'ancrage (Tripoli, Tajoura,
     // Janzour, Ain Zara, Gasr Ben Ghashir…) — signal de SEO local explicite.
-    serviceArea: {
-      "@type": "GeoCircle",
-      geoMidpoint: {
-        "@type": "GeoCoordinates",
-        latitude: 32.8872,
-        longitude: 13.1913,
-      },
-      geoRadius: "60000",
-    },
+    ...(hasGeo
+      ? {
+          serviceArea: {
+            "@type": "GeoCircle",
+            geoMidpoint: {
+              "@type": "GeoCoordinates",
+              latitude: market.lat,
+              longitude: market.lng,
+            },
+            geoRadius: String(Math.round(market.localRadiusKm * 1000)),
+          },
+        }
+      : {}),
     knowsLanguage: ["ar", "en", "fr"],
     hasOfferCatalog: { "@id": absoluteUrl(config, "/pricing#offer-catalog") },
     knowsAbout: [
@@ -198,10 +279,11 @@ export function localBusinessJsonLd(
       "أنظمة الحجز والمواعيد",
       "تحسين محركات البحث SEO",
       "تحسين الظهور في الذكاء الاصطناعي GEO",
-      "International Web Design",
-      "Web Design Tripoli Libya",
+      `Web Design ${en.city}`,
+      `Web Agency ${en.city}`,
       "E-Commerce Development",
       "Next.js Web Development",
+      ...(globalReach ? ["International Web Design", "E-Commerce Worldwide"] : []),
     ],
     openingHoursSpecification: [
       {
@@ -225,7 +307,7 @@ export function localBusinessJsonLd(
       telephone: config.phone,
       email: config.email,
       availableLanguage: ["Arabic", "English", "French"],
-      areaServed: "LY",
+      areaServed: globalReach ? "WW" : market.countryCode,
     },
     sameAs: [config.social.instagram, config.social.facebook, config.social.tiktok].filter(
       (u) => u && /^https?:\/\//.test(u),
@@ -269,11 +351,14 @@ export function localBusinessJsonLd(
  * Google : le Q/R doit être présent dans la page). Ne doit être injecté que
  * sur les pages qui affichent réellement le composant <FAQ /> (/ et /pricing).
  */
-export function faqJsonLd(faqs: ReadonlyArray<Faq>) {
+export function faqJsonLd(
+  faqs: ReadonlyArray<Faq>,
+  market?: MarketConfig | null,
+) {
   return {
     "@context": "https://schema.org",
     "@type": "FAQPage",
-    inLanguage: "en",
+    inLanguage: resolveMarket(market).locale,
     mainEntity: faqs.map((f) => ({
       "@type": "Question",
       name: f.qAr,
@@ -337,7 +422,7 @@ export function offerCatalogJsonLd(config: SiteConfig) {
  * (content.process) pour les rich results et les moteurs de réponse IA.
  */
 export function howToJsonLd(
-  config: Pick<SiteConfig, "url">,
+  config: Pick<SiteConfig, "url" | "market">,
   steps: ReadonlyArray<ProcessStep>,
 ) {
   return {
@@ -347,7 +432,7 @@ export function howToJsonLd(
     name: "كيف نصمم ونطلق موقعك الاحترافي في 7 إلى 14 يوماً — How Nukhba builds your website",
     description:
       "5 خطوات واضحة من جلسة الاكتشاف والتصميم الحي إلى الإطلاق والتدريب.",
-    inLanguage: ["en", "ar"],
+    inLanguage: marketLanguages(resolveMarket(config.market)),
     totalTime: "P14D",
     step: steps.map((s, idx) => ({
       "@type": "HowToStep",
@@ -394,7 +479,7 @@ export interface WebPageSchemaOptions {
 
 /** Schéma `WebPage` d'une page interne, avec résumé `speakable` optionnel. */
 export function webPageJsonLd(
-  config: Pick<SiteConfig, "url">,
+  config: Pick<SiteConfig, "url" | "market">,
   opts: WebPageSchemaOptions,
 ) {
   const url = absoluteUrl(config, opts.path);
@@ -405,7 +490,7 @@ export function webPageJsonLd(
     url,
     name: opts.name,
     description: metaDescription(opts.description, 300),
-    inLanguage: ["en", "ar"],
+    inLanguage: marketLanguages(resolveMarket(config.market)),
     isPartOf: { "@id": absoluteUrl(config, WEBSITE_ID) },
     ...(opts.about ? { about: { "@type": "Thing", name: opts.about } } : {}),
     primaryImageOfPage: {
@@ -427,6 +512,9 @@ export function webPageJsonLd(
 
 /** Schéma d'une réalisation du portfolio (page /demos/[slug]). */
 export function demoJsonLd(config: SiteConfig, demo: Demo) {
+  const market = resolveMarket(config.market);
+  const marketEn = marketLabels(market, "en");
+  const globalReach = Boolean(config.market?.globalReach) || market.id === "global";
   const cls = resolveDemoClassification(demo, config.pricing.plans);
   const canonicalUrl = absoluteUrl(config, `/demos/${demo.slug}`);
   const hasLivePreview =
@@ -462,7 +550,7 @@ export function demoJsonLd(config: SiteConfig, demo: Demo) {
         }
       : {}),
     url: canonicalUrl,
-    inLanguage: ["en", "ar"],
+    inLanguage: marketLanguages(market),
     ...(capturedIso
       ? { datePublished: capturedIso, dateModified: capturedIso }
       : {}),
@@ -477,7 +565,9 @@ export function demoJsonLd(config: SiteConfig, demo: Demo) {
     },
     audience: {
       "@type": "BusinessAudience",
-      name: `${demo.sectorEn} businesses worldwide`,
+      name: globalReach
+        ? `${demo.sectorEn} businesses worldwide`
+        : `${demo.sectorEn} businesses in ${marketEn.city}, ${marketEn.country}`,
     },
     ...(hasLivePreview ? { workExample: demo.previewUrl } : {}),
     ...(cls && cls.totalPriceUsd != null
@@ -499,8 +589,8 @@ export function demoJsonLd(config: SiteConfig, demo: Demo) {
       ...(demo.features ?? []),
       ...(demo.featuresEn ?? []),
       "تصميم مواقع",
-      "web design",
-      "web design Tripoli",
+      `web design ${marketEn.city}`,
+      ...(globalReach ? ["web design agency worldwide", "international web design"] : []),
     ],
   };
 }
@@ -544,11 +634,47 @@ export interface PageSeoOptions {
 }
 
 /**
+ * Remplace les jetons de marché dans un texte de métadonnées.
+ *
+ * `{city}` / `{country}` valent pour la langue du marché (arabe ou anglais
+ * selon la langue de la page) ; `{cityEn}` / `{countryEn}` valent toujours
+ * en anglais. Les titres de pages s'écrivent ainsi :
+ *   «设计 مواقع في {city} — {country} » → «تصميم مواقع في طرابلس — ليبيا ».
+ *
+ * Changer de marché dans /admin met donc à jour TOUS les titres, sans
+ * toucher au code.
+ */
+export function applyMarketTokens(
+  text: string,
+  market: ReturnType<typeof resolveMarket>,
+  locale: "ar" | "en" = "ar",
+): string {
+  const labels = marketLabels(market, locale);
+  const labelsEn = marketLabels(market, "en");
+  return text
+    .replaceAll("{city}", labels.city)
+    .replaceAll("{country}", labels.country)
+    .replaceAll("{cityEn}", labelsEn.city)
+    .replaceAll("{countryEn}", labelsEn.country)
+    .replaceAll("{place}", labels.place)
+    .replaceAll("{placeEn}", labelsEn.place);
+}
+
+/**
  * Construit les métadonnées Next.js complètes d'une page : canonical,
  * Open Graph (en_US + alternate ar), Twitter Card et robots.
  */
 export function pageMetadata(config: SiteConfig, opts: PageSeoOptions): Metadata {
   const canonical = absoluteUrl(config, opts.path);
+  // Les jetons de marché ({city}, {country}…) sont résolus ici : les titres
+  // et descriptions restent lisibles dans le code, mais suivent le marché
+  // configuré.
+  const market = resolveMarket(config.market);
+  const title = applyMarketTokens(opts.title, market);
+  const description = applyMarketTokens(opts.description, market);
+  const keywords = opts.keywords?.map((keyword) =>
+    applyMarketTokens(keyword, market),
+  );
   // undefined = pas d'images déclarées manuellement (la page s'appuie sur
   // les fichiers opengraph-image / twitter-image du segment de route).
   const ogImage =
@@ -561,9 +687,9 @@ export function pageMetadata(config: SiteConfig, opts: PageSeoOptions): Metadata
         : absoluteUrl(config, "/og.jpg");
 
   return {
-    title: opts.title,
-    description: opts.description,
-    keywords: opts.keywords,
+    title,
+    description,
+    keywords,
     alternates: { canonical },
     robots: opts.noindex
       ? { index: false, follow: false, googleBot: { index: false, follow: false } }
@@ -579,21 +705,21 @@ export function pageMetadata(config: SiteConfig, opts: PageSeoOptions): Metadata
           },
         },
     openGraph: {
-      title: opts.title,
-      description: opts.description,
+      title,
+      description,
       url: canonical,
       siteName: `${config.nameAr} ${config.name}`,
-      locale: "en_US",
-      alternateLocale: ["ar"],
+      locale: ogLocale(resolveMarket(config.market).locale),
+      alternateLocale: ["en_US"],
       type: "website",
       ...(ogImage
-        ? { images: [{ url: ogImage, width: 1376, height: 768, alt: opts.title }] }
+        ? { images: [{ url: ogImage, width: 1376, height: 768, alt: title }] }
         : {}),
     },
     twitter: {
       card: "summary_large_image",
-      title: opts.title,
-      description: opts.description,
+      title,
+      description,
       ...(ogImage ? { images: [ogImage] } : {}),
     },
   };

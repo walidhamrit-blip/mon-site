@@ -16,10 +16,16 @@ import { siteConfig } from "@/lib/config";
 import { checkRateLimitHeaders } from "@/lib/rate-limit";
 import {
   contentSchemas,
+  digitalProductSchema,
   leadStatusSchema,
   siteConfigSchema,
   type ContentSection,
 } from "@/lib/validation";
+import {
+  deleteDigitalProduct,
+  upsertDigitalProduct,
+} from "@/lib/digital-store";
+import type { DigitalProduct } from "@/lib/digital-types";
 
 export interface ActionResult {
   ok: boolean;
@@ -524,6 +530,51 @@ export async function generateDemoFromLead(leadId: number): Promise<GenerateDemo
       whatsappUrl,
       whatsappMessage,
     };
+  } catch (error) {
+    return { ok: false, error: dbIssue(error) };
+  }
+}
+
+/* ---------------- Catalogue digital (codes logiciels & cartes cadeaux) ---------------- */
+
+/**
+ * Crée ou met à jour une fiche du catalogue digital.
+ *
+ * Les dénominations (montants, régions, prix) sont réécrites avec la fiche :
+ * l'admin gère une liste simple, l'historique des lignes n'a pas de valeur
+ * ici — il n'y a pas encore de stock ni de commande rattachée.
+ */
+export async function saveDigitalProduct(input: unknown): Promise<ActionResult> {
+  await requireAdmin();
+  const parsed = digitalProductSchema.safeParse(input);
+  if (!parsed.success) {
+    return { ok: false, error: `Fiche invalide — ${firstIssue(parsed.error)}` };
+  }
+  try {
+    await upsertDigitalProduct(parsed.data as DigitalProduct);
+    revalidatePath("/codes");
+    revalidatePath("/admin/digital");
+    void pingAllPublicPages();
+    return {
+      ok: true,
+      message: `Fiche « ${parsed.data.titleAr} » enregistrée — le catalogue public est à jour.`,
+    };
+  } catch (error) {
+    return { ok: false, error: dbIssue(error) };
+  }
+}
+
+/** Supprime une fiche du catalogue digital (et ses dénominations). */
+export async function deleteDigitalProductAction(id: string): Promise<ActionResult> {
+  await requireAdmin();
+  const productId = String(id ?? "").trim();
+  if (!productId) return { ok: false, error: "Fiche non identifiée." };
+  try {
+    await deleteDigitalProduct(productId);
+    revalidatePath("/codes");
+    revalidatePath("/admin/digital");
+    void pingAllPublicPages();
+    return { ok: true, message: "Fiche supprimée du catalogue." };
   } catch (error) {
     return { ok: false, error: dbIssue(error) };
   }

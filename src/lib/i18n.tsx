@@ -87,12 +87,12 @@ const translations = {
       guarantee: "✓ رد خلال ساعتين  ✓ بدون التزام  ✓ استشارة مجانية",
     },
     footer: {
-      desc: "نصنع مواقع تبيع — فاخرة، سريعة، ومصممة على مقاس طموحك أينما كنت في العالم.",
+      desc: "نصنع مواقع تبيع — فاخرة، سريعة، ومصممة على مقاس طموحك في {place}، وأينما كنت في العالم.",
       links: "روابط سريعة",
       services: "خدماتنا",
       contact: "تواصل",
       rights: "© 2026 نخبة. كل الحقوق محفوظة.",
-      madeIn: "من طرابلس — إلى العالم",
+      madeIn: "من {city} — إلى العالم",
     },
     contactPage: {
       title: "لنتحدث عن مشروعك",
@@ -380,12 +380,12 @@ const translations = {
       guarantee: "✓ Reply in 2h  ✓ No commitment  ✓ Free consult",
     },
     footer: {
-      desc: "We build sites that sell — luxurious, fast & tailored to your ambition, wherever you are in the world.",
+      desc: "We build sites that sell — luxurious, fast & tailored to your ambition in {place}, and wherever you are in the world.",
       links: "Quick links",
       services: "Services",
       contact: "Contact",
       rights: "© 2026 Nukhba. All rights reserved.",
-      madeIn: "From Tripoli — for the world",
+      madeIn: "From {city} — for the world",
     },
     contactPage: {
       title: "Let's talk about your project",

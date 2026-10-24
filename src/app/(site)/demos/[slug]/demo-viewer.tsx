@@ -167,7 +167,6 @@ export function DemoViewer({ demo, allDemos }: { demo: Demo; allDemos: Demo[] })
                     </div>
                     <ModelPriceBreakdown
                       breakdown={classification}
-                      currency={locale === "ar" ? config.pricing.currency : config.pricing.currencyEn}
                     />
                     {config.pricing.plans.find((plan) => plan.id === classification.planId) && (
                       <ModelPurchaseButton

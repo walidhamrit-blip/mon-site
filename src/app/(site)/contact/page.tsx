@@ -8,13 +8,13 @@ export async function generateMetadata(): Promise<Metadata> {
   const { config } = await getSiteDataCached();
   return pageMetadata(config, {
     path: "/contact",
-    title: "تواصل معنا — وكالة نخبة لتصميم المواقع في طرابلس",
+    title: "تواصل معنا — وكالة نخبة لتصميم المواقع في {city}",
     description:
       "تواصل مع نخبة في طرابلس: واتساب، هاتف أو بريد إلكتروني. استشارة مجانية لموقعك أو متجرك الإلكتروني — رد سريع، السبت إلى الخميس 9 صباحاً حتى 6 مساءً.",
     keywords: [
-      "تواصل وكالة تصميم مواقع طرابلس",
-      "شركة ويب ليبيا واتساب",
-      "web agency Tripoli contact",
+      "تواصل وكالة تصميم مواقع {city}",
+      "شركة ويب {country} واتساب",
+      "web agency {cityEn} contact",
     ],
   });
 }

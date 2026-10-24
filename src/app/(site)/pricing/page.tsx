@@ -14,12 +14,16 @@ export async function generateMetadata(): Promise<Metadata> {
     path: "/pricing",
     title: "Website & Store Pricing Plans in USD — Pay in USDT",
     description:
-      "Transparent USD website pricing: model price per category, a separate customization fee, and a clear total before checkout (1 USD = 1 USDT) — pay in full or in 2–3 crypto installments.",
+      "Transparent USD pricing in {countryEn}: model price, a separate customization fee, a clear total before checkout (1 USD = 1 USDT) — full or 2–3 installments.",
     keywords: [
       "website pricing USD",
       "e-commerce website price",
       "pay for a website with USDT",
       "باقات تصميم مواقع بالدولار",
+      "website pricing {countryEn}",
+      "أسعار تصميم المواقع {country}",
+      "تكلفة متجر إلكتروني {city}",
+      "باقات تصميم مواقع",
       "website pricing Libya",
     ],
   });

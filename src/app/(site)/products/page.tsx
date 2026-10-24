@@ -8,12 +8,12 @@ export async function generateMetadata(): Promise<Metadata> {
   const { config } = await getSiteDataCached();
   return pageMetadata(config, {
     path: "/products",
-    title: "منتجاتنا الرقمية وبرامجنا السحابية — قريباً في طرابلس",
+    title: "منتجاتنا الرقمية وبرامجنا السحابية — قريباً في {city}",
     description:
       "المنتجات الرقمية والبرامج الجاهزة من نخبة قريباً — أنظمة نقاط البيع وإدارة المخزون والفوترة السحابية وقوالب الأعمال للشركات في طرابلس وليبيا.",
     keywords: [
-      "برامج محاسبة ومخازن ليبيا",
-      "نظام نقاط بيع طرابلس",
+      "برامج محاسبة ومخازن {country}",
+      "نظام نقاط بيع {city}",
       "منتجات رقمية وبرامج سحابية",
       "Nukhba software & digital products",
     ],

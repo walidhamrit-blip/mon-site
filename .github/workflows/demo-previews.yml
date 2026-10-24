@@ -68,7 +68,7 @@ jobs:
       - name: Captures des démos
         id: capture
         env:
-          CAPTURE_BASE_URL: https://nokhba.net.ly
+          CAPTURE_BASE_URL: ${{ vars.SITE_URL || 'https://nokhba.net.ly' }}
         run: |
           ARGS="--force --concurrency=3"
           if [ -n "${{ inputs.only }}" ]; then

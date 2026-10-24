@@ -1,18 +1,21 @@
 "use client";
 
 import type { PlanPriceBreakdown } from "@/lib/classification";
-import { formatMainPrice } from "@/lib/installments";
+import { Price } from "@/components/price";
 import { useI18n } from "@/lib/i18n";
 
-/** Itemized model + customization + total in USD, shared by pricing and demo pages. */
+/**
+ * Itemized model + customization + total, shared by pricing and demo pages.
+ *
+ * Les montants sont affichés dans la devise choisie par le visiteur
+ * (`<Price />`) : la devise de facturation reste l'USD.
+ */
 export function ModelPriceBreakdown({
   breakdown,
-  currency,
   compact = false,
   className = "",
 }: {
   breakdown: PlanPriceBreakdown;
-  currency: string;
   compact?: boolean;
   className?: string;
 }) {
@@ -24,8 +27,8 @@ export function ModelPriceBreakdown({
   const price = (usd: number | null) => {
     if (usd == null) return ar ? "حسب الطلب" : "On request";
     return (
-      <span className="text-end font-bold" dir="ltr">
-        {formatMainPrice(usd, currency)}
+      <span className="text-end" dir="ltr">
+        <Price usd={usd} className="font-bold" />
       </span>
     );
   };

@@ -4,7 +4,7 @@ import type { Demo } from "@/lib/site-types";
 import type { siteConfig } from "@/lib/config";
 import { getSectorSeo } from "@/lib/sectors";
 import { resolveDemoClassification } from "@/lib/classification";
-import { formatMainPrice } from "@/lib/installments";
+import { Price } from "@/components/price";
 import { whatsappLink } from "@/lib/utils";
 
 /**
@@ -152,12 +152,12 @@ export function DemoDetails({
               {classification?.priceUsd != null && (
                 <div className="flex items-center justify-between gap-3">
                   <dt className="opacity-60">السعر</dt>
-                  <dd className="font-bold text-end" dir="ltr">
-                    {formatMainPrice(
-                      classification.priceUsd,
-                      config.pricing.currency,
-                    )}{" "}
-                    <span className="opacity-60 font-medium">USD · = USDT</span>
+                  <dd className="font-bold text-end">
+                    <Price usd={classification.priceUsd} />
+                    <span className="opacity-60 font-medium">
+                      {" · "}
+                      <Price usd={classification.priceUsd} compact />
+                    </span>
                   </dd>
                 </div>
               )}

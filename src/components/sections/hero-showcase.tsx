@@ -187,7 +187,6 @@ export function HeroShowcase() {
               </div>
               <ModelPriceBreakdown
                 breakdown={classification}
-                currency={ar ? config.pricing.currency : config.pricing.currencyEn}
                 compact
               />
             </div>

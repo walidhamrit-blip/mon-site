@@ -5,7 +5,7 @@
  *   npm run previews:capture                 # toutes les démos
  *   npm run previews:capture -- --dry-run    # plan sans navigateur
  *   npm run previews:capture -- --only=al-manhaj-company,hala-dun
- *   npm run previews:capture -- --base=https://nokhba.net.ly
+ *   npm run previews:capture -- --base=https://exemple.com
  *
  * Ce que fait le script, pour chaque démo (`content.demos`) :
  *   1. vérifie que `previewUrl` répond en HTTP 200 (alerte si la démo tombe) ;
@@ -406,7 +406,7 @@ async function realCheckUrl(url, { timeoutMs = 20_000 } = {}) {
       signal: controller.signal,
       headers: {
         "User-Agent":
-          "NukhbaPreviewBot/1.0 (+https://nokhba.net.ly/; captures d'aperçu des réalisations)",
+          "NukhbaPreviewBot/1.0 (+https://exemple.com/; captures d'aperçu des réalisations)",
         Accept: "text/html,application/xhtml+xml",
       },
     });

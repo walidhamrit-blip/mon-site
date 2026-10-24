@@ -1,5 +1,6 @@
 import { createHash } from "node:crypto";
 import { getSiteDataCached } from "@/lib/store";
+import { getDigitalCatalog } from "@/lib/digital-store";
 import { buildLlmsTxt } from "@/lib/llms-txt";
 
 /**
@@ -9,8 +10,11 @@ import { buildLlmsTxt } from "@/lib/llms-txt";
  * automatiquement à chaque modification de configuration ou de contenu.
  */
 export async function GET() {
-  const data = await getSiteDataCached();
-  const body = buildLlmsTxt(data);
+  const [data, digitalProducts] = await Promise.all([
+    getSiteDataCached(),
+    getDigitalCatalog({ publicOnly: true }),
+  ]);
+  const body = buildLlmsTxt({ ...data, digitalProducts });
   const etag = `"${createHash("sha256").update(body).digest("base64url").slice(0, 32)}"`;
 
   return new Response(body, {

@@ -19,7 +19,7 @@ import { useI18n } from "@/lib/i18n";
 import { useSectionHeading, useSiteConfig } from "@/components/site-provider";
 import { SectionHeading } from "@/components/section-heading";
 import { whatsappLink } from "@/lib/utils";
-import { formatMainPrice } from "@/lib/installments";
+import { Price } from "@/components/price";
 
 /** Icônes disponibles pour les services libres (config : `standaloneServices`). */
 const ICONS: Record<string, LucideIcon> = {
@@ -90,14 +90,11 @@ export function Services() {
                     <div className="text-[10px] font-bold uppercase tracking-wider opacity-50">
                       {ar ? t.services.fromAr : t.services.fromEn}
                     </div>
-                    <div className="text-[22px] font-black text-[var(--accent)] leading-none" dir="ltr">
-                      {formatMainPrice(
-                        service.priceFromUsd,
-                        ar ? siteConfig.pricing.currency : siteConfig.pricing.currencyEn,
-                      )}
+                    <div className="text-[22px] font-black text-[var(--accent)] leading-none">
+                      <Price usd={service.priceFromUsd} />
                     </div>
-                    <div className="text-[10px] opacity-50 mt-0.5" dir="ltr">
-                      USD · = USDT
+                    <div className="text-[10px] opacity-50 mt-0.5">
+                      <Price usd={service.priceFromUsd} compact />
                     </div>
                   </div>
                 </div>

@@ -42,6 +42,11 @@ export async function generateMetadata(): Promise<Metadata> {
       "AI search visibility GEO",
       "دليل الدفع بالكريبتو",
       "تكلفة تصميم موقع",
+      "مدونة تصميم مواقع {country}",
+      "أدلة تسويق رقمي {city}",
+      "تكلفة موقع {country}",
+      "web design blog {countryEn}",
+      "business guides {cityEn}",
     ],
   });
 }

@@ -196,12 +196,35 @@ test("aucun extrait ne contient rel=nofollow", () => {
 });
 
 test("les constantes du badge restent cohérentes", () => {
-  assert.equal(badge.BADGE_CANONICAL, "https://nokhba.net.ly/");
-  assert.match(badge.BADGE_LINK, /utm_source=client_footer/);
+  // Les URL de crédit suivent le domaine : ce sont des fonctions, plus des
+  // constantes figées.
+  assert.equal(badge.badgeCanonical(), "https://nokhba.net.ly/");
+  assert.equal(badge.badgeCanonical("https://exemple.com"), "https://exemple.com/");
+  assert.match(badge.badgeLink(), /utm_source=client_footer/);
+  assert.match(badge.badgeLink("https://exemple.com"), /^https:\/\/exemple\.com\//);
   assert.equal(badge.BADGE_WIDTH, 176);
   assert.equal(badge.BADGE_HEIGHT, 44);
   assert.equal(badge.BADGE_ASSET, "/badge/nukhba-badge.svg");
   assert.notEqual(badge.BADGE_ASSET, badge.BADGE_ASSET_LIGHT);
+});
+
+test("detectBadge accepte plusieurs origines (migration de domaine)", () => {
+  const html =
+    '<a href="https://exemple.com/?utm_source=client_footer"><img src="/b.svg" alt="x"></a>';
+  // Sans option : seul le domaine configuré par défaut est reconnu.
+  assert.equal(badge.detectBadge(html).found, false);
+  // Avec l'origine du nouveau domaine : reconnu.
+  assert.equal(badge.detectBadge(html, { origins: ["https://exemple.com"] }).found, true);
+  // L'ancien domaine reste toléré s'il est déclaré.
+  assert.equal(
+    badge.detectBadge(html, { origins: ["https://exemple.com", "https://nokhba.net.ly"] }).found,
+    true,
+  );
+  // Un site qui pointe ailleurs n'est jamais considéré comme porteur du badge.
+  assert.equal(
+    badge.detectBadge(html, { origins: ["https://autre-domaine.com"] }).found,
+    false,
+  );
 });
 
 /* ───────────────────────── Lecture du fichier clients ───────────────────────── */

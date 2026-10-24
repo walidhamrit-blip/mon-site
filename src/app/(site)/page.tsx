@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { HomeSections } from "@/components/sections/home-sections";
 import { getSiteDataCached } from "@/lib/store";
 import {
-  DEFAULT_META_DESCRIPTION,
+  defaultMetaDescription,
   faqJsonLd,
   howToJsonLd,
   pageMetadata,
@@ -13,15 +13,25 @@ export async function generateMetadata(): Promise<Metadata> {
   const { config } = await getSiteDataCached();
   return pageMetadata(config, {
     path: "/",
-    title: "Website & Online Store Design — Delivered in 7 Days, Paid in USDT",
-    description: DEFAULT_META_DESCRIPTION,
+    title: "Website & Store Design in {cityEn} — 7 Days, Paid in USDT",
+    description: defaultMetaDescription(config),
     keywords: [
       "web design agency",
       "website design USD",
       "e-commerce website",
       "pay for a website with USDT",
       "تصميم مواقع",
-      "web design Tripoli Libya",
+      "تصميم مواقع {city}",
+      "شركة تصميم مواقع {country}",
+      "متجر إلكتروني {country}",
+      "تصميم متجر إلكتروني {city}",
+      "تحسين SEO {country}",
+      "وكالة ويب {city}",
+      "web design {cityEn}",
+      "web design {countryEn}",
+      "e-commerce {countryEn}",
+      "Nukhba web agency",
+      "web design agency worldwide",
     ],
   });
 }

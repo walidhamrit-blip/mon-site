@@ -12,6 +12,7 @@ import {
 } from "@/lib/services";
 import { JsonLd } from "@/components/json-ld";
 import { formatMainPrice } from "@/lib/installments";
+import { Price } from "@/components/price";
 
 /** Prix « à partir de » d'un service, lu dans la configuration vivante. */
 function startingPrice(
@@ -30,19 +31,19 @@ export async function generateMetadata(): Promise<Metadata> {
 
   return pageMetadata(config, {
     path: "/services",
-    title: "خدمات رقمية سريعة في طرابلس — هوية، عروض، صفحات هبوط",
+    title: "خدمات رقمية سريعة في {city} — هوية، عروض، صفحات هبوط",
     description:
       `خدمات نخبة الرقمية في طرابلس بأسعار معلنة: إعادة تصميم موقع من ${price("restyle", 49)}، ` +
       `إضافة قسم من ${price("add-section", 19)}، عرض تقديمي من ${price("slides", 29)}، ` +
       `هوية بصرية من ${price("branding", 39)}، صفحة هبوط من ${price("landing", 59)}، ` +
       `وإصلاح موقع من ${price("fix-optimize", 15)}.`,
     keywords: [
-      "خدمات رقمية طرابلس",
-      "إعادة تصميم موقع ليبيا",
+      "خدمات رقمية {city}",
+      "إعادة تصميم موقع {country}",
       "تصميم هوية بصرية",
-      "صفحة هبوط ليبيا",
-      "إصلاح موقع طرابلس",
-      "digital services Tripoli",
+      "صفحة هبوط {country}",
+      "إصلاح موقع {city}",
+      "digital services {cityEn}",
     ],
   });
 }
@@ -216,11 +217,11 @@ export default async function ServicesPage() {
                     <div className="mt-auto pt-5">
                       <div className="flex items-baseline gap-2">
                         <span className="text-sm opacity-50">تبدأ من</span>
-                        <span className="text-2xl font-black" dir="ltr">
-                          {formatMainPrice(service.priceFromUsd, "$")}
+                        <span className="text-2xl font-black">
+                          <Price usd={service.priceFromUsd} />
                         </span>
-                        <span className="text-xs opacity-50" dir="ltr">
-                          USD · = USDT
+                        <span className="text-xs opacity-50">
+                          <Price usd={service.priceFromUsd} compact />
                         </span>
                       </div>
                       <p className="mt-1 text-[11px] opacity-50">

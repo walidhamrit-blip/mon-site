@@ -5,11 +5,11 @@
  *   npm run badge:audit                 # vérifie tous les clients
  *   npm run badge:audit -- --dry-run    # plan, sans réseau
  *   npm run badge:audit -- --only=hala-dun
- *   npm run badge:audit -- --base=https://nokhba.net.ly
+ *   npm run badge:audit -- --base=https://exemple.com
  *
  * Pour chaque site client (démos publiées), le script :
  *   1. récupère le HTML du pied de page (page d'accueil) ;
- *   2. cherche un <a href="https://nokhba.net.ly…"> ;
+ *   2. cherche un <a href="https://<domaine-du-site>…"> ;
  *   3. vérifie l'ancre (arabe/latine), `rel` (nofollow ou dofollow) et
  *      `utm_source=client_footer` ;
  *   4. classe : `verified` (lien dofollow exploitable), `nofollow` (lien
@@ -39,8 +39,53 @@ const REPORTS_DIR = join(ROOT, "reports");
 const AT_ROOT = join(ROOT, "src");
 
 export const CLIENTS_VERSION = 1;
+/** Domaine par défaut — repris de `src/lib/site-identity.ts` (source de vérité). */
+export const DEFAULT_BADGE_ORIGIN = "https://nokhba.net.ly";
 /** Pages à essayer dans l'ordre : le crédit vit presque toujours en pied de page. */
 export const SCAN_PATHS = ["/", "/ar", "/en"];
+
+/**
+ * Détermine les origines reconnues comme badge officiel.
+ *
+ * Ordre de priorité :
+ *   1. `--badge-origin=URL` (explicite) ;
+ *   2. `BADGE_ORIGIN` (environnement) ;
+ *   3. `--base=URL` — l'API démos du site : c'est l'adresse réelle du site,
+ *      donc la source de vérité la plus fiable ;
+ *   4. `SITE_URL` / `NEXT_PUBLIC_SITE_URL` ;
+ *   5. le domaine par défaut.
+ *
+ * `--accept=URL` ajoute des origines historiques : pendant une migration de
+ * domaine, les pieds de page clients qui pointent encore vers l'ancien
+ * domaine restent valides au lieu d'être signalés « manquants ».
+ */
+export function resolveBadgeOrigins(options = {}, env = process.env) {
+  const explicit = options.badgeOrigin?.trim();
+  const fromEnv = env.BADGE_ORIGIN?.trim();
+  const fromBase = options.base?.trim();
+  const fromSiteUrl = env.SITE_URL?.trim() || env.NEXT_PUBLIC_SITE_URL?.trim();
+
+  const primary =
+    explicit || fromEnv || fromBase || fromSiteUrl || DEFAULT_BADGE_ORIGIN;
+
+  const legacy = []
+    .concat(options.accept ?? [])
+    .flatMap((value) => String(value ?? "").split(","))
+    .map((value) => value.trim())
+    .filter(Boolean);
+
+  const origins = [];
+  for (const candidate of [primary, ...legacy]) {
+    const normalized = String(candidate).replace(/\/+$/, "");
+    if (!normalized) continue;
+    const key = normalized.replace(/^https?:\/\//i, "").replace(/^www\./i, "");
+    if (origins.some((known) => known.replace(/^https?:\/\//i, "").replace(/^www\./i, "") === key)) {
+      continue;
+    }
+    origins.push(normalized);
+  }
+  return origins;
+}
 
 /* ─────────────────────────── Helpers purs ─────────────────────────── */
 
@@ -190,7 +235,7 @@ export async function auditAll({
     fetchHtml = async () => ({ ok: true, status: 200, html: "" }),
     detect = () => ({ found: false }),
   } = deps;
-  const { only = null, dryRun = false } = options;
+  const { only = null, dryRun = false, origins = [] } = options;
 
   const onlySet = only && only.length > 0 ? new Set(only) : null;
   const queue = sites.filter((site) => {
@@ -239,7 +284,7 @@ export async function auditAll({
         continue;
       }
       reachable ??= { target, status: fetched.status };
-      const detection = detect(fetched.html);
+      const detection = detect(fetched.html, { origins });
       if (detection?.found) {
         return {
           ...base,
@@ -358,7 +403,7 @@ async function readClientsFile(path = CLIENTS_PATH) {
   }
 }
 
-async function realFetchHtml(url, { timeoutMs = 20_000 } = {}) {
+async function realFetchHtml(url, { timeoutMs = 20_000, badgeOriginUrl } = {}) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
@@ -367,7 +412,7 @@ async function realFetchHtml(url, { timeoutMs = 20_000 } = {}) {
       signal: controller.signal,
       headers: {
         "User-Agent":
-          "NukhbaBadgeBot/1.0 (+https://nokhba.net.ly/badge; vérification du crédit de conception)",
+          `NukhbaBadgeBot/1.0 (+${badgeOriginUrl || DEFAULT_BADGE_ORIGIN}/badge; vérification du crédit de conception)`,
         Accept: "text/html,application/xhtml+xml",
       },
     });
@@ -383,6 +428,8 @@ function parseArgs(argv) {
     dryRun: false,
     only: null,
     base: process.env.BADGE_BASE_URL || "",
+    badgeOrigin: process.env.BADGE_ORIGIN || "",
+    accept: [],
     concurrency: 3,
     timeoutMs: 20_000,
     prune: null,
@@ -398,6 +445,17 @@ function parseArgs(argv) {
         .map((slug) => slug.trim())
         .filter(Boolean);
     } else if (arg.startsWith("--base=")) options.base = arg.slice("--base=".length).trim();
+    else if (arg.startsWith("--badge-origin=")) {
+      options.badgeOrigin = arg.slice("--badge-origin=".length).trim();
+    } else if (arg.startsWith("--accept=")) {
+      options.accept.push(
+        ...arg
+          .slice("--accept=".length)
+          .split(",")
+          .map((value) => value.trim())
+          .filter(Boolean),
+      );
+    }
     else if (arg.startsWith("--concurrency=")) {
       options.concurrency = Math.max(1, Number.parseInt(arg.split("=")[1], 10) || 3);
     } else if (arg === "--help" || arg === "-h") options.help = true;
@@ -415,6 +473,9 @@ Audit du badge de netlinking client (Nukhba)
   --no-prune             conserve les clients même s'ils ne sont plus listés
   --only=slug1,slug2     limite l'audit à certaines démos
   --base=URL             lit les démos de <URL>/api/public/demos
+  --badge-origin=URL     domaine reconnu comme badge officiel (défaut :
+                         l'API démos du site, puis SITE_URL)
+  --accept=URL[,URL…]    origines historiques tolérées (migration de domaine)
   --concurrency=N        contrôles parallèles (défaut 3)
 `);
 }
@@ -427,6 +488,18 @@ async function main() {
   }
 
   console.log(`\n🏷️  Audit du badge client${options.dryRun ? " (dry-run)" : ""}\n`);
+
+  // Origines reconnues : le domaine du site + les domaines historiques
+  // tolérés (`--accept`), pour qu'une migration de domaine ne signale pas
+  // les pieds de page clients qui pointent encore vers l'ancien lien.
+  const origins = resolveBadgeOrigins(options);
+  options.origins = origins;
+  options.badgeOriginUrl = origins[0];
+  options.badgeOriginHost = origins[0]
+    .replace(/^https?:\/\//i, "")
+    .replace(/^www\./i, "");
+  console.log(`  origine badge : ${origins.join(", ")}`);
+
   const demos = await loadDemos(options);
   if (!Array.isArray(demos) || demos.length === 0) {
     console.error("Aucune démo trouvée.");
@@ -439,7 +512,10 @@ async function main() {
   const { results, summary, doc, changed } = await auditAll({
     sites: demos,
     previousClients: previous,
-    deps: { fetchHtml: realFetchHtml, detect: badgeLib.detectBadge },
+    deps: {
+      fetchHtml: (url, opts) => realFetchHtml(url, { ...opts, badgeOriginUrl: options.badgeOriginUrl }),
+      detect: badgeLib.detectBadge,
+    },
     options,
     now: new Date(),
   });
@@ -475,7 +551,7 @@ async function main() {
         : result.status === "nofollow"
           ? "lien en nofollow"
           : result.status === "missing"
-            ? "aucun lien vers nokhba.net.ly"
+            ? `aucun lien vers ${options.badgeOriginHost || DEFAULT_BADGE_ORIGIN.replace(/^https?:\/\//i, "")}`
             : result.status === "down"
               ? `hors ligne (${result.httpStatus ?? "réseau"})`
               : "en attente";

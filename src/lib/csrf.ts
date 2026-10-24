@@ -11,9 +11,12 @@
 // Ainsi :
 //  - toute requête cross-site depuis `https://attaquant.exemple` est rejetée
 //    avec HTTP 403 (`Origin` ≠ `Host` et hors domaines configurés) ;
-//  - tous les environnements légitimes du site (domaine custom `nokhba.net.ly`,
-//    `www.nokhba.net.ly`, déploiements Vercel `*.vercel.app`, previews Arena
+//  - tous les environnements légitimes du site (domaine canonique et son
+//    alias `www.`, déploiements Vercel `*.vercel.app`, previews Arena
 //    `*.e2b.app`, `localhost`) fonctionnent sans faux positif.
+//    Les origines autorisées suivent le domaine configuré : `SITE_URL` et
+//    `NEXT_PUBLIC_SITE_URL` priment sur le domaine par défaut, il faut donc
+//    les mettre à jour en même temps qu'un changement de domaine.
 
 import { siteConfig } from "@/lib/config";
 
@@ -69,7 +72,9 @@ function allowedHostSet(req: Request): Set<string> {
   addUrlHost(hosts, process.env.VERCEL_URL);
   addUrlHost(hosts, process.env.VERCEL_BRANCH_URL);
   addUrlHost(hosts, process.env.VERCEL_PROJECT_PRODUCTION_URL);
+  // Domaine canonique configuré (défaut de l'application).
   addUrlHost(hosts, siteConfig.url);
+  addHostWithWwwAlias(hosts, siteConfig.domain);
 
   return hosts;
 }

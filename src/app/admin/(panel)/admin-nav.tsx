@@ -12,6 +12,7 @@ import {
   Globe,
   AppWindow,
   FileText,
+  Gift,
   Settings,
   ExternalLink,
   LogOut,
@@ -97,6 +98,12 @@ export function AdminNav({ newLeads, paidOrders }: Props) {
           label: "Applications & Logiciels",
           sublabel: "Pages Prochainement / En prép.",
           icon: AppWindow,
+        },
+        {
+          href: "/admin/digital",
+          label: "Codes & Cartes cadeaux",
+          sublabel: "Catalogue digital & montants",
+          icon: Gift,
         },
       ],
     },
@@ -235,6 +242,13 @@ export function AdminNav({ newLeads, paidOrders }: Props) {
             className="rounded-lg border border-stone-200 bg-[#FAF9F6] px-2 py-1.5 text-center text-[11px] font-semibold text-stone-700 hover:bg-stone-100"
           >
             Produits ↗
+          </Link>
+          <Link
+            href="/codes"
+            target="_blank"
+            className="rounded-lg border border-stone-200 bg-[#FAF9F6] px-2 py-1.5 text-center text-[11px] font-semibold text-stone-700 hover:bg-stone-100"
+          >
+            Codes ↗
           </Link>
         </div>
 

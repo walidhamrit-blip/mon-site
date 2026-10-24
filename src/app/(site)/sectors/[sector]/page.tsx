@@ -8,7 +8,7 @@ import { breadcrumbJsonLd, pageMetadata } from "@/lib/seo";
 import { JsonLd } from "@/components/json-ld";
 import { getSectorSeo, getDemosForSector, sectorCollectionJsonLd, sectorFaqJsonLd, sectorIds } from "@/lib/sectors";
 import { demoImageAlt, resolveDemoClassification } from "@/lib/classification";
-import { formatMainPrice } from "@/lib/installments";
+import { Price } from "@/components/price";
 
 export async function generateStaticParams() {
   return sectorIds.map((sector) => ({ sector }));
@@ -180,7 +180,7 @@ export default async function SectorPage({ params }: { params: Promise<{ sector:
                             </div>
                             <div className="flex justify-between gap-2">
                               <span className="opacity-60">سعر النموذج</span>
-                              <strong dir="ltr">{cls.priceUsd == null ? "حسب الطلب" : `$${cls.priceUsd} USD`}</strong>
+                              <strong>{cls.priceUsd == null ? "حسب الطلب" : <Price usd={cls.priceUsd} compact />}</strong>
                             </div>
                             <div className="mt-1 flex justify-between gap-2">
                               <span className="opacity-60">
@@ -190,7 +190,7 @@ export default async function SectorPage({ params }: { params: Promise<{ sector:
                             </div>
                             <div className="mt-1 flex justify-between gap-2 border-t border-[var(--border)]/70 pt-1 font-black">
                               <span>الإجمالي</span>
-                              <strong dir="ltr">{cls.totalPriceUsd == null ? "يُحدد قبل الدفع" : `$${cls.totalPriceUsd} USD (= USDT)`}</strong>
+                              <strong>{cls.totalPriceUsd == null ? "يُحدد قبل الدفع" : <Price usd={cls.totalPriceUsd} compact />}</strong>
                             </div>
                           </div>
                         )}

@@ -7,7 +7,9 @@ import { ArrowUpRight, Globe, Menu, Moon, Sun, X } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import { useTheme } from "./theme-provider";
 import { ThemeSwitcher, ThemeList } from "./theme-switcher";
+import { CurrencySwitcher } from "./currency-switcher";
 import { useSiteConfig } from "@/components/site-provider";
+import { marketLabels, resolveMarket } from "@/lib/market";
 import { whatsappLink } from "@/lib/utils";
 
 /**
@@ -26,6 +28,9 @@ export function Navbar() {
   const { mode, toggle } = useTheme();
   const [open, setOpen] = useState(false);
   const ar = locale === "ar";
+  // Marché de référence : la mention sous le logo suit le réglage /admin.
+  const market = resolveMarket(siteConfig.market);
+  const marketText = marketLabels(market, locale);
 
   // Panneau mobile : verrouille le fond et laisse Échap fermer.
   useEffect(() => {
@@ -55,6 +60,7 @@ export function Navbar() {
     { href: "/demos", label: t.nav.demos },
     { href: "/apps", label: ar ? "تطبيقاتنا" : "Our apps", soon: true },
     { href: "/products", label: ar ? "منتجاتنا" : "Products", soon: true },
+    { href: "/codes", label: ar ? "الأكواد والبطاقات" : "Codes & cards", soon: true },
     { href: "/blog", label: ar ? "أدلة" : "Guides" },
     { href: "/#pricing", label: t.nav.pricing },
     { href: "/abonnements", label: ar ? "الاشتراكات" : "Abonnements" },
@@ -94,7 +100,9 @@ export function Navbar() {
                   </span>
                 </span>
                 <span className="mt-1 hidden text-[10.5px] text-[var(--muted-foreground)] sm:block">
-                  {ar ? "طرابلس · مواقع فاخرة" : "Tripoli · Premium sites"}
+                  {ar
+                    ? `${marketText.city} · مواقع فاخرة`
+                    : `${marketText.city} · Premium sites`}
                 </span>
               </span>
             </Link>
@@ -137,6 +145,9 @@ export function Navbar() {
                 <Globe className="h-3.5 w-3.5" />
                 {ar ? "EN" : "عربي"}
               </button>
+              <div className="hidden lg:block">
+                <CurrencySwitcher />
+              </div>
               <button
                 onClick={toggle}
                 aria-label={ar ? "تبديل الوضع الفاتح والداكن" : "Toggle light / dark mode"}
@@ -217,6 +228,10 @@ export function Navbar() {
                     {ar ? "ثيمات الموقع" : "Site themes"}
                   </div>
                   <ThemeList />
+                </div>
+
+                <div className="mt-5 border-t border-[var(--border)] pt-5 lg:hidden">
+                  <CurrencySwitcher variant="list" />
                 </div>
 
                 <div className="mt-5 grid grid-cols-2 gap-2.5">

@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useSiteConfig } from "@/components/site-provider";
+import { resolveMarket } from "@/lib/market";
 
 /** Bouton d'annulation du renouvellement (espace abonné). */
 export function CancelRenewal({
@@ -14,6 +16,8 @@ export function CancelRenewal({
   accessUntil: string | null;
 }) {
   const router = useRouter();
+  const siteConfig = useSiteConfig();
+  const market = resolveMarket(siteConfig.market);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -22,7 +26,7 @@ export function CancelRenewal({
         day: "2-digit",
         month: "2-digit",
         year: "numeric",
-        timeZone: "Africa/Tripoli",
+        timeZone: market.timezone,
       })
     : null;
 

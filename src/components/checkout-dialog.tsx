@@ -18,6 +18,8 @@ import {
   resolvePlanPriceBreakdown,
   type ClassificationPlan,
 } from "@/lib/classification";
+import { Price } from "@/components/price";
+import { useCurrency } from "@/components/currency-provider";
 import type { Demo } from "@/lib/site-types";
 import {
   formatMainPrice,
@@ -86,6 +88,7 @@ export function CheckoutDialog({
 }) {
   const config = useSiteConfig();
   const { locale, t } = useI18n();
+  const { currency, format } = useCurrency();
   const ar = locale === "ar";
   const [step, setStep] = useState<Step>("form");
   const [name, setName] = useState("");
@@ -312,12 +315,9 @@ export function CheckoutDialog({
 
             {!flexMode && planPriceUsd != null && (
                   <span className="text-xs opacity-60">
-                    {formatMainPrice(
-                      planPriceUsd,
-                      ar ? config.pricing.currency : config.pricing.currencyEn,
-                    )}
+                    <Price usd={planPriceUsd} />
                     {" · = "}
-                    {formatUsd(planPriceUsd)} USDT
+                    {ar ? "يُدفع بـ USDT" : "payable in USDT"}
                   </span>
                 )}
               </div>
@@ -325,8 +325,8 @@ export function CheckoutDialog({
                 <div className="mt-2 border-t border-[var(--border)]/70 pt-2 space-y-1 text-xs">
                   <div className="flex items-center justify-between gap-3">
                     <span className="opacity-60">{ar ? "سعر النموذج" : "Website model"}</span>
-                    <strong dir="ltr">
-                      {formatMainPrice(planBreakdown.modelPriceUsd ?? 0, ar ? config.pricing.currency : config.pricing.currencyEn)}
+                    <strong>
+                      <Price usd={planBreakdown.modelPriceUsd ?? 0} />
                     </strong>
                   </div>
                   <div className="flex items-center justify-between gap-3">
@@ -337,8 +337,8 @@ export function CheckoutDialog({
                           ? `التخصيص (${planBreakdown.customizationPercent}٪)`
                           : `Customization (${planBreakdown.customizationPercent}%)`}
                     </span>
-                    <strong dir="ltr">
-                      {formatMainPrice(planBreakdown.customizationUsd ?? 0, ar ? config.pricing.currency : config.pricing.currencyEn)}
+                    <strong>
+                      <Price usd={planBreakdown.customizationUsd ?? 0} />
                     </strong>
                   </div>
                 </div>
@@ -353,6 +353,11 @@ export function CheckoutDialog({
                   {ar ? t.checkout.totalUsdAr : t.checkout.totalUsdEn}
                 </span>
               </div>
+              {currency !== "USD" && (
+                <div className="mt-0.5 text-end text-[11px] opacity-55" dir="ltr">
+                  ≈ {format(totalUsd)}
+                </div>
+              )}
             </div>
 
             {!flexMode && (

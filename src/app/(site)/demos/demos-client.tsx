@@ -11,7 +11,7 @@ import {
   type DemoClassification,
   type PlanPriceBreakdown,
 } from "@/lib/classification";
-import { formatMainPrice } from "@/lib/installments";
+import { Price } from "@/components/price";
 import { ModelPriceBreakdown } from "@/components/model-price-breakdown";
 import { ModelPurchaseButton } from "@/components/model-purchase-button";
 import { ProjectPreview } from "@/components/project-preview";
@@ -178,15 +178,14 @@ export function DemosClient() {
                   {ar ? group.name : group.nameEn}
                   {group.priceUsd != null && (
                     <span className="ms-1.5 opacity-70" dir="ltr">
-                      {group.breakdown.totalPriceUsd != null
-                        ? formatMainPrice(
-                            group.breakdown.totalPriceUsd,
-                            ar ? config.pricing.currency : config.pricing.currencyEn,
-                          )
-                        : `${ar ? "النموذج" : "model"} ${formatMainPrice(
-                            group.priceUsd,
-                            ar ? config.pricing.currency : config.pricing.currencyEn,
-                          )}`}
+                      {group.breakdown.totalPriceUsd != null ? (
+                        <Price usd={group.breakdown.totalPriceUsd} />
+                      ) : (
+                        <>
+                          {ar ? "النموذج" : "model"}{" "}
+                          <Price usd={group.priceUsd} />
+                        </>
+                      )}
                     </span>
                   )}
                 </button>
@@ -228,12 +227,13 @@ export function DemosClient() {
               <div className="w-full rounded-xl border border-[var(--border)]/70 bg-[var(--card)]/70 p-3 sm:w-auto sm:min-w-[260px]">
                 <ModelPriceBreakdown
                   breakdown={group.breakdown}
-                  currency={ar ? config.pricing.currency : config.pricing.currencyEn}
                   compact
                 />
                 <p className="mt-1 text-[10px] opacity-50">
-                  {ar ? "بالدولار — 1 دولار = 1 USDT" : "In USD — 1 USD = 1 USDT"}
+                  {ar ? "الأسعار بالدولار — يحوّلها المتصفح إلى عملتك" : "Prices in USD — your browser converts them"}
                 </p>
+                {/* Remise du coupon : calculée sur le total affiché ci-dessus,
+                    avec la même fonction que le serveur de paiement. */}
               </div>
             </div>
 
@@ -285,7 +285,6 @@ export function DemosClient() {
                         <div className="mt-2 rounded-xl bg-[var(--secondary)]/50 p-3">
                           <ModelPriceBreakdown
                             breakdown={classification}
-                            currency={ar ? config.pricing.currency : config.pricing.currencyEn}
                             compact
                           />
                         </div>

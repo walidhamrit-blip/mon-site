@@ -1,6 +1,9 @@
-# نخبة Nukhba — Agence Web Premium Tripoli
+# نخبة Nukhba — Agence Web Premium
 
 Site vitrine haut de gamme construit avec Next.js 16 + Tailwind + Framer Motion.
+**Portée mondiale** : Tripoli / Libye est le *marché par défaut*, pas une
+constante — ville, pays, fuseau, devise et libellés se règlent dans
+`/admin → Réglages → Marché & Devises`, sans toucher au code.
 
 ## Installation
 ```bash
@@ -15,6 +18,73 @@ Editez `src/lib/config.ts`:
 - `whatsapp` : numéro sans "+"
 - `social` : liens Instagram/Facebook
 - `email`, `phone`, `address`
+- `siteConfig.market` : **marché de référence** (ville, pays, fuseau horaire,
+  locale, devise locale, indicatif, coordonnées GPS, rayon de service local) —
+  c'est la source unique de la géographie du site (SEO, données structurées,
+  horodatage des abonnements, lien Google Maps, libellés). Modifiable depuis
+  `/admin → Réglages → Marché & Devises`.
+- `siteConfig.currency` : **devises d'affichage** — devise de facturation
+  (`base`, toujours USD en pratique), taux de conversion (`rates`, 1 USD = X)
+  et devises proposées dans le sélecteur (`enabled`).
+
+> Les prix sont **stockés en USD** (c'est la devise encaissée par NOWPayments).
+> L'affichage est converti dans la devise choisie par le visiteur — le taux
+> est une donnée pilotable, pas une formule cachée dans le code.
+
+## Portée mondiale (marché & devises)
+- **Marché** (`src/lib/market.ts`) — profils prêts à l'emploi : Tripoli
+  (défaut), Dubaï, Riyad, Le Caire, Casablanca, Tunis, « Worldwide ».
+  Changer de marché met à jour les métadonnées, le JSON-LD
+  (`address`, `geo`, `areaServed`, `serviceArea`, `inLanguage`, `slogan`), les
+  titres de pages (via les jetons `{city}`, `{country}`, `{cityEn}`,
+  `{countryEn}`), le fuseau des échéances d'abonnement, le lien Maps et les
+  libellés de la barre de navigation et du pied de page.
+- **Positionnement international** (`market.globalReach`) — à garder actif :
+  zone desservie « Worldwide », formulation internationale, devise de
+  facturation en dollars.
+- **Devises** (`src/lib/currency.ts`) — USD, EUR, SAR, AED, EGP, LYD.
+  Sélecteur en barre supérieure (et dans le menu mobile), mémorisé sur
+  l'appareil (`nukhba-currency`). Un taux absent, nul ou négatif retombe
+  sur 1 : le site n'affiche jamais un prix converti faux.
+- Les montants sont affichés par le composant unique `<Price usd={…} />`
+  (`src/components/price.tsx`), utilisable depuis un composant serveur comme
+  client. Le checkout affiche explicitement le montant **facturé en USD**.
+
+## Domaine & portabilité
+- **Source de vérité** : `src/lib/site-identity.ts` — `DEFAULT_SITE_DOMAIN` et
+  `DEFAULT_SITE_ORIGIN`. C'est le seul endroit du code où le domaine est écrit ;
+  `npm run test:seo` échoue s'il est re-fossilisé ailleurs.
+- **Modification depuis l'admin** : `/admin` → Réglages → « Domaine affiché » et
+  « URL canonique ». Ils alimentent le sitemap, les métadonnées, les canoniques,
+  le JSON-LD, les URL de crédit du badge (`/badge`) et le domaine d'envoi.
+- **Précédence de résolution** : configuration admin modifiée → variables
+  d'environnement (`SITE_URL`, `NEXT_PUBLIC_SITE_URL`) → valeur par défaut.
+- **Code de vérification Search Console** : `googleSiteVerification()` n'émet le
+  code intégré que si le domaine est encore celui du code. Sur un autre domaine,
+  il faut renseigner `GOOGLE_SITE_VERIFICATION` (le méta-tag est volontairement
+  omis plutôt que d'émettre un code invalide).
+- **Migration de domaine** : [`docs/migration-domaine.md`](docs/migration-domaine.md)
+  — runbook complet (DNS, 301, Search Console, NOWPayments, badge des sites
+  clients, rollback). Pendant une transition, `npm run badge:audit -- --accept=<ancien-domaine>`
+  évite de signaler les pieds de page clients qui pointent encore vers l'ancien lien.
+
+## Catalogue digital — codes logiciels & cartes cadeaux
+Socle prêt pour une boutique de codes (Steam, PlayStation, Xbox, Roblox,
+Google Play, Amazon, Spotify…) :
+- **Domaine** `src/lib/digital-types.ts` — natures (`software_key`,
+  `gift_card`, `game_topup`, `subscription_code`), statuts, **régions**
+  (`global`, `US`, `EU`, `SA`…), montants.
+- **Base** — tables `digital_products` et `digital_denominations`, créées
+  automatiquement au premier accès (comme le reste du schéma).
+- **Vitrine** — `/codes` (catalogue filtrable) et `/codes/[slug]` (fiche).
+- **API publique** — `GET /api/digital/products` et
+  `GET /api/digital/products/[slug]` (lecture seule, prices en USD).
+- **Admin** — `/admin/digital` : édition des fiches et des montants.
+- **Périmètre actuel : catalogue.** Les fiches sont publiées avec leurs prix,
+  leurs régions et leurs montants ; l'appel à l'action renvoie vers la liste
+  d'attente. **La caisse, le stock de codes et la livraison automatique ne
+  sont pas encore implémentés** — la feuille de route est dans
+  `docs/audit-global-2026-10.md` §3.4.
 
 ## Thèmes du site (8 thèmes, clair + sombre)
 `src/lib/themes.ts` contient le catalogue des thèmes. Chaque thème définit **sa palette claire ET sa palette sombre** : le mode clair/sombre reste donc un réglage totalement indépendant (un bouton dédié ☀/☾ dans la barre supérieure), et n'importe quel thème se voit dans les deux modes.
@@ -44,7 +114,7 @@ Editez `src/lib/config.ts`:
 Remplacez les URLs Unsplash par vos images dans `content.ts` et sections. Placez mockups dans `public/images/` et référencez `/images/...`.
 
 ## Déploiement
-- **Vercel** : `vercel --prod` — SSG automatique, 90+ Lighthouse. Ajoutez `nokhba.net.ly` dans Settings → Domains et configurez les DNS chez votre registrar.
+- **Vercel** : `vercel --prod` — SSG automatique, 90+ Lighthouse. Ajoutez le domaine dans Settings → Domains et configurez les DNS chez votre registrar. Le domaine se règle aussi depuis `/admin` → Réglages (« Domaine affiché », « URL canonique ») — voir [`docs/migration-domaine.md`](docs/migration-domaine.md) pour le runbook complet.
 - **VPS** : `npm run build` + `npm start` derrière Nginx + PM2. Ajoutez `DATABASE_URL` si vous activez formulaire DB.
 
 ## Mise en service — sortir du mode « dégradé »
@@ -135,8 +205,8 @@ Aucun fournisseur d'e-mail n'est obligatoire : sans configuration, le formulaire
 | Variable | Effet |
 | --- | --- |
 | `RESEND_API_KEY` | Envoi via l'API Resend (appel REST, aucune dépendance supplémentaire) |
-| `EMAIL_FROM` | Expéditeur — par défaut `Nukhba <no-reply@nokhba.net.ly>` (domaine à vérifier chez Resend) |
-| `EMAIL_DOMAIN` | Domaine de l'expéditeur par défaut — `nokhba.net.ly` |
+| `EMAIL_FROM` | Expéditeur — par défaut `Nukhba <no-reply@<domaine canonique>>` (domaine à vérifier chez Resend) |
+| `EMAIL_DOMAIN` | Domaine de l'expéditeur — vide = domaine canonique du site |
 | `SMTP_HOST` | Serveur SMTP — utilisé à la place de Resend si défini |
 | `SMTP_PORT` | Port SMTP — `587` par défaut |
 | `SMTP_USER` / `SMTP_PASS` | Authentification SMTP |
@@ -183,7 +253,7 @@ Le dialogue de paiement propose trois modes, reflétés dans le prix affiché :
 3. **Settings → Payouts / Crypto accounts** : ajoutez les adresses de
    réception (BTC, USDT-TRC20, ETH…) — sans wallet, aucun paiement ne peut
    être crédité.
-4. **Settings → IPN** : ajoutez `https://nokhba.net.ly/api/payments/ipn`
+4. **Settings → IPN** : ajoutez l'URL d'IPN du site (`https://<domaine>/api/payments/ipn`)
    (l'URL est aussi envoyée à chaque paiement, ce double la fiabilité).
 5. Si votre compte est en mode test, activez le sandbox (voir `NOWPAYMENTS_SANDBOX`).
 
@@ -293,7 +363,7 @@ NOWPayments pour prendre une place en avance dans le planning.
 - **Badge de netlinking client** `/badge` : page officielle avec extraits
   copiables (HTML, React/Next.js) et visuels SVG auto-hébergés
   (`public/badge/nukhba-badge{,-light}.svg`) à poser dans le pied de page de
-  chaque site livré — lien dofollow vers `nokhba.net.ly`
+  chaque site livré — lien dofollow vers le domaine de l'agence
   (`?utm_source=client_footer`, traçable). `npm run badge:audit` vérifie
   chaque site client (dofollow / nofollow / manquant / hors ligne) et alimente
   `public/badge/clients.json` ; workflow hebdomadaire + issue de suivi.
@@ -368,7 +438,7 @@ NOWPayments pour prendre une place en avance dans le planning.
   artefact, e-mail optionnel via Resend. Sans clé API, rapport `skipped` sans
   échec du workflow.
 - **Badge client** : `npm run badge:audit` (`scripts/badge-audit.mjs`) lit les
-  démos (`--base=https://nokhba.net.ly` en CI), cherche le lien de crédit dans
+  démos (`--base=$SITE_URL` en CI), cherche le lien de crédit dans
   le HTML de chaque site client (racine, puis `/ar` et `/en`), distingue
   dofollow / nofollow / manquant / hors ligne, et n'écrit
   `public/badge/clients.json` que lorsqu'un statut change. Exécution
@@ -391,7 +461,7 @@ NOWPayments pour prendre une place en avance dans le planning.
 3. Adresse/email/horaires
 4. Images réelles (remplacer Unsplash)
 5. Logos clients (bande de confiance)
-6. Domaine officiel (`nokhba.net.ly`) dans `src/lib/config.ts` (`domain` et `url`), utilisé aussi pour les métadonnées SEO.
+6. Domaine officiel : `/admin` → Réglages (« Domaine affiché », « URL canonique ») ou `src/lib/site-identity.ts` (`DEFAULT_SITE_DOMAIN` / `DEFAULT_SITE_ORIGIN`) — c'est la source de vérité du domaine, utilisée par les métadonnées SEO, le sitemap, le badge et l'envoi d'e-mails.
 7. GA/Plausible ID
 8. Favicon/OG image dans public/
 9. Textes légaux si besoin
@@ -412,6 +482,8 @@ NOWPayments pour prendre une place en avance dans le planning.
   - **Tableau de bord** — statistiques (total, nouveaux, en cours, traités), activité 14 jours, dernières demandes
   - **Demandes** — les formulaires du site sont enregistrés en base (table `leads`, créée automatiquement) : filtres, recherche, statuts, notes internes, contact WhatsApp/email, export CSV
   - **Configuration** — apparence (thème, mode, langue), coordonnées, réseaux sociaux, chiffres, tarifs/catégories, **paiement flexible**, **services à la carte** et réservation prioritaire éditables, visibles immédiatement sur le site
+  - **Marché & Devises** — profil de marché (ville, pays, fuseau, locale, devise locale, indicatif, GPS, rayon de service), positionnement international, et taux de conversion des devises d'affichage
+  - **Codes & Cartes cadeaux** — catalogue digital : fiches (nature, plateforme, titres AR/EN, régions, statut) et montants (libellé, région, prix USD, disponibilité)
   - **Contenu & sections** — toutes les sections du site public : **accueil (Hero)**, **bandeau de services**, **Pourquoi nous**, **démos**, **processus**, **témoignages**, **FAQ**, ainsi que les **titres/sous-titres de chaque section**. Listes à réordonner, ajouter ou supprimer, avec bouton « Réinitialiser » par section
 - Les réglages sont stockés dans la table `settings` ; par défaut le site utilise les valeurs de `src/lib/config.ts` et `src/lib/content.ts`
 - Après chaque enregistrement, le site public est régénéré automatiquement (revalidation Next.js)

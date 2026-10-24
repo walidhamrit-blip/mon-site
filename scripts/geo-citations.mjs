@@ -32,8 +32,15 @@ import { mkdir, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
-export const BRAND_TERMS = ["nukhba", "nokhba", "نخبة", "nokhba.net.ly"];
-export const BRAND_DOMAIN = "nokhba.net.ly";
+/**
+ * Domaine de marque cité dans les réponses des moteurs IA.
+ * Surchargeable par `BRAND_DOMAIN` (l'environnement du déploiement est
+ * alors la source de vérité, comme pour le reste du site).
+ */
+export const BRAND_DOMAIN = process.env.BRAND_DOMAIN?.trim() || "nokhba.net.ly";
+
+/** Termes de marque recherchés dans les réponses IA. */
+export const BRAND_TERMS = ["nukhba", "nokhba", "نخبة", BRAND_DOMAIN];
 
 /** Requêtes cibles : intention commerciale, arabe et anglais, Tripoli/Libye. */
 export const PROMPTS = [
@@ -250,7 +257,8 @@ async function sendEmail(summary, reportPath, results) {
   const apiKey = process.env.RESEND_API_KEY?.trim();
   const to = process.env.LEAD_NOTIFICATION_EMAIL?.trim() || process.env.EMAIL_TO?.trim();
   if (!apiKey || !to) return false;
-  const from = process.env.EMAIL_FROM?.trim() || "Nukhba GEO <no-reply@nokhba.net.ly>";
+  const from =
+    process.env.EMAIL_FROM?.trim() || `Nukhba GEO <no-reply@${BRAND_DOMAIN}>`;
   const rows = results
     .map(
       (result) =>

@@ -731,7 +731,7 @@ export const blogArticles: BlogArticle[] = [
   {
     slug: "apparaitre-dans-chatgpt-google-ai-libye",
     titleAr: "كيف يظهر موقعك في ChatGPT وGoogle AI؟ دليل GEO العملي 2026",
-    titleEn: "How to Get Your Website Cited by ChatGPT and Google AI: 2026 GEO Guide",
+    titleEn: "Get Your Website Cited by ChatGPT & Google AI: 2026 GEO Guide",
     h1Ar: "كيف يظهر موقعك في ChatGPT وGoogle AI؟",
     h1En: "How to Get Your Site Cited by ChatGPT and Google AI",
     descriptionAr:
@@ -884,7 +884,7 @@ export const blogArticles: BlogArticle[] = [
   {
     slug: "site-web-clinique-tripoli",
     titleAr: "موقع عيادة ناجح: حجز مواعيد أونلاين يملأ جدولك فعلاً",
-    titleEn: "A Clinic Website That Works: Online Booking That Fills Your Schedule",
+    titleEn: "A Clinic Website That Works: Online Booking That Fills Your Day",
     h1Ar: "موقع عيادة: كيف يزيد الحجوزات فعلاً؟",
     h1En: "A Clinic Website: What Actually Increases Bookings",
     descriptionAr:
