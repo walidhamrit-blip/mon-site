@@ -205,7 +205,9 @@ test("identifiant d'abonnement : variantes camelCase et imbriquées", () => {
     "9002",
   );
   assert.equal(
-    mod.subscriptionIdFromPayload({ subscription: { id: "9003" } }),
+    mod.subscriptionIdFromPayload({
+      subscription: { id: "9003" },
+    }),
     "9003",
   );
   assert.equal(
@@ -217,6 +219,20 @@ test("identifiant d'abonnement : variantes camelCase et imbriquées", () => {
   assert.equal(
     mod.subscriptionIdFromPayload({ recurringPayment: { id: 9005 } }),
     "9005",
+  );
+  // Variante vue sur la facture hébergée NOWPayments (paramètre d'URL
+  // subscriptionPaymentId) et sa forme snake_case d'IPN probable.
+  assert.equal(
+    mod.subscriptionIdFromPayload({
+      subscriptionPaymentId: "5214662227",
+    }),
+    "5214662227",
+  );
+  assert.equal(
+    mod.subscriptionIdFromPayload({
+      subscription_payment_id: "5214662228",
+    }),
+    "5214662228",
   );
   // Un objet imbriqué sans identifiant exploitable ne doit pas faire de faux positif.
   assert.equal(

@@ -148,6 +148,10 @@ const SUBSCRIPTION_ID_KEYS = [
   "recurring_payment_id",
   "subscriptionId",
   "recurringPaymentId",
+  // Variante observée sur la page de facture hébergée NOWPayments
+  // (paramètre d'URL `subscriptionPaymentId`).
+  "subscription_payment_id",
+  "subscriptionPaymentId",
 ] as const;
 
 /**
