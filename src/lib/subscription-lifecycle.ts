@@ -195,3 +195,101 @@ export function subscriptionIdFromPayload(
 export function normalizeEmail(value: string): string {
   return value.trim().toLowerCase();
 }
+
+/* ------------------------------------------------------------------ */
+/* Factures (iid) : seul pont entre une IPN d'abonnement et l'abonné  */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Les IPN des abonnements NOWPayments n'embarquent aucun identifiant
+ * d'abonnement : elles ne contiennent que `invoice_id`. Le lien de
+ * paiement renvoyé à la création de l'abonnement porte quant à lui cet
+ * iid en paramètre d'URL (`…/payment?iid=5267182715`).
+ */
+export function invoiceIdFromUrl(value: unknown): string | null {
+  if (typeof value !== "string") return null;
+  const match = value.match(/[?&]iid=(\d+)/i);
+  return match ? match[1] : null;
+}
+
+const INVOICE_DIRECT_KEYS = ["invoice_id", "iid", "invoiceId"] as const;
+const INVOICE_LINK_KEYS = [
+  "payment_link",
+  "invoice_url",
+  "payment_url",
+  "link",
+  "url",
+] as const;
+
+function invoiceIdFromFlatRecord(record: Record<string, unknown>): string | null {
+  for (const key of INVOICE_DIRECT_KEYS) {
+    const value = record[key];
+    if (value === null || value === undefined) continue;
+    const text = String(value).trim();
+    if (/^\d+$/.test(text)) return text;
+  }
+  for (const key of INVOICE_LINK_KEYS) {
+    const id = invoiceIdFromUrl(record[key]);
+    if (id) return id;
+  }
+  return null;
+}
+
+/**
+ * Extrait l'iid de la facture de la réponse de `POST /v1/subscriptions`.
+ * Accepte un objet, un tableau d'objets, et une imbrication d'un niveau
+ * (`{ result: { … } }`, lien dans un sous-objet) — la forme exacte varie
+ * selon les comptes NOWPayments.
+ */
+export function invoiceIdFromSubscriptionRecord(record: unknown): string | null {
+  const roots = Array.isArray(record) ? record : [record];
+  for (const root of roots) {
+    if (!root || typeof root !== "object") continue;
+    const source = root as Record<string, unknown>;
+    const direct = invoiceIdFromFlatRecord(source);
+    if (direct) return direct;
+    for (const value of Object.values(source)) {
+      if (!value || typeof value !== "object") continue;
+      const nested = Array.isArray(value) ? value : [value];
+      for (const item of nested) {
+        if (!item || typeof item !== "object") continue;
+        const id = invoiceIdFromFlatRecord(item as Record<string, unknown>);
+        if (id) return id;
+      }
+    }
+  }
+  return null;
+}
+
+/**
+ * Vrai si un abonnement distant (réponse de `GET /v1/subscriptions/{id}`)
+ * référence la facture cherchée, directement ou dans une liste imbriquée
+ * de paiements/factures. L'exploration est volontairement générique : la
+ * structure exacte de la réponse n'est pas documentée de façon stable.
+ */
+export function recordReferencesInvoiceId(
+  record: unknown,
+  invoiceId: string,
+): boolean {
+  if (!record || typeof record !== "object") return false;
+  const source = record as Record<string, unknown>;
+  for (const key of INVOICE_DIRECT_KEYS) {
+    if (source[key] != null && String(source[key]).trim() === invoiceId) {
+      return true;
+    }
+  }
+  for (const key of INVOICE_LINK_KEYS) {
+    if (invoiceIdFromUrl(source[key]) === invoiceId) return true;
+  }
+  for (const value of Object.values(source)) {
+    if (Array.isArray(value)) {
+      for (const item of value) {
+        if (item && typeof item === "object" &&
+          recordReferencesInvoiceId(item, invoiceId)) {
+          return true;
+        }
+      }
+    }
+  }
+  return false;
+}

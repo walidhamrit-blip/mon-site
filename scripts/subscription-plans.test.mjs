@@ -254,6 +254,98 @@ test("normalisation de l'e-mail", () => {
   assert.equal(mod.normalizeEmail("  Client@Example.COM "), "client@example.com");
 });
 
+/* ---------- Factures (iid) et réconciliation ---------- */
+
+test("invoiceIdFromUrl extrait l'iid des liens de facture", () => {
+  assert.equal(
+    mod.invoiceIdFromUrl("https://nowpayments.io/payment?iid=5267182715"),
+    "5267182715",
+  );
+  assert.equal(
+    mod.invoiceIdFromUrl(
+      "https://nowpayments.io/payment?iid=5267182715&subscriptionPaymentId=5214662227",
+    ),
+    "5267182715",
+  );
+  assert.equal(
+    mod.invoiceIdFromUrl("https://nowpayments.io/payment/?iid=99&foo=bar"),
+    "99",
+  );
+  assert.equal(mod.invoiceIdFromUrl("https://example.com/sans-iid"), null);
+  assert.equal(mod.invoiceIdFromUrl(null), null);
+  assert.equal(mod.invoiceIdFromUrl(42), null);
+});
+
+test("invoiceIdFromSubscriptionRecord : champs directs, liens, imbrication, tableaux", () => {
+  assert.equal(
+    mod.invoiceIdFromSubscriptionRecord({ iid: 5267182715 }),
+    "5267182715",
+  );
+  assert.equal(
+    mod.invoiceIdFromSubscriptionRecord({
+      invoice_id: "5267182715",
+    }),
+    "5267182715",
+  );
+  assert.equal(
+    mod.invoiceIdFromSubscriptionRecord({
+      payment_link: "https://nowpayments.io/payment?iid=5267182715",
+    }),
+    "5267182715",
+  );
+  // Réponse enveloppée dans un objet `result`.
+  assert.equal(
+    mod.invoiceIdFromSubscriptionRecord({
+      result: { invoice_url: "https://nowpayments.io/payment?iid=4242" },
+    }),
+    "4242",
+  );
+  // Réponse sous forme de tableau.
+  assert.equal(
+    mod.invoiceIdFromSubscriptionRecord([
+      { id: "1", link: "https://nowpayments.io/payment?iid=777" },
+    ]),
+    "777",
+  );
+  assert.equal(mod.invoiceIdFromSubscriptionRecord({ id: "abc" }), null);
+  assert.equal(mod.invoiceIdFromSubscriptionRecord(null), null);
+});
+
+test("recordReferencesInvoiceId : directe, dans un lien, dans un tableau imbriqué", () => {
+  assert.equal(
+    mod.recordReferencesInvoiceId({ invoice_id: 5267182715 }, "5267182715"),
+    true,
+  );
+  assert.equal(
+    mod.recordReferencesInvoiceId(
+      {
+        id: "5214662227",
+        payments: [
+          { payment_id: "1", invoice_id: "111" },
+          { payment_id: "2", invoice_id: "5267182715" },
+        ],
+      },
+      "5267182715",
+    ),
+    true,
+  );
+  assert.equal(
+    mod.recordReferencesInvoiceId(
+      { payment_link: "https://nowpayments.io/payment?iid=5267182715" },
+      "5267182715",
+    ),
+    true,
+  );
+  assert.equal(
+    mod.recordReferencesInvoiceId(
+      { id: "5214662227", payments: [{ invoice_id: "999" }] },
+      "5267182715",
+    ),
+    false,
+  );
+  assert.equal(mod.recordReferencesInvoiceId(null, "5267182715"), false);
+});
+
 /* ---------- Gabarits d'e-mails ---------- */
 
 const data = {

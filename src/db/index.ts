@@ -184,6 +184,15 @@ export function ensureSchema(): Promise<void> {
       await pool.query(
         "CREATE INDEX IF NOT EXISTS orders_subscription_id_idx ON orders (subscription_id)",
       );
+      // Les IPN d'abonnement NOWPayments n'exposent pas d'identifiant
+      // d'abonnement, seulement l'iid de la facture : on le mémorise dès la
+      // création pour rattacher les paiements sans appel d'API supplémentaire.
+      await pool.query(
+        "ALTER TABLE subscriptions ADD COLUMN IF NOT EXISTS first_invoice_id text",
+      );
+      await pool.query(
+        "CREATE INDEX IF NOT EXISTS subscriptions_first_invoice_id_idx ON subscriptions (first_invoice_id)",
+      );
     })().catch((error) => {
       schemaReady = null; // permet de réessayer au prochain accès
       throw error;
