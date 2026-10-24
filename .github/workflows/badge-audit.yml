@@ -199,13 +199,18 @@ jobs:
       - name: Issue — sites sans badge
         if: always() && (steps.summary.outputs.missing != '0' || steps.summary.outputs.nofollow != '0')
         uses: actions/github-script@v8
+        env:
+          # Le corps du rapport est multi-ligne : l'injecter dans une chaîne
+          # JS produirait des retours à la ligne dans le source et une
+          # SyntaxError. Une variable d'environnement le transporte intact.
+          REPORT_BODY: ${{ steps.summary.outputs.body }}
         with:
           script: |
             const title = "Badge client : sites à corriger (netlinking)";
             const body = [
               "Audit hebdomadaire du badge « Website by Nukhba ».",
               "",
-              "${{ steps.summary.outputs.body }}",
+              process.env.REPORT_BODY,
             ].join("\n");
             // Le label n'est pas créé avec le dépôt : l'API refuse de
             // rattacher une issue à un label inexistant (422). On s'assure
