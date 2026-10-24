@@ -57,6 +57,25 @@ Points structurants :
 
 ## 2. Configuration (10 minutes)
 
+### 2.0 Quelle valeur mettre dans quelle variable ?
+
+Deux variables, **deux valeurs différentes** — les inverser est l'erreur la plus
+fréquente (« Access denied » / 401) :
+
+| Nom exact de la variable | Valeur à coller | Où la trouver |
+| --- | --- | --- |
+| `RELOADLY_CLIENT_ID` | le **Client ID** (ex. `qwcLz3Xy…`, ~32 caractères) | dashboard Reloadly → *Developers* → *API keys* → ligne **Client ID** |
+| `RELOADLY_CLIENT_SECRET` | le **Client Secret** (ex. `7kscVxQZ32-…`, contient des tirets) | même écran, ligne **Client Secret** |
+| `RELOADLY_SANDBOX` | `true` pour TEST, `false` pour LIVE | bandeau du dashboard (TEST / LIVE) |
+
+À ne **jamais** mettre dans ces variables :
+
+- l'e-mail ou le **mot de passe du compte** Reloadly (le site n'en a pas besoin) ;
+- le préfixe `Bearer `, des guillemets ou des espaces (le serveur les retire,
+  mais autant coller la valeur brute) ;
+- une clé **TEST** avec le mode `LIVE`, ou l'inverse : les deux environnements
+  sont séparés et leurs jetons ne sont pas interchangeables.
+
 ### 2.1 Créer / récupérer les identifiants API
 
 1. Connectez-vous au [tableau de bord Reloadly](https://dashboard.reloadly.com).
