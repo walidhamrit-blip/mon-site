@@ -188,12 +188,12 @@ test("resolveBadgeOrigins privilégie l'API du site puis accepte les domaines hi
 
 /* ---------------- Garde-fou statique ---------------- */
 
-function walk(dir, files = []) {
+function walk(dir, files = [], pattern = /\.(ts|tsx|mjs|js)$/) {
   for (const entry of readdirSync(dir)) {
     if (entry === "node_modules" || entry === ".next" || entry === ".git") continue;
     const full = join(dir, entry);
-    if (statSync(full).isDirectory()) walk(full, files);
-    else if (/\.(ts|tsx|mjs|js)$/.test(entry)) files.push(full);
+    if (statSync(full).isDirectory()) walk(full, files, pattern);
+    else if (pattern.test(entry)) files.push(full);
   }
   return files;
 }
@@ -216,6 +216,33 @@ test("le domaine n'est écrit en dur que dans la source de vérité", () => {
     offenders,
     [],
     `domaine figé hors src/lib/site-identity.ts : ${offenders.join(", ")}`,
+  );
+});
+
+test("les workflows ne citent le domaine que comme repli explicite", () => {
+  const dir = join(root, ".github", "workflows");
+  const offenders = [];
+  for (const file of walk(dir, [], /\.ya?ml$/)) {
+    const source = readFileSync(file, "utf8");
+    let index = source.indexOf(identity.DEFAULT_SITE_DOMAIN);
+    while (index !== -1) {
+      // Le domaine n'est accepté que comme valeur de repli d'une variable
+      // d'environnement : `|| 'domaine'` ou `|| "domaine"`. Le domaine peut
+      // être précédé du schéma (`https://`), qu'il faut écarter du contexte.
+      const before = source
+        .slice(Math.max(0, index - 60), index)
+        .replace(/https?:\/\/$/i, "");
+      const isFallback = /\|\|\s*['\"]$/.test(before);
+      if (!isFallback) {
+        offenders.push(`${relative(root, file)} @${index}`);
+      }
+      index = source.indexOf(identity.DEFAULT_SITE_DOMAIN, index + 1);
+    }
+  }
+  assert.deepEqual(
+    offenders,
+    [],
+    `domaine figé dans un workflow (hors repli) : ${offenders.join(", ")}`,
   );
 });
 

@@ -44,6 +44,11 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
 
+    env:
+      # URL publique du site — variable de dépôt (Settings → Secrets and
+      # variables → Actions → Variables). Repli sur le domaine actuel.
+      SITE_URL: ${{ vars.SITE_URL || 'https://nokhba.net.ly' }}
+
     steps:
       - name: Récupération du code
         uses: actions/checkout@v5
@@ -60,7 +65,7 @@ jobs:
       - name: Audit du badge
         id: audit
         env:
-          BADGE_BASE_URL: ${{ vars.SITE_URL || 'https://nokhba.net.ly' }}
+          BADGE_BASE_URL: ${{ env.SITE_URL }}
         run: |
           ARGS="--concurrency=3"
           if [ -n "${{ inputs.only }}" ]; then
@@ -91,6 +96,8 @@ jobs:
                 clients = report.clients ?? [];
               }
             }
+            const siteUrl = (process.env.SITE_URL || "https://nokhba.net.ly").replace(/\/+$/, "");
+            const siteHost = siteUrl.replace(/^https?:\/\//i, "");
             const pending = clients.filter(
               (c) => c.status === "missing" || c.status === "nofollow",
             );
@@ -106,14 +113,14 @@ jobs:
               for (const client of pending) {
                 lines.push(
                   `- **${client.slug}** — ${client.url} — ${
-                    client.status === "nofollow" ? "lien en `nofollow`" : "aucun lien vers nokhba.net.ly"
+                    client.status === "nofollow" ? "lien en `nofollow`" : `aucun lien vers ${siteHost}`
                   }`,
                 );
               }
             }
             lines.push(
               "",
-              "Extrait prêt à coller : https://nokhba.net.ly/badge",
+              `Extrait prêt à coller : ${siteUrl}/badge`,
               "",
               `Run : ${process.env.GITHUB_SERVER_URL}/${process.env.GITHUB_REPOSITORY}/actions/runs/${process.env.GITHUB_RUN_ID}`,
             );
@@ -154,7 +161,7 @@ jobs:
 
             ${{ steps.summary.outputs.body }}
 
-            Extrait à transmettre aux clients concernés : https://nokhba.net.ly/badge
+            Extrait à transmettre aux clients concernés : ${{ env.SITE_URL }}/badge
 
       - name: Issue — sites sans badge
         if: steps.summary.outputs.missing != '0' || steps.summary.outputs.nofollow != '0'
