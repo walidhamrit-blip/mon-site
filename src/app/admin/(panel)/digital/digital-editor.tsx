@@ -26,6 +26,7 @@ import {
   type DigitalDenomination,
   type DigitalProduct,
 } from "@/lib/digital-types";
+import { ReloadlyPriceCheck } from "./reloadly-price-check";
 import { ReloadlyProductSearch } from "./reloadly-product-search";
 
 /**
@@ -464,6 +465,11 @@ export function DigitalEditor({
                         reloadlyCountryCode: countryCode,
                       })
                     }
+                  />
+
+                  <ReloadlyPriceCheck
+                    productId={product.reloadlyProductId ?? null}
+                    denominations={product.denominations}
                   />
 
                   <p className="rounded-lg border border-stone-200 bg-white px-3 py-2 text-[11.5px] leading-5 text-stone-600">

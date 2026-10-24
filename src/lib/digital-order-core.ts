@@ -140,6 +140,95 @@ export function quoteDigitalOrder(
   };
 }
 
+/* ------------------- Prix accepté par le fournisseur ---------------------- */
+
+/**
+ * Ce que Reloadly impose sur la valeur faciale d'un produit.
+ *
+ * `FIXED` n'accepte QUE les montants listés ; `RANGE` accepte toute valeur
+ * entre `min` et `max`. Envoyer autre chose renvoie `WRONG_PRODUCT_PRICE`
+ * (« Invalid price ») — une erreur opaque qui coûtait une commande payée.
+ */
+export interface SupplierPriceProduct {
+  denominationType: string;
+  fixedDenominations: number[];
+  minDenomination: number | null;
+  maxDenomination: number | null;
+  currencyCode?: string;
+  productId?: number;
+}
+
+export interface SupplierPriceCheck {
+  /** `true` si la valeur est acceptable (ou indécidable). */
+  ok: boolean;
+  /** Message prêt à afficher (admin, motif de commande). */
+  message: string;
+}
+
+function samePrice(a: number, b: number): boolean {
+  return Math.abs(a - b) < 0.005;
+}
+
+/** Formate une liste de montants : « 10, 20, 50 ». */
+export function formatPrices(values: number[]): string {
+  return values
+    .filter((value) => Number.isFinite(value))
+    .map((value) => (Number.isInteger(value) ? String(value) : String(Math.round(value * 100) / 100)))
+    .join(", ");
+}
+
+/**
+ * Vérifie qu'une valeur faciale est acceptée par le produit Reloadly.
+ *
+ * Prudence volontaire : si le produit ne dit rien d'exploitable (type
+ * inconnu, liste vide, fourchette absente), on renvoie `ok: true` — mieux
+ * vaut tenter l'achat que bloquer une vente sur une donnée manquante.
+ */
+export function checkSupplierUnitPrice(
+  product: SupplierPriceProduct,
+  unitPrice: number,
+): SupplierPriceCheck {
+  const currency = product.currencyCode ? ` ${product.currencyCode}` : "";
+  const suffix = product.productId ? ` (produit #${product.productId})` : "";
+
+  if (!Number.isFinite(unitPrice) || unitPrice <= 0) {
+    return { ok: false, message: "Aucune valeur faciale Reloadly pour ce montant." };
+  }
+
+  const type = (product.denominationType ?? "").toUpperCase();
+
+  if (type === "FIXED") {
+    const allowed = product.fixedDenominations ?? [];
+    if (allowed.length === 0) return { ok: true, message: "Montants non communiqués par Reloadly." };
+    if (allowed.some((value) => samePrice(value, unitPrice))) {
+      return { ok: true, message: `Valeur acceptée par Reloadly (${formatPrices(allowed)}${currency}).` };
+    }
+    return {
+      ok: false,
+      message: `${unitPrice}${currency} n'est pas une valeur acceptée par Reloadly${suffix} — valeurs possibles : ${formatPrices(allowed)}${currency}.`,
+    };
+  }
+
+  if (type === "RANGE") {
+    const { minDenomination: min, maxDenomination: max } = product;
+    if (min == null && max == null) return { ok: true, message: "Fourchette non communiquée par Reloadly." };
+    const below = min != null && unitPrice < min - 0.005;
+    const above = max != null && unitPrice > max + 0.005;
+    if (!below && !above) {
+      return {
+        ok: true,
+        message: `Valeur acceptée par Reloadly (fourchette ${min ?? "?"}–${max ?? "?"}${currency}).`,
+      };
+    }
+    return {
+      ok: false,
+      message: `${unitPrice}${currency} est hors de la fourchette acceptée par Reloadly${suffix} (${min ?? "?"}–${max ?? "?"}${currency}).`,
+    };
+  }
+
+  return { ok: true, message: "Type de montant inconnu : vérification impossible." };
+}
+
 /* --------------------- Réalignement sur la fiche actuelle -------------------- */
 
 /** Référence figée dans la commande, à retrouver dans la fiche actuelle. */
