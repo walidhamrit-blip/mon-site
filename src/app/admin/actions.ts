@@ -34,6 +34,7 @@ import { denominationUnitPrice, type DigitalProduct } from "@/lib/digital-types"
 import { computeSalePrice } from "@/lib/digital-order-core";
 import { getGiftCardProduct, reloadlyConfigured } from "@/lib/reloadly";
 import { mailDiagnostics, sendTestEmail } from "@/lib/mailer";
+import { applyDigitalSync, type SyncApplyResult, type SyncRequest } from "@/lib/digital-sync";
 
 export interface ActionResult {
   ok: boolean;
@@ -537,6 +538,41 @@ export async function generateDemoFromLead(leadId: number): Promise<GenerateDemo
       demoUrl,
       whatsappUrl,
       whatsappMessage,
+    };
+  } catch (error) {
+    return { ok: false, error: dbIssue(error) };
+  }
+}
+
+/**
+ * Applique la révision du catalogue Reloadly (fiches validées dans l'aperçu).
+ *
+ * L'analyse — donc les prix — est recalculée côté serveur : le navigateur
+ * n'envoie que les clés des fiches retenues et les paramètres de l'analyse.
+ */
+export async function applyDigitalSyncAction(
+  request: SyncRequest,
+  keys: string[],
+): Promise<ActionResult & { applied?: string[]; created?: number; updated?: number }> {
+  await requireAdmin();
+  try {
+    const result: SyncApplyResult = await applyDigitalSync(request, keys);
+    revalidatePath("/codes", "layout");
+    revalidatePath("/admin/digital");
+    void pingAllPublicPages();
+
+    const parts: string[] = [];
+    if (result.updated > 0) parts.push(`${result.updated} fiche(s) mise(s) à jour`);
+    if (result.created > 0) parts.push(`${result.created} fiche(s) créée(s)`);
+    const summary = parts.length > 0 ? parts.join(" · ") : "Aucune fiche modifiée";
+
+    return {
+      ok: result.errors.length === 0,
+      message: result.errors.length === 0 ? `${summary}.` : `${summary}.`,
+      error: result.errors.length > 0 ? result.errors.slice(0, 4).join(" | ") : undefined,
+      applied: result.applied,
+      created: result.created,
+      updated: result.updated,
     };
   } catch (error) {
     return { ok: false, error: dbIssue(error) };

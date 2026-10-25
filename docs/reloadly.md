@@ -148,6 +148,30 @@ et **« Valeurs acceptées »** (montants du fournisseur, frais, remise).
    **refusé** par le serveur tant que le prix reste sous le coût (si Reloadly
    est injoignable, la vérification est ignorée pour ne pas bloquer la saisie).
 
+### 2.2.2 Réviser tout le catalogue depuis Reloadly
+
+Admin → **Codes & Cartes cadeaux** → bloc **« Réviser le catalogue depuis
+Reloadly »** :
+
+1. saisir la **marge nette** de référence, les **marques** et les **pays** ;
+2. **Analyser** (lecture seule chez Reloadly, aucun achat) : pour chaque
+   produit retenu, l'écran propose la fiche concernée, les **montants
+   manquants** à ajouter, les **montants refusés** à désactiver et les **prix
+   recalculés** ;
+3. cocher les fiches à retenir, puis **Appliquer la sélection**.
+
+Règles appliquées :
+
+- **aucune suppression** : un montant que Reloadly refuse est *désactivé* et
+  annoté (des commandes passées peuvent y faire référence) ;
+- les montants conservés gardent leur **identifiant** (historique intact) ;
+- une fiche sans correspondance est créée en **« bientôt disponible »**, avec
+  ses montants et ses prix — à activer après contrôle ;
+- les **prix sont recalculés côté serveur** : le navigateur n'envoie que les
+  clés retenues, jamais un prix ;
+- les produits à **prix libre** (`RANGE`) ne génèrent aucun montant : la fiche
+  se remplit à la main.
+
 ### 2.3 Vérifier la connexion
 
 - Admin → **Commandes de codes** : carte « Connexion Reloadly » (environnement,
