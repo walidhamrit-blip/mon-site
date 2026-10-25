@@ -4,7 +4,7 @@ import { absoluteUrl, breadcrumbJsonLd, pageMetadata } from "@/lib/seo";
 import { JsonLd } from "@/components/json-ld";
 import { DigitalCatalog } from "@/components/digital-catalog";
 import { getSiteDataCached } from "@/lib/store";
-import { resolveMarket } from "@/lib/market";
+import { marketLabels, resolveMarket } from "@/lib/market";
 
 export async function generateMetadata(): Promise<Metadata> {
   const { config } = await getSiteDataCached();
