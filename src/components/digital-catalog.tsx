@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { BellRing, Check, Globe2, Search, Sparkles, Tag } from "lucide-react";
@@ -11,6 +12,7 @@ import { RegionalAlert } from "@/components/regional-alert";
 import { whatsappLink } from "@/lib/utils";
 import {
   DIGITAL_KIND_LABELS,
+  denominationLabel,
   regionLabel,
   type DigitalKind,
   type DigitalProduct,
@@ -248,33 +250,71 @@ export function DigitalCatalog({
                     whileInView={{ opacity: 1, y: 0 }}
                     viewport={{ once: true, margin: "-40px" }}
                     transition={{ duration: 0.35, delay: Math.min(index * 0.05, 0.25) }}
-                    className="card-surface card-interactive flex flex-col overflow-hidden"
+                    className="card-surface card-interactive group flex flex-col overflow-hidden"
                   >
                     <div
-                      className="relative min-h-[190px] overflow-hidden px-6 py-5"
+                      className="relative min-h-[310px] overflow-hidden bg-[#0b1220] px-6 py-5 text-white"
                       style={{
                         background: `radial-gradient(circle at 82% 28%, ${product.color}cc 0%, ${product.color}66 18%, transparent 48%), linear-gradient(135deg, #101827 0%, #182337 55%, ${product.color}55 100%)`,
                       }}
                     >
-                      <div aria-hidden="true" className="pointer-events-none absolute -right-8 -top-12 h-48 w-48 rounded-full border border-white/15 shadow-[0_0_60px_rgba(255,255,255,0.12)]" />
-                      <div aria-hidden="true" className="pointer-events-none absolute bottom-3 right-5 rotate-[-8deg] text-5xl font-black tracking-[-0.08em] text-white/15">{product.platform.slice(0, 2).toUpperCase()}</div>
+                      {product.image && (
+                        <Image
+                          src={product.image}
+                          alt={
+                            ar
+                              ? `صورة ${product.titleAr}`
+                              : `${product.titleEn} product visual`
+                          }
+                          fill
+                          sizes="(max-width: 768px) 100vw, (max-width: 1280px) 50vw, 33vw"
+                          quality={88}
+                          priority={index < 3}
+                          className="object-cover transition-transform duration-700 ease-out group-hover:scale-[1.04]"
+                        />
+                      )}
+                      {/* Le voile est volontairement indépendant du thème :
+                          les titres restent blancs et contrastés sur toutes
+                          les photos, en mode clair comme en mode sombre. */}
+                      <div
+                        aria-hidden="true"
+                        className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(3,7,18,0.45)_0%,rgba(3,7,18,0.78)_43%,rgba(3,7,18,0.97)_100%)]"
+                      />
+                      <div
+                        aria-hidden="true"
+                        className="pointer-events-none absolute -right-8 -top-12 h-48 w-48 rounded-full border border-white/15 shadow-[0_0_60px_rgba(255,255,255,0.12)]"
+                      />
+                      {!product.image && (
+                        <div
+                          aria-hidden="true"
+                          className="pointer-events-none absolute bottom-3 right-5 rotate-[-8deg] text-5xl font-black tracking-[-0.08em] text-white/15"
+                        >
+                          {product.platform.slice(0, 2).toUpperCase()}
+                        </div>
+                      )}
+
                       <div className="relative flex items-start justify-between gap-3">
-                        <span className="grid h-12 w-12 place-items-center rounded-2xl text-[15px] font-black text-white shadow-[var(--shadow-sm)]" style={{ backgroundColor: product.color }}>
+                        <span
+                          className="grid h-12 w-12 place-items-center rounded-2xl border border-white/20 text-[15px] font-black text-white shadow-[var(--shadow-sm)]"
+                          style={{ backgroundColor: product.color }}
+                        >
                           {product.platform.slice(0, 2).toUpperCase()}
                         </span>
-                        <span className="chip chip-accent">
+                        <span className="chip !border-white/25 !bg-black/45 !text-white backdrop-blur-md">
                           <Tag className="h-3 w-3" />
-                          {ar ? DIGITAL_KIND_LABELS[product.kind].ar : DIGITAL_KIND_LABELS[product.kind].en}
+                          {ar
+                            ? DIGITAL_KIND_LABELS[product.kind].ar
+                            : DIGITAL_KIND_LABELS[product.kind].en}
                         </span>
                       </div>
 
-                      <h2 className="mt-4 text-[19px] font-black leading-snug tracking-[-0.02em]">
+                      <h2 className="relative mt-4 text-[19px] font-black leading-snug tracking-[-0.02em] text-white [text-shadow:0_1px_12px_rgb(0_0_0/0.55)]">
                         {ar ? product.titleAr : product.titleEn}
                       </h2>
-                      <p className="mt-1.5 text-[12.5px] font-bold text-[var(--muted-foreground)]">
+                      <p className="relative mt-1.5 text-[12.5px] font-bold text-white/80">
                         {product.platform}
                       </p>
-                      <p className="mt-2.5 line-clamp-3 text-[13.5px] leading-7 text-[var(--muted-foreground)]">
+                      <p className="relative mt-2.5 line-clamp-3 text-[13.5px] leading-7 text-white/90">
                         {ar ? product.descriptionAr : product.descriptionEn}
                       </p>
 
@@ -287,18 +327,18 @@ export function DigitalCatalog({
                       />
 
                       {product.regions.length > 0 && (
-                        <div className="mt-4 flex flex-wrap items-center gap-1.5">
-                          <Globe2 className="h-3.5 w-3.5 text-[var(--accent)]" />
+                        <div className="relative mt-4 flex flex-wrap items-center gap-1.5">
+                          <Globe2 className="h-3.5 w-3.5 text-white/85" />
                           {product.regions.slice(0, 4).map((item) => (
                             <span
                               key={item}
-                              className="rounded-full border border-[var(--border)] px-2 py-0.5 text-[10.5px] font-bold text-[var(--muted-foreground)]"
+                              className="rounded-full border border-white/25 bg-black/25 px-2 py-0.5 text-[10.5px] font-bold text-white/90 backdrop-blur-sm"
                             >
                               {regionLabel(item, locale)}
                             </span>
                           ))}
                           {product.regions.length > 4 && (
-                            <span className="text-[10.5px] font-bold text-[var(--muted-foreground)]">
+                            <span className="text-[10.5px] font-bold text-white/80">
                               +{product.regions.length - 4}
                             </span>
                           )}
@@ -306,7 +346,7 @@ export function DigitalCatalog({
                       )}
                     </div>
 
-                    <div className="flex-1 px-6 pb-5">
+                    <div className="flex-1 px-6 pb-5 pt-5">
                       {features.length > 0 && (
                         <ul className="grid gap-2">
                           {features.slice(0, 3).map((feature) => (
@@ -331,7 +371,7 @@ export function DigitalCatalog({
                                 className="rounded-lg bg-[var(--secondary)] px-2 py-1 text-[11px] font-bold"
                                 dir="ltr"
                               >
-                                {denomination.label}
+                                {denominationLabel(denomination, locale)}
                               </span>
                             ))}
                         </div>

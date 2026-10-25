@@ -194,6 +194,32 @@ export interface DigitalDenomination {
   supplierCostUsd?: number | null;
 }
 
+const ARABIC_SCRIPT = /[\u0600-\u06ff\u0750-\u077f\u08a0-\u08ff\ufb50-\ufdff\ufe70-\ufeff]/;
+
+/**
+ * Libellé public d'un montant dans la langue active.
+ *
+ * Les anciennes fiches Spotify déjà enregistrées en base possèdent un
+ * `label` arabe (par exemple « 3 أشهر ») mais une `faceValue` anglaise
+ * (« 3 months »). En version anglaise on préfère donc la valeur faciale
+ * dès que le libellé contient de l'arabe. Cette normalisation côté rendu
+ * corrige également les données existantes, sans écraser les modifications
+ * faites dans l'administration.
+ */
+export function denominationLabel(
+  denomination: Pick<DigitalDenomination, "label" | "faceValue">,
+  locale: "ar" | "en",
+): string {
+  const label = denomination.label.trim();
+  const faceValue = denomination.faceValue.trim();
+
+  if (locale === "en" && ARABIC_SCRIPT.test(label) && faceValue && !ARABIC_SCRIPT.test(faceValue)) {
+    return faceValue;
+  }
+
+  return label || faceValue;
+}
+
 /** Fiche produit du catalogue digital. */
 export interface DigitalProduct {
   /** Identifiant stable (clé primaire en base). */

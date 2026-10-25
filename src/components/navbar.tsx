@@ -63,7 +63,7 @@ export function Navbar() {
     { href: "/codes", label: ar ? "الأكواد والبطاقات" : "Codes & cards", soon: true },
     { href: "/blog", label: ar ? "أدلة" : "Guides" },
     { href: "/#pricing", label: t.nav.pricing },
-    { href: "/abonnements", label: ar ? "الاشتراكات" : "Abonnements" },
+    { href: "/abonnements", label: ar ? "الاشتراكات" : "Subscriptions" },
     { href: "/contact", label: t.nav.contact },
   ];
 
