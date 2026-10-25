@@ -250,12 +250,14 @@ export function DigitalCatalog({
                     className="card-surface card-interactive flex flex-col overflow-hidden"
                   >
                     <div
-                      className="relative px-6 py-6"
+                      className="relative min-h-[190px] overflow-hidden px-6 py-5"
                       style={{
-                        background: `linear-gradient(140deg, ${product.color}22 0%, transparent 70%)`,
+                        background: `radial-gradient(circle at 82% 28%, ${product.color}cc 0%, ${product.color}66 18%, transparent 48%), linear-gradient(135deg, #101827 0%, #182337 55%, ${product.color}55 100%)`,
                       }}
                     >
-                      <div className="flex items-start justify-between gap-3">
+                      <div aria-hidden="true" className="pointer-events-none absolute -right-8 -top-12 h-48 w-48 rounded-full border border-white/15 shadow-[0_0_60px_rgba(255,255,255,0.12)]" />
+                      <div aria-hidden="true" className="pointer-events-none absolute bottom-3 right-5 rotate-[-8deg] text-5xl font-black tracking-[-0.08em] text-white/15">{product.platform.slice(0, 2).toUpperCase()}</div>
+                      <div className="relative flex items-start justify-between gap-3">
                         <span className="grid h-12 w-12 place-items-center rounded-2xl text-[15px] font-black text-white shadow-[var(--shadow-sm)]" style={{ backgroundColor: product.color }}>
                           {product.platform.slice(0, 2).toUpperCase()}
                         </span>
