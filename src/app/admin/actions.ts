@@ -35,6 +35,7 @@ import { computeSalePrice } from "@/lib/digital-order-core";
 import { getGiftCardProduct, reloadlyConfigured } from "@/lib/reloadly";
 import { mailDiagnostics, sendTestEmail } from "@/lib/mailer";
 import { applyDigitalSync, type SyncApplyResult, type SyncRequest } from "@/lib/digital-sync";
+import { applyCatalogRecalc } from "@/lib/digital-audit";
 
 export interface ActionResult {
   ok: boolean;
@@ -573,6 +574,38 @@ export async function applyDigitalSyncAction(
       applied: result.applied,
       created: result.created,
       updated: result.updated,
+    };
+  } catch (error) {
+    return { ok: false, error: dbIssue(error) };
+  }
+}
+
+/**
+ * Réapplique marge + arrondi (pas de 0,50) aux fiches sélectionnées.
+ *
+ * Le recalcul est refait côté serveur : le navigateur n'envoie que des
+ * identifiants de fiche et le taux de frais de paiement.
+ */
+export async function applyCatalogRecalcAction(
+  paymentFeePercent: number,
+  ficheIds: string[],
+): Promise<ActionResult & { fiches?: number; prices?: number }> {
+  await requireAdmin();
+  try {
+    const fee = Number(paymentFeePercent);
+    const safeFee = Number.isFinite(fee) && fee >= 0 && fee < 20 ? fee : 1;
+    const result = await applyCatalogRecalc(safeFee, ficheIds);
+    revalidatePath("/codes", "layout");
+    revalidatePath("/admin/digital");
+    void pingAllPublicPages();
+
+    const summary = `${result.fiches} fiche(s) · ${result.prices} prix ajusté(s)`;
+    return {
+      ok: result.errors.length === 0,
+      message: result.errors.length === 0 ? `${summary}.` : `${summary}.`,
+      error: result.errors.length > 0 ? result.errors.slice(0, 4).join(" | ") : undefined,
+      fiches: result.fiches,
+      prices: result.prices,
     };
   } catch (error) {
     return { ok: false, error: dbIssue(error) };
