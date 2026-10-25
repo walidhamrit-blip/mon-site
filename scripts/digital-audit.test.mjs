@@ -76,24 +76,57 @@ function denomination(overrides = {}) {
   };
 }
 
-test("contrôle hors réseau : prix sous la valeur faciale = perte", () => {
-  const losses = audit.faceValueLosses([
-    { id: "spotify-us", titleEn: "Spotify US", denominations: [denomination()] },
+test("remise Reloadly connue : 60 $ vendu 59,50 $ n'est PAS une perte", () => {
+  // Cas réel signalé par le client : remise 4,4 % → coût 57,36 $, vente 59,50 $.
+  const entries = audit.faceValueLosses([
+    {
+      id: "spotify-us",
+      titleEn: "Spotify US",
+      supplierFeePercent: 0,
+      supplierDiscountPercent: 4.4,
+      denominations: [denomination({ label: "$60", faceValue: "60 USD", priceUsd: 59.5, reloadlyUnitPrice: 60 })],
+    },
   ]);
-  assert.equal(losses.length, 1);
-  assert.equal(losses[0].price, 29.5);
-  assert.equal(losses[0].face, 30);
+  assert.equal(entries.length, 0, "une remise rend la vente rentable : aucune alerte");
 
-  // Prix égal ou supérieur à la face : pas de perte.
+  // Sans remise connue : simple vérification, jamais une accusation de perte.
+  const unknown = audit.faceValueLosses([
+    {
+      id: "spotify-us",
+      titleEn: "Spotify US",
+      denominations: [denomination({ label: "$60", faceValue: "60 USD", priceUsd: 59.5, reloadlyUnitPrice: 60 })],
+    },
+  ]);
+  assert.equal(unknown.length, 1);
+  assert.equal(unknown[0].verdict, "suspect");
+  assert.match(unknown[0].message, /à vérifier/i);
+  assert.match(unknown[0].message, /remise Reloadly peut rendre cette vente rentable/i);
+});
+
+test("perte prouvée seulement si frais ET remise sont connus", () => {
+  const base = {
+    id: "x",
+    titleEn: "X",
+    supplierFeePercent: 0,
+    supplierDiscountPercent: 0,
+    denominations: [denomination({ faceValue: "30 USD", priceUsd: 29.5, reloadlyUnitPrice: 30 })],
+  };
+  const proven = audit.faceValueLosses([base]);
+  assert.equal(proven.length, 1);
+  assert.equal(proven[0].verdict, "loss");
+  assert.equal(proven[0].cost, 30);
+  assert.match(proven[0].message, /perte de 0\.50 \$ par vente/);
+
+  // Une remise suffisante annule la perte.
+  const discounted = audit.faceValueLosses([
+    { ...base, supplierDiscountPercent: 4.4 },
+  ]);
+  assert.equal(discounted.length, 0);
+
+  // Prix au-dessus du coût : rien à signaler.
   assert.equal(
     audit.faceValueLosses([
-      { id: "x", titleEn: "X", denominations: [denomination({ priceUsd: 30 })] },
-    ]).length,
-    0,
-  );
-  assert.equal(
-    audit.faceValueLosses([
-      { id: "x", titleEn: "X", denominations: [denomination({ priceUsd: 33 })] },
+      { ...base, denominations: [denomination({ faceValue: "30 USD", priceUsd: 31, reloadlyUnitPrice: 30 })] },
     ]).length,
     0,
   );
@@ -101,7 +134,7 @@ test("contrôle hors réseau : prix sous la valeur faciale = perte", () => {
   // Un montant désactivé n'est pas vendu : pas d'alerte.
   assert.equal(
     audit.faceValueLosses([
-      { id: "x", titleEn: "X", denominations: [denomination({ available: false })] },
+      { ...base, denominations: [denomination({ faceValue: "30 USD", priceUsd: 29.5, available: false })] },
     ]).length,
     0,
   );
@@ -109,7 +142,10 @@ test("contrôle hors réseau : prix sous la valeur faciale = perte", () => {
   // Valeur faciale illisible : on ne devine rien.
   assert.equal(
     audit.faceValueLosses([
-      { id: "x", titleEn: "X", denominations: [denomination({ faceValue: "", reloadlyUnitPrice: null, label: "Robux" })] },
+      {
+        ...base,
+        denominations: [denomination({ faceValue: "", reloadlyUnitPrice: null, label: "Robux", priceUsd: 5 })],
+      },
     ]).length,
     0,
   );
@@ -134,12 +170,16 @@ test("la perte est signalée avec sa gravité, son coût et la source du coût",
   assert.match(source, /severity: "loss"/);
   assert.match(source, /VENTE À PERTE : prix/);
   assert.match(source, /perte de \$\{/);
-  assert.match(source, /frais Reloadly inclus/);
-  assert.match(source, /valeur faciale, frais non connus/);
+  assert.match(source, /frais Reloadly \$\{feePercent/);
+  assert.match(source, /mémorisés sur la fiche/);
   // Une devise non USD est signalée (cas Robux à 83,50 $ pour 80 Robux).
   assert.match(source, /les prix doivent être convertis en USD/);
   // Les montants désactivés ne déclenchent pas de fausse alerte de perte.
-  assert.match(source, /const loss = denomination\.available &&/);
+  assert.match(source, /const loss = /);
+  // Une perte n'est déclarée que sur un coût vérifié (reloadly | stored).
+  assert.match(source, /const verifiedCost = costSource === "reloadly" \|\| costSource === "stored"/);
+  assert.match(source, /À VÉRIFIER/);
+  assert.match(source, /remise Reloadly inconnue, cette vente peut être rentable/);
 });
 
 test("synthèse : pertes comptées en tête d'audit", () => {
@@ -153,10 +193,13 @@ test("synthèse : pertes comptées en tête d'audit", () => {
   assert.match(ui, /row\.loss \|\|/);
 });
 
-test("alerte immédiate sur la page admin (sans appel Reloadly)", () => {
+test("alerte immédiate sur la page admin, à deux niveaux", () => {
   const page = flat(read("src/app/admin/(panel)/digital/page.tsx"));
   assert.match(page, /faceValueLosses\(products\)/);
-  assert.match(page, /vendus sous leur valeur faciale/);
+  assert.match(page, /verdict === "loss"/);
+  assert.match(page, /verdict === "suspect"/);
+  assert.match(page, /perte d&apos;argent à chaque vente/);
+  assert.match(page, /à vérifier, pas forcément une perte/);
 });
 
 test("arrondi conservé : recalcul vers le haut au pas de 0,50", () => {

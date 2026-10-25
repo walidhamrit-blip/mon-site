@@ -253,48 +253,112 @@ export function computeSalePrice(input: PriceInputs): PriceBreakdown {
 
 /* ------------------- Contrôle de perte (hors réseau) ---------------------- */
 
-/**
- * Montants vendus sous leur valeur faciale — perte d'argent à chaque vente.
- *
- * Aucun appel réseau : ce contrôle immédiat sert d'alerte sur la page admin
- * et de filet quand le produit Reloadly n'est pas relié ou illisible.
- * Seuls les montants **disponibles** sont contrôlés (un montant désactivé
- * n'est pas vendu).
- */
-export function faceValueLosses<
-  T extends { label: string; priceUsd: number; available: boolean },
->(fiches: Array<{ id: string; titleEn: string; denominations: T[] }>): Array<{
+/** Verdict du contrôle de rentabilité d'un montant. */
+export type RentabilityVerdict = "loss" | "suspect" | "ok";
+
+export interface RentabilityEntry {
   ficheId: string;
   ficheTitle: string;
   label: string;
   price: number;
+  /** Valeur faciale (ce que le client reçoit). */
   face: number;
-}> {
-  const cents = (value: number) => Math.round(value * 100 + 1e-9) / 100;
-  const losses: Array<{
-    ficheId: string;
-    ficheTitle: string;
+  /** Coût retenu ; `null` si la valeur faciale est illisible. */
+  cost: number | null;
+  verdict: RentabilityVerdict;
+  /** Message prêt à afficher. */
+  message: string;
+}
+
+/**
+ * Contrôle de rentabilité SANS réseau.
+ *
+ * Le coût est calculé avec les frais **et la remise** mémorisés sur la fiche :
+ *
+ *   coût = face × (1 + frais%) × (1 − remise%)
+ *
+ * Une remise Reloadly rend donc une vente rentable même sous la valeur faciale
+ * (ex. face 60 $, remise 4,4 % → coût 57,36 $, vente 59,50 $ = bénéfice).
+ *
+ * Quand les frais/remise sont inconnus, on ne crie PAS à la perte : le montant
+ * est seulement signalé **à vérifier** (`suspect`), car une remise inconnue
+ * peut changer la conclusion. Seuls les montants disponibles sont contrôlés.
+ */
+export function faceValueLosses<
+  T extends {
     label: string;
-    price: number;
-    face: number;
-  }> = [];
+    priceUsd: number;
+    available: boolean;
+    reloadlyUnitPrice?: number | null;
+    faceValue?: string;
+  },
+>(
+  fiches: Array<{
+    id: string;
+    titleEn: string;
+    supplierFeePercent?: number | null;
+    supplierDiscountPercent?: number | null;
+    denominations: T[];
+  }>,
+): RentabilityEntry[] {
+  const cents = (value: number) => Math.round(value * 100 + 1e-9) / 100;
+  const entries: RentabilityEntry[] = [];
+
   for (const fiche of fiches) {
+    const fee = fiche.supplierFeePercent;
+    const discount = fiche.supplierDiscountPercent;
+    const feesKnown = fee != null && Number.isFinite(Number(fee));
+    const discountKnown = discount != null && Number.isFinite(Number(discount));
+
     for (const denomination of fiche.denominations) {
       if (!denomination.available) continue;
       const face = denominationUnitPrice(denomination as never);
       if (face == null || face <= 0) continue;
-      if (denomination.priceUsd > 0 && cents(denomination.priceUsd) < cents(face)) {
-        losses.push({
+      const price = denomination.priceUsd;
+      if (!(price > 0)) continue;
+
+      // Coût vérifiable seulement si l'on connaît frais ET remise.
+      const verified = feesKnown && discountKnown;
+      const cost = verified
+        ? cents(face * (1 + Number(fee) / 100) * (1 - Number(discount) / 100))
+        : null;
+
+      if (cost != null) {
+        if (cents(price) >= cents(cost)) continue; // rentable, rien à signaler
+        entries.push({
           ficheId: fiche.id,
           ficheTitle: fiche.titleEn || fiche.id,
           label: denomination.label,
-          price: denomination.priceUsd,
+          price,
           face,
+          cost,
+          verdict: "loss",
+          message: `${price.toFixed(2)} $ pour un coût réel de ${cost.toFixed(2)} $ (frais ${
+            feesKnown ? Number(fee) : 0
+          } %, remise ${discountKnown ? Number(discount) : 0} %) — perte de ${(
+            cost - price
+          ).toFixed(2)} $ par vente.`,
+        });
+        continue;
+      }
+
+      // Remise inconnue : simple vérification, jamais une accusation de perte.
+      if (cents(price) < cents(face)) {
+        entries.push({
+          ficheId: fiche.id,
+          ficheTitle: fiche.titleEn || fiche.id,
+          label: denomination.label,
+          price,
+          face,
+          cost: null,
+          verdict: "suspect",
+          message: `${price.toFixed(2)} $ pour une valeur faciale de ${face} $ — à vérifier : une remise Reloadly peut rendre cette vente rentable.`,
         });
       }
     }
   }
-  return losses;
+
+  return entries;
 }
 
 /* ------------------- Prix accepté par le fournisseur ---------------------- */

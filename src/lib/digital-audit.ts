@@ -6,9 +6,16 @@
 // déjà une perte : ce contrôle ne dépend d'aucun appel réseau.
 //
 // Coût retenu, du plus fiable au plus prudent :
-//   1. `reloadly` : valeur faciale × (1 + frais Reloadly) × (1 − remise) ;
-//   2. `face`     : la valeur faciale elle-même (borne basse, frais ignorés) ;
-//   3. `none`     : aucune donnée → aucun jugement de perte.
+//   1. `reloadly` : produit lu chez Reloadly → face × (1 + frais) × (1 − remise) ;
+//   2. `stored`   : frais ET remise mémorisés sur la fiche (même formule) —
+//      c'est ce qui évite le faux positif « 60 $ vendu 59,50 $ » quand une
+//      remise Reloadly de 4,4 % rend la vente rentable ;
+//   3. `face`     : valeur faciale seule (borne HAUTE du coût, remise inconnue) :
+//      le dépassement n'est qu'une **vérification**, jamais une accusation ;
+//   4. `none`     : aucune donnée → aucun jugement.
+//
+// Corollaire : une « perte » n'est déclarée qu'avec un coût **vérifié**
+// (`reloadly` ou `stored`).
 //
 // Les prix recalculés (marge de la fiche + arrondi) sont produits ici, jamais
 // repris du navigateur.
@@ -32,7 +39,7 @@ export interface RecalcIssue {
 }
 
 /** Origine du coût utilisé pour juger la rentabilité. */
-export type CostSource = "reloadly" | "face" | "none";
+export type CostSource = "reloadly" | "stored" | "face" | "none";
 
 /** Un montant audité / recalculé. */
 export interface RecalcRow {
@@ -51,8 +58,13 @@ export interface RecalcRow {
   costSource: CostSource;
   targetMarginPercent: number | null;
   netMarginPercent: number | null;
-  /** Vrai si le prix actuel est sous le coût : perte à chaque vente. */
+  /** Frais / remise du fournisseur lus chez Reloadly (mémorisés à l'application). */
+  supplierFeePercent: number | null;
+  supplierDiscountPercent: number | null;
+  /** Vrai si le prix actuel est sous un coût **vérifié** : perte certaine. */
   loss: boolean;
+  /** Vrai si le prix est sous la valeur faciale sans remise connue : à vérifier. */
+  suspect: boolean;
   issues: RecalcIssue[];
 }
 
@@ -72,6 +84,7 @@ export interface RecalcAnalysis {
   /** Synthèse : le premier chiffre à regarder dans l'admin. */
   summary: {
     losses: number;
+    suspects: number;
     refused: number;
     unrounded: number;
     missingPrice: number;
@@ -187,14 +200,30 @@ export async function analyseCatalogRecalc(paymentFeePercent: number): Promise<R
       const price = denomination.priceUsd;
       const issues: RecalcIssue[] = [...ficheNotes];
 
-      // Coût : Reloadly si lisible, sinon la valeur faciale (borne basse).
+      // Frais/remise : produit Reloadly s'il est lisible, sinon valeurs
+      // mémorisées sur la fiche (une remise oubliée transformait une vente
+      // rentable en « perte »).
+      const storedFee = fiche.supplierFeePercent;
+      const storedDiscount = fiche.supplierDiscountPercent;
+      const storedKnown =
+        storedFee != null &&
+        Number.isFinite(Number(storedFee)) &&
+        storedDiscount != null &&
+        Number.isFinite(Number(storedDiscount));
+      const feePercent = supplier ? Number(supplier.senderFeePercentage ?? 0) : storedKnown ? Number(storedFee) : null;
+      const discountPercent = supplier
+        ? Number(supplier.discountPercentage ?? 0)
+        : storedKnown
+          ? Number(storedDiscount)
+          : null;
+
       let cost: number | null = null;
       let costSource: CostSource = "none";
-      if (supplier && unitPrice != null) {
-        cost = cents(unitPrice * (1 + Number(supplier.senderFeePercentage ?? 0) / 100) *
-          (1 - Number(supplier.discountPercentage ?? 0) / 100));
-        costSource = "reloadly";
+      if (unitPrice != null && feePercent != null && discountPercent != null) {
+        cost = cents(unitPrice * (1 + feePercent / 100) * (1 - discountPercent / 100));
+        costSource = supplier ? "reloadly" : "stored";
       } else if (unitPrice != null) {
+        // Borne haute du coût : la remise éventuelle n'est pas connue.
         cost = cents(unitPrice);
         costSource = "face";
       }
@@ -215,27 +244,46 @@ export async function analyseCatalogRecalc(paymentFeePercent: number): Promise<R
         }
       }
 
-      // ---- PERTE : le contrôle qui compte -------------------------------
-      // Un montant désactivé n'est pas vendu : pas d'alerte de perte dessus.
-      const loss = denomination.available && cost != null && price > 0 && cents(price) < cents(cost);
-      if (loss) {
+      // ---- PERTE : seulement sur un coût VÉRIFIÉ ------------------------
+      // Un montant désactivé n'est pas vendu : pas d'alerte dessus.
+      const verifiedCost = costSource === "reloadly" || costSource === "stored";
+      const loss =
+        denomination.available &&
+        verifiedCost &&
+        cost != null &&
+        price > 0 &&
+        cents(price) < cents(cost);
+      const priced = denomination.available && price > 0;
+      const suspect =
+        !loss &&
+        priced &&
+        unitPrice != null &&
+        cents(price) < cents(unitPrice) &&
+        costSource === "face";
+
+      if (loss && cost != null) {
+        const detail =
+          costSource === "reloadly"
+            ? `frais Reloadly ${feePercent ?? 0} %, remise ${discountPercent ?? 0} %`
+            : `frais ${feePercent ?? 0} % et remise ${discountPercent ?? 0} % mémorisés sur la fiche`;
         issues.unshift({
           severity: "loss",
-          message: `VENTE À PERTE : prix ${price.toFixed(2)} $ < coût ${(cost as number).toFixed(2)} $ (${
-            costSource === "reloadly" ? "frais Reloadly inclus" : "valeur faciale, frais non connus"
-          }) — perte de ${((cost as number) - price).toFixed(2)} $ par vente.`,
+          message: `VENTE À PERTE : prix ${price.toFixed(2)} $ < coût ${cost.toFixed(2)} $ (${detail}) — perte de ${(
+            cost - price
+          ).toFixed(2)} $ par vente.`,
         });
       }
-      if (
-        denomination.available &&
-        unitPrice != null &&
-        price > 0 &&
-        cents(price) < cents(unitPrice) &&
-        !loss
-      ) {
+      if (suspect) {
+        // Remise inconnue : simple vérification, jamais une accusation. On
+        // chiffre le coût « si la remise était de 4,4 % » pour rendre le
+        // message actionnable.
+        const exampleCost = cents((unitPrice as number) * (1 - 0.044));
         issues.unshift({
-          severity: "loss",
-          message: `Prix ${price.toFixed(2)} $ inférieur à la valeur faciale ${unitPrice} : le client reçoit plus qu'il ne paie.`,
+          severity: "warning",
+          message:
+            `Prix ${price.toFixed(2)} $ sous la valeur faciale ${unitPrice} $ — À VÉRIFIER : ` +
+            `remise Reloadly inconnue, cette vente peut être rentable (ex. remise 4,4 % → ` +
+            `coût ${exampleCost.toFixed(2)} $). Relancez une révision du produit pour mémoriser la remise.`,
         });
       }
 
@@ -268,7 +316,10 @@ export async function analyseCatalogRecalc(paymentFeePercent: number): Promise<R
         costSource,
         targetMarginPercent: marginPercent,
         netMarginPercent,
+        supplierFeePercent: supplier ? Number(supplier.senderFeePercentage ?? 0) : null,
+        supplierDiscountPercent: supplier ? Number(supplier.discountPercentage ?? 0) : null,
         loss,
+        suspect,
         issues,
       });
     }
@@ -278,15 +329,12 @@ export async function analyseCatalogRecalc(paymentFeePercent: number): Promise<R
   const losses = active.filter((row) => row.loss);
   const summary = {
     losses: losses.length,
+    suspects: active.filter((row) => row.suspect).length,
     refused: active.filter((row) => row.issues.some((issue) => issue.message.startsWith("Refusé par Reloadly"))).length,
     unrounded: active.filter((row) => row.issues.some((issue) => issue.message.startsWith("Prix non arrondi"))).length,
     missingPrice: rows.filter((row) => row.newPrice == null).length,
-    belowFace: rows.filter(
-      (row) =>
-        row.issues.some((issue) => issue.message.startsWith("Prix ")) &&
-        row.unitPrice != null &&
-        row.oldPrice > 0 &&
-        cents(row.oldPrice) < cents(row.unitPrice),
+    belowFace: active.filter(
+      (row) => row.unitPrice != null && cents(row.oldPrice) < cents(row.unitPrice),
     ).length,
     fichesWithLoss: new Set(losses.map((row) => row.ficheId)).size,
     total: rows.length,
@@ -339,8 +387,17 @@ export async function applyCatalogRecalc(
       continue;
     }
     const priceById = new Map(rows.map((row) => [row.denominationId, row.newPrice as number] as const));
+    // Frais / remise réellement lus chez Reloadly : on les mémorise sur la
+    // fiche pour que le contrôle de rentabilité soit exact sans réseau.
+    const fromReloadly = rows.find((row) => row.supplierDiscountPercent != null);
     const next: DigitalProduct = {
       ...fiche,
+      ...(fromReloadly
+        ? {
+            supplierFeePercent: fromReloadly.supplierFeePercent,
+            supplierDiscountPercent: fromReloadly.supplierDiscountPercent,
+          }
+        : {}),
       denominations: fiche.denominations.map((denomination) => {
         const price = priceById.get(denomination.id);
         return price == null ? denomination : { ...denomination, priceUsd: price };

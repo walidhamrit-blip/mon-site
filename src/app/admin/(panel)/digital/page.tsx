@@ -15,48 +15,59 @@ export const metadata = {
 
 export default async function AdminDigitalPage() {
   const products = await getDigitalCatalog({ publicOnly: false });
-  // Contrôle immédiat SANS réseau : un prix inférieur à la valeur faciale est
-  // déjà une perte, inutile d'attendre l'analyse Reloadly pour le voir.
-  const losses = faceValueLosses(products);
-  const lossFiches = Array.from(new Set(losses.map((loss) => loss.ficheTitle)));
+  // Contrôle immédiat SANS réseau. Deux niveaux distincts :
+  //  • perte PROUVÉE = frais ET remise connus (mémorisés sur la fiche) ;
+  //  • à VÉRIFIER   = prix sous la valeur faciale, remise inconnue — une
+  //    remise Reloadly peut rendre la vente rentable (ex. 60 $ à 59,50 $).
+  const rentability = faceValueLosses(products);
+  const proven = rentability.filter((entry) => entry.verdict === "loss");
+  const suspects = rentability.filter((entry) => entry.verdict === "suspect");
+  const fichesOf = (entries: typeof rentability) =>
+    Array.from(new Set(entries.map((entry) => entry.ficheTitle)));
 
   return (
     <div className="space-y-4">
-      {losses.length > 0 && (
+      {proven.length > 0 && (
         <div className="rounded-2xl border border-red-300 bg-red-50 px-4 py-3">
           <p className="inline-flex items-center gap-2 text-[13.5px] font-black text-red-800">
             <TriangleAlert className="h-4 w-4" />
-            {losses.length} montant(s) vendus sous leur valeur faciale — perte d&apos;argent à chaque vente
+            {proven.length} montant(s) vendus sous leur coût réel — perte d&apos;argent à chaque vente
           </p>
           <p className="mt-1 text-[12px] leading-5 text-red-800">
-            {losses
+            {proven
               .slice(0, 6)
-              .map(
-                (loss) =>
-                  `${loss.ficheTitle} · ${loss.label} : ${loss.price.toFixed(2)} $ pour une valeur de ${loss.face} $`,
-              )
+              .map((entry) => `${entry.ficheTitle} · ${entry.label} : ${entry.message}`)
               .join(" · ")}
-            {losses.length > 6 ? ` … +${losses.length - 6}` : ""}
+            {proven.length > 6 ? ` … +${proven.length - 6}` : ""}
           </p>
           <p className="mt-1 text-[11.5px] text-red-700">
-            Fiches concernées : {lossFiches.slice(0, 8).join(", ")}
-            {lossFiches.length > 8 ? ` … +${lossFiches.length - 8}` : ""} — corrigez les
-            prix (bloc « Audit &amp; recalcul ») ou désactivez ces montants.
+            Fiches concernées : {fichesOf(proven).slice(0, 8).join(", ")} — corrigez les prix
+            (bloc « Audit &amp; recalcul ») ou désactivez ces montants.
           </p>
         </div>
       )}
-      <Link
-        href="/admin/digital/orders"
-        className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-stone-200 bg-white px-4 py-3 text-sm font-bold text-stone-800 shadow-2xs transition-colors hover:border-[#C6A664]"
-      >
-        <span className="inline-flex items-center gap-2">
-          <ShoppingBag className="h-4 w-4 text-[#8A6D2F]" />
-          Commandes de codes — livraison Reloadly
-        </span>
-        <span className="text-[12px] font-semibold text-stone-500">
-          Solde, relances et codes livrés →
-        </span>
-      </Link>
+
+      {suspects.length > 0 && (
+        <div className="rounded-2xl border border-amber-300 bg-amber-50 px-4 py-3">
+          <p className="inline-flex items-center gap-2 text-[13.5px] font-black text-amber-900">
+            <TriangleAlert className="h-4 w-4" />
+            {suspects.length} montant(s) sous la valeur faciale — à vérifier, pas forcément une perte
+          </p>
+          <p className="mt-1 text-[12px] leading-5 text-amber-900">
+            {suspects
+              .slice(0, 6)
+              .map((entry) => `${entry.ficheTitle} · ${entry.label} : ${entry.message}`)
+              .join(" · ")}
+            {suspects.length > 6 ? ` … +${suspects.length - 6}` : ""}
+          </p>
+          <p className="mt-1 text-[11.5px] text-amber-800">
+            Frais et remise du fournisseur inconnus sur ces fiches. Lancez une révision du
+            produit (« Réviser le catalogue depuis Reloadly ») : la remise sera mémorisée et
+            l&apos;alerte disparaîtra si la vente est rentable.
+          </p>
+        </div>
+      )}
+
       <CatalogAudit paymentFeePercent={paymentFeePercent()} />
       <ReloadlySync paymentFeePercent={paymentFeePercent()} />
       <DigitalEditor initialProducts={products} paymentFeePercent={paymentFeePercent()} />

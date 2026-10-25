@@ -55,6 +55,7 @@ export function CatalogAudit({ paymentFeePercent }: { paymentFeePercent: number 
             .filter(
               (row) =>
                 row.loss ||
+                row.suspect ||
                 (row.newPrice != null && Math.abs(row.newPrice - row.oldPrice) > 0.004),
             )
             .map((row) => row.ficheId),
@@ -86,7 +87,7 @@ export function CatalogAudit({ paymentFeePercent }: { paymentFeePercent: number 
 
   const visibleRows = (analysis?.rows ?? []).filter((row) => {
     if (!anomaliesOnly) return true;
-    if (row.loss) return true;
+    if (row.loss || row.suspect) return true;
     if (row.newPrice != null && Math.abs(row.newPrice - row.oldPrice) > 0.004) return true;
     return row.issues.some((issue) => issue.severity !== "info");
   });
@@ -190,6 +191,11 @@ export function CatalogAudit({ paymentFeePercent }: { paymentFeePercent: number 
               <div className="text-[11px] text-stone-600">
                 {analysis.summary.fichesWithLoss} fiche(s) concernée(s)
               </div>
+              {(analysis.summary.suspects ?? 0) > 0 && (
+                <div className="mt-1 text-[11px] font-bold text-amber-800">
+                  + {analysis.summary.suspects} à vérifier (remise inconnue)
+                </div>
+              )}
             </div>
             <div className="rounded-lg border border-stone-200 bg-[#FAF9F6] px-3 py-2">
               <div className="text-[10.5px] font-bold uppercase tracking-wide text-stone-500">
@@ -258,7 +264,9 @@ export function CatalogAudit({ paymentFeePercent }: { paymentFeePercent: number 
                             className={`block ${
                               row.loss
                                 ? "rounded bg-red-50 px-1 font-bold text-red-800"
-                                : ""
+                                : row.suspect
+                                  ? "rounded bg-amber-50 px-1 text-amber-900"
+                                  : ""
                             }`}
                           >
                             <strong>{row.denominationLabel}</strong> :{" "}
