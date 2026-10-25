@@ -140,6 +140,95 @@ export function quoteDigitalOrder(
   };
 }
 
+/* ------------------------ Prix de vente & marge --------------------------- */
+
+/** Frais de paiement déduits par défaut (NOWPayments ≈ 1 %). */
+export const DEFAULT_PAYMENT_FEE_PERCENT = 1;
+
+/** Marge nette maximale acceptée (au-delà, le diviseur devient instable). */
+export const MAX_MARGIN_PERCENT = 50;
+
+export interface PriceInputs {
+  /** Valeur faciale Reloadly à acheter (ex. 20 pour une carte 20 USD). */
+  faceValue: number | null | undefined;
+  /** `senderFeePercentage` du produit Reloadly (déjà en %). */
+  senderFeePercent?: number | null;
+  /** `discountPercentage` du produit Reloadly (déjà en %). */
+  discountPercent?: number | null;
+  /** Marge NETTE visée, en % du prix payé par le client. */
+  marginPercent: number;
+  /** Frais du processeur de paiement, en % du prix payé. */
+  paymentFeePercent?: number;
+}
+
+export interface PriceBreakdown {
+  /** `false` quand le calcul est impossible (valeur faciale absente). */
+  ok: boolean;
+  /** Ce que le code coûte réellement, frais Reloadly inclus. */
+  cost: number;
+  /** Prix de vente à afficher (arrondi au centime). */
+  price: number;
+  /** Marge réellement obtenue après frais de paiement (%). */
+  netMarginPercent: number;
+  /** Ce que rapporte la vente, en USD. */
+  netProfitUsd: number;
+  error?: string;
+}
+
+function roundCents(value: number): number {
+  return Math.round(value * 100) / 100;
+}
+
+/**
+ * Calcule le prix de vente à partir de la valeur faciale, des frais du
+ * fournisseur et de la marge NETTE visée.
+ *
+ *   coût réel  = face × (1 + fraisReloadly) × (1 − remiseReloadly)
+ *   prix vente = coût ÷ (1 − marge/100 − fraisPaiement/100)
+ *
+ * Le diviseur (et non un simple « + marge % ») est indispensable : la marge
+ * est un pourcentage du prix PAYÉ, pas du coût. C'est ce qui distingue
+ * « 4 % sur la face » (20,80 $ pour 20) de « 4 % net » (21,05 $).
+ */
+export function computeSalePrice(input: PriceInputs): PriceBreakdown {
+  const face = Number(input.faceValue);
+  const margin = Number(input.marginPercent);
+  const paymentFee = Number(input.paymentFeePercent ?? DEFAULT_PAYMENT_FEE_PERCENT);
+  const senderFee = Number(input.senderFeePercent ?? 0);
+  const discount = Number(input.discountPercent ?? 0);
+
+  const empty: PriceBreakdown = {
+    ok: false,
+    cost: 0,
+    price: 0,
+    netMarginPercent: 0,
+    netProfitUsd: 0,
+    error: "Valeur faciale Reloadly absente.",
+  };
+  if (!Number.isFinite(face) || face <= 0) return empty;
+
+  const cost = roundCents(face * (1 + senderFee / 100) * (1 - discount / 100));
+  if (!Number.isFinite(cost) || cost <= 0) {
+    return { ...empty, error: "Frais fournisseur incohérents." };
+  }
+
+  if (!Number.isFinite(margin) || margin < 0 || margin >= MAX_MARGIN_PERCENT) {
+    return { ...empty, cost, error: `Marge nette attendue entre 0 et ${MAX_MARGIN_PERCENT} %.` };
+  }
+  const safePaymentFee = Number.isFinite(paymentFee) && paymentFee >= 0 ? paymentFee : 0;
+  const divisor = 1 - (margin + safePaymentFee) / 100;
+  if (divisor <= 0.01) {
+    return { ...empty, cost, error: "Marge + frais de paiement trop élevés (≥ 99 %)." };
+  }
+
+  const price = roundCents(cost / divisor);
+  const netProfitUsd = roundCents(price * (1 - safePaymentFee / 100) - cost);
+  const netMarginPercent =
+    price > 0 ? Math.round(((price * (1 - safePaymentFee / 100) - cost) / price) * 1000) / 10 : 0;
+
+  return { ok: true, cost, price, netMarginPercent, netProfitUsd };
+}
+
 /* ------------------- Prix accepté par le fournisseur ---------------------- */
 
 /**

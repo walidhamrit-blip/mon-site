@@ -22,6 +22,15 @@ import {
  * écrasées par le catalogue par défaut).
  */
 
+/**
+ * Frais du processeur de paiement, en % (défaut 1 % — NOWPayments).
+ * Override : `PAYMENT_FEE_PERCENT`. Sert au calcul du prix de vente.
+ */
+export function paymentFeePercent(): number {
+  const raw = Number(process.env.PAYMENT_FEE_PERCENT);
+  return Number.isFinite(raw) && raw >= 0 && raw < 20 ? raw : 1;
+}
+
 let seeded: Promise<void> | null = null;
 
 /** Insère le catalogue par défaut s'il n'existe pas encore. */
@@ -56,6 +65,8 @@ async function ensureSeeded(): Promise<void> {
             fulfillment: product.fulfillment ?? "manual",
             reloadlyProductId: product.reloadlyProductId ?? null,
             reloadlyCountryCode: product.reloadlyCountryCode ?? "",
+            marginPercent:
+              product.marginPercent != null ? String(product.marginPercent) : null,
           })
           .onConflictDoNothing();
         if (product.denominations.length > 0) {
@@ -84,6 +95,12 @@ async function ensureSeeded(): Promise<void> {
     });
   }
   return seeded;
+}
+
+/** Normalise la marge pour la colonne texte (null si non renseignée). */
+function marginToColumn(value: number | null | undefined): string | null {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) && parsed >= 0 ? String(parsed) : null;
 }
 
 function toArray(value: unknown): string[] {
@@ -131,6 +148,10 @@ function rowToProduct(
     fulfillment: (row.fulfillment === "auto" ? "auto" : "manual") as DigitalFulfillment,
     reloadlyProductId: row.reloadlyProductId ?? null,
     reloadlyCountryCode: row.reloadlyCountryCode ?? "",
+    marginPercent:
+      row.marginPercent != null && Number.isFinite(Number(row.marginPercent))
+        ? Number(row.marginPercent)
+        : null,
   };
 }
 
@@ -232,6 +253,7 @@ export async function upsertDigitalProduct(product: DigitalProduct): Promise<voi
           ? Math.trunc(Number(product.reloadlyProductId))
           : null,
       reloadlyCountryCode: (product.reloadlyCountryCode ?? "").toUpperCase().slice(0, 2),
+      marginPercent: marginToColumn(product.marginPercent),
       updatedAt: new Date(),
     })
     .onConflictDoUpdate({
@@ -259,6 +281,7 @@ export async function upsertDigitalProduct(product: DigitalProduct): Promise<voi
             ? Math.trunc(Number(product.reloadlyProductId))
             : null,
         reloadlyCountryCode: (product.reloadlyCountryCode ?? "").toUpperCase().slice(0, 2),
+        marginPercent: marginToColumn(product.marginPercent),
         updatedAt: new Date(),
       },
     });

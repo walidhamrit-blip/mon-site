@@ -203,6 +203,12 @@ export const digitalProducts = pgTable("digital_products", {
   reloadlyProductId: integer("reloadly_product_id"),
   /** Pays du produit Reloadly (ISO 2 lettres, ex. « US »). */
   reloadlyCountryCode: text("reloadly_country_code").notNull().default(""),
+  /**
+   * Marge NETTE visée sur cette fiche, en % du prix payé (texte décimal,
+   * vide = prix saisis à la main). Sert à recalculer les prix de vente à
+   * partir du coût réel chez Reloadly.
+   */
+  marginPercent: text("margin_percent"),
 
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()

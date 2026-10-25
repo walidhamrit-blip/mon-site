@@ -827,3 +827,67 @@ test("achat : le prix est contrôlé chez Reloadly AVANT la commande", () => {
   assert.match(checkout, /const issue = await supplierPriceIssue\(/);
   assert.ok(checkout.indexOf("supplierPriceIssue(") < checkout.indexOf("newOrderReference("));
 });
+
+/* --------------------- Prix de vente et marge nette ------------------------- */
+
+test("marge nette : 4 % sur 20 $ donne 21,05 $ (pas 20,80 $)", () => {
+  const plain = core.computeSalePrice({ faceValue: 20, marginPercent: 4, paymentFeePercent: 1 });
+  assert.equal(plain.ok, true);
+  assert.equal(plain.cost, 20);
+  // Un simple « +4 % sur la face » (20,80) ne laisse que ~2,9 % net : le
+  // diviseur inclut les frais de paiement.
+  assert.equal(plain.price, 21.05);
+  assert.notEqual(plain.price, 20.8);
+  assert.equal(plain.netMarginPercent, 4);
+  assert.ok(plain.netProfitUsd > 0.8 && plain.netProfitUsd < 0.9);
+});
+
+test("marge nette : les frais Reloadly entrent dans le coût réel", () => {
+  const withFees = core.computeSalePrice({
+    faceValue: 20,
+    senderFeePercent: 5,
+    marginPercent: 4,
+    paymentFeePercent: 1,
+  });
+  assert.equal(withFees.cost, 21);
+  assert.equal(withFees.price, 22.11);
+  // La remise du fournisseur diminue le coût.
+  const withDiscount = core.computeSalePrice({
+    faceValue: 20,
+    discountPercent: 2,
+    marginPercent: 0,
+    paymentFeePercent: 0,
+  });
+  assert.equal(withDiscount.cost, 19.6);
+  assert.equal(withDiscount.price, 19.6);
+});
+
+test("marge nette : refus des valeurs incohérentes, jamais de prix nul", () => {
+  assert.equal(core.computeSalePrice({ faceValue: null, marginPercent: 4 }).ok, false);
+  assert.equal(core.computeSalePrice({ faceValue: 0, marginPercent: 4 }).ok, false);
+  assert.equal(core.computeSalePrice({ faceValue: 20, marginPercent: 50 }).ok, false);
+  assert.equal(core.computeSalePrice({ faceValue: 20, marginPercent: -1 }).ok, false);
+  // Prix toujours au-dessus du coût pour une marge ≥ 0.
+  const zero = core.computeSalePrice({ faceValue: 20, marginPercent: 0, paymentFeePercent: 1 });
+  assert.ok(zero.price >= zero.cost);
+});
+
+test("marge nette : câblage admin (saisie → recalcul → garde-fou)", () => {
+  const editor = readFileSync(join(srcRoot, "app/admin/(panel)/digital/digital-editor.tsx"), "utf8");
+  assert.match(editor, /const setMargin = /);
+  assert.match(editor, /computeSalePrice\(/);
+  assert.match(editor, /Marge nette \(%\)/);
+
+  const store = readFileSync(join(srcRoot, "lib/digital-store.ts"), "utf8");
+  assert.match(store, /margin_percent|marginPercent/);
+  assert.match(store, /export function paymentFeePercent/);
+
+  // Garde-fou serveur : refus d'une vente à perte.
+  const actions = readFileSync(join(srcRoot, "app/admin/actions.ts"), "utf8");
+  assert.match(actions, /findLosses\(product, reloadlyProductId\)/);
+  assert.match(actions, /Vente à perte refusée/);
+  assert.match(actions, /paymentFeePercent/);
+
+  const ddl = readFileSync(join(srcRoot, "db/index.ts"), "utf8");
+  assert.match(ddl, /digital_products ADD COLUMN IF NOT EXISTS margin_percent/);
+});

@@ -499,5 +499,7 @@ export const digitalProductSchema = z.object({
   /** Produit Reloadly relié à la fiche (achat automatique). */
   reloadlyProductId: z.coerce.number().int().min(0).max(9_999_999).nullable().optional(),
   reloadlyCountryCode: z.string().max(2).optional(),
+  /** Marge nette visée, en % du prix payé (null = prix manuels). */
+  marginPercent: z.coerce.number().min(0).max(50).nullable().optional(),
 });
 

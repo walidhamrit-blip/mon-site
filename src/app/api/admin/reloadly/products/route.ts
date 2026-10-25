@@ -28,6 +28,10 @@ function toClientProduct(product: ReloadlyGiftCardProduct) {
     fixedDenominations: product.fixedDenominations,
     minDenomination: product.minDenomination,
     maxDenomination: product.maxDenomination,
+    // Frais et remise du fournisseur : indispensables au calcul du coût réel
+    // et donc du prix de vente (marge nette).
+    senderFeePercentage: product.senderFeePercentage,
+    discountPercentage: product.discountPercentage,
     status: product.status,
     logo: product.logoUrls[0] ?? null,
   };

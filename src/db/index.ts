@@ -309,6 +309,11 @@ export function ensureSchema(): Promise<void> {
       await pool.query(
         "ALTER TABLE digital_orders ADD COLUMN IF NOT EXISTS email_provider_id text",
       );
+      // Marge nette visée par fiche : permet de recalculer les prix de vente
+      // depuis le coût réel (valeurs faciales + frais Reloadly).
+      await pool.query(
+        "ALTER TABLE digital_products ADD COLUMN IF NOT EXISTS margin_percent text",
+      );
       await pool.query(
         "ALTER TABLE digital_orders ADD COLUMN IF NOT EXISTS email_last_error text",
       );
