@@ -148,6 +148,13 @@ export const DEFAULT_PAYMENT_FEE_PERCENT = 1;
 /** Marge nette maximale acceptée (au-delà, le diviseur devient instable). */
 export const MAX_MARGIN_PERCENT = 50;
 
+/**
+ * Pas d'arrondi des prix de vente calculés : 0,50 → le prix finit toujours
+ * par « ,00 » ou « ,50 », ce qui reste lisible sur une facture crypto et
+ * limite les sous-paiements.
+ */
+export const PRICE_ROUND_STEP = 0.5;
+
 export interface PriceInputs {
   /** Valeur faciale Reloadly à acheter (ex. 20 pour une carte 20 USD). */
   faceValue: number | null | undefined;
@@ -180,11 +187,25 @@ function roundCents(value: number): number {
 }
 
 /**
+ * Arrondit un prix vers le haut au pas donné (`0.5` par défaut).
+ *
+ * Exemples : 22,27 → 22,50 · 22,00 → 22,00 · 21,51 → 22,00.
+ * La marge affichée étant recalculée après arrondi, elle dépasse très
+ * légèrement la cible : c'est le prix de la lisibilité (jamais une perte).
+ */
+export function roundPriceUp(value: number, step: number = PRICE_ROUND_STEP): number {
+  if (!Number.isFinite(value) || value <= 0) return 0;
+  if (!Number.isFinite(step) || step <= 0) return roundCents(value);
+  // Le −1e-9 absorbe les erreurs de virgule flottante (22,50 doit rester 22,50).
+  return roundCents(Math.ceil(value / step - 1e-9) * step);
+}
+
+/**
  * Calcule le prix de vente à partir de la valeur faciale, des frais du
  * fournisseur et de la marge NETTE visée.
  *
  *   coût réel  = face × (1 + fraisReloadly) × (1 − remiseReloadly)
- *   prix vente = coût ÷ (1 − marge/100 − fraisPaiement/100)
+ *   prix vente = ⌈coût ÷ (1 − marge/100 − fraisPaiement/100)⌉ au pas de 0,50
  *
  * Le diviseur (et non un simple « + marge % ») est indispensable : la marge
  * est un pourcentage du prix PAYÉ, pas du coût. C'est ce qui distingue
@@ -221,7 +242,8 @@ export function computeSalePrice(input: PriceInputs): PriceBreakdown {
     return { ...empty, cost, error: "Marge + frais de paiement trop élevés (≥ 99 %)." };
   }
 
-  const price = roundCents(cost / divisor);
+  // Toujours vers le HAUT : un arrondi ne peut jamais repasser sous le coût.
+  const price = roundPriceUp(cost / divisor);
   const netProfitUsd = roundCents(price * (1 - safePaymentFee / 100) - cost);
   const netMarginPercent =
     price > 0 ? Math.round(((price * (1 - safePaymentFee / 100) - cost) / price) * 1000) / 10 : 0;

@@ -112,11 +112,12 @@ test("montants : une entrée par valeur faciale, prix calculés depuis la marge"
   );
   assert.deepEqual(
     rows.map((row) => row.priceUsd),
-    [21.05, 26.32, 31.58, 52.63],
+    [21.5, 26.5, 32, 53],
   );
   assert.equal(rows[0].label, "$20");
   assert.equal(rows[0].cost, 20);
-  assert.equal(rows[0].netMarginPercent, 4);
+  // Après arrondi au demi supérieur, la marge obtenue dépasse la cible (4 %).
+  assert.ok(rows[0].netMarginPercent >= 4);
   // Tous les montants sont nouveaux quand la fiche est vide.
   assert.ok(rows.every((row) => row.action === "added"));
 });
@@ -146,11 +147,11 @@ test("montants refusés par Reloadly : signalés, jamais supprimés", () => {
   assert.match(byLabel["$5"].noteEn, /n'est pas accepté par Reloadly/);
   // L'identifiant du montant conservé ne change pas (historique des commandes).
   assert.equal(byLabel["$25"].id, "d25");
-  assert.equal(byLabel["$25"].priceUsd, 26.32);
+  assert.equal(byLabel["$25"].priceUsd, 26.5);
   assert.equal(byLabel["$25"].available, true);
-  assert.equal(byLabel["$20"].priceUsd, 21.05);
-  assert.equal(byLabel["$30"].priceUsd, 31.58);
-  assert.equal(byLabel["$50"].priceUsd, 52.63);
+  assert.equal(byLabel["$20"].priceUsd, 21.5);
+  assert.equal(byLabel["$30"].priceUsd, 32);
+  assert.equal(byLabel["$50"].priceUsd, 53);
 
   // La fiche est reliée au produit et passe en livraison automatique.
   assert.equal(next.reloadlyProductId, 11828);

@@ -3,6 +3,7 @@ import { ShoppingBag } from "lucide-react";
 import { getDigitalCatalog, paymentFeePercent } from "@/lib/digital-store";
 import { DigitalEditor } from "./digital-editor";
 import { ReloadlySync } from "./reloadly-sync";
+import { CatalogAudit } from "./catalog-audit";
 
 export const dynamic = "force-dynamic";
 
@@ -27,6 +28,7 @@ export default async function AdminDigitalPage() {
           Solde, relances et codes livrés →
         </span>
       </Link>
+      <CatalogAudit paymentFeePercent={paymentFeePercent()} />
       <ReloadlySync paymentFeePercent={paymentFeePercent()} />
       <DigitalEditor initialProducts={products} paymentFeePercent={paymentFeePercent()} />
     </div>

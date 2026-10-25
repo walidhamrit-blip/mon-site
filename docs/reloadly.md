@@ -172,6 +172,28 @@ Règles appliquées :
 - les produits à **prix libre** (`RANGE`) ne génèrent aucun montant : la fiche
   se remplit à la main.
 
+### 2.2.3 Arrondi et audit du catalogue
+
+**Arrondi.** Tout prix calculé (marge saisie ou révision Reloadly) est arrondi
+au **demi-dollar supérieur** : `22,27 → 22,50`, `21,51 → 22,00`. Jamais vers le
+bas, donc jamais sous le coût. Conséquence assumée : la marge **réellement
+obtenue** dépasse légèrement la cible, et c'est elle qui est affichée.
+
+**Audit & recalcul.** Admin → *Codes & Cartes cadeaux* → bloc
+**« Audit & recalcul des prix »** → *Analyser le catalogue*. L'écran liste,
+montant par montant : ancien prix → prix recalculé, coût réel, marge obtenue,
+et les anomalies :
+
+- prix actuel **sous le coût réel** (vente à perte) ;
+- prix **non arrondi** au pas de 0,50 ;
+- montant **refusé par Reloadly** ;
+- fiche **sans produit relié**, **sans marge** ou en **livraison manuelle**
+  (ignorée, avec le motif).
+
+Cocher les fiches puis **Appliquer la sélection** : les prix sont recalculés
+**côté serveur** (le navigateur n'envoie que des identifiants de fiche). Les
+montants dont la valeur Reloadly est absente ne sont pas modifiés.
+
 ### 2.3 Vérifier la connexion
 
 - Admin → **Commandes de codes** : carte « Connexion Reloadly » (environnement,

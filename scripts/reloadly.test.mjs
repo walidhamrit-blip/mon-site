@@ -830,16 +830,29 @@ test("achat : le prix est contrôlé chez Reloadly AVANT la commande", () => {
 
 /* --------------------- Prix de vente et marge nette ------------------------- */
 
-test("marge nette : 4 % sur 20 $ donne 21,05 $ (pas 20,80 $)", () => {
+test("marge nette : 4 % sur 20 $ donne 21,50 $ (arrondi au demi supérieur)", () => {
   const plain = core.computeSalePrice({ faceValue: 20, marginPercent: 4, paymentFeePercent: 1 });
   assert.equal(plain.ok, true);
   assert.equal(plain.cost, 20);
-  // Un simple « +4 % sur la face » (20,80) ne laisse que ~2,9 % net : le
-  // diviseur inclut les frais de paiement.
-  assert.equal(plain.price, 21.05);
+  // Brut = 20 / 0,95 = 21,0526 → arrondi 21,50 (jamais 20,80 = « +4 % sur la face »).
+  assert.equal(plain.price, 21.5);
   assert.notEqual(plain.price, 20.8);
-  assert.equal(plain.netMarginPercent, 4);
-  assert.ok(plain.netProfitUsd > 0.8 && plain.netProfitUsd < 0.9);
+  // La marge affichée est celle RÉELLEMENT obtenue après arrondi (≥ cible).
+  // 21,50 $ pour un coût de 20 $ → 1,285 $ net, soit ~6 % réellement obtenus.
+  assert.ok(plain.netMarginPercent >= 4 && plain.netMarginPercent <= 8);
+  assert.equal(plain.netProfitUsd, 1.29);
+});
+
+test("arrondi : toujours vers le haut, au pas de 0,50", () => {
+  assert.equal(core.roundPriceUp(22.27), 22.5);
+  assert.equal(core.roundPriceUp(22.0), 22.0);
+  assert.equal(core.roundPriceUp(21.51), 22.0);
+  assert.equal(core.roundPriceUp(22.5), 22.5); // pas de dérive flottante
+  assert.equal(core.roundPriceUp(0.1), 0.5);
+  assert.equal(core.roundPriceUp(0), 0);
+  // Un prix arrondi ne descend jamais sous le coût.
+  const cost = 21.6;
+  assert.ok(core.roundPriceUp(cost) >= cost);
 });
 
 test("marge nette : les frais Reloadly entrent dans le coût réel", () => {
@@ -850,7 +863,7 @@ test("marge nette : les frais Reloadly entrent dans le coût réel", () => {
     paymentFeePercent: 1,
   });
   assert.equal(withFees.cost, 21);
-  assert.equal(withFees.price, 22.11);
+  assert.equal(withFees.price, 22.5);
   // La remise du fournisseur diminue le coût.
   const withDiscount = core.computeSalePrice({
     faceValue: 20,
@@ -859,7 +872,7 @@ test("marge nette : les frais Reloadly entrent dans le coût réel", () => {
     paymentFeePercent: 0,
   });
   assert.equal(withDiscount.cost, 19.6);
-  assert.equal(withDiscount.price, 19.6);
+  assert.equal(withDiscount.price, 20);
 });
 
 test("marge nette : refus des valeurs incohérentes, jamais de prix nul", () => {
