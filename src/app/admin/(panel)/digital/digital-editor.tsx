@@ -14,6 +14,7 @@ import {
   deleteDigitalProductAction,
   saveDigitalProduct,
 } from "@/app/admin/actions";
+import { computeSalePrice } from "@/lib/digital-order-core";
 import {
   DIGITAL_FULFILLMENTS,
   DIGITAL_KINDS,
@@ -21,6 +22,7 @@ import {
   DIGITAL_REGIONS,
   DIGITAL_STATUSES,
   DIGITAL_STATUS_LABELS,
+  denominationUnitPrice,
   regionLabel,
   slugify,
   type DigitalDenomination,
@@ -37,12 +39,23 @@ import { ReloadlyProductSearch } from "./reloadly-product-search";
  * future caisse consommera — le passage de « catalogue » à « vente » ne
  * demandera aucune reprise de données.
  */
+/** Frais et remise publiés par Reloadly pour un produit relié. */
+interface SupplierFees {
+  senderFeePercentage: number;
+  discountPercentage: number;
+}
+
 export function DigitalEditor({
   initialProducts,
+  paymentFeePercent,
 }: {
   initialProducts: DigitalProduct[];
+  /** Frais du processeur de paiement, en % (NOWPayments par défaut). */
+  paymentFeePercent: number;
 }) {
   const [products, setProducts] = useState<DigitalProduct[]>(initialProducts);
+  // Frais Reloadly par fiche, renseignés par la vérification des montants.
+  const [fees, setFees] = useState<Record<string, SupplierFees>>({});
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [busy, startTransition] = useTransition();
@@ -84,6 +97,47 @@ export function DigitalEditor({
                   : denomination,
               ),
             },
+      ),
+    );
+  };
+
+  /**
+   * Recalcule les prix de vente d'une fiche à partir de sa marge nette et du
+   * coût réel chez Reloadly (valeur faciale + frais du fournisseur).
+   *
+   * Le prix enregistré reste la source de vérité côté caisse : on écrit donc
+   * le résultat dans `priceUsd` au lieu de le recalculer à chaque paiement.
+   */
+  const recalcPrices = (product: DigitalProduct, marginPercent: number | null): DigitalProduct => {
+    if (marginPercent == null || !Number.isFinite(marginPercent)) return product;
+    const supplier = fees[product.id] ?? { senderFeePercentage: 0, discountPercentage: 0 };
+    return {
+      ...product,
+      denominations: product.denominations.map((denomination) => {
+        const face = denominationUnitPrice(denomination);
+        const computed = computeSalePrice({
+          faceValue: face,
+          senderFeePercent: supplier.senderFeePercentage,
+          discountPercent: supplier.discountPercentage,
+          marginPercent,
+          paymentFeePercent,
+        });
+        return computed.ok ? { ...denomination, priceUsd: computed.price } : denomination;
+      }),
+    };
+  };
+
+  const setMargin = (product: DigitalProduct, raw: string) => {
+    const margin = raw.trim() === "" ? null : Number(raw.replace(",", "."));
+    const valid = margin != null && Number.isFinite(margin) && margin >= 0;
+    setProducts((prev) =>
+      prev.map((item) =>
+        item.id !== product.id
+          ? item
+          : recalcPrices(
+              { ...item, marginPercent: valid ? (margin as number) : null },
+              valid ? (margin as number) : null,
+            ),
       ),
     );
   };
@@ -467,9 +521,62 @@ export function DigitalEditor({
                     }
                   />
 
+                  <div className="mt-2 grid gap-2 sm:grid-cols-[160px_1fr] sm:items-end">
+                    <label className="block">
+                      <span className={labelCls}>Marge nette (%)</span>
+                      <input
+                        type="number"
+                        step="0.1"
+                        min="0"
+                        max="50"
+                        placeholder="ex. 4"
+                        className={inputCls}
+                        value={product.marginPercent ?? ""}
+                        onChange={(event) => setMargin(product, event.target.value)}
+                      />
+                    </label>
+                    <p className="rounded-lg bg-[#FAF9F6] px-3 py-2 text-[11.5px] leading-5 text-stone-600">
+                      Renseignez la marge : <strong>les prix de vente de tous les
+                      montants sont recalculés automatiquement</strong> à partir du coût
+                      réel (valeur Reloadly + frais du fournisseur) et des frais de
+                      paiement ({paymentFeePercent} %). Videz le champ pour reprendre la
+                      main sur les prix.
+                    </p>
+                  </div>
+
                   <ReloadlyPriceCheck
                     productId={product.reloadlyProductId ?? null}
                     denominations={product.denominations}
+                    paymentFeePercent={paymentFeePercent}
+                    marginPercent={product.marginPercent ?? null}
+                    onLoaded={(fees) => {
+                      setFees((prev) => ({ ...prev, [product.id]: fees }));
+                      // Les frais arrivent après le premier rendu : on réaligne
+                      // les prix déjà calculés pour qu'ils en tiennent compte.
+                      if (product.marginPercent != null) {
+                        setProducts((prev) =>
+                          prev.map((item) =>
+                            item.id !== product.id
+                              ? item
+                              : {
+                                  ...item,
+                                  denominations: item.denominations.map((denomination) => {
+                                    const computed = computeSalePrice({
+                                      faceValue: denominationUnitPrice(denomination),
+                                      senderFeePercent: fees.senderFeePercentage,
+                                      discountPercent: fees.discountPercentage,
+                                      marginPercent: product.marginPercent as number,
+                                      paymentFeePercent,
+                                    });
+                                    return computed.ok
+                                      ? { ...denomination, priceUsd: computed.price }
+                                      : denomination;
+                                  }),
+                                },
+                          ),
+                        );
+                      }
+                    }}
                   />
 
                   <p className="rounded-lg border border-stone-200 bg-white px-3 py-2 text-[11.5px] leading-5 text-stone-600">

@@ -199,6 +199,11 @@ export interface DigitalProduct {
   reloadlyProductId?: number | null;
   /** Pays du produit Reloadly (ISO 2 lettres). */
   reloadlyCountryCode?: string;
+  /**
+   * Marge NETTE visée sur cette fiche, en % du prix payé (null = prix
+   * saisis à la main). Sert au calcul automatique des prix de vente.
+   */
+  marginPercent?: number | null;
 }
 
 /** Statuts visibles publiquement (le catalogue public ignore les brouillons). */

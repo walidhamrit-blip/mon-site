@@ -30,7 +30,9 @@ import {
   deliverPaidDigitalOrder,
   resendDigitalCodesEmail,
 } from "@/lib/digital-orders";
-import type { DigitalProduct } from "@/lib/digital-types";
+import { denominationUnitPrice, type DigitalProduct } from "@/lib/digital-types";
+import { computeSalePrice } from "@/lib/digital-order-core";
+import { getGiftCardProduct, reloadlyConfigured } from "@/lib/reloadly";
 import { mailDiagnostics, sendTestEmail } from "@/lib/mailer";
 
 export interface ActionResult {
@@ -541,6 +543,47 @@ export async function generateDemoFromLead(leadId: number): Promise<GenerateDemo
   }
 }
 
+/**
+ * Liste les montants vendus sous leur coût réel (valeur Reloadly + frais).
+ * Renvoie [] si le fournisseur est injoignable : la vérification ne doit
+ * jamais empêcher un enregistrement légitime.
+ */
+async function findLosses(product: DigitalProduct, reloadlyProductId: number): Promise<string[]> {
+  let supplier: { senderFeePercentage: number; discountPercentage: number };
+  try {
+    const info = await getGiftCardProduct(reloadlyProductId);
+    supplier = {
+      senderFeePercentage: Number(info.senderFeePercentage ?? 0),
+      discountPercentage: Number(info.discountPercentage ?? 0),
+    };
+  } catch (error) {
+    console.warn(
+      "[admin][digital] coût non vérifiable :",
+      error instanceof Error ? error.message : error,
+    );
+    return [];
+  }
+
+  const fee = Number(process.env.PAYMENT_FEE_PERCENT);
+  const paymentFeePercent = Number.isFinite(fee) && fee >= 0 && fee < 20 ? fee : 1;
+
+  return product.denominations
+    .filter((denomination) => denomination.available)
+    .filter((denomination) => {
+      const breakdown = computeSalePrice({
+        faceValue: denominationUnitPrice(denomination),
+        senderFeePercent: supplier.senderFeePercentage,
+        discountPercent: supplier.discountPercentage,
+        // Marge 0 : on vérifie le prix face au coût, pas à la marge visée.
+        marginPercent: 0,
+        paymentFeePercent: 0,
+      });
+      if (!breakdown.ok) return false;
+      return denomination.priceUsd > 0 && denomination.priceUsd < breakdown.cost;
+    })
+    .map((denomination) => `${denomination.label} (${denomination.priceUsd.toFixed(2)} $)`);
+}
+
 /* ---------------------------- Diagnostic e-mail --------------------------- */
 
 export interface MailTestResult extends ActionResult {
@@ -612,7 +655,27 @@ export async function saveDigitalProduct(input: unknown): Promise<ActionResult> 
     return { ok: false, error: `Fiche invalide — ${firstIssue(parsed.error)}` };
   }
   try {
-    await upsertDigitalProduct(parsed.data as DigitalProduct);
+    const product = parsed.data as DigitalProduct;
+
+    // Garde-fou financier : un montant vendu sous son coût réel fait perdre
+    // de l'argent à chaque vente. On refuse l'enregistrement quand les frais
+    // Reloadly sont lisibles ; si le fournisseur est injoignable, on laisse
+    // passer (mieux vaut enregistrer que bloquer sur une vérification
+    // facultative) — l'admin affiche alors l'alerte dans l'éditeur.
+    if (product.fulfillment === "auto" && reloadlyConfigured()) {
+      const reloadlyProductId = Number(product.reloadlyProductId);
+      if (Number.isInteger(reloadlyProductId) && reloadlyProductId > 0) {
+        const losses = await findLosses(product, reloadlyProductId);
+        if (losses.length > 0) {
+          return {
+            ok: false,
+            error: `Vente à perte refusée : ${losses.join(", ")}. Augmentez le prix ou retirez la marge.`,
+          };
+        }
+      }
+    }
+
+    await upsertDigitalProduct(product);
     // La fiche produit est pré-générée (`generateStaticParams`) : sans
     // revalidation de son chemin, elle reste servie depuis le cache du build
     // — statut « bientôt disponible » et aucun bouton d'achat, même après

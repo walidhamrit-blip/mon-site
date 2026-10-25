@@ -126,6 +126,28 @@ Dans l'admin → **Codes & Cartes cadeaux** :
 > Une fiche en mode `Automatique` sans ID produit retombe en livraison manuelle
 > — c'est volontaire : on ne devine jamais un produit.
 
+### 2.2.1 Fixer la marge : le prix se calcule tout seul
+
+Une fois le produit Reloadly relié, chaque fiche affiche **« Marge nette (%) »**
+et **« Valeurs acceptées »** (montants du fournisseur, frais, remise).
+
+1. Saisir la marge nette visée (ex. `4`). **Tous les prix de la fiche sont
+   recalculés immédiatement** ; vider le champ rend la main sur les prix.
+2. Formule appliquée :
+
+   ```
+   coût réel  = valeurReloadly × (1 + fraisReloadly%) × (1 − remise%)
+   prix vente = coût réel ÷ (1 − marge% − fraisPaiement%)
+   ```
+
+   `fraisPaiement%` = `PAYMENT_FEE_PERCENT` (1 % par défaut, NOWPayments).
+   Le diviseur est essentiel : 4 % **sur la face** (20 → 20,80) ne laisse que
+   ~2,9 % net ; 4 % **net** sur un coût de 20 donne 21,05 $.
+3. Chaque montant affiche **coût réel, prix et marge nette obtenue** ; un prix
+   inférieur au coût est signalé **« VENTE À PERTE »**, et l'enregistrement est
+   **refusé** par le serveur tant que le prix reste sous le coût (si Reloadly
+   est injoignable, la vérification est ignorée pour ne pas bloquer la saisie).
+
 ### 2.3 Vérifier la connexion
 
 - Admin → **Commandes de codes** : carte « Connexion Reloadly » (environnement,
