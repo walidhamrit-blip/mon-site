@@ -937,3 +937,58 @@ test("marge nette : câblage admin (saisie → recalcul → garde-fou)", () => {
   const ddl = readFileSync(join(srcRoot, "db/index.ts"), "utf8");
   assert.match(ddl, /digital_products ADD COLUMN IF NOT EXISTS margin_percent/);
 });
+
+/* --------------------- Avertissement « carte régionale » ------------------- */
+
+test("carte régionale : détection stricte, aucune alerte sur les mondiales", () => {
+  // Fiches strictement régionales → avertissement.
+  assert.deepEqual(types.regionalOnlyRegions(["US"]), ["US"]);
+  assert.deepEqual(types.regionalOnlyRegions(["tr"]), ["TR"]);
+  assert.deepEqual(types.regionalOnlyRegions(["SA", "AE"]), ["SA", "AE"]);
+  assert.equal(types.isRegionalOnly(["TR"]), true);
+
+  // Dès que `global` est annoncé, la fiche n'est PAS régionale : Steam,
+  // PlayStation, Xbox et Amazon portent tous ["US", "global"]. Afficher un
+  // avertissement « carte régionale » y serait faux.
+  assert.deepEqual(types.regionalOnlyRegions(["global", "US"]), []);
+  assert.deepEqual(types.regionalOnlyRegions(["US", "global"]), []);
+  assert.equal(types.isRegionalOnly(["global"]), false);
+
+  // Aucune région connue : on n'invente pas d'avertissement.
+  assert.deepEqual(types.regionalOnlyRegions([]), []);
+  assert.deepEqual(types.regionalOnlyRegions(null), []);
+  assert.equal(types.isRegionalOnly(undefined), false);
+});
+
+test("avertissement régional : présent sur catalogue, fiche ET avant paiement", () => {
+  const alert = readFileSync(join(srcRoot, "components/regional-alert.tsx"), "utf8");
+  // Gras + pulsation lente, coupée pour `prefers-reduced-motion`.
+  assert.match(alert, /font-black/);
+  assert.match(alert, /regional-alert/);
+  assert.match(alert, /role="alert"/);
+  assert.match(alert, /regionalOnlyRegions\(regions\)/);
+  assert.match(alert, /local account required/i);
+
+  const css = readFileSync(join(srcRoot, "app/globals.css"), "utf8");
+  assert.match(css, /@keyframes regional-blink/);
+  assert.match(css, /animation: regional-blink 1\.8s/);
+  // Pas de clignotement rapide (risque photosensible, WCAG 2.2.2).
+  assert.match(css, /@media \(prefers-reduced-motion: reduce\)[\s\S]{0,240}\.regional-alert \{\s*animation: none/);
+
+  const catalog = readFileSync(join(srcRoot, "components/digital-catalog.tsx"), "utf8");
+  assert.match(catalog, /<RegionalAlert[\s\S]{0,160}compact/);
+
+  const details = readFileSync(
+    join(srcRoot, "app/(site)/codes/[slug]/digital-product-details.tsx"),
+    "utf8",
+  );
+  // Deux emplacements : en-tête de fiche et panneau des montants.
+  assert.equal((details.match(/<RegionalAlert/g) ?? []).length, 2);
+
+  const dialog = readFileSync(join(srcRoot, "components/digital-buy-dialog.tsx"), "utf8");
+  assert.match(dialog, /<RegionalAlert/);
+  assert.ok(
+    dialog.indexOf("<RegionalAlert") < dialog.indexOf("الدفع الآن"),
+    "l'avertissement doit précéder le bouton de paiement",
+  );
+});

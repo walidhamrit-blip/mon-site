@@ -511,3 +511,31 @@ body {
   .ribbon-window { mask-image: none; }
 }
 
+
+/* ------------------------------------------------------------------------- */
+/* Avertissement « carte régionale » (gras + pulsation lente).               */
+/*                                                                           */
+/* Un code régional ne s'active que dans son pays : l'avertissement doit     */
+/* attirer l'œil sans jamais devenir un risque photosensible. D'où une       */
+/* pulsation de 1,8 s (≈ 0,55 Hz, très en dessous du seuil WCAG de 3 Hz),    */
+/* qui porte sur l'opacité du texte et non sur sa visibilité complète.       */
+/* ------------------------------------------------------------------------- */
+@keyframes regional-blink {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.55;
+  }
+}
+.regional-alert {
+  animation: regional-blink 1.8s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  /* Mouvement désactivé, message identique : texte fixe, toujours en gras. */
+  .regional-alert {
+    animation: none;
+    opacity: 1;
+  }
+}

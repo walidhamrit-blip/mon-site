@@ -5,6 +5,7 @@ import { Loader2, Lock, Minus, Plus, ShieldCheck, X } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import { Price } from "@/components/price";
 import { regionLabel, type DigitalProduct } from "@/lib/digital-types";
+import { RegionalAlert } from "@/components/regional-alert";
 
 const MAX_QUANTITY = 10;
 
@@ -143,6 +144,14 @@ export function DigitalBuyDialog({ product, denominationId, onClose }: Props) {
             <X className="h-4 w-4" />
           </button>
         </div>
+
+        {/* Carte régionale : dernier rappel AVANT le paiement — c'est ici
+            qu'il compte, pas en haut de la fiche. Les régions viennent des
+            montants réellement proposés à la vente. */}
+        <RegionalAlert
+          regions={available.flatMap((item) => [item.region])}
+          className="mt-4"
+        />
 
         {/* Montants */}
         <div className="mt-4">

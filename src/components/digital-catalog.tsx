@@ -7,6 +7,7 @@ import { BellRing, Check, Globe2, Search, Sparkles, Tag } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import { useSiteConfig } from "@/components/site-provider";
 import { Price } from "@/components/price";
+import { RegionalAlert } from "@/components/regional-alert";
 import { whatsappLink } from "@/lib/utils";
 import {
   DIGITAL_KIND_LABELS,
@@ -276,6 +277,14 @@ export function DigitalCatalog({
                       <p className="mt-2.5 line-clamp-3 text-[13.5px] leading-7 text-[var(--muted-foreground)]">
                         {ar ? product.descriptionAr : product.descriptionEn}
                       </p>
+
+                      {/* Carte strictement régionale : l'avertissement doit
+                          être visible AVANT le clic sur « Détails ». */}
+                      <RegionalAlert
+                        regions={product.regions}
+                        compact
+                        className="relative mt-3"
+                      />
 
                       {product.regions.length > 0 && (
                         <div className="mt-4 flex flex-wrap items-center gap-1.5">
