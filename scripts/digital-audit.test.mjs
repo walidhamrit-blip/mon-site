@@ -217,3 +217,67 @@ test("le recalcul reste fait côté serveur", () => {
   const route = flat(read("src/app/api/admin/digital/recalc/route.ts"));
   assert.match(route, /isAdminAuthenticated/);
 });
+
+test("carte non-USD : jamais de « perte » calculée sur la face locale", () => {
+  // 500 TRY vendu 16 $ : comparer 16 à 500 donnerait une « perte » absurde.
+  const suspect = audit.faceValueLosses([
+    {
+      id: "steam-tr",
+      titleEn: "Steam Turquie",
+      denominations: [
+        {
+          label: "₺500",
+          faceValue: "500 TRY",
+          faceCurrency: "TRY",
+          priceUsd: 16,
+          available: true,
+          reloadlyUnitPrice: 500,
+        },
+      ],
+    },
+  ]);
+  assert.equal(suspect.length, 1);
+  assert.equal(suspect[0].verdict, "suspect");
+  assert.match(suspect[0].message, /coût réel en USD n'est pas encore connu/);
+
+  // Avec le coût réel mémorisé : verdict calculé sur CE coût.
+  const profitable = audit.faceValueLosses([
+    {
+      id: "steam-tr",
+      titleEn: "Steam Turquie",
+      denominations: [
+        {
+          label: "₺500",
+          faceValue: "500 TRY",
+          faceCurrency: "TRY",
+          priceUsd: 16,
+          available: true,
+          reloadlyUnitPrice: 500,
+          supplierCostUsd: 15.2,
+        },
+      ],
+    },
+  ]);
+  assert.equal(profitable.length, 0);
+
+  const losing = audit.faceValueLosses([
+    {
+      id: "steam-tr",
+      titleEn: "Steam Turquie",
+      denominations: [
+        {
+          label: "₺500",
+          faceValue: "500 TRY",
+          faceCurrency: "TRY",
+          priceUsd: 14,
+          available: true,
+          reloadlyUnitPrice: 500,
+          supplierCostUsd: 15.2,
+        },
+      ],
+    },
+  ]);
+  assert.equal(losing[0].verdict, "loss");
+  assert.equal(losing[0].cost, 15.2);
+  assert.match(losing[0].message, /500 TRY/);
+});

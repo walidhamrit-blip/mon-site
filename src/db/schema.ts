@@ -250,6 +250,16 @@ export const digitalDenominations = pgTable("digital_denominations", {
    * 50 pour une carte « 50 USD ». Vide = déduite de `faceValue`.
    */
   reloadlyUnitPrice: text("reloadly_unit_price"),
+  /**
+   * Devise de la valeur faciale (« USD », « TRY », « EGP »…). Vide = USD.
+   * Une face en livres turques n'est pas un montant en dollars.
+   */
+  faceCurrency: text("face_currency"),
+  /**
+   * Coût réel en USD lu chez Reloadly pour ce montant (texte). C'est la
+   * seule base de calcul fiable quand la face n'est pas en dollars.
+   */
+  supplierCostUsd: text("supplier_cost_usd"),
 });
 
 export type DigitalProductRow = typeof digitalProducts.$inferSelect;

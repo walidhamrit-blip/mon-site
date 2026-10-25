@@ -465,6 +465,15 @@ export const digitalDenominationSchema = z.object({
   available: z.boolean(),
   /** Valeur faciale Reloadly (unitPrice) ; vide = déduite de faceValue. */
   reloadlyUnitPrice: z.coerce.number().min(0).max(100_000).nullable().optional(),
+  /** Devise de la face (« USD », « TRY »…) ; vide = USD. */
+  faceCurrency: z
+    .string()
+    .max(3)
+    .transform((value) => value.trim().toUpperCase())
+    .nullable()
+    .optional(),
+  /** Coût réel en USD lu chez Reloadly (jamais saisi à la main). */
+  supplierCostUsd: z.coerce.number().min(0).max(100_000).nullable().optional(),
 });
 
 export const digitalProductSchema = z.object({

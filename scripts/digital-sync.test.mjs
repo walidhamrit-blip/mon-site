@@ -198,3 +198,101 @@ test("prix libres (RANGE) : aucun montant inventé", () => {
   assert.equal(proposal.denominations.length, 0);
   assert.match(proposal.notes.join(" "), /prix libre/);
 });
+
+test("carte non-USD : le prix part du coût USD Reloadly, pas de la face locale", () => {
+  // Steam Turquie : face 500 TRY, coût réel 15,20 $ (correspondance publiée).
+  const steamTr = {
+    ...steamUs,
+    productId: 99901,
+    productName: "Steam TRY",
+    countryCode: "TR",
+    currencyCode: "TRY",
+    fixedDenominations: [100, 500],
+    senderFeePercentage: 0,
+    discountPercentage: 0,
+    senderCurrencyCode: "USD",
+    recipientToSenderMap: { "100": 3.1, "500": 15.2 },
+  };
+  const rows = sync.buildDenominations(steamTr, 4, 1);
+  assert.equal(rows.length, 2);
+  // 500 TRY ne vaut pas 500 $ : le prix reste de l'ordre de 16 $.
+  assert.equal(rows[1].cost, 15.2);
+  assert.equal(rows[1].priceUsd, 16);
+  assert.ok(rows[1].priceUsd < 20);
+  assert.equal(rows[1].faceCurrency, "TRY");
+  assert.equal(rows[1].faceValue, "500 TRY");
+  assert.equal(rows[1].supplierCostUsd, 15.2);
+  // Le bug historique (face prise pour des dollars) est impossible.
+  assert.notEqual(rows[1].priceUsd, 526.5);
+});
+
+test("carte non-USD sans coût publié : aucun prix inventé", () => {
+  // Robux : la face est un NOMBRE DE PIÈCES, pas de l'argent. C'est le bug
+  // « 80 Robux à 83,50 $ ». Sans coût USD, on ne propose rien.
+  const robux = {
+    ...steamUs,
+    productId: 99902,
+    productName: "Robux",
+    currencyCode: "USD",
+    fixedDenominations: [80, 400],
+    senderFeePercentage: 0,
+    discountPercentage: 0,
+    senderCurrencyCode: "USD",
+  };
+  // Face USD + frais/remise connus → formule historique conservée.
+  const usdRows = sync.buildDenominations(robux, 4, 1);
+  assert.equal(usdRows.length, 2);
+
+  const unknown = {
+    ...robux,
+    currencyCode: "TRY",
+    senderCurrencyCode: "USD",
+    recipientToSenderMap: {},
+    fixedSenderDenominations: [],
+    recipientToSenderRate: null,
+  };
+  assert.equal(sync.buildDenominations(unknown, 4, 1).length, 0);
+  assert.equal(sync.supplierCostUsd(unknown, 500), null);
+});
+
+test("coût USD : correspondance > index > taux > formule USD", () => {
+  const tr = {
+    ...steamUs,
+    currencyCode: "TRY",
+    senderCurrencyCode: "USD",
+    recipientToSenderMap: { "500": 15.2 },
+    fixedSenderDenominations: [3.1, 15.9],
+    recipientToSenderRate: 0.0304,
+  };
+  assert.equal(sync.supplierCostUsd(tr, 500), 15.2);
+  // Pas de correspondance : l'index de la face sert de repli.
+  assert.equal(sync.supplierCostUsd(tr, 100, 0), 3.1);
+  // Ni l'un ni l'autre : le taux Reloadly.
+  const rateOnly = { ...tr, recipientToSenderMap: {}, fixedSenderDenominations: [] };
+  assert.equal(sync.supplierCostUsd(rateOnly, 500), 15.2);
+  // Compte marchand non-USD : on ne devine pas une conversion.
+  const nonUsdAccount = { ...tr, senderCurrencyCode: "EUR" };
+  assert.equal(sync.supplierCostUsd(nonUsdAccount, 500), null);
+  // Fiche en dollars : formule historique, frais et remise appliqués.
+  const usd = { ...steamUs, senderFeePercentage: 5, discountPercentage: 2 };
+  assert.equal(sync.supplierCostUsd(usd, 20), 20.58);
+});
+
+test("fiche non-USD : devise et coût mémorisés à l'application", () => {
+  const tr = {
+    ...steamUs,
+    productId: 99901,
+    countryCode: "TR",
+    currencyCode: "TRY",
+    fixedDenominations: [500],
+    senderCurrencyCode: "USD",
+    recipientToSenderMap: { "500": 15.2 },
+  };
+  const proposal = sync.buildProposal({ product: tr, fiche: null, marginPercent: 4, paymentFeePercent: 1 });
+  const product = sync.applyProposalToProduct(proposal, null);
+  const created = product.denominations[0];
+  assert.equal(created.faceCurrency, "TRY");
+  assert.equal(created.supplierCostUsd, 15.2);
+  assert.equal(created.reloadlyUnitPrice, 500);
+  assert.equal(created.priceUsd, 16);
+});

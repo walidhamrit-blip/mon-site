@@ -308,6 +308,23 @@ export interface ReloadlyGiftCardProduct {
   denominationType: "FIXED" | "RANGE" | string;
   /** Valeurs faciales fixes (unitPrice à transmettre à la commande). */
   fixedDenominations: number[];
+  /** Devise de la valeur faciale (`recipientCurrencyCode`), ex. « TRY ». */
+  recipientCurrencyCode: string;
+  /** Devise débitée sur notre solde (`senderCurrencyCode`), ex. « USD ». */
+  senderCurrencyCode: string;
+  /**
+   * Ce que l'achat coûte RÉELLEMENT, dans la devise du compte (`senderCurrencyCode`),
+   * dans le même ordre que `fixedDenominations`.
+   *
+   * C'est la seule source fiable pour une carte dont la face n'est pas en
+   * dollars : 500 TRY ne coûte pas 500 USD, et le taux Reloadly n'est pas
+   * celui du marché.
+   */
+  fixedSenderDenominations: number[];
+  /** Correspondance face locale → coût (`{ "500.00": 15.2 }`). */
+  recipientToSenderMap: Record<string, number>;
+  /** Taux Reloadly face → coût, quand Reloadly le publie. */
+  recipientToSenderRate: number | null;
   minDenomination: number | null;
   maxDenomination: number | null;
   senderFeePercentage: number;
@@ -339,12 +356,40 @@ export function normalizeGiftCardProduct(raw: Record<string, unknown>): Reloadly
         .map((value) => toNumber(value))
         .filter((value): value is number => value != null && value > 0)
     : [];
+  const fixedSender = Array.isArray(raw.fixedSenderDenominations)
+    ? raw.fixedSenderDenominations
+        .map((value) => toNumber(value))
+        .filter((value): value is number => value != null && value > 0)
+    : [];
+
+  // `fixedRecipientToSenderDenominationsMap` arrive sous la forme
+  // [{ "500.00": 15.2 }, …] : on aplatit en { "500.00": 15.2 }.
+  const recipientToSenderMap: Record<string, number> = {};
+  if (Array.isArray(raw.fixedRecipientToSenderDenominationsMap)) {
+    for (const entry of raw.fixedRecipientToSenderDenominationsMap) {
+      if (!entry || typeof entry !== "object") continue;
+      for (const [face, cost] of Object.entries(entry as Record<string, unknown>)) {
+        const amount = toNumber(cost);
+        const key = String(Number(face));
+        if (amount != null && amount > 0 && Number.isFinite(Number(face))) {
+          recipientToSenderMap[key] = amount;
+        }
+      }
+    }
+  }
+
+  const recipientCurrencyCode = String(raw.recipientCurrencyCode ?? "").toUpperCase();
 
   return {
     productId: Number(raw.productId ?? 0),
     productName: String(raw.productName ?? ""),
     countryCode: String(raw.countryCode ?? country.isoName ?? "").toUpperCase(),
-    currencyCode: String(raw.recipientCurrencyCode ?? "").toUpperCase(),
+    currencyCode: recipientCurrencyCode,
+    recipientCurrencyCode,
+    senderCurrencyCode: String(raw.senderCurrencyCode ?? "").toUpperCase(),
+    fixedSenderDenominations: fixedSender,
+    recipientToSenderMap,
+    recipientToSenderRate: toNumber(raw.recipientCurrencyToSenderCurrencyExchangeRate),
     brandName: String(brand.brandName ?? ""),
     denominationType: String(raw.denominationType ?? "").toUpperCase(),
     fixedDenominations: fixed,
@@ -359,6 +404,47 @@ export function normalizeGiftCardProduct(raw: Record<string, unknown>): Reloadly
     global: raw.global === true,
     status: String(raw.status ?? ""),
   };
+}
+
+/* ---------------------------------- FX ---------------------------------- */
+
+export interface ReloadlyFxRate {
+  senderCurrency: string;
+  senderAmount: number;
+  recipientCurrency: string;
+  recipientAmount: number;
+}
+
+/**
+ * Taux de change officiel de Reloadly pour un montant donné.
+ *
+ * Sert de secours quand un produit ne publie pas
+ * `fixedRecipientToSenderDenominationsMap` : on obtient ce que coûte
+ * réellement la face locale, dans la devise du compte marchand.
+ * Lecture seule, aucun achat.
+ */
+export async function reloadlyFxRate(
+  currencyCode: string,
+  amount: number,
+): Promise<ReloadlyFxRate | null> {
+  const code = String(currencyCode ?? "").trim().toUpperCase();
+  if (!code || !Number.isFinite(amount) || amount <= 0) return null;
+  const params = new URLSearchParams({ currencyCode: code, amount: String(amount) });
+  try {
+    const data = await reloadlyRequest<Record<string, unknown>>({
+      path: `/fx-rate?${params.toString()}`,
+    });
+    return {
+      senderCurrency: String(data.senderCurrency ?? "").toUpperCase(),
+      senderAmount: Number(data.senderAmount ?? 0),
+      recipientCurrency: String(data.recipientCurrency ?? "").toUpperCase(),
+      recipientAmount: Number(data.recipientAmount ?? 0),
+    };
+  } catch (error) {
+    // 400 = pas de taux pour ce couple : ce n'est pas une panne.
+    if (error instanceof ReloadlyError && error.status === 400) return null;
+    throw error;
+  }
 }
 
 export interface ListProductsInput {

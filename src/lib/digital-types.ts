@@ -157,6 +157,17 @@ export interface DigitalDenomination {
    * pour une carte « 50 USD ». Vide = déduite de `faceValue`.
    */
   reloadlyUnitPrice?: number | null;
+  /**
+   * Devise de la valeur faciale : « USD » par défaut, « TRY », « EGP »…
+   * Une carte de 500 TRY ne vaut pas 500 $ : sans cette devise, l'audit
+   * comparerait le prix à un nombre qui n'est pas de l'argent américain.
+   */
+  faceCurrency?: string | null;
+  /**
+   * Coût réel en USD lu chez Reloadly pour ce montant (`null` = inconnu).
+   * C'est la SEULE base fiable pour une face non-USD.
+   */
+  supplierCostUsd?: number | null;
 }
 
 /** Fiche produit du catalogue digital. */

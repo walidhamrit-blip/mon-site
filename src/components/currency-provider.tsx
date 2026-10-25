@@ -10,6 +10,7 @@ import {
 } from "react";
 import {
   BASE_CURRENCY,
+  DEFAULT_DISPLAY_CURRENCY,
   convertFromBase,
   currencyRate,
   enabledCurrencies,
@@ -45,6 +46,8 @@ interface CurrencyContextValue {
   format: (amountUsd: number) => string;
   /** Formate un montant USD (version compacte, sans décimales au-delà de 100). */
   formatCompact: (amountUsd: number) => string;
+  /** Taux effectifs (1 USD = X), exposés pour les tests d'identité USDT. */
+  rates: Record<string, number>;
 }
 
 const CurrencyContext = createContext<CurrencyContextValue | null>(null);
@@ -65,7 +68,8 @@ export function CurrencyProvider({
     [enabled],
   );
 
-  const [currency, setCurrencyState] = useState<CurrencyCode>(BASE_CURRENCY);
+  // Affichage par défaut : USDT (même valeur que le dollar, sans conversion).
+  const [currency, setCurrencyState] = useState<CurrencyCode>(DEFAULT_DISPLAY_CURRENCY);
 
   useEffect(() => {
     try {
@@ -97,10 +101,15 @@ export function CurrencyProvider({
       currency,
       currencies,
       setCurrency,
+      rates: rates ?? {},
       convert: (amountUsd: number) =>
         convertFromBase(amountUsd, currency, rates ?? undefined),
-      format: (amountUsd: number) => formatMoney(amountUsd, currency),
-      formatCompact: (amountUsd: number) => formatMoneyCompact(amountUsd, currency),
+      // Conversion PUIS formatage : afficher « €59.50 » pour 59,50 $ serait
+      // un prix faux. USDT a un taux de 1, donc son affichage est identique.
+      format: (amountUsd: number) =>
+        formatMoney(convertFromBase(amountUsd, currency, rates ?? undefined), currency),
+      formatCompact: (amountUsd: number) =>
+        formatMoneyCompact(convertFromBase(amountUsd, currency, rates ?? undefined), currency),
     };
   }, [currency, currencies, rates]);
 
@@ -113,12 +122,13 @@ export function useCurrency(): CurrencyContextValue {
     // Hors provider (ex. rendu serveur isolé) : on renvoie des valeurs
     // neutres en USD plutôt que de casser le rendu.
     return {
-      currency: BASE_CURRENCY,
-      currencies: [BASE_CURRENCY],
+      currency: DEFAULT_DISPLAY_CURRENCY,
+      currencies: [DEFAULT_DISPLAY_CURRENCY, BASE_CURRENCY],
       setCurrency: () => {},
+      rates: {},
       convert: (amountUsd: number) => amountUsd,
-      format: (amountUsd: number) => formatMoney(amountUsd, BASE_CURRENCY),
-      formatCompact: (amountUsd: number) => formatMoneyCompact(amountUsd, BASE_CURRENCY),
+      format: (amountUsd: number) => formatMoney(amountUsd, DEFAULT_DISPLAY_CURRENCY),
+      formatCompact: (amountUsd: number) => formatMoneyCompact(amountUsd, DEFAULT_DISPLAY_CURRENCY),
     };
   }
   return ctx;

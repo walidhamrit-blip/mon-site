@@ -87,6 +87,10 @@ async function ensureSeeded(): Promise<void> {
                 denomination.reloadlyUnitPrice != null
                   ? String(denomination.reloadlyUnitPrice)
                   : null,
+              faceCurrency: denomination.faceCurrency
+                ? String(denomination.faceCurrency).toUpperCase().slice(0, 3)
+                : null,
+              supplierCostUsd: costToColumn(denomination.supplierCostUsd),
             })),
           );
         }
@@ -103,6 +107,19 @@ async function ensureSeeded(): Promise<void> {
 function percentToColumn(value: number | null | undefined): string | null {
   const parsed = Number(value);
   return Number.isFinite(parsed) && parsed >= 0 ? String(parsed) : null;
+}
+
+/** Coût USD en colonne texte (null si absent ou incohérent). */
+function costToColumn(value: number | null | undefined): string | null {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed.toFixed(2) : null;
+}
+
+/** Lit un coût USD stocké en texte (null si absent ou illisible). */
+function columnToCost(value: string | null): number | null {
+  if (value == null) return null;
+  const parsed = Number(value);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
 }
 
 /** Lit un pourcentage stocké en texte (null si absent ou illisible). */
@@ -134,6 +151,8 @@ function rowToDenomination(row: typeof digitalDenominations.$inferSelect): Digit
     noteEn: row.noteEn ?? undefined,
     available: row.available !== 0,
     reloadlyUnitPrice: row.reloadlyUnitPrice != null ? Number(row.reloadlyUnitPrice) : null,
+    faceCurrency: row.faceCurrency ? String(row.faceCurrency).toUpperCase() : null,
+    supplierCostUsd: columnToCost(row.supplierCostUsd),
   };
 }
 
@@ -327,6 +346,10 @@ export async function upsertDigitalProduct(product: DigitalProduct): Promise<voi
           Number(denomination.reloadlyUnitPrice) > 0
             ? String(Number(denomination.reloadlyUnitPrice))
             : null,
+        faceCurrency: denomination.faceCurrency
+          ? String(denomination.faceCurrency).toUpperCase().slice(0, 3)
+          : null,
+        supplierCostUsd: costToColumn(denomination.supplierCostUsd),
       })),
     );
   }

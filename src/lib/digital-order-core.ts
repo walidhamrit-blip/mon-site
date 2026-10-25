@@ -155,6 +155,16 @@ export const MAX_MARGIN_PERCENT = 50;
  */
 export const PRICE_ROUND_STEP = 0.5;
 
+/**
+ * Pas fin, réservé aux petits montants. Une carte locale vendue 4 USDT
+ * arrondie à 4,50 gagne 12,5 % « par accident » — au pas de 0,10 la même
+ * carte sort à 4,10. Au-dessus du seuil, le pas de 0,50 reste la règle.
+ */
+export const PRICE_ROUND_STEP_FINE = 0.1;
+
+/** En dessous de ce prix (en USD/USDT), l'arrondi passe au pas de 0,10. */
+export const PRICE_ROUND_SMALL_THRESHOLD = 20;
+
 export interface PriceInputs {
   /** Valeur faciale Reloadly à acheter (ex. 20 pour une carte 20 USD). */
   faceValue: number | null | undefined;
@@ -201,6 +211,21 @@ export function roundPriceUp(value: number, step: number = PRICE_ROUND_STEP): nu
 }
 
 /**
+ * Pas d'arrondi adapté au montant : 0,50 au-dessus du seuil, 0,10 en dessous.
+ * Toujours utilisé avec `roundPriceUp` : on monte, jamais on ne descend.
+ */
+export function priceRoundStep(value: number): number {
+  return Number.isFinite(value) && value > 0 && value < PRICE_ROUND_SMALL_THRESHOLD
+    ? PRICE_ROUND_STEP_FINE
+    : PRICE_ROUND_STEP;
+}
+
+/** Arrondi au pas adapté au montant (0,10 sous 20, 0,50 au-dessus). */
+export function roundPriceUpAdaptive(value: number): number {
+  return roundPriceUp(value, priceRoundStep(value));
+}
+
+/**
  * Calcule le prix de vente à partir de la valeur faciale, des frais du
  * fournisseur et de la marge NETTE visée.
  *
@@ -233,22 +258,57 @@ export function computeSalePrice(input: PriceInputs): PriceBreakdown {
     return { ...empty, error: "Frais fournisseur incohérents." };
   }
 
+  return computeSalePriceFromCost(cost, margin, safePaymentFeeValue(paymentFee));
+}
+
+/**
+ * Prix de vente à partir d'un coût DÉJÀ connu en USD.
+ *
+ * Indispensable aux cartes dont la valeur faciale n'est pas en dollars
+ * (500 TRY, 250 EGP…) : leur coût réel vient de Reloadly
+ * (`fixedSenderDenominations`, en USD) et n'a rien à voir avec le nombre
+ * inscrit sur la carte. Le calcul est identique au reste du catalogue —
+ * seule l'origine du coût change.
+ */
+export function computeSalePriceFromCost(
+  costInput: number,
+  marginInput: number,
+  paymentFeePercent: number = DEFAULT_PAYMENT_FEE_PERCENT,
+): PriceBreakdown {
+  const cost = roundCents(Number(costInput));
+  const margin = Number(marginInput);
+  const empty: PriceBreakdown = {
+    ok: false,
+    cost: Number.isFinite(cost) && cost > 0 ? cost : 0,
+    price: 0,
+    netMarginPercent: 0,
+    netProfitUsd: 0,
+    error: "Coût réel inconnu.",
+  };
+  if (!Number.isFinite(cost) || cost <= 0) return empty;
+
   if (!Number.isFinite(margin) || margin < 0 || margin >= MAX_MARGIN_PERCENT) {
     return { ...empty, cost, error: `Marge nette attendue entre 0 et ${MAX_MARGIN_PERCENT} %.` };
   }
-  const safePaymentFee = Number.isFinite(paymentFee) && paymentFee >= 0 ? paymentFee : 0;
+  const safePaymentFee = safePaymentFeeValue(paymentFeePercent);
   const divisor = 1 - (margin + safePaymentFee) / 100;
   if (divisor <= 0.01) {
     return { ...empty, cost, error: "Marge + frais de paiement trop élevés (≥ 99 %)." };
   }
 
   // Toujours vers le HAUT : un arrondi ne peut jamais repasser sous le coût.
-  const price = roundPriceUp(cost / divisor);
+  const price = roundPriceUpAdaptive(cost / divisor);
   const netProfitUsd = roundCents(price * (1 - safePaymentFee / 100) - cost);
   const netMarginPercent =
     price > 0 ? Math.round(((price * (1 - safePaymentFee / 100) - cost) / price) * 1000) / 10 : 0;
 
   return { ok: true, cost, price, netMarginPercent, netProfitUsd };
+}
+
+/** Frais de paiement sûrs (valeur absente ou aberrante → défaut). */
+function safePaymentFeeValue(value: number | null | undefined): number {
+  const parsed = Number(value ?? DEFAULT_PAYMENT_FEE_PERCENT);
+  return Number.isFinite(parsed) && parsed >= 0 ? parsed : 0;
 }
 
 /* ------------------- Contrôle de perte (hors réseau) ---------------------- */
@@ -291,6 +351,8 @@ export function faceValueLosses<
     available: boolean;
     reloadlyUnitPrice?: number | null;
     faceValue?: string;
+    faceCurrency?: string | null;
+    supplierCostUsd?: number | null;
   },
 >(
   fiches: Array<{
@@ -316,6 +378,41 @@ export function faceValueLosses<
       if (face == null || face <= 0) continue;
       const price = denomination.priceUsd;
       if (!(price > 0)) continue;
+
+      // Face non-USD (500 TRY, 250 EGP…) : le nombre inscrit sur la carte
+      // n'est PAS de l'argent américain. Le seul coût fiable est celui que
+      // Reloadly a réellement débité, mémorisé sur le montant.
+      const currency = String(denomination.faceCurrency ?? "USD").trim().toUpperCase();
+      if (currency && currency !== "USD") {
+        const supplierCost = Number(denomination.supplierCostUsd);
+        const costKnown = Number.isFinite(supplierCost) && supplierCost > 0;
+        if (!costKnown) {
+          entries.push({
+            ficheId: fiche.id,
+            ficheTitle: fiche.titleEn || fiche.id,
+            label: denomination.label,
+            price,
+            face,
+            cost: null,
+            verdict: "suspect",
+            message: `${price.toFixed(2)} $ pour une carte de ${face} ${currency} — à vérifier : le coût réel en USD n'est pas encore connu (relancez une révision du produit).`,
+          });
+          continue;
+        }
+        const cost = cents(supplierCost);
+        if (cents(price) >= cost) continue;
+        entries.push({
+          ficheId: fiche.id,
+          ficheTitle: fiche.titleEn || fiche.id,
+          label: denomination.label,
+          price,
+          face,
+          cost,
+          verdict: "loss",
+          message: `${price.toFixed(2)} $ pour un coût réel de ${cost.toFixed(2)} $ (${face} ${currency} chez Reloadly) — perte de ${(cost - price).toFixed(2)} $ par vente.`,
+        });
+        continue;
+      }
 
       // Coût vérifiable seulement si l'on connaît frais ET remise.
       const verified = feesKnown && discountKnown;

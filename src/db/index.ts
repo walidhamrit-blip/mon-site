@@ -323,6 +323,14 @@ export function ensureSchema(): Promise<void> {
       await pool.query(
         "ALTER TABLE digital_products ADD COLUMN IF NOT EXISTS supplier_discount_percent text",
       );
+      // Faces non-USD (500 TRY, 250 EGP…) : sans devise ni coût réel, un prix
+      // serait calculé sur un nombre qui n'est pas de l'argent américain.
+      await pool.query(
+        "ALTER TABLE digital_denominations ADD COLUMN IF NOT EXISTS face_currency text",
+      );
+      await pool.query(
+        "ALTER TABLE digital_denominations ADD COLUMN IF NOT EXISTS supplier_cost_usd text",
+      );
       await pool.query(
         "ALTER TABLE digital_orders ADD COLUMN IF NOT EXISTS email_last_error text",
       );
