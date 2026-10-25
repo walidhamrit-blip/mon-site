@@ -281,3 +281,27 @@ test("carte non-USD : jamais de « perte » calculée sur la face locale", () =>
   assert.equal(losing[0].cost, 15.2);
   assert.match(losing[0].message, /500 TRY/);
 });
+
+test("écart libellé / valeur faciale détecté (cas Steam $20 vs 25 USD, 30$ vs 50 USD)", () => {
+  assert.match(
+    core.denominationLabelFaceMismatch({ label: "$20", faceValue: "25 USD" }),
+    /Libellé « \$20 » ≠ valeur faciale « 25 USD »/,
+  );
+  assert.match(
+    core.denominationLabelFaceMismatch({ label: "30$", faceValue: "50 USD" }),
+    /Libellé « 30\$ » ≠ valeur faciale « 50 USD »/,
+  );
+  assert.equal(
+    core.denominationLabelFaceMismatch({ label: "$25", faceValue: "25 USD", reloadlyUnitPrice: 25 }),
+    null,
+  );
+  assert.equal(
+    core.denominationLabelFaceMismatch({ label: "3 أشهر", faceValue: "3 months" }),
+    null,
+  );
+  assert.equal(
+    core.denominationLabelFaceMismatch({ label: "80 Robux", faceValue: "80 Robux" }),
+    null,
+  );
+});
+

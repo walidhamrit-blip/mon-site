@@ -14,7 +14,7 @@
 // commande en livraison MANUELLE et notifie l'agence — jamais d'achat
 // silencieux.
 
-import { desc, eq } from "drizzle-orm";
+import { and, desc, eq, ne } from "drizzle-orm";
 import { db, ensureSchema } from "@/db";
 import { digitalOrders, orders, type DigitalOrder } from "@/db/schema";
 import { getDigitalProductBySlug } from "@/lib/digital-store";
@@ -26,6 +26,7 @@ import {
   parseManualCodes,
   pickOrderDenomination,
   quoteDigitalOrder,
+  shouldAutoDeliverOnPoll,
   type DigitalOrderStatus,
   type DigitalQuote,
 } from "@/lib/digital-order-core";
@@ -44,11 +45,19 @@ import {
   reloadlyMaxOrderUsd,
   type GiftCardCode,
 } from "@/lib/reloadly";
-import { createInvoice } from "@/lib/nowpayments";
+import {
+  createInvoice,
+  getPayment,
+  nextOrderStatus,
+  nowPaymentsConfigured,
+  orderStatusFromIpn,
+  validatePaidAmount,
+} from "@/lib/nowpayments";
 import { createTrackingToken, newOrderReference, trackingAccess } from "@/lib/order-tracking";
 import { siteBaseUrl } from "@/lib/site-url";
 import { getSiteData } from "@/lib/store";
 import { sendDigitalCodesEmail, sendDigitalManualNotice } from "@/lib/digital-emails";
+import { sendPaymentConfirmedEmail } from "@/lib/order-emails";
 
 
 /* Ré-exports : les consommateurs serveur (admin, routes) importent tout
@@ -632,8 +641,17 @@ export async function deliverPaidDigitalOrder(
         lastError: null,
         updatedAt: now,
       })
-      .where(eq(digitalOrders.id, order.id))
+      .where(
+        and(
+          eq(digitalOrders.id, order.id),
+          ne(digitalOrders.status, "delivered"),
+        ),
+      )
       .returning();
+
+    if (updated.length === 0) {
+      return { outcome: "already_delivered", ref: order.ref };
+    }
 
     const delivered = updated[0] ?? order;
     const { config } = await getSiteData();
@@ -730,6 +748,109 @@ function publicNotice(status: DigitalOrderStatus): string | null {
 }
 
 /**
+ * Réconcilie le statut du paiement lié à une commande digitale et déclenche
+ * ou poursuit la livraison des codes si le paiement est confirmé.
+ *
+ * Utilisé lors du suivi client (`/codes/commande`) pour couvrir :
+ *  1. un retard ou un échec du webhook IPN NOWPayments ;
+ *  2. une transaction Reloadly initialement `PENDING` / `PROCESSING`
+ *     (`awaiting_codes`) dont le code est prêt au cycle de sondage suivant.
+ */
+async function reconcileDigitalOrderOnPoll(order: DigitalOrder): Promise<DigitalOrder> {
+  const initialStatus = normalizeDigitalStatus(order.status);
+  if (initialStatus !== "pending" && initialStatus !== "paid") return order;
+
+  try {
+    const paymentRows = await db
+      .select()
+      .from(orders)
+      .where(eq(orders.ref, order.ref))
+      .limit(1);
+    let payment = paymentRows[0];
+    if (!payment) return order;
+
+    if (payment.status === "pending" && payment.paymentId && nowPaymentsConfigured()) {
+      const remote = await getPayment(payment.paymentId);
+      if (remote && remote.payment_status) {
+        const remoteStatus = remote.payment_status;
+        const incomingStatus = orderStatusFromIpn(remoteStatus);
+        let resolvedStatus = nextOrderStatus(payment.status, remoteStatus);
+
+        const amountValidation =
+          incomingStatus === "paid"
+            ? validatePaidAmount(payment, remote)
+            : { ok: true, reason: null as string | null };
+        if (incomingStatus === "paid" && !amountValidation.ok) {
+          resolvedStatus = "pending";
+        }
+
+        const refreshed = {
+          ...payment,
+          status: resolvedStatus,
+          ipnStatus: remoteStatus,
+          payAddress: remote.pay_address ?? payment.payAddress,
+          payCurrency: remote.pay_currency ?? payment.payCurrency,
+          payAmount:
+            remote.pay_amount != null ? String(remote.pay_amount) : payment.payAmount,
+        };
+
+        const shouldPersist =
+          refreshed.status !== payment.status ||
+          refreshed.ipnStatus !== payment.ipnStatus ||
+          refreshed.payAddress !== payment.payAddress ||
+          refreshed.payCurrency !== payment.payCurrency ||
+          refreshed.payAmount !== payment.payAmount;
+
+        if (shouldPersist) {
+          const claimed = await db
+            .update(orders)
+            .set({
+              status: refreshed.status,
+              ipnStatus: refreshed.ipnStatus,
+              payAddress: refreshed.payAddress,
+              payCurrency: refreshed.payCurrency,
+              payAmount: refreshed.payAmount,
+              updatedAt: new Date(),
+            })
+            .where(and(eq(orders.id, payment.id), eq(orders.status, payment.status)))
+            .returning({ id: orders.id });
+
+          if (claimed.length > 0 && refreshed.status === "paid") {
+            const { config } = await getSiteData();
+            await sendPaymentConfirmedEmail(
+              refreshed,
+              config.name,
+              config.url,
+              config.email,
+            ).catch(() => null);
+          }
+          payment = refreshed;
+        }
+      }
+    }
+
+    if (
+      shouldAutoDeliverOnPoll({
+        digitalStatus: order.status,
+        paymentStatus: payment.status,
+        attempts: order.attempts,
+        updatedAt: order.updatedAt,
+      })
+    ) {
+      await deliverPaidDigitalOrder(order.id);
+      return (await loadDigitalOrder(order.id)) ?? order;
+    }
+  } catch (error) {
+    console.warn(
+      "[digital][suivi] réconciliation au sondage ignorée :",
+      error instanceof Error ? error.message : error,
+    );
+  }
+
+  return order;
+}
+
+/**
  * Commande digitale telle que consultable par le client, avec le jeton de
  * suivi (le même que la facture). Les codes ne sont renvoyés qu'une fois
  * la commande livrée.
@@ -738,10 +859,11 @@ export async function getPublicDigitalOrder(
   ref: string,
   trackingToken: string | null,
 ): Promise<PublicDigitalOrder | null> {
-  const order = await loadDigitalOrder(ref);
-  if (!order) return null;
-  if (trackingAccess(order.trackingTokenHash, trackingToken) === "denied") return null;
+  const loaded = await loadDigitalOrder(ref);
+  if (!loaded) return null;
+  if (trackingAccess(loaded.trackingTokenHash, trackingToken) === "denied") return null;
 
+  const order = await reconcileDigitalOrderOnPoll(loaded);
   const status = normalizeDigitalStatus(order.status);
   const codes =
     status === "delivered"

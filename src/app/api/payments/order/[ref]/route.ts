@@ -11,6 +11,7 @@ import {
 } from "@/lib/nowpayments";
 import { getSiteData } from "@/lib/store";
 import { sendPaymentConfirmedEmail } from "@/lib/order-emails";
+import { deliverPaidDigitalOrder } from "@/lib/digital-orders";
 import { baseRefOf } from "@/lib/installments";
 import {
   maskEmail,
@@ -136,6 +137,14 @@ export async function GET(
                 error instanceof Error ? error.message : error,
               ),
             );
+            if (order.digitalOrderId) {
+              await deliverPaidDigitalOrder(order.digitalOrderId).catch((error) =>
+                console.error(
+                  "[payments][digital] livraison impossible :",
+                  error instanceof Error ? error.message : error,
+                ),
+              );
+            }
           }
         }
 
