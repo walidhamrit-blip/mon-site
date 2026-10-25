@@ -4,7 +4,11 @@ import { useEffect, useMemo, useState } from "react";
 import { Loader2, Lock, Minus, Plus, ShieldCheck, X } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import { Price } from "@/components/price";
-import { regionLabel, type DigitalProduct } from "@/lib/digital-types";
+import {
+  denominationLabel,
+  regionLabel,
+  type DigitalProduct,
+} from "@/lib/digital-types";
 import { RegionalAlert } from "@/components/regional-alert";
 
 const MAX_QUANTITY = 10;
@@ -173,7 +177,7 @@ export function DigitalBuyDialog({ product, denominationId, onClose }: Props) {
                   }`}
                 >
                   <span className="block text-[13.5px] font-black" dir="ltr">
-                    {item.label}
+                    {denominationLabel(item, locale)}
                   </span>
                   <span className="mt-0.5 block text-[11px] text-[var(--muted-foreground)]">
                     {regionLabel(item.region, locale)} ·{" "}

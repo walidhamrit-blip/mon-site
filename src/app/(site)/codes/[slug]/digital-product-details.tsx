@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
 import {
@@ -20,6 +21,7 @@ import { whatsappLink } from "@/lib/utils";
 import {
   DIGITAL_KIND_LABELS,
   DIGITAL_STATUS_LABELS,
+  denominationLabel,
   isSellable,
   regionLabel,
   type DigitalProduct,
@@ -62,6 +64,27 @@ export function DigitalProductDetails({ product }: { product: DigitalProduct }) 
 
           <div className="mt-5 grid gap-8 lg:grid-cols-[1.15fr_0.85fr] lg:items-start">
             <div>
+              {product.image && (
+                <div className="relative mb-6 aspect-[16/9] max-h-[380px] overflow-hidden rounded-[var(--radius-lg)] border border-[var(--border)] bg-[#0b1220] shadow-[var(--shadow-sm)]">
+                  <Image
+                    src={product.image}
+                    alt={ar ? `صورة ${product.titleAr}` : `${product.titleEn} product visual`}
+                    fill
+                    sizes="(max-width: 1024px) 100vw, 58vw"
+                    quality={88}
+                    priority
+                    className="object-cover"
+                  />
+                  <div
+                    aria-hidden="true"
+                    className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/10"
+                  />
+                  <span className="absolute bottom-4 start-4 rounded-full border border-white/25 bg-black/55 px-3 py-1 text-[11px] font-black text-white backdrop-blur-md">
+                    {product.platform}
+                  </span>
+                </div>
+              )}
+
               <div className="flex flex-wrap items-center gap-2">
                 <span
                   className="grid h-14 w-14 place-items-center rounded-2xl text-[17px] font-black text-white shadow-[var(--shadow-sm)]"
@@ -150,7 +173,7 @@ export function DigitalProductDetails({ product }: { product: DigitalProduct }) 
                     >
                       <span className="min-w-0">
                         <span className="block text-[14px] font-black" dir="ltr">
-                          {denomination.label}
+                          {denominationLabel(denomination, locale)}
                         </span>
                         <span className="block text-[11px] text-[var(--muted-foreground)]">
                           {regionLabel(denomination.region, locale)}

@@ -10,6 +10,10 @@ import {
   type DigitalStatus,
 } from "@/lib/digital-types";
 
+const DEFAULT_DIGITAL_PRODUCT_IMAGES = new Map(
+  defaultDigitalProducts.map((product) => [product.id, product.image]),
+);
+
 /**
  * Accès au catalogue digital (codes logiciels & cartes cadeaux).
  *
@@ -171,7 +175,11 @@ function rowToProduct(
     titleEn: row.titleEn,
     descriptionAr: row.descriptionAr,
     descriptionEn: row.descriptionEn,
-    image: row.image,
+    // Les anciennes lignes ont été semées avant l'ajout des visuels et
+    // contiennent donc une chaîne vide. On leur applique l'image locale par
+    // défaut sans écraser une image personnalisée enregistrée dans l'admin.
+    image:
+      row.image.trim() || DEFAULT_DIGITAL_PRODUCT_IMAGES.get(row.id) || "",
     regions: toArray(row.regions),
     featuresAr: toArray(row.featuresAr),
     featuresEn: toArray(row.featuresEn),
