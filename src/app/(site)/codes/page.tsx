@@ -12,9 +12,9 @@ export async function generateMetadata(): Promise<Metadata> {
   const labels = marketLabels(market, "en");
   return pageMetadata(config, {
     path: "/codes",
-    title: "بطاقات الهدايا والأكواد الرقمية — Steam، PlayStation، Roblox",
+    title: "Digital Gift Cards & Game Codes — Steam, PlayStation, Xbox",
     description:
-      "كتالوج أكواد برمجية وبطاقات هدايا gaming ومنصات رقمية: Steam، PlayStation، Xbox، Roblox، Google Play، Amazon — أسعار واضحة باليورو والدولار والريال والدرهم، وتوصيل إلكتروني فوري.",
+      "Shop digital gift cards and game codes for Steam, PlayStation, Xbox, Roblox, Google Play and more. Clear USD pricing, region details and digital delivery worldwide." ,
     keywords: [
       "بطاقات هدايا ألعاب",
       "أكواد Steam",
@@ -42,14 +42,12 @@ export default async function CodesPage() {
   const { config } = await getSiteDataCached();
   const products = await getDigitalCatalog({ publicOnly: true });
   const market = resolveMarket(config.market);
-  const labels = marketLabels(market, "ar");
-  const globalReach = Boolean(config.market?.globalReach) || market.id === "global";
 
   const collectionSchema = {
     "@context": "https://schema.org",
     "@type": "CollectionPage",
     "@id": `${absoluteUrl(config, "/codes")}#collection`,
-    name: "بطاقات الهدايا والأكواد الرقمية — Nukhba digital codes & gift cards",
+    name: "Digital gift cards and game codes — Nukhba",
     url: absoluteUrl(config, "/codes"),
     inLanguage: [market.locale, "en"],
     isPartOf: { "@id": absoluteUrl(config, "#website") },
@@ -91,29 +89,27 @@ export default async function CodesPage() {
             <div className="inline-flex items-center gap-2 rounded-full border border-[var(--border)] bg-[var(--card)] px-4 py-1.5 text-xs font-black shadow-sm sm:text-sm">
               <span className="h-2.5 w-2.5 animate-pulse rounded-full bg-[var(--accent)]" />
               <span className="text-[var(--accent)]">
-                {globalReach
-                  ? "بوابة عالمية — codes & gift cards"
-                  : `أكواد وبطاقات هدايا — ${labels.city}`}
+                {"Worldwide digital store"}
               </span>
             </div>
 
             <h1 className="mt-4 max-w-[24ch] text-[clamp(1.9rem,1.2rem+2.6vw,3.1rem)] font-black leading-[1.06] tracking-[-0.03em] text-balance">
-              أكواد برمجية وبطاقات هدايا
-              <span className="text-[var(--accent)]"> — بأسعار واضحة</span>
+              Digital gift cards & game codes
+              <span className="text-[var(--accent)]"> — made simple</span>
             </h1>
 
             <p className="mt-4 max-w-[62ch] text-[15.5px] leading-8 text-[var(--muted-foreground)]">
-              Steam، PlayStation، Xbox، Nintendo، Roblox، Google Play، Amazon ومنصات
-              أخرى. كل بطاقة بمناطقها وأسعارها، تُسلَّم إلكترونياً على بريدك خلال
-              دقائق من تأكيد الدفع — والكتالوج متاح الآن، والبيع يفتح تباعاً.
+              Browse Steam, PlayStation, Xbox, Nintendo, Roblox, Google Play, Amazon
+              and more. Check each card’s region and denominations before ordering.
+              Digital delivery is sent to your email after payment confirmation.
             </p>
 
             <div className="mt-6 flex flex-wrap items-center gap-2.5">
               <span className="chip chip-accent">
-                {products.length} {globalReach ? "منصة عالمية" : "منتج في الكتالوج"}
+                {products.length} products
               </span>
-              <span className="chip">تسليم إلكتروني فوري</span>
-              <span className="chip">أسعار بالدولار · تحويل لأى عملة</span>
+              <span className="chip">Digital delivery</span>
+              <span className="chip">Clear USD pricing</span>
             </div>
           </div>
         </div>
