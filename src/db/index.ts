@@ -314,6 +314,15 @@ export function ensureSchema(): Promise<void> {
       await pool.query(
         "ALTER TABLE digital_products ADD COLUMN IF NOT EXISTS margin_percent text",
       );
+      // Frais et remise du fournisseur, mémorisés sur la fiche : sans eux, une
+      // remise Reloadly rendait une vente rentable impossible à distinguer
+      // d'une perte (faux positif constaté sur Spotify 60 USD à 59,50 $).
+      await pool.query(
+        "ALTER TABLE digital_products ADD COLUMN IF NOT EXISTS supplier_fee_percent text",
+      );
+      await pool.query(
+        "ALTER TABLE digital_products ADD COLUMN IF NOT EXISTS supplier_discount_percent text",
+      );
       await pool.query(
         "ALTER TABLE digital_orders ADD COLUMN IF NOT EXISTS email_last_error text",
       );

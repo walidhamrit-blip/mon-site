@@ -179,27 +179,46 @@ au **demi-dollar supérieur** : `22,27 → 22,50`, `21,51 → 22,00`. Jamais ver
 bas, donc jamais sous le coût. Conséquence assumée : la marge **réellement
 obtenue** dépasse légèrement la cible, et c'est elle qui est affichée.
 
-**Alerte de perte (immédiate).** La page *Codes & Cartes cadeaux* affiche un
-bandeau rouge dès qu'un montant **en vente** est proposé sous sa valeur faciale
-(ex. `$30` vendu 29,50 $) : ce contrôle ne dépend d'aucun appel réseau et
-couvre **toutes** les fiches, y compris celles sans produit Reloadly relié ou
-sans marge définie.
+**Deux niveaux d'alerte (immédiats).** La page *Codes & Cartes cadeaux*
+contrôle, sans aucun appel réseau et sur **toutes** les fiches (y compris celles
+sans produit Reloadly relié ou sans marge), la rentabilité de chaque montant
+**en vente** — avec deux verdicts distincts :
+
+- 🔴 **perte prouvée** — le coût est **vérifié** (produit Reloadly lisible, ou
+  frais **et** remise mémorisés sur la fiche) et le prix passe **sous ce coût**.
+  Exemple : coût 20 $, prix 19,50 $.
+- 🟠 **à vérifier** — le prix passe sous la **valeur faciale** mais la **remise
+  Reloadly est inconnue**. Ce n'est **pas** une perte : une remise peut rendre
+  la vente rentable (face 60 $, remise 4,4 % → coût 57,36 $ ; vendu 59,50 $
+  → bénéfice ≈ 1,54 $ net). Le bandeau invite à relancer une révision du
+  produit, qui mémorise frais et remise.
+
+Une perte n'est donc **jamais affirmée sur une supposition** : sans coût
+vérifié, l'écran ne parle que de vérification.
 
 **Audit & recalcul.** Admin → *Codes & Cartes cadeaux* → bloc
 **« Audit & recalcul des prix »** → *Analyser le catalogue*. L'écran liste,
 montant par montant : ancien prix → prix recalculé, coût réel, marge obtenue,
 et les anomalies :
 
-- prix actuel **sous le coût réel** (vente à perte) — coût Reloadly si le
-  produit est lisible, sinon la **valeur faciale** (borne basse, signalée
-  comme telle) : l'absence de marge ou de produit n'exclut plus la fiche du
-  contrôle, elle ajoute simplement une note ;
-- prix **sous la valeur faciale** (le client reçoit plus qu'il ne paie) ;
+- prix actuel **sous le coût vérifié** (`loss`, rouge) — coût Reloadly si le
+  produit est lisible, sinon **frais + remise mémorisés** sur la fiche ;
+  l'absence de marge ou de produit n'exclut plus la fiche du contrôle, elle
+  ajoute simplement une note ;
+- prix **sous la valeur faciale sans remise connue** (`suspect`, orange) :
+  « à vérifier », le client reçoit plus qu'il ne paie **au prix de la face**
+  mais la remise du fournisseur peut rendre l'opération rentable ;
 - produit libellé dans une **devise ≠ USD** (prix probablement multipliés) ;
 - prix **non arrondi** au pas de 0,50 ;
 - montant **refusé par Reloadly** ;
 - fiche **sans produit relié**, **sans marge** ou en **livraison manuelle**
-  (ignorée, avec le motif).
+  (notée, avec le motif).
+
+**Mémoire fournisseur.** À chaque révision, les `senderFeePercentage` et
+`discountPercentage` lus chez Reloadly sont enregistrés sur la fiche
+(`supplier_fee_percent`, `supplier_discount_percent`). L'audit et le bandeau
+peuvent ainsi recalculer un coût exact **sans rappeler Reloadly**, et l'alerte
+orange disparaît d'elle-même quand la vente est en réalité rentable.
 
 Cocher les fiches puis **Appliquer la sélection** : les prix sont recalculés
 **côté serveur** (le navigateur n'envoie que des identifiants de fiche). Les

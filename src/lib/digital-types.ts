@@ -204,6 +204,16 @@ export interface DigitalProduct {
    * saisis à la main). Sert au calcul automatique des prix de vente.
    */
   marginPercent?: number | null;
+  /**
+   * Frais du fournisseur (`senderFeePercentage`), mémorisés sur la fiche.
+   * `null` = inconnus : le contrôle de perte reste prudent.
+   */
+  supplierFeePercent?: number | null;
+  /**
+   * Remise du fournisseur (`discountPercentage`), mémorisée sur la fiche.
+   * Une remise peut rendre rentable un prix inférieur à la valeur faciale.
+   */
+  supplierDiscountPercent?: number | null;
 }
 
 /** Statuts visibles publiquement (le catalogue public ignore les brouillons). */

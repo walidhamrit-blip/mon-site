@@ -209,6 +209,14 @@ export const digitalProducts = pgTable("digital_products", {
    * partir du coût réel chez Reloadly.
    */
   marginPercent: text("margin_percent"),
+  /**
+   * Frais (`senderFeePercentage`) et remise (`discountPercentage`) publiés par
+   * Reloadly pour ce produit, mémorisés au moment de la révision. Sans eux, un
+   * prix inférieur à la valeur faciale pouvait être pris à tort pour une perte
+   * alors qu'une remise le rend rentable.
+   */
+  supplierFeePercent: text("supplier_fee_percent"),
+  supplierDiscountPercent: text("supplier_discount_percent"),
 
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()

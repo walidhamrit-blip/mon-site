@@ -501,5 +501,8 @@ export const digitalProductSchema = z.object({
   reloadlyCountryCode: z.string().max(2).optional(),
   /** Marge nette visée, en % du prix payé (null = prix manuels). */
   marginPercent: z.coerce.number().min(0).max(50).nullable().optional(),
+  /** Frais / remise publiés par Reloadly (null = inconnus). */
+  supplierFeePercent: z.coerce.number().min(0).max(100).nullable().optional(),
+  supplierDiscountPercent: z.coerce.number().min(0).max(100).nullable().optional(),
 });
 

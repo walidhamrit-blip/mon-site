@@ -110,9 +110,20 @@ export function DigitalEditor({
    */
   const recalcPrices = (product: DigitalProduct, marginPercent: number | null): DigitalProduct => {
     if (marginPercent == null || !Number.isFinite(marginPercent)) return product;
-    const supplier = fees[product.id] ?? { senderFeePercentage: 0, discountPercentage: 0 };
+    const loaded = fees[product.id];
+    // Frais inconnus (Reloadly injoignable) : on retombe sur ceux mémorisés.
+    const supplier = loaded ?? {
+      senderFeePercentage: product.supplierFeePercent ?? 0,
+      discountPercentage: product.supplierDiscountPercent ?? 0,
+    };
     return {
       ...product,
+      ...(loaded
+        ? {
+            supplierFeePercent: loaded.senderFeePercentage,
+            supplierDiscountPercent: loaded.discountPercentage,
+          }
+        : {}),
       denominations: product.denominations.map((denomination) => {
         const face = denominationUnitPrice(denomination);
         const computed = computeSalePrice({
@@ -551,8 +562,10 @@ export function DigitalEditor({
                     marginPercent={product.marginPercent ?? null}
                     onLoaded={(fees) => {
                       setFees((prev) => ({ ...prev, [product.id]: fees }));
-                      // Les frais arrivent après le premier rendu : on réaligne
-                      // les prix déjà calculés pour qu'ils en tiennent compte.
+                      // Frais et remise sont mémorisés sur la fiche : le contrôle
+                      // de perte devient exact (une remise peut rendre rentable
+                      // un prix sous la valeur faciale) et reste valable hors
+                      // ligne. Les prix déjà calculés sont réalignés.
                       if (product.marginPercent != null) {
                         setProducts((prev) =>
                           prev.map((item) =>
@@ -560,6 +573,8 @@ export function DigitalEditor({
                               ? item
                               : {
                                   ...item,
+                                  supplierFeePercent: fees.senderFeePercentage,
+                                  supplierDiscountPercent: fees.discountPercentage,
                                   denominations: item.denominations.map((denomination) => {
                                     const computed = computeSalePrice({
                                       faceValue: denominationUnitPrice(denomination),

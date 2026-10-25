@@ -67,6 +67,8 @@ async function ensureSeeded(): Promise<void> {
             reloadlyCountryCode: product.reloadlyCountryCode ?? "",
             marginPercent:
               product.marginPercent != null ? String(product.marginPercent) : null,
+            supplierFeePercent: percentToColumn(product.supplierFeePercent),
+            supplierDiscountPercent: percentToColumn(product.supplierDiscountPercent),
           })
           .onConflictDoNothing();
         if (product.denominations.length > 0) {
@@ -95,6 +97,19 @@ async function ensureSeeded(): Promise<void> {
     });
   }
   return seeded;
+}
+
+/** Normalise un pourcentage fournisseur pour la colonne texte. */
+function percentToColumn(value: number | null | undefined): string | null {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) && parsed >= 0 ? String(parsed) : null;
+}
+
+/** Lit un pourcentage stocké en texte (null si absent ou illisible). */
+function columnToPercent(value: string | null): number | null {
+  if (value == null) return null;
+  const parsed = Number(value);
+  return Number.isFinite(parsed) && parsed >= 0 ? parsed : null;
 }
 
 /** Normalise la marge pour la colonne texte (null si non renseignée). */
@@ -152,6 +167,8 @@ function rowToProduct(
       row.marginPercent != null && Number.isFinite(Number(row.marginPercent))
         ? Number(row.marginPercent)
         : null,
+    supplierFeePercent: columnToPercent(row.supplierFeePercent),
+    supplierDiscountPercent: columnToPercent(row.supplierDiscountPercent),
   };
 }
 
@@ -254,6 +271,8 @@ export async function upsertDigitalProduct(product: DigitalProduct): Promise<voi
           : null,
       reloadlyCountryCode: (product.reloadlyCountryCode ?? "").toUpperCase().slice(0, 2),
       marginPercent: marginToColumn(product.marginPercent),
+      supplierFeePercent: percentToColumn(product.supplierFeePercent),
+      supplierDiscountPercent: percentToColumn(product.supplierDiscountPercent),
       updatedAt: new Date(),
     })
     .onConflictDoUpdate({
@@ -282,6 +301,8 @@ export async function upsertDigitalProduct(product: DigitalProduct): Promise<voi
             : null,
         reloadlyCountryCode: (product.reloadlyCountryCode ?? "").toUpperCase().slice(0, 2),
         marginPercent: marginToColumn(product.marginPercent),
+        supplierFeePercent: percentToColumn(product.supplierFeePercent),
+        supplierDiscountPercent: percentToColumn(product.supplierDiscountPercent),
         updatedAt: new Date(),
       },
     });

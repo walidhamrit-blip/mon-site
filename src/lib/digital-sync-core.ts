@@ -63,6 +63,9 @@ export interface SyncProposal {
   platform: string;
   kind: DigitalKind;
   marginPercent: number;
+  /** Frais et remise publiés par Reloadly, mémorisés sur la fiche. */
+  senderFeePercent: number;
+  discountPercent: number;
   denominations: SyncDenomination[];
   /** Montants existants que Reloadly n'accepte pas (désactivés, pas supprimés). */
   disabledLabels: string[];
@@ -266,6 +269,8 @@ export function buildProposal(input: {
     platform: product.brandName || fiche?.platform || "",
     kind: fiche?.kind ?? kindForProduct(product),
     marginPercent,
+    senderFeePercent: Number(product.senderFeePercentage ?? 0),
+    discountPercent: Number(product.discountPercentage ?? 0),
     denominations,
     disabledLabels,
     notes,
@@ -352,5 +357,7 @@ export function applyProposalToProduct(
     reloadlyProductId: proposal.productId,
     reloadlyCountryCode: proposal.country === "global" ? "" : proposal.country,
     marginPercent: proposal.marginPercent,
+    supplierFeePercent: proposal.senderFeePercent,
+    supplierDiscountPercent: proposal.discountPercent,
   };
 }
