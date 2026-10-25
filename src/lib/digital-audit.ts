@@ -23,9 +23,11 @@
 import {
   checkSupplierUnitPrice,
   computeSalePrice,
+  computeSalePriceFromCost,
   faceValueLosses,
   PRICE_ROUND_STEP,
 } from "@/lib/digital-order-core";
+import { supplierCostUsd } from "@/lib/digital-sync-core";
 import { getDigitalCatalog, upsertDigitalProduct } from "@/lib/digital-store";
 import { denominationUnitPrice, type DigitalProduct } from "@/lib/digital-types";
 import { getGiftCardProduct, reloadlyConfigured } from "@/lib/reloadly";
@@ -61,6 +63,9 @@ export interface RecalcRow {
   /** Frais / remise du fournisseur lus chez Reloadly (mémorisés à l'application). */
   supplierFeePercent: number | null;
   supplierDiscountPercent: number | null;
+  /** Devise de la face (« USD », « TRY »…) et coût USD vérifié. */
+  faceCurrency: string;
+  supplierCostUsd: number | null;
   /** Vrai si le prix actuel est sous un coût **vérifié** : perte certaine. */
   loss: boolean;
   /** Vrai si le prix est sous la valeur faciale sans remise connue : à vérifier. */
@@ -217,9 +222,43 @@ export async function analyseCatalogRecalc(paymentFeePercent: number): Promise<R
           ? Number(storedDiscount)
           : null;
 
+      // Face non-USD (500 TRY, 250 EGP…) : le nombre inscrit sur la carte
+      // n'est pas un montant en dollars. Le coût ne peut venir que de
+      // Reloadly (correspondance publiée) ou du coût mémorisé.
+      const faceCurrency = String(denomination.faceCurrency ?? "USD").trim().toUpperCase();
+      const nonUsd = Boolean(faceCurrency) && faceCurrency !== "USD";
+
       let cost: number | null = null;
       let costSource: CostSource = "none";
-      if (unitPrice != null && feePercent != null && discountPercent != null) {
+      if (nonUsd) {
+        const fromReloadly = supplier && unitPrice != null
+          ? supplierCostUsd(
+              {
+                ...supplier,
+                currencyCode: supplier.recipientCurrencyCode || faceCurrency,
+                senderCurrencyCode: supplier.senderCurrencyCode,
+                fixedSenderDenominations: supplier.fixedSenderDenominations,
+                recipientToSenderMap: supplier.recipientToSenderMap,
+                recipientToSenderRate: supplier.recipientToSenderRate,
+              },
+              unitPrice,
+            )
+          : null;
+        const storedCost = Number(denomination.supplierCostUsd);
+        if (fromReloadly != null && fromReloadly > 0) {
+          cost = cents(fromReloadly);
+          costSource = "reloadly";
+        } else if (Number.isFinite(storedCost) && storedCost > 0) {
+          cost = cents(storedCost);
+          costSource = "stored";
+        }
+        if (cost == null) {
+          issues.push({
+            severity: "warning",
+            message: `Carte en ${faceCurrency} : coût réel en USD inconnu — À VÉRIFIER, aucun prix ne peut être calculé tant que la révision Reloadly n'a pas mémorisé le coût.`,
+          });
+        }
+      } else if (unitPrice != null && feePercent != null && discountPercent != null) {
         cost = cents(unitPrice * (1 + feePercent / 100) * (1 - discountPercent / 100));
         costSource = supplier ? "reloadly" : "stored";
       } else if (unitPrice != null) {
@@ -230,7 +269,14 @@ export async function analyseCatalogRecalc(paymentFeePercent: number): Promise<R
 
       let netMarginPercent: number | null = null;
       let newPrice: number | null = null;
-      if (marginPercent != null && unitPrice != null && supplier) {
+      if (marginPercent != null && cost != null && (costSource === "reloadly" || costSource === "stored")) {
+        // Le prix part TOUJOURS du coût réel en USD, jamais de la face locale.
+        const breakdown = computeSalePriceFromCost(cost, marginPercent, paymentFeePercent);
+        if (breakdown.ok) {
+          newPrice = breakdown.price;
+          netMarginPercent = breakdown.netMarginPercent;
+        }
+      } else if (marginPercent != null && unitPrice != null && supplier && !nonUsd) {
         const breakdown = computeSalePrice({
           faceValue: unitPrice,
           senderFeePercent: supplier.senderFeePercentage,
@@ -254,9 +300,12 @@ export async function analyseCatalogRecalc(paymentFeePercent: number): Promise<R
         price > 0 &&
         cents(price) < cents(cost);
       const priced = denomination.available && price > 0;
+      // Sous la face : « à vérifier » UNIQUEMENT pour les faces en dollars.
+      // Comparer un prix en USD à une face en livres turques n'a aucun sens.
       const suspect =
         !loss &&
         priced &&
+        !nonUsd &&
         unitPrice != null &&
         cents(price) < cents(unitPrice) &&
         costSource === "face";
@@ -318,6 +367,9 @@ export async function analyseCatalogRecalc(paymentFeePercent: number): Promise<R
         netMarginPercent,
         supplierFeePercent: supplier ? Number(supplier.senderFeePercentage ?? 0) : null,
         supplierDiscountPercent: supplier ? Number(supplier.discountPercentage ?? 0) : null,
+        faceCurrency: faceCurrency || "USD",
+        supplierCostUsd:
+          cost != null && (costSource === "reloadly" || costSource === "stored") ? cost : null,
         loss,
         suspect,
         issues,
@@ -387,6 +439,15 @@ export async function applyCatalogRecalc(
       continue;
     }
     const priceById = new Map(rows.map((row) => [row.denominationId, row.newPrice as number] as const));
+    const metaById = new Map(
+      rows.map(
+        (row) =>
+          [
+            row.denominationId,
+            { faceCurrency: row.faceCurrency, supplierCostUsd: row.supplierCostUsd },
+          ] as const,
+      ),
+    );
     // Frais / remise réellement lus chez Reloadly : on les mémorise sur la
     // fiche pour que le contrôle de rentabilité soit exact sans réseau.
     const fromReloadly = rows.find((row) => row.supplierDiscountPercent != null);
@@ -400,7 +461,15 @@ export async function applyCatalogRecalc(
         : {}),
       denominations: fiche.denominations.map((denomination) => {
         const price = priceById.get(denomination.id);
-        return price == null ? denomination : { ...denomination, priceUsd: price };
+        const meta = metaById.get(denomination.id);
+        const next = price == null ? denomination : { ...denomination, priceUsd: price };
+        return meta
+          ? {
+              ...next,
+              faceCurrency: meta.faceCurrency,
+              supplierCostUsd: meta.supplierCostUsd,
+            }
+          : next;
       }),
     };
     try {

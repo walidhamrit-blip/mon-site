@@ -9,7 +9,7 @@
 // plus est DÉSACTIVÉ (`available: false`) et annoté — des commandes passées
 // peuvent y faire référence.
 
-import { computeSalePrice } from "@/lib/digital-order-core";
+import { computeSalePriceFromCost } from "@/lib/digital-order-core";
 import {
   DIGITAL_KINDS,
   denominationUnitPrice,
@@ -31,6 +31,14 @@ export interface SupplierProduct {
   maxDenomination: number | null;
   senderFeePercentage?: number;
   discountPercentage?: number;
+  /** Devise du compte marchand (`senderCurrencyCode`), ex. « USD ». */
+  senderCurrencyCode?: string;
+  /** Coût réel de chaque face, dans la devise du compte. */
+  fixedSenderDenominations?: number[];
+  /** Correspondance face locale → coût (`{ "500.00": 15.2 }`). */
+  recipientToSenderMap?: Record<string, number>;
+  /** Taux Reloadly face → coût, quand il est publié. */
+  recipientToSenderRate?: number | null;
   global?: boolean;
   status?: string;
 }
@@ -38,14 +46,18 @@ export interface SupplierProduct {
 export interface SyncDenomination {
   label: string;
   faceValue: string;
+  /** Devise de la valeur faciale (« USD », « TRY », « EGP »…). */
+  faceCurrency: string;
   /** Région de validité (pays du produit, ou `global`). */
   region: string;
   /** Valeur faciale transmise à Reloadly. */
   reloadlyUnitPrice: number;
   /** Prix de vente calculé (marge nette appliquée). */
   priceUsd: number;
-  /** Coût réel (valeur faciale + frais du fournisseur). */
+  /** Coût réel en USD (ce que Reloadly débite), `null` si inconnu. */
   cost: number;
+  /** Coût réel en USD, mémorisé sur le montant (`null` = non vérifié). */
+  supplierCostUsd: number | null;
   netMarginPercent: number;
   /** `added` = nouveau montant, `updated` = prix recalculé. */
   action: "added" | "updated";
@@ -175,6 +187,69 @@ export function newFicheId(product: SupplierProduct): string {
  * Les produits `RANGE` (prix libre) sont ignorés : il n'existe pas de liste
  * de montants à tarifer, la fiche doit être remplie à la main.
  */
+/**
+ * Coût RÉEL en USD d'une valeur faciale, d'après les données Reloadly.
+ *
+ * Le piège des cartes internationales : « 500 » sur une carte turque est en
+ * livres turques, pas en dollars. Prendre ce nombre pour des dollars vend
+ * la carte ~30× trop cher (c'est le bug Robux « 80 » à 83,50 $).
+ *
+ * Ordre de confiance :
+ *  1. `fixedRecipientToSenderDenominationsMap` → coût exact publié ;
+ *  2. `fixedSenderDenominations` au même index que la face ;
+ *  3. taux `recipientCurrencyToSenderCurrencyExchangeRate` ;
+ *  4. fiche en USD : face × (1 + frais) × (1 − remise) — formule historique.
+ * Tout le reste renvoie `null` : mieux vaut « à vérifier » qu'un faux prix.
+ */
+export function supplierCostUsd(
+  product: SupplierProduct,
+  faceValue: number,
+  index = -1,
+): number | null {
+  const faceCurrency = (product.currencyCode ?? "USD").toUpperCase();
+  const senderCurrency = (product.senderCurrencyCode ?? "USD").toUpperCase();
+  // La correspondance Reloadly est libellée dans la devise du COMPTE.
+  const senderIsUsd = !senderCurrency || senderCurrency === "USD";
+
+  if (faceCurrency !== "USD" && senderIsUsd) {
+    const mapped = product.recipientToSenderMap?.[String(faceValue)];
+    if (mapped != null && Number.isFinite(mapped) && mapped > 0) {
+      return roundCents(mapped);
+    }
+    const fromIndex = product.fixedSenderDenominations?.[index];
+    if (fromIndex != null && Number.isFinite(fromIndex) && fromIndex > 0) {
+      return roundCents(fromIndex);
+    }
+    const rate = Number(product.recipientToSenderRate ?? 0);
+    if (Number.isFinite(rate) && rate > 0) {
+      return roundCents(faceValue * rate);
+    }
+    return null;
+  }
+
+  // Face déjà en dollars (ou compte non-USD : on ne devine pas).
+  if (faceCurrency === "USD" && senderIsUsd) {
+    return roundCents(
+      faceValue *
+        (1 + Number(product.senderFeePercentage ?? 0) / 100) *
+        (1 - Number(product.discountPercentage ?? 0) / 100),
+    );
+  }
+  return null;
+}
+
+function roundCents(value: number): number {
+  return Math.round(value * 100 + 1e-9) / 100;
+}
+
+/**
+ * Montants tarifés d'un produit Reloadly.
+ *
+ * Le prix de vente est TOUJOURS calculé à partir du coût réel en USD, jamais
+ * à partir du nombre inscrit sur la carte. Un montant dont le coût USD est
+ * inconnu est écarté de la proposition (il sera signalé « à vérifier ») :
+ * on ne publie jamais un prix inventé.
+ */
 export function buildDenominations(
   product: SupplierProduct,
   marginPercent: number,
@@ -188,14 +263,11 @@ export function buildDenominations(
     .sort((a, b) => a - b);
 
   const result: SyncDenomination[] = [];
-  for (const value of values) {
-    const breakdown = computeSalePrice({
-      faceValue: value,
-      senderFeePercent: product.senderFeePercentage ?? 0,
-      discountPercent: product.discountPercentage ?? 0,
-      marginPercent,
-      paymentFeePercent,
-    });
+  for (const [index, value] of values.entries()) {
+    const costUsd = supplierCostUsd(product, value, index);
+    if (costUsd == null || costUsd <= 0) continue;
+
+    const breakdown = computeSalePriceFromCost(costUsd, marginPercent, paymentFeePercent);
     if (!breakdown.ok) continue;
 
     const label = faceLabel(currency, value);
@@ -203,10 +275,12 @@ export function buildDenominations(
     result.push({
       label,
       faceValue: `${value} ${currency}`.trim(),
+      faceCurrency: currency || "USD",
       region,
       reloadlyUnitPrice: value,
       priceUsd: breakdown.price,
       cost: breakdown.cost,
+      supplierCostUsd: costUsd,
       netMarginPercent: breakdown.netMarginPercent,
       action: same ? "updated" : "added",
     });
@@ -250,6 +324,14 @@ export function buildProposal(input: {
   }
   if (denominations.length === 0) {
     notes.push("Aucun montant fixe exploitable dans le catalogue Reloadly.");
+  }
+  // Faces écartées faute de coût USD : on le dit, on n'invente pas un prix.
+  const offered = (product.fixedDenominations ?? []).filter((value) => value > 0).length;
+  const unpriced = Math.max(0, offered - denominations.length);
+  if (unpriced > 0 && (product.currencyCode ?? "").toUpperCase() !== "USD") {
+    notes.push(
+      `${unpriced} montant(s) écarté(s) : coût réel en USD non publié par Reloadly pour une face en ${(product.currencyCode ?? "").toUpperCase()}. Aucun prix n'est inventé — vérifiez le produit chez Reloadly.`,
+    );
   }
   if (disabledLabels.length > 0) {
     notes.push(`${disabledLabels.length} montant(s) non accepté(s) → désactivés (pas supprimés).`);
@@ -325,7 +407,14 @@ export function applyProposalToProduct(
     }
     const match = proposal.denominations.find((entry) => entry.reloadlyUnitPrice === value);
     return match
-      ? { ...item, priceUsd: match.priceUsd, reloadlyUnitPrice: match.reloadlyUnitPrice, available: true }
+      ? {
+          ...item,
+          priceUsd: match.priceUsd,
+          reloadlyUnitPrice: match.reloadlyUnitPrice,
+          faceCurrency: match.faceCurrency,
+          supplierCostUsd: match.supplierCostUsd,
+          available: true,
+        }
       : item;
   });
 
@@ -335,8 +424,10 @@ export function applyProposalToProduct(
       id: `${proposal.key}-${entry.reloadlyUnitPrice}-${index + 1}`,
       label: entry.label,
       faceValue: entry.faceValue,
+      faceCurrency: entry.faceCurrency,
       region: entry.region,
       priceUsd: entry.priceUsd,
+      supplierCostUsd: entry.supplierCostUsd,
       available: true,
       reloadlyUnitPrice: entry.reloadlyUnitPrice,
     }));

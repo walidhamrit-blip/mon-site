@@ -283,6 +283,12 @@ export function ReloadlySync({ paymentFeePercent }: { paymentFeePercent: number 
                                   `${item.label} → ${money(item.priceUsd)} (coût ${money(item.cost)}, ${item.netMarginPercent} %)`,
                               )
                               .join(" · ")}
+                            {proposal.currency && proposal.currency !== "USD" && (
+                              <span className="mt-1 block font-bold text-sky-900">
+                                Face en {proposal.currency} : les prix partent du coût réel en USD
+                                lu chez Reloadly, jamais du nombre inscrit sur la carte.
+                              </span>
+                            )}
                           </span>
 
                           {proposal.disabledLabels.length > 0 && (

@@ -25,10 +25,33 @@ export interface CurrencyDefinition {
   shortEn: string;
   /** Nombre de décimales affichées. */
   decimals: number;
+  /**
+   * Unité écrite APRÈS le montant (« 59.50 USDT ») au lieu d'un symbole
+   * devant. Utilisé par les stablecoins, dont l'usage s'écrit ainsi.
+   */
+  suffix?: string;
 }
 
 /** Catalogue des devises supportées par le sélecteur. */
 export const CURRENCY_CATALOG = {
+  /**
+   * Tether — l'unité dans laquelle le client paie réellement.
+   *
+   * Taux FIXE de 1 : ce n'est pas une conversion mais la même valeur, le
+   * dollar étant la devise de facturation de NOWPayments. Aucun taux de
+   * marché à suivre, donc aucun risque d'afficher un prix faux : c'est
+   * l'unité la plus honnête pour un visiteur hors zone dollar, qui n'a
+   * aucune raison de connaître le taux du dinar ou de la livre turque.
+   */
+  USDT: {
+    symbol: "",
+    suffix: " USDT",
+    labelAr: "تيثر (USDT)",
+    labelEn: "Tether (USDT)",
+    shortAr: "USDT",
+    shortEn: "USDT",
+    decimals: 2,
+  },
   USD: {
     symbol: "$",
     labelAr: "دولار أمريكي",
@@ -86,6 +109,7 @@ export const BASE_CURRENCY: CurrencyCode = "USD";
 
 /** Devises proposées par défaut dans le sélecteur. */
 export const DEFAULT_ENABLED_CURRENCIES: CurrencyCode[] = [
+  "USDT",
   "USD",
   "EUR",
   "SAR",
@@ -94,8 +118,17 @@ export const DEFAULT_ENABLED_CURRENCIES: CurrencyCode[] = [
   "LYD",
 ];
 
+/**
+ * Devise d'AFFICHAGE par défaut : USDT.
+ *
+ * Le client paie en USDT ; afficher la même unité que celle débitée évite
+ * toute question de change. Le dollar reste la devise de FACTURATION.
+ */
+export const DEFAULT_DISPLAY_CURRENCY: CurrencyCode = "USDT";
+
 /** Taux par défaut (1 USD = X). Valeurs indicatives, ajustables dans l'admin. */
 export const DEFAULT_RATES: Record<CurrencyCode, number> = {
+  USDT: 1,
   USD: 1,
   EUR: 0.92,
   SAR: 3.75,
@@ -173,13 +206,13 @@ export function formatMoney(
   locale: "ar" | "en" = "en",
 ): string {
   const normalized = normalizeCurrency(code);
-  const definition = CURRENCY_CATALOG[normalized];
+  const definition: CurrencyDefinition = CURRENCY_CATALOG[normalized];
   const safeAmount = Number.isFinite(amount) ? amount : 0;
   const formatter = new Intl.NumberFormat(locale === "ar" ? "ar-EG-u-nu-latn" : "en-US", {
     minimumFractionDigits: definition.decimals,
     maximumFractionDigits: definition.decimals,
   });
-  return `${definition.symbol}${formatter.format(safeAmount)}`;
+  return `${definition.symbol}${formatter.format(safeAmount)}${definition.suffix ?? ""}`;
 }
 
 /**
@@ -192,14 +225,14 @@ export function formatMoneyCompact(
   locale: "ar" | "en" = "en",
 ): string {
   const normalized = normalizeCurrency(code);
-  const definition = CURRENCY_CATALOG[normalized];
+  const definition: CurrencyDefinition = CURRENCY_CATALOG[normalized];
   const safeAmount = Number.isFinite(amount) ? amount : 0;
   const useWhole = Math.abs(safeAmount) >= 100;
   const formatter = new Intl.NumberFormat(locale === "ar" ? "ar-EG-u-nu-latn" : "en-US", {
     minimumFractionDigits: useWhole ? 0 : definition.decimals,
     maximumFractionDigits: useWhole ? 0 : definition.decimals,
   });
-  return `${definition.symbol}${formatter.format(safeAmount)}`;
+  return `${definition.symbol}${formatter.format(safeAmount)}${definition.suffix ?? ""}`;
 }
 
 /** Libellé court d'une devise pour le sélecteur (ex. « USD », « ر.س »). */

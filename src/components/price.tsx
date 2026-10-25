@@ -2,7 +2,7 @@
 
 import { useCurrency } from "@/components/currency-provider";
 import { useI18n } from "@/lib/i18n";
-import { BASE_CURRENCY, formatMoney } from "@/lib/currency";
+import { BASE_CURRENCY, currencyRate, formatMoney } from "@/lib/currency";
 
 /**
  * Affichage d'un prix dans la devise choisie par le visiteur.
@@ -31,10 +31,12 @@ export function Price({
   /** Format compact : sans décimales au-delà de 100. */
   compact?: boolean;
 }) {
-  const { format, formatCompact, currency } = useCurrency();
+  const { format, formatCompact, currency, rates } = useCurrency();
   const { locale } = useI18n();
   const ar = locale === "ar";
-  const isBaseCurrency = currency === BASE_CURRENCY;
+  // USDT est à parité avec le dollar : aucune mention « facturé en » n'est
+  // utile (ce serait afficher deux fois le même montant).
+  const isBaseCurrency = currency === BASE_CURRENCY || currencyRate(currency, rates) === 1;
 
   return (
     <span className={className}>

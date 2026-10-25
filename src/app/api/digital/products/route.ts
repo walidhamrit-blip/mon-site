@@ -57,6 +57,8 @@ export async function GET() {
       ok: true,
       count: products.length,
       baseCurrency: config.currency?.base ?? "USD",
+      // Affichage public : USDT (à parité avec le dollar, aucune conversion).
+      displayCurrency: "USDT",
       platforms,
       regions,
       products,

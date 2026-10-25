@@ -172,11 +172,53 @@ Règles appliquées :
 - les produits à **prix libre** (`RANGE`) ne génèrent aucun montant : la fiche
   se remplit à la main.
 
+### 2.2.2 bis Devises étrangères et affichage en USDT
+
+**Affichage : USDT par défaut.** Le site facture en USD (ce que NOWPayments
+encaisse) mais affiche les prix en **USDT** : `59.50 USDT`. Tether est arrimé
+au dollar, donc **il n'y a aucune conversion** — afficher l'unité réellement
+débitée évite au visiteur de convertir mentalement un dinar ou une livre
+turque. Les monnaies locales restent disponibles dans le sélecteur (elles,
+réellement converties via `siteConfig.currency.rates`).
+
+**Coût : le nombre inscrit sur la carte n'est pas de l'argent.** Une carte
+Steam Turquie de **500 TRY** ne coûte pas 500 $. La règle :
+
+```
+coût USD = ce que Reloadly débite réellement (jamais la face locale)
+prix     = coût USD ÷ (1 − marge − fraisPaiement)
+```
+
+Origine du coût, dans l'ordre de confiance (`supplierCostUsd`) :
+
+1. `fixedRecipientToSenderDenominationsMap` — correspondance exacte publiée ;
+2. `fixedSenderDenominations` au même index que la face ;
+3. `recipientCurrencyToSenderCurrencyExchangeRate` ;
+4. fiche **en USD** uniquement : `face × (1 + frais) × (1 − remise)`.
+
+Si aucun de ces coûts n'est disponible, **aucun prix n'est proposé** : le
+montant est écarté de la révision et la fiche s'affiche en **« à vérifier »**
+(orange) du bandeau, jamais en « vente à perte ». C'est ce qui empêche un
+retour du bug « 80 Robux à 83,50 $ ».
+
+**Mémorisation.** Chaque montant enregistre `face_currency` et
+`supplier_cost_usd`. L'audit et le bandeau de `/admin/digital` comparent donc
+le prix au **coût réel en USD** ; comparer un prix en dollars à une face en
+livres turques n'a aucun sens et n'est plus fait.
+
+**Arrondi adaptatif.** Pas de **0,50** au-dessus de 20 USDT, pas de **0,10**
+en dessous : une petite carte vendue 4 USDT arrondie à 4,50 gagnerait 12,5 %
+par accident. Toujours vers le haut, jamais sous le coût.
+
+> ⚠️ Une carte locale ne s'active que dans son pays (Steam TRY sur un compte
+> turc). La fiche doit l'indiquer explicitement dans sa région.
+
 ### 2.2.3 Arrondi et audit du catalogue
 
 **Arrondi.** Tout prix calculé (marge saisie ou révision Reloadly) est arrondi
-au **demi-dollar supérieur** : `22,27 → 22,50`, `21,51 → 22,00`. Jamais vers le
-bas, donc jamais sous le coût. Conséquence assumée : la marge **réellement
+**vers le haut** : pas de **0,50** au-dessus de 20 (`22,27 → 22,50`,
+`21,51 → 22,00`), pas de **0,10** en dessous (`4,02 → 4,10`, `19,61 → 19,70`).
+Jamais vers le bas, donc jamais sous le coût. Conséquence assumée : la marge **réellement
 obtenue** dépasse légèrement la cible, et c'est elle qui est affichée.
 
 **Deux niveaux d'alerte (immédiats).** La page *Codes & Cartes cadeaux*

@@ -48,6 +48,10 @@ function toSupplierProduct(raw: {
   maxDenomination: number | null;
   senderFeePercentage: number;
   discountPercentage: number;
+  senderCurrencyCode?: string;
+  fixedSenderDenominations?: number[];
+  recipientToSenderMap?: Record<string, number>;
+  recipientToSenderRate?: number | null;
   global: boolean;
   status: string;
 }): SupplierProduct {
@@ -63,6 +67,10 @@ function toSupplierProduct(raw: {
     maxDenomination: raw.maxDenomination,
     senderFeePercentage: raw.senderFeePercentage,
     discountPercentage: raw.discountPercentage,
+    senderCurrencyCode: raw.senderCurrencyCode,
+    fixedSenderDenominations: raw.fixedSenderDenominations,
+    recipientToSenderMap: raw.recipientToSenderMap,
+    recipientToSenderRate: raw.recipientToSenderRate,
     global: raw.global,
     status: raw.status,
   };

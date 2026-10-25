@@ -59,6 +59,7 @@ export const siteConfig = {
   currency: {
     base: "USD",
     rates: {
+      USDT: 1,
       USD: 1,
       EUR: 0.92,
       SAR: 3.75,
@@ -66,7 +67,7 @@ export const siteConfig = {
       EGP: 48.5,
       LYD: 4.83,
     },
-    enabled: ["USD", "EUR", "SAR", "AED", "EGP", "LYD"],
+    enabled: ["USDT", "USD", "EUR", "SAR", "AED", "EGP", "LYD"],
   },
 
   // Apparence principale du site — modifiable depuis /admin → Réglages.

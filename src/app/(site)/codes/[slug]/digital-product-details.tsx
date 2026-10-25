@@ -147,6 +147,14 @@ export function DigitalProductDetails({ product }: { product: DigitalProduct }) 
                         </span>
                         <span className="block text-[11px] text-[var(--muted-foreground)]">
                           {regionLabel(denomination.region, locale)}
+                          {/* Carte non-USD : on écrit la valeur faciale réelle,
+                              sinon « TRY 500 » ressemble à 500 dollars. */}
+                          {denomination.faceCurrency &&
+                            denomination.faceCurrency.toUpperCase() !== "USD" && (
+                              <span className="ms-1.5 font-bold text-[var(--foreground)]">
+                                · {denomination.faceValue}
+                              </span>
+                            )}
                         </span>
                       </span>
                       <span className="flex shrink-0 items-center gap-2.5">

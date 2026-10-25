@@ -855,6 +855,38 @@ test("arrondi : toujours vers le haut, au pas de 0,50", () => {
   assert.ok(core.roundPriceUp(cost) >= cost);
 });
 
+test("arrondi adaptatif : 0,10 sous 20, 0,50 au-dessus", () => {
+  // Une petite carte locale ne doit pas gagner 12 % « par accident ».
+  assert.equal(core.roundPriceUpAdaptive(4.02), 4.1);
+  assert.equal(core.roundPriceUpAdaptive(19.61), 19.7);
+  assert.equal(core.roundPriceUpAdaptive(20), 20);
+  assert.equal(core.roundPriceUpAdaptive(21.05), 21.5);
+  assert.equal(core.roundPriceUpAdaptive(0), 0);
+  assert.equal(core.priceRoundStep(4), 0.1);
+  assert.equal(core.priceRoundStep(19.99), 0.1);
+  assert.equal(core.priceRoundStep(20), 0.5);
+  assert.equal(core.priceRoundStep(59.5), 0.5);
+  // Jamais vers le bas, quel que soit le pas.
+  for (const value of [0.37, 4.02, 9.99, 19.99, 20.01, 123.456]) {
+    assert.ok(core.roundPriceUpAdaptive(value) >= value);
+  }
+});
+
+test("prix à partir d'un coût USD connu (cartes non-USD)", () => {
+  // 500 TRY coûtent ~15,20 $ chez Reloadly : le prix part de LÀ, pas de 500.
+  const try500 = core.computeSalePriceFromCost(15.2, 4, 1);
+  assert.equal(try500.ok, true);
+  assert.equal(try500.cost, 15.2);
+  assert.equal(try500.price, 16);
+  assert.ok(try500.price >= try500.cost);
+  // Petit montant : pas adaptatif, la marge reste proche de la cible.
+  const small = core.computeSalePriceFromCost(4, 20, 1);
+  assert.equal(small.price, 5.1);
+  // Coût inconnu : refus explicite, jamais un prix inventé.
+  assert.equal(core.computeSalePriceFromCost(0, 4, 1).ok, false);
+  assert.equal(core.computeSalePriceFromCost(null, 4, 1).ok, false);
+});
+
 test("marge nette : les frais Reloadly entrent dans le coût réel", () => {
   const withFees = core.computeSalePrice({
     faceValue: 20,
@@ -872,7 +904,8 @@ test("marge nette : les frais Reloadly entrent dans le coût réel", () => {
     paymentFeePercent: 0,
   });
   assert.equal(withDiscount.cost, 19.6);
-  assert.equal(withDiscount.price, 20);
+  // Sous 20, l'arrondi passe au pas de 0,10 : 19,60 reste 19,60.
+  assert.equal(withDiscount.price, 19.6);
 });
 
 test("marge nette : refus des valeurs incohérentes, jamais de prix nul", () => {
