@@ -25,6 +25,7 @@ import {
   type DigitalProduct,
 } from "@/lib/digital-types";
 import { DigitalBuyDialog } from "@/components/digital-buy-dialog";
+import { RegionalAlert } from "@/components/regional-alert";
 
 /**
  * Fiche d'un produit du catalogue digital.
@@ -103,6 +104,10 @@ export function DigitalProductDetails({ product }: { product: DigitalProduct }) 
                 </ul>
               )}
 
+              {/* Carte strictement régionale : avertissement en tête de fiche,
+                  avant les montants et avant tout achat. */}
+              <RegionalAlert regions={product.regions} className="mt-5" />
+
               {product.regions.length > 0 && (
                 <div className="mt-6 flex flex-wrap items-center gap-2">
                   <span className="flex items-center gap-1.5 text-[12px] font-bold text-[var(--muted-foreground)]">
@@ -133,6 +138,8 @@ export function DigitalProductDetails({ product }: { product: DigitalProduct }) 
               <div className="text-[11px] font-black uppercase tracking-[0.16em] text-[var(--muted-foreground)]">
                 {ar ? "المبالغ المتاحة" : "Available amounts"}
               </div>
+
+              <RegionalAlert regions={product.regions} compact className="mt-3" />
 
               {available.length > 0 ? (
                 <ul className="mt-4 space-y-2">

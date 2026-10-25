@@ -133,6 +133,30 @@ export function regionLabel(region: string, locale: "ar" | "en"): string {
 }
 
 /**
+ * Zones fermées d'une fiche — VIDE dès que `global` est annoncé.
+ *
+ * Un code PlayStation « US » ne s'active que sur un compte américain : c'est
+ * la cause n°1 des litiges sur les cartes cadeaux. Mais une fiche qui annonce
+ * aussi `global` n'est pas régionale (Steam, PlayStation, Xbox, Amazon) :
+ * afficher un avertissement « carte régionale » y serait faux et ferait fuir
+ * le client. On ne renvoie donc des zones que pour une fiche **strictement**
+ * régionale.
+ */
+export function regionalOnlyRegions(regions: readonly string[] | null | undefined): string[] {
+  const all = (regions ?? [])
+    .map((region) => String(region ?? "").trim().toUpperCase())
+    .filter((region) => region !== "");
+  if (all.length === 0) return [];
+  if (all.includes("GLOBAL")) return [];
+  return Array.from(new Set(all));
+}
+
+/** Vrai si la fiche est vendue uniquement dans une ou plusieurs zones fermées. */
+export function isRegionalOnly(regions: readonly string[] | null | undefined): boolean {
+  return regionalOnlyRegions(regions).length > 0;
+}
+
+/**
  * Une dénomination vendable : « 50 $ », « 500 Robux », « 1 mois »…
  * Chaque dénomination a son prix de vente en USD et sa région.
  */
