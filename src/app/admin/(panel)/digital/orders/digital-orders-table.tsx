@@ -42,6 +42,8 @@ export interface AdminDigitalOrderRow {
   reloadlyStatus: string | null;
   deliveredAt: string | null;
   emailSentAt: string | null;
+  emailProviderId: string | null;
+  emailLastError: string | null;
   attempts: number;
   lastError: string | null;
   codes: { cardNumber: string; pinCode: string | null; redemptionUrl: string | null }[];
@@ -235,9 +237,24 @@ export function DigitalOrdersTable({ rows }: { rows: AdminDigitalOrderRow[] }) {
                       <dd>
                         {frDate(row.emailSentAt)} · {row.attempts} tentative
                         {row.attempts > 1 ? "s" : ""}
+                        {row.emailProviderId && (
+                          <span className="mt-0.5 block break-all text-[11px] text-stone-500">
+                            message : <code>{row.emailProviderId}</code>
+                          </span>
+                        )}
                       </dd>
                     </div>
                   </dl>
+
+                  {row.emailLastError && (
+                    <p className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-[12px] leading-5 text-red-900">
+                      <strong>E-mail non envoyé :</strong> {row.emailLastError}
+                      <span className="mt-1 block text-[11px] text-red-800/80">
+                        Testez le canal dans « Envoi des e-mails » ci-dessus : un domaine
+                        non vérifié (SPF/DKIM) est accepté puis perdu.
+                      </span>
+                    </p>
+                  )}
 
                   {row.lastError && (
                     <p className="rounded-lg border border-orange-200 bg-orange-50 px-3 py-2 text-[12px] leading-5 text-orange-900">

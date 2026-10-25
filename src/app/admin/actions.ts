@@ -31,6 +31,7 @@ import {
   resendDigitalCodesEmail,
 } from "@/lib/digital-orders";
 import type { DigitalProduct } from "@/lib/digital-types";
+import { mailDiagnostics, sendTestEmail } from "@/lib/mailer";
 
 export interface ActionResult {
   ok: boolean;
@@ -537,6 +538,61 @@ export async function generateDemoFromLead(leadId: number): Promise<GenerateDemo
     };
   } catch (error) {
     return { ok: false, error: dbIssue(error) };
+  }
+}
+
+/* ---------------------------- Diagnostic e-mail --------------------------- */
+
+export interface MailTestResult extends ActionResult {
+  provider?: string;
+  from?: string;
+  id?: string;
+}
+
+/**
+ * Envoie un e-mail de test depuis l'admin et rapporte le verdict RÉEL du
+ * fournisseur (identifiant du message ou refus exact).
+ *
+ * C'est le seul moyen de distinguer « accepté par le fournisseur » de
+ * « réellement remis » : un domaine non vérifié ou sans SPF/DKIM renvoie
+ * souvent un identifiant puis échoue en silence.
+ */
+export async function sendTestEmailAction(to: string): Promise<MailTestResult> {
+  await requireAdmin();
+  const address = String(to ?? "").trim();
+  const diagnostics = mailDiagnostics();
+
+  if (!diagnostics.configured) {
+    return {
+      ok: false,
+      provider: diagnostics.provider,
+      from: diagnostics.from,
+      error:
+        "Aucun fournisseur d'e-mail configuré : ajoutez RESEND_API_KEY (ou SMTP_HOST / SMTP_PORT / SMTP_USER / SMTP_PASS) en Production sur Vercel, puis redéployez.",
+    };
+  }
+  if (!address) {
+    return { ok: false, provider: diagnostics.provider, error: "Adresse de destination manquante." };
+  }
+
+  try {
+    const result = await sendTestEmail(address);
+    return result.ok
+      ? {
+          ok: true,
+          provider: result.provider,
+          from: diagnostics.from,
+          id: result.id,
+          message: `Accepté par ${result.provider}${result.id ? ` (message ${result.id})` : ""} — vérifiez la boîte et le dossier spam de ${address}.`,
+        }
+      : {
+          ok: false,
+          provider: result.provider,
+          from: diagnostics.from,
+          error: result.error ?? "Envoi refusé par le fournisseur.",
+        };
+  } catch (error) {
+    return { ok: false, provider: diagnostics.provider, error: dbIssue(error) };
   }
 }
 

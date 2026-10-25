@@ -66,6 +66,37 @@ export {
 export type { DigitalOrderStatus, DigitalQuote } from "@/lib/digital-order-core";
 export { digitalCodesKey, encryptDigitalCodes, decryptDigitalCodes } from "@/lib/digital-codes";
 
+/* --------------------------- Suivi des e-mails ---------------------------- */
+
+/**
+ * Enregistre le verdict RÉEL du fournisseur pour l'e-mail des codes.
+ *
+ * Un « envoyé » sans identifiant de message ni motif d'échec est
+ * indiagnosticable : c'est exactement ce qui rendait invisible un e-mail
+ * accepté mais jamais remis (domaine non vérifié, SPF/DKIM absents, spam).
+ */
+async function recordEmailOutcome(
+  orderId: number,
+  result: { ok: boolean; provider?: string; id?: string; error?: string },
+): Promise<void> {
+  const patch = result.ok
+    ? { emailSentAt: new Date(), emailProviderId: result.id ?? null, emailLastError: null }
+    : {
+        emailLastError: `${result.provider ?? "mail"} : ${result.error ?? "échec inconnu"}`.slice(0, 500),
+      };
+  try {
+    await db.update(digitalOrders).set(patch).where(eq(digitalOrders.id, orderId));
+  } catch (error) {
+    console.warn(
+      "[digital] suivi e-mail non enregistré :",
+      error instanceof Error ? error.message : error,
+    );
+  }
+  if (!result.ok) {
+    console.warn("[digital] e-mail codes non envoyé :", result.error);
+  }
+}
+
 /* ------------------------ Valeur faciale vs Reloadly ---------------------- */
 
 /**
@@ -614,14 +645,7 @@ export async function deliverPaidDigitalOrder(
         config.url,
         config.email,
       );
-      if (email.ok) {
-        await db
-          .update(digitalOrders)
-          .set({ emailSentAt: new Date() })
-          .where(eq(digitalOrders.id, order.id));
-      } else {
-        console.warn("[digital] e-mail codes non envoyé :", email.error);
-      }
+      await recordEmailOutcome(order.id, email);
     } catch (error) {
       console.warn(
         "[digital] e-mail codes impossible :",
@@ -830,14 +854,8 @@ export async function deliverDigitalOrderManually(
       config.url,
       config.email,
     );
-    if (email.ok) {
-      await db
-        .update(digitalOrders)
-        .set({ emailSentAt: new Date() })
-        .where(eq(digitalOrders.id, order.id));
-    } else {
-      emailError = email.error ?? "e-mail non envoyé";
-    }
+    await recordEmailOutcome(order.id, email);
+    if (!email.ok) emailError = email.error ?? "e-mail non envoyé";
   } catch (error) {
     emailError = error instanceof Error ? error.message : String(error);
   }
@@ -858,11 +876,6 @@ export async function resendDigitalCodesEmail(ref: string): Promise<{ ok: boolea
 
   const { config } = await getSiteData();
   const result = await sendDigitalCodesEmail(order, codes, config.name, config.url, config.email);
-  if (result.ok) {
-    await db
-      .update(digitalOrders)
-      .set({ emailSentAt: new Date(), updatedAt: new Date() })
-      .where(eq(digitalOrders.id, order.id));
-  }
+  await recordEmailOutcome(order.id, result);
   return { ok: result.ok, error: result.error };
 }

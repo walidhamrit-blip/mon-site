@@ -15,7 +15,7 @@
     "previews:capture": "node scripts/capture-previews.mjs",
     "badge:audit": "node scripts/badge-audit.mjs",
     "test:global": "node --test scripts/global-catalog.test.mjs scripts/site-identity.test.mjs",
-    "test:digital": "node --test scripts/reloadly.test.mjs scripts/digital-catalog-cache.test.mjs"
+    "test:digital": "node --test scripts/reloadly.test.mjs scripts/digital-catalog-cache.test.mjs scripts/mail-diagnostics.test.mjs"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^4.0.84",

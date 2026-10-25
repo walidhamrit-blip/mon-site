@@ -302,6 +302,10 @@ export const digitalOrders = pgTable("digital_orders", {
   codesCipher: text("codes_cipher"),
   deliveredAt: timestamp("delivered_at", { withTimezone: true }),
   emailSentAt: timestamp("email_sent_at", { withTimezone: true }),
+  /** Identifiant du message chez le fournisseur (Resend / SMTP). */
+  emailProviderId: text("email_provider_id"),
+  /** Motif du dernier échec d'envoi des codes (diagnostic admin). */
+  emailLastError: text("email_last_error"),
 
   attempts: integer("attempts").notNull().default(0),
   lastError: text("last_error"),

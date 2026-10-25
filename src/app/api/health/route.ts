@@ -6,6 +6,7 @@ import {
   reloadlyConfigured,
   reloadlyMode,
 } from "@/lib/reloadly";
+import { mailDiagnostics } from "@/lib/mailer";
 import {
   checkNowPaymentsApiKey,
   nowPaymentsApiBase,
@@ -154,6 +155,9 @@ export async function GET() {
       database,
       nowpayments,
       reloadly,
+      // Diagnostic d'envoi : savoir par quel canal et depuis quelle adresse
+      // partent les codes (aucune clé exposée).
+      mail: mailDiagnostics(),
     },
     { status: ok ? 200 : 500 },
   );

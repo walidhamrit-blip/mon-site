@@ -140,6 +140,71 @@ async function sendWithSmtp(message: OutgoingEmail): Promise<MailResult> {
  * Envoie un e-mail. Ne lève jamais d'exception : un échec d'envoi ne doit
  * jamais faire échouer la demande du client.
  */
+/** Renseignements d'envoi, sans secret : qui expédie et par quel canal. */
+export interface MailDiagnostics {
+  provider: MailProvider;
+  configured: boolean;
+  /** Expéditeur réellement utilisé (EMAIL_FROM ou domaine du site). */
+  from: string;
+  fromExplicit: boolean;
+  domain: string;
+}
+
+export function mailDiagnostics(): MailDiagnostics {
+  const from = mailFromAddress();
+  const domain = (process.env.EMAIL_DOMAIN?.trim() || domainFromOrigin(resolveSiteOrigin())).replace(
+    /^https?:\/\//,
+    "",
+  );
+  return {
+    provider: activeMailProvider(),
+    configured: isMailConfigured(),
+    from,
+    fromExplicit: Boolean(process.env.EMAIL_FROM?.trim()),
+    domain,
+  };
+}
+
+/**
+ * E-mail de test, pour valider la configuration d'envoi depuis l'admin.
+ *
+ * Renvoie le verdict RÉEL du fournisseur : un `ok:true` + `id` signifie que
+ * Resend/SMTP a accepté le message (l'identifiant permet de le retrouver
+ * dans ses journaux) ; `ok:false` porte le refus exact.
+ */
+export async function sendTestEmail(to: string): Promise<MailResult> {
+  const address = to.trim();
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(address)) {
+    return { provider: activeMailProvider(), ok: false, error: "Adresse de destination invalide." };
+  }
+  const diagnostics = mailDiagnostics();
+  const text = [
+    "Test d'envoi — boutique des codes & cartes cadeaux.",
+    "",
+    `Fournisseur : ${diagnostics.provider}`,
+    `Expéditeur : ${diagnostics.from}`,
+    `Domaine : ${diagnostics.domain}`,
+    "",
+    "Si vous lisez ce message, la livraison des codes par e-mail peut",
+    "atteindre cette adresse. Vérifiez aussi le dossier spam : un domaine",
+    "sans SPF/DKIM y tombe souvent.",
+  ].join("\n");
+  return sendEmail({
+    to: address,
+    subject: "Test d'envoi — Nukhba codes & cartes cadeaux",
+    text,
+    html: `<p>Test d'envoi — boutique des codes &amp; cartes cadeaux.</p>
+<ul>
+  <li>Fournisseur : <strong>${diagnostics.provider}</strong></li>
+  <li>Expéditeur : <strong>${diagnostics.from}</strong></li>
+  <li>Domaine : <strong>${diagnostics.domain}</strong></li>
+</ul>
+<p>Si vous lisez ce message, la livraison des codes par e-mail peut atteindre
+cette adresse. Vérifiez aussi le dossier spam : un domaine sans SPF/DKIM y
+tombe souvent.</p>`,
+  });
+}
+
 export async function sendEmail(message: OutgoingEmail): Promise<MailResult> {
   const provider = activeMailProvider();
   if (provider === "resend") return sendWithResend(message);
