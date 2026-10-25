@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ArrowLeft, ShieldCheck, TriangleAlert } from "lucide-react";
 import { listDigitalOrders, type AdminDigitalOrder } from "@/lib/digital-orders";
+import { nowPaymentsSandbox } from "@/lib/nowpayments";
 import { checkReloadlyCredentials, reloadlyConfigured, reloadlyMaxOrderUsd } from "@/lib/reloadly";
 import { mailDiagnostics } from "@/lib/mailer";
 import {
@@ -142,6 +143,18 @@ export default async function AdminDigitalOrdersPage() {
             </dd>
           </div>
         </dl>
+
+        {!nowPaymentsSandbox() && reloadly.mode === "sandbox" && (
+          <p className="mt-4 rounded-xl border border-amber-300 bg-amber-50 p-3 text-[12.5px] leading-6 text-amber-950">
+            <strong>Attention — environnement mixte :</strong> NOWPayments encaisse en{" "}
+            <strong>production réelle</strong>, mais Reloadly est encore en{" "}
+            <strong>Sandbox (codes de test)</strong>. Pour livrer de vrais codes :
+            passez le dashboard Reloadly sur <strong>LIVE</strong>, créditez le solde USD,
+            remplacez <code>RELOADLY_CLIENT_ID</code> et <code>RELOADLY_CLIENT_SECRET</code>{" "}
+            par les clés LIVE et définissez <code>RELOADLY_SANDBOX=false</code> sur Vercel,
+            puis redéployez.
+          </p>
+        )}
 
         {!reloadly.configured && (
           <p className="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-3 text-[12.5px] leading-6 text-amber-900">

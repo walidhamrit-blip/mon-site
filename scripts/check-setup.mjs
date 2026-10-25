@@ -189,7 +189,97 @@ if (!apiKey) {
   }
 }
 
-/* ─────────────────────────────── 4. E-mails ────────────────────────────── */
+/* ──────────────────── 4. Reloadly (cartes cadeaux) ─────────────────────── */
+
+section("Reloadly (vente de codes & cartes cadeaux)");
+const reloadlyClientId = (process.env.RELOADLY_CLIENT_ID ?? "").replace(/["'\s]/g, "");
+const reloadlyClientSecret = (process.env.RELOADLY_CLIENT_SECRET ?? "").replace(/["'\s]/g, "");
+const reloadlyRawSandbox = (process.env.RELOADLY_SANDBOX ?? "").replace(/["'\s]/g, "").toLowerCase();
+const reloadlyIsLive = ["false", "0", "no", "off", "live", "production"].includes(reloadlyRawSandbox);
+const reloadlyBase = (
+  process.env.RELOADLY_API_BASE?.trim() ||
+  (reloadlyIsLive
+    ? "https://giftcards.reloadly.com"
+    : "https://giftcards-sandbox.reloadly.com")
+).replace(/\/+$/, "");
+
+if (!reloadlyClientId || !reloadlyClientSecret) {
+  warn(
+    "RELOADLY_CLIENT_ID / RELOADLY_CLIENT_SECRET absents",
+    "Les fiches en livraison automatique refuseront la vente tant que les clés Reloadly ne sont pas définies.",
+  );
+} else {
+  if (!sandbox && !reloadlyIsLive) {
+    warn(
+      "Environnement mixte : NOWPayments en LIVE mais Reloadly en SANDBOX",
+      "Les clients paient en vrai mais Reloadly émet des codes de test. Passez RELOADLY_SANDBOX=false avec vos identifiants LIVE.",
+    );
+  }
+  try {
+    const authRes = await fetch(
+      process.env.RELOADLY_AUTH_URL?.trim() || "https://auth.reloadly.com/oauth/token",
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Accept: "application/json" },
+        body: JSON.stringify({
+          client_id: reloadlyClientId,
+          client_secret: reloadlyClientSecret,
+          grant_type: "client_credentials",
+          audience: reloadlyBase,
+        }),
+        signal: AbortSignal.timeout(10_000),
+      },
+    );
+    if (!authRes.ok) {
+      const body = (await authRes.text().catch(() => "")).slice(0, 200);
+      fail(
+        `Identifiants Reloadly refusés (HTTP ${authRes.status})`,
+        `${body || "réponse vide"} — vérifiez l'appariement TEST/LIVE avec RELOADLY_SANDBOX.`,
+      );
+    } else {
+      const tokenData = await authRes.json().catch(() => ({}));
+      const balanceRes = await fetch(`${reloadlyBase}/accounts/balance`, {
+        headers: {
+          Authorization: `Bearer ${tokenData.access_token ?? ""}`,
+          Accept: "application/com.reloadly.giftcards-v1+json",
+        },
+        signal: AbortSignal.timeout(10_000),
+      });
+      if (balanceRes.ok) {
+        const bal = await balanceRes.json().catch(() => ({}));
+        const amount = Number(bal.balance ?? 0);
+        ok(
+          "Connexion Reloadly acceptée",
+          `${reloadlyIsLive ? "LIVE" : "SANDBOX"} — solde ${amount.toFixed(2)} ${bal.currencyCode ?? "USD"}`,
+        );
+        if (reloadlyIsLive && amount <= 0) {
+          warn(
+            "Solde Reloadly LIVE à 0",
+            "Créditez votre portefeuille Reloadly LIVE pour que les achats automatiques aboutissent.",
+          );
+        }
+      } else {
+        ok("Jeton Reloadly émis", reloadlyIsLive ? "mode LIVE" : "mode SANDBOX");
+      }
+    }
+  } catch (error) {
+    warn(
+      "Reloadly injoignable",
+      error instanceof Error ? error.message : String(error),
+    );
+  }
+}
+
+if (!process.env.DIGITAL_CODES_SECRET?.trim() && !sessionSecret) {
+  warn(
+    "DIGITAL_CODES_SECRET absent",
+    "Définissez DIGITAL_CODES_SECRET (ou SESSION_SECRET) pour chiffrer les codes livrés en base.",
+  );
+} else {
+  ok("Chiffrement des codes", process.env.DIGITAL_CODES_SECRET?.trim() ? "DIGITAL_CODES_SECRET" : "repli sur SESSION_SECRET");
+}
+
+/* ─────────────────────────────── 5. E-mails ────────────────────────────── */
 
 section("E-mails de confirmation (facultatif)");
 if (process.env.RESEND_API_KEY?.trim()) {
