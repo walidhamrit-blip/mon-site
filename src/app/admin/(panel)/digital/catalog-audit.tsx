@@ -23,6 +23,7 @@ export function CatalogAudit({ paymentFeePercent }: { paymentFeePercent: number 
   const [error, setError] = useState("");
   const [flash, setFlash] = useState<{ kind: "ok" | "err"; msg: string } | null>(null);
   const [busy, startTransition] = useTransition();
+  const [anomaliesOnly, setAnomaliesOnly] = useState(true);
 
   const analyse = () => {
     setError("");
@@ -47,12 +48,14 @@ export function CatalogAudit({ paymentFeePercent }: { paymentFeePercent: number 
         setAnalysis(data);
         // Par défaut, on coche les fiches qui ont au moins un prix à changer
         // ou une anomalie à corriger.
+        // On coche toute fiche qui perd de l'argent ou dont un prix change :
+        // une perte ne doit jamais rester non traitée par défaut.
         const withWork = new Set(
           data.rows
             .filter(
               (row) =>
-                (row.newPrice != null && Math.abs(row.newPrice - row.oldPrice) > 0.004) ||
-                row.issues.length > 0,
+                row.loss ||
+                (row.newPrice != null && Math.abs(row.newPrice - row.oldPrice) > 0.004),
             )
             .map((row) => row.ficheId),
         );
@@ -81,8 +84,15 @@ export function CatalogAudit({ paymentFeePercent }: { paymentFeePercent: number 
     });
   };
 
+  const visibleRows = (analysis?.rows ?? []).filter((row) => {
+    if (!anomaliesOnly) return true;
+    if (row.loss) return true;
+    if (row.newPrice != null && Math.abs(row.newPrice - row.oldPrice) > 0.004) return true;
+    return row.issues.some((issue) => issue.severity !== "info");
+  });
+
   const byFiche = new Map<string, { title: string; rows: RecalcRow[] }>();
-  for (const row of analysis?.rows ?? []) {
+  for (const row of visibleRows) {
     const entry = byFiche.get(row.ficheId) ?? { title: row.ficheTitle, rows: [] };
     entry.rows.push(row);
     byFiche.set(row.ficheId, entry);
@@ -158,6 +168,64 @@ export function CatalogAudit({ paymentFeePercent }: { paymentFeePercent: number 
             </button>
           </div>
 
+          {/* Synthèse : la perte d'argent d'abord. */}
+          <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+            <div
+              className={`rounded-lg border px-3 py-2 ${
+                analysis.summary.losses > 0
+                  ? "border-red-300 bg-red-50"
+                  : "border-emerald-200 bg-emerald-50"
+              }`}
+            >
+              <div className="text-[10.5px] font-bold uppercase tracking-wide text-stone-500">
+                Ventes à perte
+              </div>
+              <div
+                className={`text-[15px] font-black ${
+                  analysis.summary.losses > 0 ? "text-red-700" : "text-emerald-800"
+                }`}
+              >
+                {analysis.summary.losses} montant(s)
+              </div>
+              <div className="text-[11px] text-stone-600">
+                {analysis.summary.fichesWithLoss} fiche(s) concernée(s)
+              </div>
+            </div>
+            <div className="rounded-lg border border-stone-200 bg-[#FAF9F6] px-3 py-2">
+              <div className="text-[10.5px] font-bold uppercase tracking-wide text-stone-500">
+                Prix sous la valeur faciale
+              </div>
+              <div className="text-[15px] font-black text-stone-900">
+                {analysis.summary.belowFace}
+              </div>
+            </div>
+            <div className="rounded-lg border border-stone-200 bg-[#FAF9F6] px-3 py-2">
+              <div className="text-[10.5px] font-bold uppercase tracking-wide text-stone-500">
+                Refusés par Reloadly
+              </div>
+              <div className="text-[15px] font-black text-stone-900">{analysis.summary.refused}</div>
+            </div>
+            <div className="rounded-lg border border-stone-200 bg-[#FAF9F6] px-3 py-2">
+              <div className="text-[10.5px] font-bold uppercase tracking-wide text-stone-500">
+                Prix non recalculables
+              </div>
+              <div className="text-[15px] font-black text-stone-900">
+                {analysis.summary.missingPrice}
+              </div>
+              <div className="text-[11px] text-stone-600">marge ou valeur absente</div>
+            </div>
+          </div>
+
+          <label className="inline-flex items-center gap-2 text-[12px] font-bold text-stone-700">
+            <input
+              type="checkbox"
+              checked={anomaliesOnly}
+              onChange={(event) => setAnomaliesOnly(event.target.checked)}
+              className="h-4 w-4 accent-stone-900"
+            />
+            Afficher seulement les anomalies
+          </label>
+
           {analysis.warnings.length > 0 && (
             <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-[11.5px] leading-5 text-amber-900">
               {analysis.warnings.slice(0, 3).join(" | ")}
@@ -185,8 +253,16 @@ export function CatalogAudit({ paymentFeePercent }: { paymentFeePercent: number 
                       <span className="block text-[13px] font-black text-stone-900">{entry.title}</span>
                       <span className="mt-1 block space-y-0.5 text-[11.5px] leading-5 text-stone-600">
                         {entry.rows.map((row) => (
-                          <span key={row.denominationId} className="block">
+                          <span
+                            key={row.denominationId}
+                            className={`block ${
+                              row.loss
+                                ? "rounded bg-red-50 px-1 font-bold text-red-800"
+                                : ""
+                            }`}
+                          >
                             <strong>{row.denominationLabel}</strong> :{" "}
+                            {row.loss ? "⛔ " : ""}
                             {row.newPrice == null ? (
                               <span className="text-red-700">
                                 prix incalculable ({money(row.oldPrice)})
@@ -201,9 +277,22 @@ export function CatalogAudit({ paymentFeePercent }: { paymentFeePercent: number 
                             {row.cost != null ? ` · coût ${money(row.cost)}` : ""}
                             {row.netMarginPercent != null ? ` · marge ${row.netMarginPercent} %` : ""}
                             {row.issues.length > 0 && (
-                              <span className="ml-1 inline-flex items-start gap-1 text-orange-800">
-                                <TriangleAlert className="mt-0.5 h-3 w-3 shrink-0" />
-                                {row.issues.join(" · ")}
+                              <span className="mt-0.5 block space-y-0.5">
+                                {row.issues.map((issue, index) => (
+                                  <span
+                                    key={`${row.denominationId}-issue-${index}`}
+                                    className={`flex items-start gap-1 ${
+                                      issue.severity === "loss"
+                                        ? "font-bold text-red-700"
+                                        : issue.severity === "warning"
+                                          ? "text-orange-800"
+                                          : "text-stone-500"
+                                    }`}
+                                  >
+                                    <TriangleAlert className="mt-0.5 h-3 w-3 shrink-0" />
+                                    {issue.message}
+                                  </span>
+                                ))}
                               </span>
                             )}
                           </span>

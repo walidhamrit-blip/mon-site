@@ -251,6 +251,52 @@ export function computeSalePrice(input: PriceInputs): PriceBreakdown {
   return { ok: true, cost, price, netMarginPercent, netProfitUsd };
 }
 
+/* ------------------- Contrôle de perte (hors réseau) ---------------------- */
+
+/**
+ * Montants vendus sous leur valeur faciale — perte d'argent à chaque vente.
+ *
+ * Aucun appel réseau : ce contrôle immédiat sert d'alerte sur la page admin
+ * et de filet quand le produit Reloadly n'est pas relié ou illisible.
+ * Seuls les montants **disponibles** sont contrôlés (un montant désactivé
+ * n'est pas vendu).
+ */
+export function faceValueLosses<
+  T extends { label: string; priceUsd: number; available: boolean },
+>(fiches: Array<{ id: string; titleEn: string; denominations: T[] }>): Array<{
+  ficheId: string;
+  ficheTitle: string;
+  label: string;
+  price: number;
+  face: number;
+}> {
+  const cents = (value: number) => Math.round(value * 100 + 1e-9) / 100;
+  const losses: Array<{
+    ficheId: string;
+    ficheTitle: string;
+    label: string;
+    price: number;
+    face: number;
+  }> = [];
+  for (const fiche of fiches) {
+    for (const denomination of fiche.denominations) {
+      if (!denomination.available) continue;
+      const face = denominationUnitPrice(denomination as never);
+      if (face == null || face <= 0) continue;
+      if (denomination.priceUsd > 0 && cents(denomination.priceUsd) < cents(face)) {
+        losses.push({
+          ficheId: fiche.id,
+          ficheTitle: fiche.titleEn || fiche.id,
+          label: denomination.label,
+          price: denomination.priceUsd,
+          face,
+        });
+      }
+    }
+  }
+  return losses;
+}
+
 /* ------------------- Prix accepté par le fournisseur ---------------------- */
 
 /**

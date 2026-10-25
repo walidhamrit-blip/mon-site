@@ -179,12 +179,23 @@ au **demi-dollar supérieur** : `22,27 → 22,50`, `21,51 → 22,00`. Jamais ver
 bas, donc jamais sous le coût. Conséquence assumée : la marge **réellement
 obtenue** dépasse légèrement la cible, et c'est elle qui est affichée.
 
+**Alerte de perte (immédiate).** La page *Codes & Cartes cadeaux* affiche un
+bandeau rouge dès qu'un montant **en vente** est proposé sous sa valeur faciale
+(ex. `$30` vendu 29,50 $) : ce contrôle ne dépend d'aucun appel réseau et
+couvre **toutes** les fiches, y compris celles sans produit Reloadly relié ou
+sans marge définie.
+
 **Audit & recalcul.** Admin → *Codes & Cartes cadeaux* → bloc
 **« Audit & recalcul des prix »** → *Analyser le catalogue*. L'écran liste,
 montant par montant : ancien prix → prix recalculé, coût réel, marge obtenue,
 et les anomalies :
 
-- prix actuel **sous le coût réel** (vente à perte) ;
+- prix actuel **sous le coût réel** (vente à perte) — coût Reloadly si le
+  produit est lisible, sinon la **valeur faciale** (borne basse, signalée
+  comme telle) : l'absence de marge ou de produit n'exclut plus la fiche du
+  contrôle, elle ajoute simplement une note ;
+- prix **sous la valeur faciale** (le client reçoit plus qu'il ne paie) ;
+- produit libellé dans une **devise ≠ USD** (prix probablement multipliés) ;
 - prix **non arrondi** au pas de 0,50 ;
 - montant **refusé par Reloadly** ;
 - fiche **sans produit relié**, **sans marge** ou en **livraison manuelle**
