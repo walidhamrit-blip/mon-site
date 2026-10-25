@@ -304,6 +304,14 @@ export function ensureSchema(): Promise<void> {
       await pool.query(
         "ALTER TABLE orders ADD COLUMN IF NOT EXISTS digital_order_id integer",
       );
+      // Diagnostic d'envoi des codes : identifiant du message chez le
+      // fournisseur (à retrouver dans Resend/SMTP) et motif d'échec.
+      await pool.query(
+        "ALTER TABLE digital_orders ADD COLUMN IF NOT EXISTS email_provider_id text",
+      );
+      await pool.query(
+        "ALTER TABLE digital_orders ADD COLUMN IF NOT EXISTS email_last_error text",
+      );
       await pool.query(
         "CREATE INDEX IF NOT EXISTS orders_digital_order_id_idx ON orders (digital_order_id)",
       );

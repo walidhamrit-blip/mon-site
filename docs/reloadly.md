@@ -192,6 +192,28 @@ Statuts internes :
    l'e-mail automatiquement.
 4. **Renvoyer l'e-mail** est disponible sur toute commande livrée.
 
+### Le client ne reçoit pas ses codes
+
+1. Admin → **Commandes de codes** → dépliez la commande : le bloc
+   **« Codes livrés (n) »** affiche les codes réellement achetés. Ils sont
+   donc toujours récupérables, même si l'e-mail n'arrive pas.
+2. Ligne **« E-mail codes »** :
+   - un **identifiant de message** (`message : …`) = le fournisseur a accepté
+     le message ; l'échec est alors côté remise (domaine non vérifié,
+     SPF/DKIM absents, spam) ;
+   - un encart rouge **« E-mail non envoyé »** = refus explicite du
+     fournisseur (clé invalide, quota, expéditeur non autorisé).
+3. Carte **« Envoi des e-mails »** (même page) : affiche le canal
+   (`resend` / `smtp`), l'expéditeur réel et le domaine. Le bouton
+   **Envoyer le test** renvoie le verdict exact + l'identifiant du message.
+4. `GET /api/health` → bloc `mail` (`provider`, `configured`, `from`,
+   `domain`, `fromExplicit`) — aucun secret.
+
+Causes fréquentes : `EMAIL_FROM` absent (expédition depuis
+`no-reply@<domaine du site>`, non vérifié chez Resend), domaine sans
+SPF/DKIM, ou adresse du client en spam. Corriger `EMAIL_FROM` avec une
+adresse vérifiée est le remède le plus rapide.
+
 ### Rupture, erreur 4xx, doublon
 
 - `customIdentifier` déjà utilisé : la commande a été achetée lors d'un appel

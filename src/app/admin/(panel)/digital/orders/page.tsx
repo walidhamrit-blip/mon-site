@@ -2,10 +2,12 @@ import Link from "next/link";
 import { ArrowLeft, ShieldCheck, TriangleAlert } from "lucide-react";
 import { listDigitalOrders, type AdminDigitalOrder } from "@/lib/digital-orders";
 import { checkReloadlyCredentials, reloadlyConfigured, reloadlyMaxOrderUsd } from "@/lib/reloadly";
+import { mailDiagnostics } from "@/lib/mailer";
 import {
   DigitalOrdersTable,
   type AdminDigitalOrderRow,
 } from "./digital-orders-table";
+import { MailTestCard } from "./mail-test-card";
 
 export const dynamic = "force-dynamic";
 
@@ -37,6 +39,8 @@ export default async function AdminDigitalOrdersPage() {
     balance: null,
     error: error instanceof Error ? error.message : String(error),
   }));
+
+  const mail = mailDiagnostics();
 
   const toDeliver = orders.filter((order) =>
     ["paid", "manual"].includes(order.normalizedStatus),
@@ -149,6 +153,13 @@ export default async function AdminDigitalOrdersPage() {
         )}
       </section>
 
+      <MailTestCard
+        provider={mail.provider}
+        from={mail.from}
+        fromExplicit={mail.fromExplicit}
+        domain={mail.domain}
+      />
+
       {dbError && (
         <div className="rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-800">
           Base de données inaccessible : {dbError}
@@ -183,6 +194,8 @@ function toRow(order: AdminDigitalOrder): AdminDigitalOrderRow {
     reloadlyStatus: order.reloadlyStatus,
     deliveredAt: order.deliveredAt ? order.deliveredAt.toISOString() : null,
     emailSentAt: order.emailSentAt ? order.emailSentAt.toISOString() : null,
+    emailProviderId: order.emailProviderId,
+    emailLastError: order.emailLastError,
     attempts: order.attempts,
     lastError: order.lastError,
     codes: order.codes,
