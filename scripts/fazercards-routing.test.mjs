@@ -369,3 +369,15 @@ test("le catalogue se rafraîchit après la réponse (after), jamais dedans", ()
   // Le rendu planifie le rafraîchissement ET sert la copie immédiatement.
   assert.match(flat, /scheduleBackgroundRefresh\(ttlMs\); return snapshot\(cache, \{ cached: true, stale: true \}\);/);
 });
+
+test("une synchro réussie invalide le cache des pages du catalogue", () => {
+  const flat = code(catalog);
+  assert.match(flat, /import \{ revalidatePath \} from "next\/cache"/);
+  assert.match(flat, /function revalidateCatalogPages\(\): void/);
+  assert.match(flat, /revalidatePath\("\/codes", "layout"\)/);
+  // Appelée juste après l'écriture de la copie partagée.
+  assert.match(
+    flat,
+    /await writeStoredFazercardsCatalog\(result, fetchedAt\); revalidateCatalogPages\(\);/,
+  );
+});
