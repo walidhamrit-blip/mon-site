@@ -381,3 +381,33 @@ test("une synchro réussie invalide le cache des pages du catalogue", () => {
     /await writeStoredFazercardsCatalog\(result, fetchedAt\); revalidateCatalogPages\(\);/,
   );
 });
+
+test("le catalogue applique le barème dégressif, plus une marge unique", () => {
+  const flat = code(catalog);
+  assert.match(flat, /import \{ marginTierFor, retailPriceForCost \} from "@\/lib\/fazercards-pricing"/);
+  // Les trois familles (top-up, carte cadeau, clé) passent par le barème.
+  assert.equal(
+    (flat.match(/priceUsd: retailPriceForCost\(cost\)\.priceUsd,/g) ?? []).length,
+    3,
+  );
+  assert.doesNotMatch(flat, /DEFAULT_MARGIN/);
+});
+
+test("un paiement sur une chaîne coûteuse est signalé sans être refusé", () => {
+  const flat = code(read("src/app/api/payments/ipn/route.ts"));
+  assert.match(flat, /import \{ isHighCostNetwork \} from "@\/lib\/payment-networks"/);
+  assert.match(flat, /if \(isHighCostNetwork\(payCurrency\)\) \{/);
+  // Le client a payé : on ne refuse jamais, on avertit l'exploitant.
+  const block = flat.slice(
+    flat.indexOf("if (isHighCostNetwork(payCurrency))"),
+    flat.indexOf("const claimed"),
+  );
+  assert.match(block, /console\.warn/);
+  assert.doesNotMatch(block, /NextResponse\.json/);
+});
+
+test("le tunnel d'achat oriente vers les réseaux à frais minimes", () => {
+  const flat = code(read("src/components/digital-buy-dialog.tsx"));
+  assert.match(flat, /recommendedNetworksLabel\(\)/);
+  assert.match(flat, /import \{ recommendedNetworksLabel \} from "@\/lib\/payment-networks"/);
+});

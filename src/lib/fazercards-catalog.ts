@@ -29,6 +29,7 @@ import {
   type FazercardsTopupOffer,
 } from "@/lib/fazercards";
 import { after } from "next/server";
+import { marginTierFor, retailPriceForCost } from "@/lib/fazercards-pricing";
 import { revalidatePath } from "next/cache";
 import {
   readStoredFazercardsCatalog,
@@ -92,7 +93,12 @@ export interface FazercardsSyncResult {
 
 /* ------------------------------ Helpers ------------------------------ */
 
-const DEFAULT_MARGIN = 8; // % net visé par défaut
+/**
+ * Politique de prix : marge dégressive par tranche de coût + plancher de
+ * gain (voir `fazercards-pricing.ts`). À elle seule, une marge unique ne
+ * couvrait pas les frais FIXES (réseau, retrait) sur les petits articles :
+ * ceux-ci se vendaient à perte.
+ */
 // Aucun visuel fourni par FazerCards : la carte affiche ses initiales
 // plutôt qu'une image cassée (le composant gère `image` vide).
 const DEFAULT_IMAGE = "";
@@ -122,6 +128,21 @@ export function isFazercardsProductRef(
   ...values: (string | null | undefined)[]
 ): boolean {
   return values.some((value) => isFazercardsProductSlug(value));
+}
+
+/**
+ * Marge « de référence » d'une fiche : celle de sa tranche la plus basse.
+ * Les montants d'une même fiche peuvent relever de tranches différentes —
+ * ce champ n'est donc qu'un repère d'affichage, jamais un calcul de facture.
+ */
+function productMarginPercent(
+  denominations: { supplierCostUsd: number | null }[],
+): number {
+  const costs = denominations
+    .map((item) => item.supplierCostUsd)
+    .filter((cost): cost is number => cost != null && Number.isFinite(cost) && cost > 0);
+  if (costs.length === 0) return marginTierFor(0).marginPercent;
+  return marginTierFor(Math.min(...costs)).marginPercent;
 }
 
 function toSlug(value: string): string {
@@ -174,7 +195,7 @@ function mapTopupCategory(
       label: offer.name,
       faceValue: `${offer.name}`,
       region: "GLOBAL",
-      priceUsd: cost != null ? Math.round((cost / (1 - DEFAULT_MARGIN / 100)) * 100) / 100 : 0,
+      priceUsd: retailPriceForCost(cost).priceUsd,
       available: true,
       stock: null,
       minOrderQuantity: 1,
@@ -200,7 +221,7 @@ function mapTopupCategory(
     regions: ["GLOBAL"],
     denominations,
     fulfillment: "auto",
-    marginPercent: DEFAULT_MARGIN,
+    marginPercent: productMarginPercent(denominations),
     supplierFeePercent: null,
     supplierDiscountPercent: null,
   };
@@ -218,7 +239,7 @@ function mapGiftCardCategory(
       label: card.name,
       faceValue: card.name,
       region: "GLOBAL",
-      priceUsd: cost != null ? Math.round((cost / (1 - DEFAULT_MARGIN / 100)) * 100) / 100 : 0,
+      priceUsd: retailPriceForCost(cost).priceUsd,
       available: card.stock > 0,
       stock: card.stock ?? null,
       minOrderQuantity: card.min_order_quantity,
@@ -244,7 +265,7 @@ function mapGiftCardCategory(
     regions: ["GLOBAL"],
     denominations,
     fulfillment: "auto",
-    marginPercent: DEFAULT_MARGIN,
+    marginPercent: productMarginPercent(denominations),
     supplierFeePercent: null,
     supplierDiscountPercent: null,
   };
@@ -262,7 +283,7 @@ function mapGameKeyCategory(
       label: sku.name,
       faceValue: sku.name,
       region: cat.region,
-      priceUsd: cost != null ? Math.round((cost / (1 - DEFAULT_MARGIN / 100)) * 100) / 100 : 0,
+      priceUsd: retailPriceForCost(cost).priceUsd,
       available: sku.stock > 0,
       stock: sku.stock ?? null,
       minOrderQuantity: sku.min_order_quantity,
@@ -288,7 +309,7 @@ function mapGameKeyCategory(
     regions: [cat.region],
     denominations,
     fulfillment: "auto",
-    marginPercent: DEFAULT_MARGIN,
+    marginPercent: productMarginPercent(denominations),
     supplierFeePercent: null,
     supplierDiscountPercent: null,
   };
