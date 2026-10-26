@@ -8,9 +8,9 @@ export const siteConfig = {
   // Ces deux champs sont surchargeables depuis /admin (domaine + URL).
   domain: DEFAULT_SITE_DOMAIN,
   url: DEFAULT_SITE_ORIGIN,
-  email: "hello@nukhba.ly",
-  phone: "+218 91 234 5678",
-  whatsapp: "218912345678", // sans +
+  email: `contact@${DEFAULT_SITE_DOMAIN}`,
+  phone: "+218 91 344 2640",
+  whatsapp: "218913442640", // sans +
   address: "شارع الجمهورية، طرابلس، ليبيا",
   addressEn: "Al Jumhouriya Street, Tripoli, Libya",
   hours: "السبت - الخميس: 9:00 - 23:00",
@@ -209,7 +209,7 @@ export const siteConfig = {
   social: {
     instagram: "https://instagram.com/nukhba.ly",
     facebook: "https://facebook.com/nukhba.ly",
-    whatsapp: "https://wa.me/218912345678",
+    whatsapp: "https://wa.me/218913442640",
     tiktok: "https://tiktok.com/@nukhba.ly",
   },
 

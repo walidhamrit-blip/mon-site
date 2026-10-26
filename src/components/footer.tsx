@@ -123,7 +123,8 @@ export function Footer() {
                 { href: "/codes", label: ar ? "الأكواد وبطاقات الهدايا" : "Codes & gift cards" },
                 { href: "/badge", label: ar ? "شارة نخبة" : "Client badge" },
                 { href: "/contact", label: t.nav.contact },
-                { href: "/conditions", label: ar ? "شروط الخدمة" : "Terms of service" },
+                { href: "/conditions", label: ar ? "الشروط العامة للبيع" : "Terms & conditions of sale" },
+                { href: "/remboursement", label: ar ? "سياسة الاسترداد" : "Refund policy" },
               ].map((link) => (
                 <li key={link.href}>
                   <Link href={link.href} className="opacity-75 transition-opacity hover:opacity-100">
@@ -179,6 +180,12 @@ export function Footer() {
                 <Mail className="h-4 w-4 shrink-0 text-[var(--accent)]" />
                 <a href={`mailto:${siteConfig.email}`} dir="ltr" className="opacity-75 hover:opacity-100">
                   {siteConfig.email}
+                </a>
+              </li>
+              <li className="flex items-center gap-2.5">
+                <MessageCircle className="h-4 w-4 shrink-0 text-[var(--accent)]" />
+                <a href={whatsappLink(siteConfig.whatsapp)} target="_blank" rel="noopener noreferrer" className="opacity-75 hover:opacity-100">
+                  WhatsApp <span dir="ltr">{siteConfig.phone}</span>
                 </a>
               </li>
               <li className="flex items-start gap-2.5">

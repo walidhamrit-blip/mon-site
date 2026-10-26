@@ -1,4 +1,7 @@
 "use client";
+
+import { ProfessionalContact } from "@/components/professional-contact";
+import { LegalLinks } from "@/components/legal-links";
 import { useI18n } from "@/lib/i18n";
 import { CTAForm } from "@/components/sections/cta-form";
 import { useSiteConfig } from "@/components/site-provider";
@@ -101,6 +104,8 @@ export function ContactClient() {
               <span className="section-eyebrow">{ar ? "تواصل" : "Contact"}</span>
               <h1 className="section-title">{t.contactPage.title}</h1>
               <p className="section-lead">{t.contactPage.subtitle}</p>
+
+              <div className="mt-6 space-y-4"><ProfessionalContact /><LegalLinks /></div>
 
               <div className="mt-7 grid gap-2.5 sm:grid-cols-2">
                 {details.map(({ icon: Icon, label, ltr }) => (

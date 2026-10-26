@@ -1,7 +1,8 @@
 "use client";
 
 import { useI18n } from "@/lib/i18n";
-import { useSiteConfig } from "@/components/site-provider";
+import { ProfessionalContact } from "@/components/professional-contact";
+import { LegalLinks } from "@/components/legal-links";
 
 interface Section {
   title: string;
@@ -11,8 +12,8 @@ interface Section {
 
 const CONTENT: Record<"ar" | "en", { title: string; updated: string; intro: string; sections: Section[]; contactTitle: string; contactText: string }> = {
   ar: {
-    title: "شروط الخدمة",
-    updated: "آخر تحديث: 24/10/2026",
+    title: "الشروط العامة للبيع والخدمة",
+    updated: "آخر تحديث: 26/10/2026",
     intro:
       "تحدد هذه الشروط الأحكام التي تنظم العلاقة بين نخبة Nukhba Studio («نخبة») وكل عميل يطلب موقعاً إلكترونياً أو يشترك في إحدى باقاتنا عبر هذا الموقع.",
     sections: [
@@ -96,8 +97,8 @@ const CONTENT: Record<"ar" | "en", { title: string; updated: string; intro: stri
     contactText: "للاستفسار عن هذه الشروط راسلنا على البريد الإلكتروني أو عبر واتساب.",
   },
   en: {
-    title: "Terms of Service",
-    updated: "Last updated: October 24, 2026",
+    title: "Terms & conditions of sale",
+    updated: "Last updated: October 26, 2026",
     intro:
       "These terms set out the rules that govern the relationship between Nukhba Studio (\"Nukhba\") and each client who orders a website or subscribes to one of our plans through this site.",
     sections: [
@@ -184,7 +185,6 @@ const CONTENT: Record<"ar" | "en", { title: string; updated: string; intro: stri
 
 export function ConditionsClient() {
   const { locale } = useI18n();
-  const siteConfig = useSiteConfig();
   const ar = locale === "ar";
   const content = CONTENT[ar ? "ar" : "en"];
 
@@ -195,6 +195,8 @@ export function ConditionsClient() {
         <p className="text-sm text-[var(--muted-foreground)]">{content.updated}</p>
         <p className="text-[var(--muted-foreground)] leading-relaxed">{content.intro}</p>
       </header>
+
+      <LegalLinks />
 
       {content.sections.map((section) => (
         <section key={section.title} className="space-y-3">
@@ -217,18 +219,9 @@ export function ConditionsClient() {
       <section className="space-y-3">
         <h2 className="text-xl font-black">{content.contactTitle}</h2>
         <p className="leading-relaxed">{content.contactText}</p>
-        <ul className="space-y-1 text-sm">
-          <li>
-            E-mail: <a href={`mailto:${siteConfig.email}`} dir="ltr" className="underline">{siteConfig.email}</a>
-          </li>
-          <li>
-            {ar ? "الهاتف" : "Phone"}:{" "}
-            <a href={`tel:${siteConfig.phone.replace(/\s/g, "")}`} dir="ltr" className="underline">
-              {siteConfig.phone}
-            </a>
-          </li>
-        </ul>
+
       </section>
+      <ProfessionalContact />
     </article>
   );
 }

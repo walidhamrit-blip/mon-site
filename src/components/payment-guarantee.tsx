@@ -1,4 +1,5 @@
 "use client";
+import { LegalLinks } from "@/components/legal-links";
 import { BadgeCheck, ShieldCheck } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 
@@ -33,11 +34,11 @@ export function PaymentGuarantee({
         className={`flex items-start gap-2.5 rounded-2xl border border-emerald-500/30 bg-emerald-500/10 p-3.5 ${className}`}
       >
         <ShieldCheck className="mt-0.5 h-4.5 w-4.5 flex-shrink-0 text-emerald-400" />
-        <p className="text-xs leading-relaxed text-emerald-300">
+        <div><p className="text-xs leading-relaxed text-emerald-300">
           <strong className="font-black">{title}</strong>
           {" — "}
           {points[0]}
-        </p>
+        </p><div className="mt-3"><LegalLinks /></div></div>
       </div>
     );
   }
@@ -58,6 +59,7 @@ export function PaymentGuarantee({
           </li>
         ))}
       </ul>
+      <div className="mt-3"><LegalLinks /></div>
     </div>
   );
 }
