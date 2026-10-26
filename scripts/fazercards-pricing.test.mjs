@@ -75,20 +75,29 @@ test("le prix applique le pourcentage tant qu'il dépasse le plancher", () => {
 });
 
 test("le plancher de gain prend le dessus sur les petits articles", () => {
+  // Coûts dont « coût + plancher » dépasse à la fois le pourcentage ET le
+  // prix public plancher (1,50 $) : le plancher de gain décide.
   const cases = [
-    { cost: 0.75, price: 1.2 },
-    { cost: 0.87, price: 1.32 },
-    { cost: 1, price: 1.45 },
+    { cost: 1.2, min: 0.45 },
+    { cost: 1.4, min: 0.45 },
   ];
   for (const item of cases) {
     const result = retailPriceForCost(item.cost);
-    assert.equal(result.priceUsd, item.price, `coût ${item.cost}`);
     assert.equal(result.floorApplied, true, `plancher attendu pour ${item.cost}`);
+    assert.equal(
+      result.priceUsd,
+      item.cost === 1.2 ? 1.65 : 1.85,
+      `coût ${item.cost}`,
+    );
     assert.ok(
       result.priceUsd - item.cost >= result.minProfitUsd - 1e-9,
       "le gain doit atteindre le plancher",
     );
+    assert.equal(result.minProfitUsd, item.min);
   }
+  // Sous 1,50 $ de prix calculé, c'est le prix public plancher qui s'applique.
+  assert.equal(retailPriceForCost(0.75).priceUsd, 1.5);
+  assert.equal(retailPriceForCost(1).priceUsd, 1.5);
 });
 
 test("le prix n'est jamais inférieur au coût, ni sous le plancher", () => {
@@ -137,16 +146,23 @@ test("la marge effective dépasse le barème quand le plancher s'applique", () =
   assert.ok(margin >= 9.9 && margin < 10.1, `marge ${margin} hors barème`);
 });
 
-test("les articles sous 2 $ restent au catalogue, à 1,20 $ minimum", () => {
-  assert.equal(MIN_RETAIL_USD, 1.2);
-  // Le plancher de gain fixe le prix des petits articles…
-  assert.equal(retailPriceForCost(0.75).priceUsd, 1.2);
-  // …et aucun prix public ne descend sous 1,20 $, même sur un coût minuscule.
+test("les articles sous 2 $ restent au catalogue, à 1,50 $ minimum", () => {
+  // Aligné sur MIN_CRYPTO_INVOICE_USD : sous ce prix, la commande serait
+  // refusée (below_minimum) et le bouton « Acheter » ne servirait à rien.
+  assert.equal(MIN_RETAIL_USD, 1.5);
+  for (const cost of [0.05, 0.3, 0.5, 0.75, 0.99]) {
+    const { priceUsd } = retailPriceForCost(cost);
+    assert.equal(priceUsd, 1.5, `coût ${cost} → ${priceUsd}, attendu 1,50 $`);
+  }
   for (const cost of [0.05, 0.3, 0.5, 0.75, 0.99, 1.4, 1.9]) {
     const { priceUsd } = retailPriceForCost(cost);
-    assert.ok(priceUsd >= 1.2, `coût ${cost} → ${priceUsd} sous le plancher public`);
+    assert.ok(priceUsd >= 1.5, `coût ${cost} → ${priceUsd} sous le plancher public`);
     assert.ok(priceUsd > cost + 0.4, `coût ${cost} → ${priceUsd} : marge insuffisante`);
   }
+  // Au-delà du plancher public, le barème reprend ses droits.
+  assert.equal(retailPriceForCost(1.4).priceUsd, 1.85);
+  assert.equal(retailPriceForCost(1.9).priceUsd, 2.38);
+  assert.equal(retailPriceForCost(2.4).priceUsd, 3);
 });
 
 /* ------------------------------ Réseaux -------------------------------- */

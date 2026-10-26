@@ -28,8 +28,12 @@
  * (réseau, passerelle, retrait) dévorent le montant, et le client se
  * retrouve à payer surtout des frais. Les articles très bon marché du
  * fournisseur restent donc au catalogue — simplement pas à 0,60 $.
+ *
+ * Cette valeur est ALIGNÉE sur `MIN_CRYPTO_INVOICE_USD` (1,50 $) : un prix
+ * public inférieur au minimum de facture produisait un bouton « Acheter »
+ * qui échouait systématiquement (`below_minimum`).
  */
-export const MIN_RETAIL_USD = 1.2;
+export const MIN_RETAIL_USD = 1.5;
 
 /** Tranche de marge, bornée par le COÛT fournisseur (pas le prix de vente). */
 export interface MarginTier {

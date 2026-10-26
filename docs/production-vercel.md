@@ -553,12 +553,16 @@ Barème en vigueur (`src/lib/fazercards-pricing.ts`) :
 | 20 – 60 $        | 12 %        | 2,50 $        |
 | ≥ 60 $           | 10 %        | —             |
 
-`prix = max(coût / (1 − marge), coût + plancher, 1,20 $)`, arrondi au centime
+`prix = max(coût / (1 − marge), coût + plancher, 1,50 $)`, arrondi au centime
 supérieur : jamais de vente à perte, jamais de prix sous `MIN_RETAIL_USD`.
+
+`MIN_RETAIL_USD = 1,50 $` est **aligné sur `MIN_CRYPTO_INVOICE_USD`** : un
+prix public plus bas que le minimum de facture rendait le bouton « Acheter »
+inopérant (`below_minimum`).
 
 ### Réseaux de paiement
 
-Les frais de réseau sont fixes : sur un article à 1,20 $, un transfert ERC-20
+Les frais de réseau sont fixes : sur un article à 1,50 $, un transfert ERC-20
 ou Bitcoin peut manger toute la marge.
 
 - **À laisser activés** : BEP-20, Solana, TON, Polygon, Arbitrum, Avalanche,
