@@ -197,3 +197,17 @@ test("/api/health expose l'état FazerCards sans le solde", () => {
   assert.ok(block.length > 0, "bloc fazercards introuvable");
   assert.doesNotMatch(block, /balance/, "le solde ne doit pas être exposé");
 });
+
+/* ------------- Garde-fou sandbox/live (codes de test vendus) ------------- */
+
+test("aucune vente automatique quand Reloadly est en sandbox et le paiement réel", () => {
+  const flat = code(digitalOrders);
+  assert.match(flat, /export function reloadlyEnvironmentMismatch\(\): boolean/);
+  assert.match(flat, /if \(nowPaymentsSandbox\(\)\) return false;/);
+  assert.match(flat, /return reloadlyMode\(\) === "sandbox";/);
+  // Caisse : refus AVANT encaissement.
+  assert.match(flat, /reloadlyEnvironmentMismatch\(\)\) \{ console\.error\(/);
+  assert.match(flat, /"supplier_mode_mismatch"/);
+  // Livraison : bascule manuelle, jamais d'achat de code de test.
+  assert.match(flat, /aucun code de test n'a été acheté/);
+});
