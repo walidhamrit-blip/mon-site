@@ -188,7 +188,7 @@ test("/api/health expose l'état FazerCards sans le solde", () => {
   const flat = code(read("src/app/api/health/route.ts"));
   assert.match(flat, /checkFazercardsCredentials\(\{ timeoutMs: 6000 \}\)/);
   assert.match(flat, /fazercards,/);
-  assert.match(flat, /catalog: fazercardsCatalogCacheStatus\(\)/);
+  assert.match(flat, /catalog: await fazercardsCatalogStatusLive\(\)/);
   // Le solde est une donnée financière : jamais dans l'objet renvoyé.
   const block = flat.slice(
     flat.indexOf("const fazercards = {"),
@@ -380,4 +380,16 @@ test("une synchro réussie invalide le cache des pages du catalogue", () => {
     flat,
     /await writeStoredFazercardsCatalog\(result, fetchedAt\); revalidateCatalogPages\(\);/,
   );
+});
+
+test("la santé du catalogue est hydratée depuis la copie partagée", () => {
+  assert.match(
+    code(catalog),
+    /async function hydrateCatalogCache\(\): Promise<void>/,
+  );
+  assert.match(code(catalog), /export async function fazercardsCatalogStatusLive/);
+  const health = code(read("src/app/api/health/route.ts"));
+  assert.match(health, /catalog: await fazercardsCatalogStatusLive\(\)/);
+  // Une instance neuve n'a pas de cache mémoire : le statut brut mentirait.
+  assert.doesNotMatch(health, /catalog: fazercardsCatalogCacheStatus\(\)/);
 });

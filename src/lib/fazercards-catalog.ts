@@ -576,6 +576,25 @@ export function invalidateFazercardsCatalogCache(): void {
 }
 
 /** État du cache — diagnostic admin, sans aucun secret. */
+/**
+ * Même statut, mais hydraté depuis la copie partagée : c'est la seule
+ * version honnête pour `/api/health` (une instance neuve n'a pas de cache
+ * mémoire et annoncerait « 0 produit » alors que la boutique est pleine).
+ */
+export async function fazercardsCatalogStatusLive(): Promise<
+  ReturnType<typeof fazercardsCatalogCacheStatus>
+> {
+  try {
+    await hydrateCatalogCache();
+  } catch (error) {
+    console.warn(
+      "[fazercards][catalogue] hydratation impossible :",
+      error instanceof Error ? error.message : error,
+    );
+  }
+  return fazercardsCatalogCacheStatus();
+}
+
 export function fazercardsCatalogCacheStatus(): {
   cached: boolean;
   products: number;
@@ -697,6 +716,21 @@ function snapshot(
 }
 
 /**
+ * Charge la copie partagée (base) dans le cache mémoire de l'instance.
+ *
+ * Une instance serverless neuve n'a AUCUN cache mémoire : sans cette
+ * hydratation, tout ce qui interroge l'état du catalogue (rendu des pages,
+ * `/api/health`) croirait qu'il n'y a rien, alors que la copie existe.
+ */
+async function hydrateCatalogCache(): Promise<void> {
+  if (catalogCache) return;
+  const stored = await readStoredFazercardsCatalog();
+  if (stored) {
+    catalogCache = { result: stored.result, fetchedAt: stored.fetchedAt };
+  }
+}
+
+/**
  * Catalogue FazerCards, servi depuis le cache quand il est frais.
  *
  * @param options.maxAgeMs  âge maximal accepté sans appel réseau (défaut :
@@ -722,11 +756,8 @@ export async function getFazercardsCatalog(
   // rendu des pages rapide et fiable — une synchro (~123 appels HTTP)
   // dépasserait le temps d'exécution d'une fonction serverless.
   if (!cache) {
-    const stored = await readStoredFazercardsCatalog();
-    if (stored) {
-      catalogCache = { result: stored.result, fetchedAt: stored.fetchedAt };
-      cache = catalogCache;
-    }
+    await hydrateCatalogCache();
+    cache = catalogCache;
   }
 
   if (!options.force && cache) {

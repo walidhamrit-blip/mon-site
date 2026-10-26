@@ -13,7 +13,7 @@ import {
   fazercardsConfigured,
   fazercardsMaxOrderUsd,
 } from "@/lib/fazercards";
-import { fazercardsCatalogCacheStatus } from "@/lib/fazercards-catalog";
+import { fazercardsCatalogStatusLive } from "@/lib/fazercards-catalog";
 import {
   checkNowPaymentsApiKey,
   nowPaymentsApiBase,
@@ -165,7 +165,7 @@ export async function GET() {
     maxOrderUsd: fazercardsMaxOrderUsd(),
     // Cache du catalogue : évite de deviner si la boutique affiche des
     // données fraîches (TTL 10 min par défaut).
-    catalog: fazercardsCatalogCacheStatus(),
+    catalog: await fazercardsCatalogStatusLive(),
     error: fazercardsCheck.error,
   };
 
