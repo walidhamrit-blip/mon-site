@@ -45,6 +45,7 @@ import {
   reloadlyConfigured,
   reloadlyErrorMessage,
   reloadlyMaxOrderUsd,
+  reloadlyMode,
   type GiftCardCode,
 } from "@/lib/reloadly";
 import {
@@ -52,6 +53,7 @@ import {
   getPayment,
   nextOrderStatus,
   nowPaymentsConfigured,
+  nowPaymentsSandbox,
   orderStatusFromIpn,
   validatePaidAmount,
 } from "@/lib/nowpayments";
@@ -146,6 +148,18 @@ export async function createDigitalCheckout(
   const { quote } = quoted;
 
   const fulfillment = effectiveFulfillment(product);
+  if (fulfillment === "auto" && reloadlyEnvironmentMismatch()) {
+    // Refus AVANT encaissement : mieux vaut ne rien vendre que livrer un
+    // code de test à un client qui a payé en crypto réelle.
+    console.error(
+      "[digital][checkout] refuse : NOWPayments en production mais Reloadly en mode sandbox (RELOADLY_SANDBOX absent ou =true)",
+    );
+    throw new DigitalOrderError(
+      "supplier_mode_mismatch",
+      503,
+      "Vente momentanément indisponible en ligne pour ce code. Contactez-nous sur WhatsApp : nous vous le fournissons manuellement.",
+    );
+  }
   if (fulfillment === "auto" && !reloadlyConfigured()) {
     // Le produit est censé être livré automatiquement mais aucun
     // identifiant Reloadly n'est présent sur le serveur : on refuse la
@@ -330,6 +344,21 @@ export function digitalOrderSupplier(order: {
   return isFazercardsProductRef(order.productSlug, order.productId)
     ? "fazercards"
     : "reloadly";
+}
+
+/**
+ * Mélange d'environnements chez Reloadly : les clients paient en RÉEL
+ * (NOWPayments production) alors que Reloadly émettrait des codes de TEST.
+ *
+ * Un tel achat livre un code factice à un client qui a payé : remboursement,
+ * réclamation, perte de confiance. On refuse donc la vente automatique
+ * (et on bascule les livraisons en cours en manuel) tant que l'appariement
+ * n'est pas corrigé (`RELOADLY_SANDBOX=false` + identifiants LIVE).
+ */
+export function reloadlyEnvironmentMismatch(): boolean {
+  if (!reloadlyConfigured()) return false;
+  if (nowPaymentsSandbox()) return false;
+  return reloadlyMode() === "sandbox";
 }
 
 async function loadDigitalOrder(idOrRef: number | string): Promise<DigitalOrder | null> {
@@ -517,6 +546,13 @@ export async function deliverPaidDigitalOrder(
   }
 
   const requiresAuto = order.fulfillment === "auto";
+  if (requiresAuto && reloadlyEnvironmentMismatch()) {
+    // Ne JAMAIS acheter un code de test pour une commande payée en vrai.
+    return flagManual(
+      order,
+      "Reloadly est en mode SANDBOX alors que les paiements sont réels : aucun code de test n'a été acheté. Configurez RELOADLY_SANDBOX=false avec des identifiants LIVE, puis relancez la livraison.",
+    );
+  }
   if (!requiresAuto || !reloadlyConfigured()) {
     return flagManual(
       order,
