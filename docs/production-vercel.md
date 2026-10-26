@@ -110,7 +110,7 @@ fonctionne normalement.
 | `FAZERCARDS_MAX_ORDER_USD` | `300` | Au-delà, la commande bascule en livraison manuelle (aucun débit automatique) |
 | `FAZERCARDS_CATALOG_TTL_SECONDS` | `600` | Fraîcheur du catalogue en cache (prix / stock). `0` = cache désactivé |
 | `FAZERCARDS_CATALOG_MAX_STALE_MINUTES` | `60` | Âge maximal d'un catalogue périmé encore servi si le fournisseur est en panne |
-| `FAZERCARDS_WEBHOOK_SECRET` | vide | À remplir seulement si un webhook de statut est déclaré dans le hub revendeur |
+| `FAZERCARDS_WEBHOOK_SECRET` | **ne pas créer** | Vercel refuse une valeur vide. Cette variable n'est utile que le jour où un webhook de statut est déclaré dans le hub revendeur. Absente, elle n'a aucun effet |
 
 Le plafond `FAZERCARDS_MAX_ORDER_USD` est un **garde-fou de dépense** : il
 se juge sur le montant payé par le client, pas sur le solde du compte.
