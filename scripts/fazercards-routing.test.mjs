@@ -343,16 +343,29 @@ test("le rendu des pages ne synchronise jamais (sinon timeout -> 500)", () => {
     "la vitrine doit lire la copie persistée",
   );
   const flat = code(catalog);
-  // noSync sert la copie périmée au lieu de rafraîchir…
-  assert.match(flat, /if \(options\.noSync\) \{ return snapshot\(cache, \{ cached: true, stale: true \}\); \}/);
+  // noSync sert la copie périmée immédiatement, en planifiant le
+  // rafraîchissement APRÈS la réponse (jamais pendant).
+  assert.match(flat, /if \(options\.noSync\) \{ scheduleBackgroundRefresh\(ttlMs\); return snapshot\(cache, \{ cached: true, stale: true \}\); \}/);
   // …et échoue proprement s'il n'y a aucune copie (repli catalogue historique).
   assert.match(flat, /Catalogue FazerCards indisponible \(aucune copie en cache\)/);
 });
 
-test("un cron rafraîchit le catalogue toutes les 10 minutes", () => {
+test("le cron reste compatible avec le plan Hobby (une fois par jour)", () => {
   assert.match(code(cronRoute), /export const maxDuration = 60;/);
   assert.match(code(cronRoute), /getFazercardsCatalog\(\{ force: true \}\)/);
   assert.match(code(cronRoute), /CRON_SECRET/);
   assert.match(vercelJson, /"path": "\/api\/cron\/fazercards-catalog"/);
-  assert.match(vercelJson, /"\*\/10 \* \* \* \*"/);
+  // ⚠️ Un cron plus fréquent qu'une fois par jour fait ÉCHOUER le déploiement
+  // Vercel sur le plan Hobby (constaté : build rejeté avec *\/10).
+  assert.match(vercelJson, /"0 4 \* \* \*"/);
+  assert.doesNotMatch(vercelJson, /"\*\/10 /);
+});
+
+test("le catalogue se rafraîchit après la réponse (after), jamais dedans", () => {
+  const flat = code(catalog);
+  assert.match(flat, /import \{ after \} from "next\/server"/);
+  assert.match(flat, /function scheduleBackgroundRefresh\(ttlMs: number\): void/);
+  assert.match(flat, /after\(async \(\) => \{/);
+  // Le rendu planifie le rafraîchissement ET sert la copie immédiatement.
+  assert.match(flat, /scheduleBackgroundRefresh\(ttlMs\); return snapshot\(cache, \{ cached: true, stale: true \}\);/);
 });

@@ -28,6 +28,7 @@ import {
   type FazercardsTopupCategory,
   type FazercardsTopupOffer,
 } from "@/lib/fazercards";
+import { after } from "next/server";
 import {
   readStoredFazercardsCatalog,
   writeStoredFazercardsCatalog,
@@ -565,6 +566,8 @@ interface CatalogCacheEntry {
 
 let catalogCache: CatalogCacheEntry | null = null;
 let catalogInflight: Promise<FazercardsSyncResult> | null = null;
+/** Horodatage de la dernière tentative de rafraîchissement d'arrière-plan. */
+let lastRefreshAttempt = 0;
 
 /** Vide le cache (après un changement de clé API ou une synchro admin). */
 export function invalidateFazercardsCatalogCache(): void {
@@ -622,6 +625,40 @@ function refreshFazercardsCatalog(): Promise<FazercardsSyncResult> {
   return catalogInflight;
 }
 
+/**
+ * Planifie une synchronisation APRÈS la réponse HTTP.
+ *
+ * Le plan Vercel Hobby n'autorise qu'un cron par jour : sans cela, les prix
+ * et le stock resteraient figés jusqu'au lendemain. `after()` exécute la
+ * tâche dans la même invocation, une fois la réponse envoyée — l'utilisateur
+ * n'attend jamais la synchronisation.
+ *
+ * Best effort : hors contexte de requête Next (script, test), `after` lève —
+ * on ignore simplement.
+ */
+function scheduleBackgroundRefresh(ttlMs: number): void {
+  // Ne pas relancer une synchro déjà en cours, ni insister à chaque requête
+  // (une page très visitée ne doit pas déclencher une synchro par visite) :
+  // au plus une tentative toutes les demi-périodes de cache.
+  if (catalogInflight) return;
+  if (Date.now() - lastRefreshAttempt < ttlMs / 2) return;
+  lastRefreshAttempt = Date.now();
+  try {
+    after(async () => {
+      try {
+        await refreshFazercardsCatalog();
+      } catch (error) {
+        console.warn(
+          "[fazercards][catalogue] rafraîchissement d'arrière-plan impossible :",
+          error instanceof Error ? error.message : error,
+        );
+      }
+    });
+  } catch {
+    // Hors requête Next : le cron quotidien prendra le relais.
+  }
+}
+
 function snapshot(
   entry: CatalogCacheEntry,
   meta: { cached: boolean; stale: boolean },
@@ -674,9 +711,12 @@ export async function getFazercardsCatalog(
       return snapshot(cache, { cached: true, stale: false });
     }
 
-    // Rendu de page : on sert la copie existante et on laisse le cron la
-    // rafraîchir. Synchroniser ici ferait expirer la requête.
+    // Rendu de page : on sert TOUT DE SUITE la copie existante, puis on
+    // planifie le rafraîchissement APRÈS l'envoi de la réponse (`after`).
+    // Synchroniser ici ferait expirer la requête ; ne rien planifier
+    // figerait le catalogue entre deux crons (une fois par jour sur Hobby).
     if (options.noSync) {
+      scheduleBackgroundRefresh(ttlMs);
       return snapshot(cache, { cached: true, stale: true });
     }
 
