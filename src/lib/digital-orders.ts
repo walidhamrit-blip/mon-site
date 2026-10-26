@@ -3,13 +3,15 @@
 // Flux complet :
 //   1. le client choisit un code (catalogue `/codes`) et le paie en crypto
 //      (facture hébergée NOWPayments) ;
-//   2. l'IPN confirme le paiement → `deliverPaidDigitalOrder` achète le
-//      code chez Reloadly avec le solde du compte marchand ;
+//   2. l'IPN confirme le paiement → `deliverPaidDigitalOrder` route la
+//      commande vers son fournisseur : FazerCards pour les produits du
+//      catalogue FazerCards (`fzr-…`), Reloadly pour les fiches reliées à
+//      un produit Reloadly ;
 //   3. le code reçu est chiffré en base puis envoyé par e-mail au client,
 //      et consultable sur `/codes/commande` (référence + jeton).
 //
 // Aucun stock n'est acheté à l'avance : on achète uniquement après
-// encaissement. Toute condition non remplie (Reloadly non configuré,
+// encaissement. Toute condition non remplie (fournisseur non configuré,
 // produit non relié, plafond dépassé, échec fournisseur) bascule la
 // commande en livraison MANUELLE et notifie l'agence — jamais d'achat
 // silencieux.
@@ -49,6 +51,9 @@ import { createTrackingToken, newOrderReference, trackingAccess } from "@/lib/or
 import { siteBaseUrl } from "@/lib/site-url";
 import { getSiteData } from "@/lib/store";
 import { sendDigitalCodesEmail, sendDigitalManualNotice } from "@/lib/digital-emails";
+import { recordDigitalEmailOutcome } from "@/lib/digital-email-log";
+import { isFazercardsProductRef } from "@/lib/fazercards-catalog";
+import { deliverPaidFazercardsOrder } from "@/lib/fazercards-orders";
 
 
 /* Ré-exports : les consommateurs serveur (admin, routes) importent tout
@@ -65,37 +70,6 @@ export {
 } from "@/lib/digital-order-core";
 export type { DigitalOrderStatus, DigitalQuote } from "@/lib/digital-order-core";
 export { digitalCodesKey, encryptDigitalCodes, decryptDigitalCodes } from "@/lib/digital-codes";
-
-/* --------------------------- Suivi des e-mails ---------------------------- */
-
-/**
- * Enregistre le verdict RÉEL du fournisseur pour l'e-mail des codes.
- *
- * Un « envoyé » sans identifiant de message ni motif d'échec est
- * indiagnosticable : c'est exactement ce qui rendait invisible un e-mail
- * accepté mais jamais remis (domaine non vérifié, SPF/DKIM absents, spam).
- */
-async function recordEmailOutcome(
-  orderId: number,
-  result: { ok: boolean; provider?: string; id?: string; error?: string },
-): Promise<void> {
-  const patch = result.ok
-    ? { emailSentAt: new Date(), emailProviderId: result.id ?? null, emailLastError: null }
-    : {
-        emailLastError: `${result.provider ?? "mail"} : ${result.error ?? "échec inconnu"}`.slice(0, 500),
-      };
-  try {
-    await db.update(digitalOrders).set(patch).where(eq(digitalOrders.id, orderId));
-  } catch (error) {
-    console.warn(
-      "[digital] suivi e-mail non enregistré :",
-      error instanceof Error ? error.message : error,
-    );
-  }
-  if (!result.ok) {
-    console.warn("[digital] e-mail codes non envoyé :", result.error);
-  }
-}
 
 /* ------------------------ Valeur faciale vs Reloadly ---------------------- */
 
@@ -327,6 +301,28 @@ export interface DigitalDeliveryResult {
   message?: string;
 }
 
+/** Fournisseur qui doit livrer une commande digitale. */
+export type DigitalSupplier = "fazercards" | "reloadly";
+
+/**
+ * Détermine le fournisseur d'une commande.
+ *
+ * FazerCards et Reloadly partagent la même table `digitalOrders` (aucune
+ * colonne « fournisseur » n'a été ajoutée au schéma) : l'appartenance se
+ * lit sur le slug produit, que le checkout FazerCards enregistre avec le
+ * préfixe `fzr-topup-` / `fzr-giftcard-` / `fzr-gamekey-`. Les commandes
+ * antérieures (Reloadly) n'ont pas ce préfixe et restent livrées comme
+ * avant.
+ */
+export function digitalOrderSupplier(order: {
+  productSlug?: string | null;
+  productId?: string | null;
+}): DigitalSupplier {
+  return isFazercardsProductRef(order.productSlug, order.productId)
+    ? "fazercards"
+    : "reloadly";
+}
+
 async function loadDigitalOrder(idOrRef: number | string): Promise<DigitalOrder | null> {
   await ensureSchema();
   const rows = await db
@@ -475,6 +471,19 @@ export async function deliverPaidDigitalOrder(
   if (loaded.status === "delivered") {
     return { outcome: "already_delivered", ref: loaded.ref };
   }
+
+  // Routage fournisseur : une commande créée depuis le catalogue FazerCards
+  // est achetée chez FazerCards (Idempotency-Key = référence de commande).
+  // Les commandes Reloadly historiques continuent sur le flux ci-dessous.
+  if (digitalOrderSupplier(loaded) === "fazercards") {
+    const routed = await deliverPaidFazercardsOrder(loaded.id);
+    return {
+      outcome: routed.outcome,
+      ref: routed.ref,
+      ...(routed.message ? { message: routed.message } : {}),
+    };
+  }
+
   // Garde-fou absolu : jamais d'achat sans paiement confirmé, même forcé.
   const payment = await db
     .select({ status: orders.status })
@@ -645,7 +654,7 @@ export async function deliverPaidDigitalOrder(
         config.url,
         config.email,
       );
-      await recordEmailOutcome(order.id, email);
+      await recordDigitalEmailOutcome(order.id, email);
     } catch (error) {
       console.warn(
         "[digital] e-mail codes impossible :",
@@ -854,7 +863,7 @@ export async function deliverDigitalOrderManually(
       config.url,
       config.email,
     );
-    await recordEmailOutcome(order.id, email);
+    await recordDigitalEmailOutcome(order.id, email);
     if (!email.ok) emailError = email.error ?? "e-mail non envoyé";
   } catch (error) {
     emailError = error instanceof Error ? error.message : String(error);
@@ -876,6 +885,6 @@ export async function resendDigitalCodesEmail(ref: string): Promise<{ ok: boolea
 
   const { config } = await getSiteData();
   const result = await sendDigitalCodesEmail(order, codes, config.name, config.url, config.email);
-  await recordEmailOutcome(order.id, result);
+  await recordDigitalEmailOutcome(order.id, result);
   return { ok: result.ok, error: result.error };
 }

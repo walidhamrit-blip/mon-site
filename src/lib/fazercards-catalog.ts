@@ -1,0 +1,617 @@
+// Adaptateur catalogue FazerCards → DigitalProduct.
+//
+// FazerCards expose des catégories avec des offres (offers / cards / keys) :
+//   GET /topups          → catégories (category_id)
+//   GET /topups/offers   → offres (offer_id, price_usd, fields dynamiques)
+//   GET /giftcards       → catégories (category_id)
+//   GET /giftcards/cards → offres (card_id, price_usd, stock, qty min/max)
+//   GET /gamekeys        → catégories (game_id)
+//   GET /gamekeys/keys   → offres (key_id, price_usd, stock)
+//
+// Cet adaptateur récupère le catalogue FazerCards et le transforme en
+// DigitalProduct / DigitalDenomination pour affichage sur `/codes`, puis
+// permet de passer commande chez FazerCards via fazercards.ts.
+//
+// Aucun appel réseau côté client : tout passe par ce module serveur.
+
+import {
+  fazercardsGameKeys,
+  fazercardsGameKeyKeys,
+  fazercardsGiftCardCards,
+  fazercardsGiftCards,
+  fazercardsTopups,
+  fazercardsTopupOffers,
+  type FazercardsGameKeyCategory,
+  type FazercardsGameKeySku,
+  type FazercardsGiftCardCategory,
+  type FazercardsGiftCardOffer,
+  type FazercardsTopupCategory,
+  type FazercardsTopupOffer,
+} from "@/lib/fazercards";
+import {
+  DIGITAL_KINDS,
+  type DigitalDenomination,
+  type DigitalProduct,
+} from "@/lib/digital-types";
+
+/* --------------------------------- Types --------------------------------- */
+
+/** Produit FazerCards plat, prêt à l'affichage et à la commande. */
+export interface FazercardsProduct {
+  id: string; // identifiant stable (slug-friendly)
+  slug: string;
+  kind: (typeof DIGITAL_KINDS)[number];
+  platform: string;
+  categoryId: string; // category_id / game_id FazerCards
+  countryCode: string;
+  titleAr: string;
+  titleEn: string;
+  descriptionAr: string;
+  descriptionEn: string;
+  image: string;
+  regions: string[];
+  denominations: FazercardsDenomination[];
+  /** Mode de livraison effectif (toujours « auto » chez FazerCards si la clé est configurée). */
+  fulfillment: "auto" | "manual";
+  marginPercent: number | null;
+  supplierFeePercent: number | null;
+  supplierDiscountPercent: number | null;
+}
+
+/** Dénomination FazerCards (une offre / carte / clé). */
+export interface FazercardsDenomination {
+  id: string; // offer_id / card_id / key_id
+  label: string;
+  faceValue: string; // ex. « 10 USD », « 60 UC », « 500 TRY »
+  region: string;
+  priceUsd: number; // prix de vente calculé (coût + marge)
+  available: boolean;
+  stock: number | null;
+  minOrderQuantity: number;
+  maxOrderQuantity: number;
+  /** Identifiant fournisseur à transmettre à l'achat (offer_id / card_id / key_id). */
+  supplierOfferId: string;
+  /** Prix fournisseur brut (price_usd de FazerCards, en USD). */
+  supplierCostUsd: number | null;
+  /** Champs acheteur dynamiques (top-ups : player_id, …). */
+  fields: { key: string; label: string; type: string }[];
+}
+
+/** Résultat de synchronisation. */
+export interface FazercardsSyncResult {
+  products: FazercardsProduct[];
+  total: number;
+  errors: string[];
+}
+
+/* ------------------------------ Helpers ------------------------------ */
+
+const DEFAULT_MARGIN = 8; // % net visé par défaut
+const DEFAULT_IMAGE = "/images/digital/placeholder.png";
+
+/**
+ * Préfixes de slug des produits servis par FazerCards. Ils constituent le
+ * marqueur fiable d'appartenance à ce fournisseur : le checkout FazerCards
+ * enregistre le slug du produit dans `digitalOrders.productSlug`, et c'est
+ * ce préfixe qui permet à la livraison (IPN, admin) de router la commande
+ * vers le bon fournisseur sans modifier le schéma de la base.
+ */
+export const FAZERCARDS_SLUG_PREFIXES = [
+  "fzr-topup-",
+  "fzr-giftcard-",
+  "fzr-gamekey-",
+] as const;
+
+/** Vrai si le slug / identifiant de produit provient de FazerCards. */
+export function isFazercardsProductSlug(value: string | null | undefined): boolean {
+  const slug = (value ?? "").trim().toLowerCase();
+  if (!slug) return false;
+  return FAZERCARDS_SLUG_PREFIXES.some((prefix) => slug.startsWith(prefix));
+}
+
+/** Vrai si l'une des valeurs fournies (slug, id) désigne un produit FazerCards. */
+export function isFazercardsProductRef(
+  ...values: (string | null | undefined)[]
+): boolean {
+  return values.some((value) => isFazercardsProductSlug(value));
+}
+
+function toSlug(value: string): string {
+  return value
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 80);
+}
+
+function toPriceUsd(value: string | null | undefined): number | null {
+  if (value == null) return null;
+  const parsed = Number(value);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
+}
+
+function titleFor(kind: string, name: string, locale: "ar" | "en"): string {
+  const labels: Record<string, { ar: string; en: string }> = {
+    topup: { ar: "شحن لعبة", en: "Game Top-Up" },
+    gift_card: { ar: "بطاقة هدايا", en: "Gift Card" },
+    game_key: { ar: "مفتاح لعبة", en: "Game Key" },
+  };
+  const base = labels[kind] ?? { ar: "منتج رقمي", en: "Digital Product" };
+  return `${base[locale]} — ${name}`;
+}
+
+/* ------------------------------ Mappers ------------------------------ */
+
+/** Transforme une catégorie + offres top-up en FazercardsProduct. */
+function mapTopupCategory(
+  cat: FazercardsTopupCategory,
+  offers: FazercardsTopupOffer[],
+  fields: { key: string; label: string; type: string }[],
+): FazercardsProduct {
+  const denominations: FazercardsDenomination[] = offers.map((offer) => {
+    const cost = toPriceUsd(offer.price_usd);
+    return {
+      id: offer.offer_id,
+      label: offer.name,
+      faceValue: `${offer.name}`,
+      region: "GLOBAL",
+      priceUsd: cost != null ? Math.round((cost / (1 - DEFAULT_MARGIN / 100)) * 100) / 100 : 0,
+      available: true,
+      stock: null,
+      minOrderQuantity: 1,
+      maxOrderQuantity: 10,
+      supplierOfferId: offer.offer_id,
+      supplierCostUsd: cost,
+      fields,
+    };
+  });
+
+  return {
+    id: `fzr-topup-${cat.category_id}`,
+    slug: `fzr-topup-${toSlug(cat.name)}`,
+    kind: "game_topup",
+    platform: cat.name,
+    categoryId: cat.category_id,
+    countryCode: "GLOBAL",
+    titleAr: titleFor("game_topup", cat.name, "ar"),
+    titleEn: titleFor("game_topup", cat.name, "en"),
+    descriptionAr: `شحن رصيد لعبة ${cat.name} عبر FazerCards — تسليم فوري.`,
+    descriptionEn: `Top-up for ${cat.name} via FazerCards — instant delivery.`,
+    image: DEFAULT_IMAGE,
+    regions: ["GLOBAL"],
+    denominations,
+    fulfillment: "auto",
+    marginPercent: DEFAULT_MARGIN,
+    supplierFeePercent: null,
+    supplierDiscountPercent: null,
+  };
+}
+
+/** Transforme une catégorie + offres carte cadeau en FazercardsProduct. */
+function mapGiftCardCategory(
+  cat: FazercardsGiftCardCategory,
+  cards: FazercardsGiftCardOffer[],
+): FazercardsProduct {
+  const denominations: FazercardsDenomination[] = cards.map((card) => {
+    const cost = toPriceUsd(card.price_usd);
+    return {
+      id: card.card_id,
+      label: card.name,
+      faceValue: card.name,
+      region: "GLOBAL",
+      priceUsd: cost != null ? Math.round((cost / (1 - DEFAULT_MARGIN / 100)) * 100) / 100 : 0,
+      available: card.stock > 0,
+      stock: card.stock ?? null,
+      minOrderQuantity: card.min_order_quantity,
+      maxOrderQuantity: card.max_order_quantity,
+      supplierOfferId: card.card_id,
+      supplierCostUsd: cost,
+      fields: [],
+    };
+  });
+
+  return {
+    id: `fzr-giftcard-${cat.category_id}`,
+    slug: `fzr-giftcard-${toSlug(cat.name)}`,
+    kind: "gift_card",
+    platform: cat.name,
+    categoryId: cat.category_id,
+    countryCode: "GLOBAL",
+    titleAr: titleFor("gift_card", cat.name, "ar"),
+    titleEn: titleFor("gift_card", cat.name, "en"),
+    descriptionAr: `بطاقة هدايا ${cat.name} عبر FazerCards — تسليم فوري.`,
+    descriptionEn: `${cat.name} gift card via FazerCards — instant delivery.`,
+    image: DEFAULT_IMAGE,
+    regions: ["GLOBAL"],
+    denominations,
+    fulfillment: "auto",
+    marginPercent: DEFAULT_MARGIN,
+    supplierFeePercent: null,
+    supplierDiscountPercent: null,
+  };
+}
+
+/** Transforme une catégorie + clés de jeu en FazercardsProduct. */
+function mapGameKeyCategory(
+  cat: FazercardsGameKeyCategory,
+  skus: FazercardsGameKeySku[],
+): FazercardsProduct {
+  const denominations: FazercardsDenomination[] = skus.map((sku) => {
+    const cost = toPriceUsd(sku.price_usd);
+    return {
+      id: sku.key_id,
+      label: sku.name,
+      faceValue: sku.name,
+      region: cat.region,
+      priceUsd: cost != null ? Math.round((cost / (1 - DEFAULT_MARGIN / 100)) * 100) / 100 : 0,
+      available: sku.stock > 0,
+      stock: sku.stock ?? null,
+      minOrderQuantity: sku.min_order_quantity,
+      maxOrderQuantity: sku.max_order_quantity,
+      supplierOfferId: sku.key_id,
+      supplierCostUsd: cost,
+      fields: [],
+    };
+  });
+
+  return {
+    id: `fzr-gamekey-${cat.game_id}`,
+    slug: `fzr-gamekey-${toSlug(cat.name)}`,
+    kind: "software_key",
+    platform: cat.platform,
+    categoryId: cat.game_id,
+    countryCode: cat.region,
+    titleAr: titleFor("software_key", cat.name, "ar"),
+    titleEn: titleFor("software_key", cat.name, "en"),
+    descriptionAr: `مفتاح تفعيل ${cat.name} (${cat.region}) via FazerCards.`,
+    descriptionEn: `Activation key for ${cat.name} (${cat.region}) via FazerCards.`,
+    image: DEFAULT_IMAGE,
+    regions: [cat.region],
+    denominations,
+    fulfillment: "auto",
+    marginPercent: DEFAULT_MARGIN,
+    supplierFeePercent: null,
+    supplierDiscountPercent: null,
+  };
+}
+
+/* ------------------------------ Synchronisation ------------------------------ */
+
+/**
+ * Récupère le catalogue FazerCards (top-ups, cartes cadeaux, clés jeux)
+ * et le convertit en produits FazercardsProduct prêts à l'affichage.
+ *
+ * Cette fonction ne touche pas à la base de données : elle sert de source
+ * de vérité pour l'affichage et la commande chez FazerCards.
+ */
+export async function syncFazercardsCatalog(): Promise<FazercardsSyncResult> {
+  const products: FazercardsProduct[] = [];
+  const errors: string[] = [];
+
+  // ---------- Top-ups (recharges de jeux) ----------
+  try {
+    const topups = await fazercardsTopups(100);
+    for (const cat of topups.items) {
+      try {
+        const offers = await fazercardsTopupOffers(cat.category_id);
+        // Récupère les champs acheteurs dynamiques depuis le premier offre
+        // (ils sont identiques pour toute la catégorie chez FazerCards).
+        const fields: { key: string; label: string; type: string }[] = offers.fields.map((f) => ({
+          key: f.key,
+          label: f.label,
+          type: f.type,
+        }));
+        products.push(mapTopupCategory(cat, offers.offers, fields));
+      } catch (error) {
+        errors.push(`topup ${cat.category_id}: ${error instanceof Error ? error.message : String(error)}`);
+      }
+    }
+  } catch (error) {
+    errors.push(`topups list: ${error instanceof Error ? error.message : String(error)}`);
+  }
+
+  // ---------- Cartes cadeaux ----------
+  try {
+    const giftcards = await fazercardsGiftCards(100);
+    for (const cat of giftcards.items) {
+      try {
+        const cards = await fazercardsGiftCardCards(cat.category_id);
+        products.push(mapGiftCardCategory(cat, cards.offers));
+      } catch (error) {
+        errors.push(`giftcard ${cat.category_id}: ${error instanceof Error ? error.message : String(error)}`);
+      }
+    }
+  } catch (error) {
+    errors.push(`giftcards list: ${error instanceof Error ? error.message : String(error)}`);
+  }
+
+  // ---------- Clés de jeux ----------
+  try {
+    const gamekeys = await fazercardsGameKeys(100);
+    for (const cat of gamekeys.items) {
+      try {
+        const skus = await fazercardsGameKeyKeys(cat.game_id);
+        products.push(mapGameKeyCategory(cat, skus.keys));
+      } catch (error) {
+        errors.push(`gamekey ${cat.game_id}: ${error instanceof Error ? error.message : String(error)}`);
+      }
+    }
+  } catch (error) {
+    errors.push(`gamekeys list: ${error instanceof Error ? error.message : String(error)}`);
+  }
+
+  return {
+    products,
+    total: products.length,
+    errors,
+  };
+}
+
+/** Recherche un produit FazerCards par slug (après synchronisation). */
+export function findFazercardsProduct(
+  products: FazercardsProduct[],
+  slug: string,
+): FazercardsProduct | null {
+  return products.find((p) => p.slug === slug) ?? null;
+}
+
+/** Recherche une dénomination FazerCards par identifiant d'offre. */
+export function findFazercardsDenomination(
+  product: FazercardsProduct,
+  denominationId: string,
+): FazercardsDenomination | null {
+  return product.denominations.find((d) => d.id === denominationId) ?? null;
+}
+
+/* ------------------------------ Devis serveur ------------------------------ */
+
+/**
+ * Calcule un devis serveur pour une commande FazerCards.
+ * Le navigateur ne transmet que l'identifiant de produit et la quantité ;
+ * le prix vient du catalogue FazerCards (coût fournisseur + marge).
+ */
+export interface FazercardsQuote {
+  denominationId: string;
+  label: string;
+  faceValue: string;
+  region: string;
+  quantity: number;
+  unitPriceUsd: number;
+  totalUsd: number;
+  supplierCostUsd: number | null;
+  supplierOfferId: string;
+  fields: { key: string; label: string; type: string }[];
+  categoryId: string;
+}
+
+export type FazercardsQuoteResult =
+  | { ok: true; quote: FazercardsQuote }
+  | { ok: false; error: string; message: string };
+
+export function quoteFazercardsOrder(
+  product: FazercardsProduct | null,
+  denominationId: string,
+  quantityInput: unknown,
+): FazercardsQuoteResult {
+  if (!product) {
+    return { ok: false, error: "product_not_found", message: "Produit introuvable." };
+  }
+  if (product.fulfillment !== "auto" && product.fulfillment !== "manual") {
+    return {
+      ok: false,
+      error: "product_not_sellable",
+      message: "Ce produit n'est pas encore en vente.",
+    };
+  }
+
+  const denomination = product.denominations.find((item) => item.id === String(denominationId));
+  if (!denomination) {
+    return { ok: false, error: "denomination_not_found", message: "Montant introuvable pour ce produit." };
+  }
+  if (!denomination.available) {
+    return { ok: false, error: "denomination_not_sellable", message: "Ce montant n'est plus disponible." };
+  }
+
+  const quantity = Number(quantityInput ?? 1);
+  if (!Number.isInteger(quantity) || quantity < 1 || quantity > denomination.maxOrderQuantity) {
+    return {
+      ok: false,
+      error: "invalid_quantity",
+      message: `Quantité invalide (1 à ${denomination.maxOrderQuantity}).`,
+    };
+  }
+
+  const unitPriceUsd = Math.round(denomination.priceUsd * 100) / 100;
+  if (!Number.isFinite(unitPriceUsd) || unitPriceUsd <= 0) {
+    return { ok: false, error: "invalid_price", message: "Prix du produit non configuré." };
+  }
+
+  return {
+    ok: true,
+    quote: {
+      denominationId: denomination.id,
+      label: denomination.label,
+      faceValue: denomination.faceValue,
+      region: denomination.region,
+      quantity,
+      unitPriceUsd,
+      totalUsd: Math.round(unitPriceUsd * quantity * 100) / 100,
+      supplierCostUsd: denomination.supplierCostUsd,
+      supplierOfferId: denomination.supplierOfferId,
+      fields: denomination.fields,
+      categoryId: product.categoryId,
+    },
+  };
+}
+
+/* ------------------------------ Cache catalogue --------------------------- */
+
+/**
+ * Le catalogue FazerCards coûte UN appel par catégorie (top-ups, cartes,
+ * clés) : plusieurs dizaines de requêtes HTTP. Le refaire à chaque
+ * consultation de `/codes` ou à chaque checkout serait lent (plusieurs
+ * secondes), fragile (un 429 sur une catégorie suffit à dégrader la vente)
+ * et inutile — les prix et le stock ne bougent pas à la seconde.
+ *
+ * Ce cache mémoire (par instance du serveur) :
+ *   • sert un catalogue frais sans aucun appel réseau tant qu'il a moins de
+ *     `FAZERCARDS_CATALOG_TTL_SECONDS` (600 s / 10 min par défaut) ;
+ *   • ne lance JAMAIS deux synchronisations en parallèle : les requêtes
+ *     concurrentes (plusieurs visiteurs, IPN) partagent la même promesse ;
+ *   • continue de servir le dernier catalogue connu si le rafraîchissement
+ *     échoue (panne fournisseur, 429), jusqu'à `FAZERCARDS_CATALOG_MAX_STALE_MINUTES`
+ *     (60 min par défaut) — mieux vaut vendre au prix d'il y a 20 minutes
+ *     que refuser la vente ;
+ *   • n'écrase jamais un catalogue valide par une synchronisation vide
+ *     (clé API absente, panne totale).
+ */
+
+const DEFAULT_CATALOG_TTL_SECONDS = 600;
+const DEFAULT_CATALOG_MAX_STALE_MINUTES = 60;
+
+/** Durée de fraîcheur du catalogue, en millisecondes. */
+export function fazercardsCatalogTtlMs(): number {
+  const raw = Number(process.env.FAZERCARDS_CATALOG_TTL_SECONDS);
+  const seconds =
+    Number.isFinite(raw) && raw >= 0 ? raw : DEFAULT_CATALOG_TTL_SECONDS;
+  return Math.round(seconds * 1000);
+}
+
+/** Âge maximal d'un catalogue périmé encore utilisable en cas de panne. */
+export function fazercardsCatalogMaxStaleMs(): number {
+  const raw = Number(process.env.FAZERCARDS_CATALOG_MAX_STALE_MINUTES);
+  const minutes =
+    Number.isFinite(raw) && raw >= 0 ? raw : DEFAULT_CATALOG_MAX_STALE_MINUTES;
+  return Math.round(minutes * 60_000);
+}
+
+/** Catalogue FazerCards + métadonnées de cache. */
+export interface FazercardsCatalogSnapshot extends FazercardsSyncResult {
+  /** Date de la synchronisation réellement utilisée (ISO). */
+  fetchedAt: string;
+  /** Âge du catalogue au moment de la réponse, en millisecondes. */
+  ageMs: number;
+  /** true = servi depuis le cache sans appel réseau. */
+  cached: boolean;
+  /** true = périmé mais conservé faute de rafraîchissement réussi. */
+  stale: boolean;
+}
+
+interface CatalogCacheEntry {
+  result: FazercardsSyncResult;
+  fetchedAt: number;
+}
+
+let catalogCache: CatalogCacheEntry | null = null;
+let catalogInflight: Promise<FazercardsSyncResult> | null = null;
+
+/** Vide le cache (après un changement de clé API ou une synchro admin). */
+export function invalidateFazercardsCatalogCache(): void {
+  catalogCache = null;
+}
+
+/** État du cache — diagnostic admin, sans aucun secret. */
+export function fazercardsCatalogCacheStatus(): {
+  cached: boolean;
+  products: number;
+  ageMs: number | null;
+  fetchedAt: string | null;
+  refreshing: boolean;
+  ttlMs: number;
+  maxStaleMs: number;
+} {
+  const ttlMs = fazercardsCatalogTtlMs();
+  return {
+    cached: catalogCache !== null,
+    products: catalogCache?.result.products.length ?? 0,
+    ageMs: catalogCache ? Date.now() - catalogCache.fetchedAt : null,
+    fetchedAt: catalogCache
+      ? new Date(catalogCache.fetchedAt).toISOString()
+      : null,
+    refreshing: catalogInflight !== null,
+    ttlMs,
+    maxStaleMs: fazercardsCatalogMaxStaleMs(),
+  };
+}
+
+/**
+ * Synchronisation à vol unique : si une synchro est déjà en cours, tous les
+ * appelants attendent la même promesse au lieu d'en lancer une nouvelle.
+ * Un résultat vide (aucun produit) n'est jamais mis en cache : il ne doit
+ * pas effacer un catalogue valide.
+ */
+function refreshFazercardsCatalog(): Promise<FazercardsSyncResult> {
+  if (catalogInflight) return catalogInflight;
+
+  catalogInflight = syncFazercardsCatalog()
+    .then((result) => {
+      if (result.products.length > 0) {
+        catalogCache = { result, fetchedAt: Date.now() };
+      }
+      return result;
+    })
+    .finally(() => {
+      catalogInflight = null;
+    });
+
+  return catalogInflight;
+}
+
+function snapshot(
+  entry: CatalogCacheEntry,
+  meta: { cached: boolean; stale: boolean },
+): FazercardsCatalogSnapshot {
+  return {
+    ...entry.result,
+    fetchedAt: new Date(entry.fetchedAt).toISOString(),
+    ageMs: Date.now() - entry.fetchedAt,
+    cached: meta.cached,
+    stale: meta.stale,
+  };
+}
+
+/**
+ * Catalogue FazerCards, servi depuis le cache quand il est frais.
+ *
+ * @param options.maxAgeMs  âge maximal accepté sans appel réseau (défaut :
+ *                          `FAZERCARDS_CATALOG_TTL_SECONDS`).
+ * @param options.force     force une resynchronisation (admin / diagnostic).
+ */
+export async function getFazercardsCatalog(
+  options: { maxAgeMs?: number; force?: boolean } = {},
+): Promise<FazercardsCatalogSnapshot> {
+  const ttlMs = options.maxAgeMs ?? fazercardsCatalogTtlMs();
+  const cache = catalogCache;
+
+  if (!options.force && cache) {
+    const ageMs = Date.now() - cache.fetchedAt;
+    if (ageMs < ttlMs) {
+      return snapshot(cache, { cached: true, stale: false });
+    }
+
+    try {
+      const refreshed = await refreshFazercardsCatalog();
+      const entry = catalogCache ?? { result: refreshed, fetchedAt: Date.now() };
+      return snapshot(entry, { cached: false, stale: false });
+    } catch (error) {
+      const maxStaleMs = Math.max(ttlMs, fazercardsCatalogMaxStaleMs());
+      const usableStale = ageMs <= maxStaleMs && cache.result.products.length > 0;
+      console.warn(
+        `[fazercards][catalogue] rafraîchissement impossible (${
+          error instanceof Error ? error.message : String(error)
+        })${usableStale ? ` — catalogue de ${Math.round(ageMs / 60000)} min servi` : ""}`,
+      );
+      if (usableStale) return snapshot(cache, { cached: true, stale: true });
+      throw error;
+    }
+  }
+
+  const result = await refreshFazercardsCatalog();
+  const entry = catalogCache ?? { result, fetchedAt: Date.now() };
+  return snapshot(entry, {
+    cached: entry.result !== result,
+    stale: false,
+  });
+}
