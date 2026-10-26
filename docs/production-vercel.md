@@ -96,6 +96,63 @@ paiement ne peut être crédité.
 | `NEXT_PUBLIC_SITE_URL` | Repli lu par `src/lib/site-url.ts` ; préférer `SITE_URL` côté serveur |
 | `WEBHOOK_URL` | Webhook sortant après enregistrement d'un lead |
 
+### Fournisseur de codes digitaux — FazerCards
+
+FazerCards remplace Reloadly pour les codes / cartes cadeaux / top-ups
+(Reloadly exclut la Libye). Sans `FAZERCARDS_API_KEY`, la caisse digitale
+répond « fournisseur non configuré » — elle ne vend rien, mais le site
+fonctionne normalement.
+
+| Variable | Valeur | Remarques |
+|---|---|---|
+| `FAZERCARDS_API_KEY` | hub revendeur `reseller.fazercards.com` → **Profile → API key** (`fc_…`) | 🔐 **Secret.** Serveur uniquement. Une seule clé, pas de sandbox séparé : elle engage le **vrai solde** |
+| `FAZERCARDS_API_BASE` | `https://api.fzr.cards/api/v2` | Laisser la valeur par défaut |
+| `FAZERCARDS_MAX_ORDER_USD` | `300` | Au-delà, la commande bascule en livraison manuelle (aucun débit automatique) |
+| `FAZERCARDS_CATALOG_TTL_SECONDS` | `600` | Fraîcheur du catalogue en cache (prix / stock). `0` = cache désactivé |
+| `FAZERCARDS_CATALOG_MAX_STALE_MINUTES` | `60` | Âge maximal d'un catalogue périmé encore servi si le fournisseur est en panne |
+| `FAZERCARDS_WEBHOOK_SECRET` | **ne pas créer** | Vercel refuse une valeur vide. Cette variable n'est utile que le jour où un webhook de statut est déclaré dans le hub revendeur. Absente, elle n'a aucun effet |
+
+Le plafond `FAZERCARDS_MAX_ORDER_USD` est un **garde-fou de dépense** : il
+se juge sur le montant payé par le client, pas sur le solde du compte.
+
+### Mettre la clé FazerCards en production — ordre exact
+
+1. **Fusionner la PR** qui contient l'intégration (sinon la clé ne sert à
+   rien : le code déployé ne la lit pas).
+2. Vercel → projet `mon-site` → **Settings → Environment Variables** →
+   environnement **Production** → ajouter `FAZERCARDS_API_KEY` (et, si
+   besoin, le plafond et le TTL). Cliquer **Save**.
+3. **Deployments → ⋯ → Redeploy** du dernier déploiement de production.
+   ⚠️ Un déploiement **déjà en ligne ne relit jamais** les nouvelles
+   variables : sans cette étape, `fazercards.configured` reste `false`.
+4. Ouvrir `https://nokhba.net.ly/api/health` et lire le bloc `fazercards` :
+
+```json
+{ "fazercards": {
+    "configured": true,
+    "credentialsValid": true,
+    "apiBase": "https://api.fzr.cards/api/v2",
+    "maxOrderUsd": 300,
+    "catalog": { "cached": false, "products": 0, "ageMs": null,
+                 "refreshing": false, "ttlMs": 600000, "maxStaleMs": 3600000 },
+    "error": null } }
+```
+
+| Champ | Lecture |
+|---|---|
+| `configured:false` | Variable absente dans **Production**, ou déploiement non refait (étape 3) |
+| `credentialsValid:false` | Clé refusée par FazerCards — voir `error` (401/403 : clé tronquée, révoquée, ou recopiée avec des guillemets). Le code tolère guillemets et espaces : le refus vient donc bien du fournisseur |
+| `credentialsValid:null` | Fournisseur injoignable (réseau / panne) plutôt que clé invalide |
+| `catalog.products:0` | Catalogue jamais chargé — normal tant que personne n'a ouvert la boutique ; devient non nul après le premier `GET` catalogue |
+
+5. Contrôle du solde et de l'abonnement revendeur : **dans le hub
+   FazerCards** (Wallet / Subscription), jamais sur `/api/health` — le
+   solde n'est volontairement pas exposé sur une route publique.
+
+🔐 Ne pas recopier la vraie clé FazerCards dans l'environnement
+**Preview** : les Preview lisent les mêmes noms de variables et le même
+compte fournisseur, donc elles engageraient le solde réel.
+
 En local : `cp .env.example .env.local`, remplir, puis `npm run doctor`
 (diagnostic complet, n'affiche jamais de secret).
 
@@ -123,6 +180,8 @@ Interprétation :
 | `nowpayments.apiKeyValid` | Clé refusée : sandbox↔production croisés, secret IPN collé à la place, clé régénérée — voir `apiKeyError` |
 | `nowpayments.reachable` | Sortie réseau vers NOWPayments bloquée |
 | `vercel.commit` ≠ dernier commit `main` | Le déploiement de production n'est pas le dernier code |
+| `fazercards.configured` | `FAZERCARDS_API_KEY` absente → l'ajouter puis **Redeploy** (voir §2) |
+| `fazercards.credentialsValid` | Clé FazerCards refusée — voir `fazercards.error` |
 
 Dans le code, `ok` vaut exactement
 `database.connected && nowpayments.apiKeyValid === true`. C'est un bon

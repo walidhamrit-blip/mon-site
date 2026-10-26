@@ -121,10 +121,13 @@ test("adresse invalide : refus immédiat, sans appel réseau", async () => {
 
 test("la commande mémorise l'identifiant du message et le motif d'échec", () => {
   const source = readFileSync(join(srcRoot, "lib/digital-orders.ts"), "utf8");
-  assert.match(source, /emailProviderId/);
-  assert.match(source, /emailLastError/);
+  // Le suivi vit dans un module partagé (Reloadly ET FazerCards l'utilisent).
+  const journal = readFileSync(join(srcRoot, "lib/digital-email-log.ts"), "utf8");
+  assert.match(journal, /emailProviderId/);
+  assert.match(journal, /emailLastError/);
+  assert.match(source, /from "@\/lib\/digital-email-log"/);
   // Les trois chemins d'envoi (auto, manuel, renvoi) passent par le même suivi.
-  const calls = source.match(/recordEmailOutcome\(/g) ?? [];
+  const calls = source.match(/recordDigitalEmailOutcome\(/g) ?? [];
   assert.ok(calls.length >= 3, `suivi e-mail attendu sur 3 chemins, trouvé ${calls.length}`);
   const schema = readFileSync(join(srcRoot, "db/schema.ts"), "utf8");
   assert.match(schema, /email_provider_id/);

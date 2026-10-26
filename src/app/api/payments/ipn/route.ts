@@ -316,9 +316,12 @@ export async function POST(req: Request) {
       }
     }
 
-    // Commande de code / carte cadeau : l'achat se fait MAINTENANT, chez
-    // Reloadly, avec le solde du compte marchand. Idempotent : une
-    // commande déjà livrée n'est jamais rachetée (voir deliverPaidDigitalOrder).
+    // Commande de code / carte cadeau : l'achat se fait MAINTENANT, avec le
+    // solde du compte marchand du fournisseur. `deliverPaidDigitalOrder`
+    // route selon l'origine de la commande — FazerCards pour le catalogue
+    // `fzr-…`, Reloadly pour les fiches historiques. Idempotent : une
+    // commande déjà livrée n'est jamais rachetée, et chaque achat FazerCards
+    // porte un Idempotency-Key égal à la référence de la commande.
     let digital: string | null = null;
     if (order.digitalOrderId) {
       try {

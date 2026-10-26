@@ -15,7 +15,8 @@
     "previews:capture": "node scripts/capture-previews.mjs",
     "badge:audit": "node scripts/badge-audit.mjs",
     "test:global": "node --test scripts/global-catalog.test.mjs scripts/site-identity.test.mjs",
-    "test:digital": "node --test scripts/reloadly.test.mjs scripts/digital-catalog-cache.test.mjs scripts/mail-diagnostics.test.mjs scripts/digital-sync.test.mjs scripts/digital-audit.test.mjs scripts/currency-usdt.test.mjs"
+    "test:digital": "node --test scripts/reloadly.test.mjs scripts/digital-catalog-cache.test.mjs scripts/mail-diagnostics.test.mjs scripts/digital-sync.test.mjs scripts/digital-audit.test.mjs scripts/fazercards-routing.test.mjs scripts/currency-usdt.test.mjs",
+    "test:fazercards": "node --test scripts/fazercards-routing.test.mjs"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^4.0.84",

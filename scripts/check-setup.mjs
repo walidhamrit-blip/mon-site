@@ -270,6 +270,63 @@ if (!reloadlyClientId || !reloadlyClientSecret) {
   }
 }
 
+/* ───────────────────── 4 bis. FazerCards (fournisseur principal) ────────── */
+
+section("FazerCards (fournisseur principal de codes)");
+const fazercardsKey = (process.env.FAZERCARDS_API_KEY ?? "").replace(/["'\s]/g, "");
+const fazercardsBase = (
+  process.env.FAZERCARDS_API_BASE?.trim() || "https://api.fzr.cards/api/v2"
+).replace(/\/+$/, "");
+
+if (!fazercardsKey) {
+  warn(
+    "FAZERCARDS_API_KEY absente",
+    "Les produits du catalogue FazerCards (fzr-…) refuseront la vente. Clé : reseller.fazercards.com → Profile → API key.",
+  );
+} else {
+  if (!fazercardsKey.startsWith("fc_")) {
+    warn(
+      "FAZERCARDS_API_KEY ne ressemble pas à une clé FazerCards",
+      "Une clé valide commence par « fc_ ». Vérifiez qu'il ne s'agit pas du secret webhook ou d'un identifiant tronqué.",
+    );
+  }
+  try {
+    // /balance est authentifié : c'est la seule sonde qui prouve que la clé
+    // est acceptée, sans créer de commande ni débiter le portefeuille.
+    const res = await fetch(`${fazercardsBase}/balance`, {
+      headers: { "X-API-Key": fazercardsKey, Accept: "application/json" },
+      signal: AbortSignal.timeout(10_000),
+    });
+    if (!res.ok) {
+      const body = (await res.text().catch(() => "")).slice(0, 200);
+      fail(
+        `Clé FazerCards refusée (HTTP ${res.status})`,
+        body || "réponse vide — clé révoquée, tronquée, ou recopiée avec des guillemets.",
+      );
+    } else {
+      const data = await res.json().catch(() => ({}));
+      const amount = Number(data.usd ?? data.balance?.usd ?? data.balance ?? 0);
+      ok(
+        "Connexion FazerCards acceptée",
+        Number.isFinite(amount)
+          ? `solde ${amount.toFixed(2)} USD`
+          : "clé valide (solde non communiqué)",
+      );
+      if (Number.isFinite(amount) && amount <= 0) {
+        warn(
+          "Solde FazerCards à 0",
+          "Aucun achat automatique ne peut aboutir : créditez le portefeuille (USDT-TRC20, Binance Pay…) avant d'ouvrir la vente.",
+        );
+      }
+    }
+  } catch (error) {
+    warn(
+      "FazerCards injoignable",
+      error instanceof Error ? error.message : String(error),
+    );
+  }
+}
+
 if (!process.env.DIGITAL_CODES_SECRET?.trim() && !sessionSecret) {
   warn(
     "DIGITAL_CODES_SECRET absent",
