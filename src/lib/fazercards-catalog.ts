@@ -29,6 +29,10 @@ import {
   type FazercardsTopupOffer,
 } from "@/lib/fazercards";
 import {
+  readStoredFazercardsCatalog,
+  writeStoredFazercardsCatalog,
+} from "@/lib/fazercards-catalog-store";
+import {
   DIGITAL_KINDS,
   type DigitalDenomination,
   type DigitalProduct,
@@ -601,9 +605,13 @@ function refreshFazercardsCatalog(): Promise<FazercardsSyncResult> {
   if (catalogInflight) return catalogInflight;
 
   catalogInflight = syncFazercardsCatalog()
-    .then((result) => {
+    .then(async (result) => {
       if (result.products.length > 0) {
-        catalogCache = { result, fetchedAt: Date.now() };
+        const fetchedAt = Date.now();
+        catalogCache = { result, fetchedAt };
+        // Copie partagée : les autres instances (et les rendus suivants)
+        // lisent cette version en une requête, sans re-synchroniser.
+        await writeStoredFazercardsCatalog(result, fetchedAt);
       }
       return result;
     })
@@ -632,18 +640,44 @@ function snapshot(
  *
  * @param options.maxAgeMs  âge maximal accepté sans appel réseau (défaut :
  *                          `FAZERCARDS_CATALOG_TTL_SECONDS`).
- * @param options.force     force une resynchronisation (admin / diagnostic).
+ * @param options.force     force une resynchronisation (cron / admin).
+ * @param options.noSync    **ne jamais synchroniser** : sert la copie
+ *                          mémoire ou en base, même périmée, et échoue s'il
+ *                          n'y en a aucune. C'est le mode du RENDU des
+ *                          pages : une synchronisation complète (~123
+ *                          appels HTTP) dépasse le temps d'exécution d'une
+ *                          fonction serverless, ce qui faisait expirer les
+ *                          pages (repli silencieux sur le catalogue
+ *                          historique, ou erreur 500 sur les fiches).
  */
 export async function getFazercardsCatalog(
-  options: { maxAgeMs?: number; force?: boolean } = {},
+  options: { maxAgeMs?: number; force?: boolean; noSync?: boolean } = {},
 ): Promise<FazercardsCatalogSnapshot> {
   const ttlMs = options.maxAgeMs ?? fazercardsCatalogTtlMs();
-  const cache = catalogCache;
+  let cache = catalogCache;
+
+  // Rien en mémoire (instance neuve) : on lit la copie partagée en base
+  // AVANT d'envisager une synchronisation complète. C'est ce qui rend le
+  // rendu des pages rapide et fiable — une synchro (~123 appels HTTP)
+  // dépasserait le temps d'exécution d'une fonction serverless.
+  if (!cache) {
+    const stored = await readStoredFazercardsCatalog();
+    if (stored) {
+      catalogCache = { result: stored.result, fetchedAt: stored.fetchedAt };
+      cache = catalogCache;
+    }
+  }
 
   if (!options.force && cache) {
     const ageMs = Date.now() - cache.fetchedAt;
     if (ageMs < ttlMs) {
       return snapshot(cache, { cached: true, stale: false });
+    }
+
+    // Rendu de page : on sert la copie existante et on laisse le cron la
+    // rafraîchir. Synchroniser ici ferait expirer la requête.
+    if (options.noSync) {
+      return snapshot(cache, { cached: true, stale: true });
     }
 
     try {
@@ -661,6 +695,12 @@ export async function getFazercardsCatalog(
       if (usableStale) return snapshot(cache, { cached: true, stale: true });
       throw error;
     }
+  }
+
+  // Aucune copie disponible : sans synchronisation autorisée, l'appelant
+  // doit se rabattre sur le catalogue historique.
+  if (options.noSync) {
+    throw new Error("Catalogue FazerCards indisponible (aucune copie en cache).");
   }
 
   const result = await refreshFazercardsCatalog();
@@ -786,7 +826,7 @@ function hasSellableDenomination(product: DigitalProduct): boolean {
  * laquelle on ne peut pas acheter ne génère que des messages WhatsApp.
  */
 export async function getFazercardsDigitalCatalog(
-  options: { maxAgeMs?: number; force?: boolean } = {},
+  options: { maxAgeMs?: number; force?: boolean; noSync?: boolean } = {},
 ): Promise<{
   products: DigitalProduct[];
   cached: boolean;

@@ -38,6 +38,12 @@ export async function generateMetadata(): Promise<Metadata> {
  */
 export const revalidate = 60;
 
+/**
+ * Le catalogue est lu depuis la copie persistée (aucune synchro pendant le
+ * rendu) : cette borne n'est qu'un filet de sécurité.
+ */
+export const maxDuration = 20;
+
 export default async function CodesPage() {
   const { config } = await getSiteDataCached();
   const products = await getDigitalCatalog({ publicOnly: true });

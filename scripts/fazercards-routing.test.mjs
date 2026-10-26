@@ -77,7 +77,7 @@ test("une synchronisation vide n'écrase jamais un catalogue valide", () => {
   const flat = code(catalog);
   assert.match(
     flat,
-    /if \(result\.products\.length > 0\) \{ catalogCache = \{ result, fetchedAt: Date\.now\(\) \}; \}/,
+    /if \(result\.products\.length > 0\) \{ const fetchedAt = Date\.now\(\); catalogCache = \{ result, fetchedAt \};/,
   );
 });
 
@@ -223,7 +223,7 @@ test("le catalogue public vient du fournisseur quand la clé est configurée", (
   const flat = code(store);
   assert.match(flat, /async function getLiveCatalog\(\): Promise<DigitalProduct\[\] \| null>/);
   assert.match(flat, /if \(!fazercardsConfigured\(\)\) return null;/);
-  assert.match(flat, /getFazercardsDigitalCatalog\(\)/);
+  assert.match(flat, /getFazercardsDigitalCatalog\(\{ noSync: true \}\)/);
   // L'admin reste sur la base : une fiche fournisseur n'est pas éditable.
   assert.match(flat, /if \(!publicOnly\) return getStoredCatalog\(\{ publicOnly: false \}\);/);
   // Le build ne dépend jamais de l'API tierce.
@@ -312,4 +312,47 @@ test("le plafond d'achat est refusé AVANT l'encaissement", () => {
   const dialogFlat = code(dialog);
   assert.match(dialogFlat, /aboveLimit/);
   assert.match(dialogFlat, /!selected \|\| belowMinimum \|\| aboveLimit/);
+});
+
+/* ------------- Catalogue persisté (rendu de page sans synchro) ---------- */
+
+const cronRoute = read("src/app/api/cron/fazercards-catalog/route.ts");
+const storeFile = read("src/lib/fazercards-catalog-store.ts");
+const vercelJson = read("vercel.json");
+
+test("le catalogue est persisté en base (copie partagée)", () => {
+  const flat = code(storeFile);
+  assert.match(flat, /FAZERCARDS_CATALOG_SETTING_KEY = "fazercards:catalog"/);
+  assert.match(flat, /export async function readStoredFazercardsCatalog\(/);
+  assert.match(flat, /export async function writeStoredFazercardsCatalog\(/);
+  assert.match(flat, /onConflictDoUpdate/);
+  // Une synchro vide ne doit jamais écraser la copie valide.
+  assert.match(flat, /if \(result\.products\.length === 0\) return false;/);
+});
+
+test("une instance neuve lit la base avant de synchroniser", () => {
+  const flat = code(catalog);
+  assert.match(flat, /const stored = await readStoredFazercardsCatalog\(\);/);
+  assert.match(flat, /await writeStoredFazercardsCatalog\(result, fetchedAt\)/);
+});
+
+test("le rendu des pages ne synchronise jamais (sinon timeout -> 500)", () => {
+  assert.match(
+    code(store),
+    /getFazercardsDigitalCatalog\(\{ noSync: true \}\)/,
+    "la vitrine doit lire la copie persistée",
+  );
+  const flat = code(catalog);
+  // noSync sert la copie périmée au lieu de rafraîchir…
+  assert.match(flat, /if \(options\.noSync\) \{ return snapshot\(cache, \{ cached: true, stale: true \}\); \}/);
+  // …et échoue proprement s'il n'y a aucune copie (repli catalogue historique).
+  assert.match(flat, /Catalogue FazerCards indisponible \(aucune copie en cache\)/);
+});
+
+test("un cron rafraîchit le catalogue toutes les 10 minutes", () => {
+  assert.match(code(cronRoute), /export const maxDuration = 60;/);
+  assert.match(code(cronRoute), /getFazercardsCatalog\(\{ force: true \}\)/);
+  assert.match(code(cronRoute), /CRON_SECRET/);
+  assert.match(vercelJson, /"path": "\/api\/cron\/fazercards-catalog"/);
+  assert.match(vercelJson, /"\*\/10 \* \* \* \*"/);
 });
