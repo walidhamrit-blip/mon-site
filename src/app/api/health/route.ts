@@ -8,6 +8,13 @@ import {
 } from "@/lib/reloadly";
 import { mailDiagnostics } from "@/lib/mailer";
 import {
+  checkFazercardsCredentials,
+  fazercardsApiBase,
+  fazercardsConfigured,
+  fazercardsMaxOrderUsd,
+} from "@/lib/fazercards";
+import { fazercardsCatalogCacheStatus } from "@/lib/fazercards-catalog";
+import {
   checkNowPaymentsApiKey,
   nowPaymentsApiBase,
   nowPaymentsApiKey,
@@ -132,6 +139,35 @@ export async function GET() {
     error: reloadlyCheck.error,
   };
 
+  // ── Fournisseur de codes (FazerCards) ──
+  // Comme pour Reloadly : « configuré ou non », validité de la clé et état
+  // du cache catalogue. Le SOLDE n'est jamais exposé (donnée financière sur
+  // une route publique) — il reste consultable dans le hub revendeur.
+  const fazercardsCheck = fazercardsConfigured()
+    ? await checkFazercardsCredentials({ timeoutMs: 6000 }).catch((error) => ({
+        configured: true,
+        valid: null as boolean | null,
+        balance: null,
+        error: errorMessage(error),
+      }))
+    : {
+        configured: false,
+        valid: false as boolean | null,
+        balance: null,
+        error: "FAZERCARDS_API_KEY manquant",
+      };
+
+  const fazercards = {
+    configured: fazercardsCheck.configured,
+    credentialsValid: fazercardsCheck.valid,
+    apiBase: fazercardsApiBase(),
+    maxOrderUsd: fazercardsMaxOrderUsd(),
+    // Cache du catalogue : évite de deviner si la boutique affiche des
+    // données fraîches (TTL 10 min par défaut).
+    catalog: fazercardsCatalogCacheStatus(),
+    error: fazercardsCheck.error,
+  };
+
   // `ok` n'est vrai que si un paiement peut réellement être créé :
   // base connectée ET clé acceptée (pas seulement présente/joignable).
   const ok = database.connected && nowpayments.apiKeyValid === true;
@@ -155,6 +191,7 @@ export async function GET() {
       database,
       nowpayments,
       reloadly,
+      fazercards,
       // Diagnostic d'envoi : savoir par quel canal et depuis quelle adresse
       // partent les codes (aucune clé exposée).
       mail: mailDiagnostics(),

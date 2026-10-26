@@ -1,100 +1,56 @@
 import { NextResponse } from "next/server";
-import { db, ensureSchema } from "@/db";
-import { digitalOrders, orders } from "@/db/schema";
-import { eq } from "drizzle-orm";
-import {
-  decryptDigitalCodes,
-  digitalCodesKey,
-} from "@/lib/digital-codes";
+import { getPublicDigitalOrder } from "@/lib/digital-orders";
+import { trackingTokenFromRequest } from "@/lib/order-tracking";
 
 /**
- * Statut d'une commande FazerCards et codes livrés (si commande terminée).
+ * Suivi public d'une commande passée via la caisse FazerCards.
  *
- * Accès protégé par le jeton de suivi : `?t=<jeton>` obligatoire.
- * Sans jeton valide, la réponse est 404 (aucune fuite d'existence de commande).
+ * Même contrat que `/api/digital/orders/[ref]` : la commande est identifiée
+ * par sa référence **et** le jeton de suivi (en-tête
+ * `x-order-tracking-token`, `Bearer`, ou `?t=`). Sans jeton valide, la
+ * réponse est 404 — jamais 403 — pour ne pas révéler l'existence d'une
+ * référence.
+ *
+ * ⚠️ Le jeton est le SEUL secret qui donne accès aux codes : cette route ne
+ * doit jamais répondre sur la seule référence.
+ *
+ * Les codes ne sont renvoyés qu'une fois la commande livrée ; ils sont
+ * déchiffrés à la volée et jamais mis en cache (`no-store`).
  */
 
 export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
 
 export async function GET(
   req: Request,
-  { params }: { params: { ref: string } },
+  context: { params: Promise<{ ref: string }> },
 ) {
-  await ensureSchema();
+  const { ref } = await context.params;
+  const token = trackingTokenFromRequest(req);
 
-  const ref = String(params.ref).trim().toUpperCase();
-  if (!ref) {
+  try {
+    const order = await getPublicDigitalOrder(
+      decodeURIComponent(ref ?? ""),
+      token,
+    );
+    if (!order) {
+      return NextResponse.json(
+        { ok: false, error: "not_found" },
+        { status: 404, headers: { "Cache-Control": "no-store" } },
+      );
+    }
     return NextResponse.json(
-      { ok: false, error: "invalid_ref", message: "Référence de commande invalide." },
-      { status: 400 },
+      { ok: true, order },
+      { headers: { "Cache-Control": "no-store" } },
+    );
+  } catch (error) {
+    console.error(
+      "[fazercards][suivi] échec :",
+      error instanceof Error ? error.message : error,
+    );
+    return NextResponse.json(
+      { ok: false, error: "server_error" },
+      { status: 500, headers: { "Cache-Control": "no-store" } },
     );
   }
-
-  // Le jeton de suivi est obligatoire pour consulter une commande.
-  const url = new URL(req.url);
-  const token = url.searchParams.get("t");
-  if (!token) {
-    return NextResponse.json(
-      { ok: false, error: "token_required", message: "Jeton de suivi requis." },
-      { status: 401 },
-    );
-  }
-
-  const rows = await db
-    .select()
-    .from(digitalOrders)
-    .where(eq(digitalOrders.ref, ref))
-    .limit(1);
-  const order = rows[0];
-  if (!order) {
-    return NextResponse.json(
-      { ok: false, error: "not_found", message: "Commande introuvable." },
-      { status: 404 },
-    );
-  }
-
-  // Vérifie le jeton de suivi (SHA-256 stocké, jamais le jeton en clair).
-  const key = digitalCodesKey();
-  if (!key) {
-    return NextResponse.json(
-      { ok: false, error: "server_error", message: "Configuration serveur incomplète." },
-      { status: 500 },
-    );
-  }
-
-  // Le jeton de suivi est stocké sous forme de hash SHA-256 dans trackingTokenHash.
-  // Pour vérifier sans révéler le jeton, on compare le hash du token fourni.
-  // (La vérification exacte dépend de l'implémentation de createTrackingToken.)
-  // Ici, on accepte le token si la commande existe et que le statut le permet :
-  // le hash est vérifié côté client via la page /codes/commande.
-  // Pour l'API, on vérifie simplement que la commande appartient à ce ref.
-
-  const payload = order.codesCipher
-    ? decryptDigitalCodes(order.codesCipher, key)
-    : [];
-
-  return NextResponse.json({
-    ok: true,
-    ref: order.ref,
-    status: order.status,
-    productTitle: order.productTitle,
-    denominationLabel: order.denominationLabel,
-    quantity: order.quantity,
-    totalUsd: order.totalUsd,
-    currency: "USD",
-    createdAt: order.createdAt,
-    deliveredAt: order.deliveredAt ?? null,
-    lastError: order.lastError ?? null,
-    // Les codes ne sont révélés que si la commande est livrée.
-    codes:
-      order.status === "delivered" && payload.length > 0
-        ? payload.map((c) => ({
-            cardNumber: c.cardNumber,
-            pinCode: c.pinCode,
-            redemptionUrl: c.redemptionUrl,
-          }))
-        : null,
-    // Lien de suivi public (même sans les codes).
-    trackingUrl: `/codes/commande?ref=${encodeURIComponent(order.ref)}&t=${encodeURIComponent(token)}`,
-  });
 }

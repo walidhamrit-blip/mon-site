@@ -146,3 +146,54 @@ test("l'achat différé relit le category_id et les champs stockés", () => {
 test("le checkout expose categoryId à l'adaptateur", () => {
   assert.match(code(checkout), /categoryId: p\.categoryId/);
 });
+
+/* ------------------------- Suivi public (sécurité) ----------------------- */
+
+test("la route de suivi FazerCards exige le jeton (jamais le seul ref)", () => {
+  const route = read("src/app/api/fazercards/orders/[ref]/route.ts");
+  const flat = code(route);
+  assert.match(flat, /trackingTokenFromRequest\(req\)/);
+  assert.match(flat, /getPublicDigitalOrder\(/);
+  // Aucun déchiffrement direct : les codes ne sortent que par la couche
+  // publique, qui vérifie l'empreinte du jeton.
+  assert.doesNotMatch(flat, /decryptDigitalCodes\(/);
+  assert.match(flat, /Cache-Control": "no-store"/);
+});
+
+/* ------------------- Compatibilité Next 16 (build Vercel) --------------- */
+
+test("les routes dynamiques attendent params : Promise (Next 16)", () => {
+  const files = [
+    "src/app/api/fazercards/orders/[ref]/route.ts",
+    "src/app/api/digital/orders/[ref]/route.ts",
+  ];
+  for (const file of files) {
+    const flat = code(read(file));
+    assert.match(
+      flat,
+      /params: Promise<\{/,
+      `${file} : params doit être un Promise (sinon le build Next échoue)`,
+    );
+    assert.doesNotMatch(
+      flat,
+      /params: \{ ref: string \} \}/,
+      `${file} : signature de params obsolète (Next 15/16)`,
+    );
+  }
+});
+
+/* ------------------------------ Sonde santé ----------------------------- */
+
+test("/api/health expose l'état FazerCards sans le solde", () => {
+  const flat = code(read("src/app/api/health/route.ts"));
+  assert.match(flat, /checkFazercardsCredentials\(\{ timeoutMs: 6000 \}\)/);
+  assert.match(flat, /fazercards,/);
+  assert.match(flat, /catalog: fazercardsCatalogCacheStatus\(\)/);
+  // Le solde est une donnée financière : jamais dans l'objet renvoyé.
+  const block = flat.slice(
+    flat.indexOf("const fazercards = {"),
+    flat.indexOf("const ok ="),
+  );
+  assert.ok(block.length > 0, "bloc fazercards introuvable");
+  assert.doesNotMatch(block, /balance/, "le solde ne doit pas être exposé");
+});

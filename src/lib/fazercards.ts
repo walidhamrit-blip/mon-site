@@ -246,8 +246,13 @@ export async function fazercardsMe(): Promise<FazercardsAccount> {
 }
 
 /** Solde du portefeuille USD. */
-export async function fazercardsBalance(): Promise<FazercardsBalance> {
-  return fazercardsRequest<FazercardsBalance>({ path: "/balance" });
+export async function fazercardsBalance(
+  options: { timeoutMs?: number } = {},
+): Promise<FazercardsBalance> {
+  return fazercardsRequest<FazercardsBalance>({
+    path: "/balance",
+    ...(options.timeoutMs ? { timeoutMs: options.timeoutMs } : {}),
+  });
 }
 
 /** Historique des transactions du portefeuille. */
@@ -1047,7 +1052,9 @@ export async function fazercardsPaymentVerify(
  * Vérifie que les identifiants FazerCards sont valides sans rien acheter.
  * Utilisée par l'admin et par /api/health.
  */
-export async function checkFazercardsCredentials(): Promise<{
+export async function checkFazercardsCredentials(
+  options: { timeoutMs?: number } = {},
+): Promise<{
   configured: boolean;
   valid: boolean | null;
   balance: FazercardsBalance | null;
@@ -1062,7 +1069,7 @@ export async function checkFazercardsCredentials(): Promise<{
     };
   }
   try {
-    const balance = await fazercardsBalance();
+    const balance = await fazercardsBalance(options);
     return { configured: true, valid: true, balance, error: null };
   } catch (error) {
     const detail = fazercardsErrorMessage(error);
