@@ -13,6 +13,12 @@ import {
 import { RegionalAlert } from "@/components/regional-alert";
 
 const MAX_QUANTITY = 10;
+/**
+ * Plafond d'achat automatique affiché côté navigateur. Il reflète la valeur
+ * serveur (`FAZERCARDS_MAX_ORDER_USD`, 300 $ par défaut) : le serveur reste
+ * seul juge, ceci évite juste de proposer une quantité qui sera refusée.
+ */
+const MAX_ORDER_USD = 300;
 
 /** Mémorise la dernière commande du visiteur pour préremplir le suivi. */
 export const DIGITAL_LAST_ORDER_KEY = "nukhba:digital-order";
@@ -66,6 +72,11 @@ export function DigitalBuyDialog({ product, denominationId, onClose }: Props) {
       : 1;
   const belowMinimum =
     isFazercards && selected != null && total < MIN_CRYPTO_INVOICE_USD;
+  // Plafond d'achat automatique : au-delà, la commande basculerait en
+  // livraison manuelle après paiement. Le navigateur reflète la règle
+  // serveur (FAZERCARDS_MAX_ORDER_USD) pour éviter d'encaisser pour rien.
+  const aboveLimit =
+    isFazercards && selected != null && total > MAX_ORDER_USD;
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
@@ -343,6 +354,14 @@ export function DigitalBuyDialog({ product, denominationId, onClose }: Props) {
           </div>
         </div>
 
+        {aboveLimit && (
+          <p className="mt-3 rounded-lg border border-amber-300/60 bg-amber-50 px-3 py-2 text-[12.5px] leading-5 text-amber-800">
+            {ar
+              ? `الحد الأقصى ${MAX_ORDER_USD} $ للطلب الواحد — قلّل الكمية أو تواصل معنا على واتساب.`
+              : `Maximum ${MAX_ORDER_USD} $ per order — reduce the quantity or contact us on WhatsApp.`}
+          </p>
+        )}
+
         {belowMinimum && (
           <p className="mt-3 rounded-lg border border-amber-300/60 bg-amber-50 px-3 py-2 text-[12.5px] leading-5 text-amber-800">
             {ar
@@ -360,7 +379,7 @@ export function DigitalBuyDialog({ product, denominationId, onClose }: Props) {
         <button
           type="button"
           onClick={submit}
-          disabled={busy || !selected || belowMinimum}
+          disabled={busy || !selected || belowMinimum || aboveLimit}
           className="mt-4 inline-flex h-12 w-full items-center justify-center gap-2 rounded-full bg-[var(--accent)] text-sm font-black text-[var(--accent-foreground)] shadow-sm transition-colors hover:bg-[var(--accent-hover)] disabled:opacity-60"
         >
           {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Lock className="h-4 w-4" />}
