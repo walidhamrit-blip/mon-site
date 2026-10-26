@@ -136,6 +136,7 @@ export async function GET() {
     configured: reloadlyCheck.configured,
     mode: reloadlyCheck.mode,
     credentialsValid: reloadlyCheck.valid,
+    environmentMismatch: !nowpayments.sandbox && reloadlyCheck.mode === "sandbox",
     error: reloadlyCheck.error,
   };
 

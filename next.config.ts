@@ -138,6 +138,8 @@ const nextConfig: NextConfig = {
       { pathname: "/guide-crypto/**" },
       // Avatar Einstein du assistant flottant (src/components/site-chatbot.tsx).
       { pathname: "/chatbot/**" },
+      // Visuels locaux des cartes cadeaux et codes du catalogue numérique.
+      { pathname: "/digital-products/**" },
     ],
     // Qualités utilisées par les visuels nets (bannière, guide crypto).
     qualities: [75, 88, 90],

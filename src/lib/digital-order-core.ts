@@ -610,3 +610,88 @@ export function parseManualCodes(input: string): GiftCardCode[] {
   return codes;
 }
 
+/* --------- Relance automatique au suivi client & cohérence libellé --------- */
+
+/** Délai minimal entre deux relances de livraison déclenchées par le suivi client (10 s). */
+export const POLL_DELIVERY_COOLDOWN_MS = 10_000;
+
+/** Laisse la priorité à l'IPN pendant les premières secondes suivant le paiement. */
+export const POLL_INITIAL_GRACE_MS = 3_000;
+
+/**
+ * Décide si la consultation de `/codes/commande` doit déclencher ou
+ * poursuivre la livraison d'une commande déjà payée :
+ *  - couvre le cas où le webhook IPN NOWPayments a du retard ou n'a pas pu
+ *    aboutir (`digitalOrder.status === "pending"` alors que `paymentStatus === "paid"`) ;
+ *  - couvre le cas où Reloadly a répondu `PENDING` / `PROCESSING` lors du
+ *    premier appel (`digitalOrder.status === "paid"`, `reloadlyTransactionId`
+ *    présent, en attente d'émission des codes).
+ */
+export function shouldAutoDeliverOnPoll(input: {
+  digitalStatus: string | null | undefined;
+  paymentStatus: string | null | undefined;
+  attempts: number;
+  updatedAt: Date | string | number | null | undefined;
+  now?: number;
+}): boolean {
+  if (input.paymentStatus !== "paid") return false;
+  const status = normalizeDigitalStatus(input.digitalStatus);
+  if (status !== "pending" && status !== "paid") return false;
+
+  const now = input.now ?? Date.now();
+  const updatedMs =
+    input.updatedAt instanceof Date
+      ? input.updatedAt.getTime()
+      : input.updatedAt != null
+        ? new Date(input.updatedAt).getTime()
+        : 0;
+  const elapsed = Number.isFinite(updatedMs) && updatedMs > 0 ? now - updatedMs : Infinity;
+
+  if (status === "pending" && (input.attempts ?? 0) === 0) {
+    return elapsed >= POLL_INITIAL_GRACE_MS;
+  }
+  return elapsed >= POLL_DELIVERY_COOLDOWN_MS;
+}
+
+/**
+ * Détecte un écart entre le montant affiché dans le libellé (`$20`, `30$`)
+ * et la valeur faciale (`25 USD`, `50 USD`) ou la valeur Reloadly.
+ *
+ * Cas réel observé sur la fiche Steam en production : libellé `30$` mais
+ * `faceValue: "50 USD"` (ce qui fait commander une carte de 50 $ pour un
+ * prix de 31,50 $ si `reloadlyUnitPrice` est déduit de `faceValue`).
+ */
+export function denominationLabelFaceMismatch(denomination: {
+  label: string;
+  faceValue: string;
+  reloadlyUnitPrice?: number | null;
+}): string | null {
+  const label = String(denomination.label ?? "").trim();
+  const faceValue = String(denomination.faceValue ?? "").trim();
+  if (!label || !faceValue) return null;
+
+  // On ne compare que si les deux expriment un montant monétaire (évite de
+  // comparer « 3 أشهر » et « 3 months » ou un libellé purement textuel).
+  const labelMatch = label.match(/(?:\$\s*(\d+(?:[.,]\d+)?)|(\d+(?:[.,]\d+)?)\s*\$)/);
+  const faceMatch = faceValue.match(/(\d+(?:[.,]\d+)?)\s*USD/i);
+  if (!labelMatch || !faceMatch) return null;
+
+  const labelAmount = Number((labelMatch[1] ?? labelMatch[2] ?? "").replace(",", "."));
+  const faceAmount = Number(faceMatch[1].replace(",", "."));
+  if (!Number.isFinite(labelAmount) || !Number.isFinite(faceAmount)) return null;
+
+  const unitPrice = denominationUnitPrice(denomination as never);
+  if (!samePrice(labelAmount, faceAmount)) {
+    return (
+      `Libellé « ${label} » ≠ valeur faciale « ${faceValue} »` +
+      (unitPrice != null ? ` (Reloadly recevra ${unitPrice} USD)` : "") +
+      ` — alignez le libellé, la valeur faciale et la valeur Reloadly.`
+    );
+  }
+  if (unitPrice != null && !samePrice(labelAmount, unitPrice)) {
+    return `Libellé « ${label} » ≠ valeur Reloadly (${unitPrice} USD) — vérifiez le montant envoyé au fournisseur.`;
+  }
+  return null;
+}
+
+

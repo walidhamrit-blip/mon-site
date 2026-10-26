@@ -24,6 +24,7 @@ import {
   checkSupplierUnitPrice,
   computeSalePrice,
   computeSalePriceFromCost,
+  denominationLabelFaceMismatch,
   faceValueLosses,
   PRICE_ROUND_STEP,
 } from "@/lib/digital-order-core";
@@ -343,6 +344,10 @@ export async function analyseCatalogRecalc(paymentFeePercent: number): Promise<R
         if (!check.ok) {
           issues.push({ severity: "warning", message: `Refusé par Reloadly — ${check.message}` });
         }
+      }
+      const labelMismatch = denominationLabelFaceMismatch(denomination);
+      if (labelMismatch) {
+        issues.push({ severity: "warning", message: labelMismatch });
       }
       if (!isRounded(price, PRICE_ROUND_STEP)) {
         issues.push({ severity: "info", message: "Prix non arrondi (pas de 0,50)." });

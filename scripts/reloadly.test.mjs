@@ -992,3 +992,94 @@ test("avertissement régional : présent sur catalogue, fiche ET avant paiement"
     "l'avertissement doit précéder le bouton de paiement",
   );
 });
+
+/* -------- Relance automatique au suivi client & alerte environnement -------- */
+
+test("suivi client : relance automatique bornée (grâce IPN + délai entre essais)", () => {
+  const now = 1_000_000;
+  // Paiement non confirmé : jamais d'achat.
+  assert.equal(
+    core.shouldAutoDeliverOnPoll({
+      digitalStatus: "pending",
+      paymentStatus: "pending",
+      attempts: 0,
+      updatedAt: now - 60_000,
+      now,
+    }),
+    false,
+  );
+  // Commande déjà livrée, manuelle ou en échec définitif : pas de relance automatique.
+  for (const status of ["delivered", "manual", "failed"]) {
+    assert.equal(
+      core.shouldAutoDeliverOnPoll({
+        digitalStatus: status,
+        paymentStatus: "paid",
+        attempts: 1,
+        updatedAt: now - 60_000,
+        now,
+      }),
+      false,
+      `statut ${status}`,
+    );
+  }
+  // Paiement tout juste confirmé (< 3 s) : on laisse l'IPN finir en priorité.
+  assert.equal(
+    core.shouldAutoDeliverOnPoll({
+      digitalStatus: "pending",
+      paymentStatus: "paid",
+      attempts: 0,
+      updatedAt: now - 1_500,
+      now,
+    }),
+    false,
+  );
+  // Au-delà de 3 s sans passage par l'IPN : le suivi déclenche la livraison.
+  assert.equal(
+    core.shouldAutoDeliverOnPoll({
+      digitalStatus: "pending",
+      paymentStatus: "paid",
+      attempts: 0,
+      updatedAt: now - 3_500,
+      now,
+    }),
+    true,
+  );
+  // Transaction Reloadly en attente de codes (`paid`) : relance après 10 s.
+  assert.equal(
+    core.shouldAutoDeliverOnPoll({
+      digitalStatus: "paid",
+      paymentStatus: "paid",
+      attempts: 1,
+      updatedAt: now - 5_000,
+      now,
+    }),
+    false,
+  );
+  assert.equal(
+    core.shouldAutoDeliverOnPoll({
+      digitalStatus: "paid",
+      paymentStatus: "paid",
+      attempts: 1,
+      updatedAt: now - 12_000,
+      now,
+    }),
+    true,
+  );
+});
+
+test("suivi et environnement : câblage de la réconciliation et de l'alerte sandbox/live", () => {
+  const ordersSource = readFileSync(join(srcRoot, "lib/digital-orders.ts"), "utf8");
+  assert.match(ordersSource, /async function reconcileDigitalOrderOnPoll/);
+  assert.match(ordersSource, /const order = await reconcileDigitalOrderOnPoll\(loaded\)/);
+  assert.match(ordersSource, /ne\(digitalOrders\.status, "delivered"\)/);
+
+  const paymentRoute = readFileSync(
+    join(srcRoot, "app/api/payments/order/[ref]/route.ts"),
+    "utf8",
+  );
+  assert.match(paymentRoute, /if \(order\.digitalOrderId\)[\s\S]{0,120}deliverPaidDigitalOrder/);
+
+  const healthRoute = readFileSync(join(srcRoot, "app/api/health/route.ts"), "utf8");
+  assert.match(healthRoute, /environmentMismatch:/);
+});
+

@@ -33,7 +33,7 @@ export const defaultDigitalProducts: DigitalProduct[] = [
       "شحن رصيد محفظة Steam لشراء الألعاب والإضافات وعروض Winter Sale. الكود يُرسل على بريدك مباشرة بعد تأكيد الدفع.",
     descriptionEn:
       "Top up your Steam wallet for games, DLC and seasonal sales. The code lands in your inbox as soon as payment is confirmed.",
-    image: "",
+    image: "/digital-products/steam-wallet.jpg",
     regions: ["global", "US", "EU", "TR", "SA", "AE", "EG"],
     featuresAr: [
       "يعمل على حساب Steam فوراً",
@@ -69,7 +69,7 @@ export const defaultDigitalProducts: DigitalProduct[] = [
       "بطاقة PlayStation Store لشراء ألعاب PS4 وPS5 واشتراكات PlayStation Plus. مثالية للألعاب مع أصدقائك في المنطقة.",
     descriptionEn:
       "PlayStation Store cards for PS4 and PS5 games plus PlayStation Plus subscriptions — perfect for gifting friends across the region.",
-    image: "",
+    image: "/digital-products/playstation-store.jpg",
     regions: ["US", "SA", "AE", "EG", "global"],
     featuresAr: [
       "ألعاب PS4 وPS5",
@@ -105,7 +105,7 @@ export const defaultDigitalProducts: DigitalProduct[] = [
       "بطاقة Xbox لشراء الألعاب والاشتراكات على Xbox One وSeries X|S. تُضاف مباشرة إلى محفظتك.",
     descriptionEn:
       "Xbox cards for games and subscriptions on Xbox One and Series X|S, credited straight to your wallet.",
-    image: "",
+    image: "/digital-products/xbox-gift-card.jpg",
     regions: ["US", "EU", "SA", "AE", "global"],
     featuresAr: [
       "متوافقة مع Xbox One وSeries X|S",
@@ -140,7 +140,7 @@ export const defaultDigitalProducts: DigitalProduct[] = [
       "شحن رصيد Robux مباشرة على حساب Roblox الخاص بك — لاستخدامه في Avatar وItems وPasses_ANY.",
     descriptionEn:
       "Top up Robux straight onto your Roblox account for avatars, items and passes.",
-    image: "",
+    image: "/digital-products/robux-roblox.jpg",
     regions: ["global"],
     featuresAr: [
       "شحن مباشر على الحساب",
@@ -176,7 +176,7 @@ export const defaultDigitalProducts: DigitalProduct[] = [
       "بطاقة Google Play لتطبيقات الألعاب والنتائج والتطبيقات المدفوعة على متجر Play.",
     descriptionEn:
       "Google Play cards for paid apps, in-app purchases and games on the Play Store.",
-    image: "",
+    image: "/digital-products/google-play-gift.jpg",
     regions: ["US", "SA", "AE", "EG", "TR", "global"],
     featuresAr: [
       "تطبيقات ونتائج واشتراكات",
@@ -211,7 +211,7 @@ export const defaultDigitalProducts: DigitalProduct[] = [
       "بطاقة أمازون للاستخدام في المتجر أو Kindle أو Prime Video — حسب المنطقة.",
     descriptionEn:
       "Amazon cards for the store, Kindle or Prime Video, depending on the region.",
-    image: "",
+    image: "/digital-products/amazon-gift-card.jpg",
     regions: ["US", "AE", "SA", "EG", "global"],
     featuresAr: [
       "متجر أمازون وPrime Video",
@@ -246,7 +246,7 @@ export const defaultDigitalProducts: DigitalProduct[] = [
       "تفعيل اشتراك Spotify Premium على حسابك — استماع بلا إعلانات وتحميل للأجهزة.",
     descriptionEn:
       "Activate Spotify Premium on your account: ad-free listening and offline downloads.",
-    image: "",
+    image: "/digital-products/spotify-premium.jpg",
     regions: ["global"],
     featuresAr: [
       "بدون إعلانات",
@@ -280,7 +280,7 @@ export const defaultDigitalProducts: DigitalProduct[] = [
       "كود بطاقات هدايا NVIDIAلرصيد حساب NVIDIA أو اشتراك GeForce Now — تجديد أو إضافة رصيد.",
     descriptionEn:
       "NVIDIA gift card codes for GeForce Now or account credit — top up or renew.",
-    image: "",
+    image: "/digital-products/nvidia-redeem.jpg",
     regions: ["US", "EU", "global"],
     featuresAr: [
       "رصيد حساب NVIDIA",
