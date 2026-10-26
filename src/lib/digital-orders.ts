@@ -20,7 +20,11 @@ import { and, desc, eq, ne } from "drizzle-orm";
 import { db, ensureSchema } from "@/db";
 import { digitalOrders, orders, type DigitalOrder } from "@/db/schema";
 import { getDigitalProductBySlug } from "@/lib/digital-store";
-import { denominationUnitPrice, effectiveFulfillment } from "@/lib/digital-types";
+import {
+  denominationUnitPrice,
+  effectiveFulfillment,
+  type DigitalSupplier,
+} from "@/lib/digital-types";
 import {
   checkSupplierUnitPrice,
   maskEmail,
@@ -324,8 +328,8 @@ export interface DigitalDeliveryResult {
   message?: string;
 }
 
-/** Fournisseur qui doit livrer une commande digitale. */
-export type DigitalSupplier = "fazercards" | "reloadly";
+/** Fournisseur qui doit livrer une commande digitale (défini par le domaine). */
+export type { DigitalSupplier };
 
 /**
  * Détermine le fournisseur d'une commande.

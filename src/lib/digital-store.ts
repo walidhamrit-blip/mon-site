@@ -2,6 +2,8 @@ import { asc, eq, inArray } from "drizzle-orm";
 import { db, ensureSchema } from "@/db";
 import { digitalDenominations, digitalProducts } from "@/db/schema";
 import { defaultDigitalProducts } from "@/lib/digital-seed";
+import { fazercardsConfigured } from "@/lib/fazercards";
+import { getFazercardsDigitalCatalog } from "@/lib/fazercards-catalog";
 import {
   PUBLIC_DIGITAL_STATUSES,
   type DigitalDenomination,
@@ -196,7 +198,14 @@ function rowToProduct(
         : null,
     supplierFeePercent: columnToPercent(row.supplierFeePercent),
     supplierDiscountPercent: columnToPercent(row.supplierDiscountPercent),
+    // Les fiches de la base sont les fiches historiques, reliées à Reloadly.
+    supplier: "reloadly",
   };
+}
+
+/** Ajoute le fournisseur aux fiches de repli (codées en dur). */
+function withSupplier(products: DigitalProduct[]): DigitalProduct[] {
+  return products.map((product) => ({ ...product, supplier: product.supplier ?? "reloadly" }));
 }
 
 /**
@@ -206,7 +215,7 @@ function rowToProduct(
  *   (`coming_soon` et `available`) — les brouillons et les archives
  *   n'apparaissent jamais sur le site public.
  */
-export async function getDigitalCatalog(
+async function getStoredCatalog(
   options: { publicOnly?: boolean } = {},
 ): Promise<DigitalProduct[]> {
   const { publicOnly = true } = options;
@@ -224,7 +233,7 @@ export async function getDigitalCatalog(
       : rows;
 
     if (visible.length === 0) {
-      return publicOnly ? defaultDigitalProducts : defaultDigitalProducts;
+      return withSupplier(defaultDigitalProducts);
     }
 
     const ids = visible.map((row) => row.id);
@@ -250,8 +259,60 @@ export async function getDigitalCatalog(
       "[digital] lecture du catalogue impossible :",
       error instanceof Error ? error.message : error,
     );
-    return defaultDigitalProducts;
+    return withSupplier(defaultDigitalProducts);
   }
+}
+
+/**
+ * Catalogue « live » du fournisseur (FazerCards).
+ *
+ * FazerCards est le fournisseur retenu : quand sa clé est configurée, c'est
+ * SON catalogue qui est publié sur `/codes`, pas celui de la base (les
+ * fiches historiques sont reliées à Reloadly, dont le compte a été fermé).
+ *
+ * Renvoie `null` — et la vitrine retombe alors sur la base — dans trois cas :
+ *  - aucune clé fournisseur (site en mode catalogue historique) ;
+ *  - build de production : un build ne doit pas dépendre d'une API tierce
+ *    (lenteur, panne) ; les pages se rafraîchissent ensuite via ISR (60 s) ;
+ *  - fournisseur injoignable ET aucun catalogue en cache.
+ */
+async function getLiveCatalog(): Promise<DigitalProduct[] | null> {
+  if (!fazercardsConfigured()) return null;
+  if (process.env.NEXT_PHASE === "phase-production-build") return null;
+  try {
+    const { products, stale } = await getFazercardsDigitalCatalog();
+    if (stale) {
+      console.warn("[digital] catalogue fournisseur servi depuis un cache périmé");
+    }
+    return products.length > 0 ? products : null;
+  } catch (error) {
+    console.error(
+      "[digital] catalogue fournisseur indisponible, repli sur la base :",
+      error instanceof Error ? error.message : error,
+    );
+    return null;
+  }
+}
+
+/**
+ * Lit le catalogue public.
+ *
+ * Source de vérité : le fournisseur (FazerCards) quand il est configuré ;
+ * sinon la base (fiches historiques). L'administration, elle, travaille
+ * toujours sur la base (`publicOnly: false`).
+ *
+ * @param options.publicOnly limite aux fiches visibles publiquement
+ *   (`coming_soon` et `available`) — les brouillons et les archives
+ *   n'apparaissent jamais sur le site public.
+ */
+export async function getDigitalCatalog(
+  options: { publicOnly?: boolean } = {},
+): Promise<DigitalProduct[]> {
+  const { publicOnly = true } = options;
+  if (!publicOnly) return getStoredCatalog({ publicOnly: false });
+  const live = await getLiveCatalog();
+  if (live) return live;
+  return getStoredCatalog({ publicOnly: true });
 }
 
 /** Fiche unique par slug (public : seules les fiches publiées sont visées). */
