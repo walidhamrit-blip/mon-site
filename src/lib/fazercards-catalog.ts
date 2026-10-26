@@ -134,11 +134,20 @@ function toPriceUsd(value: string | null | undefined): number | null {
   return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
 }
 
+/**
+ * Titre public d'une fiche : « Game Top-Up — 8 Ball Pool ».
+ *
+ * ⚠️ Les clés sont les valeurs de `DIGITAL_KINDS` (`game_topup`,
+ * `gift_card`, `software_key`) — pas celles du fournisseur (`topup`,
+ * `game_key`). Une clé inconnue retombait sur « Digital Product », ce qui
+ * affichait un titre générique sur les 120 fiches du catalogue réel.
+ */
 function titleFor(kind: string, name: string, locale: "ar" | "en"): string {
   const labels: Record<string, { ar: string; en: string }> = {
-    topup: { ar: "شحن لعبة", en: "Game Top-Up" },
+    game_topup: { ar: "شحن لعبة", en: "Game Top-Up" },
     gift_card: { ar: "بطاقة هدايا", en: "Gift Card" },
-    game_key: { ar: "مفتاح لعبة", en: "Game Key" },
+    software_key: { ar: "مفتاح لعبة", en: "Game Key" },
+    subscription_code: { ar: "كود اشتراك", en: "Subscription Code" },
   };
   const base = labels[kind] ?? { ar: "منتج رقمي", en: "Digital Product" };
   return `${base[locale]} — ${name}`;
@@ -179,8 +188,8 @@ function mapTopupCategory(
     countryCode: "GLOBAL",
     titleAr: titleFor("game_topup", cat.name, "ar"),
     titleEn: titleFor("game_topup", cat.name, "en"),
-    descriptionAr: `شحن رصيد لعبة ${cat.name} عبر FazerCards — تسليم فوري.`,
-    descriptionEn: `Top-up for ${cat.name} via FazerCards — instant delivery.`,
+    descriptionAr: `شحن رصيد لعبة ${cat.name} — تسليم فوري إلى بريدك الإلكتروني بعد تأكيد الدفع.`,
+    descriptionEn: `Top-up for ${cat.name} — instant delivery to your e-mail after payment.`,
     image: DEFAULT_IMAGE,
     regions: ["GLOBAL"],
     denominations,
@@ -223,8 +232,8 @@ function mapGiftCardCategory(
     countryCode: "GLOBAL",
     titleAr: titleFor("gift_card", cat.name, "ar"),
     titleEn: titleFor("gift_card", cat.name, "en"),
-    descriptionAr: `بطاقة هدايا ${cat.name} عبر FazerCards — تسليم فوري.`,
-    descriptionEn: `${cat.name} gift card via FazerCards — instant delivery.`,
+    descriptionAr: `بطاقة هدايا ${cat.name} — تسليم فوري إلى بريدك الإلكتروني بعد تأكيد الدفع.`,
+    descriptionEn: `${cat.name} gift card — instant delivery to your e-mail after payment.`,
     image: DEFAULT_IMAGE,
     regions: ["GLOBAL"],
     denominations,
@@ -267,8 +276,8 @@ function mapGameKeyCategory(
     countryCode: cat.region,
     titleAr: titleFor("software_key", cat.name, "ar"),
     titleEn: titleFor("software_key", cat.name, "en"),
-    descriptionAr: `مفتاح تفعيل ${cat.name} (${cat.region}) via FazerCards.`,
-    descriptionEn: `Activation key for ${cat.name} (${cat.region}) via FazerCards.`,
+    descriptionAr: `مفتاح تفعيل ${cat.name} (${cat.region}) — تسليم فوري إلى بريدك الإلكتروني.`,
+    descriptionEn: `Activation key for ${cat.name} (${cat.region}) — instant delivery to your e-mail.`,
     image: DEFAULT_IMAGE,
     regions: [cat.region],
     denominations,

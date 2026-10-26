@@ -5,6 +5,7 @@ import { Loader2, Lock, Minus, Plus, ShieldCheck, X } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import { Price } from "@/components/price";
 import {
+  MIN_CRYPTO_INVOICE_USD,
   denominationLabel,
   regionLabel,
   type DigitalProduct,
@@ -57,6 +58,14 @@ export function DigitalBuyDialog({ product, denominationId, onClose }: Props) {
   const requiredFields = selected?.fields ?? [];
   const maxQuantity = Math.max(1, Math.min(MAX_QUANTITY, selected?.maxQuantity ?? MAX_QUANTITY));
   const isFazercards = product.supplier === "fazercards";
+  // Facture crypto minimale : pour un article à 0,81 $, il faut au moins
+  // deux unités — sinon la passerelle refuse la facture après le clic.
+  const minQuantity =
+    isFazercards && selected && selected.priceUsd > 0
+      ? Math.max(1, Math.ceil(MIN_CRYPTO_INVOICE_USD / selected.priceUsd))
+      : 1;
+  const belowMinimum =
+    isFazercards && selected != null && total < MIN_CRYPTO_INVOICE_USD;
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
@@ -200,7 +209,13 @@ export function DigitalBuyDialog({ product, denominationId, onClose }: Props) {
                   type="button"
                   onClick={() => {
                     setSelectedId(item.id);
-                    setQuantity(1);
+                    // Pré-remplit la quantité minimale facturable.
+                    const unit = item.priceUsd > 0 ? item.priceUsd : 0;
+                    const needed =
+                      isFazercards && unit > 0
+                        ? Math.max(1, Math.ceil(MIN_CRYPTO_INVOICE_USD / unit))
+                        : 1;
+                    setQuantity(Math.min(needed, MAX_QUANTITY));
                     setBuyerFields({});
                   }}
                   className={`rounded-xl border px-3 py-2.5 text-start transition-colors ${
@@ -235,8 +250,8 @@ export function DigitalBuyDialog({ product, denominationId, onClose }: Props) {
           <div className="flex items-center gap-2">
             <button
               type="button"
-              onClick={() => setQuantity((value) => Math.max(1, value - 1))}
-              disabled={quantity <= 1}
+              onClick={() => setQuantity((value) => Math.max(minQuantity, value - 1))}
+              disabled={quantity <= minQuantity}
               aria-label={ar ? "إنقاص" : "Decrease"}
               className="grid h-9 w-9 place-items-center rounded-full border border-[var(--border)] disabled:opacity-40"
             >
@@ -328,6 +343,14 @@ export function DigitalBuyDialog({ product, denominationId, onClose }: Props) {
           </div>
         </div>
 
+        {belowMinimum && (
+          <p className="mt-3 rounded-lg border border-amber-300/60 bg-amber-50 px-3 py-2 text-[12.5px] leading-5 text-amber-800">
+            {ar
+              ? `الحد الأدنى للدفع ${MIN_CRYPTO_INVOICE_USD.toFixed(2)} $ — اختر ${minQuantity} وحدات على الأقل.`
+              : `Minimum order ${MIN_CRYPTO_INVOICE_USD.toFixed(2)} $ — choose at least ${minQuantity} units.`}
+          </p>
+        )}
+
         {error && (
           <p className="mt-3 rounded-lg border border-red-300/60 bg-red-50 px-3 py-2 text-[12.5px] leading-5 text-red-700">
             {error}
@@ -337,7 +360,7 @@ export function DigitalBuyDialog({ product, denominationId, onClose }: Props) {
         <button
           type="button"
           onClick={submit}
-          disabled={busy || !selected}
+          disabled={busy || !selected || belowMinimum}
           className="mt-4 inline-flex h-12 w-full items-center justify-center gap-2 rounded-full bg-[var(--accent)] text-sm font-black text-[var(--accent-foreground)] shadow-sm transition-colors hover:bg-[var(--accent-hover)] disabled:opacity-60"
         >
           {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Lock className="h-4 w-4" />}

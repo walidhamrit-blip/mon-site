@@ -295,6 +295,17 @@ export interface DigitalProduct {
 /** Fournisseur de codes d'une fiche. */
 export type DigitalSupplier = "fazercards" | "reloadly";
 
+/**
+ * Montant minimal d'une facture crypto, en USD.
+ *
+ * Les passerelles de paiement refusent les factures trop petites (frais
+ * réseau supérieurs au montant, minimum par cryptomonnaie). Le catalogue
+ * réel contient des articles à 0,81 $ : sans ce garde-fou, le client
+ * cliquait « Payer » pour obtenir une erreur après coup. La quantité est
+ * donc bornée vers le HAUT pour atteindre ce minimum.
+ */
+export const MIN_CRYPTO_INVOICE_USD = 1.5;
+
 /** Statuts visibles publiquement (le catalogue public ignore les brouillons). */
 export const PUBLIC_DIGITAL_STATUSES: DigitalStatus[] = ["coming_soon", "available"];
 
