@@ -211,3 +211,59 @@ test("aucune vente automatique quand Reloadly est en sandbox et le paiement rée
   // Livraison : bascule manuelle, jamais d'achat de code de test.
   assert.match(flat, /aucun code de test n'a été acheté/);
 });
+
+/* --------------------- Vitrine branchée sur FazerCards ------------------ */
+
+const store = read("src/lib/digital-store.ts");
+const types = read("src/lib/digital-types.ts");
+const dialog = read("src/components/digital-buy-dialog.tsx");
+const detailsPage = read("src/app/(site)/codes/[slug]/page.tsx");
+
+test("le catalogue public vient du fournisseur quand la clé est configurée", () => {
+  const flat = code(store);
+  assert.match(flat, /async function getLiveCatalog\(\): Promise<DigitalProduct\[\] \| null>/);
+  assert.match(flat, /if \(!fazercardsConfigured\(\)\) return null;/);
+  assert.match(flat, /getFazercardsDigitalCatalog\(\)/);
+  // L'admin reste sur la base : une fiche fournisseur n'est pas éditable.
+  assert.match(flat, /if \(!publicOnly\) return getStoredCatalog\(\{ publicOnly: false \}\);/);
+  // Le build ne dépend jamais de l'API tierce.
+  assert.match(flat, /NEXT_PHASE === "phase-production-build"/);
+});
+
+test("les fiches converties portent leur fournisseur", () => {
+  assert.match(code(types), /export type DigitalSupplier = "fazercards" \| "reloadly";/);
+  assert.match(code(types), /supplier\?: DigitalSupplier;/);
+  // Les fiches de la base sont explicitement Reloadly.
+  assert.match(code(store), /supplier: "reloadly"/);
+  assert.match(code(catalog), /supplier: "fazercards"/);
+});
+
+test("le dialogue d'achat route vers la caisse du bon fournisseur", () => {
+  const flat = code(dialog);
+  assert.match(flat, /const isFazercards = product\.supplier === "fazercards";/);
+  assert.match(flat, /isFazercards \? "\/api\/fazercards\/checkout" : "\/api\/digital\/checkout"/);
+  // Champs acheteur (player_id…) saisis avant l'encaissement.
+  assert.match(flat, /requiredFields/);
+  assert.match(flat, /fields: buyerFields/);
+});
+
+test("les fiches produit ne sont plus pré-générées au build", () => {
+  assert.match(code(detailsPage), /export async function generateStaticParams\(\): Promise<\{ slug: string \}\[\]> \{ return \[\]; \}/);
+  assert.match(code(detailsPage), /export const revalidate = 60;/);
+});
+
+test("l'API catalogue public n'expose jamais le coût d'achat", () => {
+  const route = read("src/app/api/fazercards/catalog/route.ts");
+  const flat = code(route);
+  assert.match(flat, /getFazercardsDigitalCatalog\(\{ force \}\)/);
+  assert.doesNotMatch(flat, /supplierCostUsd/, "le coût fournisseur reste interne");
+  assert.match(flat, /supplier_not_configured/);
+});
+
+test("la synchro du catalogue est bornée (parallélisme + plafond)", () => {
+  const flat = code(catalog);
+  assert.match(flat, /FAZERCARDS_CATALOG_CONCURRENCY/);
+  assert.match(flat, /FAZERCARDS_CATALOG_MAX_CATEGORIES/);
+  assert.match(flat, /async function mapWithConcurrency<T>/);
+  assert.match(flat, /await mapWithConcurrency\(topups\.items\.slice\(0, limit\), concurrency/);
+});

@@ -48,9 +48,15 @@ export function DigitalBuyDialog({ product, denominationId, onClose }: Props) {
   const [phone, setPhone] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  // Champs acheteur exigés par le fournisseur (top-ups : identifiant de
+  // joueur, serveur…). Sans eux la recharge est refusée APRÈS paiement.
+  const [buyerFields, setBuyerFields] = useState<Record<string, string>>({});
 
   const selected = available.find((item) => item.id === selectedId) ?? available[0] ?? null;
   const total = (selected?.priceUsd ?? 0) * quantity;
+  const requiredFields = selected?.fields ?? [];
+  const maxQuantity = Math.max(1, Math.min(MAX_QUANTITY, selected?.maxQuantity ?? MAX_QUANTITY));
+  const isFazercards = product.supplier === "fazercards";
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
@@ -70,22 +76,45 @@ export function DigitalBuyDialog({ product, denominationId, onClose }: Props) {
       setError(ar ? "أدخل بريدك الإلكتروني لاستلام الكود." : "Enter your e-mail to receive the code.");
       return;
     }
+    const missingField = requiredFields.find(
+      (field) => !(buyerFields[field.key] ?? "").trim(),
+    );
+    if (missingField) {
+      setError(
+        ar
+          ? `أدخل « ${missingField.label || missingField.key} » لإتمام الشحن.`
+          : `Enter "${missingField.label || missingField.key}" to complete this order.`,
+      );
+      return;
+    }
 
     setBusy(true);
     try {
-      const res = await fetch("/api/digital/checkout", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          productSlug: product.slug,
-          denominationId: selected.id,
-          quantity,
-          email: email.trim(),
-          name: name.trim() || undefined,
-          phone: phone.trim() || undefined,
-          locale: locale === "en" ? "en" : "ar",
-        }),
-      });
+      // Chaque fournisseur a sa caisse : les produits FazerCards (catalogue
+      // live) passent par /api/fazercards/checkout, les fiches historiques
+      // par /api/digital/checkout. Le serveur recalcule le prix dans les deux cas.
+      const res = await fetch(
+        isFazercards ? "/api/fazercards/checkout" : "/api/digital/checkout",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            // Les deux routes acceptent `productSlug`/`productId` : on envoie
+            // les deux clés pour rester compatible avec l'existant.
+            productSlug: product.slug,
+            productId: product.slug,
+            denominationId: selected.id,
+            quantity,
+            email: email.trim(),
+            name: name.trim() || undefined,
+            phone: phone.trim() || undefined,
+            locale: locale === "en" ? "en" : "ar",
+            ...(isFazercards && Object.keys(buyerFields).length > 0
+              ? { fields: buyerFields }
+              : {}),
+          }),
+        },
+      );
       const data = (await res.json().catch(() => ({}))) as {
         ok?: boolean;
         paymentUrl?: string;
@@ -169,7 +198,11 @@ export function DigitalBuyDialog({ product, denominationId, onClose }: Props) {
                 <button
                   key={item.id}
                   type="button"
-                  onClick={() => setSelectedId(item.id)}
+                  onClick={() => {
+                    setSelectedId(item.id);
+                    setQuantity(1);
+                    setBuyerFields({});
+                  }}
                   className={`rounded-xl border px-3 py-2.5 text-start transition-colors ${
                     active
                       ? "border-[var(--accent)] bg-[var(--accent)]/10"
@@ -212,8 +245,8 @@ export function DigitalBuyDialog({ product, denominationId, onClose }: Props) {
             <span className="w-8 text-center text-[15px] font-black tabular-nums">{quantity}</span>
             <button
               type="button"
-              onClick={() => setQuantity((value) => Math.min(MAX_QUANTITY, value + 1))}
-              disabled={quantity >= MAX_QUANTITY}
+              onClick={() => setQuantity((value) => Math.min(maxQuantity, value + 1))}
+              disabled={quantity >= maxQuantity}
               aria-label={ar ? "زيادة" : "Increase"}
               className="grid h-9 w-9 place-items-center rounded-full border border-[var(--border)] disabled:opacity-40"
             >
@@ -221,6 +254,32 @@ export function DigitalBuyDialog({ product, denominationId, onClose }: Props) {
             </button>
           </div>
         </div>
+
+        {/* Champs exigés par le fournisseur (recharge de jeu) */}
+        {requiredFields.length > 0 && (
+          <div className="mt-4 space-y-2.5 rounded-xl border border-[var(--accent)]/40 bg-[var(--accent)]/5 p-3">
+            <p className="text-[11px] font-black uppercase tracking-wide text-[var(--accent)]">
+              {ar ? "بيانات الحساب المطلوبة للشحن" : "Account details required for this top-up"}
+            </p>
+            {requiredFields.map((field) => (
+              <label key={field.key} className="block">
+                <span className="mb-1 block text-[11px] font-bold uppercase tracking-wide text-[var(--muted-foreground)]">
+                  {field.label || field.key} *
+                </span>
+                <input
+                  value={buyerFields[field.key] ?? ""}
+                  onChange={(event) =>
+                    setBuyerFields((current) => ({ ...current, [field.key]: event.target.value }))
+                  }
+                  inputMode={field.type === "number" ? "numeric" : "text"}
+                  placeholder={field.key}
+                  className="h-11 w-full rounded-lg border border-[var(--border)] bg-[var(--background)] px-3 text-sm outline-none focus:border-[var(--accent)]"
+                  dir="ltr"
+                />
+              </label>
+            ))}
+          </div>
+        )}
 
         {/* Coordonnées */}
         <div className="mt-4 space-y-2.5">

@@ -192,6 +192,14 @@ export interface DigitalDenomination {
    * C'est la SEULE base fiable pour une face non-USD.
    */
   supplierCostUsd?: number | null;
+  /**
+   * Champs demandés par le fournisseur AVANT l'achat (top-ups : identifiant
+   * de joueur, serveur…). Une recharge sans `player_id` est refusée : ces
+   * champs sont donc saisis à la caisse et transmis au serveur.
+   */
+  fields?: { key: string; label: string; type: string }[];
+  /** Quantité maximale autorisée par le fournisseur pour ce montant. */
+  maxQuantity?: number | null;
 }
 
 const ARABIC_SCRIPT = /[\u0600-\u06ff\u0750-\u077f\u08a0-\u08ff\ufb50-\ufdff\ufe70-\ufeff]/;
@@ -275,7 +283,17 @@ export interface DigitalProduct {
    * Une remise peut rendre rentable un prix inférieur à la valeur faciale.
    */
   supplierDiscountPercent?: number | null;
+  /**
+   * Fournisseur qui livre la fiche. Les fiches du catalogue live
+   * (`fzr-…`) viennent de FazerCards ; les fiches historiques de la base
+   * sont reliées à Reloadly. Ce champ décide de la caisse ET de la route
+   * de livraison — jamais d'un préfixe de slug deviné côté navigateur.
+   */
+  supplier?: DigitalSupplier;
 }
+
+/** Fournisseur de codes d'une fiche. */
+export type DigitalSupplier = "fazercards" | "reloadly";
 
 /** Statuts visibles publiquement (le catalogue public ignore les brouillons). */
 export const PUBLIC_DIGITAL_STATUSES: DigitalStatus[] = ["coming_soon", "available"];

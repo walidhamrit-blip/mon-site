@@ -87,7 +87,9 @@ export interface FazercardsSyncResult {
 /* ------------------------------ Helpers ------------------------------ */
 
 const DEFAULT_MARGIN = 8; // % net visé par défaut
-const DEFAULT_IMAGE = "/images/digital/placeholder.png";
+// Aucun visuel fourni par FazerCards : la carte affiche ses initiales
+// plutôt qu'une image cassée (le composant gère `image` vide).
+const DEFAULT_IMAGE = "";
 
 /**
  * Préfixes de slug des produits servis par FazerCards. Ils constituent le
@@ -286,58 +288,102 @@ function mapGameKeyCategory(
  * Cette fonction ne touche pas à la base de données : elle sert de source
  * de vérité pour l'affichage et la commande chez FazerCards.
  */
+/** Nombre de catégories traitées simultanément (borne la charge fournisseur). */
+function catalogConcurrency(): number {
+  const raw = Number(process.env.FAZERCARDS_CATALOG_CONCURRENCY);
+  return Number.isFinite(raw) && raw >= 1 && raw <= 12 ? Math.floor(raw) : 6;
+}
+
+/**
+ * Plafond de catégories par famille (top-ups, cartes, clés).
+ *
+ * Une synchronisation coûte UN appel HTTP par catégorie : sans plafond, la
+ * première ouverture de `/codes` après un déploiement pouvait enchaîner des
+ * centaines de requêtes (plusieurs minutes) avant d'afficher quoi que ce
+ * soit. Les catégories sont celles que renvoie l'API, dans son ordre :
+ * plafonner ne « perd » donc que la queue du catalogue.
+ */
+function catalogMaxCategories(): number {
+  const raw = Number(process.env.FAZERCARDS_CATALOG_MAX_CATEGORIES);
+  return Number.isFinite(raw) && raw >= 1 && raw <= 100 ? Math.floor(raw) : 40;
+}
+
+/** Applique `worker` sur `items` avec une concurrence bornée. */
+async function mapWithConcurrency<T>(
+  items: T[],
+  limit: number,
+  worker: (item: T) => Promise<void>,
+): Promise<void> {
+  let cursor = 0;
+  const runners = Array.from({ length: Math.min(limit, items.length) }, async () => {
+    while (cursor < items.length) {
+      const index = cursor;
+      cursor += 1;
+      await worker(items[index]);
+    }
+  });
+  await Promise.all(runners);
+}
+
 export async function syncFazercardsCatalog(): Promise<FazercardsSyncResult> {
   const products: FazercardsProduct[] = [];
   const errors: string[] = [];
+  const limit = catalogMaxCategories();
+  const concurrency = catalogConcurrency();
 
   // ---------- Top-ups (recharges de jeux) ----------
   try {
-    const topups = await fazercardsTopups(100);
-    for (const cat of topups.items) {
+    const topups = await fazercardsTopups(limit);
+    const mapped: FazercardsProduct[] = [];
+    await mapWithConcurrency(topups.items.slice(0, limit), concurrency, async (cat) => {
       try {
         const offers = await fazercardsTopupOffers(cat.category_id);
-        // Récupère les champs acheteurs dynamiques depuis le premier offre
-        // (ils sont identiques pour toute la catégorie chez FazerCards).
+        // Les champs acheteurs (player_id…) viennent de la catégorie.
         const fields: { key: string; label: string; type: string }[] = offers.fields.map((f) => ({
           key: f.key,
           label: f.label,
           type: f.type,
         }));
-        products.push(mapTopupCategory(cat, offers.offers, fields));
+        mapped.push(mapTopupCategory(cat, offers.offers, fields));
       } catch (error) {
         errors.push(`topup ${cat.category_id}: ${error instanceof Error ? error.message : String(error)}`);
       }
-    }
+    });
+    products.push(...mapped);
   } catch (error) {
     errors.push(`topups list: ${error instanceof Error ? error.message : String(error)}`);
   }
 
   // ---------- Cartes cadeaux ----------
   try {
-    const giftcards = await fazercardsGiftCards(100);
-    for (const cat of giftcards.items) {
+    const giftcards = await fazercardsGiftCards(limit);
+    const mapped: FazercardsProduct[] = [];
+    await mapWithConcurrency(giftcards.items.slice(0, limit), concurrency, async (cat) => {
       try {
         const cards = await fazercardsGiftCardCards(cat.category_id);
-        products.push(mapGiftCardCategory(cat, cards.offers));
+        mapped.push(mapGiftCardCategory(cat, cards.offers));
       } catch (error) {
         errors.push(`giftcard ${cat.category_id}: ${error instanceof Error ? error.message : String(error)}`);
       }
-    }
+    });
+    products.push(...mapped);
   } catch (error) {
     errors.push(`giftcards list: ${error instanceof Error ? error.message : String(error)}`);
   }
 
   // ---------- Clés de jeux ----------
   try {
-    const gamekeys = await fazercardsGameKeys(100);
-    for (const cat of gamekeys.items) {
+    const gamekeys = await fazercardsGameKeys(limit);
+    const mapped: FazercardsProduct[] = [];
+    await mapWithConcurrency(gamekeys.items.slice(0, limit), concurrency, async (cat) => {
       try {
         const skus = await fazercardsGameKeyKeys(cat.game_id);
-        products.push(mapGameKeyCategory(cat, skus.keys));
+        mapped.push(mapGameKeyCategory(cat, skus.keys));
       } catch (error) {
         errors.push(`gamekey ${cat.game_id}: ${error instanceof Error ? error.message : String(error)}`);
       }
-    }
+    });
+    products.push(...mapped);
   } catch (error) {
     errors.push(`gamekeys list: ${error instanceof Error ? error.message : String(error)}`);
   }
@@ -614,4 +660,148 @@ export async function getFazercardsCatalog(
     cached: entry.result !== result,
     stale: false,
   });
+}
+
+/* ------------------- Adaptateur vers le domaine public ------------------- */
+
+/**
+ * Couleurs de repli, purement décoratives (la pastille de la carte). Elles
+ * sont choisies de façon déterministe à partir du slug : une même fiche
+ * garde la même couleur d'un déploiement à l'autre.
+ */
+const FALLBACK_COLORS = [
+  "#1B2838", // bleu nuit (Steam)
+  "#003791", // bleu (PlayStation)
+  "#107C10", // vert (Xbox)
+  "#E2231A", // rouge
+  "#01875F", // vert profond (Google Play)
+  "#6B21A8", // violet
+  "#B45309", // ambre
+  "#0F766E", // sarcelle
+];
+
+function fallbackColor(slug: string): string {
+  let hash = 0;
+  for (let index = 0; index < slug.length; index += 1) {
+    hash = (hash * 31 + slug.charCodeAt(index)) % 100000;
+  }
+  return FALLBACK_COLORS[hash % FALLBACK_COLORS.length];
+}
+
+/**
+ * Convertit une fiche FazerCards au format du domaine (`DigitalProduct`),
+ * celui qu'attendent la vitrine `/codes`, la fiche produit et le dialogue
+ * d'achat. Aucun composant d'affichage n'est modifié : seule la SOURCE du
+ * catalogue change.
+ *
+ * Points volontaires :
+ *  - `supplier: "fazercards"` : le navigateur sait ainsi à quelle caisse
+ *    s'adresser, sans deviner un préfixe de slug ;
+ *  - `status: "available"` : une fiche n'apparaît que si le fournisseur la
+ *    liste encore ; une offre sans montant vendable est filtrée plus bas ;
+ *  - les champs acheteur (`fields`) voyagent avec la dénomination : la
+ *    caisse les demande avant de créer la facture.
+ */
+export function fazercardsProductToDigital(
+  product: FazercardsProduct,
+  index: number,
+): DigitalProduct {
+  const regions = Array.from(
+    new Set(
+      product.denominations
+        .map((denomination) => denomination.region.toUpperCase())
+        .concat(product.regions.map((region) => region.toUpperCase()))
+        .filter((region) => region !== ""),
+    ),
+  );
+
+  const denominations: DigitalDenomination[] = product.denominations
+    .filter((denomination) => Number.isFinite(denomination.priceUsd) && denomination.priceUsd > 0)
+    .map((denomination) => ({
+      id: denomination.id,
+      label: denomination.label,
+      faceValue: denomination.faceValue,
+      region: denomination.region.toUpperCase() || "GLOBAL",
+      priceUsd: denomination.priceUsd,
+      available: denomination.available,
+      supplierCostUsd: denomination.supplierCostUsd,
+      fields: denomination.fields,
+      maxQuantity: denomination.maxOrderQuantity,
+    }));
+
+  return {
+    id: product.id,
+    slug: product.slug,
+    kind: product.kind,
+    status: "available",
+    platform: product.platform,
+    color: fallbackColor(product.slug),
+    titleAr: product.titleAr,
+    titleEn: product.titleEn,
+    descriptionAr: product.descriptionAr,
+    descriptionEn: product.descriptionEn,
+    image: product.image,
+    regions: regions.length > 0 ? regions : ["GLOBAL"],
+    featuresAr: [
+      "تسليم فوري إلى بريدك الإلكتروني",
+      "دفع بالعملات الرقمية (USDT وغيرها)",
+      "كود أصلي من الموزّع الرسمي",
+    ],
+    featuresEn: [
+      "Instant delivery to your e-mail",
+      "Crypto payment (USDT and others)",
+      "Genuine code from the official distributor",
+    ],
+    deliveryNoteAr: "يُسلَّم الكود بعد تأكيد الدفع — عادةً في أقل من 5 دقائق.",
+    deliveryNoteEn: "Code delivered after payment confirmation — usually under 5 minutes.",
+    denominations,
+    sortOrder: index,
+    fulfillment: "auto",
+    supplier: "fazercards",
+  };
+}
+
+/** Vrai si la fiche a au moins un montant réellement vendable. */
+function hasSellableDenomination(product: DigitalProduct): boolean {
+  return product.denominations.some(
+    (denomination) =>
+      denomination.available &&
+      Number.isFinite(denomination.priceUsd) &&
+      denomination.priceUsd > 0,
+  );
+}
+
+/**
+ * Catalogue du fournisseur, converti pour la vitrine.
+ * Les fiches sans montant vendable sont écartées : afficher une fiche sur
+ * laquelle on ne peut pas acheter ne génère que des messages WhatsApp.
+ */
+export async function getFazercardsDigitalCatalog(
+  options: { maxAgeMs?: number; force?: boolean } = {},
+): Promise<{
+  products: DigitalProduct[];
+  cached: boolean;
+  stale: boolean;
+  fetchedAt: string;
+  errors: string[];
+}> {
+  const catalog = await getFazercardsCatalog(options);
+  const products = catalog.products
+    .map((product, index) => fazercardsProductToDigital(product, index))
+    .filter(hasSellableDenomination);
+  return {
+    products,
+    cached: catalog.cached,
+    stale: catalog.stale,
+    fetchedAt: catalog.fetchedAt,
+    errors: catalog.errors,
+  };
+}
+
+/** Fiche du fournisseur par slug (même source que la vitrine). */
+export async function getFazercardsDigitalProduct(
+  slug: string,
+): Promise<DigitalProduct | null> {
+  const { products } = await getFazercardsDigitalCatalog();
+  return products.find((product) => product.slug === slug) ?? null;
 }

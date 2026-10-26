@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { getDigitalCatalog, getDigitalProductBySlug } from "@/lib/digital-store";
+import { getDigitalProductBySlug } from "@/lib/digital-store";
 import { absoluteUrl, breadcrumbJsonLd, pageMetadata } from "@/lib/seo";
 import { JsonLd } from "@/components/json-ld";
 import { DigitalProductDetails } from "./digital-product-details";
@@ -8,9 +8,15 @@ import { getSiteDataCached } from "@/lib/store";
 import { resolveMarket } from "@/lib/market";
 import { lowestPriceUsd } from "@/lib/digital-types";
 
-export async function generateStaticParams() {
-  const products = await getDigitalCatalog({ publicOnly: true });
-  return products.map((product) => ({ slug: product.slug }));
+/**
+ * Aucune page produit n'est pré-générée à la construction.
+ *
+ * Le catalogue vient désormais du FOURNISSEUR (FazerCards) : il change sans
+ * déploiement, et un build ne doit pas dépendre d'une API tierce. Les fiches
+ * sont donc rendues à la demande puis mises en cache par ISR (60 s).
+ */
+export async function generateStaticParams(): Promise<{ slug: string }[]> {
+  return [];
 }
 
 /**

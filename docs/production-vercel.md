@@ -110,10 +110,26 @@ fonctionne normalement.
 | `FAZERCARDS_MAX_ORDER_USD` | `300` | Au-delà, la commande bascule en livraison manuelle (aucun débit automatique) |
 | `FAZERCARDS_CATALOG_TTL_SECONDS` | `600` | Fraîcheur du catalogue en cache (prix / stock). `0` = cache désactivé |
 | `FAZERCARDS_CATALOG_MAX_STALE_MINUTES` | `60` | Âge maximal d'un catalogue périmé encore servi si le fournisseur est en panne |
+| `FAZERCARDS_CATALOG_MAX_CATEGORIES` | `40` | Catégories synchronisées par famille (chaque catégorie = 1 appel HTTP) |
+| `FAZERCARDS_CATALOG_CONCURRENCY` | `6` | Requêtes simultanées vers l'API (1–12) |
 | `FAZERCARDS_WEBHOOK_SECRET` | **ne pas créer** | Vercel refuse une valeur vide. Cette variable n'est utile que le jour où un webhook de statut est déclaré dans le hub revendeur. Absente, elle n'a aucun effet |
 
 Le plafond `FAZERCARDS_MAX_ORDER_USD` est un **garde-fou de dépense** : il
 se juge sur le montant payé par le client, pas sur le solde du compte.
+
+### Qui sert le catalogue de `/codes`
+
+Quand `FAZERCARDS_API_KEY` est présente, **c'est le catalogue FazerCards qui
+est publié** sur `/codes` et `/codes/<slug>` (les fiches de la base, reliées
+à Reloadly, ne servent plus que de repli). Conséquences :
+
+- les pages produit ne sont plus pré-générées au build (`generateStaticParams`
+  vide) : elles sont rendues à la demande puis rafraîchies par ISR (60 s) ;
+- le build ne contacte **jamais** l'API fournisseur : le premier rendu
+  déployé montre le repli base, puis l'ISR bascule sur le catalogue réel ;
+- `GET /api/fazercards/catalog` renvoie le catalogue public servi depuis le
+  cache (sans le coût d'achat) — utile pour vérifier rapidement les prix et
+  les régions réellement proposés.
 
 ### Mettre la clé FazerCards en production — ordre exact
 
