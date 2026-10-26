@@ -537,3 +537,42 @@ requêtes restent sans effet : aucune donnée n'apparaît.
 3. Les bonnes notes locales (`npm run build` + Lighthouse) ne garantissent
    pas les Web Vitals terrain : Speed Insights mesure des visiteurs réels,
    réseau et appareils compris.
+
+## Politique de prix et réseaux de paiement
+
+Le catalogue FazerCards n'applique plus une marge unique de 8 % : celle-ci
+ignorait les frais FIXES (réseau blockchain, retrait), qui dépassaient la
+marge des petits articles — une vente à 0,81 $ se soldait par une perte.
+
+Barème en vigueur (`src/lib/fazercards-pricing.ts`) :
+
+| Coût fournisseur | Marge nette | Gain plancher |
+| ---------------- | ----------- | ------------- |
+| < 5 $            | 20 %        | 0,45 $        |
+| 5 – 20 $         | 15 %        | 1,00 $        |
+| 20 – 60 $        | 12 %        | 2,50 $        |
+| ≥ 60 $           | 10 %        | —             |
+
+`prix = max(coût / (1 − marge), coût + plancher, 1,50 $)`, arrondi au centime
+supérieur : jamais de vente à perte, jamais de prix sous `MIN_RETAIL_USD`.
+
+`MIN_RETAIL_USD = 1,50 $` est **aligné sur `MIN_CRYPTO_INVOICE_USD`** : un
+prix public plus bas que le minimum de facture rendait le bouton « Acheter »
+inopérant (`below_minimum`).
+
+### Réseaux de paiement
+
+Les frais de réseau sont fixes : sur un article à 1,50 $, un transfert ERC-20
+ou Bitcoin peut manger toute la marge.
+
+- **À laisser activés** : BEP-20, Solana, TON, Polygon, Arbitrum, Avalanche,
+  Aptos.
+- **À désactiver** : TRC-20, ERC-20, Bitcoin, Ethereum natif.
+
+⚠️ La liste réellement proposée au client se règle dans le **dashboard
+NOWPayments → Coin settings**, PAS dans le code : notre facture ne fixe pas
+`pay_currency`, c'est la page hébergée qui laisse choisir la pièce. Le code
+fait trois choses : afficher les réseaux recommandés dans le tunnel d'achat
+(`src/lib/payment-networks.ts`), détecter un paiement arrivé sur une chaîne
+coûteuse (avertissement dans les logs de l'IPN, jamais un refus — le client a
+payé), et verrouiller ces règles par des tests.

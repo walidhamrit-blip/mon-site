@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Loader2, Lock, Minus, Plus, ShieldCheck, X } from "lucide-react";
+import { Loader2, Lock, Minus, Plus, ShieldCheck, X, Zap } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import { Price } from "@/components/price";
 import {
@@ -11,6 +11,7 @@ import {
   type DigitalProduct,
 } from "@/lib/digital-types";
 import { RegionalAlert } from "@/components/regional-alert";
+import { recommendedNetworksLabel } from "@/lib/payment-networks";
 
 const MAX_QUANTITY = 10;
 /**
@@ -397,6 +398,16 @@ export function DigitalBuyDialog({ product, denominationId, onClose }: Props) {
           {ar
             ? "الدفع بالعملات الرقمية (USDT وغيرها) عبر صفحة دفع آمنة. يُسلَّم الكود إلى بريدك الإلكتروني بعد تأكيد الدفع — عادةً في أقل من 5 دقائق."
             : "Crypto payment (USDT and others) on a secure hosted page. Your code is e-mailed right after payment confirmation — usually under 5 minutes."}
+        </p>
+
+        {/* Frais de réseau : ils sont FIXES et peuvent dépasser la valeur
+            d'un petit article. On oriente donc le client vers les chaînes
+            à quelques centimes (liste blanche de `payment-networks.ts`). */}
+        <p className="mt-1.5 flex items-start gap-2 text-[11px] leading-5 text-[var(--muted-foreground)]">
+          <Zap className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[var(--accent)]" />
+          {ar
+            ? `لتفادي رسوم شبكة مرتفعة، استخدم: ${recommendedNetworksLabel()}`
+            : `To avoid high network fees, pay on: ${recommendedNetworksLabel()}`}
         </p>
       </div>
     </div>

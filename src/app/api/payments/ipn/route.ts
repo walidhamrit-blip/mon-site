@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { isHighCostNetwork } from "@/lib/payment-networks";
 import { and, eq, inArray } from "drizzle-orm";
 import { db, ensureSchema } from "@/db";
 import { orders, type Order } from "@/db/schema";
@@ -260,6 +261,17 @@ export async function POST(req: Request) {
         : order.payCurrency;
     const payAmount =
       payload.pay_amount != null ? String(payload.pay_amount) : order.payAmount;
+
+    // Chaîne coûteuse détectée (ERC-20, TRC-20, BTC, ETH natif) : les frais
+    // fixes y dépassent la marge d'un petit article. Le paiement est honoré
+    // — on ne refuse jamais un client qui a payé — mais on le signale pour
+    // vérifier que la liste blanche est bien réglée dans NOWPayments
+    // (Coin settings) et pour suivre la marge réelle.
+    if (isHighCostNetwork(payCurrency)) {
+      console.warn(
+        `[ipn] paiement ${order.ref} reçu sur une chaîne coûteuse (${payCurrency}) — vérifier les Coin settings NOWPayments`,
+      );
+    }
 
     // Mise à jour conditionnelle : si le polling (ou un autre IPN) a déjà
     // fait la même transition en parallèle, cette requête ne revendique
