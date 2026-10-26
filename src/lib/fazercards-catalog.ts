@@ -29,6 +29,7 @@ import {
   type FazercardsTopupOffer,
 } from "@/lib/fazercards";
 import { after } from "next/server";
+import { revalidatePath } from "next/cache";
 import {
   readStoredFazercardsCatalog,
   writeStoredFazercardsCatalog,
@@ -615,6 +616,7 @@ function refreshFazercardsCatalog(): Promise<FazercardsSyncResult> {
         // Copie partagée : les autres instances (et les rendus suivants)
         // lisent cette version en une requête, sans re-synchroniser.
         await writeStoredFazercardsCatalog(result, fetchedAt);
+        revalidateCatalogPages();
       }
       return result;
     })
@@ -656,6 +658,28 @@ function scheduleBackgroundRefresh(ttlMs: number): void {
     });
   } catch {
     // Hors requête Next : le cron quotidien prendra le relais.
+  }
+}
+
+/**
+ * Purge le cache des pages qui affichent le catalogue.
+ *
+ * Sans cela, `/codes` reste servi depuis le cache ISR (pré-généré au build
+ * avec le catalogue de repli) : une synchronisation réussie ne changeait
+ * donc RIEN pour le visiteur. La revalidation est appelée après chaque
+ * synchro (cron, `?refresh=1`, rafraîchissement d'arrière-plan).
+ *
+ * Best effort : hors contexte de requête Next (script, test), l'appel lève
+ * et on l'ignore.
+ */
+function revalidateCatalogPages(): void {
+  try {
+    revalidatePath("/codes", "layout");
+  } catch (error) {
+    console.warn(
+      "[fazercards][catalogue] revalidation impossible :",
+      error instanceof Error ? error.message : error,
+    );
   }
 }
 
