@@ -19,6 +19,7 @@
 //   • Les identifiants publics : commandes ord-…, transactions tx-…
 
 import { sanitizeSecret } from "@/lib/nowpayments";
+import { MIN_CRYPTO_INVOICE_USD } from "@/lib/digital-types";
 
 const FAZERCARDS_BASE = "https://api.fzr.cards/api/v2";
 
@@ -33,6 +34,11 @@ function envNumber(name: string, fallback: number): number {
 /** Plafond d'un achat automatique : au-delà, livraison manuelle. */
 export function fazercardsMaxOrderUsd(): number {
   return envNumber("FAZERCARDS_MAX_ORDER_USD", DEFAULT_MAX_ORDER_USD);
+}
+
+/** Montant minimal d'une facture (aligné sur la caisse publique). */
+export function fazercardsMinOrderUsd(): number {
+  return envNumber("FAZERCARDS_MIN_ORDER_USD", MIN_CRYPTO_INVOICE_USD);
 }
 
 export function fazercardsApiKey(): string {

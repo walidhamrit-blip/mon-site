@@ -267,3 +267,35 @@ test("la synchro du catalogue est bornée (parallélisme + plafond)", () => {
   assert.match(flat, /async function mapWithConcurrency<T>/);
   assert.match(flat, /await mapWithConcurrency\(topups\.items\.slice\(0, limit\), concurrency/);
 });
+
+/* -------------------- Catalogue réel : défauts observés --------------- */
+
+test("les titres utilisent les types du domaine (pas les clés fournisseur)", () => {
+  const flat = code(catalog);
+  // Le mappeur reçoit `game_topup` / `software_key` : ces clés doivent exister.
+  assert.match(flat, /titleFor\("game_topup"/);
+  assert.match(flat, /titleFor\("software_key"/);
+  assert.match(flat, /game_topup:? \{ ar:/);
+  assert.match(flat, /software_key:? \{ ar:/);
+  // Les anciennes clés (`topup`, `game_key`) donnaient « Digital Product ».
+  assert.doesNotMatch(flat, /(?<![_a-z])topup: \{ ar:/);
+});
+
+test("aucun nom de fournisseur dans les textes publics", () => {
+  // Uniquement les descriptions RÉELLES (gabarits `...`), pas les types.
+  const texts = catalog.match(/description(?:Ar|En): `[^`]*`/g) ?? [];
+  assert.ok(texts.length > 0, "descriptions introuvables");
+  for (const text of texts) {
+    assert.doesNotMatch(text, /FazerCards/i, `fuite de marque fournisseur : ${text}`);
+  }
+});
+
+test("la caisse refuse une facture sous le minimum crypto", () => {
+  const flat = code(orders);
+  assert.match(flat, /const minOrderUsd = fazercardsMinOrderUsd\(\);/);
+  assert.match(flat, /"below_minimum"/);
+  const dialogFlat = code(dialog);
+  assert.match(dialogFlat, /MIN_CRYPTO_INVOICE_USD/);
+  assert.match(dialogFlat, /belowMinimum/);
+  assert.match(dialogFlat, /disabled=\{busy \|\| !selected \|\| belowMinimum\}/);
+});

@@ -27,6 +27,7 @@ import {
   fazercardsGameKeyOrder,
   fazercardsGiftCardOrder,
   fazercardsMaxOrderUsd,
+  fazercardsMinOrderUsd,
   fazercardsOrder,
   fazercardsTopupOrder,
   isFazercardsError,
@@ -234,6 +235,21 @@ export async function createFazercardsCheckout(
   }
 
   const totalUsd = Math.round(unitPriceUsd * quantity * 100) / 100;
+
+  // Facture trop petite : la passerelle crypto la refuserait. On l'annonce
+  // AVANT le paiement, avec l'action à faire (augmenter la quantité).
+  const minOrderUsd = fazercardsMinOrderUsd();
+  const minQuantity = Math.max(1, Math.ceil(minOrderUsd / unitPriceUsd));
+  if (totalUsd < minOrderUsd) {
+    throw new FazercardsOrderError(
+      "below_minimum",
+      400,
+      `Montant minimum ${minOrderUsd.toFixed(2)} $ par commande — choisissez au moins ${Math.min(
+        minQuantity,
+        denomination.maxOrderQuantity,
+      )} × ${denomination.label}.`,
+    );
+  }
 
   // Champs acheteur (top-ups : player_id, serveur…). Ils sont indispensables
   // à l'achat : sans eux FazerCards refuse la commande APRÈS encaissement,
