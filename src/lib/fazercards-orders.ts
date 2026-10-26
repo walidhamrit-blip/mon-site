@@ -251,6 +251,19 @@ export async function createFazercardsCheckout(
     );
   }
 
+  // Plafond d'achat automatique : au-delà, la livraison basculerait en
+  // manuel APRÈS encaissement. On refuse donc la vente tout de suite — le
+  // client n'a aucune raison de payer un article qu'on ne livrera pas seul.
+  const maxOrderUsd = fazercardsMaxOrderUsd();
+  if (totalUsd > maxOrderUsd) {
+    const maxQuantityByCap = Math.max(1, Math.floor(maxOrderUsd / unitPriceUsd));
+    throw new FazercardsOrderError(
+      "above_limit",
+      409,
+      `Montant maximum ${maxOrderUsd.toFixed(0)} $ par commande — réduisez la quantité (au plus ${maxQuantityByCap}) ou écrivez-nous sur WhatsApp.`,
+    );
+  }
+
   // Champs acheteur (top-ups : player_id, serveur…). Ils sont indispensables
   // à l'achat : sans eux FazerCards refuse la commande APRÈS encaissement,
   // donc on refuse la vente tout de suite s'ils sont exigés et absents.

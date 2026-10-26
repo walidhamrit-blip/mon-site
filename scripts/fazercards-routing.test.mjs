@@ -297,5 +297,19 @@ test("la caisse refuse une facture sous le minimum crypto", () => {
   const dialogFlat = code(dialog);
   assert.match(dialogFlat, /MIN_CRYPTO_INVOICE_USD/);
   assert.match(dialogFlat, /belowMinimum/);
-  assert.match(dialogFlat, /disabled=\{busy \|\| !selected \|\| belowMinimum\}/);
+  assert.match(dialogFlat, /disabled=\{busy \|\| !selected \|\| belowMinimum \|\| aboveLimit\}/);
+});
+
+test("le plafond d'achat est refusé AVANT l'encaissement", () => {
+  const flat = code(orders);
+  assert.match(flat, /const maxOrderUsd = fazercardsMaxOrderUsd\(\);/);
+  assert.match(flat, /"above_limit"/);
+  // La caisse doit refuser, pas laisser livrer en manuel après paiement.
+  assert.ok(
+    flat.indexOf('"above_limit"') < flat.indexOf("createInvoice("),
+    "le plafond doit être vérifié avant la création de la facture",
+  );
+  const dialogFlat = code(dialog);
+  assert.match(dialogFlat, /aboveLimit/);
+  assert.match(dialogFlat, /!selected \|\| belowMinimum \|\| aboveLimit/);
 });
