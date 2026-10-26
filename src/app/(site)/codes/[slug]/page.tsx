@@ -28,6 +28,9 @@ export async function generateStaticParams(): Promise<{ slug: string }[]> {
  */
 export const revalidate = 60;
 
+/** Même raison que la liste : aucune synchronisation pendant le rendu. */
+export const maxDuration = 60;
+
 export async function generateMetadata({
   params,
 }: {

@@ -28,6 +28,11 @@ import {
   type FazercardsTopupCategory,
   type FazercardsTopupOffer,
 } from "@/lib/fazercards";
+import { after } from "next/server";
+import {
+  readStoredFazercardsCatalog,
+  writeStoredFazercardsCatalog,
+} from "@/lib/fazercards-catalog-store";
 import {
   DIGITAL_KINDS,
   type DigitalDenomination,
@@ -561,6 +566,8 @@ interface CatalogCacheEntry {
 
 let catalogCache: CatalogCacheEntry | null = null;
 let catalogInflight: Promise<FazercardsSyncResult> | null = null;
+/** Horodatage de la dernière tentative de rafraîchissement d'arrière-plan. */
+let lastRefreshAttempt = 0;
 
 /** Vide le cache (après un changement de clé API ou une synchro admin). */
 export function invalidateFazercardsCatalogCache(): void {
@@ -601,9 +608,13 @@ function refreshFazercardsCatalog(): Promise<FazercardsSyncResult> {
   if (catalogInflight) return catalogInflight;
 
   catalogInflight = syncFazercardsCatalog()
-    .then((result) => {
+    .then(async (result) => {
       if (result.products.length > 0) {
-        catalogCache = { result, fetchedAt: Date.now() };
+        const fetchedAt = Date.now();
+        catalogCache = { result, fetchedAt };
+        // Copie partagée : les autres instances (et les rendus suivants)
+        // lisent cette version en une requête, sans re-synchroniser.
+        await writeStoredFazercardsCatalog(result, fetchedAt);
       }
       return result;
     })
@@ -612,6 +623,40 @@ function refreshFazercardsCatalog(): Promise<FazercardsSyncResult> {
     });
 
   return catalogInflight;
+}
+
+/**
+ * Planifie une synchronisation APRÈS la réponse HTTP.
+ *
+ * Le plan Vercel Hobby n'autorise qu'un cron par jour : sans cela, les prix
+ * et le stock resteraient figés jusqu'au lendemain. `after()` exécute la
+ * tâche dans la même invocation, une fois la réponse envoyée — l'utilisateur
+ * n'attend jamais la synchronisation.
+ *
+ * Best effort : hors contexte de requête Next (script, test), `after` lève —
+ * on ignore simplement.
+ */
+function scheduleBackgroundRefresh(ttlMs: number): void {
+  // Ne pas relancer une synchro déjà en cours, ni insister à chaque requête
+  // (une page très visitée ne doit pas déclencher une synchro par visite) :
+  // au plus une tentative toutes les demi-périodes de cache.
+  if (catalogInflight) return;
+  if (Date.now() - lastRefreshAttempt < ttlMs / 2) return;
+  lastRefreshAttempt = Date.now();
+  try {
+    after(async () => {
+      try {
+        await refreshFazercardsCatalog();
+      } catch (error) {
+        console.warn(
+          "[fazercards][catalogue] rafraîchissement d'arrière-plan impossible :",
+          error instanceof Error ? error.message : error,
+        );
+      }
+    });
+  } catch {
+    // Hors requête Next : le cron quotidien prendra le relais.
+  }
 }
 
 function snapshot(
@@ -632,18 +677,47 @@ function snapshot(
  *
  * @param options.maxAgeMs  âge maximal accepté sans appel réseau (défaut :
  *                          `FAZERCARDS_CATALOG_TTL_SECONDS`).
- * @param options.force     force une resynchronisation (admin / diagnostic).
+ * @param options.force     force une resynchronisation (cron / admin).
+ * @param options.noSync    **ne jamais synchroniser** : sert la copie
+ *                          mémoire ou en base, même périmée, et échoue s'il
+ *                          n'y en a aucune. C'est le mode du RENDU des
+ *                          pages : une synchronisation complète (~123
+ *                          appels HTTP) dépasse le temps d'exécution d'une
+ *                          fonction serverless, ce qui faisait expirer les
+ *                          pages (repli silencieux sur le catalogue
+ *                          historique, ou erreur 500 sur les fiches).
  */
 export async function getFazercardsCatalog(
-  options: { maxAgeMs?: number; force?: boolean } = {},
+  options: { maxAgeMs?: number; force?: boolean; noSync?: boolean } = {},
 ): Promise<FazercardsCatalogSnapshot> {
   const ttlMs = options.maxAgeMs ?? fazercardsCatalogTtlMs();
-  const cache = catalogCache;
+  let cache = catalogCache;
+
+  // Rien en mémoire (instance neuve) : on lit la copie partagée en base
+  // AVANT d'envisager une synchronisation complète. C'est ce qui rend le
+  // rendu des pages rapide et fiable — une synchro (~123 appels HTTP)
+  // dépasserait le temps d'exécution d'une fonction serverless.
+  if (!cache) {
+    const stored = await readStoredFazercardsCatalog();
+    if (stored) {
+      catalogCache = { result: stored.result, fetchedAt: stored.fetchedAt };
+      cache = catalogCache;
+    }
+  }
 
   if (!options.force && cache) {
     const ageMs = Date.now() - cache.fetchedAt;
     if (ageMs < ttlMs) {
       return snapshot(cache, { cached: true, stale: false });
+    }
+
+    // Rendu de page : on sert TOUT DE SUITE la copie existante, puis on
+    // planifie le rafraîchissement APRÈS l'envoi de la réponse (`after`).
+    // Synchroniser ici ferait expirer la requête ; ne rien planifier
+    // figerait le catalogue entre deux crons (une fois par jour sur Hobby).
+    if (options.noSync) {
+      scheduleBackgroundRefresh(ttlMs);
+      return snapshot(cache, { cached: true, stale: true });
     }
 
     try {
@@ -661,6 +735,12 @@ export async function getFazercardsCatalog(
       if (usableStale) return snapshot(cache, { cached: true, stale: true });
       throw error;
     }
+  }
+
+  // Aucune copie disponible : sans synchronisation autorisée, l'appelant
+  // doit se rabattre sur le catalogue historique.
+  if (options.noSync) {
+    throw new Error("Catalogue FazerCards indisponible (aucune copie en cache).");
   }
 
   const result = await refreshFazercardsCatalog();
@@ -786,7 +866,7 @@ function hasSellableDenomination(product: DigitalProduct): boolean {
  * laquelle on ne peut pas acheter ne génère que des messages WhatsApp.
  */
 export async function getFazercardsDigitalCatalog(
-  options: { maxAgeMs?: number; force?: boolean } = {},
+  options: { maxAgeMs?: number; force?: boolean; noSync?: boolean } = {},
 ): Promise<{
   products: DigitalProduct[];
   cached: boolean;

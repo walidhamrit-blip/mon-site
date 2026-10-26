@@ -17,6 +17,8 @@ import { fazercardsConfigured } from "@/lib/fazercards";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+/** `?refresh=1` déclenche une synchro complète : il lui faut du temps. */
+export const maxDuration = 60;
 
 export async function GET(req: Request) {
   if (!fazercardsConfigured()) {

@@ -131,6 +131,32 @@ est publié** sur `/codes` et `/codes/<slug>` (les fiches de la base, reliées
   cache (sans le coût d'achat) — utile pour vérifier rapidement les prix et
   les régions réellement proposés.
 
+### Pourquoi le catalogue est persisté en base
+
+Une synchronisation complète enchaîne **un appel HTTP par catégorie**
+(~123 aujourd'hui). Dans le rendu d'une page, cela dépasse le temps
+d'exécution d'une fonction serverless : la page expirait, retombait
+silencieusement sur le catalogue historique, et les fiches produit
+répondaient `500`.
+
+Le catalogue synchronisé est donc stocké dans la table `settings`
+(clé `fazercards:catalog`) :
+
+- le **rendu** lit cette copie (`noSync`) — jamais de synchro, page rapide ;
+- un **rafraîchissement post-réponse** (`after()`, Next 16) est planifié dès
+  que la copie dépasse son TTL : l'utilisateur reçoit la page immédiatement,
+  la synchro se fait après l'envoi ;
+- le **cron** `/api/cron/fazercards-catalog` (une fois par jour,
+  `maxDuration = 60`) sert de filet de sécurité. ⚠️ Le plan **Hobby** de
+  Vercel refuse tout cron plus fréquent qu'une fois par jour et **fait
+  échouer le déploiement** (`Hobby accounts are limited to daily cron jobs`) ;
+  un `*/10` a déjà bloqué un déploiement de ce projet ;
+- après un déploiement, la première synchro peut être forcée à la main :
+  `curl -s https://nokhba.net.ly/api/fazercards/catalog?refresh=1 > /dev/null`.
+
+Sans copie en base (premier déploiement), la vitrine sert le catalogue
+historique jusqu'au premier passage du cron.
+
 ### Mettre la clé FazerCards en production — ordre exact
 
 1. **Fusionner la PR** qui contient l'intégration (sinon la clé ne sert à

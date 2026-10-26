@@ -280,7 +280,10 @@ async function getLiveCatalog(): Promise<DigitalProduct[] | null> {
   if (!fazercardsConfigured()) return null;
   if (process.env.NEXT_PHASE === "phase-production-build") return null;
   try {
-    const { products, stale } = await getFazercardsDigitalCatalog();
+    // Rendu de page : jamais de synchronisation complète ici (elle dépasse
+    // le temps d'exécution d'une fonction serverless). On lit la copie en
+    // cache/base, rafraîchie par le cron.
+    const { products, stale } = await getFazercardsDigitalCatalog({ noSync: true });
     if (stale) {
       console.warn("[digital] catalogue fournisseur servi depuis un cache périmé");
     }
