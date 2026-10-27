@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getSiteDataCached } from "@/lib/store";
-import { breadcrumbJsonLd, pageMetadata, webPageJsonLd } from "@/lib/seo";
+import { breadcrumbJsonLd, pageMetadata, siteLocale, webPageJsonLd } from "@/lib/seo";
 import {
   comparePath,
   comparisonCriteriaJsonLd,
@@ -46,10 +46,15 @@ export async function generateMetadata({
       noindex: true,
     });
   }
+  // Les métadonnées suivent la langue principale du site (/admin) : le
+  // titre servi est toujours celui de la langue par défaut, comme le HTML
+  // initial. Le visiteur peut basculer la langue côté client ensuite.
+  const locale = siteLocale(config);
+
   return pageMetadata(config, {
     path: comparePath(comparison.id),
-    title: comparison.titleAr,
-    description: comparison.descriptionAr,
+    title: locale === "ar" ? comparison.titleAr : comparison.titleEn,
+    description: locale === "ar" ? comparison.descriptionAr : comparison.descriptionEn,
     // opengraph-image.tsx génère la carte « annonce » 1200×630 de la page.
     image: false,
     keywords: [

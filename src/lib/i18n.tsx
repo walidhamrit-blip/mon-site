@@ -80,10 +80,100 @@ const compareLabels = {
   usNameEn: "Nukhba",
 };
 
+/**
+ * Libellés de la page « Open services » (/services).
+ *
+ * Même principe que `compareLabels` : une seule constante partagée par les
+ * deux langues, branchée sur `ar` et `en` plus bas. Les contenus éditoriaux
+ * (services, FAQ) restent dans `src/lib/services.ts` et la configuration
+ * vivante — ici on ne stocke que l'interface de la page.
+ */
+const servicesHubLabels = {
+  homeAr: "الرئيسية",
+  homeEn: "Home",
+  badgeAr: "خدمات مفتوحة · Open services",
+  badgeEn: "Open services",
+  heroTitleAr: "خدمات رقمية سريعة بأسعار معلنة — طرابلس، ليبيا",
+  heroTitleEn: "Fast digital services at published prices — Tripoli, Libya",
+  heroTextAr:
+    "لا تحتاج مشروعاً كاملاً لكل فكرة. اختر الخدمة التي تحتاجها اليوم: تجديد موقعك، إضافة قسم، عرض تقديمي، هوية بصرية، صفحة هبوط أو إصلاح تقني — بأسعار تبدأ من {from} وتسليم يبدأ من {delivery}.",
+  heroTextEn:
+    "You don't need a full project for every idea. Pick the service you need today: refresh your site, add a section, a presentation deck, a visual identity, a landing page or a technical fix — starting at {from} with delivery from {delivery}.",
+  heroSecondaryAr:
+    "Fast, fixed-scope digital services in Tripoli, Libya — from $15 with delivery in as little as 24 hours.",
+  heroSecondaryEn:
+    "خدمات رقمية سريعة بأسعار ثابتة في طرابلس، ليبيا — تبدأ من 15 دولاراً وتسليم خلال 24 ساعة.",
+  shortAr: "باختصار:",
+  shortEn: "In short:",
+  answerAr:
+    "نخبة تقدم {count} خدمات رقمية جاهزة للتنفيذ عن بُعد حول العالم — إعادة تصميم موقع ({restyle})، إضافة قسم جديد ({addSection})، عروض تقديمية ({slides})، هوية بصرية ({branding})، صفحة هبوط ({landing})، وإصلاح وتحسين ({fix}). كل الأسعار بالدولار فقط وتُدفع بنفس المبلغ بـ USDT، كاملة أو على دفعتين/ثلاث.",
+  answerEn:
+    "Nukhba delivers {count} ready-to-run digital services remotely, worldwide — site restyle ({restyle}), new section ({addSection}), presentation decks ({slides}), visual identity ({branding}), landing page ({landing}), and fix & optimise ({fix}). All prices are in dollars only and paid 1:1 in USDT, in full or in two/three instalments.",
+  ctaQuoteAr: "اطلب عرض سعر مجاني",
+  ctaQuoteEn: "Get a free quote",
+  ctaPricingAr: "شاهد باقات المواقع الكاملة",
+  ctaPricingEn: "See the full website plans",
+  bulletPriceAr: "سعر ثابت مكتوب قبل البدء",
+  bulletPriceEn: "A fixed price written down before we start",
+  bulletDeliveryAr: "تسليم 24 – 72 ساعة",
+  bulletDeliveryEn: "Delivery in 24 – 72 hours",
+  bulletRevisionsAr: "مراجعتان مجانيتان",
+  bulletRevisionsEn: "Two free revisions",
+  gridTitleAr: "كل الخدمات — {count} مهمة جاهزة للتنفيذ",
+  gridTitleEn: "All services — {count} ready-to-run tasks",
+  gridSubAr: "أسعار بالدولار فقط — 1 دولار = 1 USDT",
+  gridSubEn: "USD pricing only — 1 USD = 1 USDT",
+  fromAr: "تبدأ من",
+  fromEn: "Starts at",
+  deliveryAr: "التسليم: {value}",
+  deliveryEn: "Delivery: {value}",
+  detailsAr: "تفاصيل الخدمة",
+  detailsEn: "Service details",
+  stepsTitleAr: "كيف تعمل الخدمة السريعة؟",
+  stepsTitleEn: "How does a fast service work?",
+  stepsSubAr: "ثلاث خطوات، بدون اجتماعات طويلة.",
+  stepsSubEn: "Three steps, no long meetings.",
+  step1TitleAr: "أرسل التفاصيل",
+  step1TitleEn: "Send the details",
+  step1DescAr:
+    "رابط موقعك أو ملف العرض + ما تريد الوصول إليه. الرد خلال ساعتين في أوقات العمل.",
+  step1DescEn:
+    "Your site link or deck file + what you want to achieve. Reply within two hours during working hours.",
+  step2TitleAr: "عرض سعر ثابت",
+  step2TitleEn: "A fixed-price quote",
+  step2DescAr:
+    "نحدد النطاق والمدة والسعر كتابياً. نبدأ بعد دفعة مقدمة 50% — الباقي عند التسليم.",
+  step2DescEn:
+    "We agree on scope, timing and price in writing. We start after a 50% deposit — the rest on delivery.",
+  step3TitleAr: "تسليم ومراجعة",
+  step3TitleEn: "Delivery and review",
+  step3DescAr:
+    "نسلّم الملفات أو النشر، ثم مراجعتان مجانيتان حتى الرضا الكامل — ودعم 14 يوماً بعدها.",
+  step3DescEn:
+    "We hand over the files or the go-live, then two free revisions until you're satisfied — plus 14 days of support after.",
+  faqTitleAr: "أسئلة شائعة عن الخدمات المفتوحة",
+  faqTitleEn: "FAQ about open services",
+  faqSubAr: "Open services — FAQ",
+  faqSubEn: "الخدمات المفتوحة — أسئلة شائعة",
+  exploreAr: "استكشف أيضاً",
+  exploreEn: "Explore also",
+  linkSectorsAr: "مواقع حسب القطاع",
+  linkSectorsEn: "Sites by sector",
+  linkDemosAr: "معارض الأعمال الحية",
+  linkDemosEn: "Live project showcases",
+  linkPricingAr: "باقات المواقع الكاملة",
+  linkPricingEn: "Full website plans",
+  linkAppsAr: "تطبيقات قريباً",
+  linkAppsEn: "Apps coming soon",
+  linkContactAr: "تواصل معنا",
+  linkContactEn: "Contact us",
+};
+
 
 const translations = {
   ar: {
     compare: compareLabels,
+    servicesHub: servicesHubLabels,
     nav: {
       home: "الرئيسية",
       demos: "المعارض",
@@ -378,6 +468,7 @@ const translations = {
   },
   en: {
     compare: compareLabels,
+    servicesHub: servicesHubLabels,
     nav: {
       home: "Home",
       demos: "Demos",

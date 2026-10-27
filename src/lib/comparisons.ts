@@ -113,7 +113,7 @@ export const comparisons: Record<string, ComparisonSeo> = {
     usPriceNoteAr: "استشارة مجانية، ثم موقع يُدفع مرة واحدة",
     usPriceNoteEn: "Free consultation, then a website you pay for once",
     titleAr: "إعلانات جوجل أم موقع؟ مقارنة صريحة لعلامتك في {city}",
-    titleEn: "Google Ads vs a Website: an honest comparison for {cityEn} businesses",
+    titleEn: "Google Ads vs a website: an honest comparison for {cityEn}",
     descriptionAr:
       "مقارنة صريحة بين إعلانات جوجل وبناء موقع من نخبة: التكلفة الشهرية، ملكية الزوار، سرعة أول عميل، وأيهما يناسب نشاطك في {city} فعلياً.",
     descriptionEn:
@@ -419,7 +419,7 @@ export const comparisons: Record<string, ComparisonSeo> = {
     usPriceNoteAr: "استشارة مجانية، ثم موقع يُدفع مرة واحدة",
     usPriceNoteEn: "Free consultation, then a website you pay for once",
     titleAr: "Wix أم موقع مصمّم خصيصاً؟ مقارنة لـ {city}",
-    titleEn: "Wix vs a custom-built website: the comparison for {cityEn} businesses",
+    titleEn: "Wix vs a custom website: the comparison for {cityEn}",
     descriptionAr:
       "منشئ مواقع جاهز أم موقع مصمّم خصيصاً من نخبة؟ قارن التكلفة على 3 سنوات، السرعة، التحكم، ملكية الملفات و SEO قبل أن تختار.",
     descriptionEn:

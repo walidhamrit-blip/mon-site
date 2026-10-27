@@ -55,16 +55,44 @@ export function Navbar() {
     if (open) setOpen(false);
   }
 
+  /**
+   * Liens de la barre haute.
+   *
+   * `hideBelow` indique la largeur à partir de laquelle le lien s'affiche :
+   * la barre défile horizontalement sur les écrans étroits (pas de
+   * débordement de la page), et les liens secondaires n'apparaissent que
+   * lorsqu'il y a la place — ils restent accessibles dans le pied de page
+   * et dans le menu mobile.
+   */
   const links = [
     { href: "/services", label: ar ? "خدمات سريعة" : "Open services" },
     { href: "/compare", label: ar ? "مقارنات" : "Comparisons" },
     { href: "/demos", label: t.nav.demos },
-    { href: "/apps", label: ar ? "تطبيقاتنا" : "Our apps", soon: true },
-    { href: "/products", label: ar ? "منتجاتنا" : "Products", soon: true },
-    { href: "/codes", label: ar ? "الأكواد والبطاقات" : "Codes & cards", soon: true },
+    {
+      href: "/apps",
+      label: ar ? "تطبيقاتنا" : "Our apps",
+      soon: true,
+      hideBelow: "2xl",
+    },
+    {
+      href: "/products",
+      label: ar ? "منتجاتنا" : "Products",
+      soon: true,
+      hideBelow: "2xl",
+    },
+    {
+      href: "/codes",
+      label: ar ? "الأكواد والبطاقات" : "Codes & cards",
+      soon: true,
+      hideBelow: "2xl",
+    },
     { href: "/blog", label: ar ? "أدلة" : "Guides" },
     { href: "/#pricing", label: t.nav.pricing },
-    { href: "/abonnements", label: ar ? "الاشتراكات" : "Subscriptions" },
+    {
+      href: "/abonnements",
+      label: ar ? "الاشتراكات" : "Subscriptions",
+      hideBelow: "xl",
+    },
     { href: "/contact", label: t.nav.contact },
   ];
 
@@ -110,7 +138,7 @@ export function Navbar() {
 
             <nav
               aria-label={ar ? "التنقل الرئيسي" : "Main navigation"}
-              className="hidden items-center gap-0 rounded-full bg-[var(--secondary)]/80 p-1 lg:flex xl:gap-0.5"
+              className="hidden min-w-0 items-center gap-0 overflow-x-auto rounded-full bg-[var(--secondary)]/80 p-1 lg:flex xl:gap-0.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
             >
               {links.map((link) => {
                 const active = isActive(link.href);
@@ -119,7 +147,13 @@ export function Navbar() {
                     key={link.href}
                     href={link.href}
                     aria-current={active ? "page" : undefined}
-                    className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 py-1.5 text-[12.5px] font-medium transition-colors xl:px-3 xl:text-[13px] ${
+                    className={`inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 py-1.5 text-[12.5px] font-medium transition-colors xl:px-3 xl:text-[13px] ${
+                      link.hideBelow === "xl"
+                        ? "max-xl:hidden"
+                        : link.hideBelow === "2xl"
+                          ? "max-2xl:hidden"
+                          : ""
+                    } ${
                       active
                         ? "bg-[var(--card)] font-bold text-[var(--foreground)] shadow-[var(--shadow-xs)]"
                         : "text-[var(--foreground)]/75 hover:bg-[var(--card)]/80 hover:text-[var(--foreground)]"
@@ -164,7 +198,7 @@ export function Navbar() {
                 href={whatsappLink(siteConfig.whatsapp, whatsappMsg)}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="hidden h-9 items-center gap-1.5 rounded-full bg-[var(--secondary)] px-4 text-[12.5px] font-semibold text-[var(--foreground)] transition-colors hover:bg-[var(--muted)] xl:inline-flex"
+                className="hidden h-9 items-center gap-1.5 rounded-full bg-[var(--secondary)] px-4 text-[12.5px] font-semibold text-[var(--foreground)] transition-colors hover:bg-[var(--muted)] 2xl:inline-flex"
               >
                 WhatsApp
               </a>
