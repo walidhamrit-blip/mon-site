@@ -167,6 +167,26 @@ remboursement est refusé.
 5. Envoyer l'UID **en texte** (pas une capture d'écran) pour éviter une erreur
    de recopie.
 
+**Si vous ne pouvez pas lancer le jeu tout de suite**
+
+Le **store officiel Farlight** (`store.farlightgames.com/afkjourney/global`)
+affiche « Log into your game account — Log in » en haut à droite : après
+connexion, le store reconnaît le compte de jeu et affiche ses informations
+(nom de personnage, serveur, UID). Deux précautions :
+
+- le store n'accepte qu'un **compte e-mail Farlight** ; un compte créé via
+  Google Play / Apple / Facebook doit d'abord être **lié à un e-mail Farlight
+  dans le jeu** (Menu → Paramètres → Autres → Compte) ;
+- vérifiez le **nom de personnage et le serveur** affichés : si le store ouvre
+  un autre compte que celui utilisé pour l'achat, l'UID obtenu serait celui
+  d'un tiers.
+
+**Repère utile pour le dossier** : « 21 Dragon Crystals » correspond au pack
+officiel **20 + 1 bonus**, vendu **USD 0,99** sur le store Farlight. Cette
+valeur faciale officielle est un bon argument dans la réclamation — elle situe
+le préjudice très précisément (un pack à 0,99 $, pas une recharge à plusieurs
+dizaines de dollars).
+
 **Message à copier (français)**
 
 ```
