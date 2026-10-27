@@ -200,3 +200,102 @@ export async function sendDigitalManualNotice(
   const result = await sendEmail({ to, subject, text, html });
   return { ok: result.ok, provider: result.provider, error: result.error };
 }
+
+/**
+ * E-mail au CLIENT pour une RECHARGE de jeu livrée.
+ *
+ * Une recharge (`game_topup`) ne produit aucun code : le fournisseur crédite
+ * directement le compte du joueur. Il n'y a donc rien à « envoyer » au client,
+ * mais il doit recevoir une confirmation — sinon il croit que la commande est
+ * bloquée. Les identifiants saisis à la caisse (player_id…) sont rappelés :
+ * c'est ce qui lui permet de vérifier que le crédit est parti sur le bon
+ * compte.
+ */
+export async function sendDigitalTopupDeliveredEmail(
+  order: DigitalOrder,
+  siteName: string,
+  siteUrl: string,
+  siteEmail?: string,
+): Promise<DigitalEmailResult> {
+  const to = emailAddressFrom(order.recipientEmail);
+  if (!to) return { ok: false, provider: "none", error: "destinataire absent" };
+
+  const support = emailAddressFrom(siteEmail) || emailAddressFrom(process.env.EMAIL_FROM);
+  const subject = `✅ Recharge créditée ${order.productTitle} — ${order.ref}`;
+
+  // Champs acheteur mémorisés à la caisse (player_id, server_id, account_id…).
+  const buyerFields = readBuyerFields(order);
+  const fieldLines = buyerFields.map(([key, value]) => `${key} : ${value}`);
+  const fieldRows = buyerFields
+    .map(
+      ([key, value]) =>
+        `<tr><td style="padding:6px 10px;background:#f6f3ec;font-weight:700;width:150px">${escapeHtml(key)}</td><td style="padding:6px 10px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace">${escapeHtml(value)}</td></tr>`,
+    )
+    .join("");
+
+  const text = [
+    `Merci pour votre commande chez ${siteName} !`,
+    ``,
+    `Votre recharge a été créditée sur votre compte de jeu.`,
+    ``,
+    `Produit : ${order.productTitle} — ${order.denominationLabel}`,
+    `Quantité : ${order.quantity}`,
+    `Montant réglé : ${decimal(order.totalUsd)} USD`,
+    `Commande : ${order.ref}`,
+    ``,
+    ...(fieldLines.length > 0
+      ? [`Compte crédité :`, ...fieldLines.map((line) => `  ${line}`), ``]
+      : []),
+    `Il n'y a aucun code à saisir : le crédit est appliqué directement au compte indiqué ci-dessus.`,
+    `Si votre solde en jeu n'a pas changé d'ici quelques minutes, répondez à cet e-mail avec la référence de commande.`,
+    ``,
+    support ? `Une question ? Écrivez à ${support}.` : "",
+    `${siteName} — ${siteUrl}`,
+  ]
+    .filter((line) => line !== "")
+    .join("\n");
+
+  const html = `
+    <div style="font-family:system-ui,Arial,sans-serif;max-width:560px;margin:0 auto;padding:24px;color:#1a1a1e">
+      <div style="font-size:13px;letter-spacing:.12em;color:#C6A664;font-weight:700">${escapeHtml(siteName.toUpperCase())} — BOUTIQUE DIGITALE</div>
+      <h1 style="font-size:22px;font-weight:900;margin:8px 0 4px">Votre recharge est créditée ✅</h1>
+      <p style="color:#666;font-size:14px;margin:0 0 18px">
+        ${escapeHtml(order.productTitle)} — ${escapeHtml(order.denominationLabel)}${order.quantity > 1 ? ` × ${order.quantity}` : ""}
+      </p>
+      <div style="border:1px solid #e7e1d3;border-radius:14px;background:#faf8f3;padding:14px 16px;margin:10px 0;font-size:14px">
+        Aucun code n'est nécessaire : le crédit a été appliqué directement au compte de jeu indiqué ci-dessous.
+      </div>
+      ${
+        fieldRows
+          ? `<table style="width:100%;border-collapse:collapse;font-size:13px;margin-top:12px">
+              <tr><td colspan="2" style="padding:6px 10px;font-weight:900;font-size:12px;letter-spacing:.08em;color:#8A6D2F">COMPTE CRÉDITÉ</td></tr>
+              ${fieldRows}
+            </table>`
+          : ""
+      }
+      <table style="width:100%;border-collapse:collapse;font-size:13px;margin-top:16px">
+        <tr><td style="padding:6px 10px;background:#f6f3ec;font-weight:700;width:150px">Commande</td><td style="padding:6px 10px">${escapeHtml(order.ref)}</td></tr>
+        <tr><td style="padding:6px 10px;background:#f6f3ec;font-weight:700">Montant</td><td style="padding:6px 10px">${escapeHtml(decimal(order.totalUsd))} USD</td></tr>
+      </table>
+      <p style="color:#666;font-size:13px;margin-top:16px">
+        Si votre solde en jeu n'a pas changé d'ici quelques minutes, répondez à cet e-mail avec la référence de commande : nous vérifions le crédit chez le fournisseur.
+        Suivi : <a href="${escapeHtml(siteLink(siteUrl, "/codes/commande"))}" style="color:#8A6D2F;font-weight:700">suivi de commande</a>.
+      </p>
+      ${support ? `<p style="color:#666;font-size:13px">Une question ? Écrivez à <a href="mailto:${escapeHtml(support)}" style="color:#8A6D2F">${escapeHtml(support)}</a>.</p>` : ""}
+      <p style="color:#999;font-size:12px;margin-top:24px">${escapeHtml(siteName)} — ${escapeHtml(siteUrl)}</p>
+    </div>`;
+
+  const result = await sendEmail({ to, subject, text, html });
+  return { ok: result.ok, provider: result.provider, error: result.error };
+}
+
+/** Champs acheteur mémorisés sur la commande (player_id, server_id…). */
+function readBuyerFields(order: DigitalOrder): [string, string][] {
+  const payload = order.reloadlyResponse;
+  if (!payload || typeof payload !== "object" || Array.isArray(payload)) return [];
+  const fields = (payload as Record<string, unknown>).buyerFields;
+  if (!fields || typeof fields !== "object" || Array.isArray(fields)) return [];
+  return Object.entries(fields as Record<string, unknown>)
+    .filter(([, value]) => value != null && String(value).trim() !== "")
+    .map(([key, value]) => [key, String(value)]);
+}

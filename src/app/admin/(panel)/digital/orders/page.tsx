@@ -200,6 +200,7 @@ function toRow(order: AdminDigitalOrder): AdminDigitalOrderRow {
     recipientName: order.recipientName,
     recipientPhone: order.recipientPhone,
     status: order.normalizedStatus,
+    kind: order.kind,
     fulfillment: order.fulfillment,
     reloadlyProductId: order.reloadlyProductId,
     reloadlyUnitPrice: order.reloadlyUnitPrice,

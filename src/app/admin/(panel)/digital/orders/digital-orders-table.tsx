@@ -11,6 +11,7 @@ import {
   RefreshCw,
 } from "lucide-react";
 import {
+  closeDigitalOrderWithoutCodeAction,
   manualDigitalDeliveryAction,
   resendDigitalEmailAction,
   retryDigitalDeliveryAction,
@@ -35,6 +36,8 @@ export interface AdminDigitalOrderRow {
   recipientName: string | null;
   recipientPhone: string | null;
   status: DigitalOrderStatus;
+  /** Famille du produit : une recharge (`game_topup`) ne produit aucun code. */
+  kind: string;
   fulfillment: string;
   reloadlyProductId: number | null;
   reloadlyUnitPrice: string | null;
@@ -97,6 +100,15 @@ export function DigitalOrdersTable({ rows }: { rows: AdminDigitalOrderRow[] }) {
     setPendingRef(ref);
     startTransition(async () => {
       const result = await resendDigitalEmailAction(ref);
+      flash(result.message ?? result.error ?? "Terminé.", result.ok ? "ok" : "err");
+      setPendingRef(null);
+    });
+  };
+
+  const closeWithoutCode = (ref: string) => {
+    setPendingRef(ref);
+    startTransition(async () => {
+      const result = await closeDigitalOrderWithoutCodeAction(ref);
       flash(result.message ?? result.error ?? "Terminé.", result.ok ? "ok" : "err");
       setPendingRef(null);
     });
@@ -385,6 +397,21 @@ export function DigitalOrdersTable({ rows }: { rows: AdminDigitalOrderRow[] }) {
                         )}
                         Enregistrer et envoyer au client
                       </button>
+
+                      {/* Une recharge de jeu ne produit aucun code : le
+                          crédit part sur le compte du joueur. Ce bouton
+                          clôture la commande sans exiger de faux code. */}
+                      {row.kind === "game_topup" && (
+                        <button
+                          type="button"
+                          onClick={() => closeWithoutCode(row.ref)}
+                          disabled={isBusy}
+                          className="mt-2 ms-2 inline-flex items-center gap-1.5 rounded-lg border border-emerald-300 bg-emerald-50 px-3 py-2 text-[12px] font-bold text-emerald-800 hover:bg-emerald-100 disabled:opacity-60"
+                        >
+                          <Check className="h-3.5 w-3.5" />
+                          Recharge créditée (aucun code)
+                        </button>
+                      )}
                     </div>
                   )}
                 </div>
