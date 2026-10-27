@@ -7,6 +7,9 @@ import { reloadlyMode } from "@/lib/reloadly";
 import { DigitalEditor } from "./digital-editor";
 import { ReloadlySync } from "./reloadly-sync";
 import { CatalogAudit } from "./catalog-audit";
+import { FazercardsCatalogPanel } from "./fazercards-catalog-panel";
+import { getFazercardsDigitalCatalog } from "@/lib/fazercards-catalog";
+import { fazercardsConfigured } from "@/lib/fazercards";
 
 export const dynamic = "force-dynamic";
 
@@ -17,6 +20,25 @@ export const metadata = {
 
 export default async function AdminDigitalPage() {
   const products = await getDigitalCatalog({ publicOnly: false });
+
+  // Catalogue réellement vendu : celui du fournisseur. Il ne vient PAS de la
+  // base, donc l'éditeur ci-dessous ne le montre pas — d'où ce panneau dédié.
+  let liveProducts: Awaited<ReturnType<typeof getFazercardsDigitalCatalog>>["products"] = [];
+  let liveError: string | undefined;
+  let liveStale = false;
+  let liveFetchedAt: string | null = null;
+  if (fazercardsConfigured()) {
+    try {
+      const live = await getFazercardsDigitalCatalog({ noSync: true });
+      liveProducts = live.products;
+      liveStale = live.stale;
+      liveFetchedAt = live.fetchedAt ?? null;
+    } catch (error) {
+      liveError = error instanceof Error ? error.message : String(error);
+    }
+  } else {
+    liveError = "FAZERCARDS_API_KEY absent : la boutique publique sert le catalogue de la base.";
+  }
   const envMismatch = !nowPaymentsSandbox() && reloadlyMode() === "sandbox";
   // Contrôle immédiat SANS réseau. Deux niveaux distincts :
   //  • perte PROUVÉE = frais ET remise connus (mémorisés sur la fiche) ;
@@ -37,11 +59,12 @@ export default async function AdminDigitalPage() {
             Paiements réels NOWPayments + Reloadly encore en mode Sandbox (test)
           </p>
           <p className="mt-1">
-            Les clients paient avec de vrais USDT, mais Reloadly émet encore des{" "}
-            <strong>codes de test</strong>. Pour vendre en réel : passez votre tableau
-            Reloadly sur <strong>LIVE</strong>, créditez le solde marchand, puis remplacez{" "}
-            <code>RELOADLY_CLIENT_ID</code>, <code>RELOADLY_CLIENT_SECRET</code> et ajoutez{" "}
-            <code>RELOADLY_SANDBOX=false</code> sur Vercel avant de redéployer.
+            Les clients paient de vrais USDT, mais Reloadly est encore en{" "}
+            <strong>mode test</strong>. Ce fournisseur n&apos;est plus utilisé : les
+            ventes automatiques passent par <strong>FazerCards</strong> (voir le
+            panneau « Catalogue réellement vendu »). Les fiches Reloadly ne servent
+            plus qu&apos;aux commandes passées — inutile de migrer les identifiants
+            vers LIVE.
           </p>
         </div>
       )}
@@ -87,7 +110,26 @@ export default async function AdminDigitalPage() {
         </div>
       )}
 
+      <FazercardsCatalogPanel
+        products={liveProducts}
+        error={liveError}
+        stale={liveStale}
+        fetchedAt={liveFetchedAt}
+      />
+
       <CatalogAudit paymentFeePercent={paymentFeePercent()} />
+      <div className="rounded-2xl border border-stone-300 bg-stone-50 px-4 py-3 text-[12px] leading-5 text-stone-700">
+        <p className="font-black text-stone-800">
+          Section ci-dessous : fiches historiques de la base (Reloadly) — NON vendues
+        </p>
+        <p className="mt-1">
+          Depuis la bascule sur FazerCards, la boutique publique ne sert plus ces
+          fiches : elles restent modifiables ici pour l&apos;archive et les
+          commandes passées, mais les modifier ne change rien à ce que voit le
+          client. Le catalogue vendu est celui du panneau « FazerCards » ci-dessus.
+        </p>
+      </div>
+
       <ReloadlySync paymentFeePercent={paymentFeePercent()} />
       <DigitalEditor initialProducts={products} paymentFeePercent={paymentFeePercent()} />
     </div>

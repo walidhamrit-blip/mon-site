@@ -64,7 +64,11 @@ import {
 import { createTrackingToken, newOrderReference, trackingAccess } from "@/lib/order-tracking";
 import { siteBaseUrl } from "@/lib/site-url";
 import { getSiteData } from "@/lib/store";
-import { sendDigitalCodesEmail, sendDigitalManualNotice } from "@/lib/digital-emails";
+import {
+  sendDigitalCodesEmail,
+  sendDigitalManualNotice,
+  sendDigitalTopupDeliveredEmail,
+} from "@/lib/digital-emails";
 import { recordDigitalEmailOutcome } from "@/lib/digital-email-log";
 import { isFazercardsProductRef } from "@/lib/fazercards-catalog";
 import { deliverPaidFazercardsOrder } from "@/lib/fazercards-orders";
@@ -983,9 +987,54 @@ export async function getAdminDigitalOrder(ref: string): Promise<AdminDigitalOrd
 export async function deliverDigitalOrderManually(
   ref: string,
   codesInput: string,
+  options: { withoutCodes?: boolean } = {},
 ): Promise<{ ok: boolean; delivered: number; error?: string }> {
   const order = await loadDigitalOrder(ref);
   if (!order) return { ok: false, delivered: 0, error: "Commande introuvable." };
+
+  // Clôture SANS code : réservée aux recharges de jeu, qui ne produisent
+  // aucun code (le crédit part sur le compte du joueur). Sans cette
+  // possibilité, l'admin devait inventer un faux code pour clôturer une
+  // commande pourtant livrée.
+  const closeWithoutCodes = options.withoutCodes === true;
+  if (closeWithoutCodes) {
+    if (order.kind !== "game_topup") {
+      return {
+        ok: false,
+        delivered: 0,
+        error:
+          "Clôture sans code réservée aux recharges de jeu : une carte ou une clé doit avoir un code.",
+      };
+    }
+    const now = new Date();
+    const closedRows = await db
+      .update(digitalOrders)
+      .set({
+        status: "delivered",
+        deliveredAt: now,
+        lastError: null,
+        updatedAt: now,
+      })
+      .where(eq(digitalOrders.id, order.id))
+      .returning();
+    const closed = closedRows[0] ?? { ...order, status: "delivered" };
+
+    let emailError: string | undefined;
+    try {
+      const { config } = await getSiteData();
+      const email = await sendDigitalTopupDeliveredEmail(
+        closed,
+        config.name,
+        config.url,
+        config.email,
+      );
+      await recordDigitalEmailOutcome(order.id, email);
+      if (!email.ok) emailError = email.error ?? "e-mail non envoyé";
+    } catch (error) {
+      emailError = error instanceof Error ? error.message : String(error);
+    }
+    return { ok: true, delivered: 1, ...(emailError ? { error: emailError } : {}) };
+  }
 
   const codes = parseManualCodes(codesInput);
   if (codes.length === 0) {

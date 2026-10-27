@@ -411,3 +411,49 @@ test("le tunnel d'achat oriente vers les réseaux à frais minimes", () => {
   assert.match(flat, /recommendedNetworksLabel\(\)/);
   assert.match(flat, /import \{ recommendedNetworksLabel \} from "@\/lib\/payment-networks"/);
 });
+
+test("la livraison lit l'extracteur partagé et distingue une recharge", () => {
+  const flat = code(read("src/lib/fazercards-orders.ts"));
+  assert.match(
+    flat,
+    /import \{\s*classifyFazercardsDelivery,\s*extractFazercardsCodes,\s*redactFazercardsPayload,\s*\} from "@\/lib\/fazercards-extract"/,
+  );
+  // L'extraction travaille sur le payload, pas sur l'enveloppe.
+  assert.match(flat, /extractFazercardsCodes\(orderDetail\.order\.payload\)/);
+  // Plus d'ancien extracteur local (il ignorait `payload.keys`).
+  assert.doesNotMatch(flat, /function extractFazercardsCodes/);
+  assert.match(flat, /if \(verdict === "topup_completed"\) \{/);
+  assert.match(flat, /sendDigitalTopupDeliveredEmail\(/);
+});
+
+test("un échec d'extraction journalise une réponse masquée", () => {
+  const flat = code(read("src/lib/fazercards-orders.ts"));
+  assert.match(flat, /redactFazercardsPayload\(orderDetail\.order\.payload \?\? \{\}\)/);
+  // La clé ne doit jamais être écrite en clair dans les logs.
+  assert.doesNotMatch(flat, /console\.warn\([^)]*orderDetail\.order\.payload\)/);
+});
+
+test("l'admin peut clôturer une recharge sans inventer de code", () => {
+  const orders = code(read("src/lib/digital-orders.ts"));
+  assert.match(orders, /options: \{ withoutCodes\?: boolean \} = \{\}/);
+  assert.match(orders, /if \(order\.kind !== "game_topup"\) \{/);
+  const actions = code(read("src/app/admin/actions.ts"));
+  assert.match(actions, /export async function closeDigitalOrderWithoutCodeAction/);
+  const table = code(read("src/app/admin/(panel)/digital/orders/digital-orders-table.tsx"));
+  assert.match(table, /closeDigitalOrderWithoutCodeAction/);
+});
+
+test("l'admin affiche le catalogue FazerCards, pas seulement les fiches de la base", () => {
+  const adminPage = code(read("src/app/admin/(panel)/digital/page.tsx"));
+  // Le panneau lit la MÊME source que la boutique publique…
+  assert.match(adminPage, /getFazercardsDigitalCatalog\(\{ noSync: true \}\)/);
+  assert.match(adminPage, /<FazercardsCatalogPanel/);
+  // …et prévient que l'éditeur ci-dessous ne pilote plus la boutique.
+  assert.match(adminPage, /NON vendues/);
+  // L'ancienne consigne « passer Reloadly en LIVE » n'a plus de sens.
+  assert.doesNotMatch(adminPage, /RELOADLY_SANDBOX=false/);
+
+  const panel = code(read("src/app/admin/(panel)/digital/fazercards-catalog-panel.tsx"));
+  assert.match(panel, /import \{ MARGIN_TIERS, MIN_RETAIL_USD \} from "@\/lib\/fazercards-pricing"/);
+  assert.match(panel, /Catalogue réellement vendu/);
+});

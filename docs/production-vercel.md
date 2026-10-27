@@ -585,3 +585,33 @@ fait trois choses : afficher les réseaux recommandés dans le tunnel d'achat
 (`src/lib/payment-networks.ts`), détecter un paiement arrivé sur une chaîne
 coûteuse (avertissement dans les logs de l'IPN, jamais un refus — le client a
 payé), et verrouiller ces règles par des tests.
+
+## Livraison d'une commande FazerCards : codes et recharges
+
+Deux familles de produits, deux comportements — les confondre a produit un
+incident réel (commande `ord-2492479`, Beyond: Two Souls) :
+
+| Famille | Ce que renvoie le fournisseur | Livraison |
+| ------- | ----------------------------- | --------- |
+| `software_key`, `gift_card` | un ou plusieurs codes (`payload.keys[]`, `payload.codes[]`) | codes chiffrés + e-mail |
+| `game_topup` | **aucun code** : le crédit part sur le compte du joueur | commande livrée + e-mail « recharge créditée » |
+
+`src/lib/fazercards-extract.ts` :
+
+- `extractFazercardsCodes(payload)` lit `codes`, `keys`, `cards`, `serials`,
+  `vouchers`, `items`, puis les champs directs, puis un parcours profond de
+  secours. Liste blanche de noms de champs : un statut ou une devise ne peut
+  pas être pris pour un code.
+- `classifyFazercardsDelivery({ kind, status, codes })` décide du sort :
+  `codes` · `topup_completed` · `processing` · `failed`. Une recharge
+  `completed` sans code est un **succès**, jamais une livraison manuelle.
+- `redactFazercardsPayload(payload)` produit une version masquée pour les logs
+  (structure conservée, codes jamais écrits en clair).
+
+Clôture manuelle : l'admin dispose de « Recharge créditée (aucun code) », qui
+passe la commande en `delivered` et envoie l'e-mail au client — sans exiger un
+faux code, ce qui était le seul moyen auparavant.
+
+Reprise d'une commande bloquée : « Relancer la livraison » relit la commande
+chez le fournisseur et applique les règles ci-dessus (une transaction existante
+n'est jamais repayée).

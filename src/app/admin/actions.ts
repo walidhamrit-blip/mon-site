@@ -843,6 +843,36 @@ export async function resendDigitalEmailAction(ref: string): Promise<ActionResul
  * Enregistre des codes achetés à la main et les transmet au client.
  * L'e-mail part automatiquement (comme pour une livraison Reloadly).
  */
+/**
+ * Clôture une recharge de jeu livrée SANS code.
+ *
+ * Une recharge crédite le compte du joueur : il n'y a aucun code à saisir.
+ * Sans cette action, l'admin devait inventer un faux code pour sortir la
+ * commande de l'état « livraison manuelle ».
+ */
+export async function closeDigitalOrderWithoutCodeAction(
+  ref: string,
+): Promise<ActionResult> {
+  await requireAdmin();
+  const orderRef = String(ref ?? "").trim().toUpperCase();
+  if (!orderRef) return { ok: false, error: "Référence manquante." };
+  try {
+    const result = await deliverDigitalOrderManually(orderRef, "", {
+      withoutCodes: true,
+    });
+    revalidatePath("/admin/digital/orders");
+    if (!result.ok) return { ok: false, error: result.error ?? "Clôture impossible." };
+    return {
+      ok: true,
+      message: result.error
+        ? `Recharge clôturée. ${result.error}`
+        : "Recharge clôturée et client prévenu par e-mail.",
+    };
+  } catch (error) {
+    return { ok: false, error: dbIssue(error) };
+  }
+}
+
 export async function manualDigitalDeliveryAction(
   ref: string,
   codes: string,

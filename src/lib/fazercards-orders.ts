@@ -46,7 +46,13 @@ import { getSiteData } from "@/lib/store";
 import {
   sendDigitalCodesEmail,
   sendDigitalManualNotice,
+  sendDigitalTopupDeliveredEmail,
 } from "@/lib/digital-emails";
+import {
+  classifyFazercardsDelivery,
+  extractFazercardsCodes,
+  redactFazercardsPayload,
+} from "@/lib/fazercards-extract";
 
 /* --------------------------------- Types -------------------------------- */
 
@@ -480,25 +486,35 @@ export async function deliverPaidFazercardsOrder(
     }
 
     const supplierStatus = (orderDetail.order.status ?? "").trim().toLowerCase();
-    const codes = extractFazercardsCodes(orderDetail.order);
+    const codes = extractFazercardsCodes(orderDetail.order.payload);
+    const verdict = classifyFazercardsDelivery({
+      kind: loaded.kind,
+      status: supplierStatus,
+      codes,
+    });
+
+    // Journalise la FORME de la réponse quand un code est attendu mais absent
+    // (valeurs masquées : jamais de clé en clair dans les logs). Sans cela,
+    // un échec d'extraction ne se diagnostiquait qu'à l'aveugle.
+    if (verdict !== "codes" && loaded.kind !== "game_topup") {
+      console.warn(
+        `[fazercards] aucun code lisible pour ${loaded.ref} (statut ${supplierStatus || "inconnu"}) — charges utiles :`,
+        JSON.stringify(redactFazercardsPayload(orderDetail.order.payload ?? {})),
+      );
+    }
 
     // Commande annulée / refusée chez le fournisseur alors que le client a
     // payé : on ne peut pas livrer, mais il ne faut pas attendre un code
     // qui n'arrivera jamais. Bascule immédiate en livraison manuelle
     // (remplacement ou remboursement par l'équipe).
-    if (
-      codes.length === 0 &&
-      ["cancelled", "canceled", "failed", "refunded", "rejected"].includes(
-        supplierStatus,
-      )
-    ) {
+    if (verdict === "failed") {
       return flagManual(
         loaded,
         `FazerCards a annulé la commande (${supplierStatus}) — remboursement ou remplacement requis.`,
       );
     }
 
-    if (codes.length === 0 && supplierStatus !== "completed") {
+    if (verdict === "processing") {
       await db
         .update(digitalOrders)
         .set({
@@ -513,11 +529,39 @@ export async function deliverPaidFazercardsOrder(
       };
     }
 
-    if (codes.length === 0) {
-      return flagManual(
-        loaded,
-        "Aucun code retourné par FazerCards — livraison manuelle requise.",
-      );
+    // Recharge de jeu terminée : il n'y a PAS de code à attendre — le crédit
+    // est appliqué directement au compte du joueur. La commande est donc
+    // livrée, et le client reçoit un e-mail de confirmation. (Avant ce
+    // correctif, elle basculait à tort en livraison manuelle.)
+    if (verdict === "topup_completed") {
+      const now = new Date();
+      const updatedTopup = await db
+        .update(digitalOrders)
+        .set({
+          status: "delivered",
+          reloadlyStatus: supplierStatus || "completed",
+          deliveredAt: now,
+          lastError: null,
+          updatedAt: now,
+        })
+        .where(eq(digitalOrders.id, loaded.id))
+        .returning();
+      const deliveredTopup = updatedTopup[0] ?? { ...loaded, status: "delivered" };
+
+      try {
+        const { config } = await getSiteData();
+        const email = await sendDigitalTopupDeliveredEmail(
+          deliveredTopup,
+          config.name,
+          config.url,
+          config.email,
+        );
+        await recordDigitalEmailOutcome(loaded.id, email);
+      } catch (error) {
+        console.warn("[fazercards] e-mail recharge non envoyé :", error);
+      }
+
+      return { outcome: "delivered", ref: loaded.ref };
     }
 
     // Chiffre et stocke les codes.
@@ -633,56 +677,6 @@ async function getFazercardsOrderDetail(
       payload: detail.order.payload,
     },
   };
-}
-
-/**
- * Extrait les codes (carte + PIN) d'une commande FazerCards terminée.
- * Le format exact dépend du type de produit (gift_card, topup, game_key…).
- */
-function extractFazercardsCodes(
-  order: { id: string; status: string; payload?: Record<string, unknown> },
-): { cardNumber: string; pinCode: string | null; redemptionUrl: string | null }[] {
-  const payload = order.payload ?? {};
-  const codes: {
-    cardNumber: string;
-    pinCode: string | null;
-    redemptionUrl: string | null;
-  }[] = [];
-
-  const asStr = (value: unknown): string =>
-    value == null ? "" : String(value);
-  const asStrNull = (value: unknown): string | null =>
-    value == null ? null : String(value);
-
-  // FazerCards peut retourner les codes sous différentes formes selon le type.
-  if (Array.isArray(payload.codes)) {
-    for (const c of payload.codes) {
-      const card =
-        asStr((c as Record<string, unknown>).cardNumber) ||
-        asStr((c as Record<string, unknown>).code) ||
-        asStr((c as Record<string, unknown>).number);
-      if (!card) continue;
-      codes.push({
-        cardNumber: card,
-        pinCode: asStrNull((c as Record<string, unknown>).pinCode ?? (c as Record<string, unknown>).pin),
-        redemptionUrl: asStrNull((c as Record<string, unknown>).redemptionUrl ?? (c as Record<string, unknown>).url),
-      });
-    }
-  } else if (payload.cardNumber) {
-    codes.push({
-      cardNumber: asStr(payload.cardNumber),
-      pinCode: asStrNull(payload.pinCode ?? payload.pin),
-      redemptionUrl: asStrNull(payload.redemptionUrl),
-    });
-  } else if (payload.code) {
-    codes.push({
-      cardNumber: asStr(payload.code),
-      pinCode: asStrNull(payload.pin),
-      redemptionUrl: asStrNull(payload.redemptionUrl),
-    });
-  }
-
-  return codes.filter((c) => c.cardNumber.trim() !== "");
 }
 
 /* --------------------------------- Utils -------------------------------- */
