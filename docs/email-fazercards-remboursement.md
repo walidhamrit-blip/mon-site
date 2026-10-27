@@ -146,3 +146,79 @@ Thank you,
   côté client, même si l'erreur vient de la saisie.
 - Dans tous les cas, garder la trace du numéro de dossier dans la conversation
   de support et l'ajouter au motif de la commande dans l'admin.
+
+---
+
+## Annexe — message à envoyer au client pour obtenir son UID AFK Journey
+
+Pour remplir `[CORRECT_PLAYER_ID]`, il faut l'UID du compte AFK Journey du
+client : c'est ce qui permet de demander un transfert de crédit si le
+remboursement est refusé.
+
+**Ce que le client doit faire (AFK Journey)**
+
+1. Ouvrir **AFK Journey** (mobile ou PC), connecté à **son** compte.
+2. Toucher son **avatar** en **haut à gauche** de l'écran d'accueil → la page
+   de profil / « Character Center » s'ouvre.
+3. Lire l'**UID** affiché en **bas à droite** (sous le nom du personnage) et
+   toucher l'icône **copier** à côté.
+4. Noter aussi le **nom du serveur** (ex. `G623`) affiché au même endroit : il
+   confirme qu'il s'agit du bon personnage.
+5. Envoyer l'UID **en texte** (pas une capture d'écran) pour éviter une erreur
+   de recopie.
+
+**Message à copier (français)**
+
+```
+Bonjour,
+
+Nous faisons suite à votre commande de recharge AFK Journey. Pour retrouver
+votre paiement auprès de notre fournisseur, nous avons besoin de l'identifiant
+(UID) de VOTRE compte AFK Journey — celui de votre personnage, et non un
+identifiant d'un autre jeu.
+
+Pour le trouver :
+1. Ouvrez AFK Journey sur votre téléphone ou votre PC, connecté à votre compte.
+2. Touchez votre avatar en haut à gauche de l'écran d'accueil.
+3. L'UID est affiché en bas à droite de la page de profil : touchez l'icône
+   « copier » à côté.
+4. Notez aussi le nom du serveur affiché juste à côté (ex. G623).
+
+Envoyez-nous l'UID en texte et le nom du serveur, ainsi que le nom de votre
+personnage. Dès réception, nous relançons la demande de remboursement ou de
+transfert du crédit.
+
+Merci de votre patience.
+```
+
+**Message à copier (arabe)**
+
+```
+مرحباً،
+
+بخصوص طلب شحن AFK Journey الخاص بك: نحتاج إلى معرّف حسابك (UID) في لعبة
+AFK Journey نفسها — وليس معرّف لعبة أخرى — لمتابعة طلب استرداد المبلغ لدى
+المورّد.
+
+للعثور عليه:
+1. افتح لعبة AFK Journey على هاتفك أو حاسوبك وأنت مسجّل الدخول بحسابك.
+2. اضغط على صورة حسابك في أعلى يسار الشاشة الرئيسية.
+3. يظهر معرّف UID في أسفل يمين صفحة الملف الشخصي: اضغط أيقونة النسخ بجانبه.
+4. دوّن أيضاً اسم السيرفر الظاهر بجانبه (مثال: G623).
+
+أرسل لنا المعرّف واسم السيرفر كرسالة نصية، مع اسم شخصيتك. بعد ذلك نتابع طلب
+الاسترداد أو نقل الرصيد.
+
+شكراً لتفهّمك.
+```
+
+**Ne pas confondre les deux identifiants vus dans cet incident**
+
+| Jeu | Où le joueur le trouve | Forme typique |
+|---|---|---|
+| AFK Journey (`account_id`) | avatar en haut à gauche → UID en bas à droite du profil | nombre + serveur `Gxxx` |
+| 8 Ball Pool (`user_id`) | miniclip.com, profil → « Unique ID » (ou dans le jeu : profil) | nombre à 8-10 chiffres |
+
+Le champ « Account ID » de la boutique correspond au **jeu de la fiche** : un
+ID d'un autre jeu ne crédite jamais le bon compte, et la recharge n'est pas
+récupérable.
