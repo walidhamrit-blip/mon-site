@@ -566,8 +566,17 @@ Les frais de réseau sont fixes : sur un article à 1,50 $, un transfert ERC-20
 ou Bitcoin peut manger toute la marge.
 
 - **À laisser activés** : BEP-20, Solana, TON, Polygon, Arbitrum, Avalanche,
-  Aptos.
+  Aptos, Optimism, Celo — en USDT **et** USDC sur ces chaînes.
 - **À désactiver** : TRC-20, ERC-20, Bitcoin, Ethereum natif.
+
+État vérifié en production (capture du dashboard) : USDT BEP-20, USDC BEP-20,
+USDT/USDC Solana, USDT Polygon, USDT TON, USDT Arbitrum, USDT Optimism, USDT
+Avalanche C, USDT Celo. Éteints : TRC-20, ERC-20, BTC, ETH, et les stablecoins
+secondaires (DAI, FDUSD, PYUSD, TUSD, USDD).
+
+La reconnaissance d'un ticker se fait par comparaison **exacte** de sa partie
+réseau (`usdtop` → `op`), après retrait du préfixe de pièce : un fragment
+court comme `op` ne peut pas capturer une pièce sans rapport (`opensea`).
 
 ⚠️ La liste réellement proposée au client se règle dans le **dashboard
 NOWPayments → Coin settings**, PAS dans le code : notre facture ne fixe pas

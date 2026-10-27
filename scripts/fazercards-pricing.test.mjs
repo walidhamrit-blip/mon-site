@@ -202,6 +202,39 @@ test("le ticker TON n'est pas confondu avec Tron", () => {
   assert.equal(isHighCostNetwork("usdttrc20"), true);
 });
 
+test("Optimism et Celo sont reconnus (réseaux activés en production)", () => {
+  for (const ticker of ["usdtop", "usdcop", "usdtcelo", "usdccelo"]) {
+    assert.equal(isLowCostNetwork(ticker), true, `${ticker} doit être en liste blanche`);
+    assert.equal(isHighCostNetwork(ticker), false, `${ticker} ne doit pas être coûteux`);
+  }
+  assert.equal(paymentNetworkLabel("usdtop"), "Optimism");
+  assert.equal(paymentNetworkLabel("usdtcelo"), "Celo");
+});
+
+test("les pièces des chaînes retenues sont reconnues, USDC comme USDT", () => {
+  // Config NOWPayments en production : USDT et USDC sur les mêmes chaînes.
+  assert.equal(paymentNetworkLabel("usdcsol"), "Solana");
+  assert.equal(paymentNetworkLabel("usdcbsc"), "BNB Smart Chain (BEP-20)");
+  assert.equal(paymentNetworkLabel("usdtpolygon"), "Polygon");
+  assert.equal(paymentNetworkLabel("usdtton"), "TON");
+});
+
+test("le fragment court « op » ne capture aucune chaîne coûteuse", () => {
+  // Risque de régression : « op » est très court. On vérifie qu'aucun
+  // ticker coûteux ne contient ce fragment, et que l'ordre de test
+  // (coûteux d'abord) le protège de toute façon.
+  for (const network of HIGH_COST_NETWORKS) {
+    for (const fragment of network.matches) {
+      assert.ok(!fragment.includes("op"), `fragment coûteux ambigu : ${fragment}`);
+    }
+  }
+  // Comparaison exacte après retrait du préfixe de pièce : aucune pièce
+  // dont le nom COMMENCE par un fragment de réseau n'est rattachée à tort.
+  assert.equal(isLowCostNetwork("opensea"), false);
+  assert.equal(isHighCostNetwork("opensea"), false);
+  assert.equal(paymentNetworkLabel("opensea"), "OPENSEA");
+});
+
 test("le libellé affiché est lisible, avec repli sur le ticker", () => {
   assert.equal(paymentNetworkLabel("usdtbsc"), "BNB Smart Chain (BEP-20)");
   assert.equal(paymentNetworkLabel("usdttrc20"), "Tron (TRC-20)");
