@@ -442,3 +442,18 @@ test("l'admin peut clôturer une recharge sans inventer de code", () => {
   const table = code(read("src/app/admin/(panel)/digital/orders/digital-orders-table.tsx"));
   assert.match(table, /closeDigitalOrderWithoutCodeAction/);
 });
+
+test("l'admin affiche le catalogue FazerCards, pas seulement les fiches de la base", () => {
+  const adminPage = code(read("src/app/admin/(panel)/digital/page.tsx"));
+  // Le panneau lit la MÊME source que la boutique publique…
+  assert.match(adminPage, /getFazercardsDigitalCatalog\(\{ noSync: true \}\)/);
+  assert.match(adminPage, /<FazercardsCatalogPanel/);
+  // …et prévient que l'éditeur ci-dessous ne pilote plus la boutique.
+  assert.match(adminPage, /NON vendues/);
+  // L'ancienne consigne « passer Reloadly en LIVE » n'a plus de sens.
+  assert.doesNotMatch(adminPage, /RELOADLY_SANDBOX=false/);
+
+  const panel = code(read("src/app/admin/(panel)/digital/fazercards-catalog-panel.tsx"));
+  assert.match(panel, /import \{ MARGIN_TIERS, MIN_RETAIL_USD \} from "@\/lib\/fazercards-pricing"/);
+  assert.match(panel, /Catalogue réellement vendu/);
+});
