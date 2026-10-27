@@ -3,7 +3,7 @@ import React, { createContext, useContext, useState, useEffect } from "react";
 
 export type Locale = "ar" | "en";
 
-const compareLabels = {
+export const compareLabels = {
   badgeAr: "مقارنة صريحة",
   badgeEn: "Honest comparison",
   backAr: "كل المقارنات",
@@ -88,7 +88,7 @@ const compareLabels = {
  * (services, FAQ) restent dans `src/lib/services.ts` et la configuration
  * vivante — ici on ne stocke que l'interface de la page.
  */
-const servicesHubLabels = {
+export const servicesHubLabels = {
   homeAr: "الرئيسية",
   homeEn: "Home",
   badgeAr: "خدمات مفتوحة · Open services",
@@ -100,9 +100,9 @@ const servicesHubLabels = {
   heroTextEn:
     "You don't need a full project for every idea. Pick the service you need today: refresh your site, add a section, a presentation deck, a visual identity, a landing page or a technical fix — starting at {from} with delivery from {delivery}.",
   heroSecondaryAr:
-    "Fast, fixed-scope digital services in Tripoli, Libya — from $15 with delivery in as little as 24 hours.",
-  heroSecondaryEn:
     "خدمات رقمية سريعة بأسعار ثابتة في طرابلس، ليبيا — تبدأ من 15 دولاراً وتسليم خلال 24 ساعة.",
+  heroSecondaryEn:
+    "Fast, fixed-scope digital services in Tripoli, Libya — from $15 with delivery in as little as 24 hours.",
   shortAr: "باختصار:",
   shortEn: "In short:",
   answerAr:
@@ -153,8 +153,8 @@ const servicesHubLabels = {
     "We hand over the files or the go-live, then two free revisions until you're satisfied — plus 14 days of support after.",
   faqTitleAr: "أسئلة شائعة عن الخدمات المفتوحة",
   faqTitleEn: "FAQ about open services",
-  faqSubAr: "Open services — FAQ",
-  faqSubEn: "الخدمات المفتوحة — أسئلة شائعة",
+  faqSubAr: "الخدمات المفتوحة — أسئلة شائعة",
+  faqSubEn: "Open services — FAQ",
   exploreAr: "استكشف أيضاً",
   exploreEn: "Explore also",
   linkSectorsAr: "مواقع حسب القطاع",
@@ -170,10 +170,191 @@ const servicesHubLabels = {
 };
 
 
+/**
+ * Libellés de la page d'un service (/services/[service]).
+ *
+ * Même modèle que `compareLabels` et `servicesHubLabels` : une seule
+ * constante partagée par les deux langues, branchée sur `ar` et `en` plus
+ * bas. Le contenu éditorial du service (titre, description, FAQ) reste dans
+ * `src/lib/services.ts` — ici on ne stocke que l'interface de la page.
+ */
+export const serviceDetailLabels = {
+  allServicesAr: "كل الخدمات",
+  allServicesEn: "All services",
+  breadcrumbAr: "مسار التصفح",
+  breadcrumbEn: "Breadcrumb",
+  whatsappOrderAr: "اطلب الخدمة على واتساب",
+  whatsappOrderEn: "Order this service on WhatsApp",
+  quoteFormAr: "نموذج طلب عرض سعر",
+  quoteFormEn: "Request a quote",
+  startingAtAr: "السعر يبدأ من · STARTING AT",
+  startingAtEn: "STARTING AT",
+  deliveryAr: "التسليم: {value}",
+  deliveryEn: "Delivery: {value}",
+  fixedPriceAr: "سعر ثابت + مراجعتان مجانيتان",
+  fixedPriceEn: "Fixed price + two free revisions",
+  instalmentsAr: "دفع كامل أو 2–3 أقساط",
+  instalmentsEn: "Pay in full or in 2–3 instalments",
+  comparePlansAr: "مقارنة الباقات الكاملة",
+  comparePlansEn: "Compare the full plans",
+  shortAr: "باختصار:",
+  shortEn: "In short:",
+  includedAr: "ما الذي تحصل عليه؟",
+  includedEn: "What is included",
+  whoForAr: "لمن هذه الخدمة؟",
+  whoForEn: "Who is this for?",
+  pricingAr: "الأسعار والدفع",
+  pricingEn: "Pricing and payment",
+  pricingTextAr:
+    "تبدأ الخدمة من {price}. السعر النهائي يعتمد على حجم العمل ويُثبَّت كتابياً قبل البدء. نعمل بدفعة مقدمة 50% والباقي عند التسليم، مع إمكانية الدفع بالتحويل البنكي أو نقداً أو بالعملات الرقمية عبر NOWPayments — كاملاً أو على دفعتين/ثلاث.",
+  pricingTextEn:
+    "The service starts from {price}. The final price depends on the scope and is fixed in writing before we start. We work with a 50% deposit and the balance on delivery, paid by bank transfer, cash or crypto via NOWPayments — in full or in two/three instalments.",
+  sectorsAr: "قطاعات نخدمها بهذه الخدمة",
+  sectorsEn: "Sectors we serve with this service",
+  faqAr: "أسئلة شائعة — {title}",
+  faqEn: "FAQ — {title}",
+  showcasesAr: "أعمال أنجزناها في هذه القطاعات",
+  showcasesEn: "Live showcases in these sectors",
+  caseStudyAr: "عرض دراسة الحالة",
+  caseStudyEn: "Read the case study",
+  othersAr: "خدمات أخرى قد تحتاجها",
+  othersEn: "Other services you may need",
+  readyAr: "جاهز لتبدأ؟",
+  readyEn: "Ready to start?",
+  readyTextAr:
+    "أرسل رابط موقعك أو ملفك، ونرد خلال ساعتين في أوقات العمل بعرض سعر ثابت ومدة تسليم واضحة. لا التزام قبل الموافقة.",
+  readyTextEn:
+    "Send your site link or file and we reply within two hours during working hours, with a fixed quote and a clear delivery time. No commitment before you approve.",
+  whatsappDirectAr: "واتساب مباشر",
+  whatsappDirectEn: "WhatsApp us",
+  contactFormAr: "نموذج التواصل",
+  contactFormEn: "Contact form",
+  officialAr: "الصفحة الرسمية:",
+  officialEn: "Official page:",
+};
+
+/**
+ * Libellés des pages « secteurs » (/sectors et /sectors/[sector]).
+ *
+ * Même modèle que les autres blocs : une constante partagée, branchée sur
+ * `ar` et `en`. Les contenus sectoriels (titres, FAQ) restent dans
+ * `src/lib/sectors.ts`.
+ */
+export const sectorsLabels = {
+  heroTitleAr: "تصميم مواقع حسب قطاعك في طرابلس",
+  heroTitleEn: "Websites designed for your sector in Tripoli",
+  heroTextAr:
+    "كل قطاع له لغته، ألوانه ووظائفه — اختر نشاطك واكتشف مواقع حقيقية أنجزناها في نفس مجالك مع أسعار واضحة وخدمات مخصصة.",
+  heroTextEn:
+    "Every sector has its own language, colours and features — pick your industry and see real sites we built in your field, with clear prices and tailored services.",
+  projectsAr: "{count} مشروع",
+  projectsEn: "{count} projects",
+  projectsOneAr: "مشروع واحد",
+  projectsOneEn: "1 project",
+  discoverAr: "اكتشف",
+  discoverEn: "Explore",
+};
+
+/** Libellés de la page d'un secteur (/sectors/[sector]). */
+export const sectorDetailLabels = {
+  allSectorsAr: "كل القطاعات",
+  allSectorsEn: "All sectors",
+  browseSitesAr: "استعرض {count} مواقع في هذا القطاع",
+  browseSitesEn: "Browse {count} live sites in this sector",
+  browseSitesOneAr: "استعرض موقعاً واحداً في هذا القطاع",
+  browseSitesOneEn: "Browse 1 live site in this sector",
+  quoteFreeAr: "اطلب عرض سعر مجاني",
+  quoteFreeEn: "Get a free quote",
+  sitesTitleAr: "مواقع {label} — {count} مشروع حي",
+  sitesTitleEn: "Sites for {label} — {count} live projects",
+  sitesTitleOneAr: "موقع {label} — مشروع حي واحد",
+  sitesTitleOneEn: "Site for {label} — 1 live project",
+  noProjectsAr: "لا توجد مشاريع في هذا القطاع بعد — كن أول عميل!",
+  noProjectsEn: "No projects in this sector yet — be the first client!",
+  startProjectAr: "ابدأ مشروعك الآن",
+  startProjectEn: "Start your project",
+  tierAr: "فئة",
+  tierEn: "Tier",
+  modelPriceAr: "سعر النموذج",
+  modelPriceEn: "Model price",
+  onRequestAr: "حسب الطلب",
+  onRequestEn: "On request",
+  customisationAr: "التخصيص",
+  customisationEn: "Customisation",
+  quoteAr: "عرض سعر",
+  quoteEn: "Quote",
+  totalAr: "الإجمالي",
+  totalEn: "Total",
+  beforePaymentAr: "يُحدد قبل الدفع",
+  beforePaymentEn: "Set before payment",
+  detailsAr: "عرض التفاصيل",
+  detailsEn: "View details",
+  ctaTitleAr: "جاهز لموقع {label} احترافي؟",
+  ctaTitleEn: "Ready for a professional site for {label}?",
+  ctaTextAr:
+    "نطلق موقعك في 7-14 يوم مع حجز/بيع أونلاين، SEO محلي، ومتابعة واتساب — احجز استشارتك المجانية اليوم.",
+  ctaTextEn:
+    "We launch your site in 7-14 days with booking and online sales, local SEO and WhatsApp follow-up — book your free consultation today.",
+  ctaQuoteAr: "اطلب عرض سعر",
+  ctaQuoteEn: "Request a quote",
+  ctaPlansAr: "شاهد الباقات",
+  ctaPlansEn: "See the plans",
+  includesTitleAr: "ماذا يشمل موقع {label} من نخبة؟",
+  includesTitleEn: "What a Nukhba website for {label} includes",
+  priceFromAr: "مواقع {label} لدينا تبدأ من {price} حسب الحجم والميزات —",
+  priceFromEn: "Our {label} sites start from {price} depending on size and features —",
+  comparePlansAr: "قارن الباقات والأسعار",
+  comparePlansEn: "Compare plans and pricing",
+  faqTitleAr: "أسئلة شائعة — {label}",
+  faqTitleEn: "FAQ — {label}",
+  otherSectorsAr: "استكشف قطاعات أخرى",
+  otherSectorsEn: "Explore other sectors",
+};
+
+/** Libellés du tableau comparatif des formules (/pricing). */
+export const pricingTableLabels = {
+  featureAr: "الميزة",
+  featureEn: "Feature",
+  websiteAr: "الواجهة",
+  websiteEn: "Showcase",
+  websitePlusAr: "الواجهة بلس",
+  websitePlusEn: "Showcase Plus",
+  storeAr: "المتجر",
+  storeEn: "Store",
+  rowPagesAr: "صفحات",
+  rowPagesEn: "Pages",
+  rowBlogAr: "مدونة",
+  rowBlogEn: "Blog",
+  rowBookingAr: "حجز / متجر",
+  rowBookingEn: "Booking / store",
+  rowLanguagesAr: "لغتين",
+  rowLanguagesEn: "Two languages",
+  rowSeoAr: "تحسين SEO",
+  rowSeoEn: "SEO",
+  seoBasicAr: "أساسي",
+  seoBasicEn: "Basic",
+  seoAdvancedAr: "متقدم",
+  seoAdvancedEn: "Advanced",
+  seoAdvancedPlusAr: "متقدم+",
+  seoAdvancedPlusEn: "Advanced+",
+  rowSupportAr: "دعم",
+  rowSupportEn: "Support",
+  daysAr: "{count} يوم",
+  daysEn: "{count} days",
+  bookingAr: "حجز",
+  bookingEn: "Booking",
+  fullStoreAr: "متجر كامل",
+  fullStoreEn: "Full store",
+};
+
 const translations = {
   ar: {
     compare: compareLabels,
     servicesHub: servicesHubLabels,
+    serviceDetail: serviceDetailLabels,
+    sectors: sectorsLabels,
+    sectorDetail: sectorDetailLabels,
+    pricingTable: pricingTableLabels,
     nav: {
       home: "الرئيسية",
       demos: "المعارض",
@@ -469,6 +650,10 @@ const translations = {
   en: {
     compare: compareLabels,
     servicesHub: servicesHubLabels,
+    serviceDetail: serviceDetailLabels,
+    sectors: sectorsLabels,
+    sectorDetail: sectorDetailLabels,
+    pricingTable: pricingTableLabels,
     nav: {
       home: "Home",
       demos: "Demos",

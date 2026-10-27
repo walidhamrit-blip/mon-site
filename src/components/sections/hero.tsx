@@ -193,7 +193,7 @@ export function Hero() {
               label: ar ? "موقع منجز" : "websites delivered",
             },
             {
-              value: siteConfig.stats.delivery,
+              value: ar ? siteConfig.stats.delivery : siteConfig.stats.deliveryEn,
               label: ar ? "متوسط التسليم" : "average delivery",
             },
             {

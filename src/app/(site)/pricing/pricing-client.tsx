@@ -6,7 +6,33 @@ import { useI18n } from "@/lib/i18n";
 import { CRYPTO_GUIDE_PATH } from "@/lib/blog";
 
 export function PricingClient() {
-  const { locale } = useI18n();
+  const { locale, t } = useI18n();
+  const ar = locale === "ar";
+  const p = t.pricingTable;
+  const pick = <T,>(arValue: T, enValue: T): T => (ar ? arValue : enValue);
+
+  /**
+   * Tableau comparatif des formules : chaque ligne existe en arabe et en
+   * anglais, la page affiche la version de la langue active.
+   */
+  const rows: ReadonlyArray<readonly [string, string, string, string]> = ar
+    ? [
+        [p.rowPagesAr, "5", "10", "∞"],
+        [p.rowBlogAr, "—", "✓", "✓"],
+        [p.rowBookingAr, "—", p.bookingAr, p.fullStoreAr],
+        [p.rowLanguagesAr, "—", "✓", "✓"],
+        [p.rowSeoAr, p.seoBasicAr, p.seoAdvancedAr, p.seoAdvancedPlusAr],
+        [p.rowSupportAr, p.daysAr.replace("{count}", "30"), p.daysAr.replace("{count}", "60"), p.daysAr.replace("{count}", "90")],
+      ]
+    : [
+        [p.rowPagesEn, "5", "10", "∞"],
+        [p.rowBlogEn, "—", "✓", "✓"],
+        [p.rowBookingEn, "—", p.bookingEn, p.fullStoreEn],
+        [p.rowLanguagesEn, "—", "✓", "✓"],
+        [p.rowSeoEn, p.seoBasicEn, p.seoAdvancedEn, p.seoAdvancedPlusEn],
+        [p.rowSupportEn, p.daysEn.replace("{count}", "30"), p.daysEn.replace("{count}", "60"), p.daysEn.replace("{count}", "90")],
+      ];
+
   return (
     <div className="pt-2">
       <section className="pb-[calc(var(--section-y)*0.55)] border-b border-[var(--border)] bg-[var(--secondary)]/35">
@@ -51,21 +77,16 @@ export function PricingClient() {
               <table className="w-full text-sm">
                 <thead className="bg-[var(--secondary)]">
                   <tr>
-                    <th className="text-start p-4">{locale === "ar" ? "الميزة" : "Feature"}</th>
-                    <th className="p-4 text-center">الواجهة</th>
-                    <th className="p-4 text-center bg-[var(--accent)] text-[var(--accent-foreground)]">الواجهة بلس</th>
-                    <th className="p-4 text-center">المتجر</th>
+                    <th className="text-start p-4">{pick(p.featureAr, p.featureEn)}</th>
+                    <th className="p-4 text-center">{pick(p.websiteAr, p.websiteEn)}</th>
+                    <th className="p-4 text-center bg-[var(--accent)] text-[var(--accent-foreground)]">
+                      {pick(p.websitePlusAr, p.websitePlusEn)}
+                    </th>
+                    <th className="p-4 text-center">{pick(p.storeAr, p.storeEn)}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[var(--border)]">
-                  {[
-                    ["صفحات", "5", "10", "∞"],
-                    ["مدونة", "—", "✓", "✓"],
-                    ["حجز / متجر", "—", "حجز", "متجر كامل"],
-                    ["لغتين", "—", "✓", "✓"],
-                    ["SEO", "أساسي", "متقدم", "متقدم+"],
-                    ["دعم", "30 يوم", "60 يوم", "90 يوم"],
-                  ].map((row) => (
+                  {rows.map((row) => (
                     <tr key={row[0]}>
                       <td className="p-4 font-semibold">{row[0]}</td>
                       <td className="p-4 text-center">{row[1]}</td>

@@ -1,11 +1,11 @@
 "use client";
 
-import type { ReactNode } from "react";
 import Link from "next/link";
 import { ArrowUpRight, Check, Clock, Layers, Sparkles } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import { Price } from "@/components/price";
 import { formatMainPrice } from "@/lib/installments";
+import { renderTemplate } from "@/lib/text-template";
 import { resolveServiceLanding, servicePath, type ServiceLike } from "@/lib/services";
 import { ComparisonStrip } from "@/components/comparison-strip";
 import type { ComparisonSeo } from "@/lib/comparisons";
@@ -44,29 +44,6 @@ export function ServicesHubView({
       template,
     );
 
-  /**
-   * Découpe un gabarit sur ses `{jetons}` et intercale des fragments React
-   * (les valeurs mises en avant restent du JSX, donc du vrai <strong>).
-   */
-  const renderTemplate = (
-    template: string,
-    values: Record<string, ReactNode>,
-  ): ReactNode[] => {
-    const parts: ReactNode[] = [];
-    const regex = /\{(\w+)\}/g;
-    let lastIndex = 0;
-    let match: RegExpExecArray | null;
-    while ((match = regex.exec(template)) !== null) {
-      if (match.index > lastIndex) {
-        parts.push(template.slice(lastIndex, match.index));
-      }
-      const key = match[1];
-      parts.push(<strong key={key}>{values[key]}</strong>);
-      lastIndex = match.index + match[0].length;
-    }
-    if (lastIndex < template.length) parts.push(template.slice(lastIndex));
-    return parts;
-  };
 
   const answer = fill(
     pick(s.answerAr, s.answerEn),
@@ -138,12 +115,14 @@ export function ServicesHubView({
               delivery: ar ? "24 ساعة" : "24 hours",
             })}
           </p>
-          <p
-            className="mt-2 max-w-[66ch] text-[13px] text-[var(--muted-foreground)]/75"
-            dir={ar ? "ltr" : "rtl"}
-          >
-            {pick(s.heroSecondaryAr, s.heroSecondaryEn)}
-          </p>
+          {ar && (
+            <p
+              className="mt-2 max-w-[66ch] text-[13px] text-[var(--muted-foreground)]/75"
+              dir="ltr"
+            >
+              {s.heroSecondaryEn}
+            </p>
+          )}
 
           <div
             id="services-answer"
@@ -196,6 +175,7 @@ export function ServicesHubView({
               </h2>
               <p className="mt-1 text-sm opacity-60">
                 {pick(s.gridSubAr, s.gridSubEn)}
+                {ar && <span className="ms-2 opacity-60">{s.gridSubEn}</span>}
               </p>
             </div>
           </div>
@@ -232,6 +212,11 @@ export function ServicesHubView({
                   <p className="mt-4 text-sm leading-6 opacity-70">
                     {pick(service.descAr, service.descEn)}
                   </p>
+                  {ar && (
+                    <p className="mt-1 text-xs leading-5 opacity-50" dir="ltr">
+                      {service.descEn}
+                    </p>
+                  )}
 
                   <ul className="mt-4 space-y-1.5 text-xs opacity-70">
                     {(ar ? service.featuresAr : service.featuresEn).map((feature) => (
@@ -301,7 +286,10 @@ export function ServicesHubView({
       <section className="section-tight">
         <div className="site-container px-4 sm:px-6 lg:px-8">
           <h2 className="text-2xl font-black">{pick(s.faqTitleAr, s.faqTitleEn)}</h2>
-          <p className="mt-1 text-sm opacity-60">{pick(s.faqSubAr, s.faqSubEn)}</p>
+          <p className="mt-1 text-sm opacity-60">
+            {pick(s.faqSubAr, s.faqSubEn)}
+            {ar && <span className="ms-2 opacity-60">{s.faqSubEn}</span>}
+          </p>
           <div className="mt-6 grid md:grid-cols-2 gap-4">
             {faqs.map((faq) => (
               <div
