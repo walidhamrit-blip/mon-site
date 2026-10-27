@@ -383,6 +383,21 @@ NOWPayments pour prendre une place en avance dans le planning.
   par service à la carte (6 par défaut), avec réponse directe « answer-first »,
   FAQ bilingue, schéma `Service` + `Offer`, image Open Graph générée et
   maillage interne vers les secteurs et réalisations
+- **Pages comparatives** `/compare` et `/compare/[slug]` : l'« annonce » du
+  site, programmée. Un hub + une page par alternative comparée (Google Ads,
+  Facebook Ads, Wix, freelancer, abonnement SEO), chacune avec l'affiche en
+  deux colonnes (rouge ✗ / vert ✓), un tableau comparatif ligne par ligne, la
+  réponse directe `#compare-answer`, un bloc « متى تختار أي خيار » honnête,
+  les schémas `Service` + `Offer` / `ItemList` / `FAQPage`, une carte Open
+  Graph 1200×630 générée à la volée au format de l'affiche, et les entrées
+  sitemap + `llms.txt`. **Tout est dérivé d'un seul fichier** :
+  `src/lib/comparisons.ts` — y ajouter une comparaison publie une page
+  entière sans rien câbler. Garde-fous : `scripts/comparison-pages.test.mjs`
+  (inclus dans `npm run test:seo`) et `scripts/seo-check.mjs`.
+  L'affichage est bilingue et suit la langue du site (bouton AR/EN de la
+  barre supérieure) ; un bandeau « comparaisons » ouvre aussi la page
+  `/services` (Open services).
+  Procédure : [`docs/comparisons.md`](docs/comparisons.md).
 - `manifest.ts` (PWA), `not-found.tsx` (404 noindex), pages de paiement noindex
 - Les langues sont gérées côté client (pas d'URL /ar /en réelles) : aucun
   hreflang invalide n'est émis ; les redirections /ar et /en restent en place
@@ -405,6 +420,9 @@ NOWPayments pour prendre une place en avance dans le planning.
   (police Cairo TTF vendue dans `src/lib/fonts`, helper `src/lib/og-image.tsx`).
   Même principe pour chaque page service (`/services/[service]`) et chaque
   secteur (`/sectors/[sector]`, avec le nombre de réalisations du secteur).
+  Les pages comparatives (`/compare/[slug]`) produisent la même chose sous
+  forme d'affiche : deux colonnes rouge ✗ / vert ✓ générées depuis les
+  données (`buildComparisonOgImage`).
 - **IndexNow** : chaque sauvegarde admin (`src/app/admin/actions.ts`) notifie
   Bing/Yandex via `src/lib/indexnow.ts` (ping uniquement en production, tolérant
   aux pannes). Clé publique dans `public/<clé>.txt`, surcharge possible via

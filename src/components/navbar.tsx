@@ -57,6 +57,7 @@ export function Navbar() {
 
   const links = [
     { href: "/services", label: ar ? "خدمات سريعة" : "Open services" },
+    { href: "/compare", label: ar ? "مقارنات" : "Comparisons" },
     { href: "/demos", label: t.nav.demos },
     { href: "/apps", label: ar ? "تطبيقاتنا" : "Our apps", soon: true },
     { href: "/products", label: ar ? "منتجاتنا" : "Products", soon: true },
