@@ -3,6 +3,7 @@ import { getAllKnownDemos, getSiteDataCached } from "@/lib/store";
 import { blogArticles } from "@/lib/blog-articles";
 import { getDemoCapturedAt, getDemoPreviewImages } from "@/lib/preview-manifest";
 import { getDigitalCatalog } from "@/lib/digital-store";
+import { comparisonIds } from "@/lib/comparisons";
 
 const BUILD_DATE = new Date();
 
@@ -78,6 +79,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: "weekly",
       priority: 0.8,
     },
+    {
+      url: `${base}/compare`,
+      lastModified: BUILD_DATE,
+      changeFrequency: "monthly",
+      priority: 0.8,
+    },
   ];
 
   const { sectorIds } = await import("@/lib/sectors");
@@ -100,6 +107,15 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     lastModified: new Date(article.updatedAt),
     changeFrequency: "monthly",
     priority: 0.75,
+  }));
+
+  // Pages comparatives automatiques (/compare/[slug]) — une entrée par
+  // comparaison déclarée dans src/lib/comparisons.ts.
+  const comparisonRoutes: MetadataRoute.Sitemap = comparisonIds.map((id) => ({
+    url: `${base}/compare/${id}`,
+    lastModified: BUILD_DATE,
+    changeFrequency: "monthly",
+    priority: 0.8,
   }));
 
   // Images : captures locales Playwright (desktop + mobile) quand elles
@@ -135,5 +151,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ...articleRoutes,
     ...demoRoutes,
     ...digitalRoutes,
+    ...comparisonRoutes,
   ];
 }

@@ -3,6 +3,7 @@ import { whatsappLink } from "@/lib/utils";
 import { defaultAppsPage, defaultProductsPage } from "@/lib/content";
 import { sectorSeo } from "@/lib/sectors";
 import { resolveServiceLanding, servicesHubFaqs } from "@/lib/services";
+import { comparisonIds, comparisons, comparisonText } from "@/lib/comparisons";
 import { blogArticles } from "@/lib/blog-articles";
 import { formatArticleDate, sortArticles } from "@/lib/blog";
 import { BADGE_ANCHOR_EN, badgeCanonical, badgeLink, badgeStats, linkedClients } from "@/lib/badge";
@@ -118,6 +119,18 @@ export function buildLlmsTxt({
     const landing = resolveServiceLanding(service);
     lines.push(
       `  - [${service.titleEn} / ${service.titleAr}](${cleanUrl(base, `/services/${service.id}`)}): from $${service.priceFromUsd} — delivered in ${landing.deliveryEn}`,
+    );
+  }
+  // Pages comparatives automatiques (/compare/[slug]) — l'« annonce » SEO :
+  // une comparaison chiffrée entre نخبة et une alternative courante.
+  lines.push(
+    `- [Comparisons & alternatives](${cleanUrl(base, "/compare")}): ${comparisonIds.length} honest side-by-side comparisons — ${comparisonIds.map((id) => comparisons[id]?.competitorEn ?? id).join(", ")}`,
+  );
+  for (const id of comparisonIds) {
+    const comparison = comparisons[id];
+    if (!comparison) continue;
+    lines.push(
+      `  - [${comparison.h1En} / ${comparison.h1Ar}](${cleanUrl(base, `/compare/${id}`)}): ${comparison.competitorEn} ${comparison.themPriceLabel} vs Nukhba ${comparison.usPriceLabelEn} — ${comparisonText(comparison.descriptionEn, config.market, "en")}`,
     );
   }
   const guides = sortArticles(blogArticles);
@@ -343,6 +356,50 @@ export function buildLlmsFullTxt({
     lines.push(`- Q: ${faq.qEn} / ${faq.qAr} — A: ${faq.aEn} / ${faq.aAr}`);
   }
   lines.push("");
+
+  // ── Pages comparatives : l'« annonce » SEO du site ──────────────────
+  lines.push(
+    `## 6b. Comparison Pages (/compare/[slug]) — ${comparisonIds.length} honest side-by-side comparisons`,
+  );
+  lines.push("");
+  lines.push(`- **Comparisons hub URL**: ${cleanUrl(base, "/compare")}`);
+  lines.push(
+    "- **Reading rule**: Nukhba figures are our published prices (websites from $300 one-time, standalone services from $15). Competitor figures are stated as typical market pricing, not as verified facts about a specific company.",
+  );
+  lines.push("");
+  for (const id of comparisonIds) {
+    const comparison = comparisons[id];
+    if (!comparison) continue;
+    lines.push(`### ${comparison.h1En} — ${comparison.h1Ar}`);
+    lines.push(`- **Comparison URL**: ${cleanUrl(base, `/compare/${id}`)}`);
+    lines.push(
+      `- **Compared alternative**: ${comparison.competitorEn} (${comparison.competitorAr}) — typical pricing ${comparison.themPriceLabel} (${comparison.themPriceEn})`,
+    );
+    lines.push(`- **Nukhba side**: ${comparison.usPriceLabelEn} — ${comparison.usPriceNoteEn}`);
+    lines.push(`- **Title (AR)**: ${comparisonText(comparison.titleAr, config.market, "ar")}`);
+    lines.push(`- **Title (EN)**: ${comparisonText(comparison.titleEn, config.market, "en")}`);
+    lines.push(`- **Description (AR)**: ${comparisonText(comparison.descriptionAr, config.market, "ar")}`);
+    lines.push(`- **Description (EN)**: ${comparisonText(comparison.descriptionEn, config.market, "en")}`);
+    lines.push(`- **Answer-first summary (EN)**: ${comparison.answerEn}`);
+    lines.push(`- **Answer-first summary (AR)**: ${comparison.answerAr}`);
+    lines.push(`- **Weak points of the alternative (EN)**: ${comparison.themPoints.map((point) => point.textEn).join(" · ")}`);
+    lines.push(`- **Weak points of the alternative (AR)**: ${comparison.themPoints.map((point) => point.textAr).join(" · ")}`);
+    lines.push(`- **Nukhba advantages (EN)**: ${comparison.usPoints.map((point) => point.textEn).join(" · ")}`);
+    lines.push(`- **Nukhba advantages (AR)**: ${comparison.usPoints.map((point) => point.textAr).join(" · ")}`);
+    lines.push(`- **Criteria (EN)**:`);
+    for (const criterion of comparison.criteria) {
+      lines.push(
+        `  - ${criterion.labelEn}: Nukhba — ${criterion.usEn}; ${comparison.competitorEn} — ${criterion.themEn ?? "not included"}`,
+      );
+    }
+    lines.push(`- **Best for ${comparison.competitorEn} (EN)**: ${comparison.chooseThemEn.join(" · ")}`);
+    lines.push(`- **Best for Nukhba (EN)**: ${comparison.chooseUsEn.join(" · ")}`);
+    lines.push(`- **FAQs**:`);
+    for (const faq of comparison.faqs) {
+      lines.push(`  - Q: ${faq.qEn} / ${faq.qAr} — A: ${faq.aEn} / ${faq.aAr}`);
+    }
+    lines.push("");
+  }
 
   lines.push(
     `## 7. Complete Portfolio of Live Showcases (${content.demos.length} Projects)`,

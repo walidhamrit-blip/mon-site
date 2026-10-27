@@ -143,9 +143,11 @@ function checkPage(pathname, html) {
     page === "/pricing" ||
     page === "/services" ||
     page === "/blog" ||
+    page === "/compare" ||
     page.startsWith("/sectors/") ||
     page.startsWith("/services/") ||
-    page.startsWith("/blog/");
+    page.startsWith("/blog/") ||
+    page.startsWith("/compare/");
   if (isFaqExpected) {
     if (!hasFaqSchema) {
       record(page, "error", "schéma FAQPage attendu sur cette page mais absent");
@@ -214,6 +216,28 @@ function checkPage(pathname, html) {
     // et ciblé par le `speakable` de la page.
     if (!/id=["']service-answer["']/i.test(html)) {
       record(page, "warn", "bloc de réponse directe #service-answer absent");
+    }
+  }
+
+  if (page.startsWith("/compare/") && page !== "/compare") {
+    // Page comparative : schéma Service + Offer (notre prix) et réponse
+    // directe lisible par les assistants IA.
+    const comparisonSchema = parsedSchemas.find((s) => s && s["@type"] === "Service");
+    if (!comparisonSchema) {
+      record(page, "error", "schéma Service absent sur la page comparative");
+    } else {
+      if (!comparisonSchema.offers || comparisonSchema.offers["@type"] !== "Offer") {
+        record(page, "error", "schéma Service sans bloc Offer tarifaire (comparatif)");
+      }
+      if (!comparisonSchema.provider) {
+        record(page, "warn", "schéma Service sans fournisseur (provider) — comparatif");
+      }
+    }
+    if (!parsedSchemas.some((s) => s && s["@type"] === "ItemList")) {
+      record(page, "warn", "comparatif sans ItemList des critères comparés");
+    }
+    if (!/id=[\"']compare-answer[\"']/i.test(html)) {
+      record(page, "warn", "bloc de réponse directe #compare-answer absent");
     }
   }
 
@@ -393,7 +417,8 @@ async function main() {
     const mustBeInLlms =
       (pathname.startsWith("/demos/") && pathname !== "/demos") ||
       (pathname.startsWith("/services/") && pathname !== "/services") ||
-      (pathname.startsWith("/blog/") && pathname !== "/blog");
+      (pathname.startsWith("/blog/") && pathname !== "/blog") ||
+      (pathname.startsWith("/compare/") && pathname !== "/compare");
     if (mustBeInLlms) {
       if (!llmsBody.includes(pathname)) {
         record("/llms.txt", "error", `page ${pathname} absente de /llms.txt`);

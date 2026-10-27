@@ -118,6 +118,7 @@ export function Footer() {
                 { href: "/", label: t.nav.home },
                 { href: "/demos", label: t.nav.demos },
                 { href: "/services", label: ar ? "الخدمات السريعة" : "Open services" },
+                { href: "/compare", label: ar ? "المقارنات الصريحة" : "Comparisons" },
                 { href: "/pricing", label: t.nav.pricing },
                 { href: "/blog", label: ar ? "الأدلة والمقالات" : "Guides & blog" },
                 { href: "/codes", label: ar ? "الأكواد وبطاقات الهدايا" : "Codes & gift cards" },

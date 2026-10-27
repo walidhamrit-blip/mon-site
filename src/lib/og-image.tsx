@@ -523,3 +523,229 @@ export async function buildArticleOgImage(
     { ...OG_SIZE, fonts },
   );
 }
+
+/**
+ * Coche (✓) et croix (✗) dessinées en SVG inline.
+ *
+ * Les glyphes Unicode ✓ / ✗ sont absents de la police Cairo livrée avec le
+ * site : rendus en texte, ils s'affichaient en carrés vides. On les dessine
+ * donc en tracés SVG — Satori les supporte nativement.
+ */
+function checkMark(size: number) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <path
+        d="M20 6L9 17l-5-5"
+        stroke="#FFFFFF"
+        strokeWidth="3"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+function crossMark(size: number) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <path
+        d="M18 6L6 18M6 6l12 12"
+        stroke="#FFFFFF"
+        strokeWidth="3"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
+/**
+ * Carte de partage d'une page comparative (/compare/[slug]).
+ *
+ * C'est l'« annonce » du site rendue en code : deux colonnes — l'alternative
+ * à gauche sur fond rouge avec ses points faibles (✗), نخبة à droite sur fond
+ * vert avec ses avantages (✓) — exactement le format de l'affiche de
+ * comparaison, mais générée automatiquement à partir des données de
+ * `src/lib/comparisons.ts`. Aucune retouche graphique à faire : ajouter une
+ * comparaison produit une nouvelle carte.
+ */
+export async function buildComparisonOgImage(
+  comparison: {
+    competitorEn: string;
+    themPriceLabel: string;
+    themPoints: ReadonlyArray<{ textEn: string }>;
+    usPriceLabelEn: string;
+    usPoints: ReadonlyArray<{ textEn: string }>;
+    h1En: string;
+  },
+  config: OgConfig,
+) {
+  const fonts = await loadFonts();
+  const domain = new URL(config.url).host;
+  const RED = "#C1272D";
+  const GREEN = "#0E9F6E";
+
+  const panel = (
+    background: string,
+    positive: boolean,
+    price: string,
+    caption: string,
+    points: ReadonlyArray<{ textEn: string }>,
+  ) => (
+    <div
+      style={{
+        width: "50%",
+        height: "100%",
+        display: "flex",
+        flexDirection: "column",
+        justifyContent: "space-between",
+        padding: "46px 44px",
+        background,
+        color: "#FFFFFF",
+      }}
+    >
+      <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
+        <div
+          style={{
+            width: "40px",
+            height: "40px",
+            borderRadius: "50%",
+            background: "rgba(255,255,255,0.22)",
+            color: "#FFFFFF",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          {positive ? checkMark(22) : crossMark(22)}
+        </div>
+        <span style={{ fontSize: "26px", fontWeight: 700, opacity: 0.95 }}>
+          {caption}
+        </span>
+      </div>
+
+      <div style={{ display: "flex", flexDirection: "column" }}>
+        <div
+          dir="ltr"
+          style={{ fontSize: "58px", fontWeight: 700, lineHeight: 1.05 }}
+        >
+          {price}
+        </div>
+      </div>
+
+      <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+        {points.slice(0, 4).map((point, index) => (
+          <div
+            key={index}
+            style={{ display: "flex", alignItems: "flex-start", gap: "10px" }}
+          >
+            <div
+              style={{
+                width: "20px",
+                height: "22px",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                opacity: 0.95,
+              }}
+            >
+              {positive ? checkMark(18) : crossMark(18)}
+            </div>
+            <span
+              style={{ fontSize: "20px", lineHeight: 1.35, opacity: 0.95 }}
+            >
+              {clamp(point.textEn, 52)}
+            </span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+
+  return new ImageResponse(
+    (
+      <div
+        dir="ltr"
+        style={{
+          width: "100%",
+          height: "100%",
+          display: "flex",
+          flexDirection: "column",
+          background: "#0C0C0F",
+          color: "#F5F3EE",
+          fontFamily: "Cairo",
+        }}
+      >
+        {/* Bandeau supérieur : marque + promesse */}
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            padding: "26px 44px",
+            background: "#0C0C0F",
+          }}
+        >
+          <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
+            <div
+              style={{
+                width: "42px",
+                height: "42px",
+                borderRadius: "50%",
+                background: "#C6A664",
+                color: "#0C0C0F",
+                fontSize: "24px",
+                fontWeight: 700,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              N
+            </div>
+            <span style={{ fontSize: "24px", fontWeight: 700 }}>
+              {config.name} — {config.nameAr}
+            </span>
+          </div>
+          <span style={{ fontSize: "22px", opacity: 0.7 }}>
+            {clamp(comparison.h1En, 58)}
+          </span>
+        </div>
+
+        {/* L'affiche : deux colonnes */}
+        <div style={{ display: "flex", flex: 1 }}>
+          {panel(
+            RED,
+            false,
+            comparison.themPriceLabel,
+            comparison.competitorEn,
+            comparison.themPoints,
+          )}
+          {panel(
+            GREEN,
+            true,
+            comparison.usPriceLabelEn,
+            `${config.name} — Premium Web Agency`,
+            comparison.usPoints,
+          )}
+        </div>
+
+        {/* Pied : domaine */}
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            padding: "18px 44px",
+            background: "#0C0C0F",
+            fontSize: "20px",
+            opacity: 0.75,
+          }}
+        >
+          <span>One-time price · owned asset · 7-day delivery</span>
+          <span style={{ color: "#D4B978", fontWeight: 700 }}>{domain}</span>
+        </div>
+      </div>
+    ),
+    { ...OG_SIZE, fonts },
+  );
+}
