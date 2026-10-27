@@ -28,13 +28,21 @@ export interface PaymentNetwork {
  */
 export const LOW_COST_NETWORKS: readonly PaymentNetwork[] = [
   { id: "bep20", label: "BNB Smart Chain (BEP-20)", matches: ["bsc", "bep20"] },
-  { id: "solana", label: "Solana", matches: ["sol"] },
+  { id: "solana", label: "Solana", matches: ["sol", "solana"] },
   { id: "ton", label: "TON", matches: ["ton"] },
   { id: "polygon", label: "Polygon", matches: ["matic", "polygon", "pol"] },
-  { id: "arbitrum", label: "Arbitrum", matches: ["arb"] },
-  { id: "avalanche", label: "Avalanche (C-Chain)", matches: ["avax"] },
+  { id: "arbitrum", label: "Arbitrum", matches: ["arb", "arbitrum"] },
+  { id: "avalanche", label: "Avalanche (C-Chain)", matches: ["avax", "avaxc"] },
   { id: "aptos", label: "Aptos", matches: ["apt"] },
+  { id: "optimism", label: "Optimism", matches: ["op"] },
+  { id: "celo", label: "Celo", matches: ["celo"] },
 ];
+
+/**
+ * Les identifiants sont comparés EXACTEMENT à la partie réseau du ticker
+ * (`usdtop` → `op`), après retrait du préfixe de pièce. Cela évite qu'un
+ * fragment court comme `op` (Optimism) ne capture une pièce sans rapport.
+ */
 
 /**
  * Chaînes à écarter : le frais fixe dépasse la marge des petits articles.
@@ -47,20 +55,46 @@ export const HIGH_COST_NETWORKS: readonly PaymentNetwork[] = [
   { id: "ethereum", label: "Ethereum (natif)", matches: ["eth"] },
 ];
 
+/**
+ * Préfixes de pièce que NOWPayments colle devant le réseau :
+ * `usdtbsc`, `usdcsol`, `usdtop`, `fdusdbsc`… On les retire avant de
+ * comparer, pour ne plus raisonner sur des fragments inclus.
+ */
+const STABLECOIN_PREFIXES = [
+  "usdt",
+  "usdc",
+  "usdd",
+  "fdusd",
+  "pyusd",
+  "tusd",
+  "busd",
+  "dai",
+];
+
 function normalized(ticker: string | null | undefined): string {
   return (ticker ?? "").trim().toLowerCase();
 }
 
+/** Réseau porté par un ticker, ou `null` si la chaîne est inconnue. */
 function findNetwork(
   networks: readonly PaymentNetwork[],
   ticker: string | null | undefined,
 ): PaymentNetwork | null {
   const value = normalized(ticker);
   if (!value) return null;
-  // `usdttrc20`, `usdtbsc`, `usdtsol`… : le réseau est dans le suffixe.
+
+  // Comparaison EXACTE sur la partie réseau, après retrait du préfixe de
+  // pièce. Volontairement pas d'inclusion de fragment : « op » (Optimism)
+  // capturait « opensea », et un fragment court finirait par rattacher une
+  // pièce au mauvais réseau — donc masquer un frais élevé.
+  const bare =
+    STABLECOIN_PREFIXES.map((prefix) => value.replace(prefix, "")).find(
+      (candidate) => candidate !== value,
+    ) ?? value;
+
   return (
     networks.find((network) =>
-      network.matches.some((fragment) => value.includes(fragment)),
+      network.matches.some((fragment) => bare === fragment),
     ) ?? null
   );
 }
