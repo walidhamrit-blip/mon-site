@@ -57,6 +57,11 @@ jobs:
         env:
           BASE_URL: http://localhost:3100
 
+      - name: Audit du catalogue digital (/codes, fiches, sitemap)
+        run: npm run audit:catalog
+        env:
+          BASE_URL: http://localhost:3100
+
       - name: Audit Lighthouse (SEO ≥ 90, bonnes pratiques ≥ 90)
         uses: treosh/lighthouse-ci-action@v12
         with:

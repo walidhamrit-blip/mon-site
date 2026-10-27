@@ -11,6 +11,7 @@
     "test:subscriptions": "node --test scripts/subscription-plans.test.mjs",
     "doctor": "node scripts/check-setup.mjs",
     "seo:check": "node scripts/seo-check.mjs",
+    "audit:catalog": "node scripts/catalog-audit.mjs",
     "seo:geo": "node scripts/geo-citations.mjs",
     "previews:capture": "node scripts/capture-previews.mjs",
     "badge:audit": "node scripts/badge-audit.mjs",

@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { getDigitalCatalog } from "@/lib/digital-store";
-import { absoluteUrl, breadcrumbJsonLd, pageMetadata } from "@/lib/seo";
+import { absoluteUrl, breadcrumbJsonLd, pageMetadata, siteLocale } from "@/lib/seo";
 import { JsonLd } from "@/components/json-ld";
 import { DigitalCatalog } from "@/components/digital-catalog";
 import { getSiteDataCached } from "@/lib/store";
@@ -10,11 +10,18 @@ export async function generateMetadata(): Promise<Metadata> {
   const { config } = await getSiteDataCached();
   const market = resolveMarket(config.market);
   const labels = marketLabels(market, "en");
+  // Les métadonnées suivent la langue principale du site (/admin → Réglages).
+  const locale = siteLocale(config);
   return pageMetadata(config, {
     path: "/codes",
-    title: "Digital Gift Cards & Game Codes — Steam, PlayStation, Xbox",
+    title:
+      locale === "ar"
+        ? "بطاقات الهدايا وأكواد الألعاب الرقمية — Steam وPlayStation وXbox"
+        : "Digital Gift Cards & Game Codes — Steam, PlayStation, Xbox",
     description:
-      "Shop digital gift cards and game codes for Steam, PlayStation, Xbox, Roblox, Google Play and more. Clear USD pricing, region details and digital delivery worldwide." ,
+      locale === "ar"
+        ? "متجر بطاقات الهدايا وأكواد الألعاب الرقمية: Steam وPlayStation وXbox وRoblox وGoogle Play وAmazon والمزيد. أسعار واضحة بالدولار، تفاصيل المنطقة وتسليم رقمي فوري حول العالم."
+        : "Shop digital gift cards and game codes for Steam, PlayStation, Xbox, Roblox, Google Play and more. Clear USD pricing, region details and digital delivery worldwide.",
     keywords: [
       "بطاقات هدايا ألعاب",
       "أكواد Steam",
