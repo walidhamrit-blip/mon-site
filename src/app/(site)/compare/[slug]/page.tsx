@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getSiteDataCached } from "@/lib/store";
-import { breadcrumbJsonLd, pageMetadata, webPageJsonLd } from "@/lib/seo";
+import { breadcrumbJsonLd, pageMetadata, siteLocale, webPageJsonLd } from "@/lib/seo";
 import {
   comparePath,
   comparisonCriteriaJsonLd,
@@ -10,6 +10,7 @@ import {
   comparisonServiceJsonLd,
   getComparison,
   relatedComparisons,
+  resolveComparisonTokens,
 } from "@/lib/comparisons";
 import { JsonLd } from "@/components/json-ld";
 import { ComparisonView } from "@/components/comparison-view";
@@ -46,10 +47,15 @@ export async function generateMetadata({
       noindex: true,
     });
   }
+  // Les métadonnées suivent la langue principale du site (/admin) : le
+  // titre servi est toujours celui de la langue par défaut, comme le HTML
+  // initial. Le visiteur peut basculer la langue côté client ensuite.
+  const locale = siteLocale(config);
+
   return pageMetadata(config, {
     path: comparePath(comparison.id),
-    title: comparison.titleAr,
-    description: comparison.descriptionAr,
+    title: locale === "ar" ? comparison.titleAr : comparison.titleEn,
+    description: locale === "ar" ? comparison.descriptionAr : comparison.descriptionEn,
     // opengraph-image.tsx génère la carte « annonce » 1200×630 de la page.
     image: false,
     keywords: [
@@ -81,7 +87,13 @@ export default async function ComparisonPage({
   );
   const lowestServiceUsd = Number.isFinite(servicePriceUsd) ? servicePriceUsd : 15;
 
-  const related = relatedComparisons(comparison.id);
+  // Texte prêt à afficher (jetons de marché résolus) pour le composant
+  // client ; les schémas JSON-LD gardent la donnée brute et la résolvent
+  // eux-mêmes.
+  const resolved = resolveComparisonTokens(comparison, config.market);
+  const related = relatedComparisons(comparison.id).map((item) =>
+    resolveComparisonTokens(item, config.market),
+  );
   const relatedServices = comparison.relatedServices
     .map((id) => findService(config.standaloneServices, id))
     .filter((service): service is NonNullable<typeof service> => Boolean(service))
@@ -114,7 +126,7 @@ export default async function ComparisonPage({
       />
 
       <ComparisonView
-        comparison={comparison}
+        comparison={resolved}
         related={related}
         relatedServices={relatedServices}
         sitePriceUsd={sitePriceUsd}

@@ -64,7 +64,7 @@ export function BlogClient({ articles }: { articles: BlogCardLite[] }) {
               {ar ? "← الرئيسية" : "← Home"}
             </Link>
             <span className="px-3 py-1 rounded-full bg-[var(--accent)] text-[var(--accent-foreground)]">
-              {ar ? "مدونة نخبة · Nukhba guides" : "Nukhba guides · مدونة نخبة"}
+              {ar ? "مدونة نخبة · Nukhba guides" : "Nukhba guides"}
             </span>
           </div>
 

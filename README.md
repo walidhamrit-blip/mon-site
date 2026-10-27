@@ -396,7 +396,8 @@ NOWPayments pour prendre une place en avance dans le planning.
   (inclus dans `npm run test:seo`) et `scripts/seo-check.mjs`.
   L'affichage est bilingue et suit la langue du site (bouton AR/EN de la
   barre supérieure) ; un bandeau « comparaisons » ouvre aussi la page
-  `/services` (Open services).
+  `/services` (Open services) — elle-même devenue bilingue, comme le
+  reste des sections dynamiques du site.
   Procédure : [`docs/comparisons.md`](docs/comparisons.md).
 - `manifest.ts` (PWA), `not-found.tsx` (404 noindex), pages de paiement noindex
 - Les langues sont gérées côté client (pas d'URL /ar /en réelles) : aucun

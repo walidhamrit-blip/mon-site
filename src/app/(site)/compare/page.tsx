@@ -1,11 +1,12 @@
 import type { Metadata } from "next";
 import { getSiteDataCached } from "@/lib/store";
-import { breadcrumbJsonLd, faqJsonLd, pageMetadata, webPageJsonLd } from "@/lib/seo";
+import { breadcrumbJsonLd, faqJsonLd, pageMetadata, siteLocale, webPageJsonLd } from "@/lib/seo";
 import {
   comparisonIds,
   comparisonsHubFaqs,
   comparisonsCollectionJsonLd,
   getComparison,
+  resolveComparisonTokens,
 } from "@/lib/comparisons";
 import { JsonLd } from "@/components/json-ld";
 import { ComparisonHubView } from "@/components/comparison-hub-view";
@@ -22,11 +23,20 @@ import { ComparisonHubView } from "@/components/comparison-hub-view";
  */
 export async function generateMetadata(): Promise<Metadata> {
   const { config } = await getSiteDataCached();
+  // Métadonnées dans la langue principale du site (/admin → Apparence),
+  // alignées sur le HTML initial rendu.
+  const locale = siteLocale(config);
+
   return pageMetadata(config, {
     path: "/compare",
-    title: "مقارنات صريحة — نخبة مقابل الإعلانات والقوالب والمستقلين",
+    title:
+      locale === "ar"
+        ? "مقارنات صريحة — نخبة مقابل الإعلانات والقوالب والمستقلين"
+        : "Honest comparisons: Nukhba vs ads, builders, freelancers",
     description:
-      "مقارنات صريحة بين نخبة وإعلانات جوجل وفيسبوك ومنشئات المواقع والمستقلين واشتراكات SEO: التكلفة، السرعة، ملكية العملاء والأثر بعد المشروع.",
+      locale === "ar"
+        ? "مقارنات صريحة بين نخبة وإعلانات جوجل وفيسبوك ومنشئات المواقع والمستقلين واشتراكات SEO: التكلفة، السرعة، ملكية العملاء والأثر بعد المشروع."
+        : "Honest side-by-side comparisons: Google Ads, Facebook ads, website builders, freelancers and SEO retainers vs a Nukhba site — cost, speed, ownership.",
     keywords: [
       "مقارنة المواقع",
       "مقارنة إعلانات جوجل",
@@ -41,9 +51,12 @@ export async function generateMetadata(): Promise<Metadata> {
 export default async function CompareHubPage() {
   const { config } = await getSiteDataCached();
   const sitePriceUsd = config.pricing.plans[0]?.priceUsd ?? 300;
+  // Les jetons de marché ({city}, {cityEn}…) sont résolus ici : le
+  // composant client reçoit du texte prêt à afficher.
   const items = comparisonIds
     .map((id) => getComparison(id))
-    .filter((item): item is NonNullable<typeof item> => Boolean(item));
+    .filter((item): item is NonNullable<typeof item> => Boolean(item))
+    .map((item) => resolveComparisonTokens(item, config.market));
 
   return (
     <>

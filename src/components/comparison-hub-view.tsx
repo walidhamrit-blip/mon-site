@@ -142,7 +142,8 @@ export function ComparisonHubView({
                 </div>
 
                 <span className="mt-4 inline-flex items-center gap-1 text-sm font-bold text-[var(--accent)] group-hover:underline">
-                  {pick(c.hubReadAr, c.hubReadEn)} ←
+                  {pick(c.hubReadAr, c.hubReadEn)}
+                  <span aria-hidden="true">{ar ? "←" : "→"}</span>
                 </span>
               </Link>
             ))}

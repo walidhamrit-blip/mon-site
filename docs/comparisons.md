@@ -108,6 +108,11 @@ BASE_URL=http://localhost:3100 node scripts/seo-check.mjs
   site. Les libellés d'interface (boutons, titres de sections) sont
   centralisés dans `compareLabels` (`src/lib/i18n.tsx`), les contenus
   éditoriaux restent dans `src/lib/comparisons.ts`.
+- **Métadonnées alignées sur la langue du site.** Le serveur ne sert qu'une
+  version par URL : le titre et la description suivent la langue principale
+  (`/admin → Apparence → Langue par défaut`, via `siteLocale()` dans
+  `src/lib/seo.ts`). Passer le site en arabe bascule donc aussi les
+  métadonnées, sans toucher au code.
 - **Point d'entrée depuis « Open services ».** Le bandeau
   `src/components/comparison-strip.tsx` s'affiche en haut de `/services` :
   c'est la page du visiteur qui cherche « quoi payer ? », donc le meilleur

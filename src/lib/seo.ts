@@ -10,6 +10,7 @@ import {
 } from "@/lib/market";
 import type { Demo, Faq, ProcessStep, Testimonial } from "@/lib/site-types";
 import { DEFAULT_SITE_DOMAIN, domainFromOrigin } from "@/lib/site-identity";
+import { siteConfig } from "@/lib/config";
 
 /**
  * Central SEO + structured-data (JSON-LD) helpers.
@@ -144,6 +145,22 @@ export function absoluteUrl(config: Pick<SiteConfig, "url">, path = "/"): string
   const base = config.url.replace(/\/+$/, "");
   if (!path.startsWith("/")) path = `/${path}`;
   return `${base}${path === "/" ? "/" : path.replace(/\/+$/, "")}`;
+}
+
+/**
+ * Langue principale du site (réglages /admin → Apparence), utilisée par le
+ * serveur pour les métadonnées (titre, description) : une seule version
+ * servie par URL, alignée sur le HTML initial rendu.
+ *
+ * Le visiteur peut ensuite basculer la langue côté client — c'est le
+ * comportement du site entier (pas d'URL /ar, /en).
+ */
+export function siteLocale(
+  config: { appearance?: { defaultLocale?: string | null } | null },
+): "ar" | "en" {
+  const stored = config.appearance?.defaultLocale;
+  const locale = stored ?? siteConfig.appearance.defaultLocale;
+  return locale === "ar" ? "ar" : "en";
 }
 
 /**
