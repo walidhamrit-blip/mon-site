@@ -8,6 +8,7 @@ import {
 import { nowPaymentsSandbox } from "@/lib/nowpayments";
 import { checkReloadlyCredentials, reloadlyConfigured, reloadlyMaxOrderUsd } from "@/lib/reloadly";
 import { mailDiagnostics } from "@/lib/mailer";
+import { storedBuyerFields } from "@/lib/fazercards-orders";
 import {
   DigitalOrdersTable,
   type AdminDigitalOrderRow,
@@ -209,6 +210,8 @@ function toRow(order: AdminDigitalOrder): AdminDigitalOrderRow {
     status: order.normalizedStatus,
     kind: order.kind,
     supplier: digitalOrderSupplier(order),
+    // Identifiant réellement transmis au fournisseur (recharges : user_id…).
+    buyerFields: storedBuyerFields(order),
     fulfillment: order.fulfillment,
     reloadlyProductId: order.reloadlyProductId,
     reloadlyUnitPrice: order.reloadlyUnitPrice,

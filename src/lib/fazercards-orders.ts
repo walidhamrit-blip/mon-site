@@ -151,8 +151,17 @@ export function sanitizeBuyerFields(
   return fields;
 }
 
-/** Champs acheteur mémorisés sur une commande (colonne jsonb existante). */
-function storedBuyerFields(order: DigitalOrder): Record<string, string | number> {
+/**
+ * Champs acheteur mémorisés sur une commande (colonne jsonb existante).
+ *
+ * Exporté pour l'admin : c'est la seule trace de l'identifiant RÉELLEMENT
+ * transmis au fournisseur (ex. le `user_id` d'une recharge). Sans cet
+ * affichage, un litige « ce n'est pas mon compte » ne se diagnostiquait
+ * qu'en lisant la base.
+ */
+export function storedBuyerFields(order: {
+  reloadlyResponse?: unknown;
+}): Record<string, string | number> {
   const stored = order.reloadlyResponse;
   if (!stored || typeof stored !== "object" || Array.isArray(stored)) return {};
   const fields = (stored as { buyerFields?: unknown }).buyerFields;

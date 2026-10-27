@@ -40,6 +40,11 @@ export interface AdminDigitalOrderRow {
   kind: string;
   /** Fournisseur qui livre la commande (déduit du préfixe de slug). */
   supplier: "fazercards" | "reloadly";
+  /**
+   * Champs acheteur mémorisés à la caisse — donc l'identifiant RÉELLEMENT
+   * transmis au fournisseur (recharge : `user_id`, `server_id`…).
+   */
+  buyerFields: Record<string, string | number>;
   fulfillment: string;
   reloadlyProductId: number | null;
   reloadlyUnitPrice: string | null;
@@ -194,6 +199,7 @@ export function DigitalOrdersTable({ rows }: { rows: AdminDigitalOrderRow[] }) {
           const open = openRef === row.ref;
           const status = row.status as DigitalOrderStatus;
           const canRetry = ["paid", "manual", "failed"].includes(status);
+          const buyerFieldEntries = Object.entries(row.buyerFields ?? {});
           const isBusy = busy && pendingRef === row.ref;
 
           return (
@@ -267,6 +273,47 @@ export function DigitalOrdersTable({ rows }: { rows: AdminDigitalOrderRow[] }) {
                       <dd className="min-w-0 break-words">
                         {row.reloadlyTransactionId || "—"}
                         {row.reloadlyStatus ? ` (${row.reloadlyStatus})` : ""}
+                      </dd>
+                    </div>
+                    <div className="flex gap-2">
+                      <dt className="w-32 shrink-0 font-bold text-stone-500">
+                        Identifiant transmis
+                      </dt>
+                      <dd className="min-w-0 break-words">
+                        {buyerFieldEntries.length > 0 ? (
+                          <span className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                            {buyerFieldEntries.map(([key, value]) => (
+                              <span key={key} className="inline-flex items-center gap-1.5">
+                                <span className="text-stone-500">{key}</span>
+                                <code
+                                  className="rounded bg-stone-100 px-1.5 py-0.5 font-mono text-[12px] font-bold"
+                                  dir="ltr"
+                                >
+                                  {value}
+                                </code>
+                                <button
+                                  type="button"
+                                  onClick={() => copy(String(value), `${row.ref}-${key}`)}
+                                  className="rounded border border-stone-200 p-0.5 text-stone-500 hover:bg-stone-50"
+                                  aria-label={`Copier ${key}`}
+                                >
+                                  {copied === `${row.ref}-${key}` ? (
+                                    <Check className="h-3 w-3 text-emerald-600" />
+                                  ) : (
+                                    <Copy className="h-3 w-3" />
+                                  )}
+                                </button>
+                              </span>
+                            ))}
+                          </span>
+                        ) : row.kind === "game_topup" ? (
+                          <span className="text-red-700">
+                            Aucun identifiant enregistré — vérifier la commande avant toute
+                            relance.
+                          </span>
+                        ) : (
+                          "—"
+                        )}
                       </dd>
                     </div>
                     <div className="flex gap-2">
