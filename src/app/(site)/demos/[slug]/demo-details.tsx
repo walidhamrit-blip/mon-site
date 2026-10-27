@@ -154,10 +154,6 @@ export function DemoDetails({
                   <dt className="opacity-60">السعر</dt>
                   <dd className="font-bold text-end">
                     <Price usd={classification.priceUsd} />
-                    <span className="opacity-60 font-medium">
-                      {" · "}
-                      <Price usd={classification.priceUsd} compact />
-                    </span>
                   </dd>
                 </div>
               )}
