@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Loader2, Lock, Minus, Plus, ShieldCheck, X, Zap } from "lucide-react";
+import { CheckCircle2, Loader2, Lock, Minus, Plus, ShieldCheck, X, Zap } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import { Price } from "@/components/price";
 import {
@@ -59,6 +59,18 @@ export function DigitalBuyDialog({ product, denominationId, onClose }: Props) {
   // Champs acheteur exigés par le fournisseur (top-ups : identifiant de
   // joueur, serveur…). Sans eux la recharge est refusée APRÈS paiement.
   const [buyerFields, setBuyerFields] = useState<Record<string, string>>({});
+  /**
+   * Vérification de l'identifiant joueur chez le fournisseur.
+   *
+   * Un identifiant venu d'un AUTRE jeu est accepté par le formulaire mais
+   * crédite un inconnu — une recharge livrée est irréversible. Quand le
+   * fournisseur sait vérifier le jeu, on affiche le pseudo du compte pour que
+   * le client confirme, et on bloque l'envoi si l'identifiant n'existe pas.
+   */
+  const [idCheck, setIdCheck] = useState<{
+    state: "idle" | "checking" | "ok" | "invalid" | "unverifiable";
+    playerName?: string;
+  }>({ state: "idle" });
 
   const selected = available.find((item) => item.id === selectedId) ?? available[0] ?? null;
   const total = (selected?.priceUsd ?? 0) * quantity;
@@ -87,6 +99,61 @@ export function DigitalBuyDialog({ product, denominationId, onClose }: Props) {
     return () => window.removeEventListener("keydown", onKey);
   }, [onClose]);
 
+  const idFieldsKey = JSON.stringify(buyerFields);
+  const allIdFieldsFilled =
+    requiredFields.length > 0 &&
+    requiredFields.every((field) => (buyerFields[field.key] ?? "").trim() !== "");
+
+  // `setState` est appelé DANS le callback asynchrone (jamais en synchrone
+  // dans l'effet) : sinon React boucle et le lint le refuse.
+  useEffect(() => {
+    if (!isFazercards || product.kind !== "game_topup" || !selected) return;
+    if (!allIdFieldsFilled) return;
+
+    let cancelled = false;
+    const timer = setTimeout(async () => {
+      setIdCheck({ state: "checking" });
+      try {
+        const res = await fetch("/api/fazercards/validate-id", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            productSlug: product.slug,
+            fields: Object.fromEntries(
+              Object.entries(buyerFields).map(([key, value]) => [key, value.trim()]),
+            ),
+          }),
+        });
+        const data = (await res.json().catch(() => ({}))) as {
+          checked?: boolean;
+          valid?: boolean;
+          playerName?: string;
+        };
+        if (cancelled) return;
+        if (!data.checked) {
+          // Jeu non vérifiable : on n'affiche rien, on ne bloque rien.
+          setIdCheck({ state: "unverifiable" });
+        } else if (data.valid) {
+          setIdCheck({
+            state: "ok",
+            ...(data.playerName ? { playerName: data.playerName } : {}),
+          });
+        } else {
+          setIdCheck({ state: "invalid" });
+        }
+      } catch {
+        if (!cancelled) setIdCheck({ state: "unverifiable" });
+      }
+    }, 700);
+
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+    // `idFieldsKey` couvre le contenu des champs sans dépendre de la référence.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [idFieldsKey, allIdFieldsFilled, selected?.id, product.slug, product.kind, isFazercards]);
+
   const submit = async () => {
     setError("");
     if (!selected) {
@@ -100,6 +167,14 @@ export function DigitalBuyDialog({ product, denominationId, onClose }: Props) {
     const missingField = requiredFields.find(
       (field) => !(buyerFields[field.key] ?? "").trim(),
     );
+    if (idCheck.state === "invalid") {
+      setError(
+        ar
+          ? "معرّف اللاعب غير موجود عند المزوّد. تحقق من أنه معرّف حسابك في هذه اللعبة (وليس لعبة أخرى)."
+          : "This player ID does not exist at the supplier. Check that it is your account in THIS game — not another one.",
+      );
+      return;
+    }
     if (missingField) {
       setError(
         ar
@@ -305,6 +380,35 @@ export function DigitalBuyDialog({ product, denominationId, onClose }: Props) {
                 />
               </label>
             ))}
+
+            {/* Rappel explicite : c'est LA cause d'erreur constatée en
+                production (identifiant d'un autre jeu collé dans ce champ). */}
+            <p className="rounded-lg bg-[var(--secondary)]/60 px-2.5 py-2 text-[11px] leading-4 text-[var(--muted-foreground)]">
+              {ar
+                ? `تنبيه: هذا المعرّف يجب أن يكون حسابك في « ${product.platform} » تحديداً. الشحن يُطبَّق فوراً ولا يمكن التراجع عنه.`
+                : `Careful: this ID must be your account in ${product.platform} specifically. A top-up is applied instantly and cannot be undone.`}
+            </p>
+
+            {idCheck.state === "checking" && (
+              <p className="flex items-center gap-1.5 text-[11.5px] text-[var(--muted-foreground)]">
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                {ar ? "جارٍ التحقق من المعرّف…" : "Checking the ID…"}
+              </p>
+            )}
+            {allIdFieldsFilled && idCheck.state === "ok" && (
+              <p className="flex items-center gap-1.5 rounded-lg bg-emerald-500/10 px-2.5 py-2 text-[12px] font-bold text-emerald-700">
+                <CheckCircle2 className="h-4 w-4" />
+                {ar ? "الحساب:" : "Account:"}{" "}
+                {idCheck.playerName || (ar ? "تم التحقق" : "verified")}
+              </p>
+            )}
+            {allIdFieldsFilled && idCheck.state === "invalid" && (
+              <p className="rounded-lg bg-red-500/10 px-2.5 py-2 text-[12px] font-bold text-red-700">
+                {ar
+                  ? "لم يتم العثور على هذا المعرّف في هذه اللعبة. تحقق منه قبل الدفع."
+                  : "This ID was not found in this game. Check it before paying."}
+              </p>
+            )}
           </div>
         )}
 
