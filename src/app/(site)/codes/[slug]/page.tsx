@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getDigitalProductBySlug } from "@/lib/digital-store";
-import { absoluteUrl, breadcrumbJsonLd, pageMetadata } from "@/lib/seo";
+import { absoluteUrl, breadcrumbJsonLd, pageMetadata, siteLocale } from "@/lib/seo";
 import { JsonLd } from "@/components/json-ld";
 import { DigitalProductDetails } from "./digital-product-details";
 import { getSiteDataCached } from "@/lib/store";
@@ -38,27 +38,45 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { slug } = await params;
   const { config } = await getSiteDataCached();
+  // Les métadonnées suivent la langue principale du site (/admin → Réglages) :
+  // une fiche produit ne doit pas s'annoncer en arabe dans la version
+  // anglaise (elle est indexée sur le mot-clé de la plateforme).
+  const locale = siteLocale(config);
   const product = await getDigitalProductBySlug(slug);
   if (!product) {
     return pageMetadata(config, {
       path: `/codes/${slug}`,
-      title: "منتج غير متاح",
-      description: "هذا المنتج غير متاح حالياً.",
+      title:
+        locale === "ar" ? "منتج غير متاح" : "Product not available",
+      description:
+        locale === "ar"
+          ? "هذا المنتج غير متاح حالياً."
+          : "This product is not available right now.",
       noindex: true,
     });
   }
 
+  const title = locale === "ar" ? product.titleAr : product.titleEn;
+  const description = locale === "ar" ? product.descriptionAr : product.descriptionEn;
+  // Le nom de la plateforme n'est rappelé que s'il n'est pas déjà dans le
+  // titre : « Game Top-Up — 8 Ball Pool | 8 Ball Pool » ferait double emploi
+  // et ferait dépasser la longueur conseillée pour un titre.
+  const platform =
+    product.platform && !title.toLowerCase().includes(product.platform.toLowerCase())
+      ? ` — ${product.platform}`
+      : "";
+
   return pageMetadata(config, {
     path: `/codes/${product.slug}`,
-    title: `${product.titleAr} — ${product.platform} | أكواد وبطاقات هدايا نخبة`,
-    description: product.descriptionAr,
+    title: `${title}${platform}`,
+    description,
     image: product.image ? product.image : false,
     keywords: [
-      product.titleAr,
-      product.titleEn,
+      title,
+      locale === "ar" ? product.titleEn : product.titleAr,
       product.platform,
-      "بطاقة هدايا",
-      "كود رقمي",
+      locale === "ar" ? "بطاقة هدايا" : "gift card",
+      locale === "ar" ? "كود رقمي" : "digital code",
       `${product.platform} gift card`,
       "digital code",
     ],
@@ -76,8 +94,12 @@ export default async function DigitalProductPage({
   if (!product) notFound();
 
   const market = resolveMarket(config.market);
+  const locale = siteLocale(config);
   const fromUsd = lowestPriceUsd(product);
   const canonical = absoluteUrl(config, `/codes/${product.slug}`);
+  const localeTitle = locale === "ar" ? product.titleAr : product.titleEn;
+  const localeDescription =
+    locale === "ar" ? product.descriptionAr : product.descriptionEn;
 
   // Schéma Product : la fiche est publiée et décrit précisément le produit.
   // `availability` suit le statut : une fiche « coming soon » reste
@@ -91,9 +113,9 @@ export default async function DigitalProductPage({
     "@context": "https://schema.org",
     "@type": "Product",
     "@id": `${canonical}#product`,
-    name: product.titleAr,
-    alternateName: product.titleEn,
-    description: product.descriptionAr,
+    name: localeTitle,
+    alternateName: locale === "ar" ? product.titleEn : product.titleAr,
+    description: localeDescription,
     url: canonical,
     inLanguage: [market.locale, "en"],
     brand: {
@@ -129,9 +151,18 @@ export default async function DigitalProductPage({
       <JsonLd
         data={[
           breadcrumbJsonLd(config, [
-            { name: "الرئيسية", path: "/" },
-            { name: "الأكواد وبطاقات الهدايا", path: "/codes" },
-            { name: product.titleAr, path: `/codes/${product.slug}` },
+            {
+              name: locale === "ar" ? "الرئيسية" : "Home",
+              path: "/",
+            },
+            {
+              name:
+                locale === "ar"
+                  ? "الأكواد وبطاقات الهدايا"
+                  : "Digital codes & gift cards",
+              path: "/codes",
+            },
+            { name: localeTitle, path: `/codes/${product.slug}` },
           ]),
           productSchema,
         ]}

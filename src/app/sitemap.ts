@@ -7,6 +7,16 @@ import { comparisonIds } from "@/lib/comparisons";
 
 const BUILD_DATE = new Date();
 
+/**
+ * Le sitemap est revalidé toutes les minutes, comme la boutique /codes.
+ *
+ * Sans cela il est figé au moment du build : le cataloguelive (FazerCards)
+ * n'est disponible qu'à l'exécution, donc seules les fiches « seed »
+ * étaient listées — les ~110 fiches réelles (recharges, cartes regionales)
+ * n'étaient jamais soumises aux moteurs de recherche.
+ */
+export const revalidate = 60;
+
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const { config, content } = await getSiteDataCached();
   const base = config.url.replace(/\/+$/, "");
