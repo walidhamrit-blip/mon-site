@@ -109,7 +109,7 @@ export function AdminNav({ newLeads, paidOrders }: Props) {
         {
           href: "/admin/digital/orders",
           label: "Commandes de codes",
-          sublabel: "Livraison Reloadly & relances",
+          sublabel: "Livraison FazerCards & relances",
           icon: ShoppingBag,
         },
       ],

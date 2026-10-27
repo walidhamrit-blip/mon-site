@@ -28,6 +28,7 @@ import {
 } from "@/lib/digital-types";
 import { DigitalBuyDialog } from "@/components/digital-buy-dialog";
 import { RegionalAlert } from "@/components/regional-alert";
+import { gamePlatformSummary } from "@/lib/digital-platform-core";
 
 /**
  * Fiche d'un produit du catalogue digital.
@@ -45,6 +46,14 @@ export function DigitalProductDetails({ product }: { product: DigitalProduct }) 
   const available = product.denominations.filter((denomination) => denomination.available);
   const sellable = isSellable(product);
   const [buyDenomination, setBuyDenomination] = useState<string | null>(null);
+  // Plateforme du jeu + identifiant demandé (fiches de recharge uniquement).
+  const platformSummary = gamePlatformSummary({
+    name: product.platform,
+    platform: product.platform,
+    fields:
+      product.denominations.find((denomination) => denomination.fields?.length)?.fields ??
+      null,
+  });
 
   const waitlistMessage = ar
     ? `مرحبا نخبة 👋 أرغب في «${product.titleAr}» (${product.platform}). أرجو إشعارني عند فتح البيع أو إرسال طلب مخصص.`
@@ -113,6 +122,39 @@ export function DigitalProductDetails({ product }: { product: DigitalProduct }) 
               <p className="mt-4 max-w-[62ch] text-[15px] leading-8 text-[var(--muted-foreground)]">
                 {ar ? product.descriptionAr : product.descriptionEn}
               </p>
+
+              {/* Recharge : la fiche doit dire sur quelle plateforme la recharge
+                  s'applique et quel identifiant saisir. Un identifiant d'un
+                  autre jeu crédite un inconnu, sans retour possible. */}
+              {product.kind === "game_topup" && (
+                <div className="mt-6 rounded-[var(--radius-md)] border border-[var(--border)] bg-[var(--card)] p-4">
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <div>
+                      <div className="text-[10.5px] font-black uppercase tracking-[0.14em] text-[var(--muted-foreground)]">
+                        {ar ? "المنصة" : "Platform"}
+                      </div>
+                      <div className="mt-1 text-[14px] font-black">
+                        {platformSummary.platform[locale]}
+                      </div>
+                    </div>
+                    <div>
+                      <div className="text-[10.5px] font-black uppercase tracking-[0.14em] text-[var(--muted-foreground)]">
+                        {ar ? "المعرّف المطلوب" : "ID required"}
+                      </div>
+                      <div className="mt-1 text-[14px] font-black" dir="ltr">
+                        {platformSummary.accountFields.length > 0
+                          ? platformSummary.accountFields.join(" / ")
+                          : "—"}
+                      </div>
+                    </div>
+                  </div>
+                  <p className="mt-3 text-[12.5px] leading-6 text-[var(--muted-foreground)]">
+                    {ar
+                      ? `الشحن يُطبَّق مباشرة على حساب اللاعب في « ${platformSummary.platform.ar} ». معرّف لعبة أو منصة أخرى لا يمكن استرجاعه بعد الشحن.`
+                      : `The top-up is applied directly to your player account in ${platformSummary.platform.en}. An ID from another game or platform cannot be reversed once credited.`}
+                  </p>
+                </div>
+              )}
 
               {features.length > 0 && (
                 <ul className="mt-6 grid gap-2.5 sm:grid-cols-2">

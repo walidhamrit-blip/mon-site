@@ -615,3 +615,42 @@ faux code, ce qui était le seul moyen auparavant.
 Reprise d'une commande bloquée : « Relancer la livraison » relit la commande
 chez le fournisseur et applique les règles ci-dessus (une transaction existante
 n'est jamais repayée).
+
+## Vérification de l'identifiant joueur (recharges)
+
+Un identifiant d'un autre jeu crédite un inconnu et **rien ne peut être
+annulé**. Trois garde-fous, dans cet ordre :
+
+1. **Caisse** (`createFazercardsCheckout`) — `POST /topups/validate-id` de
+   FazerCards est appelé **avant** la création de la facture. Réponse
+   `valid: false` → refus `400 invalid_player_id`, aucun montant débité.
+2. **Saisie** — le dialogue d'achat vérifie l'identifiant 700 ms après la
+   frappe (`POST /api/fazercards/validate-id`) : pseudo affiché en vert,
+   bouton d'achat bloqué et avertissement rouge si le compte n'existe pas.
+3. **Livraison** (`deliverPaidFazercardsOrder`) — re-vérification juste avant
+   l'achat fournisseur. Identifiant refusé → commande en `manual`, **aucun
+   achat**.
+
+Règle importante : un fournisseur muet (`checked: false`) **ne bloque
+jamais** la vente, sinon des jeux non vérifiables deviendraient invendables.
+
+La fiche d'une recharge affiche aussi sa **plateforme** (famille déduite du
+nom de la catégorie : Mobile, PC, PlayStation… sinon nom du jeu) et
+l'**identifiant demandé** (`Player ID`, `account_id`…), pour qu'aucun client
+ne confonde deux jeux.
+
+## Reprise automatique des commandes bloquées
+
+`GET /api/cron/digital-orders` (planifié par `vercel.json`, protégé par
+`CRON_SECRET`) reprend les commandes restées en `pending` (webhook IPN perdu)
+ou `paid` (fournisseur muet) alors que le paiement est confirmé.
+
+Conditions (`src/lib/digital-resume-core.ts`) : paiement `paid`, statut
+`pending`/`paid`, dernière activité > 15 min, < 6 tentatives, < 14 jours.
+Au-delà, la commande passe en `manual` avec un motif explicite — jamais
+d'achat silencieux, jamais de double débit (Idempotency-Key par commande).
+
+Diagnostic sans achat : `GET /api/cron/digital-orders?dry=1` avec
+`Authorization: Bearer $CRON_SECRET`. Sur un plan Vercel Hobby, le cron est
+quotidien (`20 4 * * *`) ; sur Pro, resserrez à `*/15 * * * *` pour une
+reprise toutes les 15 minutes.

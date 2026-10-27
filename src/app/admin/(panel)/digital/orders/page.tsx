@@ -1,9 +1,14 @@
 import Link from "next/link";
 import { ArrowLeft, ShieldCheck, TriangleAlert } from "lucide-react";
-import { listDigitalOrders, type AdminDigitalOrder } from "@/lib/digital-orders";
+import {
+  digitalOrderSupplier,
+  listDigitalOrders,
+  type AdminDigitalOrder,
+} from "@/lib/digital-orders";
 import { nowPaymentsSandbox } from "@/lib/nowpayments";
 import { checkReloadlyCredentials, reloadlyConfigured, reloadlyMaxOrderUsd } from "@/lib/reloadly";
 import { mailDiagnostics } from "@/lib/mailer";
+import { storedBuyerFields } from "@/lib/fazercards-orders";
 import {
   DigitalOrdersTable,
   type AdminDigitalOrderRow,
@@ -61,9 +66,10 @@ export default async function AdminDigitalOrdersPage() {
           Commandes de codes &amp; cartes cadeaux
         </h1>
         <p className="mt-1 text-sm text-stone-600">
-          Vente à la commande : le code est acheté chez Reloadly <strong>après</strong>{" "}
-          confirmation du paiement, puis envoyé au client. Aucun stock n&apos;est acheté
-          d&apos;avance.
+          Vente à la commande : le code est acheté chez le fournisseur de la fiche
+          (FazerCards pour le catalogue actuel, Reloadly pour les fiches historiques){" "}
+          <strong>après</strong> confirmation du paiement, puis envoyé au client. Aucun
+          stock n&apos;est acheté d&apos;avance.
         </p>
       </div>
 
@@ -71,7 +77,9 @@ export default async function AdminDigitalOrdersPage() {
       <section className="rounded-2xl border border-stone-200 bg-white p-5 shadow-2xs">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
-            <h2 className="text-[15px] font-black text-stone-900">Connexion Reloadly</h2>
+            <h2 className="text-[15px] font-black text-stone-900">
+              Connexion Reloadly <span className="font-bold text-stone-500">(ancien fournisseur)</span>
+            </h2>
             <p className="mt-1 text-[12.5px] text-stone-600">
               Identifiants serveur (<code>RELOADLY_CLIENT_ID</code> /{" "}
               <code>RELOADLY_CLIENT_SECRET</code>) — jamais exposés au navigateur.
@@ -201,6 +209,9 @@ function toRow(order: AdminDigitalOrder): AdminDigitalOrderRow {
     recipientPhone: order.recipientPhone,
     status: order.normalizedStatus,
     kind: order.kind,
+    supplier: digitalOrderSupplier(order),
+    // Identifiant réellement transmis au fournisseur (recharges : user_id…).
+    buyerFields: storedBuyerFields(order),
     fulfillment: order.fulfillment,
     reloadlyProductId: order.reloadlyProductId,
     reloadlyUnitPrice: order.reloadlyUnitPrice,

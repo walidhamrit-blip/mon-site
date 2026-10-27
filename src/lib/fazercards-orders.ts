@@ -48,6 +48,7 @@ import {
   sendDigitalManualNotice,
   sendDigitalTopupDeliveredEmail,
 } from "@/lib/digital-emails";
+import { checkFazercardsPlayerId } from "@/lib/fazercards-player-id";
 import {
   classifyFazercardsDelivery,
   extractFazercardsCodes,
@@ -150,8 +151,17 @@ export function sanitizeBuyerFields(
   return fields;
 }
 
-/** Champs acheteur mémorisés sur une commande (colonne jsonb existante). */
-function storedBuyerFields(order: DigitalOrder): Record<string, string | number> {
+/**
+ * Champs acheteur mémorisés sur une commande (colonne jsonb existante).
+ *
+ * Exporté pour l'admin : c'est la seule trace de l'identifiant RÉELLEMENT
+ * transmis au fournisseur (ex. le `user_id` d'une recharge). Sans cet
+ * affichage, un litige « ce n'est pas mon compte » ne se diagnostiquait
+ * qu'en lisant la base.
+ */
+export function storedBuyerFields(order: {
+  reloadlyResponse?: unknown;
+}): Record<string, string | number> {
   const stored = order.reloadlyResponse;
   if (!stored || typeof stored !== "object" || Array.isArray(stored)) return {};
   const fields = (stored as { buyerFields?: unknown }).buyerFields;
@@ -283,6 +293,26 @@ export async function createFazercardsCheckout(
       400,
       `Informations requises : ${requiredFields.map((field) => field.label || field.key).join(", ")}.`,
     );
+  }
+
+  // Vérification de l'identifiant joueur AVANT le paiement — la seule
+  // protection contre une recharge partie sur le compte d'un autre joueur
+  // (identifiant appartenant à un autre jeu, faute de frappe…). Une recharge
+  // livrée est irréversible : mieux vaut refuser la vente que créditer un
+  // inconnu. Si le fournisseur ne sait pas vérifier ce jeu, on n'empêche rien.
+  if (product.kind === "game_topup" && Object.keys(buyerFields).length > 0) {
+    const check = await checkFazercardsPlayerId({
+      categoryId: product.categoryId,
+      fields: buyerFields,
+    });
+    if (check.checked && !check.valid) {
+      throw new FazercardsOrderError(
+        "invalid_player_id",
+        400,
+        "Identifiant refusé par le fournisseur : aucun compte de jeu ne correspond. " +
+          "Vérifiez que cet identifiant est bien celui de votre compte — aucun montant n'a été débité.",
+      );
+    }
   }
 
   const ref = newOrderReference("DGC");
@@ -435,6 +465,26 @@ export async function deliverPaidFazercardsOrder(
       loaded,
       "DIGITAL_CODES_SECRET (ou SESSION_SECRET) absent : impossible de chiffrer et relire les codes en sécurité.",
     );
+  }
+
+  // Seconde vérification, juste avant l'achat : le compte a pu être renommé
+  // ou supprimé entre le paiement et la livraison. Si l'identifiant n'existe
+  // plus, on N'ACHÈTE PAS (une recharge livrée est irréversible) et on passe
+  // la main à un humain pour remboursement ou correction.
+  if (loaded.kind === "game_topup") {
+    const fields = storedBuyerFields(loaded);
+    if (Object.keys(fields).length > 0) {
+      const check = await checkFazercardsPlayerId({
+        categoryId: loaded.productId,
+        fields,
+      });
+      if (check.checked && !check.valid) {
+        return flagManual(
+          loaded,
+          "Identifiant joueur refusé par le fournisseur au moment de la livraison : aucun compte correspondant. Achat NON effectué — corriger l'identifiant avec le client ou rembourser.",
+        );
+      }
+    }
   }
 
   const totalUsd = Number(loaded.totalUsd);
