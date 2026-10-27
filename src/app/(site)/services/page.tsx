@@ -9,7 +9,7 @@ import {
 } from "@/lib/services";
 import { JsonLd } from "@/components/json-ld";
 import { ServicesHubView } from "@/components/services-hub-view";
-import { comparisonIds, getComparison } from "@/lib/comparisons";
+import { comparisonIds, getComparison, resolveComparisonTokens } from "@/lib/comparisons";
 import { formatMainPrice } from "@/lib/installments";
 
 /** Prix « à partir de » d'un service, lu dans la configuration vivante. */
@@ -72,7 +72,8 @@ export default async function ServicesPage() {
   // options ? ») : même source de données que les pages /compare.
   const comparisons = comparisonIds
     .map((id) => getComparison(id))
-    .filter((item): item is NonNullable<typeof item> => Boolean(item));
+    .filter((item): item is NonNullable<typeof item> => Boolean(item))
+    .map((item) => resolveComparisonTokens(item, config.market));
 
   const webPage = webPageJsonLd(config, {
     path: "/services",

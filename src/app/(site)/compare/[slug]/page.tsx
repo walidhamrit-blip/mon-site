@@ -10,6 +10,7 @@ import {
   comparisonServiceJsonLd,
   getComparison,
   relatedComparisons,
+  resolveComparisonTokens,
 } from "@/lib/comparisons";
 import { JsonLd } from "@/components/json-ld";
 import { ComparisonView } from "@/components/comparison-view";
@@ -86,7 +87,13 @@ export default async function ComparisonPage({
   );
   const lowestServiceUsd = Number.isFinite(servicePriceUsd) ? servicePriceUsd : 15;
 
-  const related = relatedComparisons(comparison.id);
+  // Texte prêt à afficher (jetons de marché résolus) pour le composant
+  // client ; les schémas JSON-LD gardent la donnée brute et la résolvent
+  // eux-mêmes.
+  const resolved = resolveComparisonTokens(comparison, config.market);
+  const related = relatedComparisons(comparison.id).map((item) =>
+    resolveComparisonTokens(item, config.market),
+  );
   const relatedServices = comparison.relatedServices
     .map((id) => findService(config.standaloneServices, id))
     .filter((service): service is NonNullable<typeof service> => Boolean(service))
@@ -119,7 +126,7 @@ export default async function ComparisonPage({
       />
 
       <ComparisonView
-        comparison={comparison}
+        comparison={resolved}
         related={related}
         relatedServices={relatedServices}
         sitePriceUsd={sitePriceUsd}

@@ -247,11 +247,10 @@ export function ServicesHubView({
                       <span className="text-sm opacity-50">
                         {pick(s.fromAr, s.fromEn)}
                       </span>
+                      {/* Un seul montant : le composant <Price> affiche déjà
+                          « facturé en USD » quand la devise change. */}
                       <span className="text-2xl font-black">
                         <Price usd={service.priceFromUsd} />
-                      </span>
-                      <span className="text-xs opacity-50">
-                        <Price usd={service.priceFromUsd} compact />
                       </span>
                     </div>
                     <p className="mt-1 text-[11px] opacity-50">

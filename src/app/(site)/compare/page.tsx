@@ -6,6 +6,7 @@ import {
   comparisonsHubFaqs,
   comparisonsCollectionJsonLd,
   getComparison,
+  resolveComparisonTokens,
 } from "@/lib/comparisons";
 import { JsonLd } from "@/components/json-ld";
 import { ComparisonHubView } from "@/components/comparison-hub-view";
@@ -50,9 +51,12 @@ export async function generateMetadata(): Promise<Metadata> {
 export default async function CompareHubPage() {
   const { config } = await getSiteDataCached();
   const sitePriceUsd = config.pricing.plans[0]?.priceUsd ?? 300;
+  // Les jetons de marché ({city}, {cityEn}…) sont résolus ici : le
+  // composant client reçoit du texte prêt à afficher.
   const items = comparisonIds
     .map((id) => getComparison(id))
-    .filter((item): item is NonNullable<typeof item> => Boolean(item));
+    .filter((item): item is NonNullable<typeof item> => Boolean(item))
+    .map((item) => resolveComparisonTokens(item, config.market));
 
   return (
     <>

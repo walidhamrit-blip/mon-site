@@ -132,11 +132,11 @@ export const comparisons: Record<string, ComparisonSeo> = {
     keywordsEn: ["google ads vs website", "google ads cost", "website vs ads", "should I run google ads"],
     themPoints: [
       { textAr: "تدفع عن كل نقرة واحدة", textEn: "You pay for every single click" },
-      { textAr: "الزيارات تتوقف ثانيتين تدفع", textEn: "Traffic stops the second you stop paying" },
+      { textAr: "الزيارات تتوقف فور توقفك عن الدفع", textEn: "Traffic stops the second you stop paying" },
       { textAr: "سعر النقرة يرتفع كل ربع سنة", textEn: "CPCs keep rising every quarter" },
       { textAr: "المنافسون يرفعون أسعار كلماتك", textEn: "Competitors bid up your keywords" },
       { textAr: "النقرة ليست محادثة ولا عميلاً", textEn: "A click is not a conversation" },
-      { textAr: "لا يبقى لك موقع أو قاعدة عملاء", textEn: "After the spend you own no site and no data" },
+      { textAr: "لا يبقى لك موقع ولا بيانات", textEn: "After the spend you own no site and no data" },
     ],
     usPoints: [
       { textAr: "يجدك من يبحث عن خدمتك بالاسم", textEn: "People who search for your service find you by name" },
@@ -224,8 +224,8 @@ export const comparisons: Record<string, ComparisonSeo> = {
     ],
     faqs: [
       {
-        qAr: "هل إعلانات جوجل أم الموقع يعطي نتائج أسرع؟",
-        qEn: "Do Google Ads or a website deliver results faster?",
+        qAr: "أيّهما يعطي نتائج أسرع: إعلانات جوجل أم الموقع؟",
+        qEn: "Which delivers results faster: Google Ads or a website?",
         aAr: "الإعلان أسرع في الأيام الأولى: تظهر الصفحة خلال ساعات. أما الموقع فيحتاج 7 أيام للظهور ثم يبدأ SEO بالعمل التراكمي، ويستمر أثره سنوات بعد أن يتوقف أي إنفاق إعلاني. أغلب عملائنا يجمعون الاثنين: موقع كحاضرة دائمة، وحملة إعلانية قصيرة مؤقتة عند الحاجة.",
         aEn: "Ads are faster in the first days: the page appears within hours. A website goes live in 7 days and then SEO compounds, lasting for years after ad spend stops. Most of our clients combine both: a site as a permanent reference, plus a short ad campaign when a promotion needs immediate reach.",
       },
@@ -747,7 +747,7 @@ export const comparisons: Record<string, ComparisonSeo> = {
       { textAr: "تقارير بلا أرقام واضحة", textEn: "Reports without clear numbers" },
       { textAr: "تكرار العمل نفسه كل شهر", textEn: "The same work repeated every month" },
       { textAr: "نتائج تظهر بعد 3 إلى 6 أشهر", textEn: "Results show up after 3–6 months" },
-      { textAr: "كتابة المحتوى أحياناً outsourced", textEn: "Content writing sometimes outsourced" },
+      { textAr: "كتابة المحتوى أحياناً عبر جهات خارجية", textEn: "Content writing sometimes outsourced" },
       { textAr: "لا تملك الموقع أصلاً", textEn: "You do not own the site in the first place" },
     ],
     usPoints: [
@@ -886,6 +886,69 @@ export function comparisonText(
   locale: "ar" | "en" = "ar",
 ): string {
   return applyMarketTokens(text, resolveMarket(market), locale);
+}
+
+/**
+ * Renvoie une copie de la comparaison avec tous les jetons de marché
+ * résolus ({city}, {cityEn}, {country}…) : les champs arabes sont résolus
+ * en arabe, les champs anglais en anglais.
+ *
+ * Appelé côté serveur avant de transmettre la comparaison au composant
+ * client : le visiteur ne voit jamais un jeton brut, et la page servie ne
+ * contient plus de `{city}` dans son HTML.
+ */
+export function resolveComparisonTokens(
+  comparison: ComparisonSeo,
+  market?: Parameters<typeof resolveMarket>[0],
+): ComparisonSeo {
+  const ar = (value: string) => comparisonText(value, market, "ar");
+  const en = (value: string) => comparisonText(value, market, "en");
+  return {
+    ...comparison,
+    titleAr: ar(comparison.titleAr),
+    titleEn: en(comparison.titleEn),
+    descriptionAr: ar(comparison.descriptionAr),
+    descriptionEn: en(comparison.descriptionEn),
+    h1Ar: ar(comparison.h1Ar),
+    h1En: en(comparison.h1En),
+    subtitleAr: ar(comparison.subtitleAr),
+    subtitleEn: en(comparison.subtitleEn),
+    answerAr: ar(comparison.answerAr),
+    answerEn: en(comparison.answerEn),
+    themPriceAr: ar(comparison.themPriceAr),
+    themPriceEn: en(comparison.themPriceEn),
+    usPriceLabelAr: ar(comparison.usPriceLabelAr),
+    usPriceLabelEn: en(comparison.usPriceLabelEn),
+    usPriceNoteAr: ar(comparison.usPriceNoteAr),
+    usPriceNoteEn: en(comparison.usPriceNoteEn),
+    themPoints: comparison.themPoints.map((point) => ({
+      textAr: ar(point.textAr),
+      textEn: en(point.textEn),
+    })),
+    usPoints: comparison.usPoints.map((point) => ({
+      textAr: ar(point.textAr),
+      textEn: en(point.textEn),
+    })),
+    criteria: comparison.criteria.map((criterion) => ({
+      ...criterion,
+      labelAr: ar(criterion.labelAr),
+      labelEn: en(criterion.labelEn),
+      usAr: ar(criterion.usAr),
+      usEn: en(criterion.usEn),
+      ...(criterion.themAr !== undefined ? { themAr: ar(criterion.themAr) } : {}),
+      ...(criterion.themEn !== undefined ? { themEn: en(criterion.themEn) } : {}),
+    })),
+    chooseThemAr: comparison.chooseThemAr.map(ar),
+    chooseThemEn: comparison.chooseThemEn.map(en),
+    chooseUsAr: comparison.chooseUsAr.map(ar),
+    chooseUsEn: comparison.chooseUsEn.map(en),
+    faqs: comparison.faqs.map((faq) => ({
+      qAr: ar(faq.qAr),
+      qEn: en(faq.qEn),
+      aAr: ar(faq.aAr),
+      aEn: en(faq.aEn),
+    })),
+  };
 }
 
 /** Retrouve une comparaison par identifiant. */

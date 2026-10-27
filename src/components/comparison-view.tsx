@@ -59,10 +59,12 @@ export function ComparisonView({
       : `Hello Nukhba 👋 I read the "${comparison.h1En}" comparison and would like a quote for my website.`,
   );
 
+  // Les montants sont insérés via une fonction : le « $ » ne doit pas être
+  // interprété comme une référence de groupe de capture.
   const summaryText = pick(c.summaryTextAr, c.summaryTextEn)
-    .replace("{note}", usNote)
-    .replace("{site}", String(sitePriceUsd))
-    .replace("{service}", String(servicePriceUsd));
+    .replace("{note}", () => usNote)
+    .replace("{site}", () => `$${sitePriceUsd}`)
+    .replace("{service}", () => `$${servicePriceUsd}`);
 
   return (
     <div className="pt-6" dir={ar ? "rtl" : "ltr"}>
