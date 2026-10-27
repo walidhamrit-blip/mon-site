@@ -13,8 +13,12 @@ L'affiche « Google Ads $2 000/mois ✗ … / Free to start ✓ … » est une
 | Élément | Où il est généré |
 |---|---|
 | Données éditoriales (points ✗/✓, critères, FAQ, prix) | `src/lib/comparisons.ts` |
-| Page `/compare/[slug]` | `src/app/(site)/compare/[slug]/page.tsx` |
-| Hub `/compare` | `src/app/(site)/compare/page.tsx` |
+| Page `/compare/[slug]` (serveur : metadata + JSON-LD) | `src/app/(site)/compare/[slug]/page.tsx` |
+| Affichage bilingue de la page | `src/components/comparison-view.tsx` |
+| Hub `/compare` (serveur : metadata + JSON-LD) | `src/app/(site)/compare/page.tsx` |
+| Affichage bilingue du hub | `src/components/comparison-hub-view.tsx` |
+| Bandeau « comparaisons » en haut de `/services` | `src/components/comparison-strip.tsx` |
+| Libellés communs (arabe / anglais) | `src/lib/i18n.tsx` → `compareLabels` (`t.compare.*`) |
 | Carte Open Graph 1200×630 (« l'annonce ») | `src/lib/og-image.tsx` → `buildComparisonOgImage()` |
 | Schémas JSON-LD | `src/lib/comparisons.ts` (`comparisonServiceJsonLd`, `comparisonCriteriaJsonLd`, `comparisonFaqJsonLd`, `comparisonsCollectionJsonLd`) |
 | Sitemap | `src/app/sitemap.ts` (`comparisonIds`) |
@@ -97,9 +101,17 @@ BASE_URL=http://localhost:3100 node scripts/seo-check.mjs
 - **Réponse directe (`answerAr`).** Chaque page ouvre avec un paragraphe
   « answer-first » réutilisable tel quel par Google et les assistants IA
   (cible `speakable` : `h1` + `#compare-answer`).
-- **Bilingue.** Chaque champ existe en arabe et en anglais ; les pages
-  principales du site sont en arabe (RTL) avec la version anglaise en
-  second.
+- **Bilingue et réactif à la langue du site.** Chaque champ existe en arabe
+  et en anglais. L'affichage est un composant **client** : il suit le
+  bouton de langue de la barre supérieure (et la langue par défaut définie
+  dans `/admin`), sans rechargement — comme toutes les autres sections du
+  site. Les libellés d'interface (boutons, titres de sections) sont
+  centralisés dans `compareLabels` (`src/lib/i18n.tsx`), les contenus
+  éditoriaux restent dans `src/lib/comparisons.ts`.
+- **Point d'entrée depuis « Open services ».** Le bandeau
+  `src/components/comparison-strip.tsx` s'affiche en haut de `/services` :
+  c'est la page du visiteur qui cherche « quoi payer ? », donc le meilleur
+  endroit pour proposer la comparaison avant la grille des prestations.
 
 ## 4. Garde-fous automatiques
 

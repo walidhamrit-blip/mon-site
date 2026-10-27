@@ -11,6 +11,8 @@ import {
   type ServiceLike,
 } from "@/lib/services";
 import { JsonLd } from "@/components/json-ld";
+import { ComparisonStrip } from "@/components/comparison-strip";
+import { comparisonIds, getComparison } from "@/lib/comparisons";
 import { formatMainPrice } from "@/lib/installments";
 import { Price } from "@/components/price";
 
@@ -57,6 +59,11 @@ export default async function ServicesPage() {
     (min, service) => Math.min(min, service.priceFromUsd),
     Number.POSITIVE_INFINITY,
   );
+  // Comparaisons affichées en haut de page (bandeau « pas sûr entre deux
+  // options ? ») : même source de données que les pages /compare.
+  const comparisons = comparisonIds
+    .map((id) => getComparison(id))
+    .filter((item): item is NonNullable<typeof item> => Boolean(item));
 
   const webPage = webPageJsonLd(config, {
     path: "/services",
@@ -82,6 +89,11 @@ export default async function ServicesPage() {
       />
 
       <div className="pt-6">
+        {/* Comparaisons — bandeau en haut : le visiteur qui hésite entre
+            « payer une annonce » et « payer un site » trouve la réponse
+            immédiatement, avant la grille des services. */}
+        <ComparisonStrip items={comparisons} />
+
         {/* Hero */}
         <section className="section-tight border-b border-[var(--border)] bg-[var(--secondary)]/35">
           <div className="site-container px-4 sm:px-6 lg:px-8">
