@@ -70,7 +70,7 @@ export function Navbar() {
     { href: "/demos", label: t.nav.demos },
     {
       href: "/apps",
-      label: ar ? "تطبيقاتنا" : "Our apps",
+      label: ar ? "تطبيقاتنا" : "Apps",
       soon: true,
       hideBelow: "2xl",
     },
@@ -78,20 +78,19 @@ export function Navbar() {
       href: "/products",
       label: ar ? "منتجاتنا" : "Products",
       soon: true,
-      hideBelow: "2xl",
+      hideBelow: "xl",
     },
     {
       href: "/codes",
       label: ar ? "الأكواد والبطاقات" : "Codes & cards",
-      soon: true,
-      hideBelow: "2xl",
+      hideBelow: "xl",
     },
     { href: "/blog", label: ar ? "أدلة" : "Guides" },
     { href: "/#pricing", label: t.nav.pricing },
     {
       href: "/abonnements",
       label: ar ? "الاشتراكات" : "Subscriptions",
-      hideBelow: "xl",
+      hideBelow: "2xl",
     },
     { href: "/contact", label: t.nav.contact },
   ];
@@ -138,7 +137,7 @@ export function Navbar() {
 
             <nav
               aria-label={ar ? "التنقل الرئيسي" : "Main navigation"}
-              className="hidden min-w-0 items-center gap-0 overflow-x-auto rounded-full bg-[var(--secondary)]/80 p-1 lg:flex xl:gap-0.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+              className="hidden min-w-0 items-center gap-0 overflow-x-auto rounded-full bg-[var(--secondary)]/80 p-1 lg:flex xl:gap-0 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
             >
               {links.map((link) => {
                 const active = isActive(link.href);
@@ -147,7 +146,7 @@ export function Navbar() {
                     key={link.href}
                     href={link.href}
                     aria-current={active ? "page" : undefined}
-                    className={`inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 py-1.5 text-[12.5px] font-medium transition-colors xl:px-3 xl:text-[13px] ${
+                    className={`inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full px-2 py-1.5 text-[12.5px] font-medium transition-colors xl:px-2.5 xl:text-[13px] ${
                       link.hideBelow === "xl"
                         ? "max-xl:hidden"
                         : link.hideBelow === "2xl"
@@ -191,7 +190,7 @@ export function Navbar() {
               >
                 {mode === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
               </button>
-              <div className="hidden xl:block">
+              <div className="hidden 2xl:block">
                 <ThemeSwitcher />
               </div>
               <a
