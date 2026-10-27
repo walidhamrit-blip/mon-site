@@ -481,7 +481,7 @@ export function DigitalEditor({
                         {DIGITAL_FULFILLMENTS.map((mode) => (
                           <option key={mode} value={mode}>
                             {mode === "auto"
-                              ? "Automatique (achat Reloadly)"
+                              ? "Automatique (achat fournisseur)"
                               : "Manuelle (agence)"}
                           </option>
                         ))}
@@ -596,7 +596,8 @@ export function DigitalEditor({
 
                   <p className="rounded-lg border border-stone-200 bg-white px-3 py-2 text-[11.5px] leading-5 text-stone-600">
                     <strong>Vente à la commande :</strong> en mode automatique, le
-                    serveur achète le code chez Reloadly{" "}
+                    serveur achète le code chez Reloadly pour les fiches ci-dessous
+                    (le catalogue FazerCards est vendu automatiquement, sans réglage){" "}
                     <em>après</em> confirmation du paiement (solde marchand requis) ;
                     l&apos;ID produit et la « valeur Reloadly » de chaque montant
                     doivent correspondre au catalogue Reloadly. Sans ID produit, la

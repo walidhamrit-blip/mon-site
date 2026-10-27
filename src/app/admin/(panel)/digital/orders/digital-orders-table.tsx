@@ -38,6 +38,8 @@ export interface AdminDigitalOrderRow {
   status: DigitalOrderStatus;
   /** Famille du produit : une recharge (`game_topup`) ne produit aucun code. */
   kind: string;
+  /** Fournisseur qui livre la commande (déduit du préfixe de slug). */
+  supplier: "fazercards" | "reloadly";
   fulfillment: string;
   reloadlyProductId: number | null;
   reloadlyUnitPrice: string | null;
@@ -67,6 +69,33 @@ function frDate(value: string | null): string {
   } catch {
     return date.toLocaleString("fr-FR");
   }
+}
+
+/** Nom lisible du fournisseur (jamais de jargon interne dans l'admin). */
+function supplierLabel(supplier: "fazercards" | "reloadly"): string {
+  return supplier === "fazercards" ? "FazerCards" : "Reloadly";
+}
+
+/**
+ * Détail du mode de livraison, spécifique au fournisseur.
+ *
+ * Les colonnes de la base sont héritées de Reloadly : pour une commande
+ * FazerCards, `reloadlyProductId` est toujours vide (l'achat se fait avec
+ * l'identifiant de catégorie, pas avec un produit relié). Afficher
+ * « aucun produit Reloadly relié » sur ces lignes faisait croire à une
+ * configuration manquante.
+ */
+function modeDetail(row: AdminDigitalOrderRow): string {
+  if (row.supplier === "fazercards") {
+    return row.kind === "game_topup"
+      ? " · recharge à la commande (aucun produit à relier)"
+      : " · achat à la commande chez FazerCards";
+  }
+  return row.reloadlyProductId
+    ? ` · produit #${row.reloadlyProductId} / ${row.reloadlyUnitPrice}${
+        row.region ? ` (${row.region})` : ""
+      }`
+    : " · aucun produit Reloadly relié";
 }
 
 /**
@@ -225,17 +254,17 @@ export function DigitalOrdersTable({ rows }: { rows: AdminDigitalOrderRow[] }) {
                     <div className="flex gap-2">
                       <dt className="w-32 shrink-0 font-bold text-stone-500">Mode</dt>
                       <dd>
-                        {row.fulfillment === "auto" ? "Automatique (Reloadly)" : "Manuel"}
-                        {row.reloadlyProductId
-                          ? ` · produit #${row.reloadlyProductId} / ${row.reloadlyUnitPrice}${
-                              row.region ? ` (${row.region})` : ""
-                            }`
-                          : " · aucun produit Reloadly relié"}
+                        {row.fulfillment === "auto"
+                          ? `Automatique (${supplierLabel(row.supplier)})`
+                          : "Manuel"}
+                        {modeDetail(row)}
                       </dd>
                     </div>
                     <div className="flex gap-2">
-                      <dt className="w-32 shrink-0 font-bold text-stone-500">Reloadly</dt>
-                      <dd>
+                      <dt className="w-32 shrink-0 font-bold text-stone-500">
+                        {supplierLabel(row.supplier)}
+                      </dt>
+                      <dd className="min-w-0 break-words">
                         {row.reloadlyTransactionId || "—"}
                         {row.reloadlyStatus ? ` (${row.reloadlyStatus})` : ""}
                       </dd>
@@ -363,10 +392,12 @@ export function DigitalOrdersTable({ rows }: { rows: AdminDigitalOrderRow[] }) {
 
                   <p className="text-[11.5px] leading-5 text-stone-500">
                     {status === "delivered"
-                      ? "Code acheté et transmis — rien d'autre à faire."
+                      ? row.kind === "game_topup"
+                        ? "Recharge créditée sur le compte du joueur — rien d'autre à faire."
+                        : "Code acheté et transmis — rien d'autre à faire."
                       : row.fulfillment === "auto"
-                        ? "La relance achète le code chez Reloadly (débit du solde marchand). Aucun second achat si une transaction existe déjà."
-                        : "Mode manuel : achetez le code dans le tableau Reloadly, puis saisissez-le ci-dessous — le client reçoit l'e-mail automatiquement. Si la fiche vient d'être passée en automatique, « Relancer la livraison » relit la fiche et achète le code, sans nouveau paiement."}
+                        ? `La relance achète ${row.kind === "game_topup" ? "la recharge" : "le code"} chez ${supplierLabel(row.supplier)} (débit du solde marchand). Aucun second achat si une transaction existe déjà.`
+                        : `Mode manuel : achetez ${row.kind === "game_topup" ? "la recharge" : "le code"} chez le fournisseur, puis saisissez-le ci-dessous — le client reçoit l'e-mail automatiquement. Si la fiche vient d'être passée en automatique, « Relancer la livraison » relit la fiche et achète sans nouveau paiement.`}
                   </p>
 
                   {manualRef === row.ref && status !== "delivered" && (
