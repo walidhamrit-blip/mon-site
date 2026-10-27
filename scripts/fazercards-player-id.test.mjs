@@ -11,7 +11,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
-import { hasPlayerIdField } from "../src/lib/fazercards-player-id-core.ts";
+import { hasPlayerIdField, playerIdGate } from "../src/lib/fazercards-player-id-core.ts";
 
 const root = fileURLToPath(new URL("..", import.meta.url));
 const read = (path) => readFileSync(new URL(path, `file://${root}`), "utf8");
@@ -68,8 +68,59 @@ test("la route de vérification est publique mais limitée", () => {
 test("le tunnel bloque le paiement sur un identifiant inexistant", () => {
   const flat = code(read("src/components/digital-buy-dialog.tsx"));
   assert.match(flat, /fetch\("\/api\/fazercards\/validate-id"/);
-  assert.match(flat, /idCheck\.state === "invalid"/);
+  assert.match(flat, /idGate === "block"/);
   assert.match(flat, /not found in this game/);
   // …et rappelle le nom du jeu pour éviter le mauvais identifiant.
   assert.match(flat, /must be your account in \$\{product\.platform\} specifically/);
+});
+
+/* --------------- Jeux non vérifiables (incident 8 Ball Pool) --------------- */
+
+test("un jeu non vérifiable exige une certification explicite du client", () => {
+  // Incident réel : sur « Game Top-Up — 8 Ball Pool », un identifiant bidon
+  // ouvrait directement la page de paiement — `checked: false` ne bloquait
+  // rien.
+  assert.equal(playerIdGate({ checked: false, valid: false }), "require_confirmation");
+  assert.equal(
+    playerIdGate({ checked: false, valid: false, confirmed: false }),
+    "require_confirmation",
+  );
+  assert.equal(
+    playerIdGate({ checked: false, valid: false, confirmed: true }),
+    "allow",
+  );
+});
+
+test("un identifiant vérifié et inexistant reste bloqué, même certifié", () => {
+  assert.equal(playerIdGate({ checked: true, valid: false }), "block");
+  assert.equal(
+    playerIdGate({ checked: true, valid: false, confirmed: true }),
+    "block",
+  );
+  assert.equal(playerIdGate({ checked: true, valid: true }), "allow");
+});
+
+test("la caisse serveur refuse une vente non certifiée", () => {
+  const flat = code(read("src/lib/fazercards-orders.ts"));
+  assert.match(flat, /player_id_unconfirmed/);
+  assert.match(flat, /idConfirmed === true/);
+  assert.match(flat, /playerIdGate\(/);
+  // La trace du contrôle est mémorisée sur la commande (visible en admin).
+  assert.match(flat, /playerIdCheck/);
+});
+
+test("le tunnel envoie la certification et l'exige quand le jeu n'est pas vérifiable", () => {
+  const flat = code(read("src/components/digital-buy-dialog.tsx"));
+  assert.match(flat, /idConfirmed/);
+  assert.match(flat, /idGate === "require_confirmation"/);
+  assert.match(flat, /playerIdGate\(\{ checked: false, valid: false, confirmed: idConfirmed \}\)/);
+  // Un contrôle encore en cours ne doit pas laisser cliquer « Payer ».
+  assert.match(flat, /idGate === "pending"/);
+});
+
+test("l'admin affiche le résultat du contrôle d'identifiant", () => {
+  const flat = code(read("src/app/admin/(panel)/digital/orders/digital-orders-table.tsx"));
+  assert.match(flat, /certifié par le client/);
+  assert.match(flat, /Identifiant refusé par le fournisseur/);
+  assert.match(flat, /Vérifié chez le fournisseur/);
 });

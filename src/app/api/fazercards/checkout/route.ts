@@ -30,6 +30,9 @@ const checkoutSchema = z.object({
   locale: z.enum(["ar", "en"]).optional(),
   // Champs acheteur dynamiques (top-ups : player_id, …) — transmis tels quels.
   fields: z.record(z.string(), z.union([z.string(), z.number()])).optional(),
+  // Certification explicite de l'identifiant : obligatoire quand le
+  // fournisseur ne sait pas vérifier le jeu (voir `playerIdGate`).
+  idConfirmed: z.boolean().optional(),
 });
 
 const CHECKOUT_LIMIT = {
@@ -133,6 +136,7 @@ export async function POST(req: Request) {
         phone: parsed.data.phone,
         locale: parsed.data.locale,
         fields: parsed.data.fields,
+        idConfirmed: parsed.data.idConfirmed,
       },
       productsAdapter,
       req,

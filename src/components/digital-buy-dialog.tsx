@@ -12,6 +12,7 @@ import {
 } from "@/lib/digital-types";
 import { RegionalAlert } from "@/components/regional-alert";
 import { recommendedNetworksLabel } from "@/lib/payment-networks";
+import { playerIdGate } from "@/lib/fazercards-player-id-core";
 
 const MAX_QUANTITY = 10;
 /**
@@ -70,7 +71,15 @@ export function DigitalBuyDialog({ product, denominationId, onClose }: Props) {
   const [idCheck, setIdCheck] = useState<{
     state: "idle" | "checking" | "ok" | "invalid" | "unverifiable";
     playerName?: string;
+    reason?: string;
   }>({ state: "idle" });
+  /**
+   * Certification explicite de l'identifiant, demandée quand le fournisseur
+   * ne sait pas vérifier le jeu. Sans elle, la caisse refuse la commande :
+   * vérifier l'identifiant « quand c'est possible » ne suffisait pas — un
+   * identifiant bidon ouvrait la page de paiement sur ces jeux.
+   */
+  const [idConfirmed, setIdConfirmed] = useState(false);
 
   const selected = available.find((item) => item.id === selectedId) ?? available[0] ?? null;
   const total = (selected?.priceUsd ?? 0) * quantity;
@@ -104,6 +113,30 @@ export function DigitalBuyDialog({ product, denominationId, onClose }: Props) {
     requiredFields.length > 0 &&
     requiredFields.every((field) => (buyerFields[field.key] ?? "").trim() !== "");
 
+  /**
+   * Faut-il passer par le contrôle d'identifiant avant de facturer ?
+   * Uniquement pour une recharge FazerCards dont les champs sont remplis.
+   */
+  const requiresIdCheck =
+    isFazercards && product.kind === "game_topup" && requiredFields.length > 0;
+
+  /**
+   * Issue du contrôle, décidée par la MÊME règle que la caisse serveur :
+   *  - `allow` : vérifié, ou certifié par le client sur un jeu non vérifiable ;
+   *  - `block` : identifiant inexistant chez le fournisseur ;
+   *  - `require_confirmation` : jeu non vérifiable → case à cocher obligatoire ;
+   *  - `pending` : contrôle en cours (ou pas encore lancé) → on n'envoie rien.
+   */
+  const idGate: "allow" | "block" | "require_confirmation" | "pending" = !requiresIdCheck
+    ? "allow"
+    : idCheck.state === "ok"
+      ? "allow"
+      : idCheck.state === "invalid"
+        ? "block"
+        : idCheck.state === "unverifiable"
+          ? playerIdGate({ checked: false, valid: false, confirmed: idConfirmed })
+          : "pending";
+
   // `setState` est appelé DANS le callback asynchrone (jamais en synchrone
   // dans l'effet) : sinon React boucle et le lint le refuse.
   useEffect(() => {
@@ -128,11 +161,16 @@ export function DigitalBuyDialog({ product, denominationId, onClose }: Props) {
           checked?: boolean;
           valid?: boolean;
           playerName?: string;
+          reason?: string;
         };
         if (cancelled) return;
         if (!data.checked) {
-          // Jeu non vérifiable : on n'affiche rien, on ne bloque rien.
-          setIdCheck({ state: "unverifiable" });
+          // Jeu non vérifiable : la vente reste possible, mais elle exige une
+          // certification explicite du client (voir `idGate`).
+          setIdCheck({
+            state: "unverifiable",
+            ...(data.reason ? { reason: data.reason } : {}),
+          });
         } else if (data.valid) {
           setIdCheck({
             state: "ok",
@@ -167,11 +205,27 @@ export function DigitalBuyDialog({ product, denominationId, onClose }: Props) {
     const missingField = requiredFields.find(
       (field) => !(buyerFields[field.key] ?? "").trim(),
     );
-    if (idCheck.state === "invalid") {
+    if (idGate === "pending") {
+      setError(
+        ar
+          ? "جارٍ التحقق من المعرّف — انتظر لحظة ثم أعد المحاولة."
+          : "The player ID is still being checked — wait a moment, then retry.",
+      );
+      return;
+    }
+    if (idGate === "block") {
       setError(
         ar
           ? "معرّف اللاعب غير موجود عند المزوّد. تحقق من أنه معرّف حسابك في هذه اللعبة (وليس لعبة أخرى)."
           : "This player ID does not exist at the supplier. Check that it is your account in THIS game — not another one.",
+      );
+      return;
+    }
+    if (idGate === "require_confirmation") {
+      setError(
+        ar
+          ? "لا يمكننا التحقق من هذا المعرّف تلقائياً. أكّد في المربع أن هذا المعرّف هو حسابك في هذه اللعبة — الشحن نهائي."
+          : "We cannot verify this ID automatically. Tick the box confirming it is your account in THIS game — a top-up cannot be undone.",
       );
       return;
     }
@@ -208,6 +262,9 @@ export function DigitalBuyDialog({ product, denominationId, onClose }: Props) {
             ...(isFazercards && Object.keys(buyerFields).length > 0
               ? { fields: buyerFields }
               : {}),
+            // Certification explicite : le serveur la REFUSE absente quand le
+            // fournisseur ne sait pas vérifier le jeu.
+            ...(isFazercards ? { idConfirmed } : {}),
           }),
         },
       );
@@ -304,6 +361,7 @@ export function DigitalBuyDialog({ product, denominationId, onClose }: Props) {
                         : 1;
                     setQuantity(Math.min(needed, MAX_QUANTITY));
                     setBuyerFields({});
+                    setIdConfirmed(false);
                   }}
                   className={`rounded-xl border px-3 py-2.5 text-start transition-colors ${
                     active
@@ -370,9 +428,13 @@ export function DigitalBuyDialog({ product, denominationId, onClose }: Props) {
                 </span>
                 <input
                   value={buyerFields[field.key] ?? ""}
-                  onChange={(event) =>
-                    setBuyerFields((current) => ({ ...current, [field.key]: event.target.value }))
-                  }
+                  onChange={(event) => {
+                    // Toute modification de l'identifiant annule la
+                    // certification précédente : elle portait sur une autre
+                    // valeur.
+                    setIdConfirmed(false);
+                    setBuyerFields((current) => ({ ...current, [field.key]: event.target.value }));
+                  }}
                   inputMode={field.type === "number" ? "numeric" : "text"}
                   placeholder={field.key}
                   className="h-11 w-full rounded-lg border border-[var(--border)] bg-[var(--background)] px-3 text-sm outline-none focus:border-[var(--accent)]"
@@ -408,6 +470,36 @@ export function DigitalBuyDialog({ product, denominationId, onClose }: Props) {
                   ? "لم يتم العثور على هذا المعرّف في هذه اللعبة. تحقق منه قبل الدفع."
                   : "This ID was not found in this game. Check it before paying."}
               </p>
+            )}
+            {/* Jeu non vérifiable : la vente reste possible (sinon des jeux
+                entiers deviendraient invendables), mais le client doit
+                certifier explicitement l'identifiant. */}
+            {allIdFieldsFilled && idCheck.state === "unverifiable" && (
+              <div className="rounded-lg border border-amber-300/70 bg-amber-50 px-2.5 py-2">
+                <p className="text-[12px] font-bold leading-5 text-amber-900">
+                  {ar
+                    ? "لا يمكننا التحقق من هذا المعرّف تلقائياً لدى المزوّد."
+                    : "We cannot verify this ID automatically with the supplier."}
+                </p>
+                {idCheck.reason && (
+                  <p className="mt-0.5 text-[11px] leading-4 text-amber-800/80">
+                    {idCheck.reason}
+                  </p>
+                )}
+                <label className="mt-2 flex cursor-pointer items-start gap-2 text-[11.5px] leading-4 text-amber-950">
+                  <input
+                    type="checkbox"
+                    checked={idConfirmed}
+                    onChange={(event) => setIdConfirmed(event.target.checked)}
+                    className="mt-0.5 h-3.5 w-3.5 shrink-0 accent-[var(--accent)]"
+                  />
+                  <span>
+                    {ar
+                      ? `أؤكد أن هذا المعرّف هو حسابي في « ${product.platform} » تحديداً، وأن الشحن نهائي ولا يمكن استرجاعه.`
+                      : `I confirm this ID is my account in ${product.platform} specifically, and that a top-up cannot be reversed.`}
+                  </span>
+                </label>
+              </div>
             )}
           </div>
         )}
@@ -484,7 +576,7 @@ export function DigitalBuyDialog({ product, denominationId, onClose }: Props) {
         <button
           type="button"
           onClick={submit}
-          disabled={busy || !selected || belowMinimum || aboveLimit}
+          disabled={busy || !selected || belowMinimum || aboveLimit || idGate === "pending"}
           className="mt-4 inline-flex h-12 w-full items-center justify-center gap-2 rounded-full bg-[var(--accent)] text-sm font-black text-[var(--accent-foreground)] shadow-sm transition-colors hover:bg-[var(--accent-hover)] disabled:opacity-60"
         >
           {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Lock className="h-4 w-4" />}

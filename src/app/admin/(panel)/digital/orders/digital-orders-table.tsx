@@ -45,6 +45,19 @@ export interface AdminDigitalOrderRow {
    * transmis au fournisseur (recharge : `user_id`, `server_id`…).
    */
   buyerFields: Record<string, string | number>;
+  /**
+   * Contrôle d'identifiant fait à la caisse : vérifié (pseudo), refusé, ou
+   * jeu non vérifiable certifié par le client. `null` = commande antérieure
+   * au garde-fou.
+   */
+  playerIdCheck: {
+    checked: boolean;
+    valid: boolean;
+    playerName?: string;
+    region?: string;
+    reason?: string;
+    confirmedByCustomer?: boolean;
+  } | null;
   fulfillment: string;
   reloadlyProductId: number | null;
   reloadlyUnitPrice: string | null;
@@ -101,6 +114,53 @@ function modeDetail(row: AdminDigitalOrderRow): string {
         row.region ? ` (${row.region})` : ""
       }`
     : " · aucun produit Reloadly relié";
+}
+
+/**
+ * Résumé du contrôle d'identifiant pour l'admin.
+ *
+ * Un identifiant « certifié par le client » (jeu non vérifiable) n'a pas la
+ * même valeur qu'un identifiant « vérifié » : l'affichage doit le dire, sinon
+ * un litige se traite sans savoir ce qui a réellement été contrôlé.
+ */
+function playerIdCheckLabel(row: AdminDigitalOrderRow): React.ReactNode {
+  const check = row.playerIdCheck;
+  if (!check) {
+    return (
+      <span className="text-stone-500">
+        Non enregistré (commande antérieure au contrôle)
+      </span>
+    );
+  }
+  if (check.checked && check.valid) {
+    return (
+      <span className="font-semibold text-emerald-700">
+        Vérifié chez le fournisseur
+        {check.playerName ? ` · compte « ${check.playerName} »` : ""}
+        {check.region ? ` (${check.region})` : ""}
+      </span>
+    );
+  }
+  if (check.checked && !check.valid) {
+    return (
+      <span className="font-semibold text-red-700">
+        Identifiant refusé par le fournisseur
+      </span>
+    );
+  }
+  if (check.confirmedByCustomer) {
+    return (
+      <span className="font-semibold text-amber-700">
+        Non vérifiable chez le fournisseur — certifié par le client
+        {check.reason ? ` (${check.reason})` : ""}
+      </span>
+    );
+  }
+  return (
+    <span className="text-stone-500">
+      Non vérifiable chez le fournisseur{check.reason ? ` (${check.reason})` : ""}
+    </span>
+  );
 }
 
 /**
@@ -316,6 +376,14 @@ export function DigitalOrdersTable({ rows }: { rows: AdminDigitalOrderRow[] }) {
                         )}
                       </dd>
                     </div>
+                    {row.kind === "game_topup" && (
+                      <div className="flex gap-2">
+                        <dt className="w-32 shrink-0 font-bold text-stone-500">
+                          Contrôle identifiant
+                        </dt>
+                        <dd className="min-w-0 break-words">{playerIdCheckLabel(row)}</dd>
+                      </div>
+                    )}
                     <div className="flex gap-2">
                       <dt className="w-32 shrink-0 font-bold text-stone-500">Livrée le</dt>
                       <dd>{frDate(row.deliveredAt)}</dd>

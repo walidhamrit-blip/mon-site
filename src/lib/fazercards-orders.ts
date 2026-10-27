@@ -49,6 +49,7 @@ import {
   sendDigitalTopupDeliveredEmail,
 } from "@/lib/digital-emails";
 import { checkFazercardsPlayerId } from "@/lib/fazercards-player-id";
+import { playerIdGate } from "@/lib/fazercards-player-id-core";
 import {
   classifyFazercardsDelivery,
   extractFazercardsCodes,
@@ -67,6 +68,13 @@ export interface CreateFazercardsCheckoutInput {
   locale?: "ar" | "en";
   // Champs acheteur dynamiques (top-ups : player_id, …)
   fields?: Record<string, string | number>;
+  /**
+   * Certification explicite de l'identifiant par le client, exigée quand le
+   * fournisseur ne sait pas vérifier le jeu (`checked: false`). Sans elle, la
+   * vente est refusée : un identifiant erroné sur un jeu non vérifiable
+   * ouvrait auparavant la page de paiement sans le moindre garde-fou.
+   */
+  idConfirmed?: boolean;
 }
 
 export interface FazercardsCheckoutResult {
@@ -167,6 +175,43 @@ export function storedBuyerFields(order: {
   const fields = (stored as { buyerFields?: unknown }).buyerFields;
   if (!fields || typeof fields !== "object" || Array.isArray(fields)) return {};
   return sanitizeBuyerFields(fields as Record<string, unknown>);
+}
+
+/** Trace du contrôle d'identifiant mémorisée à la caisse (admin). */
+export interface StoredPlayerIdCheck {
+  checked: boolean;
+  valid: boolean;
+  playerName?: string;
+  region?: string;
+  reason?: string;
+  confirmedByCustomer?: boolean;
+}
+
+/**
+ * Relit le contrôle d'identifiant enregistré sur la commande.
+ *
+ * `null` = commande antérieure au garde-fou (aucune trace). C'est cette
+ * information qui permet à l'admin de savoir si une recharge est partie sur
+ * un identifiant vérifié, refusé, ou seulement certifié par le client.
+ */
+export function storedPlayerIdCheck(order: {
+  reloadlyResponse?: unknown;
+}): StoredPlayerIdCheck | null {
+  const stored = order.reloadlyResponse;
+  if (!stored || typeof stored !== "object" || Array.isArray(stored)) return null;
+  const check = (stored as { playerIdCheck?: unknown }).playerIdCheck;
+  if (!check || typeof check !== "object" || Array.isArray(check)) return null;
+  const value = check as Record<string, unknown>;
+  return {
+    checked: value.checked === true,
+    valid: value.valid === true,
+    ...(typeof value.playerName === "string" && value.playerName
+      ? { playerName: value.playerName }
+      : {}),
+    ...(typeof value.region === "string" && value.region ? { region: value.region } : {}),
+    ...(typeof value.reason === "string" && value.reason ? { reason: value.reason } : {}),
+    confirmedByCustomer: value.confirmedByCustomer === true,
+  };
 }
 
 /* --------------------------------- Création ----------------------------- */
@@ -299,18 +344,56 @@ export async function createFazercardsCheckout(
   // protection contre une recharge partie sur le compte d'un autre joueur
   // (identifiant appartenant à un autre jeu, faute de frappe…). Une recharge
   // livrée est irréversible : mieux vaut refuser la vente que créditer un
-  // inconnu. Si le fournisseur ne sait pas vérifier ce jeu, on n'empêche rien.
+  // inconnu.
+  //
+  // Deux issues, décidées par `playerIdGate` (même règle que le tunnel) :
+  //  - identifiant refusé par le fournisseur → refus net ;
+  //  - jeu NON vérifiable → vente possible, mais seulement si le client a
+  //    certifié l'identifiant (`idConfirmed`). Sans cette certification, la
+  //    facture n'est pas créée : c'était le trou constaté en production.
+  let playerIdCheck: {
+    checked: boolean;
+    valid: boolean;
+    playerName?: string;
+    region?: string;
+    reason?: string;
+    confirmedByCustomer: boolean;
+  } | null = null;
   if (product.kind === "game_topup" && Object.keys(buyerFields).length > 0) {
     const check = await checkFazercardsPlayerId({
       categoryId: product.categoryId,
       fields: buyerFields,
     });
-    if (check.checked && !check.valid) {
+    const confirmed = input.idConfirmed === true;
+    playerIdCheck = {
+      checked: check.checked,
+      valid: check.valid,
+      ...(check.playerName ? { playerName: check.playerName } : {}),
+      ...(check.region ? { region: check.region } : {}),
+      ...(check.reason ? { reason: check.reason } : {}),
+      confirmedByCustomer: confirmed,
+    };
+
+    const gate = playerIdGate({
+      checked: check.checked,
+      valid: check.valid,
+      confirmed,
+    });
+    if (gate === "block") {
       throw new FazercardsOrderError(
         "invalid_player_id",
         400,
         "Identifiant refusé par le fournisseur : aucun compte de jeu ne correspond. " +
           "Vérifiez que cet identifiant est bien celui de votre compte — aucun montant n'a été débité.",
+      );
+    }
+    if (gate === "require_confirmation") {
+      throw new FazercardsOrderError(
+        "player_id_unconfirmed",
+        400,
+        "Nous ne pouvons pas vérifier automatiquement cet identifiant auprès du fournisseur. " +
+          "Confirmez explicitement qu'il s'agit de votre compte dans ce jeu : une recharge est " +
+          "irréversible — aucun montant n'a été débité.",
       );
     }
   }
@@ -363,6 +446,10 @@ export async function createFazercardsCheckout(
         categoryId: product.categoryId,
         offerId: denomination.supplierOfferId,
         buyerFields,
+        // Trace du contrôle d'identifiant (aucun secret) : l'admin voit si
+        // l'identifiant a été vérifié, refusé, ou seulement certifié par le
+        // client sur un jeu que le fournisseur ne sait pas vérifier.
+        ...(playerIdCheck ? { playerIdCheck } : {}),
       },
     })
     .returning({ id: digitalOrders.id });

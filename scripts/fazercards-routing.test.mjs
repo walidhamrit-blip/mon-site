@@ -297,7 +297,11 @@ test("la caisse refuse une facture sous le minimum crypto", () => {
   const dialogFlat = code(dialog);
   assert.match(dialogFlat, /MIN_CRYPTO_INVOICE_USD/);
   assert.match(dialogFlat, /belowMinimum/);
-  assert.match(dialogFlat, /disabled=\{busy \|\| !selected \|\| belowMinimum \|\| aboveLimit\}/);
+  // Le bouton reste aussi bloqué tant que le contrôle d'identifiant tourne.
+  assert.match(
+    dialogFlat,
+    /disabled=\{busy \|\| !selected \|\| belowMinimum \|\| aboveLimit \|\| idGate === "pending"\}/,
+  );
 });
 
 test("le plafond d'achat est refusé AVANT l'encaissement", () => {
