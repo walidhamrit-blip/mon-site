@@ -631,8 +631,23 @@ annulé**. Trois garde-fous, dans cet ordre :
    l'achat fournisseur. Identifiant refusé → commande en `manual`, **aucun
    achat**.
 
-Règle importante : un fournisseur muet (`checked: false`) **ne bloque
-jamais** la vente, sinon des jeux non vérifiables deviendraient invendables.
+Règle importante : un fournisseur muet (`checked: false`) ne bloque pas la
+vente — sinon des jeux entiers deviendraient invendables — mais il ne laisse
+plus passer en silence. La décision est centralisée dans `playerIdGate`
+(`fazercards-player-id-core.ts`), utilisée par le tunnel **et** par la caisse
+serveur :
+
+| Réponse du fournisseur | Tunnel | Serveur |
+| --- | --- | --- |
+| `checked: true`, `valid: true` | pseudo affiché, achat autorisé | accepté |
+| `checked: true`, `valid: false` | bouton bloqué | `400 invalid_player_id` |
+| `checked: false` | case à cocher obligatoire | `400 player_id_unconfirmed` sans `idConfirmed: true` |
+
+⚠️ Historique : avant ce correctif, `checked: false` ouvrait directement la page
+de paiement — constaté en production sur « Game Top-Up — 8 Ball Pool » avec un
+identifiant inventé. Le résultat du contrôle est désormais mémorisé sur la
+commande (`reloadlyResponse.playerIdCheck`) et affiché dans l'admin
+(« Contrôle identifiant » : vérifié / refusé / certifié par le client).
 
 La fiche d'une recharge affiche aussi sa **plateforme** (famille déduite du
 nom de la catégorie : Mobile, PC, PlayStation… sinon nom du jeu) et

@@ -8,7 +8,7 @@ import {
 import { nowPaymentsSandbox } from "@/lib/nowpayments";
 import { checkReloadlyCredentials, reloadlyConfigured, reloadlyMaxOrderUsd } from "@/lib/reloadly";
 import { mailDiagnostics } from "@/lib/mailer";
-import { storedBuyerFields } from "@/lib/fazercards-orders";
+import { storedBuyerFields, storedPlayerIdCheck } from "@/lib/fazercards-orders";
 import {
   DigitalOrdersTable,
   type AdminDigitalOrderRow,
@@ -212,6 +212,8 @@ function toRow(order: AdminDigitalOrder): AdminDigitalOrderRow {
     supplier: digitalOrderSupplier(order),
     // Identifiant réellement transmis au fournisseur (recharges : user_id…).
     buyerFields: storedBuyerFields(order),
+    // Résultat du contrôle d'identifiant fait à la caisse (null = antérieur).
+    playerIdCheck: storedPlayerIdCheck(order),
     fulfillment: order.fulfillment,
     reloadlyProductId: order.reloadlyProductId,
     reloadlyUnitPrice: order.reloadlyUnitPrice,
