@@ -260,12 +260,61 @@ test("l'API catalogue public n'expose jamais le coût d'achat", () => {
   assert.match(flat, /supplier_not_configured/);
 });
 
-test("la synchro du catalogue est bornée (parallélisme + plafond)", () => {
+test("la synchro du catalogue est bornée (parallélisme, plafond, budget de temps)", () => {
   const flat = code(catalog);
   assert.match(flat, /FAZERCARDS_CATALOG_CONCURRENCY/);
   assert.match(flat, /FAZERCARDS_CATALOG_MAX_CATEGORIES/);
+  assert.match(flat, /FAZERCARDS_CATALOG_TIME_BUDGET_MS/);
   assert.match(flat, /async function mapWithConcurrency<T>/);
-  assert.match(flat, /await mapWithConcurrency\(topups\.items\.slice\(0, limit\), concurrency/);
+  // Le budget de temps est respecté avant chaque appel de détail.
+  assert.match(flat, /if \(Date\.now\(\) > deadline\)/);
+});
+
+test("les listes du fournisseur sont lues page par page (curseur suivi)", () => {
+  const client = code(read("src/lib/fazercards.ts"));
+  // Les listes acceptent un curseur et le transmettent.
+  assert.match(client, /function listQuery\(limit: number, cursor\?: string \| null\)/);
+  assert.match(client, /params\.set\("cursor", token\)/);
+  const flat = code(catalog);
+  assert.match(flat, /fazercardsTopups\(limit, cursor\)/);
+  assert.match(flat, /meta\?\.next_cursor/);
+  assert.match(flat, /async function collectCategories<T>/);
+  // Le plafond ne tronque plus la LISTE : il borne les DÉTAILS.
+  assert.doesNotMatch(flat, /items\.slice\(0, limit\)/);
+});
+
+test("les marques demandées passent devant le reste (PlayStation, Steam, Xbox…)", () => {
+  const flat = code(catalog);
+  assert.match(flat, /export const PRIORITY_BRANDS = \[/);
+  for (const brand of ["playstation", "steam", "xbox", "roblox", "google play"]) {
+    assert.ok(flat.includes(`"${brand}"`), `marque prioritaire absente : ${brand}`);
+  }
+  assert.match(flat, /export function brandPriority\(name: string\): number/);
+  assert.match(flat, /function selectCategories<T>/);
+});
+
+test("la rotation est persistée et le catalogue fusionné (aucune fiche perdue)", () => {
+  const flat = code(catalog);
+  assert.match(flat, /export interface FazercardsRotation/);
+  assert.match(flat, /export function mergeFazercardsCatalog\(/);
+  assert.match(flat, /const merged = mergeFazercardsCatalog\(stored\?\.result\.products \?\? \[\], fresh\.products/);
+  assert.match(flat, /writeStoredFazercardsCatalog\(result, fetchedAt, result\.rotation\)/);
+
+  const persisted = code(read("src/lib/fazercards-catalog-store.ts"));
+  assert.match(persisted, /rotation: FazercardsRotation;/);
+});
+
+test("les slugs restent uniques (clés en plusieurs régions)", () => {
+  const flat = code(catalog);
+  assert.match(flat, /export function dedupeProductSlugs\(/);
+  assert.match(flat, /dedupeProductSlugs\(products\)/);
+});
+
+test("une carte cadeau garde sa région réelle (pas « GLOBAL » par défaut)", () => {
+  const flat = code(catalog);
+  assert.match(flat, /export function regionFromCategoryName\(/);
+  assert.match(flat, /const region = regionFromCategoryName\(cat\.name\) \?\? "GLOBAL"/);
+  assert.match(flat, /regions: \[region\]/);
 });
 
 /* -------------------- Catalogue réel : défauts observés --------------- */
@@ -337,7 +386,7 @@ test("le catalogue est persisté en base (copie partagée)", () => {
 test("une instance neuve lit la base avant de synchroniser", () => {
   const flat = code(catalog);
   assert.match(flat, /const stored = await readStoredFazercardsCatalog\(\);/);
-  assert.match(flat, /await writeStoredFazercardsCatalog\(result, fetchedAt\)/);
+  assert.match(flat, /await writeStoredFazercardsCatalog\(result, fetchedAt, result\.rotation\)/);
 });
 
 test("le rendu des pages ne synchronise jamais (sinon timeout -> 500)", () => {
@@ -382,7 +431,7 @@ test("une synchro réussie invalide le cache des pages du catalogue", () => {
   // Appelée juste après l'écriture de la copie partagée.
   assert.match(
     flat,
-    /await writeStoredFazercardsCatalog\(result, fetchedAt\); revalidateCatalogPages\(\);/,
+    /await writeStoredFazercardsCatalog\(result, fetchedAt, result\.rotation\); revalidateCatalogPages\(\);/,
   );
 });
 
