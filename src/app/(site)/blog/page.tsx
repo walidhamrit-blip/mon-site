@@ -1,6 +1,12 @@
 import type { Metadata } from "next";
 import { getSiteDataCached } from "@/lib/store";
-import { breadcrumbJsonLd, faqJsonLd, pageMetadata, webPageJsonLd } from "@/lib/seo";
+import {
+  breadcrumbJsonLd,
+  faqJsonLd,
+  pageMetadata,
+  siteLocale,
+  webPageJsonLd,
+} from "@/lib/seo";
 import { blogCollectionJsonLd, CRYPTO_GUIDE_SLUG, sortArticles } from "@/lib/blog";
 import { blogArticles } from "@/lib/blog-articles";
 import { JsonLd } from "@/components/json-ld";
@@ -29,11 +35,18 @@ const HUB_FAQS = [
 
 export async function generateMetadata(): Promise<Metadata> {
   const { config } = await getSiteDataCached();
+  // Titre et description dans la langue principale du site (arabe par défaut).
+  const locale = siteLocale(config);
   return pageMetadata(config, {
     path: "/blog",
-    title: "Nukhba Guides — Pay with USDT, Website Costs & Growth Playbooks",
+    title:
+      locale === "ar"
+        ? "أدلة نخبة — الدفع بـ USDT، تكلفة المواقع وخطة النمو"
+        : "Nukhba Guides — Pay with USDT, Website Costs & Growth Playbooks",
     description:
-      "Practical guides in English and Arabic: pay with crypto (USDT) step by step with photos, real website costs in USD, choosing an agency, launching a store, and AI search visibility.",
+      locale === "ar"
+        ? "أدلة عملية بالعربية والإنجليزية: الدفع بالعملات الرقمية USDT خطوة بخطوة بالصور، تكلفة المواقع الحقيقية بالدولار، اختيار الوكالة، إطلاق متجر، والظهور في محركات الذكاء الاصطناعي."
+        : "Practical guides in English and Arabic: pay with crypto (USDT) step by step with photos, real website costs in USD, choosing an agency, launching a store, and AI search visibility.",
     keywords: [
       "how to pay with USDT",
       "website cost 2026 USD",

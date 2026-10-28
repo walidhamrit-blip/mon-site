@@ -1,21 +1,39 @@
 import type { MetadataRoute } from "next";
+import { getSiteDataCached } from "@/lib/store";
+import { siteConfig } from "@/lib/config";
+import { dirOf } from "@/lib/locale";
 
 /**
  * Web App Manifest — installabilité PWA et identification de l'application
  * dans les résultats mobiles / suggestions des moteurs.
+ *
+ * La langue et le sens de lecture suivent la langue principale du site
+ * (arabe par défaut, réglable dans /admin → Réglages) : une PWA installée en
+ * arabe s'ouvre en RTL, pas en anglais.
  */
-export default function manifest(): MetadataRoute.Manifest {
+export default async function manifest(): Promise<MetadataRoute.Manifest> {
+  let configured: string = siteConfig.appearance.defaultLocale;
+  try {
+    const { config } = await getSiteDataCached();
+    configured = String(config.appearance?.defaultLocale ?? configured);
+  } catch {
+    /* base indisponible : on garde la langue principale codée en dur */
+  }
+  const defaultLocale: "ar" | "en" = configured === "en" ? "en" : "ar";
+  const ar = defaultLocale === "ar";
+
   return {
-    name: "Nukhba نخبة — Premium Web Agency Worldwide",
+    name: ar ? "نخبة Nukhba — وكالة مواقع فاخرة عالمياً" : "Nukhba نخبة — Premium Web Agency Worldwide",
     short_name: "Nukhba نخبة",
-    description:
-      "Premium web design & e-commerce agency for clients worldwide — delivered in 7 days.",
+    description: ar
+      ? "وكالة تصميم مواقع ومتاجر إلكترونية فاخرة — تسليم في 7 أيام، دفع بالعملات الرقمية."
+      : "Premium web design & e-commerce agency for clients worldwide — delivered in 7 days.",
     id: "/",
     start_url: "/",
     scope: "/",
     display: "standalone",
-    lang: "en",
-    dir: "ltr",
+    lang: defaultLocale,
+    dir: dirOf(defaultLocale),
     orientation: "portrait-primary",
     background_color: "#08080A",
     theme_color: "#C6A664",

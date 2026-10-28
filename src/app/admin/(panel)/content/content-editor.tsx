@@ -64,7 +64,7 @@ const HEADING_META: Record<
   why: { label: "Pourquoi nous choisir" },
   demos: { label: "Galerie des sites clients" },
   identityCustomizer: { label: "Personnalisateur d’identité" },
-  identityThemes: { label: "Sélecteur des 8 thèmes" },
+  identityThemes: { label: "Sélecteur des 6 thèmes (classés)" },
   process: { label: "Processus en 5 étapes", hasNote: true },
   pricing: { label: "Formules & Tarifs", hasNote: true },
   flexPay: { label: "Paiement flexible" },

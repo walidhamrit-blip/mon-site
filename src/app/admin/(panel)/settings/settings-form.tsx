@@ -182,11 +182,14 @@ export function SettingsForm({ initial, initialTab }: Props) {
                 Palette de couleurs par défaut du site public
               </h2>
               <p className="text-xs text-stone-500 mt-0.5">
-                Définit le thème initial vu par vos nouveaux visiteurs (l’espace d’administration reste toujours en mode clair haute lisibilité).
+                Les 6 thèmes les plus appréciés du métier, classés par demande
+                (or = le plus demandé). Définit le thème initial vu par vos
+                nouveaux visiteurs ; l’espace d’administration reste toujours en
+                mode clair haute lisibilité.
               </p>
             </div>
 
-            <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3">
+            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
               {THEMES.map((theme) => {
                 const selected = form.appearance.themeId === theme.id;
                 const tokens =
@@ -230,10 +233,15 @@ export function SettingsForm({ initial, initialTab }: Props) {
                       )}
                     </div>
                     <div className="text-xs font-bold text-stone-900">
-                      {theme.labelEn}
-                    </div>
-                    <div className="text-[11px] text-stone-500 mt-0.5" dir="rtl">
                       {theme.labelAr}
+                      {theme.featured && (
+                        <span className="ms-1.5 rounded-full bg-[#C6A664]/20 px-1.5 py-0.5 text-[9px] font-black text-[#8A6D2F]">
+                          ★ 1
+                        </span>
+                      )}
+                    </div>
+                    <div className="text-[11px] text-stone-500 mt-0.5" dir="ltr">
+                      {theme.labelEn} · n°{theme.rank}
                     </div>
                   </button>
                 );
@@ -259,7 +267,7 @@ export function SettingsForm({ initial, initialTab }: Props) {
                 </select>
               </Field>
 
-              <Field label="Langue par défaut du site">
+              <Field label="Langue principale du site">
                 <select
                   value={form.appearance.defaultLocale}
                   onChange={(e) =>
@@ -272,9 +280,13 @@ export function SettingsForm({ initial, initialTab }: Props) {
                   }
                   className={ADMIN_INPUT_CLS}
                 >
-                  <option value="ar">Arabe (RTL)</option>
-                  <option value="en">Anglais (LTR)</option>
+                  <option value="ar">العربية — langue principale (RTL)</option>
+                  <option value="en">English — secondaire (LTR)</option>
                 </select>
+                <p className="mt-1 text-[11px] text-stone-500">
+                  L’arabe est servi en RTL dès le HTML initial ; l’anglais reste
+                  accessible en un clic depuis le sélecteur de langue.
+                </p>
               </Field>
             </div>
           </div>

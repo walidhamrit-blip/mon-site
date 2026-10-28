@@ -79,8 +79,11 @@ export const siteConfig = {
     themeId: "nukhba",
     /** Mode d'affichage principal : "light" (clair) ou "dark" (sombre). */
     mode: "light",
-    /** Langue principale du site : "ar" (arabe) ou "en" (anglais). */
-    defaultLocale: "en",
+    /**
+     * Langue principale du site : "ar" (arabe — langue principale par défaut)
+     * ou "en" (anglais). L'arabe est servi en RTL dès le HTML initial.
+     */
+    defaultLocale: "ar",
   },
 
   // Prix modifiables ici — source unique.
