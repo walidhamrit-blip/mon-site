@@ -110,7 +110,12 @@ fonctionne normalement.
 | `FAZERCARDS_MAX_ORDER_USD` | `300` | Au-delà, la commande bascule en livraison manuelle (aucun débit automatique) |
 | `FAZERCARDS_CATALOG_TTL_SECONDS` | `600` | Fraîcheur du catalogue en cache (prix / stock). `0` = cache désactivé |
 | `FAZERCARDS_CATALOG_MAX_STALE_MINUTES` | `60` | Âge maximal d'un catalogue périmé encore servi si le fournisseur est en panne |
-| `FAZERCARDS_CATALOG_MAX_CATEGORIES` | `40` | Catégories synchronisées par famille (chaque catégorie = 1 appel HTTP) |
+| `FAZERCARDS_CATALOG_MAX_CATEGORIES` | `80` | Catégories **détaillées** par famille et par synchro (1 appel HTTP chacune). Le reste n'est pas perdu : rotation + fusion (voir §2 bis) |
+| `FAZERCARDS_CATALOG_PAGE_SIZE` | `100` | Taille d'une page de liste (maximum accepté par l'API) |
+| `FAZERCARDS_CATALOG_MAX_PAGES` | `10` | Pages de liste lues par famille — 10 × 100 = jusqu'à 1000 catégories listées |
+| `FAZERCARDS_CATALOG_TIME_BUDGET_MS` | `25000` | Budget de temps d'une synchro ; les détails restants sont reportés |
+| `FAZERCARDS_CATALOG_MAX_PRODUCT_AGE_DAYS` | `7` | Âge maximal d'une fiche conservée par fusion (0 = illimité) |
+| `FAZERCARDS_CATALOG_MAX_PRODUCTS` | `2000` | Taille maximale du catalogue fusionné |
 | `FAZERCARDS_CATALOG_CONCURRENCY` | `6` | Requêtes simultanées vers l'API (1–12) |
 | `FAZERCARDS_WEBHOOK_SECRET` | **ne pas créer** | Vercel refuse une valeur vide. Cette variable n'est utile que le jour où un webhook de statut est déclaré dans le hub revendeur. Absente, elle n'a aucun effet |
 
@@ -156,6 +161,51 @@ Le catalogue synchronisé est donc stocké dans la table `settings`
 
 Sans copie en base (premier déploiement), la vitrine sert le catalogue
 historique jusqu'au premier passage du cron.
+
+### 2 bis. Couverture du catalogue — pourquoi tout n'était pas visible
+
+Constat du 28/10/2026 : la boutique s'arrêtait à « Apex Legends Mobile ».
+Ni PlayStation, ni Steam, ni Xbox, ni Roblox, ni Google Play n'étaient
+proposés, alors que le fournisseur les vend. Trois causes, corrigées :
+
+1. **Curseur ignoré.** Les listes du fournisseur sont paginées
+   (`meta.next_cursor`), mais seul `?limit=` était transmis : seule la
+   première page de chaque famille était lue.
+2. **Ordre alphabétique + plafond.** L'API renvoie ses catégories par ordre
+   alphabétique et la synchro ne détaillait que les 40 premières : tout ce
+   qui suivait « Apex » n'existait pas dans la boutique.
+3. **Aucune reprise.** Le plafond était appliqué sans rotation ni fusion :
+   les catégories hors plafond ne revenaient jamais.
+
+Fonctionnement actuel :
+
+- les listes sont lues **page par page** (`FAZERCARDS_CATALOG_MAX_PAGES`) ;
+- les **marques prioritaires** (`PRIORITY_BRANDS` : PlayStation, Steam, Xbox,
+  Roblox, Google Play, iTunes, Apple, Nintendo, Amazon, Netflix, Spotify…)
+  passent **toujours** en premier, quel que soit le plafond ;
+- le reste est couvert par une **fenêtre glissante** (rotation persistée en
+  base) : chaque synchro détaille la tranche suivante ;
+- le catalogue est **fusionné** avec la version précédente : une fiche sortie
+  de la fenêtre reste en ligne avec son dernier prix connu, jusqu'à
+  `FAZERCARDS_CATALOG_MAX_PRODUCT_AGE_DAYS` (7 j par défaut) ;
+- un **budget de temps** arrête les appels de détail avant l'expiration de la
+  fonction serverless ; le reste est reporté.
+
+Deux corrections liées, visibles par le client :
+
+- **Région des cartes cadeaux** : elle est portée par le nom de la catégorie
+  (« PlayStation (US) »). Elle était forcée à `GLOBAL`, donc une carte
+  australienne ou américaine s'affichait comme « mondiale » — premier motif
+  de litige. Le filtre pays de `/codes` redevient utilisable.
+- **Slugs uniques** : deux catégories de même nom en régions différentes
+  (`fzr-gamekey-arc-raiders` en GLOBAL et en ROW) produisaient le même slug ;
+  la seconde fiche était inaccessible et sa commande échouait après
+  paiement. La région est désormais suffixée.
+
+Vérification après déploiement : `GET /api/health` → bloc
+`fazercards.catalog` expose maintenant `categories` (catégories listées par
+famille) et `rotation` (position de la fenêtre), puis
+`GET /api/fazercards/catalog?refresh=1` pour forcer une synchro immédiate.
 
 ### Mettre la clé FazerCards en production — ordre exact
 

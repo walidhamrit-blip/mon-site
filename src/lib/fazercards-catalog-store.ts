@@ -15,7 +15,7 @@
 import { eq } from "drizzle-orm";
 import { db, ensureSchema } from "@/db";
 import { settings } from "@/db/schema";
-import type { FazercardsSyncResult } from "@/lib/fazercards-catalog";
+import type { FazercardsRotation, FazercardsSyncResult } from "@/lib/fazercards-catalog";
 
 /** Clé de la ligne `settings` qui porte le catalogue. */
 export const FAZERCARDS_CATALOG_SETTING_KEY = "fazercards:catalog";
@@ -25,6 +25,22 @@ export interface StoredFazercardsCatalog {
   result: FazercardsSyncResult;
   /** Date de la synchronisation qui a produit ce catalogue. */
   fetchedAt: number;
+  /** Position de rotation à reprendre (fenêtre glissante de synchro). */
+  rotation: FazercardsRotation;
+}
+
+/** Rotation relue depuis la base (donnée non fiable) : zéros par défaut. */
+function parseRotation(value: unknown): FazercardsRotation {
+  const raw = (value ?? {}) as Record<string, unknown>;
+  const toIndex = (input: unknown): number => {
+    const parsed = Number(input);
+    return Number.isFinite(parsed) && parsed > 0 ? Math.floor(parsed) : 0;
+  };
+  return {
+    topups: toIndex(raw.topups),
+    giftcards: toIndex(raw.giftcards),
+    gamekeys: toIndex(raw.gamekeys),
+  };
 }
 
 /** Valide la forme minimale relue depuis la base (donnée non fiable). */
@@ -34,6 +50,7 @@ function parseStored(value: unknown): StoredFazercardsCatalog | null {
     products?: unknown;
     errors?: unknown;
     fetchedAt?: unknown;
+    rotation?: unknown;
   };
   if (!Array.isArray(raw.products) || raw.products.length === 0) return null;
   const fetchedAt = Number(raw.fetchedAt);
@@ -43,8 +60,10 @@ function parseStored(value: unknown): StoredFazercardsCatalog | null {
       products: raw.products as FazercardsSyncResult["products"],
       total: raw.products.length,
       errors: Array.isArray(raw.errors) ? (raw.errors as string[]) : [],
+      rotation: parseRotation(raw.rotation),
     },
     fetchedAt,
+    rotation: parseRotation(raw.rotation),
   };
 }
 
@@ -75,6 +94,7 @@ export async function readStoredFazercardsCatalog(): Promise<StoredFazercardsCat
 export async function writeStoredFazercardsCatalog(
   result: FazercardsSyncResult,
   fetchedAt = Date.now(),
+  rotation?: FazercardsRotation,
 ): Promise<boolean> {
   if (result.products.length === 0) return false;
   try {
@@ -83,6 +103,7 @@ export async function writeStoredFazercardsCatalog(
       products: result.products,
       errors: result.errors.slice(0, 20),
       fetchedAt,
+      rotation: rotation ?? result.rotation ?? { topups: 0, giftcards: 0, gamekeys: 0 },
     };
     await db
       .insert(settings)

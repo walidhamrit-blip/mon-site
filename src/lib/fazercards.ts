@@ -295,6 +295,25 @@ export async function fazercardsOrder(
   return fazercardsRequest<FazercardsOrderDetail>({ path: `/orders/${encodeURIComponent(orderId)}` });
 }
 
+/* --------------------------- Listes paginées --------------------------- */
+
+/**
+ * Construit la requête d'une liste paginée (`?limit=` + `?cursor=`).
+ *
+ * L'API renvoie au plus 100 éléments par page et fournit `meta.next_cursor` /
+ * `meta.has_more`. Le client IGNORAIT ce curseur : seule la première page
+ * était lue, donc les catégories au-delà de la 100e (ou du plafond demandé)
+ * n'existaient tout simplement pas dans la boutique. `cursor` est optionnel
+ * pour rester compatible avec les appels existants.
+ */
+function listQuery(limit: number, cursor?: string | null): string {
+  const safeLimit = Math.max(1, Math.min(100, Math.floor(limit)));
+  const params = new URLSearchParams({ limit: String(safeLimit) });
+  const token = (cursor ?? "").trim();
+  if (token) params.set("cursor", token);
+  return params.toString();
+}
+
 /* ------------------------------ Top-ups (recharges jeux) ------------------------------ */
 
 export interface FazercardsTopupCategory {
@@ -344,8 +363,11 @@ export interface FazercardsOrderResponse {
 }
 
 /** Liste des catégories de top-ups disponibles. */
-export async function fazercardsTopups(limit = 50): Promise<FazercardsTopupList> {
-  return fazercardsRequest<FazercardsTopupList>({ path: `/topups?limit=${Math.max(1, Math.min(100, limit))}` });
+export async function fazercardsTopups(
+  limit = 50,
+  cursor?: string | null,
+): Promise<FazercardsTopupList> {
+  return fazercardsRequest<FazercardsTopupList>({ path: `/topups?${listQuery(limit, cursor)}` });
 }
 
 /** Offres et champs acheteur pour une catégorie de top-up. */
@@ -457,8 +479,11 @@ export interface FazercardsGiftCardOrderInput {
 }
 
 /** Liste des catégories de cartes cadeaux. */
-export async function fazercardsGiftCards(limit = 50): Promise<FazercardsGiftCardList> {
-  return fazercardsRequest<FazercardsGiftCardList>({ path: `/giftcards?limit=${Math.max(1, Math.min(100, limit))}` });
+export async function fazercardsGiftCards(
+  limit = 50,
+  cursor?: string | null,
+): Promise<FazercardsGiftCardList> {
+  return fazercardsRequest<FazercardsGiftCardList>({ path: `/giftcards?${listQuery(limit, cursor)}` });
 }
 
 /** Offres (dénominations) dans une catégorie de carte cadeau. */
@@ -545,8 +570,11 @@ export interface FazercardsGameKeyOrderInput {
 }
 
 /** Liste des catégories de clés de jeux. */
-export async function fazercardsGameKeys(limit = 50): Promise<FazercardsGameKeyList> {
-  return fazercardsRequest<FazercardsGameKeyList>({ path: `/gamekeys?limit=${Math.max(1, Math.min(100, limit))}` });
+export async function fazercardsGameKeys(
+  limit = 50,
+  cursor?: string | null,
+): Promise<FazercardsGameKeyList> {
+  return fazercardsRequest<FazercardsGameKeyList>({ path: `/gamekeys?${listQuery(limit, cursor)}` });
 }
 
 /** SKU (clés) pour un jeu donné. */
