@@ -203,6 +203,74 @@ export async function sendDigitalManualNotice(
 }
 
 /**
+ * E-mail au CLIENT : « paiement reçu, code en cours d'émission ».
+ *
+ * ⚠️ Pourquoi cet e-mail existe. Un achat chez le fournisseur peut rester
+ * plusieurs minutes — parfois plusieurs heures — en `processing` (la carte est
+ * fabriquée, le code pas encore disponible). Sans message intermédiaire, le
+ * client qui vient de payer ne reçoit RIEN : ni code, ni confirmation. Cas
+ * réel (29/10/2026) : payé à 00:14, code jamais envoyé, aucune nouvelle
+ * pendant plus d'une heure. Cet e-mail coupe court à l'angoisse et donne la
+ * référence à citer si le client écrit.
+ */
+export async function sendDigitalCodePendingEmail(
+  order: DigitalOrder,
+  siteName: string,
+  siteUrl: string,
+  siteEmail?: string,
+): Promise<DigitalEmailResult> {
+  const to = emailAddressFrom(order.recipientEmail);
+  if (!to) return { ok: false, provider: "none", error: "destinataire absent" };
+
+  const support = emailAddressFrom(siteEmail) || emailAddressFrom(process.env.EMAIL_FROM);
+  const subject = `⏳ Paiement reçu — ${order.productTitle} — ${order.ref}`;
+
+  const text = [
+    `Merci pour votre commande chez ${siteName} !`,
+    ``,
+    `Votre paiement est confirmé. Le code est en cours d'émission chez notre fournisseur.`,
+    ``,
+    `Produit : ${order.productTitle} — ${order.denominationLabel}`,
+    `Quantité : ${order.quantity}`,
+    `Montant réglé : ${decimal(order.totalUsd)} USD`,
+    `Commande : ${order.ref}`,
+    ``,
+    `Dès que le code est disponible, vous recevez un second e-mail qui le contient.`,
+    `Aucune action n'est nécessaire de votre part.`,
+    ``,
+    support ? `Une question ? Écrivez à ${support} en citant la référence ${order.ref}.` : "",
+    `Suivi de commande : ${siteLink(siteUrl, "/codes/commande")}`,
+    `${siteName} — ${siteUrl}`,
+  ]
+    .filter((line) => line !== "")
+    .join("\n");
+
+  const html = `
+    <div style="font-family:system-ui,Arial,sans-serif;max-width:560px;margin:0 auto;padding:24px;color:#1a1a1e">
+      <div style="font-size:13px;letter-spacing:.12em;color:#C6A664;font-weight:700">${escapeHtml(siteName.toUpperCase())} — BOUTIQUE DIGITALE</div>
+      <h1 style="font-size:22px;font-weight:900;margin:8px 0 4px">Paiement reçu — code en cours ⏳</h1>
+      <p style="color:#666;font-size:14px;margin:0 0 18px">
+        ${escapeHtml(order.productTitle)} — ${escapeHtml(order.denominationLabel)}${order.quantity > 1 ? ` × ${order.quantity}` : ""}
+      </p>
+      <div style="border:1px solid #e7e1d3;border-radius:14px;background:#faf8f3;padding:14px 16px;margin:10px 0;font-size:14px">
+        Votre paiement est confirmé. Le code est en cours d'émission chez notre fournisseur : vous le recevrez dans un second e-mail, généralement en quelques minutes.
+      </div>
+      <table style="width:100%;border-collapse:collapse;font-size:13px;margin-top:16px">
+        <tr><td style="padding:6px 10px;background:#f6f3ec;font-weight:700;width:150px">Commande</td><td style="padding:6px 10px">${escapeHtml(order.ref)}</td></tr>
+        <tr><td style="padding:6px 10px;background:#f6f3ec;font-weight:700">Montant réglé</td><td style="padding:6px 10px">${escapeHtml(decimal(order.totalUsd))} USD</td></tr>
+      </table>
+      <p style="color:#666;font-size:13px;margin-top:16px">
+        Aucune action n'est nécessaire. Suivi : <a href="${escapeHtml(siteLink(siteUrl, "/codes/commande"))}" style="color:#8A6D2F;font-weight:700">votre commande</a>.
+      </p>
+      ${support ? `<p style="color:#666;font-size:13px">Une question ? Écrivez à <a href="mailto:${escapeHtml(support)}" style="color:#8A6D2F">${escapeHtml(support)}</a> en citant ${escapeHtml(order.ref)}.</p>` : ""}
+      <p style="color:#999;font-size:12px;margin-top:24px">${escapeHtml(siteName)} — ${escapeHtml(siteUrl)}</p>
+    </div>`;
+
+  const result = await sendEmail({ to, subject, text, html });
+  return { ok: result.ok, provider: result.provider, error: result.error };
+}
+
+/**
  * E-mail au CLIENT pour une RECHARGE de jeu livrée.
  *
  * Une recharge (`game_topup`) ne produit aucun code : le fournisseur crédite

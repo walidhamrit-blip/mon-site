@@ -14,7 +14,9 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
   classifyFazercardsDelivery,
+  describeFazercardsPayload,
   extractFazercardsCodes,
+  extractFazercardsCodesFromOrder,
   redactFazercardsPayload,
 } from "../src/lib/fazercards-extract.ts";
 
@@ -167,4 +169,64 @@ test("la journalisation masque aussi un PIN", () => {
   const text = JSON.stringify(redacted);
   assert.equal(text.includes("6120200345149064"), false);
   assert.equal(text.includes("EFSDCEAFSD"), false);
+});
+
+/* --------- Incident du 29/10/2026 : carte cadeau « completed » sans code -------- */
+
+test("une carte cadeau est lue même si le code n'est pas dans payload", () => {
+  // Forme plausible d'une réponse `GET /orders/:id` non documentée :
+  // le code est au niveau de la commande, à côté du payload.
+  const order = {
+    id: "ord-2540591",
+    kind: "gift_card",
+    status: "completed",
+    created_at: "2026-10-29T01:20:00Z",
+    card_code: "PSUS-2USD-4K7Q-9WX2",
+    payload: { card_id: "2_usd", quantity: 1 },
+  };
+  const codes = extractFazercardsCodesFromOrder(order);
+  assert.equal(codes.length, 1);
+  assert.equal(codes[0].cardNumber, "PSUS-2USD-4K7Q-9WX2");
+});
+
+test("une commande complète est analysée quand payload est vide", () => {
+  const order = {
+    id: "ord-1",
+    status: "completed",
+    payload: {},
+    vouchers: [{ serial: "VCH-1234-5678" }],
+  };
+  const codes = extractFazercardsCodesFromOrder(order);
+  assert.equal(codes.length, 1);
+  assert.equal(codes[0].cardNumber, "VCH-1234-5678");
+});
+
+test("un identifiant technique n'est jamais pris pour un code", () => {
+  // `order_id`, `key_id`, `code_status`… contiennent « id »/« code » mais ne
+  // sont pas des codes livrés : les envoyer au client serait grave.
+  const order = {
+    id: "ord-2540591",
+    status: "completed",
+    order_id: "ord-2540591",
+    key_id: "3141592653589793",
+    code_status: "pending_1234",
+    payload: { category_id: "giftcard_playstation_us" },
+  };
+  assert.deepEqual(extractFazercardsCodesFromOrder(order), []);
+});
+
+test("un code générique doit ressembler à un code (chiffre ou tiret)", () => {
+  const order = { status: "completed", redemption_code: "merci beaucoup" };
+  assert.deepEqual(extractFazercardsCodesFromOrder(order), []);
+});
+
+test("la structure d'une réponse se décrit sans révéler les valeurs", () => {
+  const lines = describeFazercardsPayload({
+    id: "ord-2540591",
+    status: "completed",
+    payload: { card_code: "PSUS-2USD-4K7Q-9WX2" },
+  });
+  const flat = lines.join(" | ");
+  assert.match(flat, /payload\.card_code/);
+  assert.doesNotMatch(flat, /PSUS-2USD/);
 });

@@ -85,6 +85,83 @@ const LOOKALIKE_VALUES = new Set([
 /** Longueur minimale plausible d'un code (écarte « OK », « 1 », « — »). */
 const MIN_CODE_LENGTH = 4;
 
+/**
+ * Clés dont le NOM ressemble à un code mais qui n'en sont pas : identifiants
+ * techniques, statuts, monnaies, montants. Sans cette liste, la règle
+ * générique ci-dessous confondrait `order_id`, `key_id` ou `code_status`
+ * avec un code livré — et livrerait au client un identifiant de commande.
+ */
+const NON_CODE_KEYS = [
+  "orderid",
+  "order_id",
+  "id",
+  "keyid",
+  "key_id",
+  "cardid",
+  "card_id",
+  "offerid",
+  "offer_id",
+  "categoryid",
+  "category_id",
+  "gameid",
+  "game_id",
+  "productid",
+  "product_id",
+  "idempotencykey",
+  "idempotency_key",
+  "transactionid",
+  "transaction_id",
+  "codestatus",
+  "code_status",
+  "statuscode",
+  "status_code",
+  "errorcode",
+  "error_code",
+  "currency",
+  "amount",
+  "price",
+  "priceusd",
+  "price_usd",
+  "status",
+  "kind",
+  "type",
+  "createdat",
+  "created_at",
+  "updatedat",
+  "updated_at",
+] as const;
+
+/**
+ * Règle GÉNÉRIQUE : le nom de la clé annonce-t-il un code ?
+ *
+ * Le fournisseur ne documente pas la forme de `order.payload` (schéma
+ * `additionalProperties: true`). Une liste blanche fermée suffisait pour les
+ * clés de jeu (`keys[]`) mais pas pour les cartes cadeaux : une commande
+ * `completed` restait sans code, donc sans e-mail au client. On accepte donc
+ * tout nom contenant code / serial / voucher / pin / key / token / redeem,
+ * en excluant la liste `NON_CODE_KEYS`.
+ */
+function keySuggestsCode(key: string): boolean {
+  const lower = key.toLowerCase().replace(/[\s-]/g, "");
+  if ((NON_CODE_KEYS as readonly string[]).includes(lower)) return false;
+  return /code|serial|voucher|pin|key|token|redeem|activation/.test(lower);
+}
+
+/**
+ * Un code délivré ressemble-t-il vraiment à un code ?
+ *
+ * Les chaînes courtes (« ok », « usd ») et les phrases sont écartées : un
+ * code fait au moins 6 caractères et contient un chiffre ou un tiret. Cette
+ * contrainte ne s'applique qu'à la règle générique — la liste blanche
+ * explicite reste seule juge pour les champs connus.
+ */
+function looksLikeDeliveredCode(value: string): boolean {
+  const text = value.trim();
+  if (text.length < 6) return false;
+  if (!/[0-9]/.test(text) && !text.includes("-")) return false;
+  return !LOOKALIKE_VALUES.has(text.toLowerCase());
+}
+
 type Dict = Record<string, unknown>;
 
 function isDict(value: unknown): value is Dict {
@@ -157,7 +234,8 @@ function collectDeep(value: unknown, out: ExtractedCode[], depth: number): void 
     for (const entry of value) {
       // Un tableau de chaînes est un cas fréquent (`keys: ["…", "…"]`).
       if (typeof entry === "string" || typeof entry === "number") {
-        const code = codeFromEntry(entry);
+        const text = asText(entry);
+        const code = looksLikeDeliveredCode(text) ? codeFromEntry(entry) : null;
         if (code) out.push(code);
       } else {
         collectDeep(entry, out, depth + 1);
@@ -172,7 +250,22 @@ function collectDeep(value: unknown, out: ExtractedCode[], depth: number): void 
     out.push(direct);
     return;
   }
-  for (const nested of Object.values(value)) {
+
+  for (const [key, nested] of Object.entries(value)) {
+    // 1) Le NOM de la clé annonce un code : on prend la valeur telle quelle
+    //    (c'est le cas des payloads non documentés — cartes cadeaux).
+    if (keySuggestsCode(key) && (typeof nested === "string" || typeof nested === "number")) {
+      const text = asText(nested);
+      if (looksLikeDeliveredCode(text)) {
+        out.push({
+          cardNumber: text,
+          pinCode: pickNullable(value, PIN_FIELDS),
+          redemptionUrl: pickNullable(value, URL_FIELDS),
+        });
+        continue;
+      }
+    }
+    // 2) Sinon on descend dans les structures imbriquées.
     if (isDict(nested) || Array.isArray(nested)) {
       collectDeep(nested, out, depth + 1);
     }
@@ -217,6 +310,70 @@ export function extractFazercardsCodes(payload: unknown): ExtractedCode[] {
   }
 
   return result;
+}
+
+/**
+ * Extrait les codes d'une COMMANDE fournisseur complète.
+ *
+ * ⚠️ Pourquoi ne pas se limiter à `order.payload` : la réponse
+ * `GET /orders/:id` est non documentée (`additionalProperties: true`) et les
+ * cartes cadeaux placent leurs codes ailleurs que les clés de jeu. Se
+ * restreindre à `payload` produisait exactement l'incident du 29/10/2026 :
+ * commande `completed` chez le fournisseur, zéro code extrait, aucun e-mail
+ * au client, et une commande qui tourne en « livraison en cours » sans fin.
+ *
+ * On analyse donc l'objet `order` entier (payload compris). Les identifiants
+ * techniques sont écartés par `NON_CODE_KEYS`.
+ */
+export function extractFazercardsCodesFromOrder(order: unknown): ExtractedCode[] {
+  if (!isDict(order)) return extractFazercardsCodes(order);
+
+  const result: ExtractedCode[] = [];
+  const push = (code: ExtractedCode | null): void => {
+    if (!code) return;
+    if (!result.some((item) => item.cardNumber === code.cardNumber)) result.push(code);
+  };
+
+  // 1) Le payload documenté (le plus probable).
+  for (const code of extractFazercardsCodes(order.payload)) push(code);
+
+  // 2) Le reste de la commande : c'est là que la carte cadeau peut se cacher.
+  if (result.length === 0) {
+    for (const code of extractFazercardsCodes(order)) push(code);
+  }
+
+  return result;
+}
+
+/**
+ * Décrit la STRUCTURE d'une réponse fournisseur, sans aucune valeur.
+ *
+ * Sert au diagnostic admin (et au motif de livraison manuelle) : « où sont
+ * les champs ? » se répond en une ligne, sans jamais écrire un code en clair
+ * ni dans les logs ni dans l'interface.
+ */
+export function describeFazercardsPayload(value: unknown, depth = 0, prefix = ""): string[] {
+  if (depth > 4) return [`${prefix}: …`];
+  if (Array.isArray(value)) {
+    if (value.length === 0) return [`${prefix}: []`];
+    const first = value[0];
+    const shape = isDict(first)
+      ? `{${Object.keys(first).slice(0, 8).join(",")}}`
+      : typeof first;
+    return [`${prefix}[${value.length}] ${shape}`];
+  }
+  if (!isDict(value)) return [];
+  const lines: string[] = [];
+  for (const [key, nested] of Object.entries(value)) {
+    const path = prefix ? `${prefix}.${key}` : key;
+    if (isDict(nested) || Array.isArray(nested)) {
+      lines.push(...describeFazercardsPayload(nested, depth + 1, path));
+    } else {
+      const text = asText(nested);
+      lines.push(`${path}: ${typeof nested}${text ? ` (${text.length}c)` : ""}`);
+    }
+  }
+  return lines.slice(0, 40);
 }
 
 export type FazercardsDeliveryKind =

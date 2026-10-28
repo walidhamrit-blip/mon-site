@@ -44,6 +44,7 @@ import { createTrackingToken, newOrderReference } from "@/lib/order-tracking";
 import { siteBaseUrl } from "@/lib/site-url";
 import { getSiteData } from "@/lib/store";
 import {
+  sendDigitalCodePendingEmail,
   sendDigitalCodesEmail,
   sendDigitalManualNotice,
   sendDigitalTopupDeliveredEmail,
@@ -52,9 +53,11 @@ import { checkFazercardsPlayerId } from "@/lib/fazercards-player-id";
 import { playerIdGate } from "@/lib/fazercards-player-id-core";
 import {
   classifyFazercardsDelivery,
-  extractFazercardsCodes,
+  describeFazercardsPayload,
+  extractFazercardsCodesFromOrder,
   redactFazercardsPayload,
 } from "@/lib/fazercards-extract";
+
 
 /* --------------------------------- Types -------------------------------- */
 
@@ -518,6 +521,27 @@ export async function createFazercardsCheckout(
 
 /* --------------------------------- Livraison ---------------------------- */
 
+/** Nombre de relectures du statut fournisseur après l'achat (code en cours d'émission). */
+const FAZERCARDS_CODE_POLL_ATTEMPTS = 4;
+/** Délai entre deux relectures (ms). 4 × 2,5 s = 10 s au total. */
+const FAZERCARDS_CODE_POLL_DELAY_MS = 2_500;
+
+/**
+ * Nombre de tentatives après lequel une commande `completed` SANS code est
+ * basculée en livraison manuelle.
+ *
+ * Sans cette sortie de secours, une carte que notre extraction ne sait pas
+ * lire tournait indéfiniment en « livraison en cours » : le client avait payé,
+ * n'avait ni code ni e-mail, et personne n'était alerté. Mieux vaut un humain
+ * qui récupère le code dans le tableau de bord du fournisseur et le saisit
+ * (le client reçoit alors l'e-mail automatiquement).
+ */
+const FAZERCARDS_NO_CODE_ESCALATE_ATTEMPTS = 2;
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 /**
  * Livre une commande FazerCards déjà payée.
  *
@@ -586,12 +610,15 @@ export async function deliverPaidFazercardsOrder(
     );
   }
 
+  // Numéro de la tentative en cours (1 = première livraison).
+  const attemptNumber = (loaded.attempts ?? 0) + 1;
+
   // Marque comme « paid » avant l'achat fournisseur.
   await db
     .update(digitalOrders)
     .set({
       status: "paid",
-      attempts: (loaded.attempts ?? 0) + 1,
+      attempts: attemptNumber,
       lastError: null,
       updatedAt: new Date(),
     })
@@ -614,21 +641,49 @@ export async function deliverPaidFazercardsOrder(
     }
 
     // Récupère le détail de la commande chez FazerCards (GET /orders/:id).
-    const orderDetail = await getFazercardsOrderDetail(transactionId);
+    let orderDetail = await getFazercardsOrderDetail(transactionId);
     if (!orderDetail.ok) {
       return flagManual(
         loaded,
-        `FazerCards : statut inconnu (${orderDetail.order.status}).`,
+        `FazerCards : statut inconnu (${orderDetail.status || "vide"}).`,
       );
     }
 
-    const supplierStatus = (orderDetail.order.status ?? "").trim().toLowerCase();
-    const codes = extractFazercardsCodes(orderDetail.order.payload);
-    const verdict = classifyFazercardsDelivery({
-      kind: loaded.kind,
-      status: supplierStatus,
-      codes,
-    });
+    const readDelivery = (raw: Record<string, unknown>, status: string) => {
+      const supplierStatus = (status ?? "").trim().toLowerCase();
+      const codes = extractFazercardsCodesFromOrder(raw);
+      return {
+        supplierStatus,
+        codes,
+        verdict: classifyFazercardsDelivery({
+          kind: loaded.kind,
+          status: supplierStatus,
+          codes,
+        }),
+      };
+    };
+
+    let { supplierStatus, codes, verdict } = readDelivery(orderDetail.raw, orderDetail.status);
+
+    // Sondage court : une carte cadeau est souvent émise quelques secondes
+    // APRÈS la validation de la commande. Sans ces relectures, la commande
+    // restait en « livraison en cours » jusqu'au cron du lendemain — le
+    // client n'avait ni code ni e-mail (incident du 29/10/2026).
+    // Durée totale bornée : 4 relectures × 2,5 s = 10 s, très en dessous du
+    // temps d'exécution maximal d'une fonction serverless.
+    if (loaded.kind !== "game_topup") {
+      for (
+        let poll = 1;
+        poll < FAZERCARDS_CODE_POLL_ATTEMPTS && verdict === "processing";
+        poll += 1
+      ) {
+        await sleep(FAZERCARDS_CODE_POLL_DELAY_MS);
+        const next = await getFazercardsOrderDetail(transactionId);
+        if (!next.ok) break;
+        orderDetail = next;
+        ({ supplierStatus, codes, verdict } = readDelivery(next.raw, next.status));
+      }
+    }
 
     // Journalise la FORME de la réponse quand un code est attendu mais absent
     // (valeurs masquées : jamais de clé en clair dans les logs). Sans cela,
@@ -636,7 +691,7 @@ export async function deliverPaidFazercardsOrder(
     if (verdict !== "codes" && loaded.kind !== "game_topup") {
       console.warn(
         `[fazercards] aucun code lisible pour ${loaded.ref} (statut ${supplierStatus || "inconnu"}) — charges utiles :`,
-        JSON.stringify(redactFazercardsPayload(orderDetail.order.payload ?? {})),
+        JSON.stringify(redactFazercardsPayload(orderDetail.raw ?? {})),
       );
     }
 
@@ -652,6 +707,29 @@ export async function deliverPaidFazercardsOrder(
     }
 
     if (verdict === "processing") {
+      // Le fournisseur dit « completed » mais aucun code n'est extrait :
+      // ce n'est plus une question d'attente, c'est un cas HUMAIN. On
+      // s'arrête là au lieu de boucler, et le motif porte la structure de
+      // la réponse (noms de champs uniquement, jamais une valeur) pour que
+      // le diagnostic soit possible sans accès aux logs.
+      const stuck =
+        supplierStatus === "completed" &&
+        loaded.kind !== "game_topup" &&
+        attemptNumber >= FAZERCARDS_NO_CODE_ESCALATE_ATTEMPTS;
+
+      if (stuck) {
+        const shape = describeFazercardsPayload(orderDetail.raw ?? {})
+          .slice(0, 12)
+          .join(" | ");
+        return flagManual(
+          loaded,
+          `FazerCards annonce la commande « completed » mais aucun code n'a pu être lu (${attemptNumber} tentatives). Récupérez le code dans le tableau de bord du fournisseur puis saisissez-le manuellement. Structure reçue : ${shape}`.slice(
+            0,
+            800,
+          ),
+        );
+      }
+
       await db
         .update(digitalOrders)
         .set({
@@ -659,6 +737,25 @@ export async function deliverPaidFazercardsOrder(
           updatedAt: new Date(),
         })
         .where(eq(digitalOrders.id, loaded.id));
+
+      // Première attente : le client doit savoir que son paiement est reçu et
+      // que le code arrive. Sans cet e-mail, il n'avait AUCUNE nouvelle entre
+      // le paiement et la livraison (jusqu'à plusieurs heures).
+      if (attemptNumber <= 1) {
+        try {
+          const { config } = await getSiteData();
+          const email = await sendDigitalCodePendingEmail(
+            loaded,
+            config.name,
+            config.url,
+            config.email,
+          );
+          await recordDigitalEmailOutcome(loaded.id, email);
+        } catch (error) {
+          console.warn("[fazercards] e-mail « code en cours » non envoyé :", error);
+        }
+      }
+
       return {
         outcome: "awaiting_codes",
         ref: loaded.ref,
@@ -798,21 +895,26 @@ async function placeFazercardsOrder(
 
 /**
  * Récupère le détail d'une commande FazerCards (GET /orders/:id).
+ *
+ * ⚠️ On conserve l'objet ENTIER (`raw`), pas seulement `payload` : la réponse
+ * n'est pas documentée (`additionalProperties: true`) et certaines familles
+ * — les cartes cadeaux notamment — n'exposent pas leurs codes au même
+ * endroit. Ne garder que `payload` faisait perdre le code et bloquait la
+ * commande en « livraison en cours » (incident DGC-FE3D8287…, 29/10/2026).
  */
 async function getFazercardsOrderDetail(
   orderId: string,
 ): Promise<{
   ok: boolean;
-  order: { id: string; status: string; payload?: Record<string, unknown> };
+  status: string;
+  raw: Record<string, unknown>;
 }> {
   const detail = await fazercardsOrder(orderId);
+  const raw = (detail.order ?? {}) as unknown as Record<string, unknown>;
   return {
     ok: detail.ok,
-    order: {
-      id: detail.order.id,
-      status: detail.order.status,
-      payload: detail.order.payload,
-    },
+    status: String(detail.order?.status ?? ""),
+    raw,
   };
 }
 
