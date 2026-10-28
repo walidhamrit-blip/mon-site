@@ -469,19 +469,43 @@ test("la livraison lit l'extracteur partagé et distingue une recharge", () => {
   const flat = code(read("src/lib/fazercards-orders.ts"));
   assert.match(
     flat,
-    /import \{\s*classifyFazercardsDelivery,\s*extractFazercardsCodes,\s*redactFazercardsPayload,\s*\} from "@\/lib\/fazercards-extract"/,
+    /import \{\s*classifyFazercardsDelivery,\s*describeFazercardsPayload,\s*extractFazercardsCodesFromOrder,\s*redactFazercardsPayload,\s*\} from "@\/lib\/fazercards-extract"/,
   );
-  // L'extraction travaille sur le payload, pas sur l'enveloppe.
-  assert.match(flat, /extractFazercardsCodes\(orderDetail\.order\.payload\)/);
+  // L'extraction travaille sur la COMMANDE entière : la carte cadeau ne met
+  // pas ses codes dans `payload` (incident ord-2540591).
+  assert.match(flat, /extractFazercardsCodesFromOrder\(raw\)/);
   // Plus d'ancien extracteur local (il ignorait `payload.keys`).
   assert.doesNotMatch(flat, /function extractFazercardsCodes/);
   assert.match(flat, /if \(verdict === "topup_completed"\) \{/);
   assert.match(flat, /sendDigitalTopupDeliveredEmail\(/);
 });
 
+test("une commande completed sans code ne boucle pas : elle passe en manuel", () => {
+  const flat = code(read("src/lib/fazercards-orders.ts"));
+  // Sortie de secours après N tentatives au lieu d'un « en cours » éternel.
+  assert.match(flat, /const FAZERCARDS_NO_CODE_ESCALATE_ATTEMPTS/);
+  assert.match(flat, /supplierStatus === "completed"/);
+  assert.match(flat, /attemptNumber >= FAZERCARDS_NO_CODE_ESCALATE_ATTEMPTS/);
+  // Le motif porte la structure (noms de champs), jamais les valeurs.
+  assert.match(flat, /describeFazercardsPayload\(orderDetail\.raw \?\? \{\}\)/);
+});
+
+test("le statut fournisseur est relu plusieurs fois avant d'abandonner", () => {
+  const flat = code(read("src/lib/fazercards-orders.ts"));
+  assert.match(flat, /const FAZERCARDS_CODE_POLL_ATTEMPTS = 4;/);
+  assert.match(flat, /await sleep\(FAZERCARDS_CODE_POLL_DELAY_MS\)/);
+});
+
+test("le client reçoit un e-mail « code en cours » pendant l'attente", () => {
+  const flat = code(read("src/lib/fazercards-orders.ts"));
+  assert.match(flat, /sendDigitalCodePendingEmail\(/);
+  const emails = code(read("src/lib/digital-emails.ts"));
+  assert.match(emails, /export async function sendDigitalCodePendingEmail\(/);
+});
+
 test("un échec d'extraction journalise une réponse masquée", () => {
   const flat = code(read("src/lib/fazercards-orders.ts"));
-  assert.match(flat, /redactFazercardsPayload\(orderDetail\.order\.payload \?\? \{\}\)/);
+  assert.match(flat, /redactFazercardsPayload\(orderDetail\.raw \?\? \{\}\)/);
   // La clé ne doit jamais être écrite en clair dans les logs.
   assert.doesNotMatch(flat, /console\.warn\([^)]*orderDetail\.order\.payload\)/);
 });
