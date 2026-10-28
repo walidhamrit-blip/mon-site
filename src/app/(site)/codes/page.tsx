@@ -3,6 +3,7 @@ import { getDigitalCatalog } from "@/lib/digital-store";
 import { absoluteUrl, breadcrumbJsonLd, pageMetadata, siteLocale } from "@/lib/seo";
 import { JsonLd } from "@/components/json-ld";
 import { DigitalCatalog } from "@/components/digital-catalog";
+import { sortByDemand } from "@/lib/digital-priority";
 import { getSiteDataCached } from "@/lib/store";
 import { marketLabels, resolveMarket } from "@/lib/market";
 
@@ -53,7 +54,14 @@ export const maxDuration = 60;
 
 export default async function CodesPage() {
   const { config } = await getSiteDataCached();
-  const products = await getDigitalCatalog({ publicOnly: true });
+  /**
+   * Ordre commercial dès le serveur : les fiches les plus demandées (recharges
+   * des jeux de la région, cartes des grandes boutiques, zones payables en
+   * USDT) arrivent en tête du HTML, donc aussi en tête du plan de page et du
+   * JSON-LD. Le composant client recalcule le même ordre (module partagé) quand
+   * le visiteur change de tri.
+   */
+  const products = sortByDemand(await getDigitalCatalog({ publicOnly: true }));
   const market = resolveMarket(config.market);
 
   const collectionSchema = {

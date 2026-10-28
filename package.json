@@ -16,7 +16,7 @@
     "previews:capture": "node scripts/capture-previews.mjs",
     "badge:audit": "node scripts/badge-audit.mjs",
     "test:global": "node --test scripts/global-catalog.test.mjs scripts/site-identity.test.mjs",
-    "test:digital": "node --test scripts/reloadly.test.mjs scripts/digital-catalog-cache.test.mjs scripts/mail-diagnostics.test.mjs scripts/digital-sync.test.mjs scripts/digital-audit.test.mjs scripts/fazercards-routing.test.mjs scripts/fazercards-pricing.test.mjs scripts/fazercards-delivery.test.mjs scripts/fazercards-player-id.test.mjs scripts/digital-resume.test.mjs scripts/digital-platform.test.mjs scripts/currency-usdt.test.mjs scripts/game-covers.test.mjs",
+    "test:digital": "node --test scripts/reloadly.test.mjs scripts/digital-catalog-cache.test.mjs scripts/mail-diagnostics.test.mjs scripts/digital-sync.test.mjs scripts/digital-audit.test.mjs scripts/fazercards-routing.test.mjs scripts/fazercards-pricing.test.mjs scripts/fazercards-delivery.test.mjs scripts/fazercards-player-id.test.mjs scripts/digital-resume.test.mjs scripts/digital-platform.test.mjs scripts/currency-usdt.test.mjs scripts/game-covers.test.mjs scripts/digital-priority.test.mjs",
     "test:fazercards": "node --test scripts/fazercards-routing.test.mjs scripts/fazercards-pricing.test.mjs scripts/fazercards-delivery.test.mjs scripts/fazercards-player-id.test.mjs scripts/digital-resume.test.mjs"
   },
   "dependencies": {

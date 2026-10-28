@@ -8,6 +8,7 @@ import {
   ArrowUpDown,
   Check,
   ChevronDown,
+  Flame,
   Gamepad2,
   Gift,
   Globe2,
@@ -38,15 +39,27 @@ import {
   type DigitalKind,
   type DigitalProduct,
 } from "@/lib/digital-types";
+import {
+  demandWeightFor,
+  isCryptoRegion,
+  sortByDemand,
+  sortRegionsForRail,
+  topDemandSlugs,
+} from "@/lib/digital-priority";
 import { productVisual, productVisualFit } from "@/lib/game-covers";
 
 /* ------------------------------- Constantes ------------------------------- */
 
 /** Ordre d'affichage des familles dans le rail (comme une boutique). */
+/**
+ * Ordre des familles dans la barre de filtres et dans le rail : les recharges
+ * puis les cartes — ce que la clientèle de la région achète —, les clés
+ * logicielles ensuite. Cet ordre est aussi celui des pastilles du haut.
+ */
 const FAMILY_ORDER: DigitalKind[] = [
-  "software_key",
-  "gift_card",
   "game_topup",
+  "gift_card",
+  "software_key",
   "subscription_code",
 ];
 
@@ -74,7 +87,13 @@ function priceRangeLabel(id: PriceRangeId, ar: boolean): string {
   const range = PRICE_RANGES.find((item) => item.id === id) ?? PRICE_RANGES[0];
   return ar ? range.ar : range.en;
 }
-type SortId = "featured" | "price-asc" | "price-desc" | "name";
+/**
+ * `popular` = ordre commercial (voir `@/lib/digital-priority`) : les recharges
+ * des jeux qui tournent dans la région et les cartes des grandes boutiques
+ * d'abord, à zone équivalente les zones payables en USDT avant les autres.
+ * C'est l'ordre par défaut — celui du fournisseur n'a aucun sens commercial.
+ */
+type SortId = "popular" | "price-asc" | "price-desc" | "name";
 
 /** Prix d'entrée d'une fiche (0 si aucun montant : la fiche passe en dernier). */
 function entryPrice(product: DigitalProduct): number {
@@ -121,7 +140,7 @@ export function DigitalCatalog({ products }: { products: DigitalProduct[] }) {
   const [platform, setPlatform] = useState("all");
   const [region, setRegion] = useState("all");
   const [priceRange, setPriceRange] = useState<PriceRangeId>("all");
-  const [sort, setSort] = useState<SortId>("featured");
+  const [sort, setSort] = useState<SortId>("popular");
   const [filtersOpen, setFiltersOpen] = useState(false);
 
   /* ----------------------------- Facettes ----------------------------- */
@@ -145,7 +164,14 @@ export function DigitalCatalog({ products }: { products: DigitalProduct[] }) {
       counts.set(value, (counts.get(value) ?? 0) + 1);
     }
     return Array.from(counts.entries())
-      .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+      .sort(
+        (a, b) =>
+          demandWeightFor(b[0]) - demandWeightFor(a[0]) ||
+          b[1] - a[1] ||
+          // Comparaison ASCII : l'ordre doit être identique en SSR et dans le
+          // navigateur, sinon React signale une erreur d'hydratation.
+          (a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0),
+      )
       .map(([value, count]) => ({ value, count }));
   }, [products]);
 
@@ -159,10 +185,17 @@ export function DigitalCatalog({ products }: { products: DigitalProduct[] }) {
       );
       for (const value of seen) counts.set(value, (counts.get(value) ?? 0) + 1);
     }
-    return Array.from(counts.entries())
-      .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
-      .map(([value, count]) => ({ value, count }));
+    return sortRegionsForRail(
+      Array.from(counts.entries()).map(([value, count]) => ({ value, count })),
+    );
   }, [products]);
+
+  /**
+   * Fiches mises en avant : les plus demandées du catalogue, calculées sur
+   * l'ensemble (et non sur le résultat filtré) pour que l'étiquette ne
+   * « saute » pas d'une carte à l'autre quand on filtre.
+   */
+  const popularSlugs = useMemo(() => new Set(topDemandSlugs(products, 8)), [products]);
 
   const priceCounts = useMemo(() => {
     const counts = new Map<PriceRangeId, number>();
@@ -215,6 +248,9 @@ export function DigitalCatalog({ products }: { products: DigitalProduct[] }) {
       return haystack.includes(needle);
     });
 
+    if (sort === "popular") {
+      return sortByDemand(rows);
+    }
     if (sort === "price-asc") {
       rows.sort((a, b) => entryPrice(a) - entryPrice(b));
     } else if (sort === "price-desc") {
@@ -341,6 +377,12 @@ export function DigitalCatalog({ products }: { products: DigitalProduct[] }) {
                   icon={<Globe2 className="h-3.5 w-3.5" />}
                   label={regionLabel(item.value, locale)}
                   count={item.count}
+                  hint={isCryptoRegion(item.value) ? "USDT" : undefined}
+                  hintLabel={
+                    ar
+                      ? "منطقة أساسية — الدفع بعملة USDT"
+                      : "Priority region — payable in USDT"
+                  }
                 />
               </li>
             ))}
@@ -431,7 +473,7 @@ export function DigitalCatalog({ products }: { products: DigitalProduct[] }) {
                 aria-label={ar ? "ترتيب" : "Sort"}
                 className="h-11 cursor-pointer appearance-none rounded-full border border-[var(--border)] bg-[var(--card)] pe-8 ps-9 text-[12.5px] font-bold outline-none transition-colors focus:border-[var(--accent)]"
               >
-                <option value="featured">{ar ? "المميّزة" : "Featured"}</option>
+                <option value="popular">{ar ? "الأكثر طلباً" : "Most popular"}</option>
                 <option value="price-asc">{ar ? "السعر: الأقل أولاً" : "Price: low to high"}</option>
                 <option value="price-desc">{ar ? "السعر: الأعلى أولاً" : "Price: high to low"}</option>
                 <option value="name">{ar ? "الاسم (أ-ي)" : "Name (A–Z)"}</option>
@@ -567,7 +609,7 @@ export function DigitalCatalog({ products }: { products: DigitalProduct[] }) {
                   aria-label={ar ? "ترتيب" : "Sort"}
                   className="h-9 cursor-pointer rounded-full border border-[var(--border)] bg-[var(--card)] px-3 text-[12px] font-bold outline-none"
                 >
-                  <option value="featured">{ar ? "المميّزة" : "Featured"}</option>
+                  <option value="popular">{ar ? "الأكثر طلباً" : "Popular"}</option>
                   <option value="price-asc">{ar ? "الأقل سعراً" : "Price ↑"}</option>
                   <option value="price-desc">{ar ? "الأعلى سعراً" : "Price ↓"}</option>
                   <option value="name">{ar ? "الاسم" : "Name"}</option>
@@ -705,6 +747,18 @@ export function DigitalCatalog({ products }: { products: DigitalProduct[] }) {
                             : DIGITAL_KIND_LABELS[product.kind].en}
                         </span>
 
+                        {/* Les 8 fiches les plus demandées : repère visuel
+                            posé une fois pour toutes sur le catalogue. */}
+                        {popularSlugs.has(product.slug) && (
+                          <span
+                            className="absolute end-2 top-2 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-black text-[var(--accent-foreground)] shadow-[var(--shadow-xs)]"
+                            style={{ background: "var(--accent)" }}
+                          >
+                            <Flame className="h-2.5 w-2.5" />
+                            {ar ? "مطلوب" : "Popular"}
+                          </span>
+                        )}
+
                         <div className="absolute inset-x-2 bottom-2 flex flex-wrap items-center gap-1">
                           <span className="inline-flex items-center gap-1 rounded-md border border-white/25 bg-white/12 px-1.5 py-0.5 text-[10px] font-bold text-white backdrop-blur-sm">
                             <Gamepad2 className="h-2.5 w-2.5" />
@@ -818,18 +872,25 @@ function RailButton({
   icon,
   label,
   count,
+  hint,
+  hintLabel,
 }: {
   active: boolean;
   onClick: () => void;
   icon: React.ReactNode;
   label: string;
   count: number;
+  /** Pastille courte affichée avant le compteur (« USDT »). */
+  hint?: string;
+  /** Explication de la pastille (infobulle + lecteurs d'écran). */
+  hintLabel?: string;
 }) {
   return (
     <button
       type="button"
       onClick={onClick}
       aria-pressed={active}
+      title={hint ? hintLabel : undefined}
       className={`flex w-full cursor-pointer items-center gap-2 rounded-lg px-2 py-[7px] text-start text-[12.5px] transition-colors ${
         active
           ? "bg-[var(--accent)]/14 font-black text-[var(--foreground)]"
@@ -838,6 +899,17 @@ function RailButton({
     >
       <span className={active ? "text-[var(--accent)]" : "opacity-55"}>{icon}</span>
       <span className="min-w-0 flex-1 truncate">{label}</span>
+      {hint && (
+        <span
+          className={`shrink-0 rounded-full px-1.5 py-0.5 text-[9px] font-black uppercase tracking-wide ${
+            active
+              ? "bg-[var(--accent-foreground)]/20 text-[var(--accent-foreground)]"
+              : "bg-[color-mix(in_srgb,var(--accent)_16%,transparent)] text-[var(--accent)]"
+          }`}
+        >
+          {hint}
+        </span>
+      )}
       <span
         className={`shrink-0 rounded-full px-1.5 py-0.5 text-[10px] font-bold tabular-nums ${
           active
