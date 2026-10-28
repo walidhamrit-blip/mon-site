@@ -1,5 +1,19 @@
 // Catalogue des thèmes du site.
 //
+// Le sélecteur expose **6 thèmes**, choisis parmi les palettes les plus
+// appréciées du métier (agences web, studios, e-commerce premium). Le classement
+// (`rank`) reflète la fréquence de demande observée sur ce type de projet :
+//   1. noir & or      → signature « luxe » des agences haut de gamme
+//   2. bleu roi       → couleur n°1 de la confiance (finance, SaaS, corporate)
+//   3. graphite       → minimalisme éditorial (studios, portfolios)
+//   4. émeraude       → croissance / santé / durabilité
+//   5. violet         → tech, IA et marques créatives
+//   6. bleu-vert lagon→ produit numérique, voyage, cliniques
+// Les palettes « burgundy » et « copper » ne font plus partie du sélecteur :
+// leurs identifiants restent mappés vers le thème signature (voir
+// `RETIRED_THEMES`) pour que les visiteurs ayant mémorisé un ancien choix
+// retombent sur une palette valide, sans erreur.
+//
 // Chaque thème définit sa palette CLAIRE et sa palette SOMBRE : la notion
 // « clair / sombre » reste un réglage séparé (un bouton dédié dans la barre
 // supérieure), donc n'importe quel thème peut être vu dans les deux modes.
@@ -38,23 +52,37 @@ export type ThemePalette = Record<ThemeVar, string>;
 
 export interface SiteTheme {
   id: string;
+  /** Classement d'affection du métier — 1 = le plus demandé. */
+  rank: number;
+  /** Le thème signature (mis en avant « الأكثر طلباً » dans le sélecteur). */
+  featured?: boolean;
   labelAr: string;
   labelEn: string;
   descAr: string;
   descEn: string;
+  /** Secteurs où cette palette est la plus demandée (sous-titre du sélecteur). */
+  usesAr: string;
+  usesEn: string;
   light: ThemePalette;
   dark: ThemePalette;
 }
 
 export const DEFAULT_THEME_ID = "nukhba";
 
+/** Nombre de thèmes proposés dans le sélecteur (métier = 6, classés). */
+export const THEME_COUNT = 6;
+
 export const THEMES: SiteTheme[] = [
   {
     id: "nukhba",
+    rank: 1,
+    featured: true,
     labelAr: "نخبة الذهبي",
     labelEn: "Nukhba Gold",
     descAr: "الهوية الأصلية — أسود عميق وذهبي فاخر",
     descEn: "The signature look — deep black & luxury gold",
+    usesAr: "وكالات · علامات فاخرة · ضيافة راقية",
+    usesEn: "Agencies · luxury brands · fine hospitality",
     light: {
       background: "#FCFCF9",
       foreground: "#0C0C0F",
@@ -100,10 +128,13 @@ export const THEMES: SiteTheme[] = [
   },
   {
     id: "royal",
+    rank: 2,
     labelAr: "أزرق ملكي",
     labelEn: "Royal Blue",
     descAr: "ثقة ومصداقية — مثالي للخدمات والوكالات",
     descEn: "Trust & credibility — ideal for agencies & services",
+    usesAr: "خدمات مالية · SaaS · شركات",
+    usesEn: "Finance · SaaS · corporate",
     light: {
       background: "#F5F7FC",
       foreground: "#0A1220",
@@ -148,109 +179,14 @@ export const THEMES: SiteTheme[] = [
     },
   },
   {
-    id: "emerald",
-    labelAr: "زمردي أخضر",
-    labelEn: "Emerald",
-    descAr: "انتعاش وصحة — مثالي للعيادات والمنتجات الطبيعية",
-    descEn: "Fresh & healthy — clinics & natural products",
-    light: {
-      background: "#F3FAF7",
-      foreground: "#05201A",
-      card: "#FFFFFF",
-      "card-foreground": "#05201A",
-      popover: "#FFFFFF",
-      "popover-foreground": "#05201A",
-      primary: "#0A3A2C",
-      "primary-foreground": "#F3FAF7",
-      secondary: "#E0F1EA",
-      "secondary-foreground": "#0A2C22",
-      muted: "#E6F3ED",
-      "muted-foreground": "#4E6E62",
-      accent: "#0E9F6E",
-      "accent-foreground": "#FFFFFF",
-      "accent-hover": "#0B8159",
-      border: "#D4E9DF",
-      input: "#D4E9DF",
-      ring: "#0E9F6E",
-      "chart-1": "#0E9F6E",
-    },
-    dark: {
-      background: "#04100C",
-      foreground: "#E1F1EB",
-      card: "#0A1B16",
-      "card-foreground": "#E1F1EB",
-      popover: "#0A1B16",
-      "popover-foreground": "#E1F1EB",
-      primary: "#E1F1EB",
-      "primary-foreground": "#04100C",
-      secondary: "#122620",
-      "secondary-foreground": "#E1F1EB",
-      muted: "#0E1F19",
-      "muted-foreground": "#8CAD9F",
-      accent: "#3ED9A0",
-      "accent-foreground": "#042118",
-      "accent-hover": "#6FE7B8",
-      border: "#172C24",
-      input: "#172C24",
-      ring: "#3ED9A0",
-      "chart-1": "#3ED9A0",
-    },
-  },
-  {
-    id: "burgundy",
-    labelAr: "خمري أنيق",
-    labelEn: "Burgundy",
-    descAr: "دفء الفخامة — مطاعم، أزياء وضيافة راقية",
-    descEn: "Warm luxury — restaurants, fashion & premium hospitality",
-    light: {
-      background: "#FCF6F5",
-      foreground: "#1B0B0F",
-      card: "#FFFFFF",
-      "card-foreground": "#1B0B0F",
-      popover: "#FFFFFF",
-      "popover-foreground": "#1B0B0F",
-      primary: "#4A1220",
-      "primary-foreground": "#FCF6F5",
-      secondary: "#F6E6E7",
-      "secondary-foreground": "#3A1119",
-      muted: "#F4E8E9",
-      "muted-foreground": "#7C5A60",
-      accent: "#A81E3C",
-      "accent-foreground": "#FFFFFF",
-      "accent-hover": "#8C1730",
-      border: "#EDDADC",
-      input: "#EDDADC",
-      ring: "#A81E3C",
-      "chart-1": "#A81E3C",
-    },
-    dark: {
-      background: "#120709",
-      foreground: "#F4E6E6",
-      card: "#1D0C11",
-      "card-foreground": "#F4E6E6",
-      popover: "#1D0C11",
-      "popover-foreground": "#F4E6E6",
-      primary: "#F4E6E6",
-      "primary-foreground": "#120709",
-      secondary: "#2A1218",
-      "secondary-foreground": "#F4E6E6",
-      muted: "#221015",
-      "muted-foreground": "#B78F95",
-      accent: "#F0839B",
-      "accent-foreground": "#2A0910",
-      "accent-hover": "#FFA3B6",
-      border: "#32171F",
-      input: "#32171F",
-      ring: "#F0839B",
-      "chart-1": "#F0839B",
-    },
-  },
-  {
     id: "graphite",
+    rank: 3,
     labelAr: "فحمي مينيمال",
     labelEn: "Graphite",
     descAr: "بساطة راقية — أزياء، تصميم وماركات عصرية",
     descEn: "Understated elegance — fashion, design & modern brands",
+    usesAr: "استوديوهات · بورتفوليو · تصميم",
+    usesEn: "Studios · portfolio · design",
     light: {
       background: "#FAFAFA",
       foreground: "#111113",
@@ -295,109 +231,66 @@ export const THEMES: SiteTheme[] = [
     },
   },
   {
-    id: "copper",
-    labelAr: "نحاسي دافئ",
-    labelEn: "Copper",
-    descAr: "حرارة المقاهي والمطاعم — طابع handmade دافئ",
-    descEn: "Café & kitchen warmth — a handcrafted, sunny character",
+    id: "emerald",
+    rank: 4,
+    labelAr: "زمردي أخضر",
+    labelEn: "Emerald",
+    descAr: "انتعاش وصحة — مثالي للعيادات والمنتجات الطبيعية",
+    descEn: "Fresh & healthy — clinics & natural products",
+    usesAr: "صحة · استدامة · متاجر إلكترونية",
+    usesEn: "Health · sustainability · e-commerce",
     light: {
-      background: "#FFF9F3",
-      foreground: "#1D1207",
+      background: "#F3FAF7",
+      foreground: "#05201A",
       card: "#FFFFFF",
-      "card-foreground": "#1D1207",
+      "card-foreground": "#05201A",
       popover: "#FFFFFF",
-      "popover-foreground": "#1D1207",
-      primary: "#3B1E0C",
-      "primary-foreground": "#FFF9F3",
-      secondary: "#F8E8D9",
-      "secondary-foreground": "#33190B",
-      muted: "#F7EBDF",
-      "muted-foreground": "#7C6350",
-      accent: "#B45309",
+      "popover-foreground": "#05201A",
+      primary: "#0A3A2C",
+      "primary-foreground": "#F3FAF7",
+      secondary: "#E0F1EA",
+      "secondary-foreground": "#0A2C22",
+      muted: "#E6F3ED",
+      "muted-foreground": "#4E6E62",
+      accent: "#0E9F6E",
       "accent-foreground": "#FFFFFF",
-      "accent-hover": "#94430A",
-      border: "#EEDCCD",
-      input: "#EEDCCD",
-      ring: "#B45309",
-      "chart-1": "#B45309",
+      "accent-hover": "#0B8159",
+      border: "#D4E9DF",
+      input: "#D4E9DF",
+      ring: "#0E9F6E",
+      "chart-1": "#0E9F6E",
     },
     dark: {
-      background: "#110A04",
-      foreground: "#F6EADC",
-      card: "#1C1009",
-      "card-foreground": "#F6EADC",
-      popover: "#1C1009",
-      "popover-foreground": "#F6EADC",
-      primary: "#F6EADC",
-      "primary-foreground": "#110A04",
-      secondary: "#29180D",
-      "secondary-foreground": "#F6EADC",
-      muted: "#22140A",
-      "muted-foreground": "#B9997C",
-      accent: "#F0A868",
-      "accent-foreground": "#2A1505",
-      "accent-hover": "#F7C08F",
-      border: "#33210F",
-      input: "#33210F",
-      ring: "#F0A868",
-      "chart-1": "#F0A868",
-    },
-  },
-  {
-    id: "teal",
-    labelAr: "تركوازي بحري",
-    labelEn: "Ocean Teal",
-    descAr: "هدوء ونقاء — صحافة، سياحة وخدمات مائية",
-    descEn: "Calm & clean — clinics, travel & water-related services",
-    light: {
-      background: "#F1FAFB",
-      foreground: "#04242A",
-      card: "#FFFFFF",
-      "card-foreground": "#04242A",
-      popover: "#FFFFFF",
-      "popover-foreground": "#04242A",
-      primary: "#06414A",
-      "primary-foreground": "#F1FAFB",
-      secondary: "#DEEFF2",
-      "secondary-foreground": "#053038",
-      muted: "#E2F0F2",
-      "muted-foreground": "#4E6D73",
-      accent: "#0C8A9C",
-      "accent-foreground": "#FFFFFF",
-      "accent-hover": "#0A7285",
-      border: "#D2E6EA",
-      input: "#D2E6EA",
-      ring: "#0C8A9C",
-      "chart-1": "#0C8A9C",
-    },
-    dark: {
-      background: "#03181C",
-      foreground: "#E0F2F5",
-      card: "#09242A",
-      "card-foreground": "#E0F2F5",
-      popover: "#09242A",
-      "popover-foreground": "#E0F2F5",
-      primary: "#E0F2F5",
-      "primary-foreground": "#03181C",
-      secondary: "#0E2E34",
-      "secondary-foreground": "#E0F2F5",
-      muted: "#0A262B",
-      "muted-foreground": "#87AEB4",
-      accent: "#4CCBD6",
-      "accent-foreground": "#032025",
-      "accent-hover": "#7DDCE5",
-      border: "#13373D",
-      input: "#13373D",
-      ring: "#4CCBD6",
-      "chart-1": "#4CCBD6",
+      background: "#04100C",
+      foreground: "#E1F1EB",
+      card: "#0A1B16",
+      "card-foreground": "#E1F1EB",
+      popover: "#0A1B16",
+      "popover-foreground": "#E1F1EB",
+      primary: "#E1F1EB",
+      "primary-foreground": "#04100C",
+      secondary: "#122620",
+      "secondary-foreground": "#E1F1EB",
+      muted: "#0E1F19",
+      "muted-foreground": "#8CAD9F",
+      accent: "#3ED9A0",
+      "accent-foreground": "#042118",
+      "accent-hover": "#6FE7B8",
+      border: "#172C24",
+      input: "#172C24",
+      ring: "#3ED9A0",
+      "chart-1": "#3ED9A0",
     },
   },
   {
     id: "violet",
+    rank: 5,
     labelAr: "بنفسجي نبيل",
     labelEn: "Violet",
     descAr: "جرأة إبداعية — تقنيات، إبداع وعلامات عصرية",
     descEn: "Creative boldness — tech, studios & modern brands",
+    usesAr: "تقنية · ذكاء اصطناعي · علامات إبداعية",
+    usesEn: "Tech · AI · creative brands",
     light: {
       background: "#F8F6FE",
       foreground: "#15092F",
@@ -441,14 +334,89 @@ export const THEMES: SiteTheme[] = [
       "chart-1": "#A78BFA",
     },
   },
+  {
+    id: "teal",
+    rank: 6,
+    labelAr: "تركوازي بحري",
+    labelEn: "Ocean Teal",
+    descAr: "هدوء ونقاء — صحافة، سياحة وخدمات مائية",
+    descEn: "Calm & clean — clinics, travel & water-related services",
+    usesAr: "منتجات رقمية · سفر · عيادات",
+    usesEn: "Digital products · travel · clinics",
+    light: {
+      background: "#F1FAFB",
+      foreground: "#04242A",
+      card: "#FFFFFF",
+      "card-foreground": "#04242A",
+      popover: "#FFFFFF",
+      "popover-foreground": "#04242A",
+      primary: "#06414A",
+      "primary-foreground": "#F1FAFB",
+      secondary: "#DEEFF2",
+      "secondary-foreground": "#053038",
+      muted: "#E2F0F2",
+      "muted-foreground": "#4E6D73",
+      accent: "#0C8A9C",
+      "accent-foreground": "#FFFFFF",
+      "accent-hover": "#0A7285",
+      border: "#D2E6EA",
+      input: "#D2E6EA",
+      ring: "#0C8A9C",
+      "chart-1": "#0C8A9C",
+    },
+    dark: {
+      background: "#03181C",
+      foreground: "#E0F2F5",
+      card: "#09242A",
+      "card-foreground": "#E0F2F5",
+      popover: "#09242A",
+      "popover-foreground": "#E0F2F5",
+      primary: "#E0F2F5",
+      "primary-foreground": "#03181C",
+      secondary: "#0E2E34",
+      "secondary-foreground": "#E0F2F5",
+      muted: "#0A262B",
+      "muted-foreground": "#87AEB4",
+      accent: "#4CCBD6",
+      "accent-foreground": "#032025",
+      "accent-hover": "#7DDCE5",
+      border: "#13373D",
+      input: "#13373D",
+      ring: "#4CCBD6",
+      "chart-1": "#4CCBD6",
+    },
+  },
 ];
 
+/**
+ * Anciens identifiants retirés du sélecteur (8 → 6 thèmes) : mappés vers le
+ * thème signature pour que les choix mémorisés dans `localStorage` ou dans une
+ * configuration admin plus ancienne restent valides.
+ */
+export const RETIRED_THEMES: Record<string, string> = {
+  burgundy: "nukhba",
+  copper: "nukhba",
+};
+
+/** Résout un identifiant (y compris retiré) vers un thème existant, sinon null. */
+export function resolveThemeId(value: unknown): string | null {
+  if (typeof value !== "string") return null;
+  const id = RETIRED_THEMES[value] ?? value;
+  return THEMES.some((t) => t.id === id) ? id : null;
+}
+
 export function isThemeId(value: unknown): value is string {
-  return typeof value === "string" && THEMES.some((t) => t.id === value);
+  return resolveThemeId(value) !== null;
 }
 
 export function getTheme(id: string): SiteTheme {
-  return THEMES.find((t) => t.id === id) ?? THEMES[0];
+  return THEMES.find((t) => t.id === resolveThemeId(id)) ?? THEMES[0];
+}
+
+/** Libellé du classement du thème (« Le plus demandé », « n°3 du métier »…). */
+export function themeRankLabel(theme: SiteTheme, locale: "ar" | "en"): string {
+  if (theme.featured) return locale === "ar" ? "الأكثر طلباً" : "Most requested";
+  return locale === "ar" ? `رقم ${theme.rank} في المجال` : `No. ${theme.rank} in the field`;
 }
 
 function paletteBlock(selector: string, palette: ThemePalette) {
@@ -482,12 +450,15 @@ export function themeCss(): string {
  * `nukhba-palette`, `nukhba-theme`) étaient écrites automatiquement à chaque
  * visite — même pour le simple défaut admin — et figeaient donc l'ancien
  * défaut à vie ; elles sont ignorées et supprimées.
+ * Les identifiants retirés (`burgundy`, `copper`) sont traduits vers le thème
+ * signature avant la validation.
  */
 export function themeBootScript(
   defaults: { mode?: "light" | "dark" | ""; palette?: string } = {},
 ): string {
   const mode = defaults.mode === "dark" || defaults.mode === "light" ? defaults.mode : "";
-  const palette = isThemeId(defaults.palette) ? defaults.palette : "";
+  const resolvedDefault = resolveThemeId(defaults.palette);
+  const palette = resolvedDefault ?? "";
   const validIds = THEMES.map((t) => t.id);
   return `(function(){try{
 var d=document.documentElement;
@@ -497,6 +468,8 @@ localStorage.removeItem("nukhba-theme");
 var m=localStorage.getItem("nukhba-mode-choice");
 var p=localStorage.getItem("nukhba-palette-choice");
 var valid=${JSON.stringify(validIds)};
+var retired=${JSON.stringify(RETIRED_THEMES)};
+if(p&&retired[p])p=retired[p];
 if(valid.indexOf(p)===-1)p="";
 var defM=${JSON.stringify(mode)};
 var defP=${JSON.stringify(palette)};

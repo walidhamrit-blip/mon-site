@@ -1,6 +1,9 @@
 # نخبة Nukhba — Agence Web Premium
 
 Site vitrine haut de gamme construit avec Next.js 16 + Tailwind + Framer Motion.
+**Langue principale : l’arabe** (`dir="rtl"`, servi dès le HTML initial) —
+l’anglais reste disponible en un clic via le sélecteur de langue de la barre
+supérieure, et la langue principale se règle dans `/admin → Réglages`.
 **Portée mondiale** : Tripoli / Libye est le *marché par défaut*, pas une
 constante — ville, pays, fuseau, devise et libellés se règlent dans
 `/admin → Réglages → Marché & Devises`, sans toucher au code.
@@ -94,29 +97,50 @@ Google Play, Amazon, Spotify…) :
   Guide complet : **`docs/reloadly.md`**. Les fiches `Bientôt disponible`
   restent en liste d'attente WhatsApp.
 
-## Thèmes du site (8 thèmes, clair + sombre)
-`src/lib/themes.ts` contient le catalogue des thèmes. Chaque thème définit **sa palette claire ET sa palette sombre** : le mode clair/sombre reste donc un réglage totalement indépendant (un bouton dédié ☀/☾ dans la barre supérieure), et n'importe quel thème se voit dans les deux modes.
+## Langue : l’arabe est la langue principale
+- `siteConfig.appearance.defaultLocale = "ar"` (`src/lib/config.ts`) : le HTML
+  est rendu en arabe, `<html lang="ar" dir="rtl">`, dès la première requête.
+- `src/lib/locale.ts` — module partagé serveur/client : langues disponibles
+  (`ar`, `en`), clé de mémorisation `nukhba-locale-choice`, et
+  `localeBootScript()` qui applique le choix du visiteur **avant le premier
+  rendu** (aucun flash de sens de lecture).
+- `src/components/locale-switcher.tsx` — sélecteur de langue (barre
+  supérieure + menu mobile). L’arabe y est marqué « langue principale ».
+- L’anglais reste intégralement servi (traductions `src/lib/i18n.tsx`) : un
+  visiteur anglophone bascule en un clic, et son choix est mémorisé sur son
+  appareil. Changer la langue principale depuis `/admin` s’applique aux
+  visiteurs qui n’ont pas exprimé de choix explicite.
+- Le manifest PWA (`src/app/manifest.ts`) reprend la langue principale
+  (`lang` / `dir`) : une application installée s’ouvre en RTL.
 
-| Thème | ID | Ambiance |
-|---|---|---|
-| نخبة الذهبي — Nukhba Gold | `nukhba` | noir profond & doré (thème d'origine) |
-| أزرق ملكي — Royal Blue | `royal` | confiance, agencies & services |
-| زمردي أخضر — Emerald | `emerald` | clinics & produits naturels |
-| خمري أنيق — Burgundy | `burgundy` | restaurants, mode & hôtellerie |
-| فحمي مينيمال — Graphite | `graphite` | minimalisme haut de gamme |
-| نحاسي دافئ — Copper | `copper` | cafés, restaurants & chaleur |
-| تركوازي بحري — Ocean Teal | `teal` | cabinets médicaux & tourisme |
-| بنفسجي نبيل — Violet | `violet` | tech, studios & marques créatives |
+## Thèmes du site (6 thèmes classés, clair + sombre)
+`src/lib/themes.ts` contient le catalogue. Le sélecteur propose **6 thèmes**,
+choisis parmi les palettes les plus appréciées du métier (agences, studios,
+e-commerce premium) et classés par fréquence de demande (`rank`) :
+
+| Rang | Thème | ID | Secteurs où il est le plus demandé |
+|---|---|---|---|
+| 1 ★ | نخبة الذهبي — Nukhba Gold | `nukhba` | agences, marques de luxe, hôtellerie haut de gamme |
+| 2 | أزرق ملكي — Royal Blue | `royal` | finance, SaaS, corporate |
+| 3 | فحمي مينيمال — Graphite | `graphite` | studios, portfolios, design |
+| 4 | زمردي أخضر — Emerald | `emerald` | santé, durabilité, e-commerce |
+| 5 | بنفسجي نبيل — Violet | `violet` | tech, IA, marques créatives |
+| 6 | تركوازي بحري — Ocean Teal | `teal` | produits numériques, voyage, cliniques |
+
+Chaque thème définit **sa palette claire ET sa palette sombre** : le mode
+clair/sombre reste un réglage totalement indépendant (un bouton dédié ☀/☾ dans
+la barre supérieure), donc chaque thème se voit dans les deux modes.
 
 - Les palettes sont converties en CSS (`html[data-theme="x"]` / `html.dark[data-theme="x"]`) et injectées dans le `<head>` par `src/app/layout.tsx` (`themeCss()`).
-- Un script inline (`THEME_BOOT_SCRIPT`) applique thème + mode **avant le premier rendu** : aucun clignotement de couleurs.
-- Sélection : bouton palette dans la barre supérieure (desktop), liste dans le menu mobile, ou la section « ثيمات الموقع » de la page d'accueil.
-- Le choix est mémorisé dans `localStorage` (`nukhba-palette` et `nukhba-mode`).
+- Un script inline (`themeBootScript()`) applique thème + mode **avant le premier rendu** : aucun clignotement de couleurs.
+- Sélection : bouton palette dans la barre supérieure (dès `lg`, replié dans le menu mobile), et sélecteur complet `ThemeGallery` dans la section « ثيمات جاهزة » de la page d’accueil.
+- Le choix est mémorisé dans `localStorage` (`nukhba-palette-choice` et `nukhba-mode-choice`) ; seuls les clics du visiteur y sont écrits, jamais le défaut admin.
+- Les anciens thèmes `burgundy` et `copper` quittent le sélecteur : leurs identifiants restent mappés vers le thème signature (`RETIRED_THEMES`), donc un choix mémorisé avant la mise à jour reste valide.
 - `src/app/globals.css` conserve `:root` / `.dark` comme repli (thème par défaut) si le JavaScript est désactivé.
 
 ## Contenu modifiable
 `src/lib/content.ts` : démos, secteurs, pourquoi nous, étapes, témoignages, FAQ
-`src/lib/i18n.tsx` : traductions AR/EN
+`src/lib/i18n.tsx` : traductions AR (langue principale) / EN
 
 ## Images
 Remplacez les URLs Unsplash par vos images dans `content.ts` et sections. Placez mockups dans `public/images/` et référencez `/images/...`.

@@ -1,9 +1,10 @@
 "use client";
 import React, { createContext, useContext, useEffect, useRef, useState } from "react";
-import { DEFAULT_THEME_ID, isThemeId } from "@/lib/themes";
+import { DEFAULT_THEME_ID, resolveThemeId } from "@/lib/themes";
 
 // Deux réglages indépendants :
-//  - `palette` : le thème de couleurs (or, bleu, émeraude...) — 8 thèmes.
+//  - `palette` : le thème de couleurs (or, bleu roi, graphite...) — 6 thèmes
+//                classés par popularité dans le métier (src/lib/themes.ts).
 //  - `mode`    : clair ou sombre — piloté par UN BOUTON DÉDIÉ (barre du haut).
 // Chaque thème existe en version claire ET en version sombre : les deux
 // notions sont donc totalement séparées, comme demandé.
@@ -49,7 +50,9 @@ interface ThemeContextValue {
 const ThemeCtx = createContext<ThemeContextValue | null>(null);
 
 function validPalette(id: string | null | undefined): string {
-  return isThemeId(id) ? (id as string) : DEFAULT_THEME_ID;
+  // Résout aussi les identifiants retirés du sélecteur (burgundy, copper) :
+  // un ancien choix mémorisé retombe sur le thème signature.
+  return resolveThemeId(id) ?? DEFAULT_THEME_ID;
 }
 
 export function ThemeProvider({
@@ -105,9 +108,10 @@ export function ThemeProvider({
       }
     }
 
-    if (isThemeId(savedPalette)) {
+    const resolvedSavedPalette = resolveThemeId(savedPalette);
+    if (resolvedSavedPalette) {
       explicitPalette.current = true;
-      setPaletteState(savedPalette);
+      setPaletteState(resolvedSavedPalette);
     } else {
       explicitPalette.current = false;
       setPaletteState(validPalette(defaultPalette));

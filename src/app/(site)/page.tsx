@@ -6,14 +6,22 @@ import {
   faqJsonLd,
   howToJsonLd,
   pageMetadata,
+  siteLocale,
 } from "@/lib/seo";
 import { JsonLd } from "@/components/json-ld";
 
 export async function generateMetadata(): Promise<Metadata> {
   const { config } = await getSiteDataCached();
+  // L'arabe est la langue principale : le titre suit `siteLocale(config)` et
+  // reste modifiable depuis /admin → Réglages. La description (`defaultMetaDescription`)
+  // est déjà rédigée en arabe pour la version principale.
+  const locale = siteLocale(config);
   return pageMetadata(config, {
     path: "/",
-    title: "Website & Store Design in {cityEn} — 7 Days, Paid in USDT",
+    title:
+      locale === "ar"
+        ? "تصميم مواقع ومتاجر في {city} — تسليم 7 أيام ودفع بالعملات الرقمية"
+        : "Website & Store Design in {cityEn} — 7 Days, Paid in USDT",
     description: defaultMetaDescription(config),
     keywords: [
       "web design agency",
