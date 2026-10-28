@@ -126,16 +126,41 @@ if (shop.status !== 200) {
     // Fiche présente dans le sitemap
     if (!sitemapPaths.has(path)) note(scope, "absente du sitemap.xml");
 
-    // Version anglaise : pas de fuite d'arabe dans les métadonnées.
-    // Le nom de marque « Nukhba نخبة » est bilongue par convention (suffixe
-    // du gabarit de titre du site) : il est retiré avant le contrôle.
+    // Cohérence de la langue : le contenu doit être dans la langue déclarée
+    // par `<html lang="…">`.
+    //
+    // ⚠️ Cette règle a changé. Elle exigeait « aucun arabe » parce que le
+    // site était rendu en anglais. Depuis que l'arabe est la langue
+    // PRINCIPALE (pas d'URL /ar ni /en : le HTML sort dans la langue
+    // principale, le choix du visiteur s'applique côté client), cette
+    // exigence signalait 24 faux positifs sur les fiches de repli. On
+    // contrôle désormais ce qui a un sens dans les deux sens :
+    //   - page déclarée `en` → aucune fuite d'arabe ;
+    //   - page déclarée `ar` → contenu bien en arabe (une fiche anglaise
+    //     perdue dans un rendu arabe reste un vrai défaut).
+    // Le nom de marque « Nukhba نخبة » est bilingue par convention
+    // (suffixe du gabarit de titre) : il est retiré avant le contrôle.
+    const declaredLang = (page.body.match(/<html[^>]*\blang="([a-zA-Z-]+)"/)?.[1] ?? "en")
+      .slice(0, 2)
+      .toLowerCase();
     const strip = (value) => value.replaceAll("Nukhba نخبة", "").trim();
-    if (title && AR.test(strip(title)))
-      note(scope, `titre en arabe : ${strip(title)}`);
-    if (description && AR.test(description))
-      note(scope, `description en arabe : ${description.slice(0, 60)}…`);
-    if (h1 && AR.test(strip(h1.replace(/<[^>]+>/g, ""))))
-      note(scope, `h1 en arabe : ${strip(h1.replace(/<[^>]+>/g, "")).slice(0, 60)}`);
+    const h1Text = h1 ? strip(h1.replace(/<[^>]+>/g, "")) : "";
+
+    if (declaredLang === "en") {
+      if (title && AR.test(strip(title)))
+        note(scope, `titre en arabe : ${strip(title)}`);
+      if (description && AR.test(description))
+        note(scope, `description en arabe : ${description.slice(0, 60)}…`);
+      if (h1Text && AR.test(h1Text))
+        note(scope, `h1 en arabe : ${h1Text.slice(0, 60)}`);
+    } else if (declaredLang === "ar") {
+      // Une fiche arabe dont le titre et le h1 sont purement latins est un
+      // rendu non traduit, pas une simple marque : on le signale.
+      if (title && !AR.test(strip(title)))
+        note(scope, `titre non traduit en arabe : ${strip(title)}`);
+      if (h1Text && !AR.test(h1Text) && !/^[A-Z0-9 .:+&-]{3,}$/.test(h1Text))
+        note(scope, `h1 non traduit en arabe : ${h1Text.slice(0, 60)}`);
+    }
   }
   console.log(`Fiches contrôlées : ${checked}/${links.length}`);
 }

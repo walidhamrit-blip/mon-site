@@ -94,8 +94,9 @@ export function previewSrc(entry: PreviewEntry | null, variant: PreviewVariant =
 export function getDemoPreview(
   demo: Pick<Demo, "previewUrl" | "image">,
   variant: PreviewVariant = "desktop",
+  source: PreviewManifest = previewManifest,
 ): { src: string; screenshot: boolean; capturedAt?: string; local: boolean } {
-  const entry = findPreviewEntry(demo.previewUrl);
+  const entry = findPreviewEntry(demo.previewUrl, source);
   const src = previewSrc(entry, variant);
   if (src) {
     return {
@@ -112,8 +113,11 @@ export function getDemoPreview(
  * Images locales d'une démo, sans anti-cache : utilisées par le sitemap
  * d'images (`<image:loc>` doit rester une URL canonique stable).
  */
-export function getDemoPreviewImages(demo: Pick<Demo, "previewUrl">): string[] {
-  const entry = findPreviewEntry(demo.previewUrl);
+export function getDemoPreviewImages(
+  demo: Pick<Demo, "previewUrl">,
+  source: PreviewManifest = previewManifest,
+): string[] {
+  const entry = findPreviewEntry(demo.previewUrl, source);
   if (!entry) return [];
   const paths = [entry.desktop, entry.mobile].filter(
     (path, index, all): path is string => Boolean(path) && all.indexOf(path) === index,
@@ -122,8 +126,11 @@ export function getDemoPreviewImages(demo: Pick<Demo, "previewUrl">): string[] {
 }
 
 /** Date de dernière capture d'une démo (sert à `dateModified` / sitemap). */
-export function getDemoCapturedAt(demo: Pick<Demo, "previewUrl">): Date | null {
-  const entry = findPreviewEntry(demo.previewUrl);
+export function getDemoCapturedAt(
+  demo: Pick<Demo, "previewUrl">,
+  source: PreviewManifest = previewManifest,
+): Date | null {
+  const entry = findPreviewEntry(demo.previewUrl, source);
   if (!entry?.capturedAt) return null;
   const date = new Date(entry.capturedAt);
   return Number.isNaN(date.getTime()) ? null : date;

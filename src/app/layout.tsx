@@ -1,7 +1,8 @@
 import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";
 import "./globals.css";
-import { I18nProvider, type Locale } from "@/lib/i18n";
+import { I18nProvider } from "@/lib/i18n";
+import { localeBootScript, type Locale } from "@/lib/locale";
 import { ThemeProvider, type ThemeMode } from "@/components/theme-provider";
 import { SiteProvider } from "@/components/site-provider";
 import { CurrencyProvider } from "@/components/currency-provider";
@@ -37,9 +38,12 @@ export async function generateMetadata(): Promise<Metadata> {
   const globalReach = Boolean(config.market?.globalReach) || market.id === "global";
   const baseUrl = config.url || siteConfig.url;
 
-  const title = `Nukhba نخبة — Premium Web Agency in ${labelsEn.city} | ${
-    globalReach ? "Websites, E-Commerce & Booking Worldwide" : "Websites, E-Commerce & Booking"
-  }`;
+  // L'arabe est la langue principale : le titre racine commence en arabe
+  // (nom de marque bilingue pour la recherche de marque), puis la portée
+  // internationale reste lisible pour les moteurs anglophones.
+  const title = `نخبة Nukhba — وكالة ويب فاخرة في ${labels.city} | ${
+    globalReach ? "تصميم مواقع ومتاجر وحجز أونلاين عالمياً" : "تصميم مواقع ومتاجر وحجز أونلاين"
+  } — ${labelsEn.city}`;
   const description = defaultMetaDescription(config);
 
   return {
@@ -140,8 +144,9 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
   const { config, content } = await getSiteDataCached();
 
   // Apparence principale du site (choisie dans /admin → Réglages) :
-  // langue principale, thème principal et mode clair/sombre servent de
-  // défaut à tous les visiteurs (un visiteur peut toujours basculer).
+  // langue principale — l'arabe par défaut —, thème principal et mode
+  // clair/sombre servent de défaut à tous les visiteurs (un visiteur peut
+  // toujours basculer ; son choix explicite prime alors sur ces valeurs).
   const appearance = {
     themeId: String(config.appearance?.themeId ?? siteConfig.appearance.themeId),
     mode: String(config.appearance?.mode ?? siteConfig.appearance.mode),
@@ -195,7 +200,12 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
           href="/llms-full.txt"
           title="Nukhba full AI knowledge base (AR/EN)"
         />
-        {/* Palettes des 8 thèmes (clair + sombre) — générées depuis src/lib/themes.ts */}
+        {/* Langue principale (arabe RTL) + choix mémorisé du visiteur,
+            appliqués avant le premier rendu : aucun sens de lecture erroné. */}
+        <script
+          dangerouslySetInnerHTML={{ __html: localeBootScript(defaultLocale) }}
+        />
+        {/* Palettes des 6 thèmes classés (clair + sombre) — src/lib/themes.ts */}
         <style dangerouslySetInnerHTML={{ __html: themeCss() }} />
         {/* Applique thème + mode avant le premier rendu (aucun clignotement).
             À défaut de choix mémorisé du visiteur, l'apparence principale

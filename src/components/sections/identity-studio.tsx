@@ -3,7 +3,6 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { ProjectPreview } from "@/components/project-preview";
 import { useInView, useReducedMotion } from "framer-motion";
 import {
-  Check,
   ChevronLeft,
   ChevronRight,
   ExternalLink,
@@ -18,8 +17,7 @@ import {
 import { useI18n } from "@/lib/i18n";
 import { useSectionHeading, useSiteContent } from "@/components/site-provider";
 import { useTheme } from "@/components/theme-provider";
-import { ThemePreview } from "@/components/theme-switcher";
-import { THEMES } from "@/lib/themes";
+import { ThemeGallery } from "@/components/theme-switcher";
 import { FullscreenLiveViewer } from "@/components/live-site-frames";
 import { demos as fallbackDemos } from "@/lib/content";
 import type { Demo } from "@/lib/site-types";
@@ -27,7 +25,8 @@ import type { Demo } from "@/lib/site-types";
 // Studio d'identité compact en largeur contenue (max-w-4xl) :
 //   1. bloc « Personnalisation » côte à côte avec un aperçu compact (sans iframe
 //      capturant le défilement, afin de préserver un scroll fluide partout) ;
-//   2. grille compacte des 8 thèmes prêts à l'emploi (boutons réduits, clair + sombre).
+//   2. sélecteur des 6 thèmes les plus appréciés du métier, classés par
+//      popularité (grande miniature clair + sombre, secteur de prédilection).
 
 const accents = [
   { name: "ذهبي", nameEn: "Gold", hex: "#C6A664" },
@@ -58,7 +57,7 @@ export function IdentityStudio() {
   const { demos } = useSiteContent();
   const customizerHeading = useSectionHeading("identityCustomizer");
   const themesHeading = useSectionHeading("identityThemes");
-  const { palette, setPalette, mode, toggle } = useTheme();
+  const { mode, toggle } = useTheme();
 
   const [accent, setAccent] = useState(accents[0]);
   const [font, setFont] = useState(fonts[0]);
@@ -356,7 +355,7 @@ export function IdentityStudio() {
           </div>
         </div>
 
-        {/* ---------- 2. Section Thèmes compacte + boutons réduits ---------- */}
+        {/* ---------- 2. Sélecteur des 6 thèmes les plus appréciés ---------- */}
         <div className="card-surface p-3.5 sm:p-5">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div className="min-w-0">
@@ -366,7 +365,7 @@ export function IdentityStudio() {
                   {themesHeading.title}
                 </h3>
               </div>
-              <p className="mt-0.5 text-xs text-[var(--muted-foreground)] line-clamp-1">
+              <p className="mt-0.5 text-xs text-[var(--muted-foreground)] line-clamp-2">
                 {themesHeading.subtitle}
               </p>
             </div>
@@ -389,35 +388,7 @@ export function IdentityStudio() {
             </button>
           </div>
 
-          <div className="mt-3 grid grid-cols-2 sm:grid-cols-4 gap-2">
-            {THEMES.map((theme) => {
-              const active = theme.id === palette;
-              return (
-                <button
-                  key={theme.id}
-                  type="button"
-                  onClick={() => setPalette(theme.id)}
-                  aria-pressed={active}
-                  title={ar ? theme.descAr : theme.descEn}
-                  className={`group flex items-center gap-2 rounded-xl border px-2.5 py-1.5 text-start transition-all cursor-pointer ${
-                    active
-                      ? "border-[var(--accent)] bg-[var(--secondary)] shadow-xs"
-                      : "border-[var(--border)] bg-[var(--background)]/60 hover:border-[var(--accent)]/60 hover:bg-[var(--secondary)]/60"
-                  }`}
-                >
-                  <ThemePreview theme={theme} compact className="h-6 w-8 shrink-0" />
-                  <span className="min-w-0 flex-1 text-[11.5px] font-bold leading-tight truncate">
-                    {ar ? theme.labelAr : theme.labelEn}
-                  </span>
-                  {active && (
-                    <span className="grid h-4 w-4 shrink-0 place-items-center rounded-full bg-[var(--accent)] text-[var(--accent-foreground)]">
-                      <Check className="h-2.5 w-2.5" />
-                    </span>
-                  )}
-                </button>
-              );
-            })}
-          </div>
+          <ThemeGallery className="mt-3" />
 
           <p className="mt-2.5 flex items-center gap-1.5 text-[11px] text-[var(--muted-foreground)]">
             <Palette className="h-3 w-3 shrink-0 text-[var(--accent)]" />

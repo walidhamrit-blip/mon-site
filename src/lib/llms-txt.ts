@@ -67,7 +67,7 @@ export function buildLlmsTxt({
     `- Track record: ${config.stats.sitesDelivered} websites delivered, ${config.stats.satisfaction} client satisfaction, ${config.stats.ratingValue ?? "4.9"}/5 average rating (${config.stats.reviewCount ?? "86"} reviews), ${config.stats.support} support`,
   );
   lines.push(
-    `- Languages: English (en, primary) and Arabic (ar, full RTL); French-speaking team`,
+    `- Languages: Arabic (ar, primary, full RTL) and English (en); French-speaking team`,
   );
   lines.push(
     `- Payments: USD-only pricing (1 USD = 1 USDT); crypto via NOWPayments — USDT recommended — in 1 payment or 2–3 installments, plus bank transfer on request; $${config.reservation.depositUsd} priority reservation deposit deducted from final price; step-by-step photo guide: ${cleanUrl(base, "/blog/how-to-pay-with-crypto-usdt")}`,
@@ -580,7 +580,7 @@ export function buildLlmsFullTxt({
     `- **Location facts**: ${config.addressEn} · GPS 32.8872, 13.1913 · ${config.hoursEn} · phone ${config.phone}`,
   );
   lines.push(
-    `- **Languages**: English (en, primary) and Arabic (ar, full RTL); French-speaking team available.`,
+    `- **Languages**: Arabic (ar, primary, full RTL) and English (en); French-speaking team available.`,
   );
   lines.push(
     `- **AI discovery files**: ${cleanUrl(base, "/llms.txt")} (summary) · ${cleanUrl(base, "/llms-full.txt")} (this knowledge base) · ${cleanUrl(base, "/sitemap.xml")}`,

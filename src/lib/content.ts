@@ -502,9 +502,9 @@ export const defaultSectionHeadings: SectionHeadings = {
     titleAr: "ثيمات جاهزة… اختر هوية موقعك",
     titleEn: "Ready-made themes… pick your identity",
     subtitleAr:
-      "8 ثيمات فاخرة — الأكثر طلباً في مواقع الشركات الفاخرة. كل ثيم يعمل بنسخة فاتحة وأخرى داكنة، والتبديل بينهما يتم بزر مستقل تماماً عن اختيار الثيم.",
+      "6 ثيمات — أكثر لوحات الألوان تقديراً في مجال الوكالات ومواقع الشركات، مرتبة حسب الطلب. كل ثيم يعمل بنسخة فاتحة وأخرى داكنة، والتبديل بينهما يتم بزر مستقل تماماً عن اختيار الثيم.",
     subtitleEn:
-      "8 premium themes — the most requested palettes on luxury business websites. Each one runs in a light and a dark version, switched by a button of its own.",
+      "6 themes — the most appreciated palettes in the agency & corporate web field, ranked by demand. Each one runs in a light and a dark version, switched by a button of its own.",
   },
   process: {
     titleAr: "من الفكرة إلى الإطلاق",
