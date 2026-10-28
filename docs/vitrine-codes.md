@@ -110,10 +110,20 @@ PUBG). La vitrine impose donc son propre ordre, calculé par
    PUBG Mobile 100, Free Fire 96, Mobile Legends 92, PlayStation 100,
    Steam Wallet 98, Amazon 82, Airbnb 46… Un jeu absent de la table ne vaut
    que son bonus de famille : il reste derrière.
+   Le texte analysé dépend de la famille : la **marque** pour les cartes et
+   recharges (« Halo Infinite (Xbox, Halo Credits) » n'est donc pas une carte
+   Xbox), le **nom du jeu** pour les clés (dont la plateforme vaut « Steam »
+   ou « Xbox » pour les 80 fiches). Et c'est le mot-clé le plus **long** qui
+   gagne : `mobile legends adventure` (16) ne prend pas les 92 points de
+   `mobile legends`.
 2. **Zone** — `CRYPTO_REGIONS` classe les zones utiles à un acheteur qui paie
    en USDT : `GLOBAL` d'abord (valable partout), puis le Golfe et le Levant
    (`MENA`, `SA`, `AE`, `KW`, `QA`, `OM`, `BH`, `LB`), puis `EG`, `TR`, `LY`,
    puis `US`, `UK`, `EU`, `CA`.
+   La zone se lit dans le **libellé** de la plateforme (`zoneFromPlatform`) :
+   le champ `regions` du fournisseur annonce `GLOBAL` sur presque toutes les
+   fiches. Les parenthèses de livraison (`Auto`, `Fast`, `Manual`, `Reserve`)
+   ne sont pas des zones.
 3. **Tourniquet par marque** — un tri strict par score plaçait les 41 cartes
    PlayStation de 41 pays sur les 41 premières places. Les fiches sont donc
    regroupées par marque (`brandKeyFor`, plateforme sans la zone entre
