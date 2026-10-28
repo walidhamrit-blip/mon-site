@@ -63,6 +63,22 @@ export const GAME_COVERS: GameCover[] = [
     keys: ["age of mythology retold", "age of mythology"],
   },
   {
+    file: "/game-covers/pubg-mobile.jpg",
+    keys: ["pubg mobile", "pubg new state", "pubg"],
+  },
+  {
+    file: "/game-covers/genshin-impact.jpg",
+    keys: ["genshin impact", "genshin"],
+  },
+  {
+    file: "/game-covers/valorant.jpg",
+    keys: ["valorant"],
+  },
+  {
+    file: "/game-covers/call-of-duty-mobile.jpg",
+    keys: ["call of duty mobile", "cod mobile", "call of duty"],
+  },
+  {
     file: "/game-covers/alan-wake-2.jpg",
     keys: ["alan wake 2", "alan wake ii", "alan wake"],
   },
@@ -135,8 +151,48 @@ export const GAME_COVERS: GameCover[] = [
     keys: ["rust"],
   },
   {
+    file: "/game-covers/free-fire.jpg",
+    keys: ["free fire", "garena free fire", "freefire"],
+  },
+  {
     file: "/game-covers/the-witcher-3.jpg",
     keys: ["the witcher 3 wild hunt", "witcher 3", "the witcher"],
+  },
+
+  /* ----- Marques : cartes cadeaux, abonnements, recharges de monnaie ----- */
+  // Ces fiches n'ont pas de « jaquette » : elles portent le visuel de la
+  // marque (déjà livré dans /digital-products), présenté en portrait.
+  {
+    file: "/game-covers/brand-steam.jpg",
+    keys: ["steam wallet", "steam"],
+  },
+  {
+    file: "/game-covers/brand-playstation.jpg",
+    keys: ["playstation store", "playstation network", "psn", "playstation"],
+  },
+  {
+    file: "/game-covers/brand-xbox.jpg",
+    keys: ["xbox game pass", "xbox live", "xbox"],
+  },
+  {
+    file: "/game-covers/brand-google-play.jpg",
+    keys: ["google play"],
+  },
+  {
+    file: "/game-covers/brand-amazon.jpg",
+    keys: ["amazon"],
+  },
+  {
+    file: "/game-covers/brand-spotify.jpg",
+    keys: ["spotify premium", "spotify"],
+  },
+  {
+    file: "/game-covers/brand-nvidia.jpg",
+    keys: ["nvidia geforce", "geforce now", "nvidia"],
+  },
+  {
+    file: "/game-covers/brand-roblox.jpg",
+    keys: ["roblox robux", "robux", "roblox"],
   },
 ];
 

@@ -688,6 +688,7 @@ export function DigitalCatalog({ products }: { products: DigitalProduct[] }) {
                           <FallbackArt
                             product={product}
                             initials={initialsOf(product)}
+                            name={ar ? product.titleAr : product.titleEn}
                           />
                         )}
 
@@ -912,22 +913,33 @@ function ActiveChip({ label, onRemove }: { label: string; onRemove: () => void }
 function FallbackArt({
   product,
   initials,
+  name,
 }: {
   product: DigitalProduct;
   initials: string;
+  name: string;
 }) {
   return (
     <div
       aria-hidden="true"
-      className="absolute inset-0"
+      className="absolute inset-0 overflow-hidden"
       style={{
-        background: `radial-gradient(120% 90% at 18% 0%, ${product.color}dd 0%, ${product.color}55 38%, #0b1220 78%)`,
+        background: `radial-gradient(115% 85% at 20% 0%, ${product.color}f2 0%, ${product.color}77 34%, #0a1120 76%)`,
       }}
     >
-      <div className="absolute inset-0 opacity-[0.18] [background-image:linear-gradient(rgba(255,255,255,.5)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,.5)_1px,transparent_1px)] [background-size:26px_26px]" />
-      <div className="absolute inset-0 grid place-items-center">
-        <span className="text-4xl font-black tracking-tight text-white/90 drop-shadow-[0_2px_12px_rgba(0,0,0,0.5)]">
+      {/* Trame discrète : donne une texture « produit » plutôt qu'un aplat. */}
+      <div className="absolute inset-0 opacity-[0.14] [background-image:linear-gradient(rgba(255,255,255,.55)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,.55)_1px,transparent_1px)] [background-size:24px_24px]" />
+      {/* Halo lumineux derrière le monogramme. */}
+      <div
+        className="absolute left-1/2 top-[38%] h-40 w-40 -translate-x-1/2 -translate-y-1/2 rounded-full blur-2xl"
+        style={{ background: `${product.color}aa` }}
+      />
+      <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 px-4 pb-8">
+        <span className="grid h-16 w-16 place-items-center rounded-[1.15rem] border border-white/25 bg-white/12 text-[22px] font-black tracking-tight text-white shadow-[0_10px_30px_-12px_rgba(0,0,0,0.85)] backdrop-blur-sm">
           {initials}
+        </span>
+        <span className="line-clamp-2 text-center text-[12.5px] font-black leading-tight text-white/85 [text-shadow:0_1px_10px_rgba(0,0,0,0.65)]">
+          {name}
         </span>
       </div>
     </div>

@@ -63,6 +63,29 @@ test("les mots sont comparés en entier (pas de faux positif)", () => {
   assert.equal(covers.gameCoverFor({}), null);
 });
 
+test("les fiches réelles du catalogue retombent sur une couverture connue", () => {
+  // Slugs/titres tels que produits par l'adaptateur FazerCards.
+  const cases = [
+    ["fzr-giftcard-steam-wallet-us", "Gift Card — Steam Wallet (US)", "brand-steam"],
+    ["fzr-giftcard-playstation-us", "Gift Card — PlayStation (US)", "brand-playstation"],
+    ["fzr-giftcard-xbox-game-pass-eu", "Gift Card — Xbox Game Pass (EU)", "brand-xbox"],
+    ["fzr-topup-free-fire-mena", "Game Top-Up — Free Fire (MENA)", "free-fire"],
+    ["fzr-topup-pubg-mobile-fast", "Game Top-Up — PUBG Mobile (Fast)", "pubg-mobile"],
+    ["fzr-topup-genshin-impact", "Game Top-Up — Genshin Impact", "genshin-impact"],
+    ["fzr-gamekey-elden-ring", "Game Key — Elden Ring", "elden-ring"],
+    ["fzr-gamekey-7-days-to-die", "Game Key — 7 Days to Die", "7-days-to-die"],
+  ];
+  for (const [slug, titleEn, expected] of cases) {
+    assert.equal(
+      covers.gameCoverFor({ slug, titleEn }),
+      `/game-covers/${expected}.jpg`,
+      `${titleEn} → ${expected}`,
+    );
+  }
+  // Un jeu inconnu n'hérite JAMAIS de la couverture d'un autre.
+  assert.equal(covers.gameCoverFor({ slug: "fzr-topup-zzz-unknown", titleEn: "Zzz Unknown" }), null);
+});
+
 test("l'image enregistrée en admin passe avant la jaquette locale", () => {
   assert.equal(
     covers.productVisual({
