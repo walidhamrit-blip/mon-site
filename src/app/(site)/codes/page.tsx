@@ -39,12 +39,23 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 /**
- * Le catalogue est pré-généré : sans fenêtre de revalidation, un changement
- * de statut ou de prix en admin resterait invisible jusqu'au déploiement
- * suivant. L'admin revalide déjà `/codes` (layout) ; ce délai n'est qu'un
- * filet de sécurité.
+ * La vitrine est rendue **à chaque requête**, jamais pré-générée au build.
+ *
+ * Panne constatée en production : à l'étape de build, `getLiveCatalog()`
+ * renvoie volontairement `null` (un build ne doit pas dépendre du fournisseur).
+ * La page était donc pré-rendue avec le catalogue de repli — **10 fiches** au
+ * lieu des 280 du fournisseur — et restait servie telle quelle tant qu'une
+ * synchronisation n'avait pas déclenché `revalidatePath`. Après chaque
+ * déploiement, la boutique affichait donc un catalogue vide de 90 % pendant
+ * plusieurs minutes (parfois des heures, si le rafraîchissement échouait).
+ *
+ * Le rendu par requête supprime la cause : la page lit toujours la copie du
+ * fournisseur (`noSync`, donc aucun appel réseau au moment du rendu) et ne
+ * peut plus figer un repli. Le coût est maîtrisé — la copie est en cache
+ * mémoire/base et la grille reste un rendu serveur de quelques centaines de
+ * cartes.
  */
-export const revalidate = 60;
+export const dynamic = "force-dynamic";
 
 /**
  * Le catalogue est lu depuis la copie persistée (aucune synchro pendant le

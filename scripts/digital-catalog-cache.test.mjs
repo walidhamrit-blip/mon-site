@@ -63,6 +63,10 @@ test("la fiche produit se rafraîchit d'elle-même (filet de sécurité)", () =>
   assert.match(code(productPage), /export const revalidate = 60;/);
 });
 
-test("la liste du catalogue se rafraîchit d'elle-même", () => {
-  assert.match(code(catalogPage), /export const revalidate = 60;/);
+test("la liste n'est jamais pré-générée avec le catalogue de repli", () => {
+  // Panne vécue : pré-rendue au build (où le fournisseur est volontairement
+  // ignoré), `/codes` servait 10 fiches de repli au lieu des 280 du
+  // fournisseur jusqu'à la prochaine revalidation. Rendu par requête désormais.
+  assert.match(code(catalogPage), /export const dynamic = "force-dynamic";/);
+  assert.doesNotMatch(code(catalogPage), /export const revalidate = 60;/);
 });

@@ -234,6 +234,17 @@ test("le catalogue public vient du fournisseur quand la clé est configurée", (
   assert.match(flat, /NEXT_PHASE === "phase-production-build"/);
 });
 
+test("la vitrine n'est jamais pré-générée avec le catalogue de repli", () => {
+  // Panne vécue : pré-rendue au build (où le fournisseur est volontairement
+  // ignoré), `/codes` servait 10 fiches de repli au lieu des 280 du
+  // fournisseur jusqu'à la prochaine revalidation.
+  const page = read("src/app/(site)/codes/page.tsx");
+  assert.match(page, /export const dynamic = "force-dynamic";/);
+  assert.doesNotMatch(page, /export const revalidate = 60;/);
+  // Le rendu reste sans appel réseau : `noSync` sert la copie persistée.
+  assert.match(code(store), /getFazercardsDigitalCatalog\(\{ noSync: true \}\)/);
+});
+
 test("les fiches converties portent leur fournisseur", () => {
   assert.match(code(types), /export type DigitalSupplier = "fazercards" \| "reloadly";/);
   assert.match(code(types), /supplier\?: DigitalSupplier;/);
