@@ -29,6 +29,15 @@ export interface GameCover {
   file: string;
   /** Mots-clés normalisés (minuscules, sans accent, espaces simples). */
   keys: string[];
+  /**
+   * Formules à exclure AVANT toute correspondance.
+   *
+   * Le catalogue contient des jeux dont le titre COMMENCE par celui d'un
+   * autre : « Mobile Legends » (MOBA) et « Mobile Legends: Adventure »
+   * (idle game) sont deux produits distincts. Sans exclusion, la seconde
+   * fiche porterait le visuel de la première.
+   */
+  excludes?: string[];
 }
 
 /**
@@ -155,6 +164,12 @@ export const GAME_COVERS: GameCover[] = [
     keys: ["free fire", "garena free fire", "freefire"],
   },
   {
+    file: "/game-covers/mobile-legends.jpg",
+    // Visuel de marque (logo officiel) : un MOBA n'a pas de jaquette 2:3.
+    keys: ["mobile legends", "mobile legends bang bang", "mlbb"],
+    excludes: ["mobile legends adventure"],
+  },
+  {
     file: "/game-covers/the-witcher-3.jpg",
     keys: ["the witcher 3 wild hunt", "witcher 3", "the witcher"],
   },
@@ -194,6 +209,10 @@ export const GAME_COVERS: GameCover[] = [
     file: "/game-covers/brand-roblox.jpg",
     keys: ["roblox robux", "robux", "roblox"],
   },
+  {
+    file: "/game-covers/brand-airbnb.jpg",
+    keys: ["airbnb"],
+  },
 ];
 
 /**
@@ -211,8 +230,13 @@ export function normalizeCoverKey(value: string): string {
 }
 
 /** Toutes les clés, de la plus longue à la plus courte (précision d'abord). */
-const SORTED_KEYS: { key: string; file: string }[] = GAME_COVERS.flatMap((cover) =>
-  cover.keys.map((key) => ({ key: normalizeCoverKey(key), file: cover.file })),
+const SORTED_KEYS: { key: string; file: string; excludes: string[] }[] = GAME_COVERS.flatMap(
+  (cover) =>
+    cover.keys.map((key) => ({
+      key: normalizeCoverKey(key),
+      file: cover.file,
+      excludes: (cover.excludes ?? []).map(normalizeCoverKey),
+    })),
 ).sort((a, b) => b.key.length - a.key.length);
 
 /**
@@ -238,7 +262,10 @@ export function gameCoverFor(input: {
   // On exige une correspondance sur des MOTS entiers : « rust » ne doit pas
   // être trouvé dans « trust ». D'où les espaces ajoutées autour.
   const padded = ` ${haystack} `;
-  for (const { key, file } of SORTED_KEYS) {
+  for (const { key, file, excludes } of SORTED_KEYS) {
+    // Un titre explicitement exclu (« Mobile Legends: Adventure ») ne doit
+    // jamais hériter du visuel de son homonyme plus court.
+    if (excludes.some((excluded) => padded.includes(` ${excluded} `))) continue;
     if (padded.includes(` ${key} `)) return file;
   }
   return null;
