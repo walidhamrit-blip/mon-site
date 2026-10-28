@@ -140,6 +140,10 @@ const nextConfig: NextConfig = {
       { pathname: "/chatbot/**" },
       // Visuels locaux des cartes cadeaux et codes du catalogue numérique.
       { pathname: "/digital-products/**" },
+      // Jaquettes de jeux de la vitrine `/codes` (portrait 600×900).
+      // Sans cette entrée, `next/image` refuse l'optimisation et la carte
+      // renvoie une erreur 500 au lieu d'afficher la jaquette.
+      { pathname: "/game-covers/**" },
     ],
     // Qualités utilisées par les visuels nets (bannière, guide crypto).
     qualities: [75, 88, 90],

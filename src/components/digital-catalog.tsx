@@ -648,7 +648,7 @@ export function DigitalCatalog({ products }: { products: DigitalProduct[] }) {
                                 aria-hidden="true"
                                 fill
                                 sizes="(max-width: 640px) 50vw, 22vw"
-                                quality={60}
+                                quality={75}
                                 className="scale-110 object-cover opacity-55 blur-xl"
                               />
                               <div
@@ -664,7 +664,7 @@ export function DigitalCatalog({ products }: { products: DigitalProduct[] }) {
                                 }
                                 fill
                                 sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 22vw"
-                                quality={82}
+                                quality={88}
                                 priority={index < 4}
                                 className="object-contain p-2.5 transition-transform duration-500 ease-out group-hover:scale-[1.045]"
                               />
@@ -679,7 +679,7 @@ export function DigitalCatalog({ products }: { products: DigitalProduct[] }) {
                               }
                               fill
                               sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 22vw"
-                              quality={80}
+                              quality={88}
                               priority={index < 4}
                               className="object-cover transition-transform duration-500 ease-out group-hover:scale-[1.045]"
                             />

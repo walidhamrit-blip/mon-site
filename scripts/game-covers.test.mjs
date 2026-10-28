@@ -112,3 +112,33 @@ test("les familles couvrent les futurs codes de logiciels", () => {
 test("chaque carte garde l'avertissement régional avant le clic", () => {
   assert.match(catalog, /<RegionalAlert regions=\{product\.regions\} compact/);
 });
+
+/* ---------------------------- next/image ---------------------------- */
+
+/**
+ * Panne réelle constatée : `next/image` refuse un `src` absent de
+ * `images.localPatterns` (erreur 500 au rendu de la carte) et une `quality`
+ * absente de `images.qualities`. Ces deux garde-fous évitent de republier
+ * une vitrine sans jaquettes.
+ */
+test("next/image accepte les jaquettes et les qualités utilisées", () => {
+  const config = read("next.config.ts");
+  assert.match(
+    config,
+    /\{ pathname: "\/game-covers\/\*\*" \}/,
+    "/game-covers/** doit figurer dans images.localPatterns",
+  );
+
+  const declared = (config.match(/qualities:\s*\[([^\]]*)\]/)?.[1] ?? "")
+    .split(",")
+    .map((value) => Number(value.trim()))
+    .filter(Number.isFinite);
+  const used = [...catalog.matchAll(/quality=\{(\d+)\}/g)].map((match) => Number(match[1]));
+  assert.ok(used.length > 0, "aucune qualité utilisée trouvée");
+  for (const quality of used) {
+    assert.ok(
+      declared.includes(quality),
+      `qualité ${quality} absente de images.qualities (${declared.join(", ")})`,
+    );
+  }
+});
