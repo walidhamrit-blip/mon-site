@@ -83,7 +83,12 @@ export function mergeConfig(override: unknown): typeof siteConfig {
     const isOldDefaultDomain = key === "domain" && normalized === "nukhba.ly";
     const isOldDefaultUrl =
       key === "url" && normalized.replace(/\/+$/, "") === "https://nukhba.ly";
-    if (isOldDefaultDomain || isOldDefaultUrl) {
+    // Migrate only the historical placeholders; preserve custom admin contacts.
+    const isOldDefaultContact =
+      (key === "email" && normalized === "hello@nukhba.ly") ||
+      ((key === "phone" || key === "whatsapp") &&
+        normalized.replace(/\D/g, "") === "218912345678");
+    if (isOldDefaultDomain || isOldDefaultUrl || isOldDefaultContact) {
       merged[key] = baseValue;
       continue;
     }

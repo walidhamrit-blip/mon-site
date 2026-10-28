@@ -144,7 +144,7 @@ export function ReservationDialog({
     }
   };
 
-  const whatsappNumber = (config.whatsapp || "218912345678").replace(/\D/g, "");
+  const whatsappNumber = config.whatsapp.replace(/\D/g, "");
   const whatsappText = ar
     ? `أريد حجز أولوية لموقع « ${demo.title} » — الفئة ${classification?.tier ?? "؟"}. العربون ${formatUsd(depositUsd)} $ (= ${formatUsd(depositUsd)} USDT).`
     : `I'd like to reserve a priority slot for "${demo.titleEn}" — category ${classification?.tier ?? "?"}. Deposit $${formatUsd(depositUsd)} (= ${formatUsd(depositUsd)} USDT).`;
