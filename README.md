@@ -77,6 +77,10 @@ Google Play, Amazon, Spotify…) :
 - **Base** — tables `digital_products` et `digital_denominations`, créées
   automatiquement au premier accès (comme le reste du schéma).
 - **Vitrine** — `/codes` (catalogue filtrable) et `/codes/[slug]` (fiche).
+  Organisation « boutique » : barre de filtres collante, rail de facettes
+  (à gauche en anglais, à droite en arabe) et grille de 4 cartes par ligne,
+  chaque carte portant la **jaquette du jeu** (`src/lib/game-covers.ts`).
+  Guide : **`docs/vitrine-codes.md`**.
 - **API publique** — `GET /api/digital/products` et
   `GET /api/digital/products/[slug]` (lecture seule, prices en USD).
 - **Admin** — `/admin/digital` : édition des fiches et des montants.
