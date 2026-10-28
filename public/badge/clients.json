@@ -1,90 +1,76 @@
 {
   "version": 1,
-  "generatedAt": "2026-10-20T00:00:00.000Z",
+  "generatedAt": "2026-10-28T23:32:33.763Z",
   "clients": {
     "https://smartphine-demo.vercel.app": {
       "slug": "myphone-tripoli",
       "title": "ماي فون — متجر الهواتف الذكية في طرابلس",
       "titleEn": "MyPhone — Smartphone Store in Tripoli",
-      "status": "pending",
-      "checkedAt": null
-    },
-    "https://demo-cabinet-medecin.vercel.app": {
-      "slug": "cabinet-sante-medecin",
-      "title": "عيادة سانتي — طبيبك القريب منك",
-      "titleEn": "Cabinet Santé — Your Local Doctor",
-      "status": "pending",
-      "checkedAt": null
+      "status": "missing",
+      "checkedAt": "2026-10-28T23:32:33.763Z"
     },
     "https://al-manhaj-company.vercel.app": {
-      "slug": "al-manhaj-company",
-      "title": "شركة المنهج للقرطاسية والتقنية",
-      "titleEn": "Al-Manhaj Stationery & Tech",
-      "status": "pending",
-      "checkedAt": null
+      "slug": "site-10",
+      "title": "متجر جملة و تفصيل مع خدمات و نظام طلبيات",
+      "titleEn": "Stationnery Store e-commerce",
+      "status": "missing",
+      "checkedAt": "2026-10-28T23:32:33.763Z"
     },
     "https://m-et-outillage-modele-3.vercel.app": {
       "slug": "tripo-teck-outillage",
       "title": "تريبو-تيك — مواد البناء والعدد الاحترافية",
       "titleEn": "TRIPO-TECK — Hardware & Construction",
-      "status": "pending",
-      "checkedAt": null
+      "status": "missing",
+      "checkedAt": "2026-10-28T23:32:33.763Z"
     },
     "https://tulin-magazin.vercel.app": {
       "slug": "tulin-magazin",
       "title": "تولين — بضائع أوروبية لبيت ليبي",
       "titleEn": "Tulin — European Home & Appliances",
-      "status": "pending",
-      "checkedAt": null
+      "status": "missing",
+      "checkedAt": "2026-10-28T23:32:33.763Z"
     },
     "https://pizzeria-demo1.vercel.app": {
       "slug": "pizzeria-forno-tripoli",
       "title": "بيتزا فورنو — مطعم إيطالي على الحطب",
       "titleEn": "Pizza Forno — Wood-Fired Pizzeria",
-      "status": "pending",
-      "checkedAt": null
+      "status": "missing",
+      "checkedAt": "2026-10-28T23:32:33.763Z"
     },
     "https://demo-meubles.vercel.app": {
       "slug": "maison-tripoli-meubles",
       "title": "ميزون طرابلس — مفروشات فاخرة وتصميم داخلي",
       "titleEn": "Maison Tripoli — Luxury Furniture & Interiors",
-      "status": "pending",
-      "checkedAt": null
+      "status": "missing",
+      "checkedAt": "2026-10-28T23:32:33.763Z"
     },
     "https://hala-dun.vercel.app": {
       "slug": "hala-perfumes",
       "title": "حلا للعطور والتجميل الفاخر",
       "titleEn": "HALA Perfumes & Luxury Beauty",
-      "status": "pending",
-      "checkedAt": null
+      "status": "missing",
+      "checkedAt": "2026-10-28T23:32:33.763Z"
     },
     "https://al-massa.vercel.app": {
       "slug": "al-massa-mattresses",
       "title": "الماسة الزرقاء — للمراتب والمفروشات الفاخرة",
       "titleEn": "Al-Massa Blue Diamond — Luxury Mattresses",
-      "status": "pending",
-      "checkedAt": null
+      "status": "missing",
+      "checkedAt": "2026-10-28T23:32:33.763Z"
     },
     "https://demo-jouets.vercel.app": {
       "slug": "toy-store-tripoly",
       "title": "توي ستور طرابلس — عالم ألعاب الأطفال",
       "titleEn": "Toy Store Tripoly — Kids & Toys Mega-Store",
-      "status": "pending",
-      "checkedAt": null
+      "status": "missing",
+      "checkedAt": "2026-10-28T23:32:33.763Z"
     },
     "https://al-bay.vercel.app": {
       "slug": "al-bay-family-restaurant",
       "title": "مطعم العيلة — مطبخ طرابلس الأصيل",
       "titleEn": "Al-Bay — Family Restaurant, Tripoli",
-      "status": "pending",
-      "checkedAt": null
-    },
-    "https://alssadaka-sanitary.vercel.app": {
-      "slug": "alssadaka-sanitary",
-      "title": "الصداقة — أطقم صحية ونحاس فاخر",
-      "titleEn": "Alssadaka — Premium Sanitary & Brassware",
-      "status": "pending",
-      "checkedAt": null
+      "status": "missing",
+      "checkedAt": "2026-10-28T23:32:33.763Z"
     }
   }
 }
