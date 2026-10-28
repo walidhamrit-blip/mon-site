@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2026-10-17T00:00:00.000Z",
+  "generatedAt": "2026-10-23T22:38:12.951Z",
   "viewports": {
     "desktop": {
       "width": 1440,
@@ -24,12 +24,12 @@
         "width": 390,
         "height": 693
       },
-      "hash": "Qczn4Pr0NM",
-      "capturedAt": "2026-10-17T00:00:00.000Z",
+      "hash": "_EKEo1lOTR",
+      "capturedAt": "2026-10-23T22:38:12.951Z",
       "httpStatus": 200,
       "status": "ok",
       "screenshot": true,
-      "source": "manual"
+      "source": "playwright"
     },
     "https://hala-dun.vercel.app": {
       "slug": "hala-perfumes",
@@ -43,17 +43,17 @@
         "width": 390,
         "height": 693
       },
-      "hash": "mkNYWXBepQ",
-      "capturedAt": "2026-10-17T00:00:00.000Z",
+      "hash": "jP04lTSr-8",
+      "capturedAt": "2026-10-23T22:38:12.951Z",
       "httpStatus": 200,
       "status": "ok",
       "screenshot": true,
-      "source": "manual"
+      "source": "playwright"
     },
     "https://m-et-outillage-modele-3.vercel.app": {
       "slug": "tripo-teck-outillage",
-      "desktop": "/previews/tripo-teck-visual.webp",
-      "mobile": "/previews/tripo-teck-visual.webp",
+      "desktop": "/previews/tripo-teck-outillage-desktop.webp",
+      "mobile": "/previews/tripo-teck-outillage-mobile.webp",
       "desktopSize": {
         "width": 960,
         "height": 600
@@ -62,12 +62,12 @@
         "width": 390,
         "height": 693
       },
-      "hash": "ffFr0e4tIi",
-      "capturedAt": "2026-10-17T00:00:00.000Z",
+      "hash": "QOZW8ZpmjO",
+      "capturedAt": "2026-10-23T22:38:12.951Z",
       "httpStatus": 200,
       "status": "ok",
-      "screenshot": false,
-      "source": "manual"
+      "screenshot": true,
+      "source": "playwright"
     },
     "https://smartphine-demo.vercel.app": {
       "slug": "myphone-tripoli",
@@ -81,12 +81,126 @@
         "width": 390,
         "height": 693
       },
-      "hash": "8u0mrC9hPV",
-      "capturedAt": "2026-10-17T00:00:00.000Z",
+      "hash": "oiMwYncjX5",
+      "capturedAt": "2026-10-23T22:38:12.951Z",
       "httpStatus": 200,
       "status": "ok",
-      "screenshot": false,
-      "source": "manual"
+      "screenshot": true,
+      "source": "playwright"
+    },
+    "https://tulin-magazin.vercel.app": {
+      "slug": "tulin-magazin",
+      "desktop": "/previews/tulin-magazin-desktop.webp",
+      "mobile": "/previews/tulin-magazin-mobile.webp",
+      "desktopSize": {
+        "width": 960,
+        "height": 600
+      },
+      "mobileSize": {
+        "width": 390,
+        "height": 693
+      },
+      "hash": "53vpWYgkNe",
+      "capturedAt": "2026-10-23T22:38:12.951Z",
+      "httpStatus": 200,
+      "status": "ok",
+      "screenshot": true,
+      "source": "playwright"
+    },
+    "https://demo-meubles.vercel.app": {
+      "slug": "maison-tripoli-meubles",
+      "desktop": "/previews/maison-tripoli-meubles-desktop.webp",
+      "mobile": "/previews/maison-tripoli-meubles-mobile.webp",
+      "desktopSize": {
+        "width": 960,
+        "height": 600
+      },
+      "mobileSize": {
+        "width": 390,
+        "height": 693
+      },
+      "hash": "bQIfAH1BTU",
+      "capturedAt": "2026-10-23T22:38:12.951Z",
+      "httpStatus": 200,
+      "status": "ok",
+      "screenshot": true,
+      "source": "playwright"
+    },
+    "https://pizzeria-demo1.vercel.app": {
+      "slug": "pizzeria-forno-tripoli",
+      "desktop": "/previews/pizzeria-forno-tripoli-desktop.webp",
+      "mobile": "/previews/pizzeria-forno-tripoli-mobile.webp",
+      "desktopSize": {
+        "width": 960,
+        "height": 600
+      },
+      "mobileSize": {
+        "width": 390,
+        "height": 693
+      },
+      "hash": "mgRziGQ-GB",
+      "capturedAt": "2026-10-23T22:38:12.951Z",
+      "httpStatus": 200,
+      "status": "ok",
+      "screenshot": true,
+      "source": "playwright"
+    },
+    "https://al-massa.vercel.app": {
+      "slug": "al-massa-mattresses",
+      "desktop": "/previews/al-massa-mattresses-desktop.webp",
+      "mobile": "/previews/al-massa-mattresses-mobile.webp",
+      "desktopSize": {
+        "width": 960,
+        "height": 600
+      },
+      "mobileSize": {
+        "width": 390,
+        "height": 693
+      },
+      "hash": "ZMmMauO8f7",
+      "capturedAt": "2026-10-23T22:38:12.951Z",
+      "httpStatus": 200,
+      "status": "ok",
+      "screenshot": true,
+      "source": "playwright"
+    },
+    "https://al-bay.vercel.app": {
+      "slug": "al-bay-family-restaurant",
+      "desktop": "/previews/al-bay-family-restaurant-desktop.webp",
+      "mobile": "/previews/al-bay-family-restaurant-mobile.webp",
+      "desktopSize": {
+        "width": 960,
+        "height": 600
+      },
+      "mobileSize": {
+        "width": 390,
+        "height": 693
+      },
+      "hash": "zKwblJrmyu",
+      "capturedAt": "2026-10-23T22:38:12.951Z",
+      "httpStatus": 200,
+      "status": "ok",
+      "screenshot": true,
+      "source": "playwright"
+    },
+    "https://demo-jouets.vercel.app": {
+      "slug": "toy-store-tripoly",
+      "desktop": "/previews/toy-store-tripoly-desktop.webp",
+      "mobile": "/previews/toy-store-tripoly-mobile.webp",
+      "desktopSize": {
+        "width": 960,
+        "height": 600
+      },
+      "mobileSize": {
+        "width": 390,
+        "height": 693
+      },
+      "hash": "FqkRnJWqbT",
+      "capturedAt": "2026-10-23T22:38:12.951Z",
+      "httpStatus": 200,
+      "status": "ok",
+      "screenshot": true,
+      "source": "playwright"
     }
   }
 }
