@@ -914,6 +914,36 @@ export function invalidateFazercardsCatalogCache(): void {
   catalogCache = null;
 }
 
+/**
+ * Même état, mais HYDRATÉ depuis la copie partagée (base) avant lecture.
+ *
+ * ⚠️ Pourquoi : `fazercardsCatalogCacheStatus()` ne décrit que le cache
+ * MÉMOIRE de l'instance courante. Sur Vercel, chaque instance neuve n'a pas
+ * de cache et annonçait donc `products: 0` sur `/api/health` alors que la
+ * boutique servait des centaines de fiches — un diagnostic qui ment est pire
+ * que pas de diagnostic. C'est la version à utiliser pour `/api/health`.
+ *
+ * Ne synchronise JAMAIS avec le fournisseur : lit uniquement la base.
+ */
+export async function fazercardsCatalogStatusLive(): Promise<
+  ReturnType<typeof fazercardsCatalogCacheStatus>
+> {
+  if (!catalogCache) {
+    try {
+      const stored = await readStoredFazercardsCatalog();
+      if (stored) {
+        catalogCache = { result: stored.result, fetchedAt: stored.fetchedAt };
+      }
+    } catch (error) {
+      console.warn(
+        "[fazercards][catalogue] hydratation du statut impossible :",
+        error instanceof Error ? error.message : error,
+      );
+    }
+  }
+  return fazercardsCatalogCacheStatus();
+}
+
 /** État du cache — diagnostic admin, sans aucun secret. */
 export function fazercardsCatalogCacheStatus(): {
   cached: boolean;

@@ -188,7 +188,11 @@ test("/api/health expose l'état FazerCards sans le solde", () => {
   const flat = code(read("src/app/api/health/route.ts"));
   assert.match(flat, /checkFazercardsCredentials\(\{ timeoutMs: 6000 \}\)/);
   assert.match(flat, /fazercards,/);
-  assert.match(flat, /catalog: fazercardsCatalogCacheStatus\(\)/);
+  // Statut hydraté depuis la copie partagée (une instance neuve n'a pas de
+  // cache mémoire : elle annoncerait « 0 produit » alors que la boutique
+  // est pleine).
+  assert.match(flat, /catalog: await fazercardsCatalogStatusLive\(\)/);
+  assert.doesNotMatch(flat, /catalog: fazercardsCatalogCacheStatus\(\)/);
   // Le solde est une donnée financière : jamais dans l'objet renvoyé.
   const block = flat.slice(
     flat.indexOf("const fazercards = {"),
@@ -533,4 +537,13 @@ test("l'admin affiche le catalogue FazerCards, pas seulement les fiches de la ba
   const panel = code(read("src/app/admin/(panel)/digital/fazercards-catalog-panel.tsx"));
   assert.match(panel, /import \{ MARGIN_TIERS, MIN_RETAIL_USD \} from "@\/lib\/fazercards-pricing"/);
   assert.match(panel, /Catalogue réellement vendu/);
+});
+
+test("le statut du catalogue est hydraté depuis la copie partagée", () => {
+  const flat = code(read("src/lib/fazercards-catalog.ts"));
+  assert.match(flat, /export async function fazercardsCatalogStatusLive\(/);
+  assert.match(flat, /const stored = await readStoredFazercardsCatalog\(\);/);
+  // Il lit la base, il ne resynchronise JAMAIS avec le fournisseur.
+  const live = flat.slice(flat.indexOf("export async function fazercardsCatalogStatusLive"));
+  assert.doesNotMatch(live.slice(0, 900), /refreshFazercardsCatalog\(|syncFazercardsCatalog\(/);
 });
