@@ -67,6 +67,11 @@ La correspondance se fait sur des **mots entiers** et la clé la plus longue
 gagne : `age of mythology retold` n'est pas capté par `age of mythology`, et
 `rust` n'est pas trouvé dans `trust`.
 
+Une entrée peut aussi porter des `excludes` : le catalogue contient des titres
+qui **commencent** par celui d'un autre jeu. `Mobile Legends` (MOBA) et
+`Mobile Legends: Adventure` (idle game) sont deux produits différents ; sans
+exclusion, le second porterait le visuel du premier.
+
 ### Ajouter un jeu
 
 ```bash
@@ -77,6 +82,13 @@ public/game-covers/hollow-knight.jpg
 #    src/lib/game-covers.ts → GAME_COVERS
 { file: "/game-covers/hollow-knight.jpg", keys: ["hollow knight"] }
 ```
+
+Deux familles de visuels cohabitent, et c'est voulu :
+
+- **jaquettes** (`<jeu>.jpg`) pour les clés de jeux PC/console ;
+- **visuels de marque** (`brand-<marque>.jpg` pour les cartes cadeaux photo,
+  et un visuel logo-sur-dégradé pour les marques tierces comme Airbnb ou les
+  MOBA mobiles, qui n'ont pas de jaquette 2:3 officielle).
 
 Le test `scripts/game-covers.test.mjs` vérifie que **chaque entrée déclarée
 possède son fichier** : une faute de frappe est détectée avant le déploiement.
