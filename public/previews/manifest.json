@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2026-10-23T22:38:12.951Z",
+  "generatedAt": "2026-10-28T23:32:56.634Z",
   "viewports": {
     "desktop": {
       "width": 1440,
@@ -17,15 +17,15 @@
       "desktop": "/previews/al-manhaj-company-desktop.webp",
       "mobile": "/previews/al-manhaj-company-mobile.webp",
       "desktopSize": {
-        "width": 960,
-        "height": 600
+        "width": 1440,
+        "height": 900
       },
       "mobileSize": {
-        "width": 390,
-        "height": 693
+        "width": 780,
+        "height": 1386
       },
-      "hash": "_EKEo1lOTR",
-      "capturedAt": "2026-10-23T22:38:12.951Z",
+      "hash": "ahhZ7uK-dP",
+      "capturedAt": "2026-10-28T23:32:56.634Z",
       "httpStatus": 200,
       "status": "ok",
       "screenshot": true,
@@ -36,15 +36,15 @@
       "desktop": "/previews/hala-perfumes-desktop.webp",
       "mobile": "/previews/hala-perfumes-mobile.webp",
       "desktopSize": {
-        "width": 960,
-        "height": 600
+        "width": 1440,
+        "height": 900
       },
       "mobileSize": {
-        "width": 390,
-        "height": 693
+        "width": 780,
+        "height": 1386
       },
-      "hash": "jP04lTSr-8",
-      "capturedAt": "2026-10-23T22:38:12.951Z",
+      "hash": "5EsuRuG5Ud",
+      "capturedAt": "2026-10-28T23:32:56.634Z",
       "httpStatus": 200,
       "status": "ok",
       "screenshot": true,
@@ -55,15 +55,15 @@
       "desktop": "/previews/tripo-teck-outillage-desktop.webp",
       "mobile": "/previews/tripo-teck-outillage-mobile.webp",
       "desktopSize": {
-        "width": 960,
-        "height": 600
+        "width": 1440,
+        "height": 900
       },
       "mobileSize": {
-        "width": 390,
-        "height": 693
+        "width": 780,
+        "height": 1386
       },
-      "hash": "QOZW8ZpmjO",
-      "capturedAt": "2026-10-23T22:38:12.951Z",
+      "hash": "bQUz-z7fwL",
+      "capturedAt": "2026-10-28T23:32:56.634Z",
       "httpStatus": 200,
       "status": "ok",
       "screenshot": true,
@@ -74,15 +74,15 @@
       "desktop": "/previews/myphone-visual-desktop.webp",
       "mobile": "/previews/myphone-visual-mobile.webp",
       "desktopSize": {
-        "width": 960,
-        "height": 600
+        "width": 1440,
+        "height": 900
       },
       "mobileSize": {
-        "width": 390,
-        "height": 693
+        "width": 780,
+        "height": 1386
       },
-      "hash": "oiMwYncjX5",
-      "capturedAt": "2026-10-23T22:38:12.951Z",
+      "hash": "zvo5jGax8K",
+      "capturedAt": "2026-10-28T23:32:56.634Z",
       "httpStatus": 200,
       "status": "ok",
       "screenshot": true,
@@ -93,15 +93,15 @@
       "desktop": "/previews/tulin-magazin-desktop.webp",
       "mobile": "/previews/tulin-magazin-mobile.webp",
       "desktopSize": {
-        "width": 960,
-        "height": 600
+        "width": 1440,
+        "height": 900
       },
       "mobileSize": {
-        "width": 390,
-        "height": 693
+        "width": 780,
+        "height": 1386
       },
-      "hash": "53vpWYgkNe",
-      "capturedAt": "2026-10-23T22:38:12.951Z",
+      "hash": "FCVrVQl2N-",
+      "capturedAt": "2026-10-28T23:32:56.634Z",
       "httpStatus": 200,
       "status": "ok",
       "screenshot": true,
@@ -112,15 +112,15 @@
       "desktop": "/previews/maison-tripoli-meubles-desktop.webp",
       "mobile": "/previews/maison-tripoli-meubles-mobile.webp",
       "desktopSize": {
-        "width": 960,
-        "height": 600
+        "width": 1440,
+        "height": 900
       },
       "mobileSize": {
-        "width": 390,
-        "height": 693
+        "width": 780,
+        "height": 1386
       },
-      "hash": "bQIfAH1BTU",
-      "capturedAt": "2026-10-23T22:38:12.951Z",
+      "hash": "nATkt1LVcf",
+      "capturedAt": "2026-10-28T23:32:56.634Z",
       "httpStatus": 200,
       "status": "ok",
       "screenshot": true,
@@ -131,15 +131,15 @@
       "desktop": "/previews/pizzeria-forno-tripoli-desktop.webp",
       "mobile": "/previews/pizzeria-forno-tripoli-mobile.webp",
       "desktopSize": {
-        "width": 960,
-        "height": 600
+        "width": 1440,
+        "height": 900
       },
       "mobileSize": {
-        "width": 390,
-        "height": 693
+        "width": 780,
+        "height": 1386
       },
-      "hash": "mgRziGQ-GB",
-      "capturedAt": "2026-10-23T22:38:12.951Z",
+      "hash": "UmzcHv_GWI",
+      "capturedAt": "2026-10-28T23:32:56.634Z",
       "httpStatus": 200,
       "status": "ok",
       "screenshot": true,
@@ -150,15 +150,15 @@
       "desktop": "/previews/al-massa-mattresses-desktop.webp",
       "mobile": "/previews/al-massa-mattresses-mobile.webp",
       "desktopSize": {
-        "width": 960,
-        "height": 600
+        "width": 1440,
+        "height": 900
       },
       "mobileSize": {
-        "width": 390,
-        "height": 693
+        "width": 780,
+        "height": 1386
       },
-      "hash": "ZMmMauO8f7",
-      "capturedAt": "2026-10-23T22:38:12.951Z",
+      "hash": "LS6IKVGPKm",
+      "capturedAt": "2026-10-28T23:32:56.634Z",
       "httpStatus": 200,
       "status": "ok",
       "screenshot": true,
@@ -169,15 +169,15 @@
       "desktop": "/previews/al-bay-family-restaurant-desktop.webp",
       "mobile": "/previews/al-bay-family-restaurant-mobile.webp",
       "desktopSize": {
-        "width": 960,
-        "height": 600
+        "width": 1440,
+        "height": 900
       },
       "mobileSize": {
-        "width": 390,
-        "height": 693
+        "width": 780,
+        "height": 1386
       },
-      "hash": "zKwblJrmyu",
-      "capturedAt": "2026-10-23T22:38:12.951Z",
+      "hash": "nj4OyzHuje",
+      "capturedAt": "2026-10-28T23:32:56.634Z",
       "httpStatus": 200,
       "status": "ok",
       "screenshot": true,
@@ -188,15 +188,15 @@
       "desktop": "/previews/toy-store-tripoly-desktop.webp",
       "mobile": "/previews/toy-store-tripoly-mobile.webp",
       "desktopSize": {
-        "width": 960,
-        "height": 600
+        "width": 1440,
+        "height": 900
       },
       "mobileSize": {
-        "width": 390,
-        "height": 693
+        "width": 780,
+        "height": 1386
       },
-      "hash": "FqkRnJWqbT",
-      "capturedAt": "2026-10-23T22:38:12.951Z",
+      "hash": "LBeH4_f5dh",
+      "capturedAt": "2026-10-28T23:32:56.634Z",
       "httpStatus": 200,
       "status": "ok",
       "screenshot": true,
