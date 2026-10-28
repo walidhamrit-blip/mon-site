@@ -77,6 +77,62 @@ test("une recharge de jeu passe avant une clé de jeu de niche", () => {
   assert.ok(priority.digitalDemandScore(topup) > priority.digitalDemandScore(cle));
 });
 
+test("un homonyme plus court ne vole pas les points du jeu vedette", () => {
+  const mlbb = product({
+    kind: "game_topup",
+    platform: "Mobile Legends (Global)",
+    titleEn: "Game Top-Up — Mobile Legends (Global)",
+  });
+  const adventure = product({
+    kind: "game_topup",
+    platform: "Mobile Legends: Adventure",
+    titleEn: "Game Top-Up — Mobile Legends: Adventure",
+  });
+  assert.ok(
+    priority.digitalDemandScore(mlbb) > priority.digitalDemandScore(adventure) + 50,
+    "« Mobile Legends: Adventure » est un autre jeu et doit chuter",
+  );
+});
+
+test("une carte secondaire ne profite pas du nom d'une grande marque", () => {
+  // « Halo Infinite (Xbox, Halo Credits) » reste une fiche de niche : elle ne
+  // doit pas passer pour une carte Xbox.
+  const xbox = product({ platform: "Xbox", titleEn: "Gift Card — Xbox" });
+  const halo = product({
+    platform: "Halo Infinite (Xbox, Halo Credits)",
+    titleEn: "Gift Card — Halo Infinite (Xbox, Halo Credits)",
+  });
+  assert.ok(priority.digitalDemandScore(xbox) > priority.digitalDemandScore(halo) + 50);
+});
+
+test("la zone se lit dans le libellé du produit", () => {
+  assert.equal(priority.zoneFromPlatform("PlayStation (SA)"), "SA");
+  assert.equal(priority.zoneFromPlatform("Free Fire (MENA)"), "MENA");
+  assert.equal(priority.zoneFromPlatform("Steam Wallet (Global)"), "GLOBAL");
+  assert.equal(priority.zoneFromPlatform("Xbox Game Pass (EU)"), "EU");
+  // Les parenthèses de livraison ne sont pas des zones.
+  assert.equal(priority.zoneFromPlatform("PUBG Mobile (Auto)"), null);
+  assert.equal(priority.zoneFromPlatform("PUBG Mobile (Fast)"), null);
+  assert.equal(priority.zoneFromPlatform("Steam"), null);
+});
+
+test("à jeu égal, la déclinaison MENA passe devant une zone hors périmètre", () => {
+  const mena = product({
+    kind: "game_topup",
+    platform: "Free Fire (MENA)",
+    titleEn: "Game Top-Up — Free Fire (MENA)",
+    regions: ["GLOBAL"],
+  });
+  const bd = product({
+    kind: "game_topup",
+    platform: "Free Fire (BD)",
+    titleEn: "Game Top-Up — Free Fire (BD)",
+    regions: ["GLOBAL"],
+  });
+  assert.ok(priority.digitalDemandScore(mena) > priority.digitalDemandScore(bd));
+  assert.equal(priority.sortByDemand([bd, mena])[0].platform, "Free Fire (MENA)");
+});
+
 /* --------------------------- Zones crypto --------------------------- */
 
 test("les zones prioritaires sont le global, le Golfe et le Maghreb", () => {
