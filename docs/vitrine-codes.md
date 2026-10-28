@@ -99,7 +99,48 @@ seule action nécessaire pour enrichir la vitrine jeu par jeu.
 
 ---
 
-## 3. Notes d'implémentation
+## 3. Ordre de la vitrine — demande et zones crypto
+
+Le fournisseur renvoie son catalogue dans un ordre qui n'a rien de commercial
+(les clés Steam arrivent avant les cartes PlayStation, un jeu de niche avant
+PUBG). La vitrine impose donc son propre ordre, calculé par
+`src/lib/digital-priority.ts` :
+
+1. **Demande** — un poids par famille de produit (`DEMAND_KEYWORDS`) :
+   PUBG Mobile 100, Free Fire 96, Mobile Legends 92, PlayStation 100,
+   Steam Wallet 98, Amazon 82, Airbnb 46… Un jeu absent de la table ne vaut
+   que son bonus de famille : il reste derrière.
+2. **Zone** — `CRYPTO_REGIONS` classe les zones utiles à un acheteur qui paie
+   en USDT : `GLOBAL` d'abord (valable partout), puis le Golfe et le Levant
+   (`MENA`, `SA`, `AE`, `KW`, `QA`, `OM`, `BH`, `LB`), puis `EG`, `TR`, `LY`,
+   puis `US`, `UK`, `EU`, `CA`.
+3. **Tourniquet par marque** — un tri strict par score plaçait les 41 cartes
+   PlayStation de 41 pays sur les 41 premières places. Les fiches sont donc
+   regroupées par marque (`brandKeyFor`, plateforme sans la zone entre
+   parenthèses) et l'on prend une fiche par marque à chaque tour : la
+   première ligne de la grille montre quatre produits différents, et la
+   meilleure zone reste devant à l'intérieur de chaque marque.
+
+Conséquences visibles :
+
+| Élément | Comportement |
+| --- | --- |
+| Tri par défaut | « Les plus demandés » (`SortId = "popular"`), côté serveur **et** côté navigateur |
+| HTML / JSON-LD | déjà triés : le plan de page suit l'ordre commercial |
+| Huit premières cartes | étiquette « Populaire » / « مطلوب » |
+| Rail des régions | zones USDT en tête, pastille `USDT`, puis volume décroissant |
+| Rail des plateformes | triées par demande (PUBG, Free Fire, PlayStation, Steam… avant la niche) |
+| Pastilles de familles | recharges → cartes → clés logicielles |
+
+Le classement est **éditorial**, pas statistique : il n'utilise pas les
+commandes (encore trop peu nombreuses pour être représentatives). Ajuster un
+poids dans `DEMAND_KEYWORDS` ou l'ordre de `CRYPTO_REGIONS` suffit à changer
+la vitrine ; `scripts/digital-priority.test.mjs` verrouille la règle et
+l'absence de dérive entre serveur et navigateur.
+
+---
+
+## 4. Notes d'implémentation
 
 - Le composant `DigitalCatalog` reste un composant **client** : les filtres,
   le tri et le tiroir mobile sont instantanés, sans requête réseau.
