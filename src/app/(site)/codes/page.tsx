@@ -90,39 +90,42 @@ export default async function CodesPage() {
         ]}
       />
 
-      {/* En-tête éditorial */}
-      <section className="relative overflow-hidden border-b border-[var(--border)] bg-[var(--secondary)]/35 pt-6">
+      {/*
+        En-tête de rayon — volontairement compact : la vitrine s'organise
+        comme celle du fournisseur (barre de filtres collante + rail de
+        facettes + grille), donc le contenu marchand doit commencer dans le
+        premier écran. Le titre et l'accroche restent complets pour le SEO.
+      */}
+      <section className="relative overflow-hidden border-b border-[var(--border)] bg-[var(--secondary)]/30">
         <div
           aria-hidden="true"
-          className="pointer-events-none absolute -top-24 start-1/2 h-72 w-[620px] -translate-x-1/2 rounded-full blur-3xl opacity-20 rtl:translate-x-1/2"
+          className="pointer-events-none absolute -top-28 start-1/2 h-64 w-[560px] -translate-x-1/2 rounded-full opacity-20 blur-3xl rtl:translate-x-1/2"
           style={{ background: "var(--accent)" }}
         />
         <div className="site-container relative px-4 sm:px-6 lg:px-8">
-          <div className="max-w-[62rem] pb-8 pt-4">
-            <div className="inline-flex items-center gap-2 rounded-full border border-[var(--border)] bg-[var(--card)] px-4 py-1.5 text-xs font-black shadow-sm sm:text-sm">
-              <span className="h-2.5 w-2.5 animate-pulse rounded-full bg-[var(--accent)]" />
-              <span className="text-[var(--accent)]">
-                {"Worldwide digital store"}
-              </span>
+          <div className="flex flex-col gap-3 pb-5 pt-6 sm:flex-row sm:items-end sm:justify-between">
+            <div className="max-w-[52rem]">
+              <div className="inline-flex items-center gap-2 rounded-full border border-[var(--border)] bg-[var(--card)] px-3 py-1 text-[11px] font-black shadow-[var(--shadow-xs)]">
+                <span className="h-2 w-2 animate-pulse rounded-full bg-[var(--accent)]" />
+                <span className="text-[var(--accent)]">Worldwide digital store</span>
+              </div>
+
+              <h1 className="mt-3 max-w-[26ch] text-[clamp(1.6rem,1.1rem+2vw,2.5rem)] font-black leading-[1.08] tracking-[-0.03em] text-balance">
+                Digital gift cards & game codes
+                <span className="text-[var(--accent)]"> — made simple</span>
+              </h1>
+
+              <p className="mt-2.5 max-w-[68ch] text-[14px] leading-7 text-[var(--muted-foreground)]">
+                Steam, PlayStation, Xbox, Nintendo, Roblox, Google Play, Amazon and
+                game keys. Check each card’s region before ordering — digital
+                delivery is sent to your email after payment confirmation.
+              </p>
             </div>
 
-            <h1 className="mt-4 max-w-[24ch] text-[clamp(1.9rem,1.2rem+2.6vw,3.1rem)] font-black leading-[1.06] tracking-[-0.03em] text-balance">
-              Digital gift cards & game codes
-              <span className="text-[var(--accent)]"> — made simple</span>
-            </h1>
-
-            <p className="mt-4 max-w-[62ch] text-[15.5px] leading-8 text-[var(--muted-foreground)]">
-              Browse Steam, PlayStation, Xbox, Nintendo, Roblox, Google Play, Amazon
-              and more. Check each card’s region and denominations before ordering.
-              Digital delivery is sent to your email after payment confirmation.
-            </p>
-
-            <div className="mt-6 flex flex-wrap items-center gap-2.5">
-              <span className="chip chip-accent">
-                {products.length} products
-              </span>
+            <div className="flex flex-wrap items-center gap-2 sm:shrink-0 sm:justify-end">
+              <span className="chip chip-accent">{products.length} products</span>
               <span className="chip">Digital delivery</span>
-              <span className="chip">Clear USD pricing</span>
+              <span className="chip">USD pricing</span>
             </div>
           </div>
         </div>

@@ -29,6 +29,7 @@ import {
 import { DigitalBuyDialog } from "@/components/digital-buy-dialog";
 import { RegionalAlert } from "@/components/regional-alert";
 import { gamePlatformSummary } from "@/lib/digital-platform-core";
+import { productVisual } from "@/lib/game-covers";
 
 /**
  * Fiche d'un produit du catalogue digital.
@@ -47,6 +48,8 @@ export function DigitalProductDetails({ product }: { product: DigitalProduct }) 
   const sellable = isSellable(product);
   const [buyDenomination, setBuyDenomination] = useState<string | null>(null);
   // Plateforme du jeu + identifiant demandé (fiches de recharge uniquement).
+  // Jaquette : l'image de la fiche (admin) sinon la couverture locale du jeu.
+  const visual = productVisual(product);
   const platformSummary = gamePlatformSummary({
     name: product.platform,
     platform: product.platform,
@@ -73,10 +76,10 @@ export function DigitalProductDetails({ product }: { product: DigitalProduct }) 
 
           <div className="mt-5 grid gap-8 lg:grid-cols-[1.15fr_0.85fr] lg:items-start">
             <div>
-              {product.image && (
+              {visual && (
                 <div className="relative mb-6 aspect-[16/9] max-h-[380px] overflow-hidden rounded-[var(--radius-lg)] border border-[var(--border)] bg-[#0b1220] shadow-[var(--shadow-sm)]">
                   <Image
-                    src={product.image}
+                    src={visual}
                     alt={ar ? `صورة ${product.titleAr}` : `${product.titleEn} product visual`}
                     fill
                     sizes="(max-width: 1024px) 100vw, 58vw"
