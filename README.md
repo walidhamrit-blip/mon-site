@@ -432,7 +432,11 @@ NOWPayments pour prendre une place en avance dans le planning.
   hreflang invalide n'est émis ; les redirections /ar et /en restent en place
 - Vérification Google : fichier `public/googleaf….html` actif, ou meta-tag via
   la variable `GOOGLE_SITE_VERIFICATION`
-- Détail complet de l'audit : `docs/seo-audit.md`
+- Détail complet de l'audit : `docs/seo-audit.md` et
+  [`docs/audit-seo-2026-10-28.md`](docs/audit-seo-2026-10-28.md)
+- **Après un déploiement SEO** : plan d'action pas à pas (Search Console,
+  Bing/IndexNow, Google Business Profile, boîte `contact@`, backlinks,
+  routine de mesure) dans [`docs/apres-deploiement.md`](docs/apres-deploiement.md)
 - Respect de `prefers-reduced-motion` via Framer Motion
 
 ### Automatisation SEO
