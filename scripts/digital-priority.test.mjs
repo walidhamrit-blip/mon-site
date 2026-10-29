@@ -288,6 +288,17 @@ test("les familles sont présentées dans l'ordre de la demande", () => {
   assert.deepEqual(families, ['"game_topup"', '"gift_card"', '"software_key"', '"subscription_code"']);
 });
 
+test("la grille affiche tout le catalogue sans faire exploser le rendu", () => {
+  // Choix produit : aucune pagination. Le coût est contenu autrement.
+  assert.match(catalogComponent, /contentVisibility: "auto"/);
+  assert.match(catalogComponent, /containIntrinsicSize: "auto 460px"/);
+  // L'animation d'apparition est bornée aux premières cartes (un observateur
+  // par carte sinon, sur 399 fiches).
+  assert.match(catalogComponent, /const REVEAL_LIMIT = 16;/);
+  assert.match(catalogComponent, /if \(index >= REVEAL_LIMIT\)/);
+  assert.doesNotMatch(catalogComponent, /<button[^>]*>\s*\{ar \? "Voir plus"/);
+});
+
 test("les zones prioritaires sont signalées dans le rail", () => {
   assert.match(catalogComponent, /isCryptoRegion\(item\.value\) \? "USDT" : undefined/);
   assert.match(catalogComponent, /sortRegionsForRail\(/);

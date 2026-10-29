@@ -152,6 +152,13 @@ l'absence de dérive entre serveur et navigateur.
 
 ## 4. Notes d'implémentation
 
+- **Aucune pagination** : la vitrine affiche tout le catalogue d'un coup
+  (399 fiches aujourd'hui, plafond fournisseur à 2 000). Deux précautions
+  gardent la page tenable sur mobile : `content-visibility: auto` sur chaque
+  carte (seules les cartes visibles sont calculées et peintes) et l'animation
+  d'apparition limitée aux 16 premières (`REVEAL_LIMIT`), un observateur par
+  carte étant inutile plus bas dans la grille.
+
 - Le composant `DigitalCatalog` reste un composant **client** : les filtres,
   le tri et le tiroir mobile sont instantanés, sans requête réseau.
 - Les jetons du thème (`--accent`, `--border`, `--radius-*`, `--shadow-*`) sont
