@@ -7,13 +7,21 @@ import { comparisonIds } from "@/lib/comparisons";
 import { lowestPriceUsd } from "@/lib/digital-types";
 
 /**
- * Le sitemap est revalidé toutes les minutes, comme la boutique /codes.
+ * Le sitemap est rendu **à chaque requête**, jamais pré-généré au build.
  *
- * Sans cela il est figé au moment du build : le catalogue live (FazerCards)
- * n'est disponible qu'à l'exécution, donc seules les fiches « seed »
- * étaient listées — les fiches réelles n'étaient jamais soumises aux moteurs.
+ * `revalidate = 60` ne suffisait pas : le rendu initial a lieu pendant le
+ * build, où `getLiveCatalog()` renvoie volontairement `null` (un build ne doit
+ * pas dépendre du fournisseur). Le fichier partait donc en production avec les
+ * 10 fiches « seed » ; la revalidation ISR le laissait ensuite en place tant
+ * qu'aucun rendu périmé n'était demandé, et les ~390 fiches réellement en
+ * vente n'étaient jamais soumises à Google. Constat de production du
+ * 29/10/2026 : 62 URLs au sitemap pour 399 produits affichés sur /codes.
+ *
+ * Le rendu par requête aligne le sitemap sur ce que la boutique sert
+ * vraiment. Le coût est négligeable : un fichier de quelques dizaines de Ko,
+ * lu par les moteurs quelques fois par jour.
  */
-export const revalidate = 60;
+export const dynamic = "force-dynamic";
 
 /**
  * Sitemap — uniquement des URLs canoniques et des dates RÉELLES.
