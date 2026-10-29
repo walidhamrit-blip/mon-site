@@ -11,6 +11,10 @@
     {
       "path": "/api/cron/digital-orders",
       "schedule": "20 4 * * *"
+    },
+    {
+      "path": "/api/cron/fazercards-balance",
+      "schedule": "10 5 * * *"
     }
   ]
 }
