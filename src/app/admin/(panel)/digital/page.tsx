@@ -8,6 +8,8 @@ import { DigitalEditor } from "./digital-editor";
 import { ReloadlySync } from "./reloadly-sync";
 import { CatalogAudit } from "./catalog-audit";
 import { FazercardsCatalogPanel } from "./fazercards-catalog-panel";
+import { FazercardsBalancePanel } from "./fazercards-balance-panel";
+import { getFazercardsBalanceStatus } from "@/lib/fazercards-balance";
 import { getFazercardsDigitalCatalog } from "@/lib/fazercards-catalog";
 import { fazercardsConfigured } from "@/lib/fazercards";
 
@@ -39,6 +41,11 @@ export default async function AdminDigitalPage() {
   } else {
     liveError = "FAZERCARDS_API_KEY absent : la boutique publique sert le catalogue de la base.";
   }
+  // Couverture du plafond de vente par le solde fournisseur : sans ce
+  // contrôle, une vente peut être encaissée alors que l'achat fournisseur est
+  // impossible (le solde est débité du COÛT, pas du prix de vente).
+  const balance = await getFazercardsBalanceStatus();
+
   const envMismatch = !nowPaymentsSandbox() && reloadlyMode() === "sandbox";
   // Contrôle immédiat SANS réseau. Deux niveaux distincts :
   //  • perte PROUVÉE = frais ET remise connus (mémorisés sur la fiche) ;
@@ -109,6 +116,8 @@ export default async function AdminDigitalPage() {
           </p>
         </div>
       )}
+
+      <FazercardsBalancePanel status={balance} />
 
       <FazercardsCatalogPanel
         products={liveProducts}
