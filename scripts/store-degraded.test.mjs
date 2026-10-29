@@ -138,6 +138,19 @@ test("le bandeau et la page d'attente sont rendus côté serveur", () => {
   assert.match(notice, /whatsappLink\(phone, message\)/);
 });
 
+test("un LEAD_NOTIFICATION_EMAIL mal saisi est ignoré et signalé", () => {
+  // Cas réel du 29/10/2026 : la variable contenait littéralement
+  // « LEAD_NOTIFICATION_EMAIL » (le nom collé au lieu de la valeur) et
+  // toutes les notifications partaient vers une adresse inexistante.
+  const flat = code(mailer);
+  assert.match(flat, /function looksLikeEmail\(value: string\): boolean \{/);
+  assert.match(flat, /export function configuredLeadRecipient\(\): string \| null \{/);
+  assert.match(flat, /return looksLikeEmail\(raw\) \? raw : null;/);
+  assert.match(flat, /export function mailLeadRecipient\(siteEmail: string\): string \{ return configuredLeadRecipient\(\) \?\? siteEmail; \}/);
+  // …et la sonde publique le dit au lieu de laisser croire que tout va bien.
+  assert.match(code(healthRoute), /LEAD_NOTIFICATION_EMAIL ne contient pas une adresse e-mail valide/);
+});
+
 test("les e-mails transactionnels acceptent une adresse de réponse", () => {
   const flat = code(mailer);
   assert.match(flat, /export function mailReplyTo\(\): string \| null \{/);

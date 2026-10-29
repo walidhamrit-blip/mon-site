@@ -20,6 +20,8 @@ au plan Launch). Aucune donnée perdue côté base.
 | ~08:30 UTC | L'e-mail d'alerte Neon est identifié : **limite du forfait gratuit atteinte** |
 | — | Le projet Neon passe au plafond **0,25 CU** (au lieu de 2 CU) pour que le quota dure 8 fois plus longtemps |
 | — | Test de la boîte `contact@nokhba.net.ly` : rejet **`550 5.1.1`** — la boîte n'a jamais existé |
+| 10:08 UTC | La sonde corrigée donne la cause exacte : `Your account or project has exceeded the quota. Upgrade your plan to increase limits. | code=53000` |
+| 10:08 UTC | Elle révèle aussi que `LEAD_NOTIFICATION_EMAIL` vaut littéralement **`LEAD_NOTIFICATION_EMAIL`** (le nom collé à la place de la valeur) : les notifications partaient vers une adresse inexistante |
 
 ---
 
@@ -70,7 +72,10 @@ suspendue, si le mot de passe est refusé ou si la machine est introuvable.
 3. **Créer les boîtes `contact@` et `no-reply@`** dans Zoho, puis définir sur
    Vercel `EMAIL_REPLY_TO` et `LEAD_NOTIFICATION_EMAIL`
    (voir `docs/apres-deploiement.md` § 6).
-4. **Au retour de la base** : `/api/health` → `database.connected: true` et
+4. **Corriger `LEAD_NOTIFICATION_EMAIL`** sur Vercel : la valeur actuelle
+   n'est pas une adresse e-mail (c'est le nom de la variable). Depuis le
+   correctif, elle est ignorée par sécurité et `/api/health` le signale.
+5. **Au retour de la base** : `/api/health` → `database.connected: true` et
    `catalog.degraded: false`, puis `/codes` doit réafficher les ~399 produits
    dans la minute (le mémo de panne n'est jamais mis en cache).
 
