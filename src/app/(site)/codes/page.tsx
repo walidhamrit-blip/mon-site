@@ -237,15 +237,22 @@ export default async function CodesPage() {
               <span className="chip">
                 {ar ? "تسليم رقمي فوري" : "Digital delivery"}
               </span>
-              <span className="chip">
-                {ar
-                  ? cheapest != null
-                    ? `تبدأ من ${cheapest.toFixed(2)} $`
-                    : "أسعار بالدولار"
-                  : cheapest != null
-                    ? `From $${cheapest.toFixed(2)}`
-                    : "USD pricing"}
-              </span>
+              {/*
+                Pendant une panne, le prix « à partir de » proviendrait des
+                fiches de démonstration : on n'annonce pas un tarif pour des
+                produits qui ne peuvent pas être commandés.
+              */}
+              {!degraded && (
+                <span className="chip">
+                  {ar
+                    ? cheapest != null
+                      ? `تبدأ من ${cheapest.toFixed(2)} $`
+                      : "أسعار بالدولار"
+                    : cheapest != null
+                      ? `From $${cheapest.toFixed(2)}`
+                      : "USD pricing"}
+                </span>
+              )}
             </div>
           </div>
         </div>
