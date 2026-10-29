@@ -484,32 +484,47 @@ test("le manifeste committé est valide et couvre les captures existantes", () =
     assert.ok(entry.slug);
     assert.match(entry.desktop, /^\/previews\/[a-z0-9-]+\.webp$/);
     assert.match(entry.mobile, /^\/previews\/[a-z0-9-]+\.webp$/);
+    assert.ok(
+      existsSync(join(root, "public", entry.desktop)),
+      `fichier desktop manquant sur disque : ${entry.desktop}`,
+    );
+    assert.ok(
+      existsSync(join(root, "public", entry.mobile)),
+      `fichier mobile manquant sur disque : ${entry.mobile}`,
+    );
     assert.equal(typeof entry.screenshot, "boolean");
   }
 });
 
 test("findPreviewEntry / previewSrc gèrent l'anti-cache et les absences", () => {
+  const expected = onDiskManifest.projects["https://al-manhaj-company.vercel.app"];
   const entry = manifestLib.findPreviewEntry("https://al-manhaj-company.vercel.app/");
   assert.ok(entry);
   assert.equal(entry.slug, "al-manhaj-company");
+  assert.match(entry.hash, /^[A-Za-z0-9_-]{10}$/);
   assert.equal(
     manifestLib.previewSrc(entry, "desktop"),
-    "/previews/al-manhaj-company-desktop.webp?v=Qczn4Pr0NM",
+    `${expected.desktop}?v=${expected.hash}`,
   );
   assert.equal(
     manifestLib.previewSrc(entry, "mobile"),
-    "/previews/al-manhaj-company-mobile.webp?v=Qczn4Pr0NM",
+    `${expected.mobile}?v=${expected.hash}`,
+  );
+  assert.equal(
+    manifestLib.previewSrc({ slug: "x", desktop: "/previews/x.webp", mobile: "/previews/x-m.webp" }, "desktop"),
+    "/previews/x.webp",
   );
   assert.equal(manifestLib.findPreviewEntry("https://inconnu.example.com"), null);
   assert.equal(manifestLib.previewSrc(null, "desktop"), null);
 });
 
 test("getDemoPreview privilégie le manifeste puis retombe sur l'image du portfolio", () => {
+  const expected = onDiskManifest.projects["https://hala-dun.vercel.app"];
   const known = manifestLib.getDemoPreview(
     { previewUrl: "https://hala-dun.vercel.app", image: "https://cdn/x.jpg" },
     "desktop",
   );
-  assert.equal(known.src, "/previews/hala-perfumes-desktop.webp?v=mkNYWXBepQ");
+  assert.equal(known.src, `${expected.desktop}?v=${expected.hash}`);
   assert.equal(known.local, true);
   assert.equal(known.screenshot, true);
 
@@ -525,17 +540,36 @@ test("getDemoPreviewImages renvoie des chemins uniques sans query", () => {
   const images = manifestLib.getDemoPreviewImages({
     previewUrl: "https://m-et-outillage-modele-3.vercel.app",
   });
-  // desktop et mobile pointent vers le même visuel : dédoublonné
-  assert.deepEqual(images, ["/previews/tripo-teck-visual.webp"]);
+  assert.ok(images.length >= 1);
+  for (const img of images) {
+    assert.doesNotMatch(img, /\?/);
+  }
+  // desktop et mobile pointant vers le même visuel : dédoublonné
+  const deduped = manifestLib.getDemoPreviewImages(
+    { previewUrl: "https://shared.vercel.app" },
+    {
+      version: 1,
+      generatedAt: "2026-10-20T00:00:00.000Z",
+      projects: {
+        "https://shared.vercel.app": {
+          slug: "shared",
+          desktop: "/previews/tripo-teck-visual.webp",
+          mobile: "/previews/tripo-teck-visual.webp",
+        },
+      },
+    },
+  );
+  assert.deepEqual(deduped, ["/previews/tripo-teck-visual.webp"]);
 });
 
 test("getProjectPreview (carrousel) lit le manifeste", () => {
+  const expected = onDiskManifest.projects["https://al-manhaj-company.vercel.app"];
   const demo = {
     previewUrl: "https://al-manhaj-company.vercel.app/",
     image: "https://cdn/x.jpg",
   };
   const desktop = projectPreview(demo, "desktop");
-  assert.equal(desktop.src, "/previews/al-manhaj-company-desktop.webp?v=Qczn4Pr0NM");
+  assert.equal(desktop.src, `${expected.desktop}?v=${expected.hash}`);
   assert.equal(desktop.screenshot, true);
 });
 

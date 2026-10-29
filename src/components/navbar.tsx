@@ -3,10 +3,11 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
-import { ArrowUpRight, Globe, Menu, Moon, Sun, X } from "lucide-react";
+import { ArrowUpRight, Menu, Moon, Sun, X } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import { useTheme } from "./theme-provider";
 import { ThemeSwitcher, ThemeList } from "./theme-switcher";
+import { LocaleSwitcher } from "./locale-switcher";
 import { CurrencySwitcher } from "./currency-switcher";
 import { useSiteConfig } from "@/components/site-provider";
 import { marketLabels, resolveMarket } from "@/lib/market";
@@ -24,7 +25,7 @@ export function Navbar() {
   const router = useRouter();
   const pathname = usePathname();
   const siteConfig = useSiteConfig();
-  const { locale, t, toggleLocale } = useI18n();
+  const { locale, t } = useI18n();
   const { mode, toggle } = useTheme();
   const [open, setOpen] = useState(false);
   const ar = locale === "ar";
@@ -175,15 +176,10 @@ export function Navbar() {
             </nav>
 
             <div className="flex shrink-0 items-center gap-1.5">
-              <button
-                onClick={toggleLocale}
-                aria-label={ar ? "Changer la langue" : "Toggle language"}
-                className="inline-flex h-9 cursor-pointer items-center gap-1.5 rounded-full bg-[var(--secondary)] px-3 text-[12.5px] font-semibold transition-colors hover:bg-[var(--muted)]"
-              >
-                <Globe className="h-3.5 w-3.5" />
-                {ar ? "EN" : "عربي"}
-              </button>
-              <div className="hidden lg:block">
+              {/* Langue : l'arabe est la langue principale, l'anglais reste à
+                  un clic (choix mémorisé sur l'appareil du visiteur). */}
+              <LocaleSwitcher />
+              <div className="hidden xl:block">
                 <CurrencySwitcher />
               </div>
               <button
@@ -194,7 +190,9 @@ export function Navbar() {
               >
                 {mode === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
               </button>
-              <div className="hidden 2xl:block">
+              {/* Sélecteur des 6 thèmes classés : visible dès `lg`, sinon dans
+                  le menu mobile — il ne doit jamais être inaccessible. */}
+              <div className="hidden lg:block">
                 <ThemeSwitcher />
               </div>
               <a
@@ -262,9 +260,10 @@ export function Navbar() {
                 </nav>
 
                 <div className="mt-5 border-t border-[var(--border)] pt-5">
-                  <div className="mb-2.5 text-[11px] font-black uppercase tracking-[0.16em] text-[var(--muted-foreground)]">
-                    {ar ? "ثيمات الموقع" : "Site themes"}
-                  </div>
+                  <LocaleSwitcher variant="list" />
+                </div>
+
+                <div className="mt-5 border-t border-[var(--border)] pt-5">
                   <ThemeList />
                 </div>
 

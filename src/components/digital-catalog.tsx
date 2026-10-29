@@ -666,17 +666,7 @@ export function DigitalCatalog({ products }: { products: DigitalProduct[] }) {
                     .slice(0, 4);
 
                   return (
-                    <motion.article
-                      key={product.id}
-                      initial={{ opacity: 0, y: 14 }}
-                      whileInView={{ opacity: 1, y: 0 }}
-                      viewport={{ once: true, margin: "-30px" }}
-                      transition={{
-                        duration: 0.32,
-                        delay: Math.min(index * 0.035, 0.21),
-                      }}
-                      className="group flex flex-col overflow-hidden rounded-[var(--radius-md)] border border-[var(--border)] bg-[var(--card)] shadow-[var(--shadow-xs)] transition-[border-color,box-shadow,transform] duration-200 hover:-translate-y-0.5 hover:border-[color-mix(in_srgb,var(--accent)_55%,var(--border))] hover:shadow-[var(--shadow-md)]"
-                    >
+                    <CardShell key={product.id} index={index}>
                       {/* Jaquette */}
                       <Link
                         href={`/codes/${product.slug}`}
@@ -820,7 +810,7 @@ export function DigitalCatalog({ products }: { products: DigitalProduct[] }) {
                           </Link>
                         </div>
                       </div>
-                    </motion.article>
+                    </CardShell>
                   );
                 })}
               </div>
@@ -871,6 +861,60 @@ export function DigitalCatalog({ products }: { products: DigitalProduct[] }) {
 /* ------------------------------ Sous-composants ---------------------------- */
 
 /** Ligne de facette du rail : libellé + compteur, état actif accentué. */
+/**
+ * Enveloppe d'une carte de la grille.
+ *
+ * La vitrine affiche TOUT le catalogue d'un coup (choix produit : le client
+ * doit pouvoir parcourir l'offre complète sans cliquer). Avec 399 fiches — et
+ * jusqu'à 2 000 au plafond du fournisseur — deux précautions rendent la page
+ * tenable sur un mobile :
+ *
+ *  - **`content-visibility: auto`** : le navigateur ne calcule et ne peint que
+ *    les cartes visibles, les autres coûtent une ligne de HTML. `auto` dans
+ *    `contain-intrinsic-size` mémorise la hauteur réelle après le premier
+ *    rendu, donc aucun saut de mise en page au défilement ;
+ *  - **animation d'apparition limitée aux premières cartes** : `whileInView`
+ *    installe un observateur par carte. Au-delà de la première ligne, une
+ *    apparition au défilement n'apporte rien mais coûte cher.
+ */
+const REVEAL_LIMIT = 16;
+
+const CARD_CLASS =
+  "group flex flex-col overflow-hidden rounded-[var(--radius-md)] border border-[var(--border)] bg-[var(--card)] shadow-[var(--shadow-xs)] transition-[border-color,box-shadow,transform] duration-200 hover:-translate-y-0.5 hover:border-[color-mix(in_srgb,var(--accent)_55%,var(--border))] hover:shadow-[var(--shadow-md)]";
+
+const CARD_STYLE: React.CSSProperties = {
+  contentVisibility: "auto",
+  containIntrinsicSize: "auto 460px",
+};
+
+function CardShell({
+  index,
+  children,
+}: {
+  index: number;
+  children: React.ReactNode;
+}) {
+  if (index >= REVEAL_LIMIT) {
+    return (
+      <article className={CARD_CLASS} style={CARD_STYLE}>
+        {children}
+      </article>
+    );
+  }
+  return (
+    <motion.article
+      initial={{ opacity: 0, y: 14 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, margin: "-30px" }}
+      transition={{ duration: 0.32, delay: Math.min(index * 0.035, 0.21) }}
+      className={CARD_CLASS}
+      style={CARD_STYLE}
+    >
+      {children}
+    </motion.article>
+  );
+}
+
 function RailButton({
   active,
   onClick,

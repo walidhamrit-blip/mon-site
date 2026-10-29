@@ -71,6 +71,7 @@ const DEMAND_KEYWORDS: { key: string; score: number }[] = [
   /* --- Recharges de jeux : le volume de la région MENA --- */
   { key: "pubg mobile", score: 100 },
   { key: "free fire", score: 96 },
+  { key: "mobile legends adventure", score: 16 },
   { key: "mobile legends", score: 92 },
   { key: "valorant", score: 78 },
   { key: "genshin impact", score: 74 },
@@ -178,16 +179,75 @@ export function bestCryptoRegionRank(product: Demandable): number {
   return best;
 }
 
-/** Poids de demande d'un texte (plateforme + titre + slug). */
+/** Mots-clés triés du plus long au plus court : le plus PRÉCIS gagne. */
+const SORTED_KEYWORDS = [...DEMAND_KEYWORDS].sort((a, b) => b.key.length - a.key.length);
+
+/**
+ * Poids de demande d'un texte.
+ *
+ * Le mot-clé le plus LONG gagne, pas le plus élevé : « Mobile Legends:
+ * Adventure » est un idle game, il ne doit pas hériter des 92 points du MOBA
+ * sous prétexte que son titre commence pareil.
+ */
 export function demandWeightFor(text: string): number {
   const haystack = normalizeDemandKey(text);
   if (!haystack) return 0;
   const padded = ` ${haystack} `;
-  let best = 0;
-  for (const { key, score } of DEMAND_KEYWORDS) {
-    if (padded.includes(` ${key} `) && score > best) best = score;
+  for (const { key, score } of SORTED_KEYWORDS) {
+    if (padded.includes(` ${key} `)) return score;
   }
-  return best;
+  return 0;
+}
+
+/** Parenthèses qui ne désignent PAS une zone mais un mode de livraison. */
+const NON_ZONE_PARENTS = new Set([
+  "auto",
+  "fast",
+  "manual",
+  "reserve",
+  "special",
+  "exclusive",
+]);
+
+/**
+ * Zone portée par le NOM du produit, quand il y en a une.
+ *
+ * « PlayStation (SA) », « Free Fire (MENA) », « Steam Wallet (Global) » : le
+ * fournisseur met la zone dans le libellé de la plateforme, alors que son
+ * champ `regions` annonce « GLOBAL » pour presque tout. C'est donc ce libellé
+ * qui fait foi — sinon toutes les fiches seraient« mondiales » et la
+ * priorisation par zone ne servirait à rien.
+ */
+export function zoneFromPlatform(platform: string | null | undefined): string | null {
+  const matches = [...(platform ?? "").matchAll(/\(([^)]+)\)/g)];
+  for (let index = matches.length - 1; index >= 0; index -= 1) {
+    const inner = matches[index][1].trim();
+    if (!inner) continue;
+    if (NON_ZONE_PARENTS.has(inner.toLowerCase())) continue;
+    return inner.toUpperCase();
+  }
+  return null;
+}
+
+/** Nom de la marque : la plateforme SANS ses parenthèses. */
+export function brandTextFor(product: Demandable): string {
+  return (product.platform ?? "").replace(/\([^)]*\)/g, " ").trim();
+}
+
+/**
+ * Texte qui porte la demande, selon la famille :
+ *  - clés de jeux : le NOM DU JEU (la plateforme y vaut « Steam »/« Xbox »
+ *    pour toutes les fiches, elle ne dit rien du jeu) ;
+ *  - cartes, recharges, abonnements : la MARQUE, sans la zone — sinon
+ *    « Halo Infinite (Xbox, Halo Credits) » passerait pour une carte Xbox.
+ */
+export function demandTextFor(product: Demandable): string {
+  if (product.kind === "software_key") {
+    return (product.titleEn ?? product.titleAr ?? "")
+      .replace(/^[^—:]*[—:]\s*/u, "")
+      .trim();
+  }
+  return brandTextFor(product);
 }
 
 /**
@@ -199,14 +259,13 @@ export function demandWeightFor(text: string): number {
  * ici en une ligne.
  */
 export function digitalDemandScore(product: Demandable): number {
-  const text = [product.platform, product.titleEn, product.titleAr, product.slug]
-    .filter(Boolean)
-    .join(" ")
-    // Un slug sépare ses mots par des tirets : on les rend à la recherche.
-    .replace(/-/g, " ");
-  const weight = demandWeightFor(text);
+  const weight = demandWeightFor(demandTextFor(product));
   const kindBonus = KIND_BONUS[(product.kind ?? "").trim()] ?? 0;
-  const rank = bestCryptoRegionRank(product);
+  // Zone du libellé d'abord : elle est précise (« (SA) », « (MENA) »). À
+  // défaut seulement, on se rabat sur les zones de la fiche (souvent
+  // « GLOBAL » par défaut côté fournisseur).
+  const labelZone = zoneFromPlatform(product.platform);
+  const rank = labelZone ? cryptoRegionRank(labelZone) : bestCryptoRegionRank(product);
   const regionBonus =
     rank < 0 ? 0 : Math.max(0, REGION_TOP_BONUS - rank * REGION_STEP);
   return weight + kindBonus + regionBonus;

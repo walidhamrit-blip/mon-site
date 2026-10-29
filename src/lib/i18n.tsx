@@ -1,7 +1,17 @@
 "use client";
 import React, { createContext, useContext, useState, useEffect } from "react";
+import {
+  LOCALE_STORAGE_KEY,
+  dirOf,
+  isLocale,
+  type Locale,
+} from "@/lib/locale";
 
-export type Locale = "ar" | "en";
+// L'arabe est la langue principale du site ; l'anglais reste disponible en un
+// clic. Le type `Locale` et la logique de direction vivent dans
+// `src/lib/locale.ts` (module partagé avec le layout serveur) et sont
+// ré-exportés ici pour ne pas casser les imports existants.
+export type { Locale };
 
 export const compareLabels = {
   badgeAr: "مقارنة صريحة",
@@ -404,8 +414,8 @@ const translations = {
     themes: {
       title: "ثيمات جاهزة… اختر هوية موقعك",
       subtitle:
-        "8 ثيمات فاخرة — الأكثر طلباً في مواقع الشركات الفاخرة. كل ثيم يعمل بنسخة فاتحة وأخرى داكنة، والتبديل بينهما يتم بزر مستقل تماماً عن اختيار الثيم.",
-      note: "كل ثيم متاح في الوضعين الفاتح والداكن — زر الوضع مستقل في الشريط العلوي أعلى الصفحة.",
+        "6 ثيمات — أكثر لوحات الألوان تقديراً في مجال الوكالات ومواقع الشركات، مرتبة حسب الطلب. كل ثيم يعمل بنسخة فاتحة وأخرى داكنة، والتبديل بينهما يتم بزر مستقل تماماً عن اختيار الثيم.",
+      note: "الثيمات الستة متاحة في الوضعين الفاتح والداكن — زر الوضع مستقل في الشريط العلوي.",
     },
     process: {
       title: "من الفكرة إلى الإطلاق",
@@ -703,8 +713,8 @@ const translations = {
     themes: {
       title: "Ready-made themes… pick your identity",
       subtitle:
-        "8 premium themes — the most requested palettes on luxury business websites. Each one runs in a light and a dark version, switched by a button of its own.",
-      note: "Every theme ships in both light and dark — the mode has its own button in the top bar.",
+        "6 themes — the most appreciated palettes in the agency & corporate web field, ranked by demand. Each one runs in a light and a dark version, switched by a button of its own.",
+      note: "All six themes ship in light and dark — the mode has its own button in the top bar.",
     },
     process: {
       title: "From idea to launch",
@@ -963,11 +973,11 @@ const I18nContext = createContext<{
 // automatiquement à chaque visite — y compris pour la simple langue par
 // défaut de l'admin — ce qui empêchait tout changement de langue principale
 // depuis /admin de prendre effet sur les navigateurs déjà passés par le site.
-const LOCALE_KEY = "nukhba-locale-choice";
+const LOCALE_KEY = LOCALE_STORAGE_KEY;
 
 export function I18nProvider({
   children,
-  defaultLocale = "en",
+  defaultLocale = "ar",
 }: {
   children: React.ReactNode;
   /**
@@ -983,8 +993,8 @@ export function I18nProvider({
     // langue principale (admin), y compris si elle change après coup.
     try {
       localStorage.removeItem("nukhba-locale");
-      const saved = localStorage.getItem(LOCALE_KEY) as Locale | null;
-      if (saved && (saved === "ar" || saved === "en")) {
+      const saved = localStorage.getItem(LOCALE_KEY);
+      if (isLocale(saved)) {
         // eslint-disable-next-line react-hooks/set-state-in-effect
         setLocaleState(saved);
         return;
@@ -999,7 +1009,7 @@ export function I18nProvider({
     // ⚠️ Aucune écriture localStorage ici : enregistrer la langue courante
     // transformerait le défaut admin en faux « choix du visiteur ».
     document.documentElement.lang = locale;
-    document.documentElement.dir = locale === "ar" ? "rtl" : "ltr";
+    document.documentElement.dir = dirOf(locale);
     document.documentElement.classList.toggle("rtl", locale === "ar");
   }, [locale]);
 
@@ -1013,7 +1023,7 @@ export function I18nProvider({
   };
   const toggleLocale = () => setLocale(locale === "ar" ? "en" : "ar");
   const t = translations[locale];
-  const dir = locale === "ar" ? "rtl" : "ltr";
+  const dir = dirOf(locale);
 
   return (
     <I18nContext.Provider value={{ locale, t, dir, setLocale, toggleLocale }}>

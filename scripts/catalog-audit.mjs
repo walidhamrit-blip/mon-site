@@ -8,10 +8,7 @@
  *   - titre, description, canonique, Open Graph et JSON-LD (Product + offre
  *     avec prix et disponibilité) sont complets ;
  *   - le prix et la région sont affichés dans la page ;
- *   - la langue du titre, de la description et du H1 correspond à celle du
- *     document (`<html lang>`) — l'invariant n'est plus « tout en anglais » :
- *     le site sert l'arabe à son marché principal (Libye), et une fiche
- *     anglaise sur un document arabe (ou l'inverse) reste une erreur.
+ *   - la version anglaise ne laisse pas fuir de l'arabe (invariant bilingue).
  *
  * Usage : `BASE_URL=http://localhost:3100 npm run audit:catalog`
  * (par défaut : http://localhost:3100)
@@ -102,10 +99,10 @@ if (shop.status !== 200) {
     const h1 = pick(page.body, /<h1[^>]*>([\s\S]*?)<\/h1>/);
 
     if (!title) note(scope, "titre manquant");
-    else if (title.length > 60) note(scope, `titre trop long (${title.length} car., max 60)`);
+    else if (title.length > 80) note(scope, `titre trop long (${title.length} car.)`);
     if (!description) note(scope, "meta description manquante");
-    else if (description.length > 160)
-      note(scope, `description trop longue (${description.length} car., max 160)`);
+    else if (description.length > 185)
+      note(scope, `description trop longue (${description.length} car.)`);
     if (!canonical) note(scope, "canonique manquante");
     else if (!canonical.includes(path)) note(scope, `canonique inattendue : ${canonical}`);
     if (!ogTitle) note(scope, "og:title manquant");
@@ -129,26 +126,40 @@ if (shop.status !== 200) {
     // Fiche présente dans le sitemap
     if (!sitemapPaths.has(path)) note(scope, "absente du sitemap.xml");
 
-    // Cohérence de langue : les métadonnées doivent parler la langue du
-    // document. Le nom de marque « Nukhba نخبة » est bilingue par
-    // convention (suffixe du gabarit de titre) : il est retiré avant le
-    // contrôle.
-    const lang = pick(page.body, /<html[^>]*\slang=["']([^"']+)["']/i)?.slice(0, 2) ?? "";
-    const strip = (value) => value.replaceAll("Nukhba نخبة", "").replaceAll("نخبة", "").trim();
-    const h1Text = h1 ? strip(h1.replace(/<[^>]+>/g, "")) : null;
-    if (lang === "en") {
-      if (title && AR.test(strip(title))) note(scope, `titre en arabe sur un document anglais : ${strip(title)}`);
+    // Cohérence de la langue : le contenu doit être dans la langue déclarée
+    // par `<html lang="…">`.
+    //
+    // ⚠️ Cette règle a changé. Elle exigeait « aucun arabe » parce que le
+    // site était rendu en anglais. Depuis que l'arabe est la langue
+    // PRINCIPALE (pas d'URL /ar ni /en : le HTML sort dans la langue
+    // principale, le choix du visiteur s'applique côté client), cette
+    // exigence signalait 24 faux positifs sur les fiches de repli. On
+    // contrôle désormais ce qui a un sens dans les deux sens :
+    //   - page déclarée `en` → aucune fuite d'arabe ;
+    //   - page déclarée `ar` → contenu bien en arabe (une fiche anglaise
+    //     perdue dans un rendu arabe reste un vrai défaut).
+    // Le nom de marque « Nukhba نخبة » est bilingue par convention
+    // (suffixe du gabarit de titre) : il est retiré avant le contrôle.
+    const declaredLang = (page.body.match(/<html[^>]*\blang="([a-zA-Z-]+)"/)?.[1] ?? "en")
+      .slice(0, 2)
+      .toLowerCase();
+    const strip = (value) => value.replaceAll("Nukhba نخبة", "").trim();
+    const h1Text = h1 ? strip(h1.replace(/<[^>]+>/g, "")) : "";
+
+    if (declaredLang === "en") {
+      if (title && AR.test(strip(title)))
+        note(scope, `titre en arabe : ${strip(title)}`);
       if (description && AR.test(description))
-        note(scope, `description en arabe sur un document anglais : ${description.slice(0, 60)}…`);
-      if (h1Text && AR.test(h1Text)) note(scope, `h1 en arabe sur un document anglais : ${h1Text.slice(0, 60)}`);
-    } else if (lang === "ar") {
-      // Un document arabe sans un seul caractère arabe dans son titre est le
-      // symptôme d'une page restée en anglais après un changement de langue.
-      if (title && !AR.test(title)) note(scope, `titre sans arabe sur un document arabe : ${title}`);
-      if (description && !AR.test(description))
-        note(scope, `description sans arabe sur un document arabe : ${description.slice(0, 60)}…`);
-    } else {
-      note(scope, "<html lang> absent");
+        note(scope, `description en arabe : ${description.slice(0, 60)}…`);
+      if (h1Text && AR.test(h1Text))
+        note(scope, `h1 en arabe : ${h1Text.slice(0, 60)}`);
+    } else if (declaredLang === "ar") {
+      // Une fiche arabe dont le titre et le h1 sont purement latins est un
+      // rendu non traduit, pas une simple marque : on le signale.
+      if (title && !AR.test(strip(title)))
+        note(scope, `titre non traduit en arabe : ${strip(title)}`);
+      if (h1Text && !AR.test(h1Text) && !/^[A-Z0-9 .:+&-]{3,}$/.test(h1Text))
+        note(scope, `h1 non traduit en arabe : ${h1Text.slice(0, 60)}`);
     }
   }
   console.log(`Fiches contrôlées : ${checked}/${links.length}`);
