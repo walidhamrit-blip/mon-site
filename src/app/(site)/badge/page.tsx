@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { getSiteDataCached } from "@/lib/store";
-import { absoluteUrl, breadcrumbJsonLd, pageMetadata } from "@/lib/seo";
+import { absoluteUrl, breadcrumbJsonLd, pageMetadata, siteLocale } from "@/lib/seo";
 import { JsonLd } from "@/components/json-ld";
 import { BadgeSnippet } from "@/components/badge-snippet";
 import { BadgeGrid } from "@/components/badge-grid";
@@ -21,18 +21,25 @@ import { resolveSiteOrigin } from "@/lib/site-identity";
 
 export async function generateMetadata(): Promise<Metadata> {
   const { config } = await getSiteDataCached();
+  const locale = siteLocale(config);
+  const origin = resolveSiteOrigin({ url: config.url, domain: config.domain });
   return pageMetadata(config, {
     path: "/badge",
-    title: "شارة نخبة — Badge « Website by Nukhba » للمواقع المنجزة",
+    title:
+      locale === "ar"
+        ? "شارة «Website by Nukhba» للمواقع المنجزة"
+        : "“Website by Nukhba” Client Badge",
     description:
-      `Extraits HTML وReact لشارة « Website by Nukhba » — رابط موثّق نحو ${resolveSiteOrigin({ url: config.url, domain: config.domain })} في تذييل المواقع المنجزة. رمز جاهز للنسخ بالعربية والإنجليزية.`,
+      locale === "ar"
+        ? `رمز HTML وReact لشارة «Website by Nukhba» — رابط موثّق نحو ${origin} في تذييل المواقع المنجزة. جاهز للنسخ بالعربية والإنجليزية.`
+        : `Copy-paste HTML and React snippets for the “Website by Nukhba” badge — a verified link to ${origin} in the footer of delivered client sites. Bilingual AR/EN.`,
     image: "/badge/nukhba-badge.svg",
     keywords: [
       "شارة نخبة",
       "badge Nukhba",
       "Website by Nukhba",
-      "netlinking Libye",
-      "رابط تصميم موقع طرابلس",
+      "netlinking {country}",
+      "رابط تصميم موقع {city}",
     ],
   });
 }

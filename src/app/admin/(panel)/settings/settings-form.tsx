@@ -259,22 +259,29 @@ export function SettingsForm({ initial, initialTab }: Props) {
                 </select>
               </Field>
 
-              <Field label="Langue par défaut du site">
+              <Field label="Langue de référence (HTML + SEO)">
                 <select
-                  value={form.appearance.defaultLocale}
+                  value={form.appearance.primaryLocale}
                   onChange={(e) =>
                     patch({
                       appearance: {
                         ...form.appearance,
-                        defaultLocale: e.target.value as "ar" | "en",
+                        primaryLocale: e.target.value as "auto" | "ar" | "en",
                       },
                     })
                   }
                   className={ADMIN_INPUT_CLS}
                 >
+                  <option value="auto">Auto — langue du marché (recommandé)</option>
                   <option value="ar">Arabe (RTL)</option>
                   <option value="en">Anglais (LTR)</option>
                 </select>
+                <p className="mt-1.5 text-[11px] leading-5 text-stone-500">
+                  C&apos;est la langue servie aux moteurs de recherche
+                  (titre, description, <code>&lt;html lang&gt;</code>) et le
+                  défaut du site. « Auto » suit le pays du marché : arabe pour
+                  la Libye. Le visiteur peut toujours basculer la langue.
+                </p>
               </Field>
             </div>
           </div>

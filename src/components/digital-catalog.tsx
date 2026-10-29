@@ -27,6 +27,7 @@ import {
   Zap,
 } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
+import { productDisplayName } from "@/lib/digital-seo";
 import { useSiteConfig } from "@/components/site-provider";
 import { Price } from "@/components/price";
 import { RegionalAlert } from "@/components/regional-alert";
@@ -142,6 +143,10 @@ export function DigitalCatalog({ products }: { products: DigitalProduct[] }) {
   const [priceRange, setPriceRange] = useState<PriceRangeId>("all");
   const [sort, setSort] = useState<SortId>("popular");
   const [filtersOpen, setFiltersOpen] = useState(false);
+  // Nom commercial nettoyé, identique au H1 de la fiche : le catalogue ne
+  // doit pas afficher « Game Top-Up — PUBG Mobile (Auto) » quand la page
+  // cible s'intitule « PUBG Mobile ».
+  const displayName = (product: DigitalProduct) => productDisplayName(product, locale);
 
   /* ----------------------------- Facettes ----------------------------- */
 
@@ -676,7 +681,7 @@ export function DigitalCatalog({ products }: { products: DigitalProduct[] }) {
                       <Link
                         href={`/codes/${product.slug}`}
                         className="relative block aspect-[2/3] overflow-hidden bg-[#0b1220]"
-                        aria-label={ar ? product.titleAr : product.titleEn}
+                        aria-label={displayName(product)}
                       >
                         {visual ? (
                           visualFit === "contain" ? (
@@ -701,8 +706,8 @@ export function DigitalCatalog({ products }: { products: DigitalProduct[] }) {
                                 src={visual}
                                 alt={
                                   ar
-                                    ? `صورة ${product.titleAr}`
-                                    : `${product.titleEn} product visual`
+                                    ? `صورة ${displayName(product)}`
+                                    : `${displayName(product)} product visual`
                                 }
                                 fill
                                 sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 22vw"
@@ -716,8 +721,8 @@ export function DigitalCatalog({ products }: { products: DigitalProduct[] }) {
                               src={visual}
                               alt={
                                 ar
-                                  ? `غلاف ${product.titleAr}`
-                                  : `${product.titleEn} cover art`
+                                  ? `غلاف ${displayName(product)}`
+                                  : `${displayName(product)} cover art`
                               }
                               fill
                               sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 22vw"
@@ -730,7 +735,7 @@ export function DigitalCatalog({ products }: { products: DigitalProduct[] }) {
                           <FallbackArt
                             product={product}
                             initials={initialsOf(product)}
-                            name={ar ? product.titleAr : product.titleEn}
+                            name={displayName(product)}
                           />
                         )}
 
@@ -774,7 +779,7 @@ export function DigitalCatalog({ products }: { products: DigitalProduct[] }) {
                       {/* Contenu */}
                       <div className="flex flex-1 flex-col p-3">
                         <h3 className="line-clamp-2 text-[13px] font-black leading-[1.35] tracking-[-0.01em]">
-                          {ar ? product.titleAr : product.titleEn}
+                          {displayName(product)}
                         </h3>
 
                         {denominations.length > 0 && (

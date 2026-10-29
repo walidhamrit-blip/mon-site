@@ -245,7 +245,7 @@ export const blogArticles: BlogArticle[] = [
   },
   /* ───────────────────────── 1. Coût d'un site ───────────────────────── */
   {
-    slug: "prix-site-web-libye-2026",
+    slug: "website-cost-libya-2026",
     titleAr: "كم تكلفة تصميم موقع إلكتروني في 2026؟ الأسعار الحقيقية بالدولار",
     titleEn: "How Much Does a Website Cost in 2026? Real Prices in USD",
     h1Ar: "كم تكلفة تصميم موقع إلكتروني في 2026؟",
@@ -411,7 +411,7 @@ export const blogArticles: BlogArticle[] = [
 
   /* ────────────────────── 2. Choisir une agence ────────────────────── */
   {
-    slug: "choisir-agence-web-tripoli",
+    slug: "choose-web-agency-tripoli",
     titleAr: "كيف تختار أفضل شركة تصميم مواقع؟ 7 معايير عملية قبل التعاقد",
     titleEn: "How to Choose a Web Design Agency: 7 Practical Criteria",
     h1Ar: "كيف تختار شركة تصميم مواقع تثق بها؟",
@@ -572,7 +572,7 @@ export const blogArticles: BlogArticle[] = [
 
   /* ─────────────────────── 3. Boutique en ligne ─────────────────────── */
   {
-    slug: "lancer-boutique-en-ligne-libye",
+    slug: "launch-online-store-libya",
     titleAr: "كيف تطلق متجراً إلكترونياً في 2026؟ دليل عملي خطوة بخطوة",
     titleEn: "How to Launch an Online Store in 2026: Practical Step-by-Step",
     h1Ar: "كيف تطلق متجراً إلكترونياً يبيع فعلاً؟",
@@ -729,7 +729,7 @@ export const blogArticles: BlogArticle[] = [
 
   /* ──────────────────── 4. Visibilité dans les IA (GEO) ──────────────────── */
   {
-    slug: "apparaitre-dans-chatgpt-google-ai-libye",
+    slug: "get-cited-by-chatgpt-google-ai",
     titleAr: "كيف يظهر موقعك في ChatGPT وGoogle AI؟ دليل GEO العملي 2026",
     titleEn: "Get Your Website Cited by ChatGPT & Google AI: 2026 GEO Guide",
     h1Ar: "كيف يظهر موقعك في ChatGPT وGoogle AI؟",
@@ -882,7 +882,7 @@ export const blogArticles: BlogArticle[] = [
 
   /* ───────────────────────── 5. Site clinique ───────────────────────── */
   {
-    slug: "site-web-clinique-tripoli",
+    slug: "clinic-website-booking-tripoli",
     titleAr: "موقع عيادة ناجح: حجز مواعيد أونلاين يملأ جدولك فعلاً",
     titleEn: "A Clinic Website That Works: Online Booking That Fills Your Day",
     h1Ar: "موقع عيادة: كيف يزيد الحجوزات فعلاً؟",

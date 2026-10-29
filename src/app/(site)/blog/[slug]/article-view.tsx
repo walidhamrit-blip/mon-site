@@ -427,6 +427,27 @@ export function ArticleView({
               </ul>
             </div>
           )}
+          {/* Passerelle vers la seconde activité du site : les guides
+              parlent de sites et de paiement, la boutique vend les codes.
+              Sans ce lien, les 399 fiches produit ne recevaient aucun
+              lien contextuel depuis le contenu éditorial. */}
+          <div className="rounded-2xl border border-[var(--accent)]/35 bg-[var(--accent)]/5 p-5">
+            <h2 className="text-xs font-black tracking-wide text-[var(--accent)]">
+              {ar ? "المتجر الرقمي" : "Digital store"}
+            </h2>
+            <p className="mt-2 text-[13px] leading-6 opacity-75">
+              {ar
+                ? "بطاقات Steam وPlayStation وXbox، أكواد ألعاب وبرامج وشحن العملات داخل الألعاب — بأسعار بالدولار وتسليم على بريدك."
+                : "Steam, PlayStation and Xbox cards, game keys, software codes and in-game top-ups — USD pricing, delivered by email."}
+            </p>
+            <Link
+              href="/codes"
+              className="mt-3 inline-flex items-center gap-1.5 text-[13px] font-black text-[var(--accent)] hover:underline"
+            >
+              {ar ? "تصفّح الأكواد والبطاقات" : "Browse codes & cards"}
+              <ArrowUpRight className="h-3.5 w-3.5" />
+            </Link>
+          </div>
         </aside>
       </div>
 

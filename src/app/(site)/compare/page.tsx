@@ -31,8 +31,8 @@ export async function generateMetadata(): Promise<Metadata> {
     path: "/compare",
     title:
       locale === "ar"
-        ? "مقارنات صريحة — نخبة مقابل الإعلانات والقوالب والمستقلين"
-        : "Honest comparisons: Nukhba vs ads, builders, freelancers",
+        ? "مقارنات صريحة: نخبة مقابل البدائل"
+        : "Honest Comparisons: Nukhba vs the Alternatives",
     description:
       locale === "ar"
         ? "مقارنات صريحة بين نخبة وإعلانات جوجل وفيسبوك ومنشئات المواقع والمستقلين واشتراكات SEO: التكلفة، السرعة، ملكية العملاء والأثر بعد المشروع."

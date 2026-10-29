@@ -4,17 +4,24 @@ import {
   breadcrumbJsonLd,
   faqJsonLd,
   pageMetadata,
+  siteLocale,
 } from "@/lib/seo";
 import { JsonLd } from "@/components/json-ld";
 import { PricingClient } from "./pricing-client";
 
 export async function generateMetadata(): Promise<Metadata> {
   const { config } = await getSiteDataCached();
+  const locale = siteLocale(config);
   return pageMetadata(config, {
     path: "/pricing",
-    title: "Website & Store Pricing Plans in USD — Pay in USDT",
+    title:
+      locale === "ar"
+        ? "أسعار تصميم المواقع والمتاجر بالدولار"
+        : "Website & Store Pricing in USD — No Surprises",
     description:
-      "Transparent USD pricing in {countryEn}: model price, a separate customization fee, a clear total before checkout (1 USD = 1 USDT) — full or 2–3 installments.",
+      locale === "ar"
+        ? "أسعار واضحة بالدولار في {country}: سعر النموذج + رسوم التخصيص + الإجمالي قبل الدفع (1 دولار = 1 USDT) — دفعة واحدة أو 2–3 أقساط."
+        : "Transparent USD pricing in {countryEn}: model price, a separate customization fee, a clear total before checkout (1 USD = 1 USDT) — full or 2–3 installments.",
     keywords: [
       "website pricing USD",
       "e-commerce website price",

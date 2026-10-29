@@ -15,7 +15,7 @@
  *   - balises <link rel="alternate" type="text/markdown"> vers /llms.txt et /llms-full.txt
  *   - un seul <h1>
  *   - blocs JSON-LD tous parsables + conformité Google (FAQPage uniquement sur / et /pricing,
- *     HowTo sur /, ProfessionalService avec geo + review, CreativeWork avec offers sur /demos/[slug])
+ *     HowTo sur /, ProfessionalService avec geo, CreativeWork avec offers sur /demos/[slug])
  *   - maillage interne serveur sur chaque fiche /demos/[slug]
  *   - absence de noindex accidentel sur une page indexable
  *   - aucune image sans attribut alt
@@ -48,6 +48,18 @@ function countMatches(regex, html) {
   return [...html.matchAll(regex)].length;
 }
 
+/** Texte visible approximatif (scripts, styles et balises retirés). */
+function visibleText(html) {
+  return decode(
+    html
+      .replace(/<script[\s\S]*?<\/script>/gi, " ")
+      .replace(/<style[\s\S]*?<\/style>/gi, " ")
+      .replace(/<[^>]+>/g, " "),
+  )
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
 async function fetchText(url) {
   const res = await fetch(url, { redirect: "manual" });
   return { status: res.status, headers: res.headers, body: await res.text() };
@@ -55,17 +67,28 @@ async function fetchText(url) {
 
 function checkPage(pathname, html) {
   const page = pathname || "/";
+  let title = "";
 
   // ── Title ──
   const titleMatch = html.match(/<title[^>]*>([\s\S]*?)<\/title>/i);
   if (!titleMatch) {
     record(page, "error", "balise <title> absente");
   } else {
-    const title = decode(titleMatch[1].trim());
+    title = decode(titleMatch[1].trim());
     if (title.length < 20) record(page, "warn", `title très court (${title.length} car.) : ${title}`);
-    // Le seuil haut remonte à 80 car. : les titres arabes sont plus compacts
-    // en largeur de pixels et le suffixe de marque (« | نخبة Nukhba ») s'ajoute.
-    if (title.length > 80) record(page, "warn", `title trop long (${title.length} car., max conseillé 80)`);
+    // Google coupe autour de 60 caractères (≈600 px). Un titre plus long
+    // perd sa fin — souvent le mot-clé ou la ville. `serpTitle()` borne tous
+    // les titres du site à 60 : dépasser ici signale une page qui contourne
+    // le gabarit.
+    if (title.length > 60) {
+      record(page, "error", `title trop long (${title.length} car., max 60) : ${title}`);
+    }
+    // Marque citée deux fois (« … — Nukhba | Nukhba نخبة ») : gaspillage de
+    // la largeur d'affichage et signal de duplication.
+    const brandHits = (title.match(/nukhba|نخبة/gi) || []).length;
+    if (brandHits > 1) {
+      record(page, "error", `marque répétée ${brandHits}× dans le title : ${title}`);
+    }
     if (titles.has(title)) record(page, "error", `title dupliqué avec ${titles.get(title)}`);
     titles.set(title, page);
   }
@@ -79,7 +102,7 @@ function checkPage(pathname, html) {
   } else {
     const len = descMatch[1].trim().length;
     if (len < 50) record(page, "warn", `description courte (${len} car., min conseillé 50)`);
-    if (len > 180) record(page, "warn", `description longue (${len} car., max conseillé 180)`);
+    if (len > 160) record(page, "warn", `description longue (${len} car., max conseillé 160)`);
   }
 
   // ── Canonical ──
@@ -90,6 +113,55 @@ function checkPage(pathname, html) {
     record(page, "error", "balise canonical absente");
   } else if (!/^https:\/\//.test(canonicalMatch[1])) {
     record(page, "error", `canonical non absolu/https : ${canonicalMatch[1]}`);
+  } else {
+    // La canonique doit désigner LA page testée, pas une autre URL du site.
+    try {
+      const canonicalPath = new URL(canonicalMatch[1]).pathname.replace(/\/+$/, "") || "/";
+      const expected = page === "/" ? "/" : page.replace(/\/+$/, "");
+      if (canonicalPath !== expected) {
+        record(page, "error", `canonical incohérente (${canonicalPath}) pour ${expected}`);
+      }
+    } catch {
+      record(page, "error", `canonical illisible : ${canonicalMatch[1]}`);
+    }
+  }
+
+  // ── Langue du document vs métadonnées ──
+  const langMatch = html.match(/<html[^>]*\slang=["']([^"']+)["']/i);
+  const lang = langMatch ? langMatch[1].toLowerCase().slice(0, 2) : "";
+  if (!lang || (lang !== "ar" && lang !== "en")) {
+    record(page, "error", `<html lang> absent ou invalide (« ${lang || "?"} »)`);
+  }
+  const ogLocaleMatch = html.match(
+    /<meta\s+property=["']og:locale["']\s+content=["']([^"']+)["']/i,
+  );
+  if (ogLocaleMatch && ogLocaleMatch[1].toLowerCase().slice(0, 2) !== lang) {
+    record(
+      page,
+      "error",
+      `og:locale (${ogLocaleMatch[1]}) ne correspond pas à <html lang="${lang}">`,
+    );
+  }
+  // Le vocabulaire du titre doit être celui de la page : un titre arabe sur
+  // un document déclaré en anglais (et inversement) est le symptôme exact
+  // du mélange de langues relevé dans l'audit.
+  const ARABIC = /[\u0600-\u06FF]/;
+  const titleLang = ARABIC.test(title) ? "ar" : "en";
+  if (lang && titleLang !== lang) {
+    record(page, "error", `title en « ${titleLang} » sur un document lang="${lang}"`);
+  }
+  // La description doit elle aussi être dans la langue du document : une
+  // meta arabe sur une page anglaise (ou l'inverse) est un signal de
+  // duplication/mauvaise langue, très courant après un changement de
+  // langue par défaut.
+  const description = (html.match(
+    /<meta\s+name=["']description["']\s+content=["']([^"']*)["']/i,
+  ) || [])[1];
+  if (description && lang) {
+    const descLang = ARABIC.test(description) ? "ar" : "en";
+    if (descLang !== lang) {
+      record(page, "error", `description en « ${descLang} » sur un document lang="${lang}"`);
+    }
   }
 
   // ── Open Graph & Twitter Card ──
@@ -144,10 +216,13 @@ function checkPage(pathname, html) {
     page === "/services" ||
     page === "/blog" ||
     page === "/compare" ||
+    page === "/abonnements" ||
+    page === "/codes" ||
     page.startsWith("/sectors/") ||
     page.startsWith("/services/") ||
     page.startsWith("/blog/") ||
-    page.startsWith("/compare/");
+    page.startsWith("/compare/") ||
+    page.startsWith("/codes/");
   if (isFaqExpected) {
     if (!hasFaqSchema) {
       record(page, "error", "schéma FAQPage attendu sur cette page mais absent");
@@ -165,8 +240,19 @@ function checkPage(pathname, html) {
     if (!proService.geo || proService.geo["@type"] !== "GeoCoordinates") {
       record(page, "error", "ProfessionalService sans coordonnées GPS (geo)");
     }
-    if (!Array.isArray(proService.review) || proService.review.length === 0) {
-      record(page, "error", "ProfessionalService sans avis structurés (review)");
+    // Depuis 2019, Google n'affiche pas les avis « auto-déclarés » d'une
+    // entreprise sur sa propre page. Les baliser n'apporte aucun rich
+    // result et expose à un signalement pour données structurées trompeuses.
+    // On signale donc leur présence comme une dette, pas comme un manque.
+    if (
+      proService.aggregateRating ||
+      (Array.isArray(proService.review) && proService.review.length > 0)
+    ) {
+      record(
+        page,
+        "warn",
+        "avis auto-déclarés dans ProfessionalService (non éligibles Google — utiliser une fiche Google Business Profile)",
+      );
     }
   }
 
@@ -257,6 +343,66 @@ function checkPage(pathname, html) {
     }
   }
 
+  // ── Fiches produits du catalogue digital ──
+  if (page.startsWith("/codes/") && page !== "/codes" && !page.startsWith("/codes/commande")) {
+    const product = parsedSchemas.find((s) => s && s["@type"] === "Product");
+    if (!product) {
+      record(page, "error", "schéma Product absent sur la fiche produit");
+    } else {
+      if (!product.image) {
+        record(page, "error", "schéma Product sans image (vignette SERP impossible)");
+      }
+      if (!product.sku) {
+        record(page, "warn", "schéma Product sans sku");
+      }
+      if (product.offers && !product.offers.priceCurrency) {
+        record(page, "error", "offres Product sans priceCurrency");
+      }
+    }
+    if (!hasFaqSchema) {
+      record(page, "error", "FAQPage attendue sur la fiche produit (région, livraison, paiement)");
+    }
+    const words = visibleText(html).split(/\s+/).filter(Boolean).length;
+    if (words < 400) {
+      record(page, "warn", `fiche produit mince (${words} mots, min conseillé 400)`);
+    }
+    // Maillage de retour : une fiche produit doit ramener vers le rayon,
+    // sinon les pages profondes n'irriguent plus le hub.
+    if (!/href=["']\/codes["']/.test(html)) {
+      record(page, "error", "aucun lien de retour vers /codes depuis la fiche produit");
+    }
+  }
+
+  // ── Hub boutique ──
+  if (page === "/codes") {
+    if (!parsedSchemas.some((s) => s && s["@type"] === "Store")) {
+      record(page, "error", "schéma Store absent du hub /codes");
+    }
+    // L'ItemList des produits est imbriqué dans `mainEntity` du
+    // CollectionPage : on inspecte donc récursivement le JSON-LD.
+    const hasItemList = parsedSchemas.some((schema) => {
+      let found = false;
+      const walk = (node) => {
+        if (found || !node || typeof node !== "object") return;
+        if (Array.isArray(node)) {
+          node.forEach(walk);
+          return;
+        }
+        if (node["@type"] === "ItemList") found = true;
+        Object.values(node).forEach(walk);
+      };
+      walk(schema);
+      return found;
+    });
+    if (!hasItemList) {
+      record(page, "error", "ItemList des produits absent du hub /codes");
+    }
+    const words = visibleText(html).split(/\s+/).filter(Boolean).length;
+    if (words < 650) {
+      record(page, "warn", `hub boutique mince (${words} mots, min conseillé 650)`);
+    }
+  }
+
   // ── Images sans alt ──
   const imgs = [...html.matchAll(/<img\s[^>]*>/gi)].map((m) => m[0]);
   for (const img of imgs) {
@@ -320,6 +466,40 @@ async function main() {
     }
   } catch (err) {
     record("/sitemap.xml", "warn", `images non vérifiées : ${err.message}`);
+  }
+
+  // 1a bis. Dates `lastmod` : une date identique sur tout le sitemap signifie
+  // « build date », pas « contenu modifié ». Google cesse alors de s'y fier.
+  try {
+    const sitemapBody =
+      resourceBodies.get("/sitemap.xml") || (await fetchText(`${BASE}/sitemap.xml`)).body;
+    const lastmods = [...sitemapBody.matchAll(/<lastmod>([^<]+)<\/lastmod>/g)].map(
+      (match) => match[1].trim(),
+    );
+    const future = lastmods.filter((value) => {
+      const time = Date.parse(value);
+      return Number.isFinite(time) && time > Date.now() + 86_400_000;
+    });
+    if (future.length > 0) {
+      record("/sitemap.xml", "error", `${future.length} lastmod dans le futur`);
+    }
+    if (lastmods.length >= 10) {
+      const counts = new Map();
+      for (const value of lastmods) {
+        const day = value.slice(0, 10);
+        counts.set(day, (counts.get(day) ?? 0) + 1);
+      }
+      const mostCommon = Math.max(...counts.values());
+      if (mostCommon / lastmods.length > 0.8) {
+        record(
+          "/sitemap.xml",
+          "warn",
+          `${mostCommon}/${lastmods.length} lastmod identiques (date de build, pas de contenu)`,
+        );
+      }
+    }
+  } catch (err) {
+    record("/sitemap.xml", "warn", `lastmod non vérifiés : ${err.message}`);
   }
 
   // 1b. Garde-fou CSP & iframes de démonstration (évite toute régression

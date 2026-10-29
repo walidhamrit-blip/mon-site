@@ -402,9 +402,19 @@ export const siteConfigSchema = z.object({
     .object({
       themeId: z.string().min(1).max(40).default(DEFAULT_THEME_ID),
       mode: z.enum(["light", "dark"]).default("light"),
-      defaultLocale: z.enum(["ar", "en"]).default("en"),
+      /**
+       * Langue de référence du site. "auto" suit le marché : c'est le
+       * réglage recommandé (arabe pour la Libye), surchargeable en un clic.
+       */
+      primaryLocale: z.enum(["auto", "ar", "en"]).default("auto"),
+      defaultLocale: z.enum(["ar", "en"]).default("ar"),
     })
-    .default({ themeId: DEFAULT_THEME_ID, mode: "light", defaultLocale: "en" }),
+    .default({
+      themeId: DEFAULT_THEME_ID,
+      mode: "light",
+      primaryLocale: "auto",
+      defaultLocale: "ar",
+    }),
   /** Paiement flexible « 1 $ ou plus » (section dédiée du site). */
   flexiblePayment: z
     .object({

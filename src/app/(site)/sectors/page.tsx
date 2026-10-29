@@ -12,8 +12,8 @@ export async function generateMetadata(): Promise<Metadata> {
     path: "/sectors",
     title:
       locale === "ar"
-        ? "تصميم مواقع حسب القطاع في {city} — نخبة"
-        : "Websites designed for your sector in {cityEn} — Nukhba",
+        ? "تصميم مواقع حسب القطاع في {city}"
+        : "Websites by Sector in {cityEn}",
     description:
       locale === "ar"
         ? "اختر قطاعك: عيادات، مطاعم، عطور، مفروشات، ألعاب، إلكترونيات، مواد بناء، قرطاسية، أطقم صحية — مواقع مخصصة في طرابلس مع حجز وبيع أونلاين."

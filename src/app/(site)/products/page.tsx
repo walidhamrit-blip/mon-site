@@ -3,6 +3,7 @@ import { getSiteDataCached } from "@/lib/store";
 import { absoluteUrl, breadcrumbJsonLd, pageMetadata, siteLocale } from "@/lib/seo";
 import { JsonLd } from "@/components/json-ld";
 import { UpcomingShowcaseView } from "@/components/upcoming-showcase-view";
+import { DigitalStoreBanner } from "@/components/digital-store-banner";
 
 export async function generateMetadata(): Promise<Metadata> {
   const { config } = await getSiteDataCached();
@@ -12,8 +13,8 @@ export async function generateMetadata(): Promise<Metadata> {
     path: "/products",
     title:
       locale === "ar"
-        ? "منتجاتنا الرقمية وبرامجنا السحابية — قريباً في {city}"
-        : "Our Digital Products & Cloud Software — Coming Soon in {cityEn}",
+        ? "برامج ومنتجات رقمية قادمة — نخبة"
+        : "Digital Products & Cloud Software — Coming Soon",
     description:
       locale === "ar"
         ? "المنتجات الرقمية والبرامج الجاهزة من نخبة قريباً — أنظمة نقاط البيع وإدارة المخزون والفوترة السحابية وقوالب الأعمال للشركات في طرابلس وليبيا."
@@ -77,6 +78,7 @@ export default async function ProductsPage() {
         ]}
       />
       <UpcomingShowcaseView kind="products" />
+      <DigitalStoreBanner locale={locale} />
     </>
   );
 }

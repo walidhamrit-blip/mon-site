@@ -6,20 +6,23 @@ import type { MetadataRoute } from "next";
  */
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "Nukhba نخبة — Premium Web Agency Worldwide",
-    short_name: "Nukhba نخبة",
+    // Manifeste = première fiche que Google lit pour une PWA. Le
+    // positionnement doit être celui du site réel (agence + boutique
+    // d'codes), et la langue celle du marché (arabe pour la Libye).
+    name: "نخبة Nukhba — تصميم مواقع ومتجر أكواد رقمية",
+    short_name: "نخبة Nukhba",
     description:
-      "Premium web design & e-commerce agency for clients worldwide — delivered in 7 days.",
+      "تصميم مواقع ومتاجر إلكترونية بالدولار مع متجر أكواد ألعاب وبرامج وبطاقات هدايا — تسليم في 7 أيام.",
     id: "/",
     start_url: "/",
     scope: "/",
     display: "standalone",
-    lang: "en",
-    dir: "ltr",
+    lang: "ar",
+    dir: "rtl",
     orientation: "portrait-primary",
     background_color: "#08080A",
     theme_color: "#C6A664",
-    categories: ["business", "design", "productivity"],
+    categories: ["business", "design", "shopping"],
     icons: [
       {
         src: "/icon.svg",
