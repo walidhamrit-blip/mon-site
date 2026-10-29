@@ -249,6 +249,18 @@ export function marketLanguages(market: MarketProfile): string[] {
 }
 
 /**
+ * Langue principale d'un marché.
+ *
+ * Un site adressé à la Libye doit servir son HTML, ses titres et ses
+ * descriptions en arabe : c'est la langue des requêtes réellement tapées
+ * par les clients locaux. Les marchés non arabophones (ou « Worldwide »)
+ * restent en anglais.
+ */
+export function marketLanguage(market: MarketProfile): "ar" | "en" {
+  return String(market.locale ?? "").toLowerCase().startsWith("ar") ? "ar" : "en";
+}
+
+/**
  * Liste `areaServed` du JSON-LD LocalBusiness.
  *
  * - `globalReach` (ou un marché « monde ») : la zone déclarée est le monde

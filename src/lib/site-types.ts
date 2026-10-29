@@ -120,6 +120,9 @@ export interface SiteConfigData {
   appearance: {
     themeId: string;
     mode: "light" | "dark";
+    /** Langue de référence (HTML + SEO). "auto" = langue du marché. */
+    primaryLocale: "auto" | "ar" | "en";
+    /** Ancien champ, conservé pour les configurations existantes. */
     defaultLocale: "ar" | "en";
   };
   social: {

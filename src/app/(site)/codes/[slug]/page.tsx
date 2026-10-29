@@ -1,12 +1,18 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { getDigitalProductBySlug } from "@/lib/digital-store";
+import { getDigitalCatalog, getDigitalProductBySlug } from "@/lib/digital-store";
 import { absoluteUrl, breadcrumbJsonLd, pageMetadata, siteLocale } from "@/lib/seo";
 import { JsonLd } from "@/components/json-ld";
 import { DigitalProductDetails } from "./digital-product-details";
 import { getSiteDataCached } from "@/lib/store";
 import { resolveMarket } from "@/lib/market";
-import { lowestPriceUsd } from "@/lib/digital-types";
+import { DIGITAL_KIND_LABELS, lowestPriceUsd } from "@/lib/digital-types";
+import {
+  productDisplayName,
+  productFaqs,
+  productSeoDescription,
+  productSeoTitle,
+} from "@/lib/digital-seo";
 
 /**
  * Aucune page produit n'est pré-générée à la construction.
@@ -56,23 +62,15 @@ export async function generateMetadata({
     });
   }
 
-  const title = locale === "ar" ? product.titleAr : product.titleEn;
-  const description = locale === "ar" ? product.descriptionAr : product.descriptionEn;
-  // Le nom de la plateforme n'est rappelé que s'il n'est pas déjà dans le
-  // titre : « Game Top-Up — 8 Ball Pool | 8 Ball Pool » ferait double emploi
-  // et ferait dépasser la longueur conseillée pour un titre.
-  const platform =
-    product.platform && !title.toLowerCase().includes(product.platform.toLowerCase())
-      ? ` — ${product.platform}`
-      : "";
-
   return pageMetadata(config, {
     path: `/codes/${product.slug}`,
-    title: `${title}${platform}`,
-    description,
+    title: productSeoTitle(product, locale),
+    // Description unique par fiche (type + région + prix de départ) : la
+    // description fournisseur était identique sur toutes les URLs.
+    description: productSeoDescription(product, locale),
     image: product.image ? product.image : false,
     keywords: [
-      title,
+      locale === "ar" ? product.titleAr : product.titleEn,
       locale === "ar" ? product.titleEn : product.titleAr,
       product.platform,
       locale === "ar" ? "بطاقة هدايا" : "gift card",
@@ -95,11 +93,34 @@ export default async function DigitalProductPage({
 
   const market = resolveMarket(config.market);
   const locale = siteLocale(config);
+  const ar = locale === "ar";
   const fromUsd = lowestPriceUsd(product);
   const canonical = absoluteUrl(config, `/codes/${product.slug}`);
-  const localeTitle = locale === "ar" ? product.titleAr : product.titleEn;
-  const localeDescription =
-    locale === "ar" ? product.descriptionAr : product.descriptionEn;
+  // Nom nettoyé (« Game Top-Up — PUBG Mobile (Auto) » → « PUBG Mobile ») :
+  // c'est lui qui sert de H1, de nom de produit structuré et de texte de
+  // maillage. Les qualificatifs opérationnels du fournisseur n'ont pas leur
+  // place dans un titre indexé.
+  const localeTitle = productDisplayName(product, locale);
+  const localeDescription = ar ? product.descriptionAr : product.descriptionEn;
+  const faqs = productFaqs(product, locale);
+
+  // Fiches proches : même nature ou même plateforme. Elles créent un
+  // maillage interne crawlable (le client, lui, reste sur son univers).
+  const catalog = await getDigitalCatalog({ publicOnly: true });
+  const related = catalog
+    .filter(
+      (candidate) =>
+        candidate.id !== product.id &&
+        (candidate.platform === product.platform || candidate.kind === product.kind),
+    )
+    .slice(0, 4)
+    .map((candidate) => ({
+      slug: candidate.slug,
+      title: productDisplayName(candidate, locale),
+      platform: candidate.platform,
+      image: candidate.image,
+      fromUsd: lowestPriceUsd(candidate),
+    }));
 
   // Schéma Product : la fiche est publiée et décrit précisément le produit.
   // `availability` suit le statut : une fiche « coming soon » reste
@@ -114,15 +135,33 @@ export default async function DigitalProductPage({
     "@type": "Product",
     "@id": `${canonical}#product`,
     name: localeTitle,
-    alternateName: locale === "ar" ? product.titleEn : product.titleAr,
+    alternateName: ar ? product.titleEn : product.titleAr,
     description: localeDescription,
     url: canonical,
-    inLanguage: [market.locale, "en"],
+    // `image` manquait : sans visuel, Google n'affiche pas de vignette dans
+    // les résultats produit et le balisage est incomplet.
+    image: product.image
+      ? [
+          product.image.startsWith("http")
+            ? product.image
+            : absoluteUrl(config, product.image),
+        ]
+      : [absoluteUrl(config, "/og.jpg")],
+    sku: product.id,
+    inLanguage: ar ? market.locale : "en",
+    // Marque : la plateforme quand elle est identifiable (« Steam »,
+    // « PlayStation »). Les fiches de recharge portent souvent une
+    // plateforme technique (« Mobile », « PC ») qui n'est pas une marque —
+    // dans ce cas on retombe sur le nom du produit.
     brand: {
       "@type": "Brand",
-      name: product.platform || "Nukhba",
+      name: /^(mobile|pc|console|web|android|ios)$/i.test(product.platform || "")
+        ? localeTitle
+        : product.platform || localeTitle,
     },
-    category: product.kind,
+    category: ar
+      ? DIGITAL_KIND_LABELS[product.kind].ar
+      : DIGITAL_KIND_LABELS[product.kind].en,
     ...(fromUsd != null
       ? {
           offers: {
@@ -140,10 +179,34 @@ export default async function DigitalProductPage({
             offerCount: product.denominations.filter((d) => d.available).length,
             availability,
             url: canonical,
+            itemCondition: "https://schema.org/NewCondition",
             seller: { "@id": absoluteUrl(config, "#organization") },
+            // Politique de retour : obligatoire pour prétendre à
+            // l'expérience « fiches marchand » de Google. Les codes
+            // numériques ne sont pas remboursables après livraison — on le
+            // déclare au lieu de laisser Google le deviner.
+            hasMerchantReturnPolicy: {
+              "@type": "MerchantReturnPolicy",
+              applicableCountry: market.countryCode || "LY",
+              returnPolicyCategory: "https://schema.org/MerchantReturnNotPermitted",
+              merchantReturnLink: absoluteUrl(config, "/remboursement"),
+            },
           },
         }
       : {}),
+  };
+
+  // FAQ propre à la fiche, strictement identique au bloc visible.
+  const faqSchema = {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "@id": `${canonical}#faq`,
+    inLanguage: ar ? market.locale : "en",
+    mainEntity: faqs.map((faq) => ({
+      "@type": "Question",
+      name: faq.q,
+      acceptedAnswer: { "@type": "Answer", text: faq.a },
+    })),
   };
 
   return (
@@ -151,23 +214,20 @@ export default async function DigitalProductPage({
       <JsonLd
         data={[
           breadcrumbJsonLd(config, [
+            { name: ar ? "الرئيسية" : "Home", path: "/" },
             {
-              name: locale === "ar" ? "الرئيسية" : "Home",
-              path: "/",
-            },
-            {
-              name:
-                locale === "ar"
-                  ? "الأكواد وبطاقات الهدايا"
-                  : "Digital codes & gift cards",
+              name: ar
+                ? "الأكواد وبطاقات الهدايا"
+                : "Digital codes & gift cards",
               path: "/codes",
             },
             { name: localeTitle, path: `/codes/${product.slug}` },
           ]),
           productSchema,
+          faqSchema,
         ]}
       />
-      <DigitalProductDetails product={product} />
+      <DigitalProductDetails product={product} displayName={localeTitle} related={related} />
     </>
   );
 }

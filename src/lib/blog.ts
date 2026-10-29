@@ -164,27 +164,31 @@ type SeoConfig = { url: string; name: string; nameAr: string };
 export function articleJsonLd(
   config: SeoConfig,
   article: BlogArticle,
-  options: { image?: string } = {},
+  options: { image?: string; locale?: "ar" | "en" } = {},
 ) {
   const base = config.url.replace(/\/+$/, "");
   const url = `${base}${articlePath(article.slug)}`;
   const publisherId = `${base}/#organization`;
+  // Le balisage doit décrire la page RÉELLEMENT servie : sur un site arabe,
+  // `headline`/`description` en anglais contredisent le H1 et la description
+  // visibles (Google peut alors ignorer ou réécrire le rich result).
+  const ar = options.locale === "ar";
   return {
     "@context": "https://schema.org",
     "@type": "BlogPosting",
     "@id": `${url}#article`,
-    headline: article.titleEn,
-    alternateHeadline: article.titleAr,
-    name: article.h1En,
-    description: article.descriptionEn,
+    headline: ar ? article.titleAr : article.titleEn,
+    alternateHeadline: ar ? article.titleEn : article.titleAr,
+    name: ar ? article.h1Ar : article.h1En,
+    description: ar ? article.descriptionAr : article.descriptionEn,
     url,
     mainEntityOfPage: { "@type": "WebPage", "@id": url },
     isPartOf: { "@id": `${base}/#website` },
-    inLanguage: ["en", "ar"],
+    inLanguage: ar ? "ar" : "en",
     datePublished: article.publishedAt,
     dateModified: article.updatedAt,
-    articleSection: article.categoryEn,
-    keywords: [...article.keywordsAr, ...article.keywordsEn].join(", "),
+    articleSection: ar ? article.categoryAr : article.categoryEn,
+    keywords: (ar ? article.keywordsAr : article.keywordsEn).join(", "),
     wordCount: articleWordCount(article),
     timeRequired: `PT${article.readingMinutes}M`,
     author: { "@id": publisherId },

@@ -318,10 +318,14 @@ test("buildLlmsTxt et buildLlmsFullTxt synchronisent dynamiquement toutes les r�
 });
 
 // ── 8. Schémas JSON-LD enrichis & Moteur d'audit SEO/GEO ──────────────────
-test("schémas JSON-LD incluent geo, review, services à la carte, HowTo et Offer par démo", () => {
+test("schémas JSON-LD incluent geo, offre, HowTo — et aucun avis auto-déclaré", () => {
   const lb = localBusinessJsonLd(siteConfig, defaultTestimonials);
   assert.equal(lb.geo["@type"], "GeoCoordinates");
-  assert.equal(lb.review.length, defaultTestimonials.length);
+  // Politique Google : les avis qu'une entreprise publie sur sa propre page
+  // ne sont pas éligibles aux rich results (self-serving reviews). On ne les
+  // balise plus — les témoignages restent visibles dans le HTML.
+  assert.equal(lb.review, undefined);
+  assert.equal(lb.aggregateRating, undefined);
   assert.equal(lb.serviceArea["@type"], "GeoCircle");
   assert.equal(lb.serviceArea.geoRadius, "60000");
   assert.ok(lb.hasOfferCatalog["@id"].endsWith("/pricing#offer-catalog"));

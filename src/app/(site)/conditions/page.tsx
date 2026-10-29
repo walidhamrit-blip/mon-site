@@ -1,15 +1,21 @@
 import type { Metadata } from "next";
 import { getSiteDataCached } from "@/lib/store";
-import { pageMetadata } from "@/lib/seo";
+import { pageMetadata, siteLocale } from "@/lib/seo";
 import { ConditionsClient } from "./conditions-client";
 
 export async function generateMetadata(): Promise<Metadata> {
   const { config } = await getSiteDataCached();
+  const locale = siteLocale(config);
   return pageMetadata(config, {
     path: "/conditions",
-    title: "الشروط العامة للبيع — Terms & conditions of sale — Nukhba",
+    title:
+      locale === "ar"
+        ? "شروط البيع والخدمة — نخبة"
+        : "Terms of Sale & Service — Nukhba",
     description:
-      "شروط الخدمة لمواقع نخبة: الأسعار والدفع بالعملات الرقمية، العربون، الاشتراكات والتجديد، الإلغاء، النطاق والاستضافة، والملكية الفكرية.",
+      locale === "ar"
+        ? "شروط خدمة نخبة: الأسعار والدفع بالعملات الرقمية، العربون، الاشتراكات والتجديد، الإلغاء، النطاق والاستضافة، الملكية الفكرية، وشروط بيع الأكواد الرقمية."
+        : "Nukhba terms: pricing and crypto payment, deposits, subscriptions and renewals, cancellation, domain and hosting, intellectual property, and digital-code sales conditions.",
     keywords: ["شروط الخدمة", "terms of service", "Nukhba"],
   });
 }

@@ -42,7 +42,16 @@ const AI_CRAWLERS = [
 
 export default async function robots(): Promise<MetadataRoute.Robots> {
   const { config } = await getSiteDataCached();
-  const disallow = ["/api/", "/admin", "/admin/login", "/pay/"];
+  const disallow = [
+    "/api/",
+    "/admin",
+    "/admin/login",
+    "/pay/",
+    // Pages de transaction / suivi : elles n'ont aucune valeur dans l'index
+    // et exposent des références de commande.
+    "/codes/commande",
+    "/abonnements/suivi",
+  ];
 
   return {
     rules: [
@@ -59,6 +68,5 @@ export default async function robots(): Promise<MetadataRoute.Robots> {
       },
     ],
     sitemap: `${config.url.replace(/\/+$/, "")}/sitemap.xml`,
-    host: config.url.replace(/\/+$/, ""),
   };
 }

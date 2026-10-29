@@ -32,8 +32,8 @@ export async function generateMetadata(): Promise<Metadata> {
   // le HTML initial.
   const locale = siteLocale(config);
 
-  const titleAr = "خدمات رقمية سريعة في {city} — هوية، عروض، صفحات هبوط";
-  const titleEn = "Fast digital services in {cityEn} — identity, decks, landing pages";
+  const titleAr = "خدمات رقمية سريعة بأسعار معلنة في {city}";
+  const titleEn = "Fast Digital Services at Fixed Prices — {cityEn}";
   const descriptionAr =
     `خدمات نخبة الرقمية في طرابلس بأسعار معلنة: إعادة تصميم موقع من ${price("restyle", 49)}، ` +
     `إضافة قسم من ${price("add-section", 19)}، عرض تقديمي من ${price("slides", 29)}، ` +

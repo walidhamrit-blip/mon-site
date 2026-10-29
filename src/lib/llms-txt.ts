@@ -11,7 +11,7 @@ import { resolveSiteOrigin } from "@/lib/site-identity";
 import type { SiteContent } from "@/lib/site-types";
 import type { siteConfig } from "@/lib/config";
 import type { DigitalProduct } from "@/lib/digital-types";
-import { marketLabels, resolveMarket } from "@/lib/market";
+import { marketLanguage, marketLabels, resolveMarket } from "@/lib/market";
 
 type LlmsConfig = typeof siteConfig;
 
@@ -66,8 +66,17 @@ export function buildLlmsTxt({
   lines.push(
     `- Track record: ${config.stats.sitesDelivered} websites delivered, ${config.stats.satisfaction} client satisfaction, ${config.stats.ratingValue ?? "4.9"}/5 average rating (${config.stats.reviewCount ?? "86"} reviews), ${config.stats.support} support`,
   );
+  // Langue de référence : identique à celle servie dans le HTML et les
+  // métadonnées (arabe pour un marché arabophone, sauf choix explicite).
+  const explicitLocale = String(config.appearance?.primaryLocale ?? "auto");
+  const primaryLocale =
+    explicitLocale === "ar" || explicitLocale === "en"
+      ? explicitLocale
+      : marketLanguage(market);
   lines.push(
-    `- Languages: English (en, primary) and Arabic (ar, full RTL); French-speaking team`,
+    primaryLocale === "ar"
+      ? `- Languages: Arabic (ar, primary, full RTL) and English (en); French-speaking team`
+      : `- Languages: English (en, primary) and Arabic (ar, full RTL); French-speaking team`,
   );
   lines.push(
     `- Payments: USD-only pricing (1 USD = 1 USDT); crypto via NOWPayments — USDT recommended — in 1 payment or 2–3 installments, plus bank transfer on request; $${config.reservation.depositUsd} priority reservation deposit deducted from final price; step-by-step photo guide: ${cleanUrl(base, "/blog/how-to-pay-with-crypto-usdt")}`,
@@ -90,7 +99,7 @@ export function buildLlmsTxt({
     `- [Digital Products & Software — Coming Soon](${cleanUrl(base, "/products")}): ${productsPage.items.length} cloud POS, CRM, ERP & digital software kits (${productsPage.statusBadgeEn} / ${productsPage.statusBadgeAr})`,
   );
   lines.push(
-    `- [Digital Codes & Gift Cards](${cleanUrl(base, "/codes")}): catalogue of software activation codes, gaming gift cards and in-game currency top-ups (Steam, PlayStation, Xbox, Roblox, Google Play, Amazon, Spotify) — priced in USD, region-tagged, electronic delivery`,
+    `- [Digital Codes & Gift Cards](${cleanUrl(base, "/codes")}): catalogue of software activation codes, gaming gift cards and in-game currency top-ups (Steam, PlayStation, Xbox, Roblox, Google Play, Amazon, Spotify) — priced in USD, region-tagged, electronic delivery. Buying guide and pre-purchase FAQ: region-locking rules, delivery time, payment (1 USD = 1 USDT) and replacement policy for invalid codes.`,
   );
   for (const code of digitalProducts) {
     const from = code.denominations

@@ -4,116 +4,58 @@ import { blogArticles } from "@/lib/blog-articles";
 import { getDemoCapturedAt, getDemoPreviewImages } from "@/lib/preview-manifest";
 import { getDigitalCatalog } from "@/lib/digital-store";
 import { comparisonIds } from "@/lib/comparisons";
-
-const BUILD_DATE = new Date();
+import { lowestPriceUsd } from "@/lib/digital-types";
 
 /**
  * Le sitemap est revalidé toutes les minutes, comme la boutique /codes.
  *
- * Sans cela il est figé au moment du build : le cataloguelive (FazerCards)
+ * Sans cela il est figé au moment du build : le catalogue live (FazerCards)
  * n'est disponible qu'à l'exécution, donc seules les fiches « seed »
- * étaient listées — les ~110 fiches réelles (recharges, cartes regionales)
- * n'étaient jamais soumises aux moteurs de recherche.
+ * étaient listées — les fiches réelles n'étaient jamais soumises aux moteurs.
  */
 export const revalidate = 60;
 
+/**
+ * Sitemap — uniquement des URLs canoniques et des dates RÉELLES.
+ *
+ * Constat de l'audit : toutes les entrées portaient `lastModified = now`
+ * (date du build ou du démarrage du serveur). Google ignore une date qui
+ * change à chaque crawl ; pire, cela lui apprend à ne plus faire confiance
+ * au sitemap. On ne déclare donc une date que lorsqu'elle est vérifiable
+ * (date de mise à jour d'un article, date de capture d'une réalisation) et
+ * on omet le champ pour les pages institutionnelles.
+ */
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const { config, content } = await getSiteDataCached();
   const base = config.url.replace(/\/+$/, "");
 
   const mainRoutes: MetadataRoute.Sitemap = [
-    { url: `${base}/`, lastModified: BUILD_DATE, changeFrequency: "weekly", priority: 1 },
-    {
-      url: `${base}/demos`,
-      lastModified: BUILD_DATE,
-      changeFrequency: "weekly",
-      priority: 0.9,
-    },
-    {
-      url: `${base}/apps`,
-      lastModified: BUILD_DATE,
-      changeFrequency: "weekly",
-      priority: 0.85,
-    },
-    {
-      url: `${base}/products`,
-      lastModified: BUILD_DATE,
-      changeFrequency: "weekly",
-      priority: 0.85,
-    },
-    {
-      url: `${base}/sectors`,
-      lastModified: BUILD_DATE,
-      changeFrequency: "weekly",
-      priority: 0.8,
-    },
-    {
-      url: `${base}/blog`,
-      lastModified: BUILD_DATE,
-      changeFrequency: "weekly",
-      priority: 0.8,
-    },
-    {
-      url: `${base}/services`,
-      lastModified: BUILD_DATE,
-      changeFrequency: "weekly",
-      priority: 0.85,
-    },
-    {
-      url: `${base}/pricing`,
-      lastModified: BUILD_DATE,
-      changeFrequency: "monthly",
-      priority: 0.8,
-    },
-    {
-      url: `${base}/contact`,
-      lastModified: BUILD_DATE,
-      changeFrequency: "monthly",
-      priority: 0.7,
-    },
-    {
-      url: `${base}/badge`,
-      lastModified: BUILD_DATE,
-      changeFrequency: "monthly",
-      priority: 0.6,
-    },
-    {
-      url: `${base}/remboursement`,
-      lastModified: BUILD_DATE,
-      changeFrequency: "yearly",
-      priority: 0.3,
-    },
-    {
-      url: `${base}/conditions`,
-      lastModified: BUILD_DATE,
-      changeFrequency: "yearly",
-      priority: 0.3,
-    },
-    {
-      url: `${base}/codes`,
-      lastModified: BUILD_DATE,
-      changeFrequency: "weekly",
-      priority: 0.8,
-    },
-    {
-      url: `${base}/compare`,
-      lastModified: BUILD_DATE,
-      changeFrequency: "monthly",
-      priority: 0.8,
-    },
+    { url: `${base}/`, changeFrequency: "weekly", priority: 1 },
+    { url: `${base}/codes`, changeFrequency: "daily", priority: 0.9 },
+    { url: `${base}/demos`, changeFrequency: "weekly", priority: 0.9 },
+    { url: `${base}/services`, changeFrequency: "weekly", priority: 0.85 },
+    { url: `${base}/pricing`, changeFrequency: "monthly", priority: 0.8 },
+    { url: `${base}/sectors`, changeFrequency: "weekly", priority: 0.8 },
+    { url: `${base}/blog`, changeFrequency: "weekly", priority: 0.8 },
+    { url: `${base}/compare`, changeFrequency: "monthly", priority: 0.8 },
+    { url: `${base}/products`, changeFrequency: "weekly", priority: 0.75 },
+    { url: `${base}/apps`, changeFrequency: "weekly", priority: 0.7 },
+    { url: `${base}/abonnements`, changeFrequency: "monthly", priority: 0.7 },
+    { url: `${base}/contact`, changeFrequency: "monthly", priority: 0.7 },
+    { url: `${base}/badge`, changeFrequency: "monthly", priority: 0.6 },
+    { url: `${base}/remboursement`, changeFrequency: "yearly", priority: 0.3 },
+    { url: `${base}/conditions`, changeFrequency: "yearly", priority: 0.3 },
   ];
 
   const { sectorIds } = await import("@/lib/sectors");
   const sectorRoutes: MetadataRoute.Sitemap = sectorIds.map((id) => ({
     url: `${base}/sectors/${id}`,
-    lastModified: BUILD_DATE,
     changeFrequency: "weekly",
     priority: 0.75,
   }));
 
   const serviceRoutes: MetadataRoute.Sitemap = config.standaloneServices.map((service) => ({
     url: `${base}/services/${service.id}`,
-    lastModified: BUILD_DATE,
     changeFrequency: "monthly",
     priority: 0.8,
   }));
@@ -129,21 +71,22 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // comparaison déclarée dans src/lib/comparisons.ts.
   const comparisonRoutes: MetadataRoute.Sitemap = comparisonIds.map((id) => ({
     url: `${base}/compare/${id}`,
-    lastModified: BUILD_DATE,
     changeFrequency: "monthly",
     priority: 0.8,
   }));
 
   // Images : captures locales Playwright (desktop + mobile) quand elles
   // existent — stables, rapides et servies par notre propre domaine. À défaut,
-  // on retombe sur l'image externe du portfolio.
+  // on retombe sur l'image externe du portfolio. La date de capture n'est
+  // déclarée que si elle existe réellement.
   const demoRoutes: MetadataRoute.Sitemap = getAllKnownDemos(content).map((d) => {
     const localPreviews = getDemoPreviewImages(d).map((path) => `${base}${path}`);
     const fallback = d.image && !d.image.includes("&") ? [d.image] : [];
     const images = localPreviews.length > 0 ? localPreviews : fallback;
+    const capturedAt = getDemoCapturedAt(d);
     return {
       url: `${base}/demos/${d.slug}`,
-      lastModified: getDemoCapturedAt(d) ?? BUILD_DATE,
+      ...(capturedAt ? { lastModified: capturedAt } : {}),
       changeFrequency: "weekly",
       priority: 0.7,
       ...(images.length > 0 ? { images } : {}),
@@ -151,14 +94,28 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   });
 
   // Catalogue digital : une entrée par fiche publiée (codes logiciels,
-  // cartes cadeaux gaming, recharges).
-  const digitalProducts = await getDigitalCatalog({ publicOnly: true });
-  const digitalRoutes: MetadataRoute.Sitemap = digitalProducts.map((product) => ({
-    url: `${base}/codes/${product.slug}`,
-    lastModified: BUILD_DATE,
-    changeFrequency: "weekly",
-    priority: 0.75,
-  }));
+  // cartes cadeaux gaming, recharges). L'image est déclarée : elle est
+  // éligible à Google Images, un canal important pour ce type de produit.
+  const digitalProducts = (await getDigitalCatalog({ publicOnly: true })).filter(
+    // On ne soumet au crawl que les fiches qui ont un contenu transactionnel
+    // réel : vendables, ou au moins dotées d'un prix. Une fiche vide
+    // « bientôt disponible » reste accessible par le rayon, mais n'est pas
+    // poussée dans le sitemap (budget de crawl et signal de qualité).
+    (product) => product.status === "available" || lowestPriceUsd(product) != null,
+  );
+  const digitalRoutes: MetadataRoute.Sitemap = digitalProducts.map((product) => {
+    const image = product.image
+      ? product.image.startsWith("http")
+        ? product.image
+        : `${base}${product.image}`
+      : null;
+    return {
+      url: `${base}/codes/${product.slug}`,
+      changeFrequency: "weekly",
+      priority: lowestPriceUsd(product) != null ? 0.75 : 0.5,
+      ...(image ? { images: [image] } : {}),
+    };
+  });
 
   return [
     ...mainRoutes,

@@ -30,6 +30,7 @@ import { DigitalBuyDialog } from "@/components/digital-buy-dialog";
 import { RegionalAlert } from "@/components/regional-alert";
 import { gamePlatformSummary } from "@/lib/digital-platform-core";
 import { productVisual } from "@/lib/game-covers";
+import { productFaqs, redeemSteps } from "@/lib/digital-seo";
 
 /**
  * Fiche d'un produit du catalogue digital.
@@ -39,10 +40,31 @@ import { productVisual } from "@/lib/game-covers";
  * puis livré dès la confirmation du paiement (aucun stock acheté
  * d'avance). Les fiches `coming_soon` restent en liste d'attente.
  */
-export function DigitalProductDetails({ product }: { product: DigitalProduct }) {
+export interface RelatedDigitalProduct {
+  slug: string;
+  title: string;
+  platform: string;
+  image: string;
+  fromUsd: number | null;
+}
+
+export function DigitalProductDetails({
+  product,
+  displayName,
+  related = [],
+}: {
+  product: DigitalProduct;
+  /** Nom commercial nettoyé (voir `productDisplayName`) — H1 et textes. */
+  displayName: string;
+  related?: RelatedDigitalProduct[];
+}) {
   const siteConfig = useSiteConfig();
   const { locale } = useI18n();
   const ar = locale === "ar";
+  // Contenu unique par fiche : étapes d'activation et FAQ générées à partir
+  // des données réelles (type, plateforme, régions, montants).
+  const steps = redeemSteps(product, locale);
+  const faqs = productFaqs(product, locale);
   const features = ar ? product.featuresAr : product.featuresEn;
   const available = product.denominations.filter((denomination) => denomination.available);
   const sellable = isSellable(product);
@@ -59,8 +81,8 @@ export function DigitalProductDetails({ product }: { product: DigitalProduct }) 
   });
 
   const waitlistMessage = ar
-    ? `مرحبا نخبة 👋 أرغب في «${product.titleAr}» (${product.platform}). أرجو إشعارني عند فتح البيع أو إرسال طلب مخصص.`
-    : `Hello Nukhba 👋 I'd like "${product.titleEn}" (${product.platform}). Please notify me when sales open, or prepare a custom order.`;
+    ? `مرحبا نخبة 👋 أرغب في «${displayName}» (${product.platform}). أرجو إشعارني عند فتح البيع أو إرسال طلب مخصص.`
+    : `Hello Nukhba 👋 I'd like "${displayName}" (${product.platform}). Please notify me when sales open, or prepare a custom order.`;
 
   return (
     <div className="pt-6">
@@ -80,7 +102,7 @@ export function DigitalProductDetails({ product }: { product: DigitalProduct }) 
                 <div className="relative mb-6 aspect-[16/9] max-h-[380px] overflow-hidden rounded-[var(--radius-lg)] border border-[var(--border)] bg-[#0b1220] shadow-[var(--shadow-sm)]">
                   <Image
                     src={visual}
-                    alt={ar ? `صورة ${product.titleAr}` : `${product.titleEn} product visual`}
+                    alt={ar ? `صورة ${displayName}` : `${displayName} product visual`}
                     fill
                     sizes="(max-width: 1024px) 100vw, 58vw"
                     quality={88}
@@ -117,10 +139,12 @@ export function DigitalProductDetails({ product }: { product: DigitalProduct }) 
               </div>
 
               <h1 className="mt-5 text-[clamp(1.7rem,1.1rem+2.2vw,2.6rem)] font-black leading-[1.1] tracking-[-0.03em] text-balance">
-                {ar ? product.titleAr : product.titleEn}
+                {displayName}
               </h1>
               <p className="mt-1.5 text-[13.5px] font-bold text-[var(--muted-foreground)]">
-                {product.platform}
+                {ar
+                  ? `${DIGITAL_KIND_LABELS[product.kind].ar} · ${product.platform}`
+                  : `${DIGITAL_KIND_LABELS[product.kind].en} · ${product.platform}`}
               </p>
               <p className="mt-4 max-w-[62ch] text-[15px] leading-8 text-[var(--muted-foreground)]">
                 {ar ? product.descriptionAr : product.descriptionEn}
@@ -301,6 +325,90 @@ export function DigitalProductDetails({ product }: { product: DigitalProduct }) 
               </Link>
             </aside>
           </div>
+        </div>
+      </section>
+
+      {/*
+        Contenu de fiche (sous la ligne de flottaison) : guide d'activation,
+        questions fréquentes et fiches proches. Sans lui, chaque URL produit
+        ne comptait que ~280 mots quasi identiques — le profil type d'un
+        catalogue que Google choisit de ne pas indexer.
+      */}
+      <section className="section-tight border-t border-[var(--border)]">
+        <div className="site-container px-4 sm:px-6 lg:px-8">
+          <div className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+            <div>
+              <h2 className="text-2xl font-black">
+                {ar ? `كيف تستخدم ${displayName}؟` : `How to use ${displayName}`}
+              </h2>
+              <ol className="mt-5 space-y-4">
+                {steps.map((step, index) => (
+                  <li key={step} className="flex items-start gap-3 text-[14px] leading-7">
+                    <span className="mt-0.5 grid h-7 w-7 shrink-0 place-items-center rounded-full bg-[var(--accent)]/15 text-[12px] font-black text-[var(--accent)]">
+                      {index + 1}
+                    </span>
+                    <span className="opacity-85">{step}</span>
+                  </li>
+                ))}
+              </ol>
+              <p className="mt-5 rounded-[var(--radius-md)] border border-[var(--border)] bg-[var(--card)] p-4 text-[13px] leading-6 text-[var(--muted-foreground)]">
+                {ar
+                  ? "تحقّق من منطقة الحساب قبل الشراء: البطاقة الإقليمية لا تعمل خارج منطقتها ولا تُسترجع بعد التسليم. للأسئلة، تواصل معنا على واتساب قبل الدفع."
+                  : "Check your account region before buying: a region-locked card will not work outside its region and cannot be refunded after delivery. Message us on WhatsApp before paying if unsure."}
+              </p>
+            </div>
+
+            <div>
+              <h2 className="text-2xl font-black">
+                {ar ? "أسئلة شائعة" : "Frequently asked questions"}
+              </h2>
+              <div className="mt-5 divide-y divide-[var(--border)] rounded-[var(--radius-lg)] border border-[var(--border)] bg-[var(--card)]">
+                {faqs.map((faq) => (
+                  <details key={faq.q} className="p-4">
+                    <summary className="cursor-pointer list-none text-[14px] font-black leading-6">
+                      {faq.q}
+                    </summary>
+                    <p className="mt-2 text-[13px] leading-7 text-[var(--muted-foreground)]">
+                      {faq.a}
+                    </p>
+                  </details>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {related.length > 0 && (
+            <div className="mt-12 border-t border-[var(--border)] pt-8">
+              <h2 className="text-xl font-black">
+                {ar ? "منتجات مشابهة" : "Related products"}
+              </h2>
+              <nav
+                aria-label={ar ? "منتجات مشابهة" : "Related products"}
+                className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4"
+              >
+                {related.map((item) => (
+                  <Link
+                    key={item.slug}
+                    href={`/codes/${item.slug}`}
+                    className="rounded-[var(--radius-md)] border border-[var(--border)] bg-[var(--card)] p-4 transition-colors hover:border-[var(--accent)]"
+                  >
+                    <span className="block text-[11px] font-black uppercase tracking-[0.12em] text-[var(--muted-foreground)]">
+                      {item.platform}
+                    </span>
+                    <span className="mt-1 block text-[14px] font-black leading-6">
+                      {item.title}
+                    </span>
+                    {item.fromUsd != null && (
+                      <span className="mt-2 block text-[12.5px] font-bold text-[var(--accent)]" dir="ltr">
+                        {ar ? "من " : "From "}
+                        {item.fromUsd.toFixed(2)} $
+                      </span>
+                    )}
+                  </Link>
+                ))}
+              </nav>
+            </div>
+          )}
         </div>
       </section>
 
