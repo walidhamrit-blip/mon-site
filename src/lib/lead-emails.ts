@@ -13,7 +13,7 @@ import {
   type LeadEmailData,
   type SiteEmailContext,
 } from "@/lib/emails";
-import { sendEmail, type MailResult } from "@/lib/mailer";
+import { mailLeadRecipient, sendEmail, type MailResult } from "@/lib/mailer";
 
 export interface LeadEmailOutcome {
   /** Notification adressée à l'agence. */
@@ -22,10 +22,16 @@ export interface LeadEmailOutcome {
   receipt: MailResult | null;
 }
 
-/** Adresse qui reçoit les notifications de demandes. */
+/**
+ * Adresse qui reçoit les notifications de demandes.
+ *
+ * Une seule règle, partagée avec `/api/health` (`mailLeadRecipient`) : sans
+ * `LEAD_NOTIFICATION_EMAIL`, la notification part vers l'adresse publique du
+ * site — qui doit donc exister réellement, sinon elle est rejetée en 550 et
+ * la demande est perdue.
+ */
 export function notificationRecipient(ctx: SiteEmailContext): string {
-  const explicit = process.env.LEAD_NOTIFICATION_EMAIL?.trim();
-  return explicit || ctx.email;
+  return mailLeadRecipient(ctx.email);
 }
 
 /** Construit le contexte du site (coordonnées) à partir de la configuration. */

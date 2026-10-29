@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { getDigitalCatalog } from "@/lib/digital-store";
+import { digitalCatalogStatus, getDigitalCatalog } from "@/lib/digital-store";
 import {
   absoluteUrl,
   breadcrumbJsonLd,
@@ -10,6 +10,7 @@ import {
 } from "@/lib/seo";
 import { JsonLd } from "@/components/json-ld";
 import { DigitalCatalog } from "@/components/digital-catalog";
+import { StoreUnavailableNotice } from "@/components/store-status-notice";
 import { sortByDemand } from "@/lib/digital-priority";
 import { getSiteDataCached } from "@/lib/store";
 import { marketLabels, resolveMarket } from "@/lib/market";
@@ -82,6 +83,13 @@ export default async function CodesPage() {
    * le visiteur change de tri.
    */
   const products = sortByDemand(await getDigitalCatalog({ publicOnly: true }));
+  /**
+   * Panne de la base : le catalogue affiché n'est plus le vrai (repli sur les
+   * fiches de démonstration) et aucune commande ne pourrait être enregistrée.
+   * On le DIT au visiteur, et on ne présente pas le repli comme le catalogue.
+   */
+  const status = digitalCatalogStatus();
+  const degraded = status.degraded;
   const market = resolveMarket(config.market);
   const locale = siteLocale(config);
   const ar = locale === "ar";
@@ -90,6 +98,32 @@ export default async function CodesPage() {
     .map((product) => lowestPriceUsd(product))
     .filter((value): value is number => value != null);
   const cheapest = fromPrices.length > 0 ? Math.min(...fromPrices) : null;
+
+  /*
+   * Pendant une panne de base, on n'émet NI l'ItemList NI les offres du
+   * Store : le catalogue affiché n'est alors qu'un repli de démonstration,
+   * et l'annoncer à Google reviendrait à lui apprendre que la boutique
+   * vend 8 produits (constat de production du 29/10/2026).
+   */
+  const itemList = degraded
+    ? null
+    : {
+        "@type": "ItemList",
+        numberOfItems: products.length,
+        itemListElement: products.map((product, index) => ({
+          "@type": "ListItem",
+          position: index + 1,
+          url: absoluteUrl(config, `/codes/${product.slug}`),
+          name: ar ? product.titleAr : product.titleEn,
+          ...(product.image
+            ? {
+                image: product.image.startsWith("http")
+                  ? product.image
+                  : absoluteUrl(config, product.image),
+              }
+            : {}),
+        })),
+      };
 
   const collectionSchema = {
     "@context": "https://schema.org",
@@ -104,39 +138,25 @@ export default async function CodesPage() {
     description: ar
       ? "كتالوج أكواد الألعاب والبرامج وبطاقات هدايا الألعاب وشحن العملات داخل الألعاب: Steam وPlayStation وXbox وRoblox وGoogle Play وAmazon — أسعار بالدولار وتسليم إلكتروني."
       : "Catalogue of game keys, software codes, gaming gift cards and in-game currency top-ups: Steam, PlayStation, Xbox, Roblox, Google Play and Amazon — USD pricing with electronic delivery.",
-    mainEntity: {
-      "@type": "ItemList",
-      numberOfItems: products.length,
-      itemListElement: products.map((product, index) => ({
-        "@type": "ListItem",
-        position: index + 1,
-        url: absoluteUrl(config, `/codes/${product.slug}`),
-        name: ar ? product.titleAr : product.titleEn,
-        ...(product.image
-          ? {
-              image: product.image.startsWith("http")
-                ? product.image
-                : absoluteUrl(config, product.image),
-            }
-          : {}),
-      })),
-    },
+    ...(itemList ? { mainEntity: itemList } : {}),
   };
 
   // Entité Store + catalogue d'offres : Google comprend qu'il s'agit d'une
   // boutique et non d'une simple page de services.
   const storeSchema = storeJsonLd(
     config,
-    products.map((product) => ({
-      name: ar ? product.titleAr : product.titleEn,
-      url: absoluteUrl(config, `/codes/${product.slug}`),
-      image: product.image
-        ? product.image.startsWith("http")
-          ? product.image
-          : absoluteUrl(config, product.image)
-        : null,
-      priceUsd: lowestPriceUsd(product),
-    })),
+    degraded
+      ? []
+      : products.map((product) => ({
+          name: ar ? product.titleAr : product.titleEn,
+          url: absoluteUrl(config, `/codes/${product.slug}`),
+          image: product.image
+            ? product.image.startsWith("http")
+              ? product.image
+              : absoluteUrl(config, product.image)
+            : null,
+          priceUsd: lowestPriceUsd(product),
+        })),
   );
 
   const faqSchema = {
@@ -206,7 +226,13 @@ export default async function CodesPage() {
 
             <div className="flex flex-wrap items-center gap-2 sm:shrink-0 sm:justify-end">
               <span className="chip chip-accent">
-                {ar ? `${products.length} منتجاً` : `${products.length} products`}
+                {degraded
+                  ? ar
+                    ? "صيانة مؤقتة"
+                    : "Temporary maintenance"
+                  : ar
+                    ? `${products.length} منتجاً`
+                    : `${products.length} products`}
               </span>
               <span className="chip">
                 {ar ? "تسليم رقمي فوري" : "Digital delivery"}
@@ -225,7 +251,17 @@ export default async function CodesPage() {
         </div>
       </section>
 
-      <DigitalCatalog products={products} />
+      {degraded && (
+        <StoreUnavailableNotice ar={ar} phone={config.phone} />
+      )}
+
+      {/*
+        Pendant une panne de base, la grille n'est pas affichée : elle
+        contiendrait les fiches de démonstration, présentées comme le
+        catalogue réel — c'est exactement ce qui a trompé les visiteurs (et
+        le sitemap) le 29/10/2026.
+      */}
+      {!degraded && <DigitalCatalog products={products} />}
 
       {/*
         Contenu de rayon : ces sections répondent aux questions réellement

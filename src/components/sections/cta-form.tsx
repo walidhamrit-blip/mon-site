@@ -217,13 +217,18 @@ export function CTAForm() {
                   <div className="flex flex-wrap gap-3 pt-2">
                     {submitError && (
                       <div className="w-full rounded-2xl border border-red-500/40 bg-red-500/10 px-4 py-2.5 text-xs text-red-500 text-center">
-                        Échec de l’envoi — réessayez ou{" "}
+                        {locale === "ar"
+                          ? "تعذّر إرسال الطلب — أعد المحاولة أو"
+                          : "Sending failed — try again or"}{" "}
                         <a
                           href={whatsappLink(siteConfig.whatsapp, whatsappMsg)}
                           target="_blank"
+                          rel="noopener noreferrer"
                           className="underline font-bold"
                         >
-                          contactez-nous sur WhatsApp
+                          {locale === "ar"
+                            ? "تواصل معنا على واتساب"
+                            : "contact us on WhatsApp"}
                         </a>
                       </div>
                     )}

@@ -91,6 +91,7 @@ paiement ne peut être crédité.
 | `RESEND_API_KEY` **ou** `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `SMTP_SECURE` | E-mails. Si les deux fournisseurs sont présents, le code choisit Resend. Sans fournisseur, demandes et commandes restent enregistrées mais aucun e-mail ne part |
 | `EMAIL_FROM` | Expéditeur, ex. `Nukhba <no-reply@nokhba.net.ly>` — domaine à vérifier chez le fournisseur |
 | `EMAIL_DOMAIN` | Domaine utilisé pour construire l'expéditeur par défaut si `EMAIL_FROM` est vide |
+| `EMAIL_REPLY_TO` | Adresse de réponse des e-mails transactionnels. L'expéditeur reste `no-reply@…` (domaine vérifié) ; sans cette variable, un client qui clique « Répondre » écrit à une boîte inexistante et reçoit un `550 5.1.1`. Doit être une boîte **créée** (ex. `contact@nokhba.net.ly`). Visible dans `/api/health` → `mail.replyTo` |
 | `SMTP_TLS_REJECT_UNAUTHORIZED` | Laisser vide/`true` ; `false` désactive la vérification du certificat SMTP (relais auto-signé uniquement) |
 | `LEAD_NOTIFICATION_EMAIL` | Destinataire prioritaire des notifications **leads et paiements**. Pour les paiements, si elle est absente, le code retombe sur l'e-mail public configuré du site, puis sur l'adresse extraite de `EMAIL_FROM` |
 | `NEXT_PUBLIC_SITE_URL` | Repli lu par `src/lib/site-url.ts` ; préférer `SITE_URL` côté serveur |

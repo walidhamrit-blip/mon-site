@@ -271,10 +271,20 @@ L'adresse est affichée sur `/contact`, dans le pied de page, dans le JSON-LD
 et dans les e-mails de commande. Une boîte qui ne reçoit rien = des demandes
 perdues **et** un signal de confiance dégradé.
 
-**État réel vérifié le 29/10 :** le domaine a bien des MX Zoho
-(`mx.zoho.com`, `mx2.zoho.com`, `mx3.zoho.com`), un SPF correct
-(`v=spf1 include:zohomail.com ~all`) et un DMARC (`v=DMARC1; p=none;`). Donc
-l'infrastructure est prête ; la seule inconnue est **l'existence de la boîte**.
+**Test réel du 29/10 — la boîte n'existe pas.** Un message envoyé depuis
+Gmail a été rejeté en **`550 5.1.1`** (« destinataire inconnu »). Le diagnostic
+est net : le domaine a bien des MX Zoho (`mx.zoho.com`, `mx2.zoho.com`,
+`mx3.zoho.com`), un SPF correct (`v=spf1 include:zohomail.com ~all`) et un
+DMARC (`v=DMARC1; p=none;`) — donc **l'infrastructure est prête, il manque
+seulement la boîte**. Toutes les demandes envoyées à `contact@` ont donc été
+perdues jusqu'ici.
+
+> ⚠️ Deux effets de bord à corriger dans le même mouvement :
+> 1. les confirmations de commande partent de `no-reply@nokhba.net.ly`, boîte
+>    qui n'existe pas non plus : un client qui répond est rejeté ;
+> 2. le formulaire de contact notifie cette même adresse morte — c'est
+>    pourquoi `LEAD_NOTIFICATION_EMAIL` doit pointer vers une adresse qui
+>    reçoit réellement (voir § 6.4).
 
 ### 6.1 Tester
 
@@ -282,7 +292,7 @@ Depuis une adresse externe (Gmail, Outlook…), envoyer un message à
 `contact@nokhba.net.ly` avec pour objet « test ». Attendre 5 minutes, puis
 vérifier la réception dans Zoho Mail (dossier « Spam » inclus).
 
-- **Le message arrive** → rien à faire, passez à 6.3.
+- **Le message arrive** → rien à faire, passez à 6.4.
 - **Erreur « adresse introuvable » (550 / 5.1.1)** → la boîte n'existe pas,
   allez au 6.2.
 
@@ -299,7 +309,21 @@ vérifier la réception dans Zoho Mail (dossier « Spam » inclus).
 > **/admin → Paramètres** vers une adresse qui fonctionne **aujourd'hui**.
 > Une adresse morte coûte plus qu'une adresse Gmail.
 
-### 6.3 Confort (facultatif mais recommandé)
+### 6.3 Créer aussi `no-reply@`
+
+Même écran, 30 secondes : sans cette boîte, les réponses aux e-mails de
+commande continuent d'être rejetées. Une fois créée, définir sur Vercel :
+
+- `EMAIL_REPLY_TO=contact@nokhba.net.ly` → les clients qui cliquent
+  « Répondre » écrivent à une adresse qui existe ;
+- `LEAD_NOTIFICATION_EMAIL=contact@nokhba.net.ly` (ou votre Gmail tant que
+  Zoho n'est pas prêt) → le formulaire de contact alerte quelqu'un qui lit.
+
+Vérification : `https://nokhba.net.ly/api/health` → la section `mail` doit
+afficher `"replyTo": "contact@nokhba.net.ly"`, et la liste `warnings` ne doit
+plus mentionner `EMAIL_REPLY_TO`.
+
+### 6.4 Confort (facultatif mais recommandé)
 
 - **Zoho Admin → E-mail → Authentification** : activer **DKIM** pour le
   domaine, puis passer DMARC de `p=none` à `p=quarantine` **après 2–4
