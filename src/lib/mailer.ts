@@ -63,9 +63,30 @@ export function mailReplyTo(): string | null {
   return explicit || null;
 }
 
+/** Contrôle de forme minimal d'une adresse e-mail. */
+function looksLikeEmail(value: string): boolean {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(value);
+}
+
+/**
+ * Destination configurée pour les notifications internes, **si elle est
+ * valide**.
+ *
+ * Constat de production du 29/10/2026 : la variable `LEAD_NOTIFICATION_EMAIL`
+ * contenait littéralement `LEAD_NOTIFICATION_EMAIL` (le nom collé à la place
+ * de la valeur). Toutes les notifications partaient donc vers une adresse
+ * inexistante — sans que rien ne le signale. Une valeur qui n'a pas la forme
+ * d'une adresse est désormais ignorée, et signalée par `/api/health`.
+ */
+export function configuredLeadRecipient(): string | null {
+  const raw = process.env.LEAD_NOTIFICATION_EMAIL?.trim();
+  if (!raw) return null;
+  return looksLikeEmail(raw) ? raw : null;
+}
+
 /** Adresse qui reçoit les notifications internes (demandes, alertes). */
 export function mailLeadRecipient(siteEmail: string): string {
-  return process.env.LEAD_NOTIFICATION_EMAIL?.trim() || siteEmail;
+  return configuredLeadRecipient() ?? siteEmail;
 }
 
 /** Fournisseur actif, déduit des variables d'environnement. */

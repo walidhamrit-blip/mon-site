@@ -6,7 +6,11 @@ import {
   reloadlyConfigured,
   reloadlyMode,
 } from "@/lib/reloadly";
-import { mailDiagnostics, mailLeadRecipient } from "@/lib/mailer";
+import {
+  configuredLeadRecipient,
+  mailDiagnostics,
+  mailLeadRecipient,
+} from "@/lib/mailer";
 import {
   checkFazercardsCredentials,
   fazercardsApiBase,
@@ -279,6 +283,16 @@ export async function GET() {
   if (!diagnostics.replyTo) {
     warnings.push(
       `Les e-mails partent de ${diagnostics.from} : sans EMAIL_REPLY_TO, un client qui répond à sa confirmation écrit à une boîte qui n'existe pas (rejet 550).`,
+    );
+  }
+  /*
+   * Variable présente mais inutilisable : cas réel du 29/10/2026, où
+   * `LEAD_NOTIFICATION_EMAIL` valait littéralement « LEAD_NOTIFICATION_EMAIL ».
+   * Sans cette alerte, les notifications partaient dans le vide en silence.
+   */
+  if (process.env.LEAD_NOTIFICATION_EMAIL?.trim() && !configuredLeadRecipient()) {
+    warnings.push(
+      `LEAD_NOTIFICATION_EMAIL ne contient pas une adresse e-mail valide (valeur actuelle ignorée) : les demandes partent vers ${siteConfig.email}. Corriger la variable sur Vercel.`,
     );
   }
   if (leadRecipient === siteConfig.email) {
