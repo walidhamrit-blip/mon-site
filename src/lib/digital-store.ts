@@ -17,6 +17,89 @@ const DEFAULT_DIGITAL_PRODUCT_IMAGES = new Map(
 );
 
 /**
+ * État de santé du catalogue public.
+ *
+ * Panne vécue le 29/10/2026 : le quota de calcul Neon était épuisé, la base
+ * était suspendue, et la boutique affichait **8 fiches de démonstration
+ * périmées** sans le moindre signe de panne — ni pour le visiteur, ni pour
+ * le propriétaire, ni pour le sitemap. On enregistre donc le dernier échec
+ * de lecture pour pouvoir :
+ *  - afficher un bandeau « boutique momentanément indisponible » au lieu
+ *    d'un faux catalogue (les commandes ne pourraient de toute façon pas
+ *    être enregistrées) ;
+ *  - retirer les fiches du sitemap pendant la panne (ne pas apprendre à
+ *    Google que le catalogue fait 8 produits) ;
+ *  - exposer l'état dans `/api/health` et dans `npm run doctor`.
+ *
+ * L'état est mémorisé par instance : un rendu réussi le remet à zéro.
+ */
+interface CatalogFailure {
+  at: number;
+  message: string;
+}
+
+let catalogFailure: CatalogFailure | null = null;
+
+export interface DigitalCatalogStatus {
+  /** Vrai quand une base est configurée mais qu'elle ne répond plus. */
+  degraded: boolean;
+  reason: "database_unreachable" | null;
+  message: string | null;
+  /** Horodatage ISO du premier échec encore en cours. */
+  since: string | null;
+}
+
+/** Une base est-elle censée répondre ? (sinon : mode démo local/CI) */
+export function databaseConfigured(): boolean {
+  return Boolean(process.env.DATABASE_URL?.trim());
+}
+
+function recordCatalogFailure(error: unknown): void {
+  // Sans DATABASE_URL (CI, `next build`, poste de dev sans base), le repli
+  // sur les fiches codées en dur est le fonctionnement normal : ce n'est
+  // pas une panne, et afficher un bandeau serait trompeur.
+  if (!databaseConfigured()) return;
+  catalogFailure = {
+    at: catalogFailure?.at ?? Date.now(),
+    message: error instanceof Error ? error.message : String(error),
+  };
+}
+
+function clearCatalogFailure(): void {
+  catalogFailure = null;
+}
+
+/** État courant, sans requête supplémentaire (aucune consommation Neon). */
+export function digitalCatalogStatus(): DigitalCatalogStatus {
+  if (!catalogFailure) {
+    return { degraded: false, reason: null, message: null, since: null };
+  }
+  return {
+    degraded: true,
+    reason: "database_unreachable",
+    message: catalogFailure.message,
+    since: new Date(catalogFailure.at).toISOString(),
+  };
+}
+
+/**
+ * Mémo du catalogue public (2 min).
+ *
+ * `/codes` est rendu à chaque requête (`force-dynamic`, indispensable pour
+ * voir le catalogue fournisseur). Sans mémo, chaque visite — et chaque
+ * passage d'un robot — refaisait une lecture en base. Deux minutes suffisent
+ * largement pour une boutique : les écritures admin invalident le mémo
+ * explicitement, et le fournisseur a déjà son propre cache.
+ */
+const PUBLIC_CATALOG_TTL_MS = 120_000;
+let publicCatalogCache: { products: DigitalProduct[]; at: number } | null = null;
+
+/** À appeler après toute écriture du catalogue (admin, cron, seed). */
+export function clearPublicCatalogCache(): void {
+  publicCatalogCache = null;
+}
+
+/**
  * Accès au catalogue digital (codes logiciels & cartes cadeaux).
  *
  * Comme le reste du site, toute lecture est protégée : si la base est
@@ -225,6 +308,8 @@ async function getStoredCatalog(
       .select()
       .from(digitalProducts)
       .orderBy(asc(digitalProducts.sortOrder), asc(digitalProducts.id));
+    // La base répond : la panne éventuelle est terminée.
+    clearCatalogFailure();
 
     const visible = publicOnly
       ? rows.filter((row) =>
@@ -259,6 +344,7 @@ async function getStoredCatalog(
       "[digital] lecture du catalogue impossible :",
       error instanceof Error ? error.message : error,
     );
+    recordCatalogFailure(error);
     return withSupplier(defaultDigitalProducts);
   }
 }
@@ -313,9 +399,23 @@ export async function getDigitalCatalog(
 ): Promise<DigitalProduct[]> {
   const { publicOnly = true } = options;
   if (!publicOnly) return getStoredCatalog({ publicOnly: false });
+
+  // Mémo court : `/codes` est rendu à chaque requête, et sans lui chaque
+  // visite (donc chaque passage de robot) relisait la base. Les écritures
+  // invalident explicitement le mémo (voir `clearPublicCatalogCache`).
+  const now = Date.now();
+  if (publicCatalogCache && now - publicCatalogCache.at < PUBLIC_CATALOG_TTL_MS) {
+    return publicCatalogCache.products;
+  }
+
   const live = await getLiveCatalog();
-  if (live) return live;
-  return getStoredCatalog({ publicOnly: true });
+  const products = live ?? (await getStoredCatalog({ publicOnly: true }));
+  // On ne mémorise pas un repli dû à une panne : dès que la base revient,
+  // la page doit le voir tout de suite plutôt qu'au bout de deux minutes.
+  if (live || !digitalCatalogStatus().degraded) {
+    publicCatalogCache = { products, at: now };
+  }
+  return products;
 }
 
 /** Fiche unique par slug (public : seules les fiches publiées sont visées). */
@@ -334,6 +434,7 @@ export async function getDigitalProductById(id: string): Promise<DigitalProduct 
 
 /** Crée ou met à jour une fiche et ses dénominations. */
 export async function upsertDigitalProduct(product: DigitalProduct): Promise<void> {
+  clearPublicCatalogCache();
   await ensureSchema();
   await db
     .insert(digitalProducts)
@@ -429,6 +530,7 @@ export async function upsertDigitalProduct(product: DigitalProduct): Promise<voi
 
 /** Supprime une fiche (et ses dénominations, en cascade). */
 export async function deleteDigitalProduct(id: string): Promise<void> {
+  clearPublicCatalogCache();
   await ensureSchema();
   await db.delete(digitalProducts).where(eq(digitalProducts.id, id));
 }

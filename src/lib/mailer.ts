@@ -47,6 +47,27 @@ export function mailFromAddress(): string {
   return `Nukhba <no-reply@${domain}>`;
 }
 
+/**
+ * Adresse de réponse appliquée quand l'appelant n'en fournit pas.
+ *
+ * Les e-mails transactionnels (codes livrés, confirmations de commande)
+ * partent de `no-reply@…`. Un client qui clique « Répondre » écrit donc à
+ * une boîte inexistante : le message est rejeté (550 5.1.1) et le support
+ * perd le fil. `EMAIL_REPLY_TO` corrige cela sans changer l'expéditeur
+ * (qui doit rester sur le domaine vérifié pour SPF/DKIM).
+ *
+ * Aucune valeur par défaut : on n'invente pas une adresse qui n'existe pas.
+ */
+export function mailReplyTo(): string | null {
+  const explicit = process.env.EMAIL_REPLY_TO?.trim();
+  return explicit || null;
+}
+
+/** Adresse qui reçoit les notifications internes (demandes, alertes). */
+export function mailLeadRecipient(siteEmail: string): string {
+  return process.env.LEAD_NOTIFICATION_EMAIL?.trim() || siteEmail;
+}
+
 /** Fournisseur actif, déduit des variables d'environnement. */
 export function activeMailProvider(): MailProvider {
   if (process.env.RESEND_API_KEY?.trim()) return "resend";
@@ -76,7 +97,9 @@ async function sendWithResend(message: OutgoingEmail): Promise<MailResult> {
         subject: message.subject,
         html: message.html,
         text: message.text,
-        ...(message.replyTo ? { reply_to: message.replyTo } : {}),
+        ...(message.replyTo || mailReplyTo()
+          ? { reply_to: message.replyTo || mailReplyTo() }
+          : {}),
       }),
       signal: AbortSignal.timeout(TIMEOUT_MS),
     });
@@ -127,7 +150,7 @@ async function sendWithSmtp(message: OutgoingEmail): Promise<MailResult> {
       subject: message.subject,
       html: message.html,
       text: message.text,
-      replyTo: message.replyTo,
+      replyTo: message.replyTo || mailReplyTo() || undefined,
     });
 
     return { provider: "smtp", ok: true, id: info.messageId };
@@ -148,6 +171,8 @@ export interface MailDiagnostics {
   from: string;
   fromExplicit: boolean;
   domain: string;
+  /** Adresse de réponse par défaut (null = réponses impossibles). */
+  replyTo: string | null;
 }
 
 export function mailDiagnostics(): MailDiagnostics {
@@ -162,6 +187,7 @@ export function mailDiagnostics(): MailDiagnostics {
     from,
     fromExplicit: Boolean(process.env.EMAIL_FROM?.trim()),
     domain,
+    replyTo: mailReplyTo(),
   };
 }
 

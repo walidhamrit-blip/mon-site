@@ -61,7 +61,18 @@ export async function POST(req: Request) {
 
   const data = parsed.data;
   let leadId = 0;
+  let saved = false;
 
+  /*
+   * Enregistrement en base — mais un échec ne doit plus faire perdre la
+   * demande.
+   *
+   * Incident du 29/10/2026 : la base était suspendue (quota Neon épuisé) ;
+   * le formulaire répondait 500 et AUCUN e-mail n'était envoyé, parce que
+   * l'envoi venait après l'insertion. Des demandes clients ont été perdues
+   * en silence. Désormais : on tente l'insertion, on envoie les e-mails dans
+   * tous les cas, et on ne répond « échec » que si les deux ont échoué.
+   */
   try {
     await ensureSchema();
     const inserted = await db
@@ -81,21 +92,18 @@ export async function POST(req: Request) {
       })
       .returning({ id: leads.id });
     leadId = inserted[0]?.id ?? 0;
+    saved = true;
   } catch (error) {
     console.error(
-      "[lead] enregistrement impossible :",
+      "[lead] enregistrement impossible (la demande sera transmise par e-mail) :",
       error instanceof Error ? error.message : error,
-    );
-    return NextResponse.json(
-      { ok: false, error: "save_failed" },
-      { status: 500 },
     );
   }
 
   // Webhook optionnel (Formspree, Make, Zapier…) : WEBHOOK_URL sur Vercel.
   // Validation anti-SSRF : on refuse localhost/RFC1918/loopback pour
-  // éviter qu'un attaquant ayant accès aux variables d'env transforme
-  // le serveur en relais vers des services internes.
+  // éviter qu'un attaquant ayant accès aux variables d'env transforme le
+  // serveur en relais vers des services internes.
   const webhook = process.env.WEBHOOK_URL?.trim();
   if (webhook) {
     if (!isValidWebhookUrl(webhook)) {
@@ -118,7 +126,9 @@ export async function POST(req: Request) {
   }
 
   // E-mails : notification à l'agence + accusé de réception au client.
-  // Un échec d'envoi ne doit jamais invalider la demande déjà enregistrée.
+  // Ils partent que la demande ait pu être enregistrée ou non : c'est le
+  // dernier filet avant la perte définitive.
+  let notified = false;
   try {
     const { config } = await getSiteData();
     const outcome = await sendLeadEmails(
@@ -139,6 +149,7 @@ export async function POST(req: Request) {
       },
       leadEmailContext(config),
     );
+    notified = outcome.notification.ok;
     if (!outcome.notification.ok) {
       console.warn("[lead] notification non envoyée :", outcome.notification.error);
     }
@@ -155,5 +166,19 @@ export async function POST(req: Request) {
     );
   }
 
-  return NextResponse.json({ ok: true });
+  /*
+   * Ni base ni e-mail : la demande n'a atterri nulle part. On le dit
+   * franchement (503) pour que l'interface propose le WhatsApp — mieux vaut
+   * un client redirigé qu'un client qui croit avoir été entendu.
+   */
+  if (!saved && !notified) {
+    return NextResponse.json(
+      { ok: false, error: "unavailable", fallback: "whatsapp" },
+      { status: 503 },
+    );
+  }
+
+  // `saved: false` + `ok: true` = la demande est arrivée par e-mail mais
+  // n'a pas pu être stockée : le client n'a rien à refaire.
+  return NextResponse.json({ ok: true, saved });
 }

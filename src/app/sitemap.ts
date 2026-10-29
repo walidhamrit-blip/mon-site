@@ -2,7 +2,7 @@ import type { MetadataRoute } from "next";
 import { getAllKnownDemos, getSiteDataCached } from "@/lib/store";
 import { blogArticles } from "@/lib/blog-articles";
 import { getDemoCapturedAt, getDemoPreviewImages } from "@/lib/preview-manifest";
-import { getDigitalCatalog } from "@/lib/digital-store";
+import { digitalCatalogStatus, getDigitalCatalog } from "@/lib/digital-store";
 import { comparisonIds } from "@/lib/comparisons";
 import { lowestPriceUsd } from "@/lib/digital-types";
 
@@ -101,10 +101,22 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     };
   });
 
+  // Panne de base (quota épuisé, base suspendue…) : le catalogue lu n'est
+  // qu'un repli de démonstration. On retire les fiches du sitemap plutôt que
+  // de faire crawler des 404 et de laisser croire que la boutique vend 8
+  // produits — constat de production du 29/10/2026. Les pages
+  // institutionnelles, elles, restent valables : elles ne dépendent pas du
+  // catalogue.
   // Catalogue digital : une entrée par fiche publiée (codes logiciels,
   // cartes cadeaux gaming, recharges). L'image est déclarée : elle est
   // éligible à Google Images, un canal important pour ce type de produit.
-  const digitalProducts = (await getDigitalCatalog({ publicOnly: true })).filter(
+  //
+  // L'état de panne se lit APRÈS la tentative de lecture — c'est cette
+  // lecture qui l'enregistre. Pendant une panne, la liste est vide : un
+  // sitemap ne doit pas proposer au crawl des 404, ni faire croire que la
+  // boutique vend 8 fiches de démonstration.
+  const catalog = await getDigitalCatalog({ publicOnly: true });
+  const digitalProducts = (digitalCatalogStatus().degraded ? [] : catalog).filter(
     // On ne soumet au crawl que les fiches qui ont un contenu transactionnel
     // réel : vendables, ou au moins dotées d'un prix. Une fiche vide
     // « bientôt disponible » reste accessible par le rayon, mais n'est pas
