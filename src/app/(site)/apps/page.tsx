@@ -3,6 +3,7 @@ import { getSiteDataCached } from "@/lib/store";
 import { absoluteUrl, breadcrumbJsonLd, pageMetadata, siteLocale } from "@/lib/seo";
 import { JsonLd } from "@/components/json-ld";
 import { UpcomingShowcaseView } from "@/components/upcoming-showcase-view";
+import { DigitalStoreBanner } from "@/components/digital-store-banner";
 
 export async function generateMetadata(): Promise<Metadata> {
   const { config } = await getSiteDataCached();
@@ -12,8 +13,8 @@ export async function generateMetadata(): Promise<Metadata> {
     path: "/apps",
     title:
       locale === "ar"
-        ? "تطبيقاتنا الذكية للجوال والويب — قيد التحضير وقريباً"
-        : "Our Smart Apps for Mobile & Web — In Preparation, Coming Soon",
+        ? "تطبيقات نخبة القادمة — iOS وAndroid والويب"
+        : "Nukhba Apps — Coming Soon on iOS, Android & Web",
     description:
       locale === "ar"
         ? "تطبيقات الجوال والويب من نخبة في طرابلس قريباً وقيد التحضير — حلول ذكية للمتاجر والعيادات والمطاعم على iOS وAndroid والويب مع تسجيل للإطلاق المبكر."
@@ -71,6 +72,7 @@ export default async function AppsPage() {
         ]}
       />
       <UpcomingShowcaseView kind="apps" />
+      <DigitalStoreBanner locale={locale} />
     </>
   );
 }

@@ -5,6 +5,7 @@ import {
   demoJsonLd,
   demoSeoMeta,
   pageMetadata,
+  siteLocale,
 } from "@/lib/seo";
 import { JsonLd } from "@/components/json-ld";
 import { notFound } from "next/navigation";
@@ -34,14 +35,18 @@ export async function generateMetadata({
     });
   }
 
-  const seo = demoSeoMeta(demo, "ar");
+  const locale = siteLocale(config);
+  const seo = demoSeoMeta(demo, locale);
 
   return pageMetadata(config, {
     path: `/demos/${demo.slug}`,
     title: seo.title,
     description: seo.description,
     image: false,
-    keywords: [demo.sectorAr, demo.sectorEn, "تصميم مواقع طرابلس", "نخبة"],
+    keywords:
+      locale === "ar"
+        ? [demo.sectorAr, demo.sectorEn, "تصميم مواقع {city}", "نخبة"]
+        : [demo.sectorEn, demo.sectorAr, "web design {cityEn}", "Nukhba"],
   });
 }
 

@@ -3,6 +3,7 @@ import { resolveDemoClassification, resolvePlanPriceBreakdown } from "@/lib/clas
 import { getDemoCapturedAt, getDemoPreviewImages } from "@/lib/preview-manifest";
 import {
   marketAreaServed,
+  marketLanguage,
   marketLanguages,
   marketLabels,
   resolveMarket,
@@ -10,7 +11,6 @@ import {
 } from "@/lib/market";
 import type { Demo, Faq, ProcessStep, Testimonial } from "@/lib/site-types";
 import { DEFAULT_SITE_DOMAIN, domainFromOrigin } from "@/lib/site-identity";
-import { siteConfig } from "@/lib/config";
 
 /**
  * Central SEO + structured-data (JSON-LD) helpers.
@@ -38,6 +38,11 @@ type SiteConfig = {
   addressEn: string;
   /** Profil de marché (ville, pays, fuseau, devise locale…). */
   market?: (MarketConfig & { globalReach?: boolean }) | null;
+  /** Apparence : langue de référence, thème, mode. */
+  appearance?: {
+    primaryLocale?: "auto" | "ar" | "en" | string | null;
+    defaultLocale?: "ar" | "en" | string | null;
+  } | null;
   social: {
     instagram: string;
     facebook: string;
@@ -91,13 +96,25 @@ export const DEFAULT_META_DESCRIPTION =
  * fait la force du référencement de longue date, et on ajoute la formule
  * internationale qui attire la clientèle hors du pays d'origine.
  */
-export function defaultMetaDescription(config: Pick<SiteConfig, "market">): string {
+export function defaultMetaDescription(
+  config: Pick<SiteConfig, "market" | "appearance">,
+  locale?: "ar" | "en",
+): string {
+  const lang = locale ?? siteLocale(config);
   const market = resolveMarket(config.market);
-  const ar = marketLabels(market, "ar");
-  const reach = config.market?.globalReach ? " وللعالم" : "";
-  // ~160 caractères : la description doit rester dans la zone d'affichage
+  const labels = marketLabels(market, lang);
+  const reach = config.market?.globalReach
+    ? lang === "ar"
+      ? " وللعالم"
+      : " and worldwide"
+    : "";
+  // ~155 caractères : la description doit rester dans la zone d'affichage
   // des résultats Google (le contrôle SEO le vérifie à chaque build).
-  return `وكالة نخبة لتصميم المواقع في ${ar.city}: مواقع واجهة، متاجر إلكترونية وأنظمة حجز${reach} — تسليم في 7 أيام، سرعة 90+، تحسين SEO، والأسعار بالدولار.`;
+  // ≤ 155 caractères, phrase complète : une description coupée au milieu
+  // d'un mot (« … مع متجر… ») gaspille la seule accroche de la SERP.
+  return lang === "ar"
+    ? `وكالة نخبة في ${labels.city}: مواقع ومتاجر إلكترونية بأسعار بالدولار${reach}، تسليم في 7 أيام، تحسين SEO — ومتجر أكواد ألعاب وبرامج وبطاقات هدايا.`
+    : `Nukhba in ${labels.city}: websites and online stores priced in USD${reach}, delivered in 7 days, SEO-ready — plus a digital store for game keys, software and gift cards.`;
 }
 
 /**
@@ -148,19 +165,36 @@ export function absoluteUrl(config: Pick<SiteConfig, "url">, path = "/"): string
 }
 
 /**
- * Langue principale du site (réglages /admin → Apparence), utilisée par le
- * serveur pour les métadonnées (titre, description) : une seule version
- * servie par URL, alignée sur le HTML initial rendu.
+ * Langue de référence du site — celle du HTML initial, des titres, des
+ * descriptions et des données structurées.
  *
- * Le visiteur peut ensuite basculer la langue côté client — c'est le
- * comportement du site entier (pas d'URL /ar, /en).
+ * Trois niveaux, du plus explicite au plus automatique :
+ *  1. `appearance.primaryLocale` = "ar" ou "en" : choix explicite de
+ *     l'exploitant (/admin → Apparence) ;
+ *  2. "auto" (défaut) : langue du marché configuré — arabe pour la Libye,
+ *     l'Égypte, l'Arabie saoudite, les Émirats, le Maghreb ; anglais sinon.
+ *
+ * Pourquoi : un site adressé à Tripoli qui se présente en anglais dans son
+ * HTML ne peut pas se classer sur « تصميم مواقع طرابلس ». La langue servie
+ * doit être celle des requêtes réellement tapées par les clients. Un
+ * exploitant qui vise d'abord l'international peut forcer "en" en un clic.
+ *
+ * Le visiteur peut ensuite basculer la langue côté client ; les métadonnées
+ * restent, elles, alignées sur le HTML initial (une seule version par URL,
+ * pas de hreflang trompeur vers une page inexistante).
  */
-export function siteLocale(
-  config: { appearance?: { defaultLocale?: string | null } | null },
-): "ar" | "en" {
-  const stored = config.appearance?.defaultLocale;
-  const locale = stored ?? siteConfig.appearance.defaultLocale;
-  return locale === "ar" ? "ar" : "en";
+export function siteLocale(config: {
+  appearance?: { primaryLocale?: string | null; defaultLocale?: string | null } | null;
+  market?: (MarketConfig & { globalReach?: boolean }) | null;
+}): "ar" | "en" {
+  const explicit = String(config.appearance?.primaryLocale ?? "auto").toLowerCase();
+  if (explicit === "ar" || explicit === "en") return explicit;
+  // Repli : langue du marché. `defaultLocale` n'est volontairement plus
+  // prioritaire — il pouvait rester bloqué sur « en » alors que la valeur
+  // était un simple défaut enregistré, ce qui produisait un site anglais
+  // pour un marché arabophone.
+  const market = resolveMarket(config.market);
+  return marketLanguage(market);
 }
 
 /**
@@ -179,13 +213,17 @@ export function ogLocale(locale: string): string {
 export function organizationJsonLd(config: SiteConfig) {
   const market = resolveMarket(config.market);
   const en = marketLabels(market, "en");
+  const ar = marketLabels(market, "ar");
   const globalReach = Boolean(config.market?.globalReach) || market.id === "global";
   return {
     "@context": "https://schema.org",
     "@type": "Organization",
     "@id": absoluteUrl(config, ORG_ID),
     name: `${config.nameAr} — ${config.name}`,
-    alternateName: `Nukhba Premium Web Agency ${en.city}`,
+    // La marque n'est plus seulement une agence : l'entité couvre aussi le
+    // magasin de codes. Un `alternateName` figé sur « Web Agency » brouille
+    // le rapprochement avec les requêtes gaming.
+    alternateName: `Nukhba Web Design & Digital Store ${en.city}`,
     url: absoluteUrl(config, "/"),
     logo: {
       "@type": "ImageObject",
@@ -197,8 +235,8 @@ export function organizationJsonLd(config: SiteConfig) {
     email: config.email,
     telephone: config.phone,
     description: globalReach
-      ? `وكالة تصميم وتطوير مواقع${en.city === "Worldwide" ? "" : ` في ${en.city}`} تعمل لأسواق عربية وعالمية: مواقع واجهة، متاجر إلكترونية، أنظمة حجز، تحسين SEO وتسليم في 7 أيام.`
-      : `وكالة تصميم وتطوير مواقع في ${en.city} — ${en.country}: مواقع واجهة، متاجر إلكترونية، أنظمة حجز، تحسين SEO وتسليم في 7 أيام.`,
+      ? `وكالة تصميم وتطوير مواقع${market.id === "global" ? "" : ` في ${ar.city}`} تعمل لأسواق عربية وعالمية: مواقع واجهة، متاجر إلكترونية، أنظمة حجز، تحسين SEO وتسليم في 7 أيام — ومتجر رقمي لأكواد الألعاب والبرامج وبطاقات الهدايا.`
+      : `وكالة تصميم وتطوير مواقع في ${ar.city} — ${ar.country}: مواقع واجهة، متاجر إلكترونية، أنظمة حجز، تحسين SEO وتسليم في 7 أيام — ومتجر رقمي لأكواد الألعاب والبرامج وبطاقات الهدايا.`,
     inLanguage: marketLanguages(market),
     sameAs: [config.social.instagram, config.social.facebook, config.social.tiktok].filter(
       (u) => u && /^https?:\/\//.test(u),
@@ -233,7 +271,9 @@ export function websiteJsonLd(config: SiteConfig) {
  */
 export function localBusinessJsonLd(
   config: SiteConfig,
-  testimonials?: ReadonlyArray<Testimonial>,
+  // Conservé dans la signature pour ne pas casser les appelants ; les avis ne
+  // sont plus balisés (voir plus bas).
+  _testimonials?: ReadonlyArray<Testimonial>,
 ) {
   const market = resolveMarket(config.market);
   const en = marketLabels(market, "en");
@@ -244,8 +284,8 @@ export function localBusinessJsonLd(
     "@context": "https://schema.org",
     "@type": "ProfessionalService",
     "@id": absoluteUrl(config, BUSINESS_ID),
-    name: `${config.nameAr} — ${config.name} Premium Web Agency`,
-    alternateName: `Nukhba Web Agency ${en.city}`,
+    name: `${config.nameAr} — ${config.name} · Web Design & Digital Store`,
+    alternateName: `Nukhba Web Agency & Digital Store ${en.city}`,
     url: absoluteUrl(config, "/"),
     logo: absoluteUrl(config, "/icon.svg"),
     image: absoluteUrl(config, "/og.jpg"),
@@ -296,10 +336,15 @@ export function localBusinessJsonLd(
       "أنظمة الحجز والمواعيد",
       "تحسين محركات البحث SEO",
       "تحسين الظهور في الذكاء الاصطناعي GEO",
+      "بطاقات هدايا الألعاب",
+      "أكواد الألعاب والبرامج الرقمية",
+      "شحن العملات داخل الألعاب",
       `Web Design ${en.city}`,
       `Web Agency ${en.city}`,
       "E-Commerce Development",
       "Next.js Web Development",
+      "Game Gift Cards",
+      "Software Activation Keys",
       ...(globalReach ? ["International Web Design", "E-Commerce Worldwide"] : []),
     ],
     openingHoursSpecification: [
@@ -329,36 +374,13 @@ export function localBusinessJsonLd(
     sameAs: [config.social.instagram, config.social.facebook, config.social.tiktok].filter(
       (u) => u && /^https?:\/\//.test(u),
     ),
-    // Note visible sur le site (section témoignages) — source unique :
-    // config.stats (voir src/lib/config.ts), avec repli sur les valeurs
-    // historiques si une configuration ancienne ne les porte pas.
-    aggregateRating: {
-      "@type": "AggregateRating",
-      ratingValue: config.stats?.ratingValue ?? "4.9",
-      bestRating: "5",
-      worstRating: "1",
-      reviewCount: config.stats?.reviewCount ?? "86",
-    },
-    ...(testimonials && testimonials.length > 0
-      ? {
-          review: testimonials.map((t) => ({
-            "@type": "Review",
-            author: {
-              "@type": "Person",
-              name: t.name,
-              alternateName: t.nameEn,
-              jobTitle: t.role,
-            },
-            reviewBody: `${t.text} (${t.textEn})`,
-            reviewRating: {
-              "@type": "Rating",
-              ratingValue: String(t.rating),
-              bestRating: "5",
-              worstRating: "1",
-            },
-          })),
-        }
-      : {}),
+    // Pas d'`aggregateRating` ni de `review` auto-déclarés ici.
+    // Depuis 2019, Google n'affiche pas les avis « auto-attribués » d'une
+    // entreprise sur sa propre page (self-serving reviews) et considère leur
+    // balisage comme du spam de données structurées. Les témoignages restent
+    // visibles dans la section dédiée ; les avis éligibles sont ceux d'une
+    // fiche Google Business Profile vérifiée. Les mentions « 4.9/5 » de
+    // l'interface sont donc décoratives, pas un signal SEO.
     parentOrganization: { "@id": absoluteUrl(config, ORG_ID) },
   };
 }
@@ -431,6 +453,70 @@ export function offerCatalogJsonLd(config: SiteConfig) {
     numberOfItems: planOffers.length + serviceOffers.length,
     provider: { "@id": absoluteUrl(config, ORG_ID) },
     itemListElement: [...planOffers, ...serviceOffers],
+  };
+}
+
+/**
+ * Schéma `Store` — l'activité « boutique d'codes et cartes cadeaux ».
+ *
+ * Le site porte deux activités distinctes : une agence web (ProfessionalService)
+ * et une boutique de codes numériques. Sans entité `Store`, Google ne
+ * comprenait que l'agence et traitait `/codes` comme une simple page du site
+ * de services. Le nœud est déclaré une fois (`@id` stable), enrichi du
+ * catalogue sur `/codes`.
+ */
+export function storeJsonLd(
+  config: SiteConfig,
+  products: ReadonlyArray<{
+    name: string;
+    url: string;
+    image?: string | null;
+    priceUsd?: number | null;
+  }> = [],
+) {
+  const storeUrl = absoluteUrl(config, "/codes");
+  const market = resolveMarket(config.market);
+  return {
+    "@context": "https://schema.org",
+    "@type": "Store",
+    "@id": `${storeUrl}#store`,
+    name: `${config.nameAr} ${config.name} — Digital Store`,
+    alternateName: "متجر نخبة للأكواد والبطاقات الرقمية",
+    url: storeUrl,
+    image: absoluteUrl(config, "/og.jpg"),
+    description:
+      "متجر رقمي لبطاقات الهدايا وأكواد الألعاب والبرامج: Steam، PlayStation، Xbox، Roblox، Google Play، Amazon وغيرها. أسعار بالدولار وتسليم إلكتروني.",
+    parentOrganization: { "@id": absoluteUrl(config, ORG_ID) },
+    currenciesAccepted: "USD",
+    paymentAccepted: "Cryptocurrency (USDT), NOWPayments",
+    areaServed: { "@type": "Place", name: "Worldwide" },
+    knowsLanguage: marketLanguages(market),
+    ...(products.length > 0
+      ? {
+          hasOfferCatalog: {
+            "@type": "OfferCatalog",
+            name: "أكواد وبطاقات رقمية — Digital codes & gift cards",
+            numberOfItems: products.length,
+            itemListElement: products.map((product) => ({
+              "@type": "Offer",
+              url: product.url,
+              ...(product.priceUsd != null
+                ? {
+                    priceCurrency: "USD",
+                    price: String(product.priceUsd),
+                    availability: "https://schema.org/InStock",
+                  }
+                : {}),
+              itemOffered: {
+                "@type": "Product",
+                name: product.name,
+                url: product.url,
+                ...(product.image ? { image: product.image } : {}),
+              },
+            })),
+          },
+        }
+      : {}),
   };
 }
 
@@ -633,6 +719,113 @@ export function demoSeoMeta(demo: Demo, locale: "ar" | "en" = "en"): { title: st
   };
 }
 
+/**
+ * Longueur maximale d'un titre affiché dans les résultats Google.
+ *
+ * Google coupe autour de ~600 px (≈ 60 caractères latins, un peu plus en
+ * arabe). Au-delà, la fin du titre — souvent le mot-clé ou la ville — dispa-
+ * raît. Tous les titres du site passent donc par `serpTitle`, qui borne la
+ * longueur et n'ajoute le suffixe de marque que s'il reste de la place.
+ */
+export const SERP_TITLE_MAX = 60;
+
+/** Suffixe de marque par langue. */
+const BRAND_LABEL: Record<"ar" | "en", string> = { ar: "نخبة", en: "Nukhba" };
+const BRAND_PATTERN = /(nukhba|نخبة)/i;
+
+/** Nettoie un titre : espaces multiples, séparateurs orphelins en fin. */
+function normalizeTitle(value: string): string {
+  return value
+    .replace(/\s+/g, " ")
+    .replace(/\s*[|—–-]\s*$/, "")
+    .trim();
+}
+
+/** Coupe une chaîne sur un mot, sans laisser de ponctuation suspendue. */
+function clampAtWord(value: string, max: number): string {
+  if (value.length <= max) return value;
+  const slice = value.slice(0, max);
+  // 1) Ponctuation forte : on préfère un titre complet (« … في 2026 ؟ »)
+  //    à une troncature avec points de suspension au milieu d'un mot-clé.
+  const strong = Math.max(
+    slice.lastIndexOf("؟"),
+    slice.lastIndexOf("?"),
+    slice.lastIndexOf("!"),
+  );
+  if (strong >= max * 0.45) return value.slice(0, strong + 1).trim();
+  // 2) Séparateur éditorial (sous-titre, précision) : on coupe avant.
+  let separator = -1;
+  for (const mark of [" — ", " – ", " | ", ": "]) {
+    const index = slice.lastIndexOf(mark);
+    if (index > separator) separator = index;
+  }
+  if (separator >= max * 0.5) {
+    return value
+      .slice(0, separator)
+      .replace(/[\s|—–,:;.\-]+$/, "")
+      .trim();
+  }
+  // 3) Dernier recours : coupure sur un espace.
+  const cut = slice.lastIndexOf(" ");
+  const base = (cut > max * 0.55 ? slice.slice(0, cut) : slice)
+    .replace(/[\s|—–,:;.\-]+$/, "")
+    .trim();
+  return `${base}…`;
+}
+
+/**
+ * Construit le titre réellement servi dans la SERP.
+ *
+ * - supprime une marque déjà présente en fin de titre (« … | Nukhba نخبة »)
+ *   puis l'ajoute UNE seule fois si la place le permet : fini les titres
+ *   « Websites … — Nukhba | Nukhba نخبة » qui dépassaient 75 caractères ;
+ * - ne dépasse jamais `max` caractères (60 par défaut), pour éviter la
+ *   troncature sauvage de Google au milieu d'un mot-clé.
+ */
+export function serpTitle(
+  raw: string,
+  locale: "ar" | "en" = "ar",
+  max: number = SERP_TITLE_MAX,
+): string {
+  let title = normalizeTitle(raw ?? "");
+  if (!title) return BRAND_LABEL[locale];
+
+  // « Titre | Nukhba » ou « Titre | نخبة Nukhba » → « Titre ».
+  const parts = title.split(/\s*\|\s*/);
+  if (parts.length > 1 && BRAND_PATTERN.test(parts[parts.length - 1])) {
+    parts.pop();
+    title = parts.join(" | ").trim();
+  }
+  // « Titre — Nukhba », « Titre - نخبة » → « Titre ».
+  title = title.replace(/\s*[—–-]\s*(nukhba|نخبة)\s*$/i, "").trim();
+
+  if (!BRAND_PATTERN.test(title)) {
+    const suffix = ` | ${BRAND_LABEL[locale]}`;
+    if (title.length + suffix.length <= max) title = `${title}${suffix}`;
+  }
+  return clampAtWord(title, max);
+}
+
+/** Description meta bornée à la largeur d'affichage Google (≈155 car.). */
+export function serpDescription(raw: string, max = 155): string {
+  const clean = (raw ?? "").replace(/\s+/g, " ").trim();
+  if (clean.length <= max) return clean;
+  const slice = clean.slice(0, max);
+  // Coupe à la fin d'une phrase quand elle tombe dans la zone visible :
+  // une description qui s'arrête sur un point se lit mieux qu'un « … ».
+  const sentence = Math.max(
+    slice.lastIndexOf(". "),
+    slice.lastIndexOf("؟ "),
+    slice.lastIndexOf("? "),
+  );
+  if (sentence >= max * 0.6) return clean.slice(0, sentence + 1).trim();
+  const cut = slice.lastIndexOf(" ");
+  const base = (cut > max * 0.6 ? slice.slice(0, cut) : slice)
+    .replace(/[\s,;:.\-]+$/, "")
+    .trim();
+  return `${base}…`;
+}
+
 export interface PageSeoOptions {
   /** Chemin interne, ex "/contact". */
   path: string;
@@ -648,6 +841,8 @@ export interface PageSeoOptions {
   noindex?: boolean;
   /** Mots-clés supplémentaires (AR/EN/FR). */
   keywords?: string[];
+  /** Force la langue de la page (sinon : langue de référence du site). */
+  locale?: "ar" | "en";
 }
 
 /**
@@ -687,10 +882,15 @@ export function pageMetadata(config: SiteConfig, opts: PageSeoOptions): Metadata
   // et descriptions restent lisibles dans le code, mais suivent le marché
   // configuré.
   const market = resolveMarket(config.market);
-  const title = applyMarketTokens(opts.title, market);
-  const description = applyMarketTokens(opts.description, market);
+  const locale = opts.locale ?? siteLocale(config);
+  // Titre borné à 60 caractères, suffixe de marque ajouté une seule fois.
+  const title = serpTitle(applyMarketTokens(opts.title, market, locale), locale);
+  // Description bornée à ~155 caractères (largeur d'affichage Google).
+  const description = serpDescription(
+    applyMarketTokens(opts.description, market, locale),
+  );
   const keywords = opts.keywords?.map((keyword) =>
-    applyMarketTokens(keyword, market),
+    applyMarketTokens(keyword, market, locale),
   );
   // undefined = pas d'images déclarées manuellement (la page s'appuie sur
   // les fichiers opengraph-image / twitter-image du segment de route).
@@ -726,11 +926,29 @@ export function pageMetadata(config: SiteConfig, opts: PageSeoOptions): Metadata
       description,
       url: canonical,
       siteName: `${config.nameAr} ${config.name}`,
-      locale: ogLocale(resolveMarket(config.market).locale),
-      alternateLocale: ["en_US"],
+      // La locale Open Graph décrit la LANGUE DE LA PAGE, pas le marché :
+      // une page anglaise sur un marché libyen doit s'annoncer en en_US,
+      // sinon les graphes sociaux et les moteurs reçoivent un signal
+      // contradictoire avec <html lang>.
+      locale: locale === "ar" ? ogLocale(market.locale) : "en_US",
+      alternateLocale:
+        locale === "ar" ? ["en_US"] : [ogLocale(market.locale)],
       type: "website",
+      // Dimensions déclarées uniquement pour l'image OG par défaut. Une
+      // jaquette produit (carrée, 600×600 chez le fournisseur) annoncée en
+      // 1376×768 produit un aperçu social recadré et un balisage faux.
       ...(ogImage
-        ? { images: [{ url: ogImage, width: 1376, height: 768, alt: title }] }
+        ? {
+            images: [
+              {
+                url: ogImage,
+                alt: title,
+                ...(ogImage.endsWith("/og.jpg")
+                  ? { width: 1376, height: 768 }
+                  : {}),
+              },
+            ],
+          }
         : {}),
     },
     twitter: {

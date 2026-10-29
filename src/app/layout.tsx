@@ -1,8 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";
 import "./globals.css";
-import { I18nProvider } from "@/lib/i18n";
-import { localeBootScript, type Locale } from "@/lib/locale";
+import { I18nProvider, type Locale } from "@/lib/i18n";
 import { ThemeProvider, type ThemeMode } from "@/components/theme-provider";
 import { SiteProvider } from "@/components/site-provider";
 import { CurrencyProvider } from "@/components/currency-provider";
@@ -17,6 +16,8 @@ import {
   ogLocale,
   offerCatalogJsonLd,
   organizationJsonLd,
+  serpTitle,
+  siteLocale,
   websiteJsonLd,
 } from "@/lib/seo";
 import { marketLabels, resolveMarket } from "@/lib/market";
@@ -38,20 +39,30 @@ export async function generateMetadata(): Promise<Metadata> {
   const globalReach = Boolean(config.market?.globalReach) || market.id === "global";
   const baseUrl = config.url || siteConfig.url;
 
-  // L'arabe est la langue principale : le titre racine commence en arabe
-  // (nom de marque bilingue pour la recherche de marque), puis la portée
-  // internationale reste lisible pour les moteurs anglophones.
-  const title = `نخبة Nukhba — وكالة ويب فاخرة في ${labels.city} | ${
-    globalReach ? "تصميم مواقع ومتاجر وحجز أونلاين عالمياً" : "تصميم مواقع ومتاجر وحجز أونلاين"
-  } — ${labelsEn.city}`;
-  const description = defaultMetaDescription(config);
+  // Langue de référence : celle du marché (arabe pour la Libye) sauf choix
+  // explicite dans /admin. Le HTML initial, les métadonnées et les données
+  // structurées doivent parler la même langue — sinon Google reçoit un
+  // signal contradictoire (cas historique : <html lang="en"> avec une
+  // description arabe).
+  const locale = siteLocale(config);
+  const title = serpTitle(
+    globalReach
+      ? locale === "ar"
+        ? `تصميم مواقع ومتاجر إلكترونية في ${labels.city} وللعالم`
+        : `Web Design, E-Commerce & Digital Store in ${labelsEn.city}`
+      : locale === "ar"
+        ? `تصميم مواقع ومتاجر إلكترونية في ${labels.city}`
+        : `Web Design & E-Commerce in ${labelsEn.city}`,
+    locale,
+  );
+  const description = defaultMetaDescription(config, locale);
 
   return {
     metadataBase: new URL(baseUrl),
-    title: {
-      default: title,
-      template: "%s | Nukhba نخبة",
-    },
+    // Pas de `template` : chaque page fournit un titre déjà complet et borné
+    // (`serpTitle`). Un template global ajoutait la marque une seconde fois
+    // et poussait la plupart des titres au-delà de 60 caractères.
+    title,
     description,
     keywords: [
       `تصميم مواقع ${labels.city}`,
@@ -87,28 +98,29 @@ export async function generateMetadata(): Promise<Metadata> {
     },
     manifest: "/manifest.webmanifest",
     openGraph: {
-      title: `نخبة — مواقع فاخرة لشركات ${labels.city}`,
-      description:
-        "موقعك الاحترافي جاهز في أيام — تصميم نخبوي، سرعة تذهل، وتخصيص بلا حدود.",
+      title,
+      description,
       url: baseUrl,
       siteName: "نخبة Nukhba",
-      locale: ogLocale(market.locale),
-      alternateLocale: ["en_US"],
+      locale: locale === "ar" ? ogLocale(market.locale) : "en_US",
+      alternateLocale: locale === "ar" ? ["en_US"] : [ogLocale(market.locale)],
       type: "website",
       images: [
         {
           url: "/og.jpg",
           width: 1376,
           height: 768,
-          alt: `نخبة — وكالة تصميم مواقع فاخرة في ${labels.city}`,
+          alt:
+            locale === "ar"
+              ? `نخبة — وكالة تصميم مواقع ومتجر أكواد رقمية في ${labels.city}`
+              : `Nukhba — web design agency and digital store in ${labelsEn.city}`,
         },
       ],
     },
     twitter: {
       card: "summary_large_image",
-      title: `نخبة — مواقع فاخرة لشركات ${labels.city}`,
-      description:
-        "موقعك الاحترافي جاهز في أيام — تصميم نخبوي، سرعة تذهل، وتخصيص بلا حدود.",
+      title,
+      description,
       images: ["/og.jpg"],
     },
     robots: {
@@ -144,17 +156,15 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
   const { config, content } = await getSiteDataCached();
 
   // Apparence principale du site (choisie dans /admin → Réglages) :
-  // langue principale — l'arabe par défaut —, thème principal et mode
-  // clair/sombre servent de défaut à tous les visiteurs (un visiteur peut
-  // toujours basculer ; son choix explicite prime alors sur ces valeurs).
+  // langue principale, thème principal et mode clair/sombre servent de
+  // défaut à tous les visiteurs (un visiteur peut toujours basculer).
   const appearance = {
     themeId: String(config.appearance?.themeId ?? siteConfig.appearance.themeId),
     mode: String(config.appearance?.mode ?? siteConfig.appearance.mode),
-    defaultLocale: String(
-      config.appearance?.defaultLocale ?? siteConfig.appearance.defaultLocale,
-    ),
   };
-  const defaultLocale: Locale = appearance.defaultLocale === "en" ? "en" : "ar";
+  // Même résolution que les métadonnées : HTML, `<html lang>` et contenu
+  // initial ne peuvent pas diverger.
+  const defaultLocale: Locale = siteLocale(config);
   const defaultMode: ThemeMode = appearance.mode === "dark" ? "dark" : "light";
   const defaultPalette = isThemeId(appearance.themeId)
     ? appearance.themeId
@@ -200,12 +210,7 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
           href="/llms-full.txt"
           title="Nukhba full AI knowledge base (AR/EN)"
         />
-        {/* Langue principale (arabe RTL) + choix mémorisé du visiteur,
-            appliqués avant le premier rendu : aucun sens de lecture erroné. */}
-        <script
-          dangerouslySetInnerHTML={{ __html: localeBootScript(defaultLocale) }}
-        />
-        {/* Palettes des 6 thèmes classés (clair + sombre) — src/lib/themes.ts */}
+        {/* Palettes des 8 thèmes (clair + sombre) — générées depuis src/lib/themes.ts */}
         <style dangerouslySetInnerHTML={{ __html: themeCss() }} />
         {/* Applique thème + mode avant le premier rendu (aucun clignotement).
             À défaut de choix mémorisé du visiteur, l'apparence principale

@@ -1,16 +1,22 @@
 import type { Metadata } from "next";
 import { getSiteDataCached } from "@/lib/store";
-import { absoluteUrl, breadcrumbJsonLd, pageMetadata } from "@/lib/seo";
+import { absoluteUrl, breadcrumbJsonLd, pageMetadata, siteLocale } from "@/lib/seo";
 import { JsonLd } from "@/components/json-ld";
 import { ContactClient } from "./contact-client";
 
 export async function generateMetadata(): Promise<Metadata> {
   const { config } = await getSiteDataCached();
+  const locale = siteLocale(config);
   return pageMetadata(config, {
     path: "/contact",
-    title: "تواصل معنا — وكالة نخبة لتصميم المواقع في {city}",
+    title:
+      locale === "ar"
+        ? "تواصل مع نخبة — وكالة ويب في {city}"
+        : "Contact Nukhba — Web Agency in {cityEn}",
     description:
-      "تواصل مع نخبة في طرابلس: واتساب، هاتف أو بريد إلكتروني. استشارة مجانية لموقعك أو متجرك الإلكتروني — رد سريع، السبت إلى الخميس 9 صباحاً حتى 6 مساءً.",
+      locale === "ar"
+        ? "تواصل مع نخبة في {city}: واتساب، هاتف أو بريد إلكتروني. استشارة مجانية لموقعك أو متجرك الإلكتروني — رد سريع خلال ساعتين في أوقات العمل."
+        : "Contact Nukhba in {cityEn}: WhatsApp, phone or email. Free consultation for your website, e-commerce store or digital code order — fast reply, no commitment.",
     keywords: [
       "تواصل وكالة تصميم مواقع {city}",
       "شركة ويب {country} واتساب",

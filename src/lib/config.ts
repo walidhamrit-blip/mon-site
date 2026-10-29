@@ -80,10 +80,20 @@ export const siteConfig = {
     /** Mode d'affichage principal : "light" (clair) ou "dark" (sombre). */
     mode: "light",
     /**
-     * Langue principale du site : "ar" (arabe — langue principale par défaut)
-     * ou "en" (anglais). L'arabe est servi en RTL dès le HTML initial.
+     * Langue de référence du site : "ar" (arabe) ou "en" (anglais).
+     * Conservé pour la compatibilité des configurations existantes.
+     * La valeur réellement utilisée est `primaryLocale` ci-dessous.
      */
     defaultLocale: "ar",
+    /**
+     * Langue de référence SEO et du HTML initial.
+     *
+     * "auto" (recommandé) = langue du marché configuré : arabe pour la
+     * Libye, l'Égypte, l'Arabie saoudite, les Émirats et le Maghreb ;
+     * anglais pour les marchés non arabophones. "ar" / "en" forcent le
+     * choix, quel que soit le marché.
+     */
+    primaryLocale: "auto",
   },
 
   // Prix modifiables ici — source unique.

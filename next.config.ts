@@ -171,6 +171,35 @@ const nextConfig: NextConfig = {
       { source: "/produits", destination: "/products", permanent: true },
       { source: "/nos-produits", destination: "/products", permanent: true },
       { source: "/logiciels", destination: "/products", permanent: true },
+      // Slugs d'articles historiques en français → slugs anglais descriptifs.
+      // Le site vise un public arabe/anglais : un slug français n'aide ni la
+      // compréhension ni le partage. Redirections 301 pour ne perdre aucun
+      // lien ni signal déjà acquis.
+      {
+        source: "/blog/prix-site-web-libye-2026",
+        destination: "/blog/website-cost-libya-2026",
+        permanent: true,
+      },
+      {
+        source: "/blog/choisir-agence-web-tripoli",
+        destination: "/blog/choose-web-agency-tripoli",
+        permanent: true,
+      },
+      {
+        source: "/blog/lancer-boutique-en-ligne-libye",
+        destination: "/blog/launch-online-store-libya",
+        permanent: true,
+      },
+      {
+        source: "/blog/apparaitre-dans-chatgpt-google-ai-libye",
+        destination: "/blog/get-cited-by-chatgpt-google-ai",
+        permanent: true,
+      },
+      {
+        source: "/blog/site-web-clinique-tripoli",
+        destination: "/blog/clinic-website-booking-tripoli",
+        permanent: true,
+      },
     ];
   },
 };

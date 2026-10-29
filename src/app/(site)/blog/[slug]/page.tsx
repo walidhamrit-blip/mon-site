@@ -5,6 +5,7 @@ import {
   absoluteUrl,
   breadcrumbJsonLd,
   pageMetadata,
+  siteLocale,
   webPageJsonLd,
 } from "@/lib/seo";
 import {
@@ -40,15 +41,17 @@ export async function generateMetadata({
       noindex: true,
     });
   }
-  // Métadonnées serveur en anglais (langue principale internationale) ;
-  // le corps visible suit la langue choisie par le visiteur (ArticleView).
+  // Les métadonnées suivent la langue de référence du site : un titre
+  // anglais sur un corps arabe envoie un signal contradictoire à Google et
+  // dégrade le taux de clic dans la SERP arabe.
+  const locale = siteLocale(config);
   return pageMetadata(config, {
     path: articlePath(article.slug),
-    title: article.titleEn,
-    description: article.descriptionEn,
+    title: locale === "ar" ? article.titleAr : article.titleEn,
+    description: locale === "ar" ? article.excerptAr : article.excerptEn,
     // opengraph-image.tsx génère une carte dédiée à l'article.
     image: false,
-    keywords: [...article.keywordsEn, ...article.keywordsAr],
+    keywords: [...article.keywordsAr, ...article.keywordsEn],
   });
 }
 
@@ -62,6 +65,8 @@ export default async function ArticlePage({
   const article = findArticle(blogArticles, slug);
   if (!article) notFound();
 
+  const locale = siteLocale(config);
+  const ar = locale === "ar";
   const canonical = absoluteUrl(config, articlePath(article.slug));
   const services = (article.relatedServices ?? [])
     .map((id) => config.standaloneServices.find((service) => service.id === id) ?? null)
@@ -107,19 +112,22 @@ export default async function ArticlePage({
       <JsonLd
         data={[
           breadcrumbJsonLd(config, [
-            { name: "Home", path: "/" },
-            { name: "Guides", path: "/blog" },
-            { name: article.titleEn, path: articlePath(article.slug) },
+            { name: ar ? "الرئيسية" : "Home", path: "/" },
+            { name: ar ? "الأدلة" : "Guides", path: "/blog" },
+            {
+              name: ar ? article.titleAr : article.titleEn,
+              path: articlePath(article.slug),
+            },
           ]),
           webPageJsonLd(config, {
             path: articlePath(article.slug),
-            name: article.titleEn,
-            description: article.answerEn,
+            name: ar ? article.titleAr : article.titleEn,
+            description: ar ? article.answerAr : article.answerEn,
             speakable: ["h1", "#article-answer"],
-            about: article.categoryEn,
+            about: ar ? article.categoryAr : article.categoryEn,
             dateModified: article.updatedAt,
           }),
-          articleJsonLd(config, article),
+          articleJsonLd(config, article, { locale }),
           articleFaqJsonLd(article),
         ]}
       />

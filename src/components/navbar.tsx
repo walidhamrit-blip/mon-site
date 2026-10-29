@@ -70,10 +70,12 @@ export function Navbar() {
     { href: "/compare", label: ar ? "مقارنات" : "Comparisons" },
     { href: "/demos", label: t.nav.demos },
     {
-      href: "/apps",
-      label: ar ? "تطبيقاتنا" : "Apps",
-      soon: true,
-      hideBelow: "2xl",
+      // La boutique est le second métier du site (clés de jeux, codes
+      // logiciels, cartes cadeaux) : le lien reste visible à TOUTES les
+      // largeurs. Il était masqué sous 1280 px — donc absent du haut de page
+      // sur la majorité des portables et sur tous les mobiles.
+      href: "/codes",
+      label: ar ? "المتجر الرقمي" : "Digital store",
     },
     {
       href: "/products",
@@ -82,9 +84,10 @@ export function Navbar() {
       hideBelow: "xl",
     },
     {
-      href: "/codes",
-      label: ar ? "الأكواد والبطاقات" : "Codes & cards",
-      hideBelow: "xl",
+      href: "/apps",
+      label: ar ? "تطبيقاتنا" : "Apps",
+      soon: true,
+      hideBelow: "2xl",
     },
     { href: "/blog", label: ar ? "أدلة" : "Guides" },
     { href: "/#pricing", label: t.nav.pricing },
@@ -95,6 +98,7 @@ export function Navbar() {
     },
     { href: "/contact", label: t.nav.contact },
   ];
+
 
   const isActive = (href: string) =>
     href === "/" ? pathname === "/" : pathname === href || pathname.startsWith(`${href}/`);
