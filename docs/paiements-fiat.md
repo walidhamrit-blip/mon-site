@@ -85,9 +85,10 @@ sécurité permanent si un rail tombe.
 1. **Maintenant (cette semaine)** : option C — un onglet « paiement local
    (virement / wallet) » dans le checkout. Ça ne bloque sur rien, ça n'exige
    aucun contrat, et ça valide la demande réelle.
-2. **En parallèle** : déposer le dossier DPAY (KYC = registre de commerce +
-   document bancaire) pour l'option A. C'est le délai externe qui décidera de la
-   date, pas le code.
+2. **En parallèle** : engager la démarche société (registre de commerce, compte
+   professionnel) puis déposer le dossier DPAY (KYC = société + document
+   bancaire). C'est ce délai externe qui décidera de la date, pas le code
+   (voir § 5 bis si tu n'as pas encore de société).
 3. **À l'activation DPAY** : Moamalat + EDFali + Sadad + MobiCash d'abord (les
    plus utilisés), puis MPGS (cartes internationales USD) si ta banque
    l'accorde, et enfin MyPay en secours.
@@ -161,6 +162,47 @@ cartes cadeaux** est une catégorie sensible pour les banques (risque de
 revente/abus). Déclare l'activité précisément (« revente de codes numériques
 au détail »), garde les preuves de livraison, et prévois le crypto comme rail de
 continuité si un rail fiat est suspendu.
+
+---
+
+## 5 bis. Cas concret : pas encore de société
+
+C'est le cas aujourd'hui. Autant l'écrire clairement : **le KYC DPAY/MyPay
+exige une société** (documents de société + registre de commerce, revue manuelle
+avant le mode live — « aucun compte direct sans vérification complète »). Sans
+société : pas de page de paiement DPAY, pas de contrat Moamalat, pas de MPGS.
+Aucun contournement technique n'existe, et ce n'est pas le code qui bloque :
+c'est le statut juridique.
+
+**L'ordre réaliste (et ce que chaque étape débloque)**
+
+| Étape | Ce que ça débloque | Délai typique |
+|---|---|---|
+| 1. Registre de commerce + numéro fiscal | la possibilité de contracter, facturer, et rassurer un acquéreur | 2 à 6 semaines selon le guichet |
+| 2. Compte bancaire au nom de la société | le versement des rails (Moamalat, MPGS, DPAY ne paient pas un compte personnel) | 1 à 3 semaines |
+| 3. Compte DPAY/MyPay + KYC | page de paiement locale, wallets, webhooks | quelques jours |
+| 4. Contrat Moamalat / MPGS avec la banque | cartes locales puis cartes internationales en USD | variable, chemin critique |
+
+**En attendant la société, trois façons d'encaisser du fiat sans se mettre en
+faute**
+
+1. **Crypto (déjà en place)** — 1 % NOWPayments, aucune démarche.
+2. **Wallet local / virement confirmé à la main** — Sadad, EDFali, MobiCash ou
+   virement vers un compte au nom de l'exploitant. C'est autorisé et courant,
+   mais ce n'est pas une solution à 12 mois : un volume régulier sur un compte
+   personnel finit par être signalé ou plafonné par la banque. Précautions
+   minimales : **vérifier le paiement dans l'application de la banque** (jamais
+   une capture d'écran — elle se falsifie en 30 secondes), exiger la référence
+   de commande dans le libellé, plafonner les premières commandes, livrer après
+   encaissement constaté, tenir un relevé séparé des dépenses personnelles.
+3. **Réseau de revendeurs** — des boutiques paient en LYD/cash et revendent le
+   code ; tu captes du fiat « hors ligne » sans KYC technique, au prix d'une
+   marge partagée (souvent 5–10 %). C'est souvent la première marche réelle
+   d'un catalogue de codes dans un marché cash.
+
+**Ce que je ne recommande pas d'attendre** : lancer l'intégration DPAY en
+production avant le registre de commerce. Le sandbox, oui (ça ne coûte rien et
+ça valide les rails) ; le live, non.
 
 ---
 
