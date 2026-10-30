@@ -46,6 +46,7 @@ paiement, et non le produit ou le prix.
 | **B** | MyPay (`mypay.ly`) | mêmes rails, plus QR/agent | Moyen | ✅ oui (alternative à A) |
 | **C** | **Virement / wallet confirmé manuellement** | virement bancaire LYD, Sadad, EDFali… preuve envoyée sur WhatsApp | **Faible** (déjà 80 % du code présent) | ✅ oui, **dès aujourd'hui**, aucun contrat |
 | **D** | Onramp carte→crypto (Guardarian, Transak, Onramp.money…) | carte Visa/MC, le crypto arrive sur ta facture | Faible (lien sortant) | ⚠️ partiel : cartes libyennes souvent refusées, KYC client, 2–5 % de frais |
+| **A′** | **Fiat on-ramp NOWPayments (Banxa / Guardarian)** | carte Visa/MC, Apple/Google Pay, virements locaux du pays du client | Faible (réglages + KYB) | ⚠️ partiel : pas de LYD/Moamalat/Sadad, disponibilité par pays, KYB société |
 | **E** | Merchant of Record (Paddle, Lemon Squeezy) | carte | — | ❌ **exclu** : Paddle interdit explicitement les « gift cards, vouchers, stored value » et les services financiers/crypto. Ton catalogue tombe pile dans l'interdit. |
 | **F** | Entité étrangère + Stripe/PayPal | carte | Élevé (société, comptes, fiscalité) | ⚠️ possible mais disproportionné au volume actuel |
 
@@ -78,11 +79,53 @@ un statut `manual`, l'admin qui valide. Il manque seulement l'écran côté clie
 C'est le moyen le plus rapide de capter les clients fiat, et un filet de
 sécurité permanent si un rail tombe.
 
+**A′. Le fiat on-ramp NOWPayments (e-mail « Fiat Operations » du 30/10)**
+
+Cet e-mail décrit **deux choses différentes** — la confusion coûte cher :
+
+1. **Facture + ChangeNOW Pro (côté client).** Au moment de payer, le client
+   choisit ChangeNOW Pro, recharge son wallet Pro via un fournisseur fiat
+   disponible, puis paie depuis son solde crypto. Tu reçois du crypto ; le KYC
+   est celui **du client** chez le fournisseur fiat. NOWPayments propose d'aider
+   à « connecter ce flux » sur tes factures.
+2. **Merchant on-ramp / off-ramp (côté marchand).** Applications séparées dans
+   le dashboard (`Settings → Fiat operations`) : tu choisis un fournisseur
+   (Banxa pour l'on-ramp, Guardarian pour l'off-ramp), tu remplis un **formulaire
+   KYB**, et une fois approuvé, les devises fiat choisies sont activées sur ton
+   compte — les paiements carte de tes clients arrivent **convertis en crypto**
+   sur ton solde custody. Délai annoncé : ~10 jours ouvrés après dossier complet.
+
+Ce que ça couvre : cartes Visa/Mastercard, Apple Pay / Google Pay, Revolut Pay
+et certains virements locaux **selon le fournisseur et le pays du client**.
+Devises limitées à celles que tu actives (USD, EUR, GBP, AUD, CAD…).
+
+Ce que ça ne couvre **pas** : LYD, Moamalat, Sadad, EDFali, MobiCash. Aucun de
+ces fournisseurs n'outille les rails libyens. Donc **pas de remplacement** de
+DPAY pour le marché local ; en revanche c'est la voie la plus courte pour les
+clients à carte (diaspora, Golfe, Europe).
+
+Coût : frais du fournisseur on-ramp (variables selon méthode et pays) **en plus**
+du 1 % NOWPayments, et KYC client au-delà d'un certain montant.
+
+Effort code : **quasi nul**. La page de facture hébergée affiche les devises
+fiat activées ; l'IPN et la livraison ne changent pas — notre contrôle de
+montant (`validatePaidAmount`) couvre déjà l'écart. Le flux « Pro au moment de
+payer » est un réglage de facture à confirmer avec le support NOWPayments.
+
+Verdict : **complément utile, pas substitut**. Et attention, le on-ramp marchand
+exige quand même une société (KYB) — mais un KYB en ligne en ~10 jours est
+souvent plus rapide qu'un contrat d'acquéreur avec une banque locale.
+
 ---
 
 ## 3. Recommandation
 
-1. **Maintenant (cette semaine)** : option C — un onglet « paiement local
+0. **Tout de suite** : ouvrir `Settings → Fiat operations` dans le dashboard
+   NOWPayments, regarder les fournisseurs proposés, et demander au support (a)
+   si des clients en Libye peuvent payer par ce canal, (b) si le flux
+   « ChangeNOW Pro » exige un KYB marchand, (c) les frais par méthode. C'est
+   gratuit et ça se règle en une conversation — ça ne remplace rien d'autre.
+1. **Cette semaine** : option C — un onglet « paiement local
    (virement / wallet) » dans le checkout. Ça ne bloque sur rien, ça n'exige
    aucun contrat, et ça valide la demande réelle.
 2. **En parallèle** : engager la démarche société (registre de commerce, compte
@@ -228,6 +271,11 @@ d'échec par rail (OTP expiré, session 15 min dépassée).
 - DPAY (rails libyens, API, webhooks, MPGS USD) : https://dpay.ly/ ·
   https://dpay.ly/docs/api
 - MyPay (API + webhooks LYD) : https://docs.mypay.ly/
+- NOWPayments — fiat on-ramp (KYB par fournisseur, devises activées) :
+  https://nowpayments.zendesk.com/hc/en-us/articles/21341613323421-NOWPayments-Integration-Guide
+- NOWPayments — activation Banxa (cartes + virements locaux, KYB ~10 jours) :
+  https://nowpayments.io/blog/integrate-banxa-to-accept-fiat-payments
+- NOWPayments — on-ramp / off-ramp (20+ devises fiat) : https://nowpayments.io/off-ramp
 - Écosystème de paiement libyen (LYPay, OnePay, wallets bancaires, Sadad) :
   https://www.malomat.org/en-us/articles/37609718835357
 - Réalité du paiement en Libye (cash, cartes locales limitées, hawala) :
