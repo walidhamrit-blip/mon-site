@@ -9,7 +9,9 @@ import { ReloadlySync } from "./reloadly-sync";
 import { CatalogAudit } from "./catalog-audit";
 import { FazercardsCatalogPanel } from "./fazercards-catalog-panel";
 import { FazercardsBalancePanel } from "./fazercards-balance-panel";
+import { FazercardsTopupPanel } from "./fazercards-topup-panel";
 import { getFazercardsBalanceStatus } from "@/lib/fazercards-balance";
+import { getFazercardsAutotopupStatus } from "@/lib/fazercards-autotopup";
 import { getFazercardsDigitalCatalog } from "@/lib/fazercards-catalog";
 import { fazercardsConfigured } from "@/lib/fazercards";
 
@@ -45,6 +47,9 @@ export default async function AdminDigitalPage() {
   // contrôle, une vente peut être encaissée alors que l'achat fournisseur est
   // impossible (le solde est débité du COÛT, pas du prix de vente).
   const balance = await getFazercardsBalanceStatus();
+  // Recharge automatique : configuration + registre, sans appel réseau (le
+  // solde est déjà lu juste au-dessus). Aucun virement n'est déclenché ici.
+  const autotopup = await getFazercardsAutotopupStatus();
 
   const envMismatch = !nowPaymentsSandbox() && reloadlyMode() === "sandbox";
   // Contrôle immédiat SANS réseau. Deux niveaux distincts :
@@ -118,6 +123,7 @@ export default async function AdminDigitalPage() {
       )}
 
       <FazercardsBalancePanel status={balance} />
+      <FazercardsTopupPanel initial={autotopup} />
 
       <FazercardsCatalogPanel
         products={liveProducts}

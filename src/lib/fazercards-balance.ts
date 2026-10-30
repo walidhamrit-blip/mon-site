@@ -181,7 +181,11 @@ async function writeAlertState(state: BalanceAlertState): Promise<void> {
   }
 }
 
-function adminRecipient(siteEmail?: string): string {
+/**
+ * Destinataire des alertes internes (jamais un client).
+ * Exporté pour que la recharge automatique utilise exactement la même règle.
+ */
+export function adminRecipient(siteEmail?: string): string {
   const from = (value: string | undefined) => value?.match(/[^\s<>]+@[^\s<>]+/)?.[0]?.trim() ?? "";
   return (
     from(process.env.LEAD_NOTIFICATION_EMAIL) ||
