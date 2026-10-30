@@ -140,7 +140,26 @@ function normalizeState(raw: unknown): AutotopupState {
   };
 }
 
-export async function readAutotopupState(): Promise<AutotopupState> {
+/**
+ * Registre inaccessible (base suspendue, quota épuisé, réseau).
+ *
+ * Distinction volontaire : l'ADMINISTRATION dégrade en silence (elle doit
+ * rester lisible pendant une panne), mais un PASSAGE DE RECHARGE refuse de
+ * travailler sans registre — un registre muet n'est pas un registre vide, et
+ * « je ne sais pas s'il y a un virement en cours » ne doit jamais conduire à
+ * un second envoi.
+ */
+export class AutotopupRegistryError extends Error {
+  constructor(message: string, cause?: unknown) {
+    super(message);
+    this.name = "AutotopupRegistryError";
+    this.cause = cause;
+  }
+}
+
+export async function readAutotopupState(
+  options: { strict?: boolean } = {},
+): Promise<AutotopupState> {
   try {
     await ensureSchema();
     const rows = await db
@@ -149,7 +168,15 @@ export async function readAutotopupState(): Promise<AutotopupState> {
       .where(eq(settings.key, FAZERCARDS_AUTOTOPUP_KEY))
       .limit(1);
     return normalizeState(rows[0]?.value);
-  } catch {
+  } catch (error) {
+    if (options.strict) {
+      throw new AutotopupRegistryError(
+        `registre de recharge illisible (base de données) : ${
+          error instanceof Error ? error.message : String(error)
+        }`,
+        error,
+      );
+    }
     return emptyAutotopupState();
   }
 }
@@ -445,7 +472,22 @@ export async function runFazercardsAutotopup(
   const maxOrderUsd = fazercardsMaxOrderUsd();
   const targetUsd = fazercardsTargetBalanceUsd(maxOrderUsd);
 
-  let state = await readAutotopupState();
+  // Lecture STRICTE : sans registre, on ne sait pas si un virement est en
+  // cours. On s'arrête là — jamais de seconde facture par ignorance.
+  let state: AutotopupState;
+  try {
+    state = await readAutotopupState({ strict: true });
+  } catch (error) {
+    const reason =
+      "registre de recharge indisponible (base de données suspendue ou injoignable) : aucun virement, aucun envoi";
+    return reportBase({
+      ok: false,
+      action: "error",
+      targetUsd,
+      reason,
+      error: error instanceof Error ? error.message : reason,
+    });
+  }
 
   // Anti-chevauchement : deux passages simultanés pourraient créer deux factures.
   if (state.lastRunAt && now - state.lastRunAt < AUTOTOPUP_MIN_INTERVAL_MS) {
@@ -599,7 +641,18 @@ export async function runFazercardsAutotopup(
     return reportBase({ ...withData, action: "wait", reason });
   }
 
-  // 4. Créer la facture de dépôt (ou reprendre celle en attente).
+  // 4. Vérifier que le registre est ÉCRIVABLE avant de créer une facture :
+  //    une facture sans registre serait un engagement sans trace.
+  try {
+    await writeAutotopupState({ ...state, lastRunAt: now, lastReason: "registre vérifié avant envoi" });
+  } catch (error) {
+    const reason = `registre de recharge non inscriptible : ${
+      error instanceof Error ? error.message : String(error)
+    } — aucun virement`;
+    return reportBase({ ...withData, ok: false, action: "error", reason, error: reason });
+  }
+
+  // 5. Créer la facture de dépôt (ou reprendre celle en attente).
   let pending: PendingTopUp;
   if (settled.pending) {
     pending = settled.pending;
@@ -627,10 +680,25 @@ export async function runFazercardsAutotopup(
   }
 
   // L'état est écrit AVANT l'envoi : un crash entre les deux ne doit pas
-  // pouvoir créer une seconde facture puis un second virement.
-  await writeAutotopupState({ ...state, pending, lastRunAt: now, lastReason: approved.reason });
+  // pouvoir créer une seconde facture puis un second virement. Si cette
+  // écriture échoue, on n'envoie RIEN (la facture expirera d'elle-même).
+  try {
+    await writeAutotopupState({ ...state, pending, lastRunAt: now, lastReason: approved.reason });
+  } catch (error) {
+    const reason = `registre de recharge non inscriptible : ${
+      error instanceof Error ? error.message : String(error)
+    } — aucun virement effectué (facture ${pending.paymentId} laissée expirer)`;
+    return reportBase({
+      ...withData,
+      ok: false,
+      action: "error",
+      reason,
+      error: reason,
+      paymentId: pending.paymentId,
+    });
+  }
 
-  // 5. Envoyer l'argent.
+  // 6. Envoyer l'argent.
   let payoutId: string | null = null;
   let verified = false;
   try {

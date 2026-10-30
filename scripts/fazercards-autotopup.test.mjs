@@ -322,6 +322,29 @@ test("le module de virement n'est importé que par la recharge automatique", () 
   assert.doesNotMatch(read("src/app/api/health/route.ts"), /payout|autotopup/i);
 });
 
+test("sans registre lisible, aucun virement n'est même préparé", () => {
+  const runtime = read("src/lib/fazercards-autotopup.ts");
+  // Lecture STRICTE au début du passage : la base suspendue (quota Neon) ne
+  // doit jamais être confondue avec « aucun virement en cours ».
+  assert.match(runtime, /readAutotopupState\(\{ strict: true \}\)/);
+  assert.match(runtime, /registre de recharge indisponible/);
+  assert.match(runtime, /class AutotopupRegistryError/);
+  // L'administration, elle, continue de dégrader sans erreur.
+  const statusFn = runtime.slice(runtime.indexOf("export async function getFazercardsAutotopupStatus"));
+  assert.match(statusFn, /await readAutotopupState\(\)/);
+});
+
+test("le registre doit être inscriptible AVANT toute facture fournisseur", () => {
+  const runtime = read("src/lib/fazercards-autotopup.ts");
+  const probe = runtime.indexOf("registre vérifié avant envoi");
+  const invoice = runtime.indexOf("await fazercardsPaymentCreate(");
+  assert.ok(probe > 0, "sonde d'écriture absente");
+  assert.ok(invoice > probe, "facture créée avant la vérification du registre");
+  // Et une écriture « pending » ratée annule l'envoi.
+  assert.match(runtime, /registre de recharge non inscriptible/);
+  assert.match(runtime, /aucun virement effectué \(facture/);
+});
+
 test("le cron est déclaré une fois par jour dans vercel.json", () => {
   const vercel = JSON.parse(read("vercel.json"));
   const entry = vercel.crons.find((cron) => cron.path === "/api/cron/fazercards-topup");

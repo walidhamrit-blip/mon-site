@@ -200,7 +200,29 @@ part tant que trois verrous ne sont pas levés.
   prévient et le code se saisit dans `/admin/digital` (le virement est rejeté
   par NOWPayments au bout d'une heure si personne ne le valide).
 
-**4. Fichiers ajoutés**
+**4. Base de données suspendue (quota Neon, cf. incident du 29/10)**
+
+Le registre de recharge vit dans la table `settings` — donc dans Neon. Trois
+conséquences, dans l'ordre d'importance :
+
+- **Le déploiement n'est pas concerné** : la compilation ne lit pas la base, et
+  aucune migration n'est nécessaire (`settings` existe déjà et est créée par
+  `ensureSchema()`). Le code peut être fusionné et déployé pendant le blocage.
+- **Aucune vente pendant la suspension** ⇒ aucun débit fournisseur ⇒ **aucune
+  recharge à déclencher**. La recharge ne fait que compenser des ventes livrées.
+- **Un registre muet n'est pas un registre vide.** Si la base est injoignable,
+  un passage de recharge s'arrête net : lecture stricte de l'état, puis
+  vérification que le registre est inscriptible **avant** de créer la facture
+  FazerCards. Message explicite (« registre de recharge indisponible »), aucun
+  virement. C'est ce qui empêche un second envoi si l'état du virement en cours
+  devenait illisible. L'administration, elle, continue de s'afficher en mode
+  dégradé (registre vide) sans bloquer la page.
+
+👉 Conséquence pratique : **n'activez pas `FAZERCARDS_AUTOTOPUP_ENABLED` avant
+le retour de la base** (01/11), et faites d'abord une simulation : elle aussi a
+besoin du registre pour être honnête.
+
+**5. Fichiers ajoutés**
 
 | Fichier | Rôle |
 |---|---|
