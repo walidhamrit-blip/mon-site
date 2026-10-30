@@ -327,6 +327,61 @@ if (!fazercardsKey) {
   }
 }
 
+/* ───────────────────── 4 ter. Recharge automatique du solde ─────────────── */
+
+section("Recharge automatique du solde FazerCards (virements NOWPayments)");
+const autotopupEnabled =
+  (process.env.FAZERCARDS_AUTOTOPUP_ENABLED ?? "").trim().toLowerCase() === "true";
+const payoutEmail = process.env.NOWPAYMENTS_EMAIL?.trim() ?? "";
+const payoutPassword = process.env.NOWPAYMENTS_PASSWORD?.trim() ?? "";
+const payoutTotp = (process.env.NOWPAYMENTS_PAYOUT_TOTP_SECRET ?? "")
+  .replace(/[\s\-=]/g, "")
+  .toUpperCase();
+const payoutCurrency =
+  (process.env.NOWPAYMENTS_PAYOUT_CURRENCY ?? "").trim().toLowerCase() || "usdttrc20";
+
+if (!autotopupEnabled) {
+  ok(
+    "Recharge automatique désactivée",
+    "Aucun virement ne peut partir (FAZERCARDS_AUTOTOPUP_ENABLED ≠ true). Simulation possible depuis /admin/digital.",
+  );
+} else {
+  if (!payoutEmail || !payoutPassword) {
+    fail(
+      "Recharge activée sans identifiants de virement",
+      "NOWPAYMENTS_EMAIL et NOWPAYMENTS_PASSWORD sont indispensables au jeton JWT : tout virement échouera.",
+    );
+  }
+  if (!payoutTotp) {
+    warn(
+      "2FA des virements en mode e-mail",
+      "Sans NOWPAYMENTS_PAYOUT_TOTP_SECRET, chaque virement doit être validé à la main dans l'heure — sinon NOWPayments le rejette.",
+    );
+  } else if (!/^[A-Z2-7]{16,}$/.test(payoutTotp)) {
+    warn(
+      "NOWPAYMENTS_PAYOUT_TOTP_SECRET ne ressemble pas à un secret Base32",
+      "Attendu : le secret brut de l'application d'authentification (16 caractères ou plus, A–Z et 2–7).",
+    );
+  }
+  const method = (process.env.FAZERCARDS_AUTOTOPUP_METHOD ?? "").trim().toLowerCase() || "trc20";
+  const coherent =
+    (method === "trc20" && payoutCurrency.includes("trc20")) ||
+    (method === "bep20" && payoutCurrency.includes("bsc")) ||
+    (method === "ton" && payoutCurrency.includes("ton")) ||
+    method === "binancepay" ||
+    !process.env.FAZERCARDS_AUTOTOPUP_METHOD;
+  if (!coherent) {
+    warn(
+      "Méthode de dépôt et devise de virement incohérentes",
+      `FAZERCARDS_AUTOTOPUP_METHOD=${method} mais NOWPAYMENTS_PAYOUT_CURRENCY=${payoutCurrency} : le fournisseur ne créditera pas un dépôt sur un autre réseau.`,
+    );
+  }
+  ok(
+    "Recharge automatique activée",
+    `Devise ${payoutCurrency}, méthode ${method}. Le cron planifié reste en simulation ; l'exécution réelle exige ?execute=1.`,
+  );
+}
+
 if (!process.env.DIGITAL_CODES_SECRET?.trim() && !sessionSecret) {
   warn(
     "DIGITAL_CODES_SECRET absent",
