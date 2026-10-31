@@ -20,7 +20,7 @@ export interface SiteTheme {
   dark: ThemePalette;
 }
 export const DEFAULT_THEME_ID = "cyber-violet";
-export const THEME_COUNT = 6;
+export const THEME_COUNT = 7;
 
 function palette(mode: "light" | "dark", accent: string, hover: string): ThemePalette {
   const dark = mode === "dark";
@@ -54,13 +54,14 @@ const definitions = [
   { id: "plasma-rose", ar: "بلازما وردي", en: "Plasma Rose", day: "#B51E69", hover: "#901653", night: "#FF8CC7", descAr: "وردي بلازما لهوية جريئة ومبدعة", descEn: "Plasma pink for a bold, creative identity", usesAr: "إبداع · بث · مجتمعات", usesEn: "Creativity · streaming · community" },
   { id: "solar-orange", ar: "برتقالي شمسي", en: "Solar Orange", day: "#B8450C", hover: "#913407", night: "#FFAD69", descAr: "برتقالي مشبع مع لمسة شمسية دافئة", descEn: "Saturated orange with a warm solar glow", usesAr: "متجر · عروض · اكتشاف", usesEn: "Store · offers · discovery" },
   { id: "arctic-cyan", ar: "سماوي قطبي", en: "Arctic Cyan", day: "#006D87", hover: "#005368", night: "#66DFEF", descAr: "سماوي بارد مستوحى من أجهزة المستقبل", descEn: "Cool cyan inspired by next-generation hardware", usesAr: "أجهزة · شبكات · مستقبل", usesEn: "Hardware · networks · future" },
+  { id: "royal-gold", ar: "ذهبي ملكي", en: "Royal Gold", day: "#8A620C", hover: "#6B4908", night: "#F0CE78", nightHover: "#FFE2A0", descAr: "ذهبي دافئ ومضيء على الأسود، مع تباين واضح في الوضع الفاتح", descEn: "Warm luminous gold on black, with rich contrast in light mode", usesAr: "ذهبي · أناقة · ألعاب", usesEn: "Gold · elegance · gaming" },
 ];
 export const THEMES: SiteTheme[] = definitions.map((theme, index) => ({
   id: theme.id, rank: index + 1, featured: index === 0,
   labelAr: theme.ar, labelEn: theme.en,
   descAr: theme.descAr, descEn: theme.descEn, usesAr: theme.usesAr, usesEn: theme.usesEn,
   light: palette("light", theme.day, theme.hover),
-  dark: palette("dark", theme.night, "#E3EAF8"),
+  dark: palette("dark", theme.night, theme.nightHover ?? "#E3EAF8"),
 }));
 
 /** Preserve saved visitor choices and old admin configuration without a reset. */

@@ -222,7 +222,7 @@ export function ThemeSwitcher() {
           <div className="flex items-start justify-between gap-2 px-1 pb-2">
             <div className="min-w-0">
               <div className="text-[11.5px] font-black">
-                {ar ? `لوحات الألعاب الست` : `${THEME_COUNT} gaming palettes`}
+                {ar ? `${THEME_COUNT} لوحات ألعاب` : `${THEME_COUNT} gaming palettes`}
               </div>
               <div className="mt-0.5 text-[10px] leading-relaxed opacity-55">
                 {ar
@@ -300,7 +300,7 @@ export function ThemeList() {
     <div>
       <div className="mb-2.5 flex items-center gap-2 text-[11px] font-black uppercase tracking-[0.16em] text-[var(--muted-foreground)]">
         <Palette className="h-3.5 w-3.5" />
-        {ar ? `لوحات الألعاب الست` : `${THEME_COUNT} gaming palettes`}
+        {ar ? `${THEME_COUNT} لوحات ألعاب` : `${THEME_COUNT} gaming palettes`}
       </div>
       <div className="grid grid-cols-2 gap-1.5">
         {THEMES.map((t) => {

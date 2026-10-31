@@ -9,8 +9,8 @@ hierarchy stay unchanged.
 
 - White day canvas, black night canvas (as requested).
 - White day cards, blue-charcoal night cards; neutral secondary surfaces.
-- Six gaming palettes: Cyber Violet, Electric Blue, Neon Lime, Plasma Rose,
-  Solar Orange and Arctic Cyan. Legacy IDs are mapped to the new IDs before
+- Seven gaming palettes: Cyber Violet, Electric Blue, Neon Lime, Plasma Rose,
+  Solar Orange, Arctic Cyan and Royal Gold. Legacy IDs are mapped to the new IDs before
   first paint, preserving both admin and visitor preferences.
 - Day accents are deliberately darker than night accents: normal-sized links,
   action labels and body text must remain legible without neon on white.
@@ -49,3 +49,12 @@ related-product names are selected in the live locale too.
 
 `store-locale.test.mjs` renders both languages and both maintenance states and
 checks that English visible copy contains no Arabic characters.
+
+Royal Gold adds warm gold accents (`#F0CE78`, hover `#FFE2A0`) on the
+black dark-mode canvas, with dark button labels. Light mode uses a deeper
+gold (`#8A620C`) for readable text and buttons on white. The default palette
+and existing saved preferences are unchanged.
+
+Dark Royal Gold controls also use a static metallic highlight and a restrained
+gold halo, strengthened on hover/focus. Secondary controls, other palettes and
+light mode are unaffected; no animated shimmer is used.

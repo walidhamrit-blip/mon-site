@@ -54,7 +54,7 @@ function contrast(a, b) {
   return (values[0] + 0.05) / (values[1] + 0.05);
 }
 
-test("all six day and night palettes have readable action and body color pairs", () => {
+test("all day and night palettes have readable action and body color pairs", () => {
   for (const theme of themes.THEMES) for (const mode of ["light", "dark"]) {
     const p = theme[mode];
     for (const [foreground, background] of [["foreground", "background"], ["card-foreground", "card"], ["muted-foreground", "background"], ["muted-foreground", "secondary"], ["accent-foreground", "accent"], ["accent-foreground", "accent-hover"], ["accent", "background"], ["accent", "secondary"]]) {
@@ -74,7 +74,7 @@ test("gaming system scopes public pages and includes day-aware footer and form s
 
 
 test("new gaming palettes replace the old catalog and migrate saved IDs", () => {
-  assert.deepEqual(themes.THEMES.map((theme) => theme.id), ["cyber-violet", "electric-blue", "neon-lime", "plasma-rose", "solar-orange", "arctic-cyan"]);
+  assert.deepEqual(themes.THEMES.map((theme) => theme.id), ["cyber-violet", "electric-blue", "neon-lime", "plasma-rose", "solar-orange", "arctic-cyan", "royal-gold"]);
   assert.equal(themes.DEFAULT_THEME_ID, "cyber-violet");
   for (const old of ["nukhba", "royal", "graphite", "emerald", "violet", "teal", "burgundy", "copper"]) {
     const resolved = themes.resolveThemeId(old);
@@ -97,5 +97,27 @@ test("boot script resolves legacy preferences before first paint", async () => {
     });
     assert.equal(attrs.get("data-theme"), newId);
     assert.ok(classes.has("dark"));
+  }
+});
+
+
+test("Royal Gold is selectable and keeps warm gold accents in both modes", () => {
+  const gold = themes.getTheme("royal-gold");
+  assert.equal(gold.id, "royal-gold");
+  assert.equal(themes.THEME_COUNT, themes.THEMES.length);
+  assert.equal(gold.dark.accent, "#F0CE78");
+  assert.equal(gold.dark["accent-hover"], "#FFE2A0");
+  assert.equal(gold.light.accent, "#8A620C");
+  assert.ok(themes.themeBootScript().includes('"royal-gold"'));
+});
+
+
+test("gold lighting is limited to dark Royal Gold and keeps gradient stops readable", () => {
+  const css = readFileSync("src/app/gaming.css", "utf8");
+  assert.ok(css.includes('html.dark[data-theme="royal-gold"] .public-shell'));
+  assert.ok(css.includes('.vivid-button:not(.is-secondary)'));
+  const gold = themes.getTheme("royal-gold");
+  for (const stop of ["#DDB958", "#F0CE78", "#FFE8AD", "#E5BE60"]) {
+    assert.ok(contrast(gold.dark["accent-foreground"], stop) >= 4.5);
   }
 });
