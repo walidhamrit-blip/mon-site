@@ -73,7 +73,8 @@ export const dynamic = "force-dynamic";
  */
 export const maxDuration = 60;
 
-export default async function CodesPage() {
+export default async function CodesPage({ searchParams }: { searchParams: Promise<{ kind?: string }> }) {
+  const { kind } = await searchParams;
   const { config } = await getSiteDataCached();
   /**
    * Ordre commercial dès le serveur : les fiches les plus demandées (recharges
@@ -268,7 +269,7 @@ export default async function CodesPage() {
         catalogue réel — c'est exactement ce qui a trompé les visiteurs (et
         le sitemap) le 29/10/2026.
       */}
-      {!degraded && <DigitalCatalog products={products} />}
+      {!degraded && <DigitalCatalog key={kind === "game_topup" ? "game_topup" : "all"} products={products} initialKind={kind === "game_topup" ? "game_topup" : "all"} />}
 
       {/*
         Contenu de rayon : ces sections répondent aux questions réellement

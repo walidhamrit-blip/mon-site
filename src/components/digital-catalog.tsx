@@ -131,13 +131,13 @@ function initialsOf(product: DigitalProduct): string {
  * le fournisseur en publiera, ils apparaîtront dans « Codes logiciels » sans
  * toucher au code de cette page.
  */
-export function DigitalCatalog({ products }: { products: DigitalProduct[] }) {
+export function DigitalCatalog({ products, initialKind = "all" }: { products: DigitalProduct[]; initialKind?: DigitalKind | "all" }) {
   const siteConfig = useSiteConfig();
   const { locale } = useI18n();
   const ar = locale === "ar";
 
   const [query, setQuery] = useState("");
-  const [kind, setKind] = useState<DigitalKind | "all">("all");
+  const [kind, setKind] = useState<DigitalKind | "all">(initialKind);
   const [platform, setPlatform] = useState("all");
   const [region, setRegion] = useState("all");
   const [priceRange, setPriceRange] = useState<PriceRangeId>("all");

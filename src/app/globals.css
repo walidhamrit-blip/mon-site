@@ -539,3 +539,14 @@ body {
     opacity: 1;
   }
 }
+
+/* Accueil : introduction lisible, puis trois portes d'entrée distinctes. */
+.home-intro {
+  color: #fff;
+  background: linear-gradient(120deg, #140d29, #302050 60%, #513474);
+}
+.home-intro-grid {
+  background-image: radial-gradient(rgb(255 255 255 / 12%) 1px, transparent 1px);
+  background-size: 28px 28px;
+  mask-image: linear-gradient(to right, #000, transparent 35%, transparent 65%, #000);
+}

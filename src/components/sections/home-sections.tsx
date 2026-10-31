@@ -1,5 +1,7 @@
 "use client";
 
+import type { ReactNode } from "react";
+import { HomeGateway } from "./home-gateway";
 import { Hero } from "@/components/sections/hero";
 import { ServicesRibbon } from "@/components/sections/services-ribbon";
 import { WhyUs } from "@/components/sections/why-us";
@@ -52,7 +54,7 @@ function renderBuiltInSection(id: BuiltInSectionId) {
   }
 }
 
-export function HomeSections() {
+export function HomeSections({ storeShowcase }: { storeShowcase?: ReactNode }) {
   const config = useSiteConfig();
   const { layout } = useSiteContent();
   const customMap = new Map(layout.customSections.map((s) => [s.id, s]));
@@ -70,12 +72,16 @@ export function HomeSections() {
           </h1>
         </div>
       )}
+      {!heroEnabled && <><HomeGateway />{storeShowcase}</>}
       {layout.entries
         .filter((entry) => entry.enabled)
         .map((entry) => {
           if (entry.kind === "builtin" && entry.builtinId) {
             return (
-              <div key={entry.key}>{renderBuiltInSection(entry.builtinId)}</div>
+              <div key={entry.key}>
+                {renderBuiltInSection(entry.builtinId)}
+                {entry.builtinId === "hero" && <><HomeGateway />{storeShowcase}</>}
+              </div>
             );
           }
           if (entry.kind === "custom" && entry.customId) {

@@ -85,8 +85,7 @@ export default async function HomePage() {
   return (
     <>
       {schemas.length > 0 && <JsonLd data={schemas} />}
-      <HomeSections />
-      <DigitalShowcase locale={locale} products={showcase} total={catalog.length} />
+      <HomeSections storeShowcase={<DigitalShowcase locale={locale} products={showcase} total={catalog.length} />} />
     </>
   );
 }

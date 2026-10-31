@@ -14,7 +14,7 @@ import { marketLabels, resolveMarket } from "@/lib/market";
 import { whatsappLink } from "@/lib/utils";
 
 /**
- * Barre de navigation flottante.
+ * Navigation principale resserrée ; les liens secondaires restent sous « More ».
  *
  * - un seul lien actif surligné (`usePathname`) ;
  * - menu mobile en panneau plein écran, défilement de la page verrouillé ;
@@ -100,6 +100,10 @@ export function Navbar() {
   ];
 
 
+  const primaryHrefs = ["/services", "/codes", "/demos", "/contact"];
+  const primaryLinks = links.filter((link) => primaryHrefs.includes(link.href));
+  const secondaryLinks = links.filter((link) => !primaryHrefs.includes(link.href));
+
   const isActive = (href: string) =>
     href === "/" ? pathname === "/" : pathname === href || pathname.startsWith(`${href}/`);
 
@@ -118,9 +122,9 @@ export function Navbar() {
 
   return (
     <>
-      <header className="relative z-50 py-4">
+      <header className="relative z-50 border-b border-[var(--border)] bg-[var(--background)] py-3">
         <div className="site-container px-4 sm:px-6">
-          <div className="flex items-center justify-between gap-3 rounded-full border border-[var(--border)]/60 bg-[var(--card)]/70 px-3 py-2.5 backdrop-blur-md sm:px-4">
+          <div className="flex items-center justify-between gap-3 px-1 py-2 sm:px-4">
             <Link href="/" className="group flex shrink-0 items-center gap-2.5" aria-label={siteConfig.name}>
               <span className="grid h-9 w-9 place-items-center rounded-full bg-[var(--primary)] text-sm font-black text-[var(--primary-foreground)] transition-transform group-hover:scale-105">
                 {ar ? "ن" : "N"}
@@ -144,7 +148,7 @@ export function Navbar() {
               aria-label={ar ? "التنقل الرئيسي" : "Main navigation"}
               className="hidden min-w-0 items-center gap-0 overflow-x-auto rounded-full bg-[var(--secondary)]/80 p-1 lg:flex xl:gap-0 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
             >
-              {links.map((link) => {
+              {primaryLinks.map((link) => {
                 const active = isActive(link.href);
                 return (
                   <Link
@@ -174,6 +178,13 @@ export function Navbar() {
                 );
               })}
             </nav>
+
+            <details className="relative hidden shrink-0 lg:block">
+              <summary className="cursor-pointer rounded-full px-3 py-2 text-sm font-semibold">{ar ? "المزيد" : "More"}</summary>
+              <nav aria-label={ar ? "روابط إضافية" : "More pages"} className="absolute end-0 top-full z-50 mt-3 grid min-w-52 gap-1 rounded-2xl border border-[var(--border)] bg-[var(--card)] p-3 shadow-[var(--shadow-lg)]">
+                {secondaryLinks.map((link) => <Link key={link.href} href={link.href} onClick={(event) => event.currentTarget.closest("details")?.removeAttribute("open")} className="rounded-lg px-3 py-2 text-sm hover:bg-[var(--secondary)]">{link.label}{link.soon && <span className="ms-2 text-xs text-[var(--muted-foreground)]">{ar ? "قريباً" : "Soon"}</span>}</Link>)}
+              </nav>
+            </details>
 
             <div className="flex shrink-0 items-center gap-1.5">
               {/* Langue : l'arabe est la langue principale, l'anglais reste à
