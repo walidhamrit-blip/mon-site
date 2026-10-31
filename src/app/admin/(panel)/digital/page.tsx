@@ -9,6 +9,7 @@ import { ReloadlySync } from "./reloadly-sync";
 import { CatalogAudit } from "./catalog-audit";
 import { FazercardsCatalogPanel } from "./fazercards-catalog-panel";
 import { FazercardsBalancePanel } from "./fazercards-balance-panel";
+import { FazercardsCardIdFinder } from "./fazercards-card-id-finder";
 import { getFazercardsBalanceStatus } from "@/lib/fazercards-balance";
 import { getFazercardsDigitalCatalog } from "@/lib/fazercards-catalog";
 import { fazercardsConfigured } from "@/lib/fazercards";
@@ -118,6 +119,8 @@ export default async function AdminDigitalPage() {
       )}
 
       <FazercardsBalancePanel status={balance} />
+
+      <FazercardsCardIdFinder />
 
       <FazercardsCatalogPanel
         products={liveProducts}
