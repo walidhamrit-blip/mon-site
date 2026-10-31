@@ -17,7 +17,7 @@ export function HomeGateway() {
     <section aria-label={ar ? "اختر ما تحتاجه" : "Choose what you need"} className="site-container relative z-10 px-4 py-8 sm:px-6 lg:px-8">
       <div className="grid gap-5 md:grid-cols-3">
         {items.map(({ icon: Icon, ...item }, i) => (
-          <Link key={item.href} href={item.href} className="group flex flex-col rounded-[var(--radius-lg)] border border-[var(--border)] bg-[var(--card)] p-7 shadow-[var(--shadow-sm)] transition-colors hover:border-[var(--accent)]">
+          <Link key={item.href} href={item.href} data-category={i} className="gateway-card group flex flex-col rounded-[var(--radius-lg)] border border-[var(--border)] bg-[var(--card)] p-7 shadow-[var(--shadow-sm)] transition-colors hover:border-[var(--accent)]">
             <div className="mb-6 flex items-center justify-between">
               <span className="grid h-14 w-14 place-items-center rounded-2xl bg-[var(--accent)]/10 text-[var(--accent)]"><Icon className="h-7 w-7" /></span>
               <span aria-hidden="true" className="text-sm font-bold text-[var(--muted-foreground)]/50">0{i + 1}</span>

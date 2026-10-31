@@ -1,30 +1,33 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowUpRight, Code2 } from "lucide-react";
+import { ArrowUpRight, Sparkles, Code2, Gift, Gamepad2 } from "lucide-react";
+import { motion, useReducedMotion } from "framer-motion";
 import { useI18n } from "@/lib/i18n";
 import { useSiteConfig } from "@/components/site-provider";
+import { HeroVisual } from "@/components/hero-visual";
 
-/** The homepage introduces both businesses; project-specific copy lives on /creation-sites. */
 export function Hero() {
   const config = useSiteConfig();
   const { locale } = useI18n();
   const ar = locale === "ar";
+  const reduced = useReducedMotion();
   return (
-    <section className="home-intro relative isolate overflow-hidden px-4 py-16 text-center sm:py-24">
-      <div aria-hidden="true" className="home-intro-grid pointer-events-none absolute inset-0 -z-10" />
-      <div className="mx-auto max-w-4xl">
-        <p className="mb-6 inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/5 px-4 py-2 text-xs font-bold text-white/80"><Code2 className="h-4 w-4" />{config.name} · {ar ? "خدمات ومنتجات رقمية" : "Digital services & products"}</p>
-        <h1 className="text-[clamp(2rem,1.3rem+3vw,3.8rem)] font-black leading-[1.25] tracking-tight text-balance">
-          {ar ? "مواقع احترافية ومنتجات رقمية،" : "Professional websites & digital products,"}{" "}
-          <span className="text-[#ffc77d]">{ar ? "في مكان واحد." : "in one place."}</span>
-        </h1>
-        <p className="mx-auto mt-6 max-w-2xl text-base leading-8 text-white/75">{ar ? "أنشئ موقعاً لنشاطك، أو اختر بطاقات الهدايا ومفاتيح الألعاب والبرامج وشحن الألعاب من متجرنا الرقمي." : "Build a website for your business, or explore gift cards, game and software keys, and top-ups in our digital store."}</p>
-        <p className="mt-3 text-sm leading-7 text-white/60">{ar ? "مواقع وبرامج · بطاقات رقمية · شحن الألعاب" : "Websites & software · Digital gift cards · Game top-ups"}</p>
-        <div className="mt-8 flex flex-wrap justify-center gap-3">
-          <Link href="/creation-sites" className="inline-flex min-h-12 items-center gap-2 rounded-full bg-[#ffb45b] px-7 text-sm font-black text-[#231333] transition-colors hover:bg-[#ffc77d]">{ar ? "أريد إنشاء موقع" : "I need a website"}<ArrowUpRight className="h-4 w-4 rtl:rotate-[-90deg]" /></Link>
-          <Link href="/codes" className="inline-flex min-h-12 items-center rounded-full border border-white/30 px-7 text-sm font-bold text-white transition-colors hover:bg-white/10">{ar ? "تصفّح المتجر الرقمي" : "Explore digital store"}</Link>
-        </div>
+    <section className="home-intro">
+      <div className="site-container home-intro-layout px-4 sm:px-6 lg:px-8">
+        <motion.div initial={false} animate={{ opacity: 1, y: 0 }} className="home-intro-copy">
+          <p className="hero-eyebrow"><Sparkles className="h-4 w-4" />{config.name} · {ar ? "خدمات ومنتجات رقمية" : "YOUR DIGITAL POSSIBILITIES"}</p>
+          <h1>{ar ? "مواقع. ألعاب. بطاقات." : "Websites. Games. Gift cards."}<br /><span className="hero-accent-text">{ar ? "عالم من الإمكانيات." : "A world of possibilities."}</span></h1>
+          <p className="hero-description">{ar ? "موقع يُبرز نشاطك، أو بطاقة تفتح لك عالماً جديداً. إنشاء مواقع، بطاقات هدايا، مفاتيح ألعاب وشحن — اختر ما يناسبك." : "A website that brings your business to life. A card that unlocks a new world. Websites, gift cards, game keys and top-ups — find your next move."}</p>
+          <div className="hero-actions">
+            <Link href="/codes" className="vivid-button">{ar ? "اكتشف المتجر" : "Explore the store"}<ArrowUpRight className="h-4 w-4 rtl:rotate-[-90deg]" /></Link>
+            <Link href="/creation-sites" className="vivid-button is-secondary">{ar ? "لننشئ موقعك" : "Let’s build your website"}<Code2 className="h-4 w-4" /></Link>
+          </div>
+          <div className="hero-topics">
+            {[[Code2, ar ? "إنشاء مواقع" : "Web creation"], [Gift, ar ? "بطاقات رقمية" : "Digital cards"], [Gamepad2, ar ? "ألعاب وشحن" : "Games & top-ups"]].map(([Icon, label], i) => { const TopicIcon = Icon as typeof Code2; return <motion.span key={i} initial={reduced ? false : { opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.12 }}><TopicIcon className="h-4 w-4" />{label as string}</motion.span>; })}
+          </div>
+        </motion.div>
+        <HeroVisual />
       </div>
     </section>
   );

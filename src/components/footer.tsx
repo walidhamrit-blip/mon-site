@@ -38,7 +38,7 @@ export function Footer() {
   ];
 
   return (
-    <footer className="relative overflow-hidden bg-[var(--primary)] text-[var(--primary-foreground)]">
+    <footer className="public-footer relative overflow-hidden">
       <div
         aria-hidden="true"
         className="pointer-events-none absolute -top-32 end-0 h-[380px] w-[380px] translate-x-1/3 rounded-full bg-[var(--accent)]/15 blur-[90px] rtl:-translate-x-1/3"

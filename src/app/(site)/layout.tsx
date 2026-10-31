@@ -14,7 +14,7 @@ export default function SiteLayout({ children }: { children: ReactNode }) {
   return (
     <>
       <Navbar />
-      <main className="min-h-screen">
+      <main className="site-main min-h-screen">
         {children}
       </main>
       <Footer />
