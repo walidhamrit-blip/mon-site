@@ -14,8 +14,8 @@
  *   - balises Open Graph (og:title, og:description, og:url) et Twitter Card
  *   - balises <link rel="alternate" type="text/markdown"> vers /llms.txt et /llms-full.txt
  *   - un seul <h1>
- *   - blocs JSON-LD tous parsables + conformité Google (FAQPage uniquement sur / et /pricing,
- *     HowTo sur /, ProfessionalService avec geo, CreativeWork avec offers sur /demos/[slug])
+ *   - blocs JSON-LD tous parsables + conformité Google (FAQPage sur les pages avec FAQ visible,
+ *     HowTo sur /creation-sites, ProfessionalService avec geo, CreativeWork avec offers sur /demos/[slug])
  *   - maillage interne serveur sur chaque fiche /demos/[slug]
  *   - absence de noindex accidentel sur une page indexable
  *   - aucune image sans attribut alt
@@ -213,6 +213,7 @@ function checkPage(pathname, html) {
   const isFaqExpected =
     page === "/" ||
     page === "/pricing" ||
+    page === "/creation-sites" ||
     page === "/services" ||
     page === "/blog" ||
     page === "/compare" ||
@@ -231,8 +232,8 @@ function checkPage(pathname, html) {
     record(page, "error", "schéma FAQPage présent sur une page sans section FAQ visible (non-conformité Google)");
   }
 
-  if (page === "/" && !schemaTypes.has("HowTo")) {
-    record(page, "error", "schéma HowTo attendu sur la page d'accueil mais absent");
+  if (page === "/creation-sites" && !schemaTypes.has("HowTo")) {
+    record(page, "error", "schéma HowTo attendu sur la page création de sites mais absent");
   }
 
   const proService = parsedSchemas.find((s) => s && s["@type"] === "ProfessionalService");

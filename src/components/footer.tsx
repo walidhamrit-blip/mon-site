@@ -38,7 +38,7 @@ export function Footer() {
   ];
 
   return (
-    <footer className="relative overflow-hidden bg-[var(--primary)] text-[var(--primary-foreground)]">
+    <footer className="public-footer relative overflow-hidden">
       <div
         aria-hidden="true"
         className="pointer-events-none absolute -top-32 end-0 h-[380px] w-[380px] translate-x-1/3 rounded-full bg-[var(--accent)]/15 blur-[90px] rtl:-translate-x-1/3"
@@ -53,13 +53,13 @@ export function Footer() {
             </p>
             <p className="mt-2 max-w-[46ch] text-[19px] font-black leading-snug tracking-tight sm:text-[22px]">
               {ar
-                ? "موقعك الاحترافي جاهز خلال 7 أيام — ابدأ بمكالمة قصيرة."
-                : "Your professional site in 7 days — start with a short call."}
+                ? "منتج رقمي أو مشروع موقع؟ اختر خطوتك التالية."
+                : "A digital product or a new website? Let’s find your next step."}
             </p>
           </div>
           <div className="flex flex-wrap gap-2.5">
             <Link
-              href="/contact"
+              href="/creation-sites#lead-form"
               className="inline-flex h-11 items-center gap-1.5 rounded-full bg-[var(--accent)] px-5 text-[13.5px] font-bold text-[var(--accent-foreground)] transition-colors hover:bg-[var(--accent-hover)]"
             >
               {ar ? "اطلب عرضاً مجانياً" : "Get a free quote"}
@@ -85,7 +85,7 @@ export function Footer() {
               <div>
                 <div className="font-black tracking-tight">NUKHBA · نخبة</div>
                 <div className="text-[11.5px] opacity-60">
-                  {marketText.city} · Premium Web Agency
+                  {marketText.city} · Digital services & store
                 </div>
               </div>
             </div>
@@ -116,6 +116,7 @@ export function Footer() {
             <ul className="mt-4 space-y-2.5 text-[13px]">
               {[
                 { href: "/", label: t.nav.home },
+                { href: "/creation-sites", label: ar ? "إنشاء المواقع" : "Website creation" },
                 { href: "/demos", label: t.nav.demos },
                 { href: "/services", label: ar ? "الخدمات السريعة" : "Open services" },
                 { href: "/compare", label: ar ? "المقارنات الصريحة" : "Comparisons" },

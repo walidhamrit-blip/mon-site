@@ -122,7 +122,7 @@ test("la boutique affiche un bandeau au lieu d'un faux catalogue", () => {
   assert.match(flat, /const degraded = status\.degraded;/);
   assert.match(flat, /\{degraded && \( <StoreUnavailableNotice ar=\{ar\} phone=\{config\.phone\} \/> \)\}/);
   // La grille n'est pas rendue : elle contiendrait les fiches de démonstration.
-  assert.match(flat, /\{!degraded && <DigitalCatalog products=\{products\} \/>\}/);
+  assert.match(flat, /\{!degraded && <DigitalCatalog key=\{initialKind\} products=\{products\} initialKind=\{initialKind\} \/>\}/);
   // Et le balisage n'annonce pas ces fiches comme le catalogue.
   assert.match(flat, /const itemList = degraded \? null :/);
   assert.match(flat, /\.\.\.\(itemList \? \{ mainEntity: itemList \} : \{\}\)/);

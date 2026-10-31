@@ -1,3 +1,5 @@
+import { EditorialVisual } from "@/components/editorial-visual";
+import { storeCategories } from "@/lib/site-hierarchy";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { digitalCatalogStatus, getDigitalCatalog } from "@/lib/digital-store";
@@ -73,7 +75,9 @@ export const dynamic = "force-dynamic";
  */
 export const maxDuration = 60;
 
-export default async function CodesPage() {
+export default async function CodesPage({ searchParams }: { searchParams: Promise<{ kind?: string }> }) {
+  const { kind } = await searchParams;
+  const initialKind = storeCategories.find((category) => category.kind === kind)?.kind ?? "all";
   const { config } = await getSiteDataCached();
   /**
    * Ordre commercial dès le serveur : les fiches les plus demandées (recharges
@@ -258,6 +262,7 @@ export default async function CodesPage() {
         </div>
       </section>
 
+      <div className="site-container px-4 py-6 sm:px-6 lg:px-8"><EditorialVisual kind="store" /></div>
       {degraded && (
         <StoreUnavailableNotice ar={ar} phone={config.phone} />
       )}
@@ -268,7 +273,10 @@ export default async function CodesPage() {
         catalogue réel — c'est exactement ce qui a trompé les visiteurs (et
         le sitemap) le 29/10/2026.
       */}
-      {!degraded && <DigitalCatalog products={products} />}
+      <nav aria-label={ar ? "فئات المتجر" : "Store categories"} className="site-container flex flex-wrap gap-2 px-4 py-6 sm:px-6 lg:px-8">
+        {storeCategories.map((category) => <Link key={category.kind} href={category.kind === "all" ? "/codes" : `/codes?kind=${category.kind}`} aria-current={initialKind === category.kind ? "page" : undefined} className={`rounded-full border px-4 py-2 text-sm font-bold ${initialKind === category.kind ? "border-[var(--accent)] bg-[var(--accent)] text-[var(--accent-foreground)]" : "border-[var(--border)] bg-[var(--card)]"}`}>{ar ? category.ar : category.en}</Link>)}
+      </nav>
+      {!degraded && <DigitalCatalog key={initialKind} products={products} initialKind={initialKind} />}
 
       {/*
         Contenu de rayon : ces sections répondent aux questions réellement

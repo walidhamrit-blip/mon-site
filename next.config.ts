@@ -134,6 +134,8 @@ const nextConfig: NextConfig = {
     // Captures locales servies avec un hash anti-cache (`?v=…`) : autorise
     // l'optimisation Next (srcset retina) malgré la query string.
     localPatterns: [
+      // Full-width hero and shared editorial imagery.
+      { pathname: "/visuals/**" },
       { pathname: "/previews/**" },
       { pathname: "/guide-crypto/**" },
       // Avatar Einstein du assistant flottant (src/components/site-chatbot.tsx).

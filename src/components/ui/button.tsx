@@ -7,7 +7,7 @@ export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElemen
 }
 
 const styles = {
-  default: "bg-[var(--primary)] text-[var(--primary-foreground)] hover:opacity-90",
+  default: "bg-[var(--accent)] text-[var(--accent-foreground)] hover:bg-[var(--accent-hover)]",
   accent: "bg-[var(--accent)] text-[var(--accent-foreground)] hover:bg-[var(--accent-hover)] shadow-md",
   outline: "border border-[var(--border)] bg-transparent hover:bg-[var(--secondary)]",
   ghost: "hover:bg-[var(--secondary)]",

@@ -388,6 +388,23 @@ export const THEMES: SiteTheme[] = [
   },
 ];
 
+// Palettes affect accents and actions, never the neutral page canvas.
+for (const theme of THEMES) {
+  Object.assign(theme.light, {
+    background: "#FFFFFF", foreground: "#15151B", card: "#FFFFFF",
+    "card-foreground": "#15151B", popover: "#FFFFFF", "popover-foreground": "#15151B",
+    secondary: "#F6F6F8", "secondary-foreground": "#22222A", muted: "#F0F0F3",
+    "muted-foreground": "#656571", border: "#E7E7EC", input: "#E7E7EC",
+  });
+  Object.assign(theme.dark, {
+    background: "#000000", foreground: "#F5F5F7", card: "#101013",
+    "card-foreground": "#F5F5F7", popover: "#101013", "popover-foreground": "#F5F5F7",
+    secondary: "#151518", "secondary-foreground": "#F5F5F7", muted: "#202025",
+    "muted-foreground": "#A5A5B0", border: "#28282E", input: "#28282E",
+  });
+}
+
+
 /**
  * Anciens identifiants retirés du sélecteur (8 → 6 thèmes) : mappés vers le
  * thème signature pour que les choix mémorisés dans `localStorage` ou dans une
