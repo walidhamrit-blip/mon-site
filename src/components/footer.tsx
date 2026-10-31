@@ -59,7 +59,7 @@ export function Footer() {
           </div>
           <div className="flex flex-wrap gap-2.5">
             <Link
-              href="/contact"
+              href="/creation-sites#lead-form"
               className="inline-flex h-11 items-center gap-1.5 rounded-full bg-[var(--accent)] px-5 text-[13.5px] font-bold text-[var(--accent-foreground)] transition-colors hover:bg-[var(--accent-hover)]"
             >
               {ar ? "اطلب عرضاً مجانياً" : "Get a free quote"}
@@ -116,6 +116,7 @@ export function Footer() {
             <ul className="mt-4 space-y-2.5 text-[13px]">
               {[
                 { href: "/", label: t.nav.home },
+                { href: "/creation-sites", label: ar ? "إنشاء المواقع" : "Website creation" },
                 { href: "/demos", label: t.nav.demos },
                 { href: "/services", label: ar ? "الخدمات السريعة" : "Open services" },
                 { href: "/compare", label: ar ? "المقارنات الصريحة" : "Comparisons" },

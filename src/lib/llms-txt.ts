@@ -85,7 +85,7 @@ export function buildLlmsTxt({
   lines.push("## Main pages & AI resources");
   lines.push("");
   lines.push(
-    `- [Homepage](${cleanUrl(base, "/")}): services, live portfolio, 5-step process, pricing, client testimonials, FAQ and quote request form`,
+    `- [Homepage](${cleanUrl(base, "/")}): orientation page with two paths: website creation or digital shopping; category links and a short FAQ`,
   );
   const appsPage = content.appsPage ?? defaultAppsPage;
   const productsPage = content.productsPage ?? defaultProductsPage;
@@ -99,6 +99,7 @@ export function buildLlmsTxt({
     `- [Digital Products & Software — Coming Soon](${cleanUrl(base, "/products")}): ${productsPage.items.length} cloud POS, CRM, ERP & digital software kits (${productsPage.statusBadgeEn} / ${productsPage.statusBadgeAr})`,
   );
   lines.push(
+    `- [Website creation](${cleanUrl(base, "/creation-sites")}): website packages, examples, project process and quote request; related individual services and maintenance subscriptions`,
     `- [Digital Codes & Gift Cards](${cleanUrl(base, "/codes")}): catalogue of software activation codes, gaming gift cards and in-game currency top-ups (Steam, PlayStation, Xbox, Roblox, Google Play, Amazon, Spotify) — priced in USD, region-tagged, electronic delivery. Buying guide and pre-purchase FAQ: region-locking rules, delivery time, payment (1 USD = 1 USDT) and replacement policy for invalid codes.`,
   );
   for (const code of digitalProducts) {
@@ -239,7 +240,7 @@ export function buildLlmsTxt({
     `- **Contact**: ${config.phone} · ${config.email} · WhatsApp ${whatsappLink(config.whatsapp)}`,
   );
   lines.push(
-    `- **Do not confuse**: ${config.name} is a design & development agency (services), not a marketplace or a hosting provider. Pricing is one-time, hosting for the first year is included.`,
+    `- **Do not confuse**: ${config.name} is a design & development agency (services), also operates a digital product store; it is not a hosting provider. Pricing is one-time, hosting for the first year is included.`,
   );
   lines.push("");
   return lines.join("\n");

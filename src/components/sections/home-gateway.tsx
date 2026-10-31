@@ -9,8 +9,8 @@ export function HomeGateway() {
   const { locale } = useI18n();
   const ar = locale === "ar";
   const items = [
-    { icon: Code2, href: "/services", title: ar ? "مواقع وبرامج حسب الطلب" : "Websites & software", text: ar ? "مواقع احترافية ومتاجر إلكترونية وحلول تناسب نشاطك." : "Professional websites, online stores and solutions built for your business.", action: ar ? "اكتشف الخدمات" : "Explore services" },
-    { icon: Gift, href: "/codes", title: ar ? "بطاقات هدايا وأكواد رقمية" : "Gift cards & digital codes", text: ar ? "تصفّح البطاقات وأكواد البرامج والألعاب المتاحة في متجرنا." : "Discover available gift cards, software codes and game keys in our store.", action: ar ? "تصفّح المتجر" : "Browse the store" },
+    { icon: Code2, href: "/creation-sites", title: ar ? "مواقع وبرامج حسب الطلب" : "Website creation", text: ar ? "مواقع احترافية ومتاجر إلكترونية وحلول تناسب نشاطك." : "Professional websites, online stores and solutions built for your business.", action: ar ? "اكتشف الخدمات" : "View website offers" },
+    { icon: Gift, href: "/codes?kind=gift_card", title: ar ? "بطاقات هدايا وأكواد رقمية" : "Gift cards & digital codes", text: ar ? "تصفّح البطاقات وأكواد البرامج والألعاب المتاحة في متجرنا." : "Discover available gift cards, software codes and game keys in our store.", action: ar ? "تصفّح المتجر" : "Browse the store" },
     { icon: Gamepad2, href: "/codes?kind=game_topup", title: ar ? "شحن الألعاب" : "Game top-ups", text: ar ? "اختر لعبتك وقيمة الشحن وتابع طلبك من مكان واحد." : "Find your game, choose a top-up and follow your order in one place.", action: ar ? "اكتشف الشحن" : "Explore top-ups" },
   ];
   return (
