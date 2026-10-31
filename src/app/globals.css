@@ -640,3 +640,31 @@ html[dir="rtl"] .home-intro h1 { line-height: 1.45; letter-spacing: -.025em; }
   .site-main a.rounded-full { transition: transform .2s, box-shadow .2s, background .2s; }
   .site-main a.rounded-full:hover { transform: translateY(-2px); }
 }
+
+/* Single full-bleed homepage image, independent of the palette and database. */
+.panoramic-hero {
+  position: relative;
+  isolation: isolate;
+  width: 100%;
+  height: clamp(320px, 43vw, 720px);
+  overflow: hidden;
+  background: #080b13;
+}
+.panoramic-hero-image {
+  object-fit: cover;
+  object-position: center 52%;
+  /* A gentle, finite five-second zoom avoids endless distracting motion. */
+  animation: panoramic-zoom 5s ease-out both;
+  transform-origin: 62% 50%;
+}
+@keyframes panoramic-zoom {
+  from { transform: scale(1); }
+  to { transform: scale(1.065); }
+}
+@media (max-width: 640px) {
+  .panoramic-hero { height: 360px; }
+  .panoramic-hero-image { object-position: 62% center; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .panoramic-hero-image { animation: none; transform: none; }
+}
