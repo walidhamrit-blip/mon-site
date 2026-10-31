@@ -8,7 +8,7 @@ import { SiteProvider } from "@/components/site-provider";
 import { CurrencyProvider } from "@/components/currency-provider";
 import { getSiteDataCached } from "@/lib/store";
 import { siteConfig } from "@/lib/config";
-import { isThemeId, themeBootScript, themeCss } from "@/lib/themes";
+import { resolveThemeId, DEFAULT_THEME_ID, themeBootScript, themeCss } from "@/lib/themes";
 import { JsonLd } from "@/components/json-ld";
 import {
   googleSiteVerification,
@@ -167,9 +167,7 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
   // initial ne peuvent pas diverger.
   const defaultLocale: Locale = siteLocale(config);
   const defaultMode: ThemeMode = appearance.mode === "dark" ? "dark" : "light";
-  const defaultPalette = isThemeId(appearance.themeId)
-    ? appearance.themeId
-    : siteConfig.appearance.themeId;
+  const defaultPalette = resolveThemeId(appearance.themeId) ?? DEFAULT_THEME_ID;
 
   // Données structurées globales servies dans le HTML initial (sans JS requis) :
   // Organization + WebSite + ProfessionalService (SEO local + avis) +

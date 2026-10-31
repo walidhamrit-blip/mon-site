@@ -12,7 +12,7 @@ import {
 } from "lucide-react";
 import { resetSiteConfig, saveSiteConfig } from "@/app/admin/actions";
 import { useTheme } from "@/components/theme-provider";
-import { THEMES } from "@/lib/themes";
+import { THEMES, resolveThemeId } from "@/lib/themes";
 import { MARKET_PRESETS } from "@/lib/market";
 import { CURRENCY_CATALOG, DEFAULT_RATES } from "@/lib/currency";
 
@@ -188,7 +188,7 @@ export function SettingsForm({ initial, initialTab }: Props) {
 
             <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3">
               {THEMES.map((theme) => {
-                const selected = form.appearance.themeId === theme.id;
+                const selected = resolveThemeId(form.appearance.themeId) === theme.id;
                 const tokens =
                   form.appearance.mode === "dark" ? theme.dark : theme.light;
                 return (

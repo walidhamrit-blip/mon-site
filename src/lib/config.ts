@@ -76,7 +76,7 @@ export const siteConfig = {
   // mémorisé sur son appareil et prime sur ces valeurs).
   appearance: {
     /** Thème principal (palette de couleurs, voir src/lib/themes.ts). */
-    themeId: "nukhba",
+    themeId: "cyber-violet",
     /** Mode d'affichage principal : "light" (clair) ou "dark" (sombre). */
     mode: "light",
     /**

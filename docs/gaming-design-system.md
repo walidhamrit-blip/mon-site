@@ -9,7 +9,9 @@ hierarchy stay unchanged.
 
 - White day canvas, black night canvas (as requested).
 - White day cards, blue-charcoal night cards; neutral secondary surfaces.
-- Six stable palette IDs, preserving admin and visitor preferences.
+- Six gaming palettes: Cyber Violet, Electric Blue, Neon Lime, Plasma Rose,
+  Solar Orange and Arctic Cyan. Legacy IDs are mapped to the new IDs before
+  first paint, preserving both admin and visitor preferences.
 - Day accents are deliberately darker than night accents: normal-sized links,
   action labels and body text must remain legible without neon on white.
 - Night accents are luminous with dark action labels.
@@ -33,3 +35,17 @@ hierarchy stay unchanged.
 Build and source tests run without Neon. Browser smoke checks cover the main
 public routes in all six palettes and both modes, plus mobile layouts, images
 and menu interaction. Live purchasing still needs the Neon quota restored.
+
+## Shop language boundary
+
+`/codes` keeps catalogue fetching, metadata and structured data on the server.
+All visible shop content is rendered by `DigitalStoreView`, using the same
+live `useI18n` locale as the filters and navigation. This includes the header,
+category links, counts, maintenance notice, buying guide and FAQ. The initial
+server render still follows the configured site language, so crawlable content
+and initial JSON-LD stay aligned; changing the visitor language updates the
+visible content without refetching the catalogue. Product display names and
+related-product names are selected in the live locale too.
+
+`store-locale.test.mjs` renders both languages and both maintenance states and
+checks that English visible copy contains no Arabic characters.

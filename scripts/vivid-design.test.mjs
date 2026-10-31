@@ -39,7 +39,7 @@ test("homepage artwork is allowed by the image optimizer and is not an old carou
   assert.match(hero, /panoramic-hero/);
   assert.doesNotMatch(hero, /HeroVisual/);
   assert.match(readFileSync("src/app/(site)/layout.tsx", "utf8"), /public-shell/);
-  for (const path of ["src/components/website-creation-view.tsx", "src/app/(site)/codes/page.tsx"]) {
+  for (const path of ["src/components/website-creation-view.tsx", "src/components/digital-store-view.tsx"]) {
     assert.match(readFileSync(path, "utf8"), /EditorialVisual/);
     assert.doesNotMatch(readFileSync(path, "utf8"), /HeroVisual/);
   }
@@ -70,4 +70,32 @@ test("gaming system scopes public pages and includes day-aware footer and form s
   assert.match(css, /input,textarea,select/);
   assert.match(css, /prefers-reduced-motion/);
   assert.match(readFileSync("src/components/footer.tsx", "utf8"), /gaming-footer-grid/);
+});
+
+
+test("new gaming palettes replace the old catalog and migrate saved IDs", () => {
+  assert.deepEqual(themes.THEMES.map((theme) => theme.id), ["cyber-violet", "electric-blue", "neon-lime", "plasma-rose", "solar-orange", "arctic-cyan"]);
+  assert.equal(themes.DEFAULT_THEME_ID, "cyber-violet");
+  for (const old of ["nukhba", "royal", "graphite", "emerald", "violet", "teal", "burgundy", "copper"]) {
+    const resolved = themes.resolveThemeId(old);
+    assert.ok(themes.THEMES.some((theme) => theme.id === resolved), old);
+    assert.equal(themes.getTheme(old).id, resolved);
+  }
+  assert.match(themes.themeBootScript({palette:"nukhba"}), /cyber-violet/);
+});
+
+test("boot script resolves legacy preferences before first paint", async () => {
+  const { runInNewContext } = await import("node:vm");
+  for (const [oldId, newId] of Object.entries(themes.RETIRED_THEMES)) {
+    const attrs = new Map();
+    const classes = new Set();
+    const stored = new Map([["nukhba-palette-choice", oldId], ["nukhba-mode-choice", "dark"]]);
+    runInNewContext(themes.themeBootScript({palette:"nukhba"}), {
+      document: {documentElement: {setAttribute: (key, value) => attrs.set(key, value), classList: {add: (value) => classes.add(value)}}},
+      localStorage: {getItem: (key) => stored.get(key), removeItem: (key) => stored.delete(key)},
+      window: {matchMedia: () => ({matches:false})},
+    });
+    assert.equal(attrs.get("data-theme"), newId);
+    assert.ok(classes.has("dark"));
+  }
 });

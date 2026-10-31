@@ -117,6 +117,8 @@ export default async function DigitalProductPage({
     .map((candidate) => ({
       slug: candidate.slug,
       title: productDisplayName(candidate, locale),
+      titleAr: productDisplayName(candidate, "ar"),
+      titleEn: productDisplayName(candidate, "en"),
       platform: candidate.platform,
       image: candidate.image,
       fromUsd: lowestPriceUsd(candidate),
