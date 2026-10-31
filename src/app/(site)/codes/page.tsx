@@ -1,4 +1,4 @@
-import { HeroVisual } from "@/components/hero-visual";
+import { EditorialVisual } from "@/components/editorial-visual";
 import { storeCategories } from "@/lib/site-hierarchy";
 import type { Metadata } from "next";
 import Link from "next/link";
@@ -262,7 +262,7 @@ export default async function CodesPage({ searchParams }: { searchParams: Promis
         </div>
       </section>
 
-      <div className="site-container px-4 py-6 sm:px-6 lg:px-8"><HeroVisual variant="store" compact /></div>
+      <div className="site-container px-4 py-6 sm:px-6 lg:px-8"><EditorialVisual kind="store" /></div>
       {degraded && (
         <StoreUnavailableNotice ar={ar} phone={config.phone} />
       )}

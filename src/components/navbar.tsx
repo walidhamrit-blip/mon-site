@@ -73,7 +73,7 @@ export function Navbar() {
 
   return (
     <>
-      <header className="relative z-50 border-b border-[var(--border)] bg-[var(--background)] py-3">
+      <header className="public-header relative z-50 border-b border-[var(--border)] bg-[var(--background)] py-3">
         <div className="site-container px-4 sm:px-6">
           <div className="flex items-center justify-between gap-3 px-1 py-2 sm:px-4">
             <Link href="/" className="group flex shrink-0 items-center gap-2.5" aria-label={siteConfig.name}>
@@ -89,15 +89,15 @@ export function Navbar() {
                 </span>
                 <span className="mt-1 hidden text-[10.5px] text-[var(--muted-foreground)] sm:block">
                   {ar
-                    ? `${marketText.city} · مواقع فاخرة`
-                    : `${marketText.city} · Premium sites`}
+                    ? `${marketText.city} · خدمات رقمية`
+                    : `${marketText.city} · Digital services`}
                 </span>
               </span>
             </Link>
 
             <nav
               aria-label={ar ? "التنقل الرئيسي" : "Main navigation"}
-              className="hidden min-w-0 items-center gap-0 overflow-x-auto rounded-full bg-[var(--secondary)]/80 p-1 lg:flex xl:gap-0 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+              className="primary-menu hidden min-w-0 items-center gap-1 lg:flex"
             >
               {links.map((link) => {
                 const active = isActive(link.href);

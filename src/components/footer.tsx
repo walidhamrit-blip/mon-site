@@ -53,8 +53,8 @@ export function Footer() {
             </p>
             <p className="mt-2 max-w-[46ch] text-[19px] font-black leading-snug tracking-tight sm:text-[22px]">
               {ar
-                ? "موقعك الاحترافي جاهز خلال 7 أيام — ابدأ بمكالمة قصيرة."
-                : "Your professional site in 7 days — start with a short call."}
+                ? "منتج رقمي أو مشروع موقع؟ اختر خطوتك التالية."
+                : "A digital product or a new website? Let’s find your next step."}
             </p>
           </div>
           <div className="flex flex-wrap gap-2.5">
@@ -85,7 +85,7 @@ export function Footer() {
               <div>
                 <div className="font-black tracking-tight">NUKHBA · نخبة</div>
                 <div className="text-[11.5px] opacity-60">
-                  {marketText.city} · Premium Web Agency
+                  {marketText.city} · Digital services & store
                 </div>
               </div>
             </div>

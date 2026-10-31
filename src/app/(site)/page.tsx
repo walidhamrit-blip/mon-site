@@ -62,6 +62,7 @@ export default async function HomePage() {
   const catalog = sortByDemand(await getDigitalCatalog({ publicOnly: true }));
   const showcase = catalog.slice(0, 6).map((product) => ({
     slug: product.slug,
+    image: product.image || undefined,
     // Nom nettoyé (« Game Top-Up — PUBG Mobile (Auto) » → « PUBG Mobile »).
     title: productDisplayName(product, locale),
     platform: product.platform,

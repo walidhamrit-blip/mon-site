@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { HeroVisual } from "./hero-visual";
+import { EditorialVisual } from "./editorial-visual";
 import { useI18n } from "@/lib/i18n";
 import { useSiteConfig, useSiteContent } from "./site-provider";
 import { marketLabels, resolveMarket } from "@/lib/market";
@@ -30,7 +30,7 @@ export function WebsiteCreationView() {
         {[["/services", ar ? "خدمات وتعديلات حسب الطلب" : "Individual services & improvements"], ["/abonnements", ar ? "الصيانة والاشتراكات" : "Maintenance & subscriptions"], ["/sectors", ar ? "حلول حسب نشاطك" : "Solutions by industry"]].map(([href,label]) => <Link key={href} href={href} className="underline underline-offset-4">{label}</Link>)}
       </div>
     </section>
-    <div className="site-container px-4 pb-10 sm:px-6 lg:px-8"><HeroVisual variant="web" compact /></div>
+    <div className="site-container px-4 pb-10 sm:px-6 lg:px-8"><EditorialVisual kind="web" /></div>
     <Pricing />
     <DemosGallery />
     <div id="website-process"><Process /></div>

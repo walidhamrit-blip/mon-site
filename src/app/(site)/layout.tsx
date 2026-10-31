@@ -13,11 +13,13 @@ import { SiteChatbot } from "@/components/site-chatbot";
 export default function SiteLayout({ children }: { children: ReactNode }) {
   return (
     <>
+      <div className="public-shell">
       <Navbar />
       <main className="site-main min-h-screen">
         {children}
       </main>
       <Footer />
+      </div>
       <WhatsAppFloat />
       <SiteChatbot />
       <Analytics />

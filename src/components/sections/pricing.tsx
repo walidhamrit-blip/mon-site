@@ -42,7 +42,7 @@ export function Pricing() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ delay: idx * 0.08 }}
-              className={`relative flex flex-col rounded-[var(--radius-lg)] border p-6 transition-shadow lg:p-7 ${plan.featured ? "border-[var(--primary)] bg-[var(--primary)] text-[var(--primary-foreground)] shadow-[var(--shadow-lg)] lg:-mt-3 lg:scale-[1.02]" : "border-[var(--border)] bg-[var(--card)] shadow-[var(--shadow-xs)] hover:shadow-[var(--shadow-md)]"}`}
+              className={`relative flex flex-col rounded-[var(--radius-lg)] border p-6 transition-shadow lg:p-7 ${plan.featured ? "border-[var(--accent)] bg-[var(--card)] text-[var(--foreground)] shadow-[var(--shadow-lg)]" : "border-[var(--border)] bg-[var(--card)] shadow-[var(--shadow-xs)] hover:shadow-[var(--shadow-md)]"}`}
             >
               {plan.featured && (
                 <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-4 py-1.5 rounded-full bg-[var(--accent)] text-[var(--accent-foreground)] text-xs font-black flex items-center gap-1.5 shadow">
@@ -85,7 +85,7 @@ export function Pricing() {
               <ul className="mt-6 space-y-2.5">
                 {(locale === "ar" ? plan.features : plan.featuresEn).map((f) => (
                   <li key={f} className="flex gap-2.5 text-sm leading-6">
-                    <span className={`mt-0.5 h-5 w-5 rounded-full grid place-items-center flex-shrink-0 ${plan.featured ? "bg-white/15 text-white" : "bg-[var(--accent)] text-white"}`}>
+                    <span className={`mt-0.5 h-5 w-5 rounded-full grid place-items-center flex-shrink-0 ${plan.featured ? "bg-[var(--accent)]/15 text-[var(--accent)]" : "bg-[var(--accent)]/15 text-[var(--accent)]"}`}>
                       <Check className="h-3.5 w-3.5" />
                     </span>
                     <span className={plan.featured ? "opacity-90" : "opacity-80"}>{f}</span>
@@ -93,7 +93,7 @@ export function Pricing() {
                 ))}
               </ul>
 
-              <div className={`mt-6 text-xs pt-4 border-t ${plan.featured ? "opacity-60 border-white/10" : "opacity-50 border-[var(--border)]"}`}>
+              <div className={`mt-6 text-xs pt-4 border-t ${plan.featured ? "opacity-60 border-[var(--border)]" : "opacity-50 border-[var(--border)]"}`}>
                 {locale === "ar" ? "سنة استضافة + شهادة SSL مجاناً" : "1 year hosting + SSL free"}
               </div>
             </motion.div>

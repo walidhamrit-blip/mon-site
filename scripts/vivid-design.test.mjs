@@ -30,3 +30,17 @@ test("carousel uses local assets and exposes pause, keyboard buttons and reduced
   assert.match(source, /data-playing=\{playing\}/);
   assert.match(readFileSync("src/app/globals.css", "utf8"), /prefers-reduced-motion: reduce/);
 });
+
+test("homepage artwork is allowed by the image optimizer and is not an old carousel", () => {
+  const config = readFileSync("next.config.ts", "utf8");
+  assert.match(config, /pathname: "\/visuals\/\*\*"/);
+  assert.ok(existsSync("public/visuals/futuristic-gaming-hero.webp"));
+  const hero = readFileSync("src/components/sections/hero.tsx", "utf8");
+  assert.match(hero, /panoramic-hero/);
+  assert.doesNotMatch(hero, /HeroVisual/);
+  assert.match(readFileSync("src/app/(site)/layout.tsx", "utf8"), /public-shell/);
+  for (const path of ["src/components/website-creation-view.tsx", "src/app/(site)/codes/page.tsx"]) {
+    assert.match(readFileSync(path, "utf8"), /EditorialVisual/);
+    assert.doesNotMatch(readFileSync(path, "utf8"), /HeroVisual/);
+  }
+});
