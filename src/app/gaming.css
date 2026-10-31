@@ -1,0 +1,179 @@
+/* Gaming editorial system. Public routes only; admin keeps its own UI.
+   Day mode is designed explicitly, rather than a low-contrast inversion. */
+.public-shell {
+  --radius-xs: .4rem;
+  --radius-sm: .65rem;
+  --radius-md: .85rem;
+  --radius-lg: 1.1rem;
+  --radius-xl: 1.35rem;
+  --shadow-xs: 0 2px 6px rgb(19 35 65 / 5%);
+  --shadow-sm: 0 8px 24px -12px rgb(19 35 65 / 18%);
+  --shadow-md: 0 16px 40px -20px rgb(19 35 65 / 25%);
+  --shadow-lg: 0 24px 55px -28px rgb(19 35 65 / 32%);
+  --section-y: clamp(3.5rem, 6vw, 6rem);
+  background: var(--background);
+  color: var(--foreground);
+}
+.dark .public-shell {
+  --shadow-xs: 0 2px 8px #0005;
+  --shadow-sm: 0 10px 28px -15px #000b;
+  --shadow-md: 0 20px 45px -20px #000e;
+  --shadow-lg: 0 28px 60px -28px #000;
+}
+.public-shell .site-container { max-width: 1344px; }
+.public-shell .public-header { border-bottom: 1px solid var(--border); padding-block: .6rem; }
+.public-shell .public-header > .site-container > div { padding-block: .35rem; }
+.public-shell .gaming-brand {
+  display: grid; place-items: center; width: 42px; height: 42px;
+  border-radius: .75rem .2rem .75rem .2rem;
+  color: var(--accent-foreground); background: var(--accent);
+  font-size: 1.2rem; font-weight: 900;
+  box-shadow: 3px 3px 0 color-mix(in srgb, var(--accent) 18%, var(--background));
+}
+.public-shell .primary-menu { padding: 0; gap: .35rem; border-radius: 0; }
+.public-shell .primary-menu a { position: relative; border-radius: .5rem; background: transparent; color: var(--muted-foreground); font-weight: 800; }
+.public-shell .primary-menu a[aria-current="page"] { background: transparent; color: var(--accent); }
+.public-shell .primary-menu a[aria-current="page"]::after { content: ""; position: absolute; bottom: -9px; inset-inline: 1rem; height: 3px; background: var(--accent); border-radius: 3px 3px 0 0; }
+.public-shell .public-header button { border-radius: .65rem; }
+.public-shell .public-header button[class*="bg-[var(--primary)]"] { box-shadow: none; }
+.dark .public-shell .public-header .gaming-brand { box-shadow: 0 0 22px -10px var(--accent); }
+
+/* Clear typography and stronger reading contrast in every palette. */
+.public-shell .site-main { font-size: 15px; line-height: 1.75; }
+.public-shell .site-main h1:not(.sr-only) { font-size: clamp(2rem, 3.6vw, 3.6rem); line-height: 1.2; letter-spacing: -.04em; font-weight: 900; }
+.public-shell .site-main h2 { font-weight: 850; letter-spacing: -.025em; }
+.public-shell .section-title { font-size: clamp(1.8rem, 2.7vw, 2.75rem); line-height: 1.25; }
+.public-shell .section-lead { color: var(--muted-foreground); font-size: 1rem; line-height: 1.9; }
+html[dir="rtl"] .public-shell .site-main :is(h1,h2,h3) { line-height: 1.5; letter-spacing: 0; }
+.public-shell .gaming-kicker, .public-shell .section-eyebrow {
+  display: inline-flex; align-items: center; gap: .6rem;
+  color: var(--accent); letter-spacing: .12em; font-size: .68rem;
+  line-height: 1.6; font-weight: 900; text-transform: uppercase;
+}
+.public-shell .gaming-kicker { margin-bottom: .8rem; }
+.public-shell .gaming-kicker::before, .public-shell .section-eyebrow::before {
+  content: ""; display: block; width: 6px; height: 14px;
+  background: var(--accent); border-radius: 1px; transform: skew(-15deg);
+}
+.public-shell .section-eyebrow.is-centered::after { display: none; }
+.public-shell .gaming-section-heading { padding-bottom: 1rem; }
+
+/* Actions are solid, legible and shaped like controls, not decorative pills. */
+.public-shell .vivid-button, .public-shell .gaming-button,
+.public-shell .site-main :is(a,button)[class*="rounded-full"] {
+  border-radius: .65rem; font-weight: 800; letter-spacing: 0;
+}
+.public-shell .vivid-button { min-height: 48px; box-shadow: 0 5px 0 -2px color-mix(in srgb, var(--accent) 25%, var(--background)); }
+.public-shell .vivid-button:hover { transform: translateY(-2px); box-shadow: 0 8px 20px -12px var(--accent); }
+.public-shell .vivid-button.is-secondary { border: 1px solid var(--input); box-shadow: none; background: var(--card); color: var(--foreground); }
+.public-shell .vivid-button.is-secondary:hover { border-color: var(--accent); color: var(--accent); }
+.public-shell .site-main :is(a,button)[class*="bg-[var(--accent)]"] { font-weight: 800; }
+.dark .public-shell .vivid-button:not(.is-secondary) { box-shadow: 0 0 24px -16px var(--accent); }
+.public-shell .site-main :is(a,button):focus-visible { outline: 3px solid var(--ring); outline-offset: 4px; }
+
+/* Homepage: the photo remains uncluttered, three clear editorial entry cards. */
+.public-shell .panoramic-hero { height: clamp(360px, 39vw, 640px); border-bottom: 3px solid var(--accent); }
+.public-shell .home-gateway { margin-top: -48px; padding-bottom: 4rem; }
+.public-shell .gateway-card {
+  --gateway-color: var(--accent);
+  padding: 14px; border-radius: 1rem; border: 1px solid var(--border);
+  background: var(--card); box-shadow: var(--shadow-md);
+}
+.public-shell .gateway-card::before { display: none; }
+.public-shell .gateway-card:hover { transform: translateY(-5px); border-color: var(--accent); box-shadow: var(--shadow-lg); }
+.public-shell .gateway-art { height: 180px; border-radius: .65rem; }
+.public-shell .gateway-art-icon { border-radius: .4rem; width: 34px; height: 34px; background: var(--accent); color: var(--accent-foreground); }
+.public-shell .gateway-card > .gateway-art > .gateway-art-icon { background: var(--accent); color: var(--accent-foreground); }
+.public-shell .gateway-card .gaming-card-index { margin: 1.1rem .4rem 0; color: var(--accent); font-size: .58rem; font-weight: 900; letter-spacing: .12em; }
+.public-shell .gateway-card h2 { margin-inline: .4rem; font-size: 1.15rem; font-weight: 900; }
+.public-shell .gateway-card > p:not(.gaming-card-index) { margin-inline: .4rem; font-size: .85rem; line-height: 1.9; }
+.public-shell .gateway-card .gateway-action { border: 1px solid var(--border); background: var(--secondary); color: var(--foreground); border-radius: .5rem; min-height: 44px; }
+.public-shell .gateway-card:hover .gateway-action { background: var(--accent); color: var(--accent-foreground); border-color: var(--accent); }
+.public-shell .gateway-card:hover > div:first-child > span:first-child { transform: none; }
+.public-shell .gaming-store-section { background: var(--secondary); border-color: var(--border); }
+.public-shell .gaming-store-section > .site-container > h2 { font-size: clamp(1.6rem, 2.4vw, 2.4rem); }
+.public-shell .gaming-store-section nav a { background: var(--card); border-radius: .5rem; border-color: var(--input); font-size: .8rem; min-height: 44px; }
+.public-shell .gaming-store-section nav a:hover { border-color: var(--accent); color: var(--accent); }
+.public-shell .gaming-store-section section { background: transparent; border-color: var(--border); }
+.public-shell .gaming-project-panel { position: relative; overflow: hidden; border: 1px solid var(--border); border-radius: 1rem; box-shadow: var(--shadow-sm); }
+.public-shell .gaming-project-panel::before { content: ""; position: absolute; top: 0; inset-inline-start: 0; width: 5px; height: 100%; background: var(--accent); }
+.public-shell .gaming-project-panel a { border: 1px solid transparent; border-radius: .6rem; }
+.public-shell .gaming-project-panel a:hover { border-color: var(--accent); background: var(--card); }
+.public-shell .gaming-support-section { background: var(--background); }
+.public-shell .gaming-support-section .grid > div { background: var(--secondary); border-radius: .8rem; border-color: var(--border); }
+
+/* Same panel language on storefront, service, article, comparison and forms. */
+.public-shell .card-surface,
+.public-shell .store-preview-card,
+.public-shell .gaming-product-grid > *,
+.public-shell .site-main div[class*="bg-[var(--card)]"][class*="border"][class*="rounded"] {
+  border-radius: var(--radius-lg); border-color: var(--border); box-shadow: var(--shadow-xs);
+}
+.public-shell .card-interactive:hover,
+.public-shell .store-preview-card:hover,
+.public-shell .gaming-product-grid > *:hover { border-color: var(--accent); box-shadow: var(--shadow-md); }
+.public-shell .store-preview-art { aspect-ratio: 16/10; border-bottom: 1px solid var(--border); }
+.public-shell .store-preview-card > span:nth-last-child(2) { padding: 1.15rem; }
+.public-shell .store-preview-card span[dir="ltr"] { font-size: 1rem; font-weight: 900; }
+.public-shell .chip { border-radius: .4rem; border-color: var(--border); font-size: .7rem; font-weight: 750; }
+.public-shell .chip-accent { color: var(--accent); background: color-mix(in srgb, var(--accent) 8%, var(--card)); border-color: color-mix(in srgb, var(--accent) 25%, var(--border)); }
+.public-shell .site-main :is(input,textarea,select) {
+  background: var(--card); color: var(--foreground); border: 1px solid var(--input);
+  border-radius: .6rem; caret-color: var(--accent); box-shadow: none;
+}
+.public-shell .site-main :is(input,textarea,select):focus { outline: 2px solid var(--ring); outline-offset: 2px; border-color: var(--accent); }
+.public-shell .site-main :is(input,textarea)::placeholder { color: var(--muted-foreground); opacity: 1; }
+.public-shell .site-main :is(input[type="checkbox"],input[type="radio"]) { accent-color: var(--accent); }
+.public-shell .site-main table { border-collapse: collapse; background: var(--card); }
+.public-shell .site-main th { background: var(--secondary); color: var(--foreground); font-weight: 850; }
+.public-shell .site-main :is(th,td) { border-color: var(--border); }
+.public-shell .site-main tbody tr:hover { background: var(--secondary); }
+.public-shell .site-main details { border-radius: .7rem; background: var(--card); border-color: var(--border); }
+.public-shell .site-main details[open] { border-color: var(--accent); box-shadow: inset 3px 0 0 var(--accent); }
+.public-shell .site-main details summary { font-weight: 800; color: var(--foreground); }
+.public-shell .site-main details p { color: var(--muted-foreground); }
+.public-shell .editorial-visual { border-radius: 1rem; border: 1px solid var(--border); }
+.dark .public-shell .card-interactive:hover, .dark .public-shell .store-preview-card:hover { box-shadow: 0 0 24px -16px var(--accent); }
+
+/* Footer is designed for BOTH modes, not a permanently black legacy block. */
+.public-shell .public-footer.gaming-footer { background: var(--secondary); color: var(--foreground); border-top: 1px solid var(--border); }
+.public-shell .gaming-footer-cta { display: flex; align-items: center; justify-content: space-between; gap: 2rem; padding-block: 2.5rem; border-bottom: 1px solid var(--border); }
+.public-shell .gaming-footer-cta h2 { font-size: clamp(1.5rem, 2.4vw, 2.25rem); line-height: 1.4; font-weight: 900; letter-spacing: -.025em; }
+.public-shell .gaming-footer-grid { display: grid; grid-template-columns: 1.3fr 1fr 1fr 1fr; gap: 2.5rem; padding-block: 3rem; }
+.public-shell .gaming-footer-brand { display: inline-flex; align-items: center; gap: .8rem; font-size: 1.2rem; }
+.public-shell .gaming-footer-grid h3 { display: flex; align-items: center; gap: .5rem; font-size: .85rem; font-weight: 900; margin-bottom: 1.2rem; }
+.public-shell .gaming-footer-grid ul { display: grid; gap: .65rem; font-size: .8rem; color: var(--muted-foreground); }
+.public-shell .gaming-footer a:hover { color: var(--accent); }
+.public-shell .gaming-footer .vivid-button:hover { color: var(--accent-foreground); }
+.public-shell .gaming-footer .vivid-button.is-secondary:hover { color: var(--accent); }
+.public-shell .gaming-footer-resources { display: flex; flex-wrap: wrap; gap: .7rem 1.5rem; border-top: 1px solid var(--border); padding-block: 1.4rem; font-size: .75rem; color: var(--muted-foreground); }
+.public-shell .gaming-footer-bottom { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 1rem; padding-block: 1.2rem; border-top: 1px solid var(--border); color: var(--muted-foreground); font-size: .65rem; letter-spacing: .07em; }
+@media (max-width: 1023px) {
+  .public-shell .gaming-footer-grid { grid-template-columns: 1fr 1fr; gap: 2rem; }
+  .public-shell .gaming-footer-cta { align-items: flex-start; flex-direction: column; gap: 1.5rem; }
+}
+@media (max-width: 767px) {
+  .public-shell .panoramic-hero { height: 340px; }
+  .public-shell .home-gateway { margin-top: -24px; padding-bottom: 2.5rem; }
+  .public-shell .gateway-art { height: 175px; }
+  .public-shell .gaming-brand { width: 34px; height: 34px; font-size: 1rem; }
+  .public-shell .gaming-footer-grid { gap: 2rem 1.2rem; }
+  .public-shell .gaming-footer-grid > div:first-child { grid-column: 1/-1; }
+  .public-shell .gaming-footer-grid > nav:last-child { grid-column: 1/-1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .public-shell :is(.vivid-button,.gateway-card,.card-interactive):hover { transform: none; }
+  .public-shell .site-main :is(a,button,img) { transition: none; }
+}
+
+/* Shared interior-page mastheads: a restrained technical pattern, not a
+   second image carousel or a dark-only hero pasted into the light mode. */
+.public-shell .site-main section:not(.panoramic-hero):has(h1:not(.sr-only)) {
+  background-color: var(--background);
+  background-image: linear-gradient(120deg, transparent 70%, color-mix(in srgb, var(--accent) 5%, transparent));
+  border-bottom: 1px solid var(--border);
+}
+.public-shell .site-main section h1:not(.sr-only)::after {
+  content: ""; display: block; width: 52px; height: 4px;
+  margin-top: 1rem; background: var(--accent); border-radius: 1px;
+}

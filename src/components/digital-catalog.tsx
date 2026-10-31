@@ -654,7 +654,7 @@ export function DigitalCatalog({ products, initialKind = "all" }: { products: Di
                 </div>
               </div>
             ) : (
-              <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3 xl:grid-cols-4">
+              <div className="gaming-product-grid grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3 xl:grid-cols-4">
                 {filtered.map((product, index) => {
                   const visual = productVisual(product);
                   const visualFit = productVisualFit(product);

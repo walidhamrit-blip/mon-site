@@ -22,7 +22,8 @@ export function HomeGateway() {
               <Image src={item.src} alt={item.title} fill sizes="(max-width: 768px) 85vw, 380px" className="object-cover object-top" />
               <span className="gateway-art-icon"><Icon className="h-5 w-5" /></span>
             </div>
-            <h2 className="mt-5 text-xl font-extrabold">{item.title}</h2>
+            <p className="gaming-card-index" aria-hidden="true">0{i + 1} / {ar ? "اختر مسارك" : "CHOOSE YOUR PATH"}</p>
+            <h2 className="mt-3 text-xl font-extrabold">{item.title}</h2>
             <p className="mb-6 mt-3 text-sm leading-7 text-[var(--muted-foreground)]">{item.text}</p>
             <span className="gateway-action mt-auto flex items-center justify-center gap-2 text-sm font-bold">{item.action}<ArrowUpRight className="h-4 w-4 rtl:rotate-[-90deg]" /></span>
           </Link>

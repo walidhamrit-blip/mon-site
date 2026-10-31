@@ -77,7 +77,7 @@ export function Navbar() {
         <div className="site-container px-4 sm:px-6">
           <div className="flex items-center justify-between gap-3 px-1 py-2 sm:px-4">
             <Link href="/" className="group flex shrink-0 items-center gap-2.5" aria-label={siteConfig.name}>
-              <span className="grid h-9 w-9 place-items-center rounded-full bg-[var(--primary)] text-sm font-black text-[var(--primary-foreground)] transition-transform group-hover:scale-105">
+              <span className="gaming-brand grid h-9 w-9 place-items-center bg-[var(--primary)] text-sm font-black text-[var(--primary-foreground)] transition-transform group-hover:scale-105">
                 {ar ? "ن" : "N"}
               </span>
               <span className="leading-none">

@@ -86,25 +86,25 @@
   --font-playfair: "Playfair Display", Georgia, serif;
   --font-inter: "Inter", system-ui, sans-serif;
   --background: #FFFFFF;
-  --foreground: #0C0C0F;
+  --foreground: #111827;
   --card: #FFFFFF;
   --card-foreground: #0C0C0F;
   --popover: #FFFFFF;
   --popover-foreground: #0C0C0F;
-  --primary: #0C0C0F;
-  --primary-foreground: #FCFCF9;
+  --primary: #A34B08;
+  --primary-foreground: #FFFFFF;
   --secondary: #F6F6F8;
   --secondary-foreground: #1A1A1E;
   --muted: #F0F0F3;
   --muted-foreground: #6B6B76;
-  --accent: #C6A664;
-  --accent-foreground: #0C0C0F;
-  --accent-hover: #B89652;
+  --accent: #A34B08;
+  --accent-foreground: #FFFFFF;
+  --accent-hover: #803906;
   --border: #E7E7EC;
   --input: #E8E6DF;
-  --ring: #C6A664;
+  --ring: #A34B08;
   --radius: 1rem;
-  --chart-1: #C6A664;
+  --chart-1: #A34B08;
 }
 
 .dark {

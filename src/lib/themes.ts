@@ -77,10 +77,10 @@ export const THEMES: SiteTheme[] = [
     id: "nukhba",
     rank: 1,
     featured: true,
-    labelAr: "نخبة الذهبي",
-    labelEn: "Nukhba Gold",
-    descAr: "الهوية الأصلية — أسود عميق وذهبي فاخر",
-    descEn: "The signature look — deep black & luxury gold",
+    labelAr: "نخبة الكهرماني",
+    labelEn: "Nukhba Amber",
+    descAr: "كهرماني قوي نهاراً ومضيء ليلاً",
+    descEn: "Rich amber by day, luminous amber by night",
     usesAr: "وكالات · علامات فاخرة · ضيافة راقية",
     usesEn: "Agencies · luxury brands · fine hospitality",
     light: {
@@ -388,22 +388,38 @@ export const THEMES: SiteTheme[] = [
   },
 ];
 
-// Palettes affect accents and actions, never the neutral page canvas.
+/** Gaming UI: neutral canvases, accessible day accents, luminous night accents.
+ * Keep palette IDs stable so existing admin/visitor choices remain valid.
+ */
+const gamingAccents: Record<string, { day: string; hover: string; night: string }> = {
+  nukhba: { day: "#A34B08", hover: "#803906", night: "#FFB45C" },
+  royal: { day: "#2454D6", hover: "#1C42AE", night: "#8AAEFF" },
+  graphite: { day: "#374151", hover: "#202938", night: "#C3CCDE" },
+  emerald: { day: "#087A53", hover: "#06613F", night: "#55E0AD" },
+  violet: { day: "#7138D5", hover: "#5826AF", night: "#BD9AFF" },
+  teal: { day: "#08758A", hover: "#065C6E", night: "#66DCE8" },
+};
 for (const theme of THEMES) {
+  const accent = gamingAccents[theme.id];
   Object.assign(theme.light, {
-    background: "#FFFFFF", foreground: "#15151B", card: "#FFFFFF",
-    "card-foreground": "#15151B", popover: "#FFFFFF", "popover-foreground": "#15151B",
-    secondary: "#F6F6F8", "secondary-foreground": "#22222A", muted: "#F0F0F3",
-    "muted-foreground": "#656571", border: "#E7E7EC", input: "#E7E7EC",
+    background: "#FFFFFF", foreground: "#111827", card: "#FFFFFF",
+    "card-foreground": "#111827", popover: "#FFFFFF", "popover-foreground": "#111827",
+    primary: accent.day, "primary-foreground": "#FFFFFF",
+    secondary: "#F3F5FA", "secondary-foreground": "#1F293B", muted: "#EAF0F7",
+    "muted-foreground": "#526078", border: "#D9E0EB", input: "#C4CEDD",
+    accent: accent.day, "accent-foreground": "#FFFFFF", "accent-hover": accent.hover,
+    ring: accent.day, "chart-1": accent.day,
   });
   Object.assign(theme.dark, {
-    background: "#000000", foreground: "#F5F5F7", card: "#101013",
-    "card-foreground": "#F5F5F7", popover: "#101013", "popover-foreground": "#F5F5F7",
-    secondary: "#151518", "secondary-foreground": "#F5F5F7", muted: "#202025",
-    "muted-foreground": "#A5A5B0", border: "#28282E", input: "#28282E",
+    background: "#000000", foreground: "#F1F5FB", card: "#10131B",
+    "card-foreground": "#F1F5FB", popover: "#10131B", "popover-foreground": "#F1F5FB",
+    primary: accent.night, "primary-foreground": "#080C14",
+    secondary: "#151B27", "secondary-foreground": "#F1F5FB", muted: "#202938",
+    "muted-foreground": "#A8B5CB", border: "#2C3648", input: "#3E4C63",
+    accent: accent.night, "accent-foreground": "#080C14", "accent-hover": "#E3EAF8",
+    ring: accent.night, "chart-1": accent.night,
   });
 }
-
 
 /**
  * Anciens identifiants retirés du sélecteur (8 → 6 thèmes) : mappés vers le

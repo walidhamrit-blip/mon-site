@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";
 import "./globals.css";
+import "./gaming.css";
 import { I18nProvider, type Locale } from "@/lib/i18n";
 import { ThemeProvider, type ThemeMode } from "@/components/theme-provider";
 import { SiteProvider } from "@/components/site-provider";

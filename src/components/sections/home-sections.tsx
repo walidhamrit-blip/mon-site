@@ -22,8 +22,9 @@ export function HomeSections({ storeShowcase }: { storeShowcase?: ReactNode }) {
       <HomeLegacyAnchors />
       <Hero />
       <HomeGateway />
-      <section className="border-y border-[var(--border)] bg-[var(--secondary)]/30">
+      <section className="gaming-store-section border-y border-[var(--border)] bg-[var(--secondary)]/30">
         <div className="site-container px-4 py-12 sm:px-6 lg:px-8">
+          <p className="gaming-kicker">{ar ? "المتجر الرقمي" : "DIGITAL STORE"}</p>
           <h2 className="text-2xl font-black">{ar ? "اختر فئة من المتجر الرقمي" : "Explore the digital store"}</h2>
           <p className="mt-3 max-w-2xl text-sm leading-7 text-[var(--muted-foreground)]">{ar ? "اختر حسب حاجتك. راجع المنصة والمنطقة وشروط التفعيل في صفحة كل منتج قبل الطلب." : "Shop by what you need. Check each product’s platform, region and activation requirements before ordering."}</p>
           <nav aria-label={ar ? "فئات المنتجات" : "Product categories"} className="mt-6 flex flex-wrap gap-3">
@@ -33,7 +34,7 @@ export function HomeSections({ storeShowcase }: { storeShowcase?: ReactNode }) {
         {storeShowcase}
       </section>
       <section className="site-container px-4 py-14 sm:px-6 lg:px-8">
-        <div className="grid gap-8 rounded-[var(--radius-lg)] border border-[var(--border)] bg-[var(--card)] p-6 sm:p-10 md:grid-cols-2">
+        <div className="gaming-project-panel grid gap-8 rounded-[var(--radius-lg)] border border-[var(--border)] bg-[var(--card)] p-6 sm:p-10 md:grid-cols-2">
           <div>
             <p className="text-xs font-bold text-[var(--accent)]">{ar ? "لنشاطك التجاري" : "For your business"}</p>
             <h2 className="mt-3 text-3xl font-black">{ar ? "موقع يعرّف بك، أو متجر يبيع لك." : "A website that introduces you. A store that sells for you."}</h2>
@@ -49,7 +50,7 @@ export function HomeSections({ storeShowcase }: { storeShowcase?: ReactNode }) {
           </div>
         </div>
       </section>
-      <section className="border-t border-[var(--border)] bg-[var(--secondary)]/30">
+      <section className="gaming-support-section border-t border-[var(--border)] bg-[var(--secondary)]/30">
         <div className="site-container px-4 py-14 sm:px-6 lg:px-8">
           <h2 className="text-2xl font-black">{ar ? "كيف نساعدك؟" : "How can we help?"}</h2>
           <div className="mt-6 grid gap-4 sm:grid-cols-3">
