@@ -2,17 +2,16 @@ import type { Metadata } from "next";
 import { HomeSections } from "@/components/sections/home-sections";
 import { getSiteDataCached } from "@/lib/store";
 import {
-  defaultMetaDescription,
-  faqJsonLd,
-  howToJsonLd,
   pageMetadata,
   siteLocale,
 } from "@/lib/seo";
 import { JsonLd } from "@/components/json-ld";
-import { getDigitalCatalog } from "@/lib/digital-store";
+import { digitalCatalogStatus, getDigitalCatalog } from "@/lib/digital-store";
 import { sortByDemand } from "@/lib/digital-priority";
 import { lowestPriceUsd } from "@/lib/digital-types";
 import { DigitalShowcase } from "@/components/sections/digital-showcase";
+import { homeFaqs } from "@/lib/site-hierarchy";
+import { StoreUnavailableNotice } from "@/components/store-status-notice";
 import { productDisplayName } from "@/lib/digital-seo";
 
 /**
@@ -30,9 +29,9 @@ export async function generateMetadata(): Promise<Metadata> {
     path: "/",
     title:
       locale === "ar"
-        ? "تصميم مواقع ومتاجر إلكترونية في {city} — تسليم في 7 أيام"
-        : "Web Design & Online Stores in {cityEn} — Delivered in 7 Days",
-    description: defaultMetaDescription(config, locale),
+        ? "نخبة — إنشاء مواقع وبطاقات وأكواد رقمية"
+        : "Nukhba — Websites, Gift Cards & Digital Codes",
+    description: locale === "ar" ? "خدمات إنشاء المواقع والمتاجر في {city}، وبطاقات الهدايا ومفاتيح الألعاب والبرامج وشحن الألعاب. اختر المتجر الرقمي أو ابدأ مشروع موقعك مع نخبة." : "Website and online store creation in {cityEn}, plus gift cards, game and software keys, and game top-ups. Shop digital products or start your website with Nukhba.",
     keywords: [
       "web design agency",
       "website design USD",
@@ -55,7 +54,7 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function HomePage() {
-  const { config, content } = await getSiteDataCached();
+  const { config } = await getSiteDataCached();
   const locale = siteLocale(config);
   // Vitrine de la boutique : les six produits les plus demandés, ordonnés
   // côté serveur. Le maillage vers /codes et les fiches est ainsi présent
@@ -63,30 +62,26 @@ export default async function HomePage() {
   const catalog = sortByDemand(await getDigitalCatalog({ publicOnly: true }));
   const showcase = catalog.slice(0, 6).map((product) => ({
     slug: product.slug,
+    image: product.image || undefined,
     // Nom nettoyé (« Game Top-Up — PUBG Mobile (Auto) » → « PUBG Mobile »).
     title: productDisplayName(product, locale),
     platform: product.platform,
     kind: product.kind,
     fromUsd: lowestPriceUsd(product),
   }));
-  const isSectionEnabled = (id: string) =>
-    content.layout.entries.some(
-      (e) => e.kind === "builtin" && e.builtinId === id && e.enabled,
-    );
-
-  const schemas: Record<string, unknown>[] = [];
-  if (isSectionEnabled("faq") && content.faqs.length > 0) {
-    schemas.push(faqJsonLd(content.faqs));
-  }
-  if (isSectionEnabled("process") && content.process.length > 0) {
-    schemas.push(howToJsonLd(config, content.process));
-  }
+  const degraded = digitalCatalogStatus().degraded;
+  const ar = locale === "ar";
+  const schemas = [{
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    inLanguage: locale,
+    mainEntity: homeFaqs.map((faq) => ({ "@type": "Question", name: ar ? faq.qAr : faq.qEn, acceptedAnswer: { "@type": "Answer", text: ar ? faq.aAr : faq.aEn } })),
+  }];
 
   return (
     <>
       {schemas.length > 0 && <JsonLd data={schemas} />}
-      <HomeSections />
-      <DigitalShowcase locale={locale} products={showcase} total={catalog.length} />
+      <HomeSections storeShowcase={degraded ? <StoreUnavailableNotice ar={ar} phone={config.whatsapp} /> : <DigitalShowcase locale={locale} products={showcase} total={catalog.length} />} />
     </>
   );
 }

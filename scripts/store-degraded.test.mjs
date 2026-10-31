@@ -34,6 +34,7 @@ const sitemap = read("src/app/sitemap.ts");
 const leadRoute = read("src/app/api/lead/route.ts");
 const healthRoute = read("src/app/api/health/route.ts");
 const codesPage = read("src/app/(site)/codes/page.tsx");
+const codesView = read("src/components/digital-store-view.tsx");
 const mailer = read("src/lib/mailer.ts");
 const notice = read("src/components/store-status-notice.tsx");
 
@@ -118,11 +119,13 @@ test("/api/health explique la panne au lieu de la cacher", () => {
 
 test("la boutique affiche un bandeau au lieu d'un faux catalogue", () => {
   const flat = code(codesPage);
+  const view = code(codesView);
+  assert.match(flat, /<DigitalStoreView products=\{products\} degraded=\{degraded\} initialKind=\{initialKind\} \/>/);
   assert.match(flat, /const status = digitalCatalogStatus\(\);/);
   assert.match(flat, /const degraded = status\.degraded;/);
-  assert.match(flat, /\{degraded && \( <StoreUnavailableNotice ar=\{ar\} phone=\{config\.phone\} \/> \)\}/);
+  assert.match(view, /\{degraded && \( <StoreUnavailableNotice ar=\{ar\} phone=\{config\.phone\} \/> \)\}/);
   // La grille n'est pas rendue : elle contiendrait les fiches de démonstration.
-  assert.match(flat, /\{!degraded && <DigitalCatalog products=\{products\} \/>\}/);
+  assert.match(view, /\{!degraded && <DigitalCatalog key=\{initialKind\} products=\{products\} initialKind=\{initialKind\} \/>\}/);
   // Et le balisage n'annonce pas ces fiches comme le catalogue.
   assert.match(flat, /const itemList = degraded \? null :/);
   assert.match(flat, /\.\.\.\(itemList \? \{ mainEntity: itemList \} : \{\}\)/);

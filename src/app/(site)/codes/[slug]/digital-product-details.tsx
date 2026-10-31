@@ -30,7 +30,7 @@ import { DigitalBuyDialog } from "@/components/digital-buy-dialog";
 import { RegionalAlert } from "@/components/regional-alert";
 import { gamePlatformSummary } from "@/lib/digital-platform-core";
 import { productVisual } from "@/lib/game-covers";
-import { productFaqs, redeemSteps } from "@/lib/digital-seo";
+import { productDisplayName, productFaqs, redeemSteps } from "@/lib/digital-seo";
 
 /**
  * Fiche d'un produit du catalogue digital.
@@ -43,6 +43,8 @@ import { productFaqs, redeemSteps } from "@/lib/digital-seo";
 export interface RelatedDigitalProduct {
   slug: string;
   title: string;
+  titleAr?: string;
+  titleEn?: string;
   platform: string;
   image: string;
   fromUsd: number | null;
@@ -50,7 +52,7 @@ export interface RelatedDigitalProduct {
 
 export function DigitalProductDetails({
   product,
-  displayName,
+  displayName: initialDisplayName,
   related = [],
 }: {
   product: DigitalProduct;
@@ -61,6 +63,7 @@ export function DigitalProductDetails({
   const siteConfig = useSiteConfig();
   const { locale } = useI18n();
   const ar = locale === "ar";
+  const displayName = productDisplayName(product, locale) || initialDisplayName;
   // Contenu unique par fiche : étapes d'activation et FAQ générées à partir
   // des données réelles (type, plateforme, régions, montants).
   const steps = redeemSteps(product, locale);
@@ -396,7 +399,7 @@ export function DigitalProductDetails({
                       {item.platform}
                     </span>
                     <span className="mt-1 block text-[14px] font-black leading-6">
-                      {item.title}
+                      {ar ? item.titleAr ?? item.title : item.titleEn ?? item.title}
                     </span>
                     {item.fromUsd != null && (
                       <span className="mt-2 block text-[12.5px] font-bold text-[var(--accent)]" dir="ltr">

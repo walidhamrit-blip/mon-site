@@ -11,10 +11,11 @@ import { LocaleSwitcher } from "./locale-switcher";
 import { CurrencySwitcher } from "./currency-switcher";
 import { useSiteConfig } from "@/components/site-provider";
 import { marketLabels, resolveMarket } from "@/lib/market";
+import { primaryNavigation } from "@/lib/site-hierarchy";
 import { whatsappLink } from "@/lib/utils";
 
 /**
- * Barre de navigation flottante.
+ * Quatre destinations principales, identiques sur ordinateur et mobile.
  *
  * - un seul lien actif surligné (`usePathname`) ;
  * - menu mobile en panneau plein écran, défilement de la page verrouillé ;
@@ -25,7 +26,7 @@ export function Navbar() {
   const router = useRouter();
   const pathname = usePathname();
   const siteConfig = useSiteConfig();
-  const { locale, t } = useI18n();
+  const { locale } = useI18n();
   const { mode, toggle } = useTheme();
   const [open, setOpen] = useState(false);
   const ar = locale === "ar";
@@ -56,49 +57,7 @@ export function Navbar() {
     if (open) setOpen(false);
   }
 
-  /**
-   * Liens de la barre haute.
-   *
-   * `hideBelow` indique la largeur à partir de laquelle le lien s'affiche :
-   * la barre défile horizontalement sur les écrans étroits (pas de
-   * débordement de la page), et les liens secondaires n'apparaissent que
-   * lorsqu'il y a la place — ils restent accessibles dans le pied de page
-   * et dans le menu mobile.
-   */
-  const links = [
-    { href: "/services", label: ar ? "خدمات سريعة" : "Open services" },
-    { href: "/compare", label: ar ? "مقارنات" : "Comparisons" },
-    { href: "/demos", label: t.nav.demos },
-    {
-      // La boutique est le second métier du site (clés de jeux, codes
-      // logiciels, cartes cadeaux) : le lien reste visible à TOUTES les
-      // largeurs. Il était masqué sous 1280 px — donc absent du haut de page
-      // sur la majorité des portables et sur tous les mobiles.
-      href: "/codes",
-      label: ar ? "المتجر الرقمي" : "Digital store",
-    },
-    {
-      href: "/products",
-      label: ar ? "منتجاتنا" : "Products",
-      soon: true,
-      hideBelow: "xl",
-    },
-    {
-      href: "/apps",
-      label: ar ? "تطبيقاتنا" : "Apps",
-      soon: true,
-      hideBelow: "2xl",
-    },
-    { href: "/blog", label: ar ? "أدلة" : "Guides" },
-    { href: "/#pricing", label: t.nav.pricing },
-    {
-      href: "/abonnements",
-      label: ar ? "الاشتراكات" : "Subscriptions",
-      hideBelow: "2xl",
-    },
-    { href: "/contact", label: t.nav.contact },
-  ];
-
+  const links = primaryNavigation.map((link) => ({ href: link.href, label: ar ? link.ar : link.en }));
 
   const isActive = (href: string) =>
     href === "/" ? pathname === "/" : pathname === href || pathname.startsWith(`${href}/`);
@@ -109,20 +68,16 @@ export function Navbar() {
 
   const quote = () => {
     setOpen(false);
-    if (pathname === "/") {
-      document.getElementById("lead-form")?.scrollIntoView({ behavior: "smooth" });
-    } else {
-      router.push("/#lead-form");
-    }
+    router.push("/creation-sites#lead-form");
   };
 
   return (
     <>
-      <header className="relative z-50 py-4">
+      <header className="public-header relative z-50 border-b border-[var(--border)] bg-[var(--background)] py-3">
         <div className="site-container px-4 sm:px-6">
-          <div className="flex items-center justify-between gap-3 rounded-full border border-[var(--border)]/60 bg-[var(--card)]/70 px-3 py-2.5 backdrop-blur-md sm:px-4">
+          <div className="flex items-center justify-between gap-3 px-1 py-2 sm:px-4">
             <Link href="/" className="group flex shrink-0 items-center gap-2.5" aria-label={siteConfig.name}>
-              <span className="grid h-9 w-9 place-items-center rounded-full bg-[var(--primary)] text-sm font-black text-[var(--primary-foreground)] transition-transform group-hover:scale-105">
+              <span className="gaming-brand grid h-9 w-9 place-items-center bg-[var(--primary)] text-sm font-black text-[var(--primary-foreground)] transition-transform group-hover:scale-105">
                 {ar ? "ن" : "N"}
               </span>
               <span className="leading-none">
@@ -134,15 +89,15 @@ export function Navbar() {
                 </span>
                 <span className="mt-1 hidden text-[10.5px] text-[var(--muted-foreground)] sm:block">
                   {ar
-                    ? `${marketText.city} · مواقع فاخرة`
-                    : `${marketText.city} · Premium sites`}
+                    ? `${marketText.city} · خدمات رقمية`
+                    : `${marketText.city} · Digital services`}
                 </span>
               </span>
             </Link>
 
             <nav
               aria-label={ar ? "التنقل الرئيسي" : "Main navigation"}
-              className="hidden min-w-0 items-center gap-0 overflow-x-auto rounded-full bg-[var(--secondary)]/80 p-1 lg:flex xl:gap-0 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+              className="primary-menu hidden min-w-0 items-center gap-1 lg:flex"
             >
               {links.map((link) => {
                 const active = isActive(link.href);
@@ -151,25 +106,10 @@ export function Navbar() {
                     key={link.href}
                     href={link.href}
                     aria-current={active ? "page" : undefined}
-                    className={`inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full px-2 py-1.5 text-[12.5px] font-medium transition-colors xl:px-2.5 xl:text-[13px] ${
-                      link.hideBelow === "xl"
-                        ? "max-xl:hidden"
-                        : link.hideBelow === "2xl"
-                          ? "max-2xl:hidden"
-                          : ""
-                    } ${
-                      active
-                        ? "bg-[var(--card)] font-bold text-[var(--foreground)] shadow-[var(--shadow-xs)]"
-                        : "text-[var(--foreground)]/75 hover:bg-[var(--card)]/80 hover:text-[var(--foreground)]"
-                    }`}
+                    className={`inline-flex shrink-0 items-center whitespace-nowrap rounded-full px-3 py-2 text-[13px] font-medium transition-colors ${active ? "bg-[var(--card)] font-bold text-[var(--foreground)]" : "text-[var(--muted-foreground)] hover:text-[var(--foreground)]"}`}
                   >
                     {link.label}
-                    {link.soon && (
-                      <span
-                        className="h-1.5 w-1.5 rounded-full bg-[var(--accent)]"
-                        aria-label={ar ? "قريباً" : "Soon"}
-                      />
-                    )}
+
                   </Link>
                 );
               })}
@@ -248,13 +188,7 @@ export function Navbar() {
                       }`}
                     >
                       <span>{link.label}</span>
-                      {link.soon ? (
-                        <span className="rounded-full bg-[var(--accent)]/15 px-2.5 py-0.5 text-[10.5px] font-black text-[var(--accent)]">
-                          {ar ? "قريباً" : "Soon"}
-                        </span>
-                      ) : (
-                        <ArrowUpRight className="h-4 w-4 opacity-30 rtl:rotate-180" />
-                      )}
+                      <ArrowUpRight className="h-4 w-4 opacity-30 rtl:rotate-180" />
                     </Link>
                   ))}
                 </nav>

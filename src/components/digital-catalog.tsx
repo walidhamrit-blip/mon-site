@@ -131,13 +131,13 @@ function initialsOf(product: DigitalProduct): string {
  * le fournisseur en publiera, ils apparaîtront dans « Codes logiciels » sans
  * toucher au code de cette page.
  */
-export function DigitalCatalog({ products }: { products: DigitalProduct[] }) {
+export function DigitalCatalog({ products, initialKind = "all" }: { products: DigitalProduct[]; initialKind?: DigitalKind | "all" }) {
   const siteConfig = useSiteConfig();
   const { locale } = useI18n();
   const ar = locale === "ar";
 
   const [query, setQuery] = useState("");
-  const [kind, setKind] = useState<DigitalKind | "all">("all");
+  const [kind, setKind] = useState<DigitalKind | "all">(initialKind);
   const [platform, setPlatform] = useState("all");
   const [region, setRegion] = useState("all");
   const [priceRange, setPriceRange] = useState<PriceRangeId>("all");
@@ -654,7 +654,7 @@ export function DigitalCatalog({ products }: { products: DigitalProduct[] }) {
                 </div>
               </div>
             ) : (
-              <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3 xl:grid-cols-4">
+              <div className="gaming-product-grid grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3 xl:grid-cols-4">
                 {filtered.map((product, index) => {
                   const visual = productVisual(product);
                   const visualFit = productVisualFit(product);

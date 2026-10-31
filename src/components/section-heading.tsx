@@ -34,7 +34,7 @@ export function SectionHeading({
   return (
     <div
       className={cn(
-        "flex flex-col gap-6",
+        "gaming-section-heading flex flex-col gap-6",
         centered
           ? "items-center text-center"
           : "lg:flex-row lg:items-end lg:justify-between",

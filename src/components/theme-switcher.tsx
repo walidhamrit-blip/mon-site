@@ -102,7 +102,7 @@ export function ThemePreview({
   );
 }
 
-/** Pastille de classement : « الأكثر طلباً » pour la signature, sinon le rang. */
+/** Signature marker, then a stable palette position. */
 function RankBadge({ theme, tone = "muted" }: { theme: SiteTheme; tone?: "muted" | "accent" }) {
   const { locale } = useI18n();
   const featured = Boolean(theme.featured);
@@ -203,7 +203,7 @@ export function ThemeSwitcher() {
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        aria-label={ar ? "الثيمات الستة الأكثر تفضيلاً" : "The six most appreciated themes"}
+        aria-label={ar ? "لوحات الألعاب" : "Gaming palettes"}
         aria-expanded={open}
         title={ar ? "الثيمات والألوان" : "Themes & colors"}
         className="relative grid h-9 w-9 cursor-pointer place-items-center rounded-full bg-[var(--secondary)] transition-colors hover:bg-[var(--muted)]"
@@ -222,12 +222,12 @@ export function ThemeSwitcher() {
           <div className="flex items-start justify-between gap-2 px-1 pb-2">
             <div className="min-w-0">
               <div className="text-[11.5px] font-black">
-                {ar ? `الثيمات الستة الأكثر تفضيلاً` : `The ${THEME_COUNT} most appreciated themes`}
+                {ar ? `لوحات الألعاب الست` : `${THEME_COUNT} gaming palettes`}
               </div>
               <div className="mt-0.5 text-[10px] leading-relaxed opacity-55">
                 {ar
-                  ? "مرتبة حسب الطلب في مجال مواقع الشركات والوكالات."
-                  : "Ranked by demand across corporate & agency websites."}
+                  ? "ألوان مستوحاة من الألعاب والتقنية، لكل منها وضع فاتح وداكن."
+                  : "Gaming-inspired colors, each designed for light and dark mode."}
               </div>
             </div>
             <button
@@ -300,7 +300,7 @@ export function ThemeList() {
     <div>
       <div className="mb-2.5 flex items-center gap-2 text-[11px] font-black uppercase tracking-[0.16em] text-[var(--muted-foreground)]">
         <Palette className="h-3.5 w-3.5" />
-        {ar ? `الثيمات الستة الأكثر تفضيلاً` : `Top ${THEME_COUNT} themes`}
+        {ar ? `لوحات الألعاب الست` : `${THEME_COUNT} gaming palettes`}
       </div>
       <div className="grid grid-cols-2 gap-1.5">
         {THEMES.map((t) => {

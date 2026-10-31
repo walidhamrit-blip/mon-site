@@ -7,24 +7,24 @@ export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElemen
 }
 
 const styles = {
-  default: "bg-[var(--primary)] text-[var(--primary-foreground)] hover:opacity-90",
+  default: "bg-[var(--accent)] text-[var(--accent-foreground)] hover:bg-[var(--accent-hover)]",
   accent: "bg-[var(--accent)] text-[var(--accent-foreground)] hover:bg-[var(--accent-hover)] shadow-md",
   outline: "border border-[var(--border)] bg-transparent hover:bg-[var(--secondary)]",
   ghost: "hover:bg-[var(--secondary)]",
 };
 
 const sizes = {
-  sm: "h-9 px-4 text-sm rounded-full",
-  md: "h-11 px-6 text-[15px] rounded-full",
-  lg: "h-14 px-8 text-base rounded-full",
-  icon: "h-10 w-10 rounded-full",
+  sm: "h-9 px-4 text-sm rounded-xl",
+  md: "h-11 px-6 text-[15px] rounded-xl",
+  lg: "h-14 px-8 text-base rounded-xl",
+  icon: "h-10 w-10 rounded-xl",
 };
 
 export function Button({ className, variant = "default", size = "md", ...props }: ButtonProps) {
   return (
     <button
       className={cn(
-        "inline-flex items-center justify-center gap-2 font-medium transition-all duration-200 disabled:opacity-50 disabled:pointer-events-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] cursor-pointer active:scale-[0.98]",
+        "inline-flex items-center justify-center gap-2 gaming-button font-bold transition-all duration-200 disabled:opacity-50 disabled:pointer-events-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] cursor-pointer active:scale-[0.98]",
         styles[variant],
         sizes[size],
         className
