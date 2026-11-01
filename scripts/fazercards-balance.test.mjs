@@ -18,6 +18,7 @@ import {
   BALANCE_MIN_USD,
   BALANCE_TOPUP_ROUNDING_USD,
   assessFazercardsBalance,
+  balanceGate,
   shouldSendBalanceAlert,
   supplierCostForSalePrice,
 } from "../src/lib/fazercards-balance-core.ts";
@@ -163,4 +164,58 @@ test("l'alerte n'est mémorisée que si l'e-mail est parti", () => {
   assert.match(runtime, /if \(result\.ok\) \{\s*await writeAlertState\(/);
   // Un échec d'envoi ne doit pas faire taire l'alerte 24 h.
   assert.match(runtime, /alerte non envoyée/);
+});
+
+/* ------------------- Porte de la caisse (avant paiement) ------------------- */
+
+test("la porte laisse passer une commande que le solde couvre", () => {
+  const gate = balanceGate({ balanceUsd: 19.39, orderCostUsd: 19.39 });
+  assert.equal(gate.decision, "allow");
+  assert.equal(gate.reason, "covered");
+  const below = balanceGate({ balanceUsd: 19.39, orderCostUsd: 12.5 });
+  assert.equal(below.decision, "allow");
+});
+
+test("la porte bloque une commande au-dessus du solde, au centime près", () => {
+  const gate = balanceGate({ balanceUsd: 19.39, orderCostUsd: 19.4 });
+  assert.equal(gate.decision, "block");
+  assert.equal(gate.balanceUsd, 19.39);
+  assert.equal(gate.orderCostUsd, 19.4);
+  // Bruit binaire : 0.1 × 3 ne doit ni bloquer à tort ni laisser passer.
+  const floaty = balanceGate({ balanceUsd: 0.3, orderCostUsd: 0.1 * 3 });
+  assert.equal(floaty.decision, "allow");
+});
+
+test("coût inconnu ou solde illisible : la vente reste possible (filet manuel)", () => {
+  assert.equal(balanceGate({ balanceUsd: 1, orderCostUsd: null }).reason, "cost_unknown");
+  assert.equal(balanceGate({ balanceUsd: null, orderCostUsd: 50 }).reason, "balance_unknown");
+  assert.equal(balanceGate({ balanceUsd: null, orderCostUsd: null }).reason, "cost_unknown");
+  // Un coût négatif ou nul est une donnée absente, pas un achat gratuit.
+  assert.equal(balanceGate({ balanceUsd: 1, orderCostUsd: 0 }).reason, "cost_unknown");
+  assert.equal(balanceGate({ balanceUsd: 1, orderCostUsd: -5 }).reason, "cost_unknown");
+});
+
+test("la caisse refuse AVANT la facture une vente que le solde ne couvre pas", () => {
+  const orders = read("src/lib/fazercards-orders.ts");
+  const checkout = orders.slice(orders.indexOf("export async function createFazercardsCheckout"));
+  const gateAt = checkout.indexOf("balanceGate({");
+  const refAt = checkout.indexOf('newOrderReference("DGC")');
+  assert.ok(gateAt > 0, "porte de solde absente de la caisse");
+  assert.ok(refAt > 0, "création de commande introuvable");
+  assert.ok(gateAt < refAt, "la porte doit précéder la création de la facture");
+  assert.match(checkout, /getFazercardsBalanceStatus\(\)/);
+  assert.match(checkout, /supplier_balance_insufficient/);
+  assert.match(checkout, /aucun montant n'a été débité/);
+  // Coût = coût unitaire × quantité (une quantité ne doit pas contourner la porte).
+  assert.match(checkout, /denomination\.supplierCostUsd \* quantity/);
+});
+
+test("le refus ne divulgue aucun montant interne au client", () => {
+  const orders = read("src/lib/fazercards-orders.ts");
+  const checkout = orders.slice(orders.indexOf("export async function createFazercardsCheckout"));
+  const block = checkout.slice(checkout.indexOf('if (balanceDecision.decision === "block")'));
+  const message = block.slice(0, block.indexOf(");"));
+  // Ni solde, ni coût fournisseur, ni interpolation de montant dans le message.
+  assert.doesNotMatch(message, /\$\{/);
+  assert.doesNotMatch(message, /balanceDecision\.(balanceUsd|orderCostUsd)/);
 });
