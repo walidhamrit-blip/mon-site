@@ -396,7 +396,9 @@ export function classifyFazercardsDelivery(input: {
   codes: ExtractedCode[];
 }): FazercardsDeliveryKind {
   const status = (input.status ?? "").trim().toLowerCase();
-  const failedStatuses = ["cancelled", "canceled", "failed", "refunded", "rejected"];
+  // FazerCards retourne `Refund` (singulier) pour un remboursement ; couvrir
+  // aussi `refunded` utilisé par d'autres statuts/intégrations.
+  const failedStatuses = ["cancelled", "canceled", "failed", "refund", "refunded", "rejected"];
 
   if (failedStatuses.includes(status)) return "failed";
   if (input.codes.length > 0) return "codes";
