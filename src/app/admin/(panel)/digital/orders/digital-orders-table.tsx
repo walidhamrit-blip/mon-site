@@ -91,7 +91,7 @@ function frDate(value: string | null): string {
 
 /** Nom lisible du fournisseur (jamais de jargon interne dans l'admin). */
 function supplierLabel(supplier: "fazercards" | "reloadly"): string {
-  return supplier === "fazercards" ? "FazerCards" : "Reloadly";
+  return supplier === "fazercards" ? "FazerCards" : "Archive (ancien fournisseur)";
 }
 
 /**
@@ -100,7 +100,7 @@ function supplierLabel(supplier: "fazercards" | "reloadly"): string {
  * Les colonnes de la base sont héritées de Reloadly : pour une commande
  * FazerCards, `reloadlyProductId` est toujours vide (l'achat se fait avec
  * l'identifiant de catégorie, pas avec un produit relié). Afficher
- * « aucun produit Reloadly relié » sur ces lignes faisait croire à une
+ * « archive : fournisseur retiré » sur ces lignes faisait croire à une
  * configuration manquante.
  */
 function modeDetail(row: AdminDigitalOrderRow): string {
@@ -113,7 +113,7 @@ function modeDetail(row: AdminDigitalOrderRow): string {
     ? ` · produit #${row.reloadlyProductId} / ${row.reloadlyUnitPrice}${
         row.region ? ` (${row.region})` : ""
       }`
-    : " · aucun produit Reloadly relié";
+    : " · archive : fournisseur retiré";
 }
 
 /**
@@ -258,7 +258,7 @@ export function DigitalOrdersTable({ rows }: { rows: AdminDigitalOrderRow[] }) {
         {rows.map((row) => {
           const open = openRef === row.ref;
           const status = row.status as DigitalOrderStatus;
-          const canRetry = ["paid", "manual", "failed"].includes(status);
+          const canRetry = row.supplier === "fazercards" && ["paid", "manual", "failed"].includes(status);
           const buyerFieldEntries = Object.entries(row.buyerFields ?? {});
           const isBusy = busy && pendingRef === row.ref;
 

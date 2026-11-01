@@ -193,13 +193,11 @@ test("synthèse : pertes comptées en tête d'audit", () => {
   assert.match(ui, /row\.loss \|\|/);
 });
 
-test("alerte immédiate sur la page admin, à deux niveaux", () => {
+test("l'admin actif utilise le solde et le catalogue FazerCards, pas l'audit historique", () => {
   const page = flat(read("src/app/admin/(panel)/digital/page.tsx"));
-  assert.match(page, /faceValueLosses\(products\)/);
-  assert.match(page, /verdict === "loss"/);
-  assert.match(page, /verdict === "suspect"/);
-  assert.match(page, /perte d&apos;argent à chaque vente/);
-  assert.match(page, /à vérifier, pas forcément une perte/);
+  assert.match(page, /FazercardsBalancePanel/);
+  assert.match(page, /FazercardsCatalogPanel/);
+  assert.doesNotMatch(page, /faceValueLosses|ReloadlySync|CatalogAudit|DigitalEditor/);
 });
 
 test("arrondi conservé : recalcul vers le haut au pas de 0,50", () => {

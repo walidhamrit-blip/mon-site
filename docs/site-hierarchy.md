@@ -38,5 +38,8 @@ transmis au serveur).
 Neon en panne : conserver les catégories et les liens, afficher le message de
 maintenance et ne pas présenter les produits de repli comme achetables.
 Aucun faux stock, prix de démonstration ou paiement simulé n'est ajouté.
-Le contrôle complet du catalogue et des commandes attend le rétablissement
-Neon ; cette refonte ne modifie pas le paiement ni la synchronisation.
+Le 1 novembre 2026, la sonde de production confirme le retour de Neon et la
+sortie de maintenance ; la boutique affiche 775 produits. La validation des
+livraisons et des commandes reste distincte de cette sonde technique (voir
+`admin-revision-2026-11-01.md`). Cette refonte ne modifie pas le paiement ni la
+synchronisation.

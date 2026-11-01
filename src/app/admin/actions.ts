@@ -1,5 +1,7 @@
 "use server";
 
+import { LEGACY_SUPPLIER_RETIRED, RETIRED_SUPPLIER_MESSAGE } from "@/lib/retired-supplier";
+
 import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
@@ -556,6 +558,7 @@ export async function applyDigitalSyncAction(
   keys: string[],
 ): Promise<ActionResult & { applied?: string[]; created?: number; updated?: number }> {
   await requireAdmin();
+  if (LEGACY_SUPPLIER_RETIRED) return { ok: false, error: RETIRED_SUPPLIER_MESSAGE };
   try {
     const result: SyncApplyResult = await applyDigitalSync(request, keys);
     revalidatePath("/codes", "layout");
@@ -591,6 +594,7 @@ export async function applyCatalogRecalcAction(
   ficheIds: string[],
 ): Promise<ActionResult & { fiches?: number; prices?: number }> {
   await requireAdmin();
+  if (LEGACY_SUPPLIER_RETIRED) return { ok: false, error: RETIRED_SUPPLIER_MESSAGE };
   try {
     const fee = Number(paymentFeePercent);
     const safeFee = Number.isFinite(fee) && fee >= 0 && fee < 20 ? fee : 1;
@@ -719,6 +723,7 @@ export async function sendTestEmailAction(to: string): Promise<MailTestResult> {
  */
 export async function saveDigitalProduct(input: unknown): Promise<ActionResult> {
   await requireAdmin();
+  if (LEGACY_SUPPLIER_RETIRED) return { ok: false, error: RETIRED_SUPPLIER_MESSAGE };
   const parsed = digitalProductSchema.safeParse(input);
   if (!parsed.success) {
     return { ok: false, error: `Fiche invalide — ${firstIssue(parsed.error)}` };

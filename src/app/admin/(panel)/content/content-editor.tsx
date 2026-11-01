@@ -131,7 +131,7 @@ export function ContentEditor({
   };
 
   const tabItems: { id: EditableTab; label: string; count?: number }[] = [
-    { id: "hero", label: "Hero d’accueil" },
+    { id: "hero", label: "Introduction web / ancien Hero" },
     { id: "ribbon", label: "Bandeau défilant", count: ribbon.items.length },
     { id: "whyUs", label: "Pourquoi nous", count: whyUs.length },
     { id: "process", label: "Étapes", count: process.length },
@@ -219,14 +219,10 @@ export function ContentEditor({
             Textes, FAQ & Témoignages
           </h1>
           <p className="text-sm text-stone-500 mt-1">
-            Modifiez tous les textes bilingues (arabe & anglais) de votre site. Pour ajouter ou supprimer des sections entières, rendez-vous dans{" "}
-            <Link
-              href="/admin/sections"
-              className="text-[#8A6D2F] font-semibold hover:underline inline-flex items-center gap-1"
-            >
-              <Blocks className="h-3.5 w-3.5" /> Sections & Sites
-            </Link>
-            .
+            Gérez les contenus bilingues partagés et les sections du parcours création de sites. L’accueil utilise une composition fixe ; sa FAQ courte et les textes de la boutique ont leurs propres sources. Les anciennes rubriques sont conservées, mais ne s’affichent pas toutes sur l’accueil. Les exemples se gèrent aussi dans{" "}
+            <Link href="/admin/sites" className="text-[#8A6D2F] font-semibold hover:underline inline-flex items-center gap-1">
+              <Blocks className="h-3.5 w-3.5" /> Exemples & réalisations
+            </Link>.
           </p>
         </div>
       </div>
@@ -270,8 +266,11 @@ export function ContentEditor({
       {tab === "hero" && (
         <div className="rounded-2xl border border-stone-200 bg-white p-5 sm:p-6 space-y-4 shadow-2xs">
           <h2 className="text-sm font-black text-stone-900">
-            Bannière principale d’accueil (Hero)
+            Introduction création de sites & anciens champs Hero
           </h2>
+          <p className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs leading-relaxed text-amber-900">
+            La bannière d’accueil est une photo fixe, sans texte ni boutons. Seul le sous-titre de cette rubrique est repris dans l’introduction de /creation-sites. Les autres champs Hero sont conservés pour compatibilité et ne changent pas la bannière actuelle.
+          </p>
           <div className="grid sm:grid-cols-2 gap-3.5">
             <Field label="Badge au-dessus du titre (arabe)">
               <input

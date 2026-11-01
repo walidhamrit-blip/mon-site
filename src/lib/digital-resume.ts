@@ -30,10 +30,8 @@ import {
 import {
   deliverPaidDigitalOrder,
   digitalOrderSupplier,
-  reloadlyEnvironmentMismatch,
 } from "@/lib/digital-orders";
 import { fazercardsConfigured } from "@/lib/fazercards";
-import { reloadlyConfigured } from "@/lib/reloadly";
 
 /** Nombre maximal de commandes traitées par balayage (borne l'exécution). */
 export const RESUME_BATCH_LIMIT = 10;
@@ -69,7 +67,7 @@ export interface ResumeOptions {
 /** Vrai si le fournisseur de la commande est utilisable sur ce serveur. */
 function supplierReady(order: { productSlug?: string | null; productId?: string | null }): boolean {
   if (digitalOrderSupplier(order) === "fazercards") return fazercardsConfigured();
-  return reloadlyConfigured() && !reloadlyEnvironmentMismatch();
+  return false; // Fournisseur historique retiré : aucune relance automatique.
 }
 
 /**

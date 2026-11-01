@@ -540,8 +540,8 @@ test("l'admin affiche le catalogue FazerCards, pas seulement les fiches de la ba
   // Le panneau lit la MÊME source que la boutique publique…
   assert.match(adminPage, /getFazercardsDigitalCatalog\(\{ noSync: true \}\)/);
   assert.match(adminPage, /<FazercardsCatalogPanel/);
-  // …et prévient que l'éditeur ci-dessous ne pilote plus la boutique.
-  assert.match(adminPage, /NON vendues/);
+  // L'ancien éditeur et la synchronisation ne font plus partie du parcours actif.
+  assert.doesNotMatch(adminPage, /DigitalEditor|ReloadlySync|reloadlyMode/);
   // L'ancienne consigne « passer Reloadly en LIVE » n'a plus de sens.
   assert.doesNotMatch(adminPage, /RELOADLY_SANDBOX=false/);
 
