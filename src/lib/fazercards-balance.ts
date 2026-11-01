@@ -5,10 +5,12 @@
 // fournisseur ne permet pas d'honorer. Le client paie, la caisse tente l'achat,
 // le solde ne couvre pas → livraison manuelle et remboursement.
 //
-// Deux usages :
+// Trois usages :
 //   • l'administration (`/admin/digital`) affiche la couverture en clair ;
 //   • un cron quotidien envoie une alerte e-mail quand le plafond n'est plus
-//     couvert, avec le montant de recharge conseillé.
+//     couvert, avec le montant de recharge conseillé ;
+//   • la caisse (`createFazercardsCheckout`) refuse AVANT paiement une vente
+//     dont le coût fournisseur dépasse le solde (`balanceGate`).
 //
 // ⚠️ Le solde n'est JAMAIS exposé sur une route publique (`/api/health`
 // l'occulte volontairement) : c'est une donnée financière.

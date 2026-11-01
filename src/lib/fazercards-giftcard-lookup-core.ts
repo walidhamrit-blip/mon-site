@@ -25,26 +25,35 @@ export interface FazercardsGiftCardOfferLite {
 
 const UUID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const CATEGORY_SLUG_PATTERN = /^[a-z0-9][a-z0-9_-]{0,127}$/i;
+const RAW_CATEGORY_SLUG_PATTERN = /^(?=.*[-_])[a-z0-9][a-z0-9_-]{0,127}$/i;
 
 /**
  * Extrait un `category_id` depuis :
- *   - un UUID brut ;
- *   - un lien du panneau revendeur, ex.
- *     `https://reseller.fazercards.com/panel/giftcard/<uuid>` ;
- *   - tout texte contenant un UUID.
+ *   - un UUID brut ou contenu dans un texte ;
+ *   - un slug brut (ex. `playstation_sa`) ;
+ *   - un lien du panneau revendeur, ex. `/panel/giftcard/<category_id>`.
  *
- * Renvoie `null` si aucun identifiant exploitable n'est trouvé.
+ * Renvoie `null` si aucun identifiant exploitable n'est trouvé. Les recherches
+ * par nom avec des espaces restent des recherches, pas des identifiants.
  */
 export function extractFazercardsGiftCardCategoryId(input: string): string | null {
   const trimmed = (input ?? "").trim();
   if (!trimmed) return null;
 
   if (UUID_PATTERN.test(trimmed)) return trimmed.toLowerCase();
+  if (RAW_CATEGORY_SLUG_PATTERN.test(trimmed)) return trimmed;
 
   try {
     const url = new URL(trimmed);
     const segments = url.pathname.split("/").filter(Boolean);
-    // Le panneau place l'UUID en dernier segment : /panel/giftcard/<uuid>.
+    // Le panneau place l'identifiant après /panel/giftcard/.
+    const giftCardIndex = segments.lastIndexOf("giftcard");
+    const linkedId = giftCardIndex >= 0 ? segments[giftCardIndex + 1] : undefined;
+    if (linkedId && CATEGORY_SLUG_PATTERN.test(linkedId)) {
+      return UUID_PATTERN.test(linkedId) ? linkedId.toLowerCase() : linkedId;
+    }
+    // Compatibilité avec tout texte ou lien contenant un UUID.
     for (let i = segments.length - 1; i >= 0; i -= 1) {
       const segment = segments[i];
       if (UUID_PATTERN.test(segment)) return segment.toLowerCase();

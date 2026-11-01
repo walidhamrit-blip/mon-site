@@ -14,7 +14,8 @@
  *    exclut notre marge.
  *
  * Aucun montant de solde n'est jamais exposé publiquement : cette logique sert
- * l'administration et l'alerte interne uniquement.
+ * l'administration, l'alerte interne et la porte de la caisse (refus d'une
+ * vente que le solde ne peut pas financer, AVANT création de la facture).
  */
 
 // Import RELATIF volontaire (et non l'alias « @/lib ») : ce module est importé
@@ -135,6 +136,58 @@ export function assessFazercardsBalance(input: {
     recommendedTopUpUsd,
     summary: summaryFor({ level, balanceUsd, maxOrderUsd, costCeilingUsd, coveredSaleUsd }),
   };
+}
+
+/* --------------------- Porte de la caisse (avant paiement) --------------------- */
+
+/**
+ * Décision de la caisse AVANT création de la facture : le solde peut-il
+ * financer l'achat fournisseur de CETTE commande ?
+ *
+ * Règles (dans l'ordre) :
+ *  1. coût inconnu (dénomination sans coût fournisseur renseigné) → `allow` :
+ *     on ne bloque pas une vente sur une donnée absente ;
+ *  2. solde illisible (clé absente ou passerelle muette) → `allow` : une API
+ *     muette ne doit pas fermer toute la boutique — la bascule en livraison
+ *     manuelle (avec notification) reste le filet ;
+ *  3. solde ≥ coût de la commande (coût unitaire × quantité, arrondi au
+ *     centime) → `allow` ;
+ *  4. sinon → `block` : la vente serait encaissée puis impossible à honorer.
+ *
+ * Comparaison en centimes entiers : les montants sont saisis avec deux
+ * décimales et l'arithmétique binaire ne doit jamais refuser (ou laisser
+ * passer) une commande à un centime près.
+ */
+export type BalanceGateDecision =
+  | { decision: "allow"; reason: "covered" | "cost_unknown" | "balance_unknown" }
+  | { decision: "block"; balanceUsd: number; orderCostUsd: number };
+
+export function balanceGate(input: {
+  /** Solde lu chez le fournisseur (null = illisible). */
+  balanceUsd: number | null;
+  /** Coût fournisseur de la commande (coût unitaire × quantité). */
+  orderCostUsd: number | null;
+}): BalanceGateDecision {
+  const cost =
+    typeof input.orderCostUsd === "number" &&
+    Number.isFinite(input.orderCostUsd) &&
+    input.orderCostUsd > 0
+      ? Math.round(input.orderCostUsd * 100) / 100
+      : null;
+  if (cost == null) return { decision: "allow", reason: "cost_unknown" };
+
+  const balance =
+    typeof input.balanceUsd === "number" &&
+    Number.isFinite(input.balanceUsd) &&
+    input.balanceUsd >= 0
+      ? Math.round(input.balanceUsd * 100) / 100
+      : null;
+  if (balance == null) return { decision: "allow", reason: "balance_unknown" };
+
+  if (Math.round(balance * 100) >= Math.round(cost * 100)) {
+    return { decision: "allow", reason: "covered" };
+  }
+  return { decision: "block", balanceUsd: balance, orderCostUsd: cost };
 }
 
 /** Arrondit une recharge au palier supérieur (jamais 0 pour un besoin réel). */

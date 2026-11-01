@@ -21,7 +21,7 @@ import {
 const root = fileURLToPath(new URL("..", import.meta.url));
 const read = (path) => readFileSync(`${root}/${path}`, "utf8");
 
-test("extrait le category_id depuis un lien du panneau revendeur", () => {
+test("extrait un UUID ou un slug depuis un category_id et un lien revendeur", () => {
   const id = "5189abcf-0bd0-4dac-b239-cf8106ac0e8c";
   assert.equal(
     extractFazercardsGiftCardCategoryId(
@@ -29,12 +29,19 @@ test("extrait le category_id depuis un lien du panneau revendeur", () => {
     ),
     id,
   );
+  assert.equal(
+    extractFazercardsGiftCardCategoryId(
+      "https://reseller.fazercards.com/panel/giftcard/playstation_sa",
+    ),
+    "playstation_sa",
+  );
+  assert.equal(extractFazercardsGiftCardCategoryId("playstation_sa"), "playstation_sa");
   assert.equal(extractFazercardsGiftCardCategoryId(id.toUpperCase()), id);
   assert.equal(extractFazercardsGiftCardCategoryId(`  ${id}  `), id);
 });
 
-test("refuse les saisies sans UUID exploitable", () => {
-  for (const input of ["", "Free Fire", "https://reseller.fazercards.com/panel/giftcard"]) {
+test("refuse les recherches par nom ou saisies sans identifiant exploitable", () => {
+  for (const input of ["", "Free Fire", "playstation sa", "https://reseller.fazercards.com/panel/giftcard"]) {
     assert.equal(extractFazercardsGiftCardCategoryId(input), null);
   }
 });

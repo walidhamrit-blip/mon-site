@@ -32,7 +32,7 @@ function noStoreJson(body: unknown, status = 200) {
 /**
  * Recherche en lecture seule des cartes cadeaux FazerCards — réservé admin.
  *
- * - `?category_id=<uuid|lien>` : liste les montants (`card_id`) de la catégorie.
+ * - `?category_id=<UUID|slug|lien>` : liste les montants (`card_id`) de la catégorie.
  * - `?q=<texte>` : cherche des catégories par nom (pagination bornée).
  *
  * Aucun achat, aucune commande, aucune clé API ni donnée de compte renvoyée.
@@ -65,7 +65,7 @@ export async function GET(req: Request) {
         ok: false,
         error: "invalid_category",
         message:
-          "Identifiant de catégorie invalide : collez un UUID ou un lien FazerCards contenant cet UUID.",
+          "Identifiant de catégorie invalide : collez un UUID, un category_id comme playstation_sa ou un lien FazerCards.",
       },
       400,
     );

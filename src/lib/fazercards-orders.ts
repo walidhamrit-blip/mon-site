@@ -51,6 +51,8 @@ import {
 } from "@/lib/digital-emails";
 import { checkFazercardsPlayerId } from "@/lib/fazercards-player-id";
 import { playerIdGate } from "@/lib/fazercards-player-id-core";
+import { balanceGate } from "@/lib/fazercards-balance-core";
+import { getFazercardsBalanceStatus } from "@/lib/fazercards-balance";
 import {
   classifyFazercardsDelivery,
   describeFazercardsPayload,
@@ -325,6 +327,35 @@ export async function createFazercardsCheckout(
       "above_limit",
       409,
       `Montant maximum ${maxOrderUsd.toFixed(0)} $ par commande — réduisez la quantité (au plus ${maxQuantityByCap}) ou écrivez-nous sur WhatsApp.`,
+    );
+  }
+
+  // Garde-fou de SOLDE fournisseur AVANT paiement — la caisse tient sa
+  // promesse : ne jamais encaisser un achat que le solde ne peut pas financer
+  // (le solde est débité du COÛT fournisseur, jamais du prix de vente).
+  // Sans cette porte, une vente au-dessus du solde était encaissée puis
+  // basculait en livraison manuelle + remboursement.
+  // Coût inconnu (dénomination sans coût renseigné) ou solde illisible
+  // (passerelle muette) → la vente reste possible : une API muette ne doit
+  // pas fermer toute la boutique, et la bascule manuelle reste le filet.
+  const orderCostUsd =
+    denomination.supplierCostUsd != null &&
+    Number.isFinite(denomination.supplierCostUsd) &&
+    denomination.supplierCostUsd > 0
+      ? Math.round(denomination.supplierCostUsd * quantity * 100) / 100
+      : null;
+  const balanceStatus = await getFazercardsBalanceStatus();
+  const balanceDecision = balanceGate({
+    balanceUsd: balanceStatus.assessment.balanceUsd,
+    orderCostUsd,
+  });
+  if (balanceDecision.decision === "block") {
+    // Le message client ne contient AUCUN montant interne (ni solde, ni coût).
+    throw new FazercardsOrderError(
+      "supplier_balance_insufficient",
+      409,
+      "Ce montant dépasse notre capacité d'achat immédiat : aucun montant n'a été débité. " +
+        "Réduisez la quantité ou écrivez-nous sur WhatsApp — nous le commandons pour vous.",
     );
   }
 
