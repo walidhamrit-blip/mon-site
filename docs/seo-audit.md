@@ -1,5 +1,13 @@
 # Audit SEO & Référencement IA (GEO) — نخبة Nukhba (`nokhba.net.ly`)
 
+> **Document historique — mise en garde du 1er novembre 2026.** Pour l’état
+> vérifié du site, consulter [l’audit SEO/GEO actualisé](./audit-seo-geo-2026-11-01.md)
+> et [le guide sitemap GSC](./guide-gsc-sitemap-2026-11-01.md). Les scores ci-dessous
+> décrivent d’anciennes appréciations d’implémentation, pas des mesures Google,
+> de performance terrain ou de citations IA. Les promesses d’ingestion des flux,
+> les consignes de liens dofollow systématiques et les nombres historiques ne
+> constituent pas des résultats vérifiés.
+
 > **Nouvel Audit Complet & Catalogue des Automatisations SEO / GEO**
 > Réalisé le **2026-10-19** sur la base Next.js 16 / React 19 / PostgreSQL (Drizzle).
 > Périmètre : SEO technique, SEO local (Tripoli / Libye), données structurées Schema.org, sémantique serveur, Core Web Vitals, **GEO / Référencement IA** (ChatGPT Search, Perplexity, Claude, Google AI Overviews, Gemini, Apple Intelligence, Copilot) et **automatisations de bout en bout**.
