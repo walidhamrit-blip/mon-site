@@ -726,14 +726,13 @@ export async function deliverPaidFazercardsOrder(
       );
     }
 
-    // Commande annulée / refusée chez le fournisseur alors que le client a
-    // payé : on ne peut pas livrer, mais il ne faut pas attendre un code
-    // qui n'arrivera jamais. Bascule immédiate en livraison manuelle
-    // (remplacement ou remboursement par l'équipe).
+    // Commande annulée / refusée / remboursée chez le fournisseur alors que
+    // le paiement client est confirmé : aucun code n'arrivera. Bascule en
+    // traitement manuel sans tenter de racheter la recharge.
     if (verdict === "failed") {
       return flagManual(
         loaded,
-        `FazerCards a annulé la commande (${supplierStatus}) — remboursement ou remplacement requis.`,
+        `FazerCards a annulé ou remboursé la commande (${supplierStatus}) — intervention manuelle requise.`,
       );
     }
 

@@ -117,7 +117,7 @@ test("une carte terminée sans code reste une anomalie à traiter", () => {
 });
 
 test("un statut d'échec fournisseur prime sur le type de produit", () => {
-  for (const status of ["cancelled", "canceled", "failed", "refunded", "rejected"]) {
+  for (const status of ["cancelled", "canceled", "failed", "Refund", "refunded", "rejected"]) {
     for (const kind of ["game_topup", "gift_card", "software_key"]) {
       assert.equal(
         classifyFazercardsDelivery({ kind, status, codes: [] }),
