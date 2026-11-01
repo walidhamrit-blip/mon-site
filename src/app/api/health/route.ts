@@ -2,11 +2,6 @@ import { db } from "@/db";
 import { sql } from "drizzle-orm";
 import { siteConfig } from "@/lib/config";
 import {
-  checkReloadlyCredentials,
-  reloadlyConfigured,
-  reloadlyMode,
-} from "@/lib/reloadly";
-import {
   configuredLeadRecipient,
   mailDiagnostics,
   mailLeadRecipient,
@@ -183,36 +178,8 @@ export async function GET() {
     error: statusProbe.error,
   };
 
-  // ── Fournisseur de codes (Reloadly) ──
-  // Aucune donnée financière ici : ni solde, ni identifiants. Seulement
-  // « configuré ou non », l'environnement visé et la validité des
-  // identifiants (utile quand une commande payée n'a pas pu être livrée).
-  const reloadlyCheck = reloadlyConfigured()
-    ? await checkReloadlyCredentials().catch((error) => ({
-        configured: true,
-        mode: reloadlyMode(),
-        valid: null,
-        balance: null,
-        error: errorMessage(error),
-      }))
-    : {
-        configured: false,
-        mode: reloadlyMode(),
-        valid: false,
-        balance: null,
-        error: "RELOADLY_CLIENT_ID / RELOADLY_CLIENT_SECRET absents",
-      };
-
-  const reloadly = {
-    configured: reloadlyCheck.configured,
-    mode: reloadlyCheck.mode,
-    credentialsValid: reloadlyCheck.valid,
-    environmentMismatch: !nowpayments.sandbox && reloadlyCheck.mode === "sandbox",
-    error: reloadlyCheck.error,
-  };
-
   // ── Fournisseur de codes (FazerCards) ──
-  // Comme pour Reloadly : « configuré ou non », validité de la clé et état
+  // Diagnostic : « configuré ou non », validité de la clé et état
   // du cache catalogue. Le SOLDE n'est jamais exposé (donnée financière sur
   // une route publique) — il reste consultable dans le hub revendeur.
   const fazercardsCheck = fazercardsConfigured()
@@ -323,7 +290,6 @@ export async function GET() {
       },
       database,
       nowpayments,
-      reloadly,
       fazercards,
       /** Panne du catalogue public (bandeau de maintenance affiché). */
       catalog,

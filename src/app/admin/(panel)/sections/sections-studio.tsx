@@ -426,13 +426,13 @@ export function SectionsStudio({
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <span className="text-xs font-bold uppercase tracking-wider text-[#8A6D2F]">
-            Architecture de la page d’accueil
+            Constructeur historique — données conservées
           </span>
           <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-stone-900 mt-0.5">
             Sections & Sites par section
           </h1>
           <p className="text-sm text-stone-500 mt-1 max-w-2xl">
-            Créez ou supprimez des sections entières, changez leur ordre d’affichage, et ajoutez ou supprimez librement les sites à l’intérieur de chaque section.
+            L’accueil actuel a une composition fixe et trois parcours. Les réglages d’ordre et de visibilité de cet ancien constructeur ne pilotent plus l’accueil. Les données de sections et les fiches restent conservées pour compatibilité ; gérez les exemples publics depuis « Exemples & réalisations ».
           </p>
         </div>
 
@@ -569,7 +569,7 @@ export function SectionsStudio({
       <div className="space-y-3">
         <div className="flex items-center justify-between px-1">
           <h2 className="text-xs font-bold uppercase tracking-wider text-stone-500">
-            Sections affichées sur l’accueil ({activeEntries.length})
+            Sections activées dans l’ancien constructeur ({activeEntries.length})
           </h2>
           <span className="text-xs text-stone-400">
             Ordre réel de haut en bas sur la page publique
@@ -729,7 +729,7 @@ export function SectionsStudio({
                     <button
                       type="button"
                       onClick={() => setEntryEnabled(entry.key, false)}
-                      title="Retirer cette section de la page d'accueil"
+                      title="Désactiver cette section dans l’ancien constructeur"
                       className="h-8 px-2.5 rounded-lg border border-red-200 bg-red-50/70 text-red-600 hover:bg-red-100 text-xs font-semibold inline-flex items-center gap-1 cursor-pointer"
                     >
                       <Trash2 className="h-3.5 w-3.5" />

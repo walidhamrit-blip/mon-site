@@ -20,6 +20,7 @@ import {
   Menu,
   X,
 } from "lucide-react";
+import { ADMIN_PUBLIC_LINKS, activeAdminHref } from "@/lib/admin-navigation";
 import { logout } from "@/app/admin/actions";
 
 interface Props {
@@ -45,96 +46,30 @@ export function AdminNav({ newLeads, paidOrders }: Props) {
   const [open, setOpen] = useState(false);
 
   const groups: NavGroup[] = [
-    {
-      title: "Pilotage & Activité",
-      items: [
-        {
-          href: "/admin",
-          label: "Vue d’ensemble",
-          sublabel: "Indicateurs & accès directs",
-          icon: LayoutDashboard,
-          exact: true,
-        },
-        {
-          href: "/admin/leads",
-          label: "Demandes clients",
-          sublabel: "Devis, suivi & avis WhatsApp",
-          icon: Inbox,
-          badge: newLeads,
-          badgeTone: "amber",
-        },
-        {
-          href: "/admin/orders",
-          label: "Paiements & acomptes",
-          sublabel: "Transactions crypto & 1 $",
-          icon: Wallet,
-          badge: paidOrders,
-          badgeTone: "emerald",
-        },
-        {
-          href: "/admin/subscriptions",
-          label: "Abonnements",
-          sublabel: "Abonnés & revenu récurrent",
-          icon: Repeat,
-        },
-      ],
-    },
-    {
-      title: "Architecture & Catalogues",
-      items: [
-        {
-          href: "/admin/sections",
-          label: "Sections & Sites",
-          sublabel: "Ajouter / supprimer sections & sites",
-          icon: Blocks,
-        },
-        {
-          href: "/admin/sites",
-          label: "Galerie des sites",
-          sublabel: "Portfolio client & SEO IA",
-          icon: Globe,
-        },
-        {
-          href: "/admin/catalog",
-          label: "Applications & Logiciels",
-          sublabel: "Pages Prochainement / En prép.",
-          icon: AppWindow,
-        },
-        {
-          href: "/admin/digital",
-          label: "Codes & Cartes cadeaux",
-          sublabel: "Catalogue digital & montants",
-          icon: Gift,
-        },
-        {
-          href: "/admin/digital/orders",
-          label: "Commandes de codes",
-          sublabel: "Livraison FazerCards & relances",
-          icon: ShoppingBag,
-        },
-      ],
-    },
-    {
-      title: "Contenus & Système",
-      items: [
-        {
-          href: "/admin/content",
-          label: "Textes, FAQ & Avis",
-          sublabel: "Accueil, arguments & étapes",
-          icon: FileText,
-        },
-        {
-          href: "/admin/settings",
-          label: "Réglages & Tarifs",
-          sublabel: "Thème, contacts & formules",
-          icon: Settings,
-        },
-      ],
-    },
+    { title: "Vue d’ensemble", items: [
+      { href: "/admin", label: "Tableau de bord", sublabel: "Parcours publics & activité", icon: LayoutDashboard, exact: true },
+    ] },
+    { title: "Boutique digitale", items: [
+      { href: "/admin/digital", label: "Catalogue & fournisseurs", sublabel: "FazerCards, prix & disponibilité", icon: Gift },
+      { href: "/admin/digital/orders", label: "Commandes digitales", sublabel: "Paiements, livraison & relances", icon: ShoppingBag },
+    ] },
+    { title: "Création de sites & Contact", items: [
+      { href: "/admin/leads", label: "Demandes & devis", sublabel: "Projets web & messages clients", icon: Inbox, badge: newLeads, badgeTone: "amber" },
+      { href: "/admin/sites", label: "Exemples & réalisations", sublabel: "Galerie du parcours création de sites", icon: Globe },
+      { href: "/admin/orders", label: "Paiements projets web", sublabel: "Acomptes & paiements libres", icon: Wallet, badge: paidOrders, badgeTone: "emerald" },
+      { href: "/admin/subscriptions", label: "Abonnements web", sublabel: "Maintenance & revenu récurrent", icon: Repeat },
+    ] },
+    { title: "Contenus & Réglages", items: [
+      { href: "/admin/content", label: "Textes, FAQ & Avis", sublabel: "Contenus partagés arabe / anglais", icon: FileText },
+      { href: "/admin/settings", label: "Identité, thèmes & tarifs", sublabel: "Contacts, apparence & offres web", icon: Settings },
+    ] },
+    { title: "Pages secondaires & Héritage", items: [
+      { href: "/admin/sections", label: "Ancien constructeur", sublabel: "Données conservées, accueil fixe", icon: Blocks },
+      { href: "/admin/catalog", label: "Apps & logiciels à venir", sublabel: "Pages secondaires, hors boutique", icon: AppWindow },
+    ] },
   ];
 
-  const isActive = (href: string, exact?: boolean) =>
-    exact ? pathname === href : pathname === href || pathname.startsWith(`${href}/`);
+  const activeHref = activeAdminHref(pathname, groups.flatMap((group) => group.items.map((item) => item.href)));
 
   const navContent = (
     <div className="flex flex-col h-full justify-between gap-6">
@@ -176,11 +111,12 @@ export function AdminNav({ newLeads, paidOrders }: Props) {
               <div className="space-y-1">
                 {group.items.map((item) => {
                   const Icon = item.icon;
-                  const active = isActive(item.href, item.exact);
+                  const active = activeHref === item.href;
                   return (
                     <Link
                       key={item.href}
                       href={item.href}
+                      aria-current={active ? "page" : undefined}
                       onClick={() => setOpen(false)}
                       className={`group flex items-center justify-between gap-2.5 rounded-xl px-3 py-2.5 transition-all ${
                         active
@@ -228,35 +164,13 @@ export function AdminNav({ newLeads, paidOrders }: Props) {
       </div>
 
       <div className="space-y-1.5 border-t border-stone-200 pt-4 text-sm">
-        <div className="grid grid-cols-3 gap-1 pb-1">
-          <Link
-            href="/"
-            target="_blank"
-            className="rounded-lg border border-stone-200 bg-[#FAF9F6] px-2 py-1.5 text-center text-[11px] font-semibold text-stone-700 hover:bg-stone-100"
-          >
-            Accueil ↗
-          </Link>
-          <Link
-            href="/apps"
-            target="_blank"
-            className="rounded-lg border border-stone-200 bg-[#FAF9F6] px-2 py-1.5 text-center text-[11px] font-semibold text-stone-700 hover:bg-stone-100"
-          >
-            Apps ↗
-          </Link>
-          <Link
-            href="/products"
-            target="_blank"
-            className="rounded-lg border border-stone-200 bg-[#FAF9F6] px-2 py-1.5 text-center text-[11px] font-semibold text-stone-700 hover:bg-stone-100"
-          >
-            Produits ↗
-          </Link>
-          <Link
-            href="/codes"
-            target="_blank"
-            className="rounded-lg border border-stone-200 bg-[#FAF9F6] px-2 py-1.5 text-center text-[11px] font-semibold text-stone-700 hover:bg-stone-100"
-          >
-            Codes ↗
-          </Link>
+        <div className="grid grid-cols-2 gap-1 pb-1">
+          {ADMIN_PUBLIC_LINKS.map((item) => (
+            <Link key={item.href} href={item.href} target="_blank" rel="noopener noreferrer"
+              className="rounded-lg border border-stone-200 bg-[#FAF9F6] px-2 py-1.5 text-center text-[11px] font-semibold text-stone-700 hover:bg-stone-100">
+              {item.label} ↗
+            </Link>
+          ))}
         </div>
 
         <Link

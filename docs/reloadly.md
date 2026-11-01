@@ -1,3 +1,8 @@
+> **Archive — fournisseur retiré le 01/11/2026.** Les instructions ci-dessous
+> décrivent l’ancienne intégration et ne doivent plus être appliquées.
+> Les nouvelles ventes passent par FazerCards ; les achats, synchronisations
+> et relances automatiques de l’ancien fournisseur sont bloqués.
+
 # Vendre à la commande — intégration Reloadly
 
 Ce document décrit la vente de codes (cartes cadeaux, abonnements, recharges)

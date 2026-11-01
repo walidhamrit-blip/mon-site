@@ -1,3 +1,4 @@
+import { LEGACY_SUPPLIER_RETIRED, RETIRED_SUPPLIER_MESSAGE } from "@/lib/retired-supplier";
 // Commandes digitales — « vendre à la commande ».
 //
 // Flux complet :
@@ -148,6 +149,9 @@ export async function createDigitalCheckout(
   input: CreateDigitalCheckoutInput,
   req: Request,
 ): Promise<DigitalCheckoutResult> {
+  if (LEGACY_SUPPLIER_RETIRED) {
+    throw new DigitalOrderError("supplier_retired", 410, RETIRED_SUPPLIER_MESSAGE);
+  }
   const product = await getDigitalProductBySlug(input.productSlug);
   const quoted = quoteDigitalOrder(product, input.denominationId, input.quantity);
   if (!quoted.ok || !product) {
@@ -520,7 +524,7 @@ export async function deliverPaidDigitalOrder(
 
   // Routage fournisseur : une commande créée depuis le catalogue FazerCards
   // est achetée chez FazerCards (Idempotency-Key = référence de commande).
-  // Les commandes Reloadly historiques continuent sur le flux ci-dessous.
+  // Les archives de l’ancien fournisseur ne déclenchent plus aucun achat.
   if (digitalOrderSupplier(loaded) === "fazercards") {
     const routed = await deliverPaidFazercardsOrder(loaded.id);
     return {
@@ -528,6 +532,10 @@ export async function deliverPaidDigitalOrder(
       ref: routed.ref,
       ...(routed.message ? { message: routed.message } : {}),
     };
+  }
+
+  if (LEGACY_SUPPLIER_RETIRED) {
+    return { outcome: "manual", ref: loaded.ref, message: RETIRED_SUPPLIER_MESSAGE };
   }
 
   // Garde-fou absolu : jamais d'achat sans paiement confirmé, même forcé.

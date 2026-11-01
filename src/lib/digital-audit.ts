@@ -1,3 +1,4 @@
+import { assertLegacySupplierActive } from "@/lib/retired-supplier";
 // Audit du catalogue et recalcul global des prix — partie SERVEUR.
 //
 // Principe : l'audit signale les PERTES EN PRIORITÉ, et cela même quand la
@@ -123,6 +124,7 @@ export { faceValueLosses } from "@/lib/digital-order-core";
  * à perte (c'était le défaut de la version précédente).
  */
 export async function analyseCatalogRecalc(paymentFeePercent: number): Promise<RecalcAnalysis> {
+  assertLegacySupplierActive();
   const fiches = await getDigitalCatalog({ publicOnly: false });
   const rows: RecalcRow[] = [];
   const skipped: RecalcSkip[] = [];

@@ -1080,6 +1080,6 @@ test("suivi et environnement : câblage de la réconciliation et de l'alerte san
   assert.match(paymentRoute, /if \(order\.digitalOrderId\)[\s\S]{0,120}deliverPaidDigitalOrder/);
 
   const healthRoute = readFileSync(join(srcRoot, "app/api/health/route.ts"), "utf8");
-  assert.match(healthRoute, /environmentMismatch:/);
+  assert.doesNotMatch(healthRoute, /checkReloadlyCredentials|environmentMismatch:/);
 });
 

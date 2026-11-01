@@ -1,3 +1,4 @@
+import { assertLegacySupplierActive } from "@/lib/retired-supplier";
 // Révision du catalogue à partir du catalogue Reloadly — partie SERVEUR.
 //
 // Lecture seule chez le fournisseur (aucun achat) : on liste les produits des
@@ -81,6 +82,7 @@ function toSupplierProduct(raw: {
  * renvoie une proposition par produit retenu. Aucune écriture.
  */
 export async function analyseDigitalSync(request: SyncRequest): Promise<SyncAnalysis> {
+  assertLegacySupplierActive();
   if (!reloadlyConfigured()) {
     throw new Error(
       "RELOADLY_CLIENT_ID / RELOADLY_CLIENT_SECRET absents : la révision du catalogue nécessite la connexion Reloadly.",

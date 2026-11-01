@@ -1,12 +1,10 @@
 import Link from "next/link";
-import { ArrowLeft, ShieldCheck, TriangleAlert } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import {
   digitalOrderSupplier,
   listDigitalOrders,
   type AdminDigitalOrder,
 } from "@/lib/digital-orders";
-import { nowPaymentsSandbox } from "@/lib/nowpayments";
-import { checkReloadlyCredentials, reloadlyConfigured, reloadlyMaxOrderUsd } from "@/lib/reloadly";
 import { mailDiagnostics } from "@/lib/mailer";
 import { storedBuyerFields, storedPlayerIdCheck } from "@/lib/fazercards-orders";
 import {
@@ -26,7 +24,7 @@ export const metadata = {
  * Commandes de codes / cartes cadeaux.
  *
  * C'est ici que se pilote la livraison à la commande : état de la
- * connexion Reloadly, solde marchand, commandes payées à livrer, erreurs
+ * connexion fournisseur, solde marchand, commandes payées à livrer, erreurs
  * fournisseur et relance en un clic.
  */
 export default async function AdminDigitalOrdersPage() {
@@ -37,14 +35,6 @@ export default async function AdminDigitalOrdersPage() {
   } catch (error) {
     dbError = error instanceof Error ? error.message : String(error);
   }
-
-  const reloadly = await checkReloadlyCredentials().catch((error) => ({
-    configured: reloadlyConfigured(),
-    mode: "sandbox" as const,
-    valid: null,
-    balance: null,
-    error: error instanceof Error ? error.message : String(error),
-  }));
 
   const mail = mailDiagnostics();
 
@@ -66,112 +56,16 @@ export default async function AdminDigitalOrdersPage() {
           Commandes de codes &amp; cartes cadeaux
         </h1>
         <p className="mt-1 text-sm text-stone-600">
-          Vente à la commande : le code est acheté chez le fournisseur de la fiche
-          (FazerCards pour le catalogue actuel, Reloadly pour les fiches historiques){" "}
-          <strong>après</strong> confirmation du paiement, puis envoyé au client. Aucun
+          Vente à la commande : le code est acheté chez FazerCards
+          <strong> après</strong> confirmation du paiement, puis envoyé au client. Aucun
           stock n&apos;est acheté d&apos;avance.
         </p>
       </div>
 
-      {/* Diagnostic fournisseur */}
-      <section className="rounded-2xl border border-stone-200 bg-white p-5 shadow-2xs">
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div>
-            <h2 className="text-[15px] font-black text-stone-900">
-              Connexion Reloadly <span className="font-bold text-stone-500">(ancien fournisseur)</span>
-            </h2>
-            <p className="mt-1 text-[12.5px] text-stone-600">
-              Identifiants serveur (<code>RELOADLY_CLIENT_ID</code> /{" "}
-              <code>RELOADLY_CLIENT_SECRET</code>) — jamais exposés au navigateur.
-            </p>
-          </div>
-          <span
-            className={`inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1 text-[11.5px] font-bold ${
-              reloadly.valid
-                ? "border-emerald-200 bg-emerald-50 text-emerald-800"
-                : reloadly.configured
-                  ? "border-orange-200 bg-orange-50 text-orange-800"
-                  : "border-stone-200 bg-stone-50 text-stone-600"
-            }`}
-          >
-            {reloadly.valid ? <ShieldCheck className="h-3.5 w-3.5" /> : <TriangleAlert className="h-3.5 w-3.5" />}
-            {reloadly.valid
-              ? "Connecté"
-              : reloadly.configured
-                ? "Identifiants refusés / injoignable"
-                : "Non configuré"}
-          </span>
-        </div>
-
-        <dl className="mt-4 grid gap-3 text-[12.5px] sm:grid-cols-2 lg:grid-cols-4">
-          <div className="rounded-xl border border-stone-200 bg-[#FAF9F6] p-3">
-            <dt className="text-[10.5px] font-bold uppercase tracking-wide text-stone-500">
-              Environnement
-            </dt>
-            <dd className="mt-1 font-black text-stone-900">
-              {reloadly.mode === "live" ? "🟢 Live (argent réel)" : "🧪 Sandbox (test)"}
-            </dd>
-            <dd className="mt-0.5 text-[11px] text-stone-500">
-              {reloadly.mode === "live"
-                ? "Chaque livraison débite le solde réel."
-                : "Aucun argent réel dépensé. Passez RELOADLY_SANDBOX=false pour vendre."}
-            </dd>
-          </div>
-          <div className="rounded-xl border border-stone-200 bg-[#FAF9F6] p-3">
-            <dt className="text-[10.5px] font-bold uppercase tracking-wide text-stone-500">
-              Solde marchand
-            </dt>
-            <dd className="mt-1 font-black text-stone-900">
-              {reloadly.balance
-                ? `${reloadly.balance.balance.toFixed(2)} ${reloadly.balance.currencyCode}`
-                : "—"}
-            </dd>
-            <dd className="mt-0.5 text-[11px] text-stone-500">
-              {reloadly.balance
-                ? "Solde disponible pour acheter les codes."
-                : reloadly.error ?? "Renseignez les identifiants pour l'afficher."}
-            </dd>
-          </div>
-          <div className="rounded-xl border border-stone-200 bg-[#FAF9F6] p-3">
-            <dt className="text-[10.5px] font-bold uppercase tracking-wide text-stone-500">
-              Plafond automatique
-            </dt>
-            <dd className="mt-1 font-black text-stone-900">{reloadlyMaxOrderUsd()} $</dd>
-            <dd className="mt-0.5 text-[11px] text-stone-500">
-              Au-delà : livraison manuelle (variable <code>RELOADLY_MAX_ORDER_USD</code>).
-            </dd>
-          </div>
-          <div className="rounded-xl border border-stone-200 bg-[#FAF9F6] p-3">
-            <dt className="text-[10.5px] font-bold uppercase tracking-wide text-stone-500">
-              À livrer
-            </dt>
-            <dd className="mt-1 font-black text-stone-900">{toDeliver}</dd>
-            <dd className="mt-0.5 text-[11px] text-stone-500">
-              Commandes payées qui attendent un code.
-            </dd>
-          </div>
-        </dl>
-
-        {!nowPaymentsSandbox() && reloadly.mode === "sandbox" && (
-          <p className="mt-4 rounded-xl border border-amber-300 bg-amber-50 p-3 text-[12.5px] leading-6 text-amber-950">
-            <strong>Attention — environnement mixte :</strong> NOWPayments encaisse en{" "}
-            <strong>production réelle</strong>, mais Reloadly est encore en{" "}
-            <strong>Sandbox (codes de test)</strong>. Pour livrer de vrais codes :
-            passez le dashboard Reloadly sur <strong>LIVE</strong>, créditez le solde USD,
-            remplacez <code>RELOADLY_CLIENT_ID</code> et <code>RELOADLY_CLIENT_SECRET</code>{" "}
-            par les clés LIVE et définissez <code>RELOADLY_SANDBOX=false</code> sur Vercel,
-            puis redéployez.
-          </p>
-        )}
-
-        {!reloadly.configured && (
-          <p className="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-3 text-[12.5px] leading-6 text-amber-900">
-            Sans identifiants Reloadly, les fiches en <strong>livraison manuelle</strong>{" "}
-            restent vendables : la commande est encaissée puis signalée ici pour achat
-            manuel. Les fiches en <strong>livraison automatique</strong> refusent la vente
-            tant que la connexion n&apos;est pas configurée.
-          </p>
-        )}
+      <section className="rounded-2xl border border-stone-200 bg-white p-5 text-sm">
+        <p><strong>À traiter : {dbError ? "indisponible" : toDeliver}</strong> commande(s) payée(s) ou manuelle(s).</p>
+        <p className="mt-2 text-stone-600">Le fournisseur actif est FazerCards. Les commandes historiques sont conservées sans achat automatique chez leur ancien fournisseur. Consultez le solde et les disponibilités dans le catalogue avant toute relance.</p>
+        <Link href="/admin/digital" className="mt-3 inline-block font-bold underline">Catalogue & solde FazerCards</Link>
       </section>
 
       <MailTestCard

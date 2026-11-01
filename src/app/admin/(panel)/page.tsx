@@ -13,6 +13,8 @@ import {
   AppWindow,
   Settings,
   FileText,
+  ShoppingBag,
+  Gift,
   ExternalLink,
 } from "lucide-react";
 import { db, ensureSchema } from "@/db";
@@ -23,6 +25,8 @@ import {
   collectAllDemos,
   type LeadStatus,
 } from "@/lib/site-types";
+import { ADMIN_PUBLIC_LINKS } from "@/lib/admin-navigation";
+import { SystemHealth } from "./system-health";
 import { StatusBadge } from "./status-badge";
 
 export const dynamic = "force-dynamic";
@@ -142,7 +146,7 @@ export default async function AdminDashboardPage() {
       href: "/admin/leads?status=done",
     },
     {
-      label: "Paiements confirmés",
+      label: "Paiements projets web",
       value: paidOrders,
       hint: `${Math.round(paidTotalUsd).toLocaleString("fr-FR")} $ · ${pendingOrders} en attente`,
       icon: Wallet,
@@ -160,12 +164,14 @@ export default async function AdminDashboardPage() {
   ];
 
   const workspaceCards = [
+    { href: "/admin/digital", icon: Gift, badge: "Boutique /codes", title: "Catalogue digital & fournisseurs", desc: "Consultez le catalogue réellement vendu, le solde fournisseur, les prix et la disponibilité. Aucun stock fictif." },
+    { href: "/admin/digital/orders", icon: ShoppingBag, badge: "Ventes digitales", title: "Commandes & livraisons", desc: "Suivez les paiements et livraisons de codes. Les relances restent des actions explicites, jamais automatiques depuis ce tableau de bord." },
     {
       href: "/admin/sections",
       icon: Blocks,
       badge: `${activeSectionsCount} sections actives · ${customSectionsCount} perso`,
-      title: "Sections & Sites par section",
-      desc: "Ajoutez de nouvelles sections, réordonnez ou supprimez des sections, et ajoutez/supprimez les sites à l’intérieur de chacune.",
+      title: "Ancien constructeur (héritage)",
+      desc: "Données conservées pour compatibilité. L’ordre et la visibilité des anciennes sections ne modifient plus la composition fixe de l’accueil.",
     },
     {
       href: "/admin/sites",
@@ -186,7 +192,7 @@ export default async function AdminDashboardPage() {
       icon: FileText,
       badge: `${content.faqs.length} FAQ · ${content.testimonials.length} avis`,
       title: "Textes, FAQ & Témoignages",
-      desc: "Modifiez le Hero d’accueil, le bandeau défilant, les arguments clés, les étapes et les avis clients.",
+      desc: "Gérez les contenus partagés et les étapes du parcours web. La bannière d’accueil est une photo sans texte ; les anciennes rubriques restent identifiées.",
     },
     {
       href: "/admin/settings",
@@ -210,17 +216,17 @@ export default async function AdminDashboardPage() {
             Vue d’ensemble
           </h1>
           <p className="text-sm text-stone-500 mt-1">
-            Pilotez l’architecture des sections, le catalogue de sites, les pages à venir et vos demandes clients.
+            Pilotez la boutique digitale, les projets de création de sites et les demandes clients.
           </p>
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
           <Link
-            href="/admin/sections"
+            href="/admin/digital"
             className="h-10 px-4 rounded-xl bg-stone-900 text-white text-xs sm:text-sm font-semibold inline-flex items-center gap-2 hover:bg-stone-800 shadow-xs"
           >
             <Blocks className="h-4 w-4 text-[#E5CA87]" />
-            Gérer sections & sites
+            Gérer la boutique
           </Link>
           <Link
             href="/"
@@ -240,14 +246,17 @@ export default async function AdminDashboardPage() {
               Base de données non connectée sur cet environnement
             </div>
             <p className="text-amber-800/90 text-xs leading-relaxed">
-              Le site public fonctionne normalement avec ses contenus par défaut. Pour activer l’enregistrement persistant, configurez{" "}
-              <code className="text-amber-950 font-semibold">DATABASE_URL</code>. Détail :{" "}
-              <code className="text-amber-900/80">{dbError}</code>
+              Les indicateurs sont indisponibles, pas égaux à zéro. Vérifiez la connexion et le quota Neon sur cet environnement. La boutique peut passer en maintenance ; ne relancez pas les livraisons avant vérification.
             </p>
           </div>
         </div>
       )}
 
+      <nav aria-label="Parcours du site public" className="flex flex-wrap gap-2">
+        {ADMIN_PUBLIC_LINKS.map((item) => <Link key={item.href} href={item.href} target="_blank" rel="noopener noreferrer" className="rounded-xl border border-stone-200 bg-white px-4 py-2 text-sm font-semibold">{item.label} ↗</Link>)}
+      </nav>
+      <SystemHealth />
+      <p className="text-xs text-stone-500">Indicateurs des demandes clients et paiements de projets web. Les ventes digitales sont suivies séparément dans Commandes digitales.</p>
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-3.5">
         {cards.map(({ label, value, hint, icon: Icon, tone, href }) => (
           <Link
@@ -264,9 +273,9 @@ export default async function AdminDashboardPage() {
               </span>
             </div>
             <div className="mt-3 text-3xl font-black tracking-tight tabular-nums text-stone-900">
-              {value}
+              {dbError ? "—" : value}
             </div>
-            <div className="mt-1 text-xs text-stone-500">{hint}</div>
+            <div className="mt-1 text-xs text-stone-500">{dbError ? "Données indisponibles" : hint}</div>
           </Link>
         ))}
       </div>
@@ -350,30 +359,7 @@ export default async function AdminDashboardPage() {
               Vérifiez à tout moment le rendu public des pages du site :
             </p>
             <div className="space-y-2 text-xs font-semibold">
-              <Link
-                href="/apps"
-                target="_blank"
-                className="flex items-center justify-between rounded-xl border border-stone-200 bg-[#FAF9F6] px-3.5 py-2.5 text-stone-800 hover:border-[#C6A664]"
-              >
-                <span>Page « Nos applications » (/apps)</span>
-                <ExternalLink className="h-3.5 w-3.5 text-[#8A6D2F]" />
-              </Link>
-              <Link
-                href="/products"
-                target="_blank"
-                className="flex items-center justify-between rounded-xl border border-stone-200 bg-[#FAF9F6] px-3.5 py-2.5 text-stone-800 hover:border-[#C6A664]"
-              >
-                <span>Page « Produits numériques & logiciels » (/products)</span>
-                <ExternalLink className="h-3.5 w-3.5 text-[#8A6D2F]" />
-              </Link>
-              <Link
-                href="/demos"
-                target="_blank"
-                className="flex items-center justify-between rounded-xl border border-stone-200 bg-[#FAF9F6] px-3.5 py-2.5 text-stone-800 hover:border-[#C6A664]"
-              >
-                <span>Galerie complète des réalisations (/demos)</span>
-                <ExternalLink className="h-3.5 w-3.5 text-[#8A6D2F]" />
-              </Link>
+              {ADMIN_PUBLIC_LINKS.map((item) => <Link key={item.href} href={item.href} target="_blank" rel="noopener noreferrer" className="flex items-center justify-between rounded-xl border border-stone-200 bg-[#FAF9F6] px-3.5 py-2.5 text-stone-800 hover:border-[#C6A664]">{item.label}<ExternalLink className="h-3.5 w-3.5" /></Link>)}
             </div>
           </div>
         )}
@@ -390,7 +376,7 @@ export default async function AdminDashboardPage() {
           </div>
           {recent.length === 0 ? (
             <p className="p-8 text-center text-sm text-stone-500">
-              Aucune demande enregistrée pour le moment.
+              {dbError ? "Demandes indisponibles : la base ne répond pas." : "Aucune demande enregistrée pour le moment."}
             </p>
           ) : (
             <ul className="divide-y divide-stone-100">
