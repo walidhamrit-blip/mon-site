@@ -1,5 +1,13 @@
 # Après le déploiement — plan d'action pas à pas
 
+> **Plan historique — référence actualisée le 1er novembre 2026 :** utiliser
+> [le nouveau guide sitemap GSC](./guide-gsc-sitemap-2026-11-01.md) et
+> [l’audit SEO/GEO](./audit-seo-geo-2026-11-01.md). Les objectifs numériques et
+> délais ci-dessous ne sont ni des mesures actuelles ni des garanties. Un
+> sitemap lu ne garantit pas l’indexation ; une migration bien conduite ne
+> « remet pas l’indexation à zéro » par principe. Ne pas imposer de liens
+> dofollow ni confondre autorisation d’entraînement IA et visibilité en recherche.
+
 **Pour qui :** le propriétaire du site (tout se fait dans un navigateur, sans
 toucher au code).
 **Quand :** à partir du 29/10/2026, dans l'ordre des sections.
