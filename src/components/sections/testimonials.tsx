@@ -39,14 +39,12 @@ export function Testimonials() {
           lead={heading.subtitle}
           aside={
             <div className="flex items-center gap-3 rounded-full border border-[var(--border)] bg-[var(--card)] px-4 py-2">
-              <span className="flex text-[var(--accent)]">
-                {[1, 2, 3, 4, 5].map((i) => (
-                  <Star key={i} className="h-4 w-4 fill-current" />
-                ))}
-              </span>
-              <span className="text-sm font-black">4.9/5</span>
+              {/* A11 : pas de note moyenne ni de compteur d'avis agrégé
+                  non sourcé — seul le nombre de témoignages réellement
+                  publiés ci-dessous, dérivé de la liste affichée. */}
+              <span className="text-sm font-black">{testimonials.length}</span>
               <span className="text-[12px] text-[var(--muted-foreground)]">
-                {ar ? "من 86 تقييم" : "86 reviews"}
+                {ar ? "شهادات عملاء منشورة" : "published client testimonials"}
               </span>
             </div>
           }

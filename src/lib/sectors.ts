@@ -39,9 +39,9 @@ export const sectorSeo: Record<string, SectorSeo> = {
     titleAr: "تصميم مواقع عيادات في طرابلس — حجز مواعيد أونلاين",
     titleEn: "Clinic & Healthcare Website Design in Tripoli — Online Booking",
     descriptionAr:
-      "وكالة نخبة تصمم مواقع عيادات ومراكز صحية في طرابلس: حجز مواعيد حسب التاريخ، عرض الأطباء والخدمات، تقييم 4.9/5، وتواصل واتساب مباشر — تسليم 7-10 أيام.",
+      "وكالة نخبة تصمم مواقع عيادات ومراكز صحية في طرابلس: حجز مواعيد حسب التاريخ، عرض الأطباء والخدمات، تقييمات مرضى معروضة، وتواصل واتساب مباشر — تسليم 7-10 أيام.",
     descriptionEn:
-      "Nukhba builds clinic & healthcare sites in Tripoli: appointment booking, doctor showcase, 4.9/5 trust rating and WhatsApp contact — delivered in 7-10 days.",
+      "Nukhba builds clinic & healthcare sites in Tripoli: appointment booking, doctor showcase, displayed patient reviews and WhatsApp contact — delivered in 7-10 days.",
     h1Ar: "تصميم مواقع عيادات ومراكز صحية في طرابلس",
     h1En: "Clinic & Healthcare Websites in Tripoli",
     heroSubtitleAr:

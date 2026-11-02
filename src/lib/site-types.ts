@@ -134,13 +134,9 @@ export interface SiteConfigData {
   stats: {
     delivery: string;
     deliveryEn: string;
-    sitesDelivered: string;
-    satisfaction: string;
-    support: string;
-    /** Note moyenne affichée (ex. "4.9") — source unique SEO/GEO. */
-    ratingValue?: string;
-    /** Nombre d'avis affiché (ex. "86") — source unique SEO/GEO. */
-    reviewCount?: string;
+    // A11 : pas de champs « sites livrés / satisfaction / note / avis /
+    // support 24/7 » — chiffres non sourcés, retirés de la config, de
+    // l'admin et des flux llms. Voir src/lib/config.ts.
   };
   reservation: {
     enabled: boolean;
