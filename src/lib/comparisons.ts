@@ -446,7 +446,9 @@ export const comparisons: Record<string, ComparisonSeo> = {
     ],
     usPoints: [
       { textAr: "تصميم حصري على هويتك", textEn: "A design built only for your brand" },
-      { textAr: "دفع واحد بلا تجديد سنوي", textEn: "One payment, no annual renewal" },
+      // A03 : ne jamais nier le renouvellement — l'hébergement n'est inclus
+      // que la première année (voir la section tarifs), puis il se renouvelle.
+      { textAr: "دفعة واحدة من 300$ + سنة استضافة أولى مشمولة، ثم تجديد سنوي للاستضافة", textEn: "One payment from $300 + first year of hosting included, then an annual hosting renewal" },
       { textAr: "سرعة 90+ على Lighthouse", textEn: "90+ Lighthouse performance" },
       { textAr: "SEO و بحث الذكاء الاصطناعي جاهز", textEn: "SEO and AI-search ready" },
       { textAr: "لوحة تحكم بسيطة مع تدريب", textEn: "A simple dashboard plus training" },
@@ -456,8 +458,8 @@ export const comparisons: Record<string, ComparisonSeo> = {
       {
         labelAr: "التكلفة على 3 سنوات",
         labelEn: "Cost over 3 years",
-        usAr: "دفعة واحدة (من $300) — لا تجديد",
-        usEn: "One payment (from $300) — nothing to renew",
+        usAr: "دفعة واحدة (من $300) + استضافة سنة أولى مشمولة، ثم تجديد سنوي",
+        usEn: "One payment (from $300) + first-year hosting included, then annual renewal",
         themAr: "اشتراك شهري يتكرر 36 مرة",
         themEn: "A monthly fee repeated 36 times",
         winner: "us",

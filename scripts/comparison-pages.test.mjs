@@ -332,3 +332,54 @@ test("aucun jeton de marché ne fuit dans les schémas ni dans le texte affiché
     assert.ok(resolved.length > 40, `${id}: description vide après résolution`);
   }
 });
+
+test("A03 : aucune promesse « sans renouvellement » et prix « from $X » alignés sur la config vivante", () => {
+  // Audit SEO/GEO 2026-11-01 (A03) : l'hébergement n'est inclus que la
+  // première année — aucun comparatif ne doit nier le renouvellement annuel.
+  // Tout prix « from $X » cité pour NOTRE offre doit exister dans la config
+  // vivante (plan complet ou service à la carte) — fini les prix en dur
+  // contradictoires (ex. 60/100/299 $ obsolètes de l'audit). On ne contrôle
+  // que les champs « nôtres » (us*, answer, titres) : les prix « them* »
+  // appartiennent au concurrent.
+  const allowedPrices = new Set([
+    ...siteConfig.pricing.plans.map((plan) => plan.priceUsd),
+    ...siteConfig.standaloneServices.map((s) => s.priceFromUsd),
+  ]);
+  const cheapest = Math.min(...siteConfig.pricing.plans.map((plan) => plan.priceUsd));
+  const TEXT_KEYS = new Set([
+    "titleAr", "titleEn", "h1Ar", "h1En", "subtitleAr", "subtitleEn",
+    "descriptionAr", "descriptionEn", "answerAr", "answerEn",
+  ]);
+  const collectOurs = (node, out = []) => {
+    if (typeof node === "string") { out.push(node); return out; }
+    if (Array.isArray(node)) { node.forEach((v) => collectOurs(v, out)); return out; }
+    if (node && typeof node === "object") {
+      for (const [key, value] of Object.entries(node)) {
+        if (key.startsWith("us") || TEXT_KEYS.has(key)) collectOurs(value, out);
+      }
+    }
+    return out;
+  };
+  for (const id of comparisonIds) {
+    const flat = collectOurs(comparisons[id]).join("\n");
+    assert.ok(!flat.includes("لا تجديد"), `${id} : ne doit pas nier le renouvellement`);
+    assert.ok(!flat.includes("بلا تجديد"), `${id} : ne doit pas nier le renouvellement`);
+    assert.ok(!/no annual renewal/i.test(flat), `${id} : "no annual renewal" interdit`);
+    assert.ok(!/nothing to renew/i.test(flat), `${id} : "nothing to renew" interdit`);
+    for (const match of flat.matchAll(/from \$(\d+)/g)) {
+      assert.ok(
+        allowedPrices.has(Number(match[1])),
+        `${id} : « from $${match[1]} » ne correspond à aucun prix de la config vivante`,
+      );
+    }
+    // Quand un comparatif cite un prix de site complet, c'est le plan le
+    // moins cher de la config (jamais un montant obsolète type 60/100/299 $).
+    for (const match of flat.matchAll(/(?:site|website|موقع)[^$]{0,50}?\$(\d{3})/gi)) {
+      assert.equal(
+        Number(match[1]),
+        cheapest,
+        `${id} : le prix de site $${match[1]} doit être le plan le moins cher de la config ($${cheapest})`,
+      );
+    }
+  }
+});

@@ -83,7 +83,8 @@ export default async function AbonnementsPage() {
     ? [
         {
           q: "ما الفرق بين الاشتراك والدفعة الواحدة؟",
-          a: "الاشتراك يوزّع تكلفة الموقع والاستضافة والصيانة على دفعات شهرية أو سنوية؛ الدفعة الواحدة تشتري النموذج والتخصيص نهائياً. الاشتراك مناسب من يريد بداية أخفّ والتزاماً شهرياً، والدفعة الواحدة من يفضّل تملكاً كاملاً بلا تجديد.",
+          a: "الاشتراك يوزّع تكلفة الموقع والاستضافة والصيانة على دفعات شهرية أو سنوية؛ الدفعة الواحدة تشتري النموذج والتخصيص نهائياً مع سنة استضافة أولى مشمولة، ثم تجديد سنوي للاستضافة فقط. الاشتراك مناسب من يريد بداية أخفّ والتزاماً شهرياً، والدفعة الواحدة لمن يفضّل تملكاً كاملاً.",
+
         },
         {
           q: "كيف يتم التجديد؟",
@@ -105,7 +106,7 @@ export default async function AbonnementsPage() {
     : [
         {
           q: "How is a subscription different from a one-off payment?",
-          a: "A subscription spreads the website, hosting and maintenance cost over monthly or yearly payments. A one-off payment buys the model and customization outright. Choose the subscription for a lighter start with a monthly commitment.",
+          a: "A subscription spreads the website, hosting and maintenance cost over monthly or yearly payments. A one-off payment buys the model and customization outright, with the first year of hosting included (then an annual hosting renewal only). Choose the subscription for a lighter start with a monthly commitment.",
         },
         {
           q: "How does renewal work?",
