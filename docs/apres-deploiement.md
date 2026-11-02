@@ -236,9 +236,9 @@ avant les liens classiques.
    éventuellement les villes voisines) et **masquez l'adresse**.
 5. **Téléphone** : `+218 91 344 2640` — identique au site.
 6. **Site web** : `https://nokhba.net.ly` (sans `/ar`, sans paramètres).
-7. **Horaires** : ceux affichés sur `/contact`, c'est-à-dire
-   **السبت – الخميس, 9:00 – 22:00**. Toute différence entre la fiche et le site
-   affaiblit la cohérence (nom, adresse, téléphone, horaires = « NAP »).
+7. **Horaires** : ceux affichés sur `/contact` (source unique : `/admin → Réglages`,
+   actuellement **السبت – الخميس, 9:00 – 23:00**). Toute différence entre la fiche
+   et le site affaiblit la cohérence (nom, adresse, téléphone, horaires = « NAP »).
 
 ### 5.2 Vérifier la fiche
 
