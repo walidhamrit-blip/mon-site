@@ -121,7 +121,7 @@ test("detectBadge trouve un lien dofollow avec ancre et utm", () => {
   assert.match(result.href, /nokhba\.net\.ly/);
 });
 
-test("detectBadge reconnaît un lien nofollow (badge dégradé)", () => {
+test("detectBadge reconnaît un lien nofollow (qualification acceptée)", () => {
   const html = `<a rel="nofollow noopener" href="https://www.nokhba.net.ly/">Website by Nukhba</a>`;
   const result = badge.detectBadge(html);
   assert.equal(result.found, true);
@@ -166,8 +166,8 @@ test("badgeHtmlSnippet pointe vers le lien de crédit et le bon asset", () => {
   assert.match(html, /src="https:\/\/nokhba\.net\.ly\/badge\/nukhba-badge\.svg"/);
   assert.match(html, /width="176"/);
   assert.match(html, /loading="lazy"/);
-  assert.match(html, /rel="noopener"/);
-  assert.match(html, /تصميم وتطوير المواقع/);
+  assert.match(html, /rel="sponsored nofollow noopener"/);
+  assert.match(html, /نخبة/);
 });
 
 test("badgeHtmlSnippet variante claire et texte visible", () => {
@@ -177,21 +177,22 @@ test("badgeHtmlSnippet variante claire et texte visible", () => {
   assert.match(html, /Website by Nukhba/);
 });
 
-test("badgeReactSnippet produit du JSX valide et sans nofollow", () => {
+test("badgeReactSnippet produit du JSX avec crédit qualifié", () => {
   const jsx = badge.badgeReactSnippet();
   assert.match(jsx, /export function NukhbaBadge\(\)/);
   assert.match(jsx, /width=\{176\}/);
   assert.match(jsx, /href="https:\/\/nokhba\.net\.ly\//);
-  assert.doesNotMatch(jsx, /nofollow/);
+  assert.match(jsx, /rel="sponsored nofollow noopener"/);
 });
 
-test("aucun extrait ne contient rel=nofollow", () => {
+test("tous les extraits qualifient le crédit commercial", () => {
   for (const snippet of [
     badge.badgeHtmlSnippet(),
     badge.badgeHtmlSnippet({ variant: "light", withText: true }),
     badge.badgeReactSnippet({ withText: true }),
   ]) {
-    assert.doesNotMatch(snippet, /nofollow/i);
+    assert.match(snippet, /rel="sponsored nofollow noopener"/);
+    assert.doesNotMatch(snippet, /Tripoli web design agency|تصميم وتطوير المواقع/);
   }
 });
 
@@ -431,9 +432,9 @@ test("summarize compte chaque statut et les erreurs", () => {
 });
 
 test("adviceFor donne une action concrète par statut", () => {
-  assert.match(adviceFor("verified"), /dofollow/);
+  assert.match(adviceFor("verified"), /qualification/);
   assert.match(adviceFor("nofollow"), /nofollow/);
-  assert.match(adviceFor("missing"), /pied de page/);
+  assert.match(adviceFor("missing"), /facultatif/);
   assert.match(adviceFor("down"), /injoignable/);
 });
 
@@ -659,4 +660,21 @@ test("--only limite le run sans supprimer les autres clients", async () => {
   assert.deepEqual(results.map((result) => result.slug), ["bare"]);
   assert.equal(doc.clients["https://good.vercel.app"].status, "verified");
   assert.equal(doc.clients["https://bare.vercel.app"].status, "missing");
+});
+
+
+test("les extraits qualifiés restent détectables et le crédit reste volontaire", () => {
+  for (const render of [badge.badgeHtmlSnippet, badge.badgeReactSnippet]) {
+    for (const variant of ["dark", "light"]) {
+      const snippet = render({ variant, withText: true });
+      const result = badge.detectBadge(snippet);
+      assert.equal(result.found, true);
+      assert.equal(result.nofollow, true);
+      assert.match(result.rel, /\bsponsored\b/);
+      assert.match(result.anchor, /Website by Nukhba/);
+    }
+  }
+  assert.equal(badge.BADGE_ANCHOR_EN, "Website by Nukhba");
+  assert.equal(badge.BADGE_ANCHOR_AR, "نخبة");
+  assert.doesNotMatch(adviceFor("nofollow"), /transmettre|à corriger/);
 });

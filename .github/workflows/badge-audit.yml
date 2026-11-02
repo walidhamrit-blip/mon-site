@@ -1,7 +1,7 @@
 name: Client badge audit
 
 # Vérifie chaque semaine que les sites clients livrés portent bien le badge
-# « Website by Nukhba » (lien dofollow vers le domaine de l'agence dans le
+# « Website by Nukhba » (crédit facultatif vers le domaine de l'agence dans le
 # pied de page). L'URL du site vient de la variable de dépôt `SITE_URL`.
 #
 # - mesure : `verified` / `nofollow` / `missing` / `down` par client ;
@@ -99,17 +99,17 @@ jobs:
             const siteUrl = (process.env.SITE_URL || "https://nokhba.net.ly").replace(/\/+$/, "");
             const siteHost = siteUrl.replace(/^https?:\/\//i, "");
             const pending = clients.filter(
-              (c) => c.status === "missing" || c.status === "nofollow",
+              (c) => c.status === "missing",
             );
             const lines = [
-              `- ✅ vérifiés (dofollow) : **${summary.verified}**`,
-              `- ⚠️ nofollow : **${summary.nofollow ?? 0}**`,
+              `- ✅ liens présents non qualifiés : **${summary.verified}**`,
+              `- ✅ nofollow accepté : **${summary.nofollow ?? 0}**`,
               `- ➖ sans badge : **${summary.missing ?? 0}**`,
               `- ✖ hors ligne : **${summary.down ?? 0}**`,
               `- total suivi : ${summary.total ?? 0}`,
             ];
             if (pending.length > 0) {
-              lines.push("", "### Sites à corriger", "");
+              lines.push("", "### Crédits absents (accord client requis)", "");
               for (const client of pending) {
                 lines.push(
                   `- **${client.slug}** — ${client.url} — ${
@@ -197,7 +197,7 @@ jobs:
           echo "::warning::La PR de mise à jour des statuts n'a pas pu être ouverte (étape non bloquante). L'audit a bien abouti : le rapport est publié et l'issue « sites à corriger » fait foi."
 
       - name: Issue — sites sans badge
-        if: always() && (steps.summary.outputs.missing != '0' || steps.summary.outputs.nofollow != '0')
+        if: always() && steps.summary.outputs.missing != '0'
         uses: actions/github-script@v8
         env:
           # Le corps du rapport est multi-ligne : l'injecter dans une chaîne
@@ -256,7 +256,7 @@ jobs:
             }
 
       - name: Clôture de l'issue quand tout est bon
-        if: always() && steps.summary.outputs.missing == '0' && steps.summary.outputs.nofollow == '0'
+        if: always() && steps.summary.outputs.missing == '0'
         uses: actions/github-script@v8
         with:
           script: |

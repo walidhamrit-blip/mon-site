@@ -527,8 +527,8 @@ export function buildLlmsFullTxt({
   lines.push(`- **Badge page URL**: ${cleanUrl(base, "/badge")}`);
   lines.push(`- **Credit link (canonical)**: ${badgeOrigin} — campaign variant: ${badgeLink(origin)}`);
   lines.push(`- **Badge asset**: ${cleanUrl(base, "/badge/nukhba-badge.svg")} (dark, 176×44) · ${cleanUrl(base, "/badge/nukhba-badge-light.svg")} (light)`);
-  lines.push(`- **Recommended anchor (EN / AR)**: ${BADGE_ANCHOR_EN} / تصميم وتطوير المواقع — نخبة طرابلس`);
-  lines.push(`- **Rule**: one dofollow link per delivered site footer, pointing to ${origin.replace(/^https?:\/\//i, "")}, with a bilingual alt text. No \`rel="nofollow"\`.`);
+  lines.push(`- **Recommended anchor (EN / AR)**: ${BADGE_ANCHOR_EN} / نخبة`);
+  lines.push(`- **Rule**: optional brand credit in the client footer, pointing to ${origin.replace(/^https?:\/\//i, "")}, with a bilingual alt text. Use \`rel="sponsored nofollow noopener"\` for the commercial credit; clients may decline or remove it.`);
   lines.push(`- **Verification**: automated weekly audit of every client homepage (\`npm run badge:audit\`). ${badge.verified} verified · ${badge.nofollow} nofollow · ${badge.missing + badge.pending} awaiting · ${badge.total} client sites tracked.`);
   if (credited.length > 0) {
     lines.push("- **Sites currently crediting Nukhba**:");

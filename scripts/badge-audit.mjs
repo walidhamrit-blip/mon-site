@@ -12,7 +12,7 @@
  *   2. cherche un <a href="https://<domaine-du-site>…"> ;
  *   3. vérifie l'ancre (arabe/latine), `rel` (nofollow ou dofollow) et
  *      `utm_source=client_footer` ;
- *   4. classe : `verified` (lien dofollow exploitable), `nofollow` (lien
+ *   4. classe : `verified` (lien présent sans nofollow), `nofollow` (lien
  *      présent mais neutralisé), `missing` (aucun lien), `down` (site
  *      injoignable), `pending` (jamais vérifié) ;
  *   5. met à jour `public/badge/clients.json` et écrit
@@ -210,13 +210,13 @@ export function summarize(results = []) {
 
 /** Message actionnable pour un client qui n'a pas encore de badge valide. */
 export function adviceFor(status, { nofollow = false } = {}) {
-  if (status === "verified") return "Badge en place et suivi (dofollow).";
+  if (status === "verified") return "Crédit présent ; vérifier la qualification si contrepartie commerciale.";
   if (status === "nofollow") {
-    return "Lien présent mais en nofollow : retirer rel=\"nofollow\" pour transmettre l'autorité.";
+    return "Crédit présent en nofollow : qualification acceptée, ne pas la retirer.";
   }
   if (status === "down") return "Site injoignable : relancer le contrôle plus tard.";
-  if (status === "missing") return "Ajouter le badge en pied de page (extrait prêt sur /badge).";
-  if (nofollow) return "Lien en nofollow : à corriger.";
+  if (status === "missing") return "Proposer le crédit facultatif au client (extrait sur /badge), sans obligation.";
+  if (nofollow) return "Crédit qualifié en nofollow : accepté.";
   return "Jamais vérifié.";
 }
 

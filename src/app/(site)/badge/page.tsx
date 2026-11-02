@@ -202,10 +202,10 @@ export default async function BadgePage() {
               <h2 className="mt-12 text-2xl font-black">قواعد الشارة</h2>
               <ul className="mt-3 space-y-2 text-sm opacity-70 leading-7">
                 <li>— رابط <span dir="ltr" className="font-bold">{origin.replace(/^https?:\/\//i, "")}</span> ظاهر في تذييل كل صفحة (على الأقل الصفحة الرئيسية).</li>
-                <li>— بدون <code dir="ltr">rel=&quot;nofollow&quot;</code>: الرابط يجب أن ينقل السلطة (dofollow).</li>
+                <li>— الشارة اختيارية. نستخدم <code dir="ltr">rel=&quot;sponsored nofollow noopener&quot;</code> للإفصاح عن العلاقة التجارية، دون وعد بتحسين الترتيب.</li>
                 <li>— وصف بديل ثنائي اللغة على الصورة، أو نص ظاهر «{BADGE_ANCHOR_AR}».</li>
                 <li>— لا تعديل على الصورة أو نسبها لجهة أخرى، ولا وضعها في صفحات لا علاقة لها بالموقع.</li>
-                <li>— عند إعادة تصميم الموقع، يبقى الرابط قائماً.</li>
+                <li>— يمكن للعميل رفض الشارة أو إزالة الرابط في أي وقت.</li>
               </ul>
               <p className="mt-4 text-xs opacity-50 leading-6">
                 الشارة ليست شرطاً في العقد، لكنها ممارسة معتادة في الوكالات: التعريف
