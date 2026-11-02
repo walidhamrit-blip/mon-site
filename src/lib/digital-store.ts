@@ -1,3 +1,4 @@
+import { applyGiftCardSalesPolicy } from "@/lib/digital-sales-policy";
 import { asc, eq, inArray } from "drizzle-orm";
 import { db, ensureSchema } from "@/db";
 import { digitalDenominations, digitalProducts } from "@/db/schema";
@@ -409,7 +410,8 @@ export async function getDigitalCatalog(
   }
 
   const live = await getLiveCatalog();
-  const products = live ?? (await getStoredCatalog({ publicOnly: true }));
+  const products = (live ?? (await getStoredCatalog({ publicOnly: true })))
+    .map(applyGiftCardSalesPolicy);
   // On ne mémorise pas un repli dû à une panne : dès que la base revient,
   // la page doit le voir tout de suite plutôt qu'au bout de deux minutes.
   if (live || !digitalCatalogStatus().degraded) {

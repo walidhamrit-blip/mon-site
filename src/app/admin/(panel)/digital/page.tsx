@@ -1,4 +1,6 @@
 import { FazercardsCatalogPanel } from "./fazercards-catalog-panel";
+import { FazercardsReplenishmentPanel } from "./fazercards-replenishment-panel";
+import { readReplenishmentSettings } from "@/lib/fazercards-replenishment";
 import { FazercardsBalancePanel } from "./fazercards-balance-panel";
 import { FazercardsCardIdFinder } from "./fazercards-card-id-finder";
 import { getFazercardsBalanceStatus } from "@/lib/fazercards-balance";
@@ -35,12 +37,21 @@ export default async function AdminDigitalPage() {
   // contrôle, une vente peut être encaissée alors que l'achat fournisseur est
   // impossible (le solde est débité du COÛT, pas du prix de vente).
   const balance = await getFazercardsBalanceStatus();
+  let replenishmentRule = null;
+  try {
+    replenishmentRule = await readReplenishmentSettings();
+  } catch (error) {
+    console.error("[fazercards][règle] lecture impossible", error);
+  }
 
   return (
     <div className="space-y-4">
       <h1 className="text-2xl font-black text-stone-900">Boutique digitale — FazerCards</h1>
       <p className="text-sm text-stone-600">Gérez le catalogue actuel, le solde et la disponibilité. Les anciennes commandes restent consultables ; aucun ancien fournisseur n’est utilisé pour les nouvelles ventes.</p>
       <FazercardsBalancePanel status={balance} />
+      {replenishmentRule ? <FazercardsReplenishmentPanel rule={replenishmentRule} balanceUsd={balance.assessment.balanceUsd} /> : (
+        <p className="rounded-xl border border-red-300 bg-red-50 p-4 text-sm text-red-800">Règle de recharge inaccessible : vérifiez la connexion à la base de données. La surveillance ne peut pas être garantie.</p>
+      )}
 
       <FazercardsCardIdFinder />
 

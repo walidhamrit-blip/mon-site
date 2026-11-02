@@ -289,12 +289,19 @@ const product = {
 };
 
 test("devis : total recalculé côté serveur (prix × quantité)", () => {
-  const result = core.quoteDigitalOrder(product, "d50", "3");
+  const result = core.quoteDigitalOrder(product, "d10", "3");
   assert.equal(result.ok, true);
-  assert.equal(result.quote.unitPriceUsd, 56.5);
-  assert.equal(result.quote.totalUsd, 169.5);
+  assert.equal(result.quote.unitPriceUsd, 12);
+  assert.equal(result.quote.totalUsd, 36);
   assert.equal(result.quote.quantity, 3);
-  assert.equal(result.quote.reloadlyUnitPrice, 50);
+  assert.equal(result.quote.reloadlyUnitPrice, 10);
+});
+
+test("devis : plafond de 50 USD inclus, au-delà refusé", () => {
+  const priced = (priceUsd) => ({ ...product, denominations: [{ ...product.denominations[0], priceUsd }] });
+  assert.equal(core.quoteDigitalOrder(priced(50), "d50", 1).ok, true);
+  assert.equal(core.quoteDigitalOrder(priced(50.01), "d50", 1).error, "above_limit");
+  assert.equal(core.quoteDigitalOrder(priced(25.01), "d50", 2).error, "above_limit");
 });
 
 test("devis : valeur Reloadly déduite de la valeur faciale quand elle manque", () => {
