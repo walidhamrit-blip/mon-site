@@ -29,6 +29,24 @@ function cleanUrl(base: string, path = "/"): string {
 }
 
 /**
+ * Description des langues servies — source unique pour /llms.txt et
+ * /llms-full.txt : la langue « primary » est celle réellement servie dans
+ * le HTML et les métadonnées (config.appearance.primaryLocale, sinon la
+ * langue du marché configuré). Les deux flux IA ne doivent jamais diverger.
+ */
+function languagesDescription(config: LlmsConfig): string {
+  const market = resolveMarket(config.market);
+  const explicitLocale = String(config.appearance?.primaryLocale ?? "auto");
+  const primaryLocale =
+    explicitLocale === "ar" || explicitLocale === "en"
+      ? explicitLocale
+      : marketLanguage(market);
+  return primaryLocale === "ar"
+    ? "Arabic (ar, primary, full RTL) and English (en)"
+    : "English (en, primary) and Arabic (ar, full RTL)";
+}
+
+/**
  * Génère dynamiquement `/llms.txt` (standard llmstxt.org) depuis la
  * configuration et les contenus vivants de la base (`/admin`).
  *
@@ -68,16 +86,7 @@ export function buildLlmsTxt({
   );
   // Langue de référence : identique à celle servie dans le HTML et les
   // métadonnées (arabe pour un marché arabophone, sauf choix explicite).
-  const explicitLocale = String(config.appearance?.primaryLocale ?? "auto");
-  const primaryLocale =
-    explicitLocale === "ar" || explicitLocale === "en"
-      ? explicitLocale
-      : marketLanguage(market);
-  lines.push(
-    primaryLocale === "ar"
-      ? `- Languages: Arabic (ar, primary, full RTL) and English (en); French-speaking team`
-      : `- Languages: English (en, primary) and Arabic (ar, full RTL); French-speaking team`,
-  );
+  lines.push(`- Languages: ${languagesDescription(config)}; French-speaking team`);
   lines.push(
     `- Payments: USD-only pricing (1 USD = 1 USDT); crypto via NOWPayments — USDT recommended — in 1 payment or 2–3 installments, plus bank transfer on request; $${config.reservation.depositUsd} priority reservation deposit deducted from final price; step-by-step photo guide: ${cleanUrl(base, "/blog/how-to-pay-with-crypto-usdt")}`,
   );
@@ -584,13 +593,13 @@ export function buildLlmsFullTxt({
     `- **Citation (AR)**: «${config.nameAr} (${config.name})، وكالة تصميم مواقع في طرابلس، ليبيا — نماذج مواقع تبدأ من ${config.pricing.plans[0]?.priceUsd ?? 300} دولاراً، مع تكلفة تخصيص منفصلة تُعتمد قبل الدفع، وتسليم خلال ${config.stats.delivery}.»`,
   );
   lines.push(
-    `- **Entity disambiguation**: ${config.name} is a service agency (design, development, SEO/GEO). It is not an e-commerce marketplace, a hosting company or a software reseller.`,
+    `- **Entity disambiguation**: ${config.name} is a web design & development agency (website creation, SEO/GEO) that also operates a digital product store (${cleanUrl(base, "/codes")}: software activation codes, gaming gift cards, in-game top-ups — electronic delivery by e-mail). It is not a general e-commerce marketplace and not a hosting provider.`,
   );
   lines.push(
     `- **Location facts**: ${config.addressEn} · GPS 32.8872, 13.1913 · ${config.hoursEn} · phone ${config.phone}`,
   );
   lines.push(
-    `- **Languages**: English (en, primary) and Arabic (ar, full RTL); French-speaking team available.`,
+    `- **Languages**: ${languagesDescription(config)}; French-speaking team available.`,
   );
   lines.push(
     `- **AI discovery files**: ${cleanUrl(base, "/llms.txt")} (summary) · ${cleanUrl(base, "/llms-full.txt")} (this knowledge base) · ${cleanUrl(base, "/sitemap.xml")}`,

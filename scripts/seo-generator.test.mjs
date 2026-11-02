@@ -317,6 +317,40 @@ test("buildLlmsTxt et buildLlmsFullTxt synchronisent dynamiquement toutes les r�
   assert.ok(llmsFull.includes("Preferred Citations & Entity Facts"));
 });
 
+test("llms.txt et llms-full.txt décrivent la même entité : langue principale réelle et boutique digitale admise (audit A04)", () => {
+  const content = {
+    demos: defaultDemos.map((d) => ensureDemoSeoFields(d)),
+    faqs: defaultFaqs,
+    testimonials: defaultTestimonials,
+    hero: defaultHero,
+    ribbon: defaultRibbon,
+    whyUs: defaultWhyUs,
+    process: defaultProcess,
+    headings: defaultSectionHeadings,
+  };
+  const llms = buildLlmsTxt({ config: siteConfig, content });
+  const llmsFull = buildLlmsFullTxt({ config: siteConfig, content });
+
+  // La langue principale déclarée doit suivre la config (ar par défaut),
+  // dans LES DEUX flux — pas une valeur en dur contradictoire.
+  const expectedPrimary = siteConfig.appearance?.primaryLocale === "en" ? "en" : "ar";
+  for (const [label, body] of [["llms.txt", llms], ["llms-full.txt", llmsFull]]) {
+    assert.ok(!body.includes("software reseller"), `${label} ne doit plus nier la revente de logiciels`);
+    assert.ok(body.includes("/codes"), `${label} doit mentionner la boutique digitale /codes`);
+    if (expectedPrimary === "ar") {
+      assert.ok(
+        body.includes("Arabic (ar, primary"),
+        `${label} doit déclarer l'arabe comme langue principale`,
+      );
+    } else {
+      assert.ok(
+        body.includes("English (en, primary"),
+        `${label} doit déclarer l'anglais comme langue principale`,
+      );
+    }
+  }
+});
+
 // ── 8. Schémas JSON-LD enrichis & Moteur d'audit SEO/GEO ──────────────────
 test("schémas JSON-LD incluent geo, offre, HowTo — et aucun avis auto-déclaré", () => {
   const lb = localBusinessJsonLd(siteConfig, defaultTestimonials);
