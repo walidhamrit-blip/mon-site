@@ -1,8 +1,14 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { getDigitalCatalog, getDigitalProductBySlug } from "@/lib/digital-store";
+import {
+  digitalCatalogStatus,
+  getDigitalCatalog,
+  getDigitalProductBySlug,
+} from "@/lib/digital-store";
+import { productPageFallback } from "@/lib/digital-fallback";
 import { absoluteUrl, breadcrumbJsonLd, pageMetadata, siteLocale } from "@/lib/seo";
 import { JsonLd } from "@/components/json-ld";
+import { StoreUnavailableProduct } from "@/components/store-status-notice";
 import { DigitalProductDetails } from "./digital-product-details";
 import { getSiteDataCached } from "@/lib/store";
 import { resolveMarket } from "@/lib/market";
@@ -89,7 +95,20 @@ export default async function DigitalProductPage({
   const { slug } = await params;
   const { config } = await getSiteDataCached();
   const product = await getDigitalProductBySlug(slug);
-  if (!product) notFound();
+  if (!product) {
+    // A05 : panne déclarée (base + fournisseur down) → JAMAIS de 404, qui
+    // ferait désindexer une fiche encore existante. On rend une page
+    // « temporairement indisponible » (200 + noindex, voir generateMetadata).
+    if (productPageFallback(digitalCatalogStatus().degraded) === "unavailable") {
+      return (
+        <StoreUnavailableProduct
+          ar={siteLocale(config) === "ar"}
+          phone={config.phone}
+        />
+      );
+    }
+    notFound();
+  }
 
   const market = resolveMarket(config.market);
   const locale = siteLocale(config);
