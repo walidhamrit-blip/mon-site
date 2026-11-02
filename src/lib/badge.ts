@@ -46,9 +46,9 @@ export const BADGE_ASSET_LIGHT = "/badge/nukhba-badge-light.svg";
 export const BADGE_WIDTH = 176;
 export const BADGE_HEIGHT = 44;
 
-/** Ancres bilingues recommandées (texte visible ou `alt`). */
-export const BADGE_ANCHOR_AR = "تصميم وتطوير المواقع — نخبة طرابلس";
-export const BADGE_ANCHOR_EN = "Website by Nukhba — Tripoli web design agency";
+/** Crédit de marque neutre, facultatif ; aucune ancre SEO géographique. */
+export const BADGE_ANCHOR_AR = "نخبة";
+export const BADGE_ANCHOR_EN = "Website by Nukhba";
 
 export type BadgeStatus = "verified" | "nofollow" | "missing" | "down" | "pending";
 
@@ -151,7 +151,7 @@ export function badgeHtmlSnippet(options: SnippetOptions = {}): string {
   const text = withText
     ? `\n  <span style="display:block;margin-top:6px;font-size:12px;line-height:1.4;color:#9C9A94">${BADGE_ANCHOR_AR} · ${BADGE_ANCHOR_EN}</span>`
     : "";
-  return `<a href="${href}" target="_blank" rel="noopener" title="${BADGE_ANCHOR_AR}" style="display:inline-block;text-decoration:none">\n  ${image}${text}\n</a>`;
+  return `<a href="${href}" target="_blank" rel="sponsored nofollow noopener" title="${BADGE_ANCHOR_AR}" style="display:inline-block;text-decoration:none">\n  ${image}${text}\n</a>`;
 }
 
 /** Extrait React / Next.js (App Router ou Pages Router). */
@@ -162,7 +162,7 @@ export function badgeReactSnippet(options: SnippetOptions = {}): string {
     <a
       href="${href}"
       target="_blank"
-      rel="noopener"
+      rel="sponsored nofollow noopener"
       title="${BADGE_ANCHOR_AR}"
       style={{ display: "inline-block", textDecoration: "none" }}
     >
