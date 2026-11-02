@@ -34,6 +34,7 @@ const sitemap = read("src/app/sitemap.ts");
 const leadRoute = read("src/app/api/lead/route.ts");
 const healthRoute = read("src/app/api/health/route.ts");
 const codesPage = read("src/app/(site)/codes/page.tsx");
+const productPage = read("src/app/(site)/codes/[slug]/page.tsx");
 const codesView = read("src/components/digital-store-view.tsx");
 const mailer = read("src/lib/mailer.ts");
 const notice = read("src/components/store-status-notice.tsx");
@@ -164,4 +165,23 @@ test("les e-mails transactionnels acceptent une adresse de réponse", () => {
   assert.match(flat, /reply_to: message\.replyTo \|\| mailReplyTo\(\)/);
   assert.match(flat, /replyTo: message\.replyTo \|\| mailReplyTo\(\) \|\| undefined,/);
   assert.match(flat, /replyTo: mailReplyTo\(\),/);
+});
+
+test("A05 : panne déclarée + fiche absente → page temporaire 200/noindex, jamais de 404", () => {
+  // Audit SEO/GEO 2026-11-01 (A05) : une 404 ferait désindexer par Google une
+  // fiche qui existe encore chez le fournisseur pendant une panne. La page
+  // fiche doit donc distinguer « panne en cours » (page « indisponible
+  // temporairement », non indexée) du vrai slug inconnu (404).
+  const flat = code(productPage);
+  // La décision passe par la fonction pure testée par digital-fallback.test.mjs…
+  assert.match(flat, /productPageFallback\(digitalCatalogStatus\(\)\.degraded\) === "unavailable"/);
+  // …et la page de panne est rendue AVANT le notFound().
+  assert.ok(
+    flat.indexOf('=== "unavailable"') < flat.indexOf("notFound()"),
+    "le repli 'unavailable' doit être traité avant notFound()",
+  );
+  assert.match(flat, /<StoreUnavailableProduct/);
+  // generateMetadata reste noindex quand la fiche est absente (ni panne ni
+  // produit) : la page temporaire ne doit pas être indexée.
+  assert.match(flat, /if \(!product\) \{[\s\S]*?noindex: true,/);
 });

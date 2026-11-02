@@ -9,14 +9,15 @@ import { StoreUnavailableProduct } from "@/components/store-status-notice";
  *
  * Le 29/10/2026, la base étant suspendue (quota Neon épuisé), les ~390
  * fiches du fournisseur renvoyaient un 404 nu : un client venu d'un lien
- * direct ne comprenait pas, et repartait. On distingue donc les deux cas :
+ * direct ne comprenait pas, et repartait.
  *
- *  - panne en cours → message de maintenance + commande par WhatsApp ;
- *  - slug réellement inconnu → 404 classique, avec retour au rayon.
- *
- * Le code HTTP reste 404 dans les deux cas : c'est la réponse honnête pour
- * une URL dont le contenu n'existe pas à cet instant, et elle évite de faire
- * passer un repli pour la vraie fiche.
+ * Depuis l'audit SEO/GEO 2026-11-01 (point A05), la page fiche intercepte
+ * le cas « panne en cours » AVANT le notFound() et rend une page 200 +
+ * noindex « temporairement indisponible » : une 404 ferait désindexer par
+ * Google une fiche qui existe encore chez le fournisseur. Ce not-found.tsx
+ * n'est donc atteint que quand AUCUNE panne n'est déclarée → 404 classique
+ * (slug réellement inconnu : lien cassé ou fiche retirée), avec retour au
+ * rayon. C'est la réponse honnête pour une URL dont le contenu n'existe pas.
  */
 export default async function DigitalProductNotFound() {
   const { config } = await getSiteDataCached();
