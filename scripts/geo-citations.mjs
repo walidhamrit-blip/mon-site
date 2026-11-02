@@ -106,15 +106,26 @@ export const PROMPTS = [
 /**
  * Détecte une mention de la marque dans une réponse (texte libre) et extrait
  * l'URL du site si elle est citée.
+ *
+ * A06 (audit SEO/GEO 2026-11-01) : l'URL de marque n'est reconnue que si le
+ * HOSTNAME est exactement `BRAND_DOMAIN` — jamais une simple sous-chaîne,
+ * sinon « nokhba.net.ly.evil.example » compterait comme une citation.
  */
 export function detectBrandMention(text = "") {
   const haystack = String(text).toLowerCase();
-  const matched = BRAND_TERMS.filter((term) => haystack.includes(term.toLowerCase()));
-  const urlMatch = /https?:\/\/(?:www\.)?nokhba\.net\.ly[^\s)\]"'<>]*/i.exec(String(text));
+  const nameTerms = BRAND_TERMS.filter((term) => term !== BRAND_DOMAIN);
+  const matched = nameTerms.filter((term) => haystack.includes(term.toLowerCase()));
+  let url = null;
+  for (const match of String(text).matchAll(/https?:\/\/[^\s)\]"'<>]+/gi)) {
+    if (hostOf(match[0]) === BRAND_DOMAIN) {
+      url = match[0];
+      break;
+    }
+  }
   return {
-    mentioned: matched.length > 0,
+    mentioned: matched.length > 0 || url !== null,
     matched,
-    url: urlMatch ? urlMatch[0] : null,
+    url,
   };
 }
 
@@ -128,25 +139,57 @@ export function hostOf(url) {
 }
 
 /**
- * Agrège les résultats : taux de citation global, par moteur et par langue,
- * et liste des domaines concurrents les plus cités.
+ * Vrai si au moins une source citée par le moteur pointe exactement sur le
+ * domaine de marque (vérification par hostname, pas par sous-chaîne).
+ */
+export function citesBrandDomain(sources = [], domain = BRAND_DOMAIN) {
+  return (sources ?? []).some((url) => hostOf(url) === domain);
+}
+
+/**
+ * Agrège les résultats (A06, audit SEO/GEO 2026-11-01) en distinguant :
+ *  - `mentionRate`  : la marque est nommée dans la réponse (texte libre) ;
+ *  - `citationRate` : au moins une SOURCE citée par le moteur a un hostname
+ *    exactement égal au domaine de marque (citation d'URL vérifiée) ;
+ *  - `groundedCitationRate` : idem, restreint aux réponses ancrées web
+ *    (`grounded: true`) — seules celles-là mesurent des citations en ligne ;
+ *  - les requêtes en erreur (`status: "error"`) sont comptées à part et
+ *    exclues des dénominateurs : une erreur API n'est pas une réponse négative.
+ *
+ * `rate`/`cited` restent exposés pour compatibilité (rate = mentionRate).
  */
 export function summarize(results = []) {
+  const pct = (n, d) => (d === 0 ? 0 : Math.round((n / d) * 100));
+  const isCited = (result) =>
+    result.cited ?? citesBrandDomain(result.sources ?? []);
+
   const total = results.length;
-  const cited = results.filter((result) => result.mentioned).length;
+  const errors = results.filter((result) => result.status === "error").length;
+  const answered = results.filter((result) => result.status !== "error");
+  const mentioned = answered.filter((result) => result.mentioned).length;
+  const cited = answered.filter(isCited).length;
+  const grounded = answered.filter((result) => result.grounded);
+  const groundedCited = grounded.filter(isCited).length;
+
   const byProvider = {};
   const byLang = {};
   const domains = new Map();
 
   for (const result of results) {
-    const provider = byProvider[result.provider] ?? { total: 0, cited: 0 };
+    const provider = byProvider[result.provider] ?? {
+      total: 0, errors: 0, mentioned: 0, cited: 0,
+    };
     provider.total += 1;
-    if (result.mentioned) provider.cited += 1;
+    if (result.status === "error") provider.errors += 1;
+    if (result.status !== "error" && result.mentioned) provider.mentioned += 1;
+    if (result.status !== "error" && isCited(result)) provider.cited += 1;
     byProvider[result.provider] = provider;
 
-    const lang = byLang[result.lang] ?? { total: 0, cited: 0 };
+    const lang = byLang[result.lang] ?? { total: 0, errors: 0, mentioned: 0, cited: 0 };
     lang.total += 1;
-    if (result.mentioned) lang.cited += 1;
+    if (result.status === "error") lang.errors += 1;
+    if (result.status !== "error" && result.mentioned) lang.mentioned += 1;
+    if (result.status !== "error" && isCited(result)) lang.cited += 1;
     byLang[result.lang] = lang;
 
     for (const url of result.sources ?? []) {
@@ -156,16 +199,32 @@ export function summarize(results = []) {
     }
   }
 
-  const rated = (entry) => ({
-    total: entry.total,
-    cited: entry.cited,
-    rate: entry.total === 0 ? 0 : Math.round((entry.cited / entry.total) * 100),
-  });
+  const rated = (entry) => {
+    const answeredCount = entry.total - entry.errors;
+    return {
+      total: entry.total,
+      errors: entry.errors,
+      answered: answeredCount,
+      mentioned: entry.mentioned,
+      mentionRate: pct(entry.mentioned, answeredCount),
+      cited: entry.cited,
+      citationRate: pct(entry.cited, answeredCount),
+    };
+  };
 
   return {
     total,
+    errors,
+    answered: answered.length,
+    mentioned,
+    mentionRate: pct(mentioned, answered.length),
     cited,
-    rate: total === 0 ? 0 : Math.round((cited / total) * 100),
+    citationRate: pct(cited, answered.length),
+    groundedTotal: grounded.length,
+    groundedCited,
+    groundedCitationRate: pct(groundedCited, grounded.length),
+    // Compatibilité avec l'ancien affichage « taux de citation ».
+    rate: pct(mentioned, answered.length),
     byProvider: Object.fromEntries(
       Object.entries(byProvider).map(([key, value]) => [key, rated(value)]),
     ),
@@ -263,15 +322,17 @@ async function sendEmail(summary, reportPath, results) {
     .map(
       (result) =>
         `<tr><td>${result.provider}</td><td>${result.lang}</td><td>${result.id}</td>` +
-        `<td>${result.mentioned ? "✅ cité" : "—"}</td><td>${(result.snippet ?? "").slice(0, 160)}</td></tr>`,
+        `<td>${result.status === "error" ? "⚠ erreur" : result.mentioned ? "✅ mentionné" : "—"}</td>` +
+        `<td>${result.status === "error" ? "—" : result.cited ? "🔗 URL citée" : "—"}</td>` +
+        `<td>${(result.snippet ?? result.error ?? "").slice(0, 160)}</td></tr>`,
     )
     .join("");
   const html = `
     <h2>GEO Tracker — citations IA</h2>
-    <p><strong>Taux de citation : ${summary.rate}%</strong> (${summary.cited}/${summary.total} requêtes).</p>
+    <p><strong>Mention : ${summary.mentionRate}%</strong> · <strong>Citation d'URL vérifiée : ${summary.citationRate}%</strong> · <strong>Citation ancrée web : ${summary.groundedCitationRate}%</strong> (${summary.cited}/${summary.answered} requêtes répondues, ${summary.errors} erreur(s)).</p>
     <p>Rapport : ${reportPath}</p>
     <table border="1" cellpadding="6" cellspacing="0">
-      <thead><tr><th>Moteur</th><th>Langue</th><th>Requête</th><th>Marque</th><th>Extrait</th></tr></thead>
+      <thead><tr><th>Moteur</th><th>Langue</th><th>Requête</th><th>Marque</th><th>Citation</th><th>Extrait</th></tr></thead>
       <tbody>${rows}</tbody>
     </table>`;
   try {
@@ -284,7 +345,7 @@ async function sendEmail(summary, reportPath, results) {
       body: JSON.stringify({
         from,
         to: [to],
-        subject: `GEO Tracker — ${summary.rate}% de citations (${new Date().toISOString().slice(0, 10)})`,
+        subject: `GEO Tracker — citation ${summary.citationRate}% / mention ${summary.mentionRate}% (${new Date().toISOString().slice(0, 10)})`,
         html,
       }),
     });
@@ -329,7 +390,12 @@ async function main() {
           id: prompt.id,
           lang: prompt.lang,
           query: prompt.query,
+          status: "ok",
+          grounded: provider.grounded,
           mentioned: detection.mentioned,
+          // A06 : citation = source du moteur dont le hostname est exactement
+          // le domaine de marque — pas une simple mention textuelle.
+          cited: citesBrandDomain(sources),
           matchedTerms: detection.matched,
           url: detection.url,
           sources: sources.slice(0, 10),
@@ -337,16 +403,22 @@ async function main() {
           at: new Date().toISOString(),
         };
         results.push(result);
-        console.log(`${detection.mentioned ? "✓" : "·"} ${prompt.id}`);
+        console.log(
+          `${detection.mentioned ? "✓" : "·"} ${citesBrandDomain(sources) ? "🔗" : " "} ${prompt.id}`,
+        );
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error);
+        // A06 : une erreur API est un état distinct, PAS une réponse négative.
         results.push({
           provider: provider.name,
           model: provider.model,
           id: prompt.id,
           lang: prompt.lang,
           query: prompt.query,
+          status: "error",
+          grounded: provider.grounded,
           mentioned: false,
+          cited: false,
           error: message.slice(0, 200),
           at: new Date().toISOString(),
         });
@@ -380,13 +452,17 @@ async function main() {
     );
   } else {
     console.log(
-      `\nTaux de citation : ${summary.rate}% (${summary.cited}/${summary.total})`,
+      `\nMention : ${summary.mentionRate}% · Citation d'URL vérifiée : ${summary.citationRate}% · Ancrée web : ${summary.groundedCitationRate}% (${summary.cited}/${summary.answered} répondues, ${summary.errors} erreur(s))`,
     );
     for (const [provider, stats] of Object.entries(summary.byProvider)) {
-      console.log(`- ${provider}: ${stats.rate}% (${stats.cited}/${stats.total})`);
+      console.log(
+        `- ${provider}: citation ${stats.citationRate}% / mention ${stats.mentionRate}% (${stats.cited}/${stats.answered} répondues)`,
+      );
     }
     for (const [lang, stats] of Object.entries(summary.byLang)) {
-      console.log(`- ${lang}: ${stats.rate}% (${stats.cited}/${stats.total})`);
+      console.log(
+        `- ${lang}: citation ${stats.citationRate}% / mention ${stats.mentionRate}% (${stats.cited}/${stats.answered} répondues)`,
+      );
     }
   }
   console.log(`\nRapport : ${reportPath}`);
