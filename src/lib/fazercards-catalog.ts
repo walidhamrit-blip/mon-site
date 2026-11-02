@@ -30,6 +30,7 @@ import {
   type FazercardsTopupOffer,
 } from "@/lib/fazercards";
 import { after } from "next/server";
+import { applyGiftCardSalesPolicy } from "@/lib/digital-sales-policy";
 import { marginTierFor, retailPriceForCost } from "@/lib/fazercards-pricing";
 import { revalidatePath } from "next/cache";
 import {
@@ -1081,6 +1082,7 @@ function snapshot(
 ): FazercardsCatalogSnapshot {
   return {
     ...entry.result,
+    products: entry.result.products.map(applyGiftCardSalesPolicy),
     fetchedAt: new Date(entry.fetchedAt).toISOString(),
     ageMs: Date.now() - entry.fetchedAt,
     cached: meta.cached,

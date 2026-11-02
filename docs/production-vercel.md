@@ -108,7 +108,7 @@ fonctionne normalement.
 |---|---|---|
 | `FAZERCARDS_API_KEY` | hub revendeur `reseller.fazercards.com` → **Profile → API key** (`fc_…`) | 🔐 **Secret.** Serveur uniquement. Une seule clé, pas de sandbox séparé : elle engage le **vrai solde** |
 | `FAZERCARDS_API_BASE` | `https://api.fzr.cards/api/v2` | Laisser la valeur par défaut |
-| `FAZERCARDS_MAX_ORDER_USD` | `300` | Au-delà, la commande bascule en livraison manuelle (aucun débit automatique) |
+| `FAZERCARDS_MAX_ORDER_USD` | `50` | Plafond de caisse en USD ; une valeur supérieure reste limitée à 50 USD par le code |
 | `FAZERCARDS_CATALOG_TTL_SECONDS` | `600` | Fraîcheur du catalogue en cache (prix / stock). `0` = cache désactivé |
 | `FAZERCARDS_CATALOG_MAX_STALE_MINUTES` | `60` | Âge maximal d'un catalogue périmé encore servi si le fournisseur est en panne |
 | `FAZERCARDS_CATALOG_MAX_CATEGORIES` | `80` | Catégories **détaillées** par famille et par synchro (1 appel HTTP chacune). Le reste n'est pas perdu : rotation + fusion (voir §2 bis) |
@@ -120,8 +120,17 @@ fonctionne normalement.
 | `FAZERCARDS_CATALOG_CONCURRENCY` | `6` | Requêtes simultanées vers l'API (1–12) |
 | `FAZERCARDS_WEBHOOK_SECRET` | **ne pas créer** | Vercel refuse une valeur vide. Cette variable n'est utile que le jour où un webhook de statut est déclaré dans le hub revendeur. Absente, elle n'a aucun effet |
 
-Le plafond `FAZERCARDS_MAX_ORDER_USD` est un **garde-fou de dépense** : il
-se juge sur le montant payé par le client, pas sur le solde du compte.
+La caisse digitale refuse les nouvelles commandes de plus de **50 USD** (prix de
+vente total, assimilé ici à 50 USDT). Une valeur Vercel plus basse reste
+applicable, mais une valeur plus haute ne relève pas ce plafond. Les cartes
+cadeaux dont le prix de vente dépasse **100 USD** sont mises en veille dans
+le catalogue public, y compris depuis un cache existant. La valeur faciale,
+qui peut être dans une autre monnaie, n'est pas utilisée comme seuil.
+Les factures créées avant ce changement restent soumises au garde-fou
+de livraison configuré par `FAZERCARDS_MAX_ORDER_USD` (300 USD par défaut).
+Ne baissez pas cette variable avant de traiter les factures précédemment émises
+au-dessus de 50 USD : elles passeraient alors en livraison manuelle.
+Le solde fournisseur et les limites éventuelles de NOWPayments restent distincts.
 
 ### Qui sert le catalogue de `/codes`
 
@@ -720,3 +729,14 @@ Diagnostic sans achat : `GET /api/cron/digital-orders?dry=1` avec
 `Authorization: Bearer $CRON_SECRET`. Sur un plan Vercel Hobby, le cron est
 quotidien (`20 4 * * *`) ; sur Pro, resserrez à `*/15 * * * *` pour une
 reprise toutes les 15 minutes.
+
+### Surveillance de recharge FazerCards
+
+Dans **Administration → Boutique digitale**, la règle de recharge est modifiable
+sans redéploiement : seuil (30 USD par défaut) et solde cible (100 USD par défaut).
+Si le solde est strictement inférieur au seuil, le cron quotidien de solde peut
+envoyer une alerte et l'admin affiche la différence avec la cible. La base de
+données, `CRON_SECRET`, le cron Vercel et la messagerie doivent fonctionner.
+Cette règle ne crée ni facture FazerCards, ni retrait NOWPayments : la recharge
+reste manuelle. Vérifier les montants, frais et instructions BEP20 avant tout
+paiement. Ce réglage ne modifie pas le plafond de commande du site.

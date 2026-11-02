@@ -61,6 +61,23 @@ function dbIssue(error: unknown): string {
   return `Échec de l'enregistrement : ${msg.slice(0, 200)}`;
 }
 
+/** Enregistre uniquement une règle de surveillance ; aucun virement n'est lancé. */
+export async function saveFazercardsReplenishmentRule(input: unknown): Promise<ActionResult> {
+  await requireAdmin();
+  const { validReplenishmentSettings } = await import("@/lib/fazercards-replenishment-core");
+  if (!validReplenishmentSettings(input)) {
+    return { ok: false, error: "Montants invalides : la cible doit dépasser le seuil, avec deux décimales maximum (cible ≤ 50 000 USD)." };
+  }
+  try {
+    const { saveReplenishmentSettings } = await import("@/lib/fazercards-replenishment");
+    await saveReplenishmentSettings(input);
+    revalidatePath("/admin/digital");
+    return { ok: true, message: "Règle de surveillance enregistrée. Aucun transfert n'a été effectué." };
+  } catch (error) {
+    return { ok: false, error: dbIssue(error) };
+  }
+}
+
 /* ---------------- Connexion / déconnexion ---------------- */
 
 const LOGIN_LIMIT = { windowMs: 15 * 60 * 1000, max: 10, prefix: "login" } as const;

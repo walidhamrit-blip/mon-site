@@ -20,6 +20,7 @@
 
 import { sanitizeSecret } from "@/lib/nowpayments";
 import { MIN_CRYPTO_INVOICE_USD } from "@/lib/digital-types";
+import { MAX_DIGITAL_ORDER_USD } from "@/lib/digital-sales-policy";
 
 const FAZERCARDS_BASE = "https://api.fzr.cards/api/v2";
 
@@ -31,8 +32,13 @@ function envNumber(name: string, fallback: number): number {
   return Number.isFinite(value) && value > 0 ? value : fallback;
 }
 
-/** Plafond d'un achat automatique : au-delà, livraison manuelle. */
+/** Plafond à la caisse : une ancienne valeur Vercel ne peut dépasser 50 USD. */
 export function fazercardsMaxOrderUsd(): number {
+  return Math.min(envNumber("FAZERCARDS_MAX_ORDER_USD", DEFAULT_MAX_ORDER_USD), MAX_DIGITAL_ORDER_USD);
+}
+
+/** Ancien garde-fou de livraison : ne pas bloquer les factures déjà émises. */
+export function fazercardsDeliveryMaxOrderUsd(): number {
   return envNumber("FAZERCARDS_MAX_ORDER_USD", DEFAULT_MAX_ORDER_USD);
 }
 

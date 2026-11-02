@@ -31,6 +31,8 @@ import {
   fazercardsMaxOrderUsd,
 } from "@/lib/fazercards";
 import { sendEmail } from "@/lib/mailer";
+import { readReplenishmentSettings } from "@/lib/fazercards-replenishment";
+import { replenishmentNeed, replenishmentAlertLevel, type ReplenishmentSettings } from "@/lib/fazercards-replenishment-core";
 import { escapeHtml } from "@/lib/emails";
 import { getSiteData } from "@/lib/store";
 
@@ -205,35 +207,40 @@ function alertEmail(input: {
   assessment: BalanceAssessment;
   siteName: string;
   siteUrl: string;
+  rule: ReplenishmentSettings;
+  alertLevel: BalanceAssessment["level"];
 }): { subject: string; text: string; html: string } {
-  const { assessment, siteName, siteUrl } = input;
+  const { assessment, siteName, siteUrl, rule } = input;
+  const need = replenishmentNeed(assessment.balanceUsd, rule);
   const recovery = input.kind === "recovery";
-  const level = LEVEL_LABELS[assessment.level] ?? assessment.level;
+  const level = LEVEL_LABELS[input.alertLevel] ?? input.alertLevel;
 
   const subject = recovery
     ? `✅ Solde fournisseur rétabli — ${assessment.balanceUsd?.toFixed(2) ?? "?"} $`
-    : `⚠️ Solde fournisseur ${level} — recharge de ${assessment.recommendedTopUpUsd} $ conseillée`;
+    : `⚠️ Solde fournisseur ${level} — vérification nécessaire`;
 
   const lines = [
     recovery
-      ? `Le solde fournisseur couvre de nouveau le plafond d'achat automatique.`
-      : `Le solde du compte fournisseur ne couvre pas le plafond de vente configuré.`,
+      ? `Le solde fournisseur est revenu au-dessus du seuil et couvre le plafond de vente.`
+      : `Le solde est sous le seuil de recharge, ne couvre pas le plafond de vente ou est illisible (voir les détails).`,
     ``,
     `Solde lu : ${assessment.balanceUsd != null ? `${assessment.balanceUsd.toFixed(2)} $` : "illisible"}`,
+    `Seuil de recharge : ${rule.thresholdUsd.toFixed(2)} $ ; cible : ${rule.targetUsd.toFixed(2)} $`,
+    ...(need != null && need > 0 ? [`Recharge indicative vers la cible : ${need.toFixed(2)} $ ; aucun transfert automatique.`] : []),
     `Plafond de vente (FAZERCARDS_MAX_ORDER_USD) : ${assessment.maxOrderUsd.toFixed(2)} $`,
     `Coût fournisseur de ce plafond : ${assessment.costCeilingUsd.toFixed(2)} $`,
     ...(assessment.coveredSaleUsd != null
       ? [`Vente maximale encore payable : ${assessment.coveredSaleUsd.toFixed(2)} $`]
       : []),
     ...(assessment.recommendedTopUpUsd > 0
-      ? [`Recharge conseillée : ${assessment.recommendedTopUpUsd.toFixed(2)} $ (marge incluse)`]
+      ? [`Recharge pour couvrir le plafond de vente : ${assessment.recommendedTopUpUsd.toFixed(2)} $ (marge incluse)`]
       : []),
     ``,
     assessment.summary,
     ``,
     recovery
       ? `Aucune action requise.`
-      : `Deux options, dans cet ordre : recharger le solde, ou baisser FAZERCARDS_MAX_ORDER_USD pour rester dans la couverture actuelle.`,
+      : `Vérifiez le solde et rechargez si nécessaire ; aucun transfert n'est lancé automatiquement.`,
     ``,
     `Administration : ${siteUrl.replace(/\/+$/, "")}/admin/digital`,
     ``,
@@ -248,6 +255,8 @@ function alertEmail(input: {
       </h1>
       <table style="width:100%;border-collapse:collapse;font-size:13px">
         <tr><td style="padding:6px 10px;background:#f6f3ec;font-weight:700;width:200px">Solde lu</td><td style="padding:6px 10px">${assessment.balanceUsd != null ? `${assessment.balanceUsd.toFixed(2)} $` : "illisible"}</td></tr>
+        <tr><td style="padding:6px 10px;background:#f6f3ec;font-weight:700">Seuil / cible</td><td style="padding:6px 10px">${rule.thresholdUsd.toFixed(2)} $ / ${rule.targetUsd.toFixed(2)} $</td></tr>
+        ${need != null && need > 0 ? `<tr><td style="padding:6px 10px;background:#f6f3ec;font-weight:700">Recharge indicative</td><td style="padding:6px 10px">${need.toFixed(2)} $ — aucun transfert automatique</td></tr>` : ""}
         <tr><td style="padding:6px 10px;background:#f6f3ec;font-weight:700">Plafond de vente</td><td style="padding:6px 10px">${assessment.maxOrderUsd.toFixed(2)} $</td></tr>
         <tr><td style="padding:6px 10px;background:#f6f3ec;font-weight:700">Coût fournisseur du plafond</td><td style="padding:6px 10px">${assessment.costCeilingUsd.toFixed(2)} $</td></tr>
         ${
@@ -257,7 +266,7 @@ function alertEmail(input: {
         }
         ${
           assessment.recommendedTopUpUsd > 0
-            ? `<tr><td style="padding:6px 10px;background:#f6f3ec;font-weight:700">Recharge conseillée</td><td style="padding:6px 10px;font-weight:700">${assessment.recommendedTopUpUsd.toFixed(2)} $</td></tr>`
+            ? `<tr><td style="padding:6px 10px;background:#f6f3ec;font-weight:700">Recharge pour couvrir le plafond</td><td style="padding:6px 10px;font-weight:700">${assessment.recommendedTopUpUsd.toFixed(2)} $</td></tr>`
             : ""
         }
       </table>
@@ -266,7 +275,7 @@ function alertEmail(input: {
         ${
           recovery
             ? "Aucune action requise."
-            : "Deux options : recharger le solde, ou baisser <code>FAZERCARDS_MAX_ORDER_USD</code> pour rester dans la couverture actuelle."
+            : "Vérifiez le solde et rechargez si nécessaire ; aucun transfert n’est lancé automatiquement."
         }
       </p>
       <p style="font-size:12px;color:#999;margin-top:20px">${escapeHtml(siteName)} — ${escapeHtml(siteUrl)}</p>
@@ -300,18 +309,22 @@ export async function checkFazercardsBalance(
 ): Promise<BalanceCheckReport> {
   const status = await getFazercardsBalanceStatus({ fresh: options.fresh ?? true });
   const assessment = status.assessment;
+  // En cas de panne DB ou de règle invalide, échouer explicitement plutôt que
+  // prétendre surveiller les paramètres enregistrés avec d'autres valeurs.
+  const rule = await readReplenishmentSettings();
+  const alertLevel = replenishmentAlertLevel(assessment.level, assessment.balanceUsd, rule);
   const now = options.now ?? Date.now();
   const previous = await readAlertState();
 
   const decision = shouldSendBalanceAlert({
-    level: assessment.level,
+    level: alertLevel,
     previous,
     now,
     resendHours: balanceAlertResendHours(),
   });
 
   const base = {
-    level: assessment.level,
+    level: alertLevel,
     balanceUsd: assessment.balanceUsd,
     maxOrderUsd: assessment.maxOrderUsd,
     costCeilingUsd: assessment.costCeilingUsd,
@@ -345,6 +358,8 @@ export async function checkFazercardsBalance(
     assessment,
     siteName: config.name,
     siteUrl: config.url,
+    rule,
+    alertLevel,
   });
 
   const result = await sendEmail({ to: recipient, ...message });
@@ -353,7 +368,7 @@ export async function checkFazercardsBalance(
   // pendant 24 h).
   if (result.ok) {
     await writeAlertState({
-      level: assessment.level,
+      level: alertLevel,
       sentAt: now,
       balanceUsd: assessment.balanceUsd,
     });

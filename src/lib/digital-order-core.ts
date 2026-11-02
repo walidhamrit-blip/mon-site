@@ -10,6 +10,7 @@ import {
   denominationUnitPrice,
   type DigitalProduct,
 } from "@/lib/digital-types";
+import { MAX_DIGITAL_ORDER_USD } from "@/lib/digital-sales-policy";
 import type { GiftCardCode } from "@/lib/reloadly";
 
 /* --------------------------------- Statuts --------------------------------- */
@@ -125,6 +126,15 @@ export function quoteDigitalOrder(
     };
   }
 
+  const totalUsd = Math.round(unitPriceUsd * quantity * 100) / 100;
+  if (totalUsd > MAX_DIGITAL_ORDER_USD) {
+    return {
+      ok: false,
+      error: "above_limit",
+      message: `Montant maximum ${MAX_DIGITAL_ORDER_USD} $ par commande.`,
+    };
+  }
+
   return {
     ok: true,
     quote: {
@@ -134,7 +144,7 @@ export function quoteDigitalOrder(
       region: denomination.region,
       quantity,
       unitPriceUsd,
-      totalUsd: Math.round(unitPriceUsd * quantity * 100) / 100,
+      totalUsd,
       reloadlyUnitPrice: denominationUnitPrice(denomination),
     },
   };

@@ -27,6 +27,7 @@ import {
   fazercardsGameKeyOrder,
   fazercardsGiftCardOrder,
   fazercardsMaxOrderUsd,
+  fazercardsDeliveryMaxOrderUsd,
   fazercardsMinOrderUsd,
   fazercardsOrder,
   fazercardsTopupOrder,
@@ -630,7 +631,7 @@ export async function deliverPaidFazercardsOrder(
   }
 
   const totalUsd = Number(loaded.totalUsd);
-  const cap = fazercardsMaxOrderUsd();
+  const cap = fazercardsDeliveryMaxOrderUsd();
   if (!Number.isFinite(totalUsd) || totalUsd <= 0) {
     return flagManual(loaded, "Montant de commande invalide.");
   }

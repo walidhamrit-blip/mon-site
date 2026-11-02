@@ -12,16 +12,10 @@ import {
 } from "@/lib/digital-types";
 import { RegionalAlert } from "@/components/regional-alert";
 import { recommendedNetworksLabel } from "@/lib/payment-networks";
+import { MAX_DIGITAL_ORDER_USD } from "@/lib/digital-sales-policy";
 import { playerIdGate } from "@/lib/fazercards-player-id-core";
 
 const MAX_QUANTITY = 10;
-/**
- * Plafond d'achat automatique affiché côté navigateur. Il reflète la valeur
- * serveur (`FAZERCARDS_MAX_ORDER_USD`, 300 $ par défaut) : le serveur reste
- * seul juge, ceci évite juste de proposer une quantité qui sera refusée.
- */
-const MAX_ORDER_USD = 300;
-
 /** Mémorise la dernière commande du visiteur pour préremplir le suivi. */
 export const DIGITAL_LAST_ORDER_KEY = "nukhba:digital-order";
 
@@ -96,9 +90,9 @@ export function DigitalBuyDialog({ product, denominationId, onClose }: Props) {
     isFazercards && selected != null && total < MIN_CRYPTO_INVOICE_USD;
   // Plafond d'achat automatique : au-delà, la commande basculerait en
   // livraison manuelle après paiement. Le navigateur reflète la règle
-  // serveur (FAZERCARDS_MAX_ORDER_USD) pour éviter d'encaisser pour rien.
+  // serveur pour éviter d'encaisser pour rien.
   const aboveLimit =
-    isFazercards && selected != null && total > MAX_ORDER_USD;
+    selected != null && Math.round(total * 100) / 100 > MAX_DIGITAL_ORDER_USD;
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
@@ -554,8 +548,8 @@ export function DigitalBuyDialog({ product, denominationId, onClose }: Props) {
         {aboveLimit && (
           <p className="mt-3 rounded-lg border border-amber-300/60 bg-amber-50 px-3 py-2 text-[12.5px] leading-5 text-amber-800">
             {ar
-              ? `الحد الأقصى ${MAX_ORDER_USD} $ للطلب الواحد — قلّل الكمية أو تواصل معنا على واتساب.`
-              : `Maximum ${MAX_ORDER_USD} $ per order — reduce the quantity or contact us on WhatsApp.`}
+              ? `الحد الأقصى ${MAX_DIGITAL_ORDER_USD} $ للطلب الواحد — قلّل الكمية أو تواصل معنا على واتساب.`
+              : `Maximum ${MAX_DIGITAL_ORDER_USD} $ per order — reduce the quantity or contact us on WhatsApp.`}
           </p>
         )}
 
