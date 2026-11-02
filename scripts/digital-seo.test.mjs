@@ -115,3 +115,44 @@ test("le prix d'entrée reste présent dans le title quand il existe", () => {
   assert.ok(seo.productSeoTitle(mena, "en").includes("$1.50"));
   assert.ok(seo.productSeoTitle(mena, "ar").includes("1.50"));
 });
+
+test("A02 : un top-up ne promet PAS de code par e-mail — livraison = Player ID", () => {
+  const descAr = seo.productSeoDescription(mena, "ar");
+  const descEn = seo.productSeoDescription(mena, "en");
+  assert.ok(descAr.includes("معرّف اللاعب"), `desc AR top-up : ${descAr}`);
+  assert.ok(!descAr.includes("بريدك"), `desc AR top-up ne doit pas promettre l'e-mail : ${descAr}`);
+  assert.ok(descEn.includes("player ID"), `desc EN top-up : ${descEn}`);
+  assert.ok(!descEn.includes("to your email"), `desc EN top-up ne doit pas promettre l'e-mail : ${descEn}`);
+
+  const faqAr = seo.productFaqs(mena, "ar").find((f) => f.q.includes("بعد الدفع"));
+  assert.ok(faqAr.a.includes("معرّف اللاعب"), `FAQ AR top-up : ${faqAr.a}`);
+  assert.ok(!faqAr.a.includes("بريدك"), `FAQ AR top-up ne doit pas promettre l'e-mail : ${faqAr.a}`);
+  const faqEn = seo.productFaqs(mena, "en").find((f) => /after payment/i.test(f.q));
+  assert.ok(faqEn.a.includes("player ID"), `FAQ EN top-up : ${faqEn.a}`);
+});
+
+test("A02 : une carte cadeau se livre bien par e-mail (code)", () => {
+  const card = product({
+    kind: "gift_card",
+    slug: "fzr-giftcard-steam-eu",
+    platform: "Steam",
+    titleEn: "Gift Card — Steam Wallet (EU)",
+    titleAr: "بطاقة هدايا — محفظة Steam (EU)",
+    regions: ["EU"],
+  });
+  assert.ok(/emailed/i.test(seo.productSeoDescription(card, "en")));
+  assert.ok(seo.productSeoDescription(card, "ar").includes("بريدك الإلكتروني"));
+  const faqEn = seo.productFaqs(card, "en").find((f) => /after payment/i.test(f.q));
+  assert.ok(/email/i.test(faqEn.a), `FAQ EN carte : ${faqEn.a}`);
+});
+
+test("A02 : deliveryText couvre les kinds — jamais d'e-mail pour un top-up", () => {
+  assert.ok(seo.deliveryText(mena, "en").includes("player ID"));
+  assert.ok(seo.deliveryText(mena, "ar").includes("معرّف اللاعب"));
+  const card = product({ kind: "gift_card" });
+  assert.ok(/emailed/i.test(seo.deliveryText(card, "en")));
+  const key = product({ kind: "software_key" });
+  assert.ok(/emailed/i.test(seo.deliveryText(key, "en")));
+  const sub = product({ kind: "subscription_code" });
+  assert.ok(/emailed/i.test(seo.deliveryText(sub, "en")));
+});

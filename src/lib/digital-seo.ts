@@ -183,6 +183,27 @@ export function productSeoName(product: DigitalProduct, locale: Locale): string 
   return `${base} (${labels})`;
 }
 
+/**
+ * Mode de livraison RÉEL d'une fiche, selon sa nature (A02, audit SEO/GEO
+ * 2026-11-01) :
+ *  - `game_topup` : recharge directe sur le Player ID — aucun code par e-mail ;
+ *  - cartes cadeaux, clés logicielles, abonnements : code envoyé par e-mail.
+ * Ne jamais promettre l'e-mail pour un top-up (et inversement) : c'était une
+ * contradiction confirmée sur les fiches en production.
+ */
+export function deliveryText(product: DigitalProduct, locale: Locale): string {
+  const ar = locale === "ar";
+  const platform = product.platform || (ar ? "المنصة" : "the platform");
+  if (product.kind === "game_topup") {
+    return ar
+      ? `يُشحن الرصيد مباشرة على معرّف اللاعب في ${platform} بعد الدفع — لا يُرسل أي كود بالبريد.`
+      : `The balance is credited directly to your ${platform} player ID after payment — no code is emailed.`;
+  }
+  return ar
+    ? "يُرسل الكود إلى بريدك الإلكتروني مباشرة بعد الدفع."
+    : "The code is emailed to you right after payment.";
+}
+
 /** Questions fréquentes d'une fiche produit — toutes visibles sur la page. */
 export function productFaqs(product: DigitalProduct, locale: Locale): DigitalFaq[] {
   const ar = locale === "ar";
@@ -198,11 +219,11 @@ export function productFaqs(product: DigitalProduct, locale: Locale): DigitalFaq
   const faqs: DigitalFaq[] = [
     {
       q: ar ? `كيف أستلم ${title} بعد الدفع؟` : `How do I receive ${title} after payment?`,
+      // A02 : le mode de livraison dépend de la nature du produit (top-up =
+      // Player ID, pas d'e-mail) — fallback cohérent, note fournisseur prioritaire.
       a: ar
-        ? product.deliveryNoteAr ||
-          "يُرسل الكود إلى بريدك الإلكتروني مباشرة بعد تأكيد الدفع، عادة خلال دقائق."
-        : product.deliveryNoteEn ||
-          "The code is sent to your email right after payment confirmation, usually within minutes.",
+        ? product.deliveryNoteAr || deliveryText(product, "ar")
+        : product.deliveryNoteEn || deliveryText(product, "en"),
     },
     {
       q: ar ? `هل ${title} تعمل في بلدي؟` : `Does ${title} work in my country?`,
@@ -338,8 +359,8 @@ export function productSeoDescription(
   // toutes les fiches. Longueur visée : ≤ 155 caractères, sans troncature.
   if (ar) {
     const head = `${title} — ${kind}${from != null ? ` من ${from.toFixed(2)} دولار` : ""}.`;
-    return `${head} النطاق: ${region}. تسليم رقمي على بريدك بعد الدفع (1 USD = 1 USDT).`;
+    return `${head} النطاق: ${region}. ${deliveryText(product, "ar")} (1 USD = 1 USDT).`;
   }
   const head = `${title} — ${kind}${from != null ? ` from $${from.toFixed(2)}` : ""}.`;
-  return `${head} Region: ${region}. Digital delivery after payment (1 USD = 1 USDT).`;
+  return `${head} Region: ${region}. ${deliveryText(product, "en")} (1 USD = 1 USDT).`;
 }
