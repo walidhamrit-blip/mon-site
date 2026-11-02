@@ -377,10 +377,19 @@ NOWPayments pour prendre une place en avance dans le planning.
   (`plan` | `reservation`) et `demo_slug`.
 
 ## SEO et référencement IA
+
+**Référence actuelle — 1er novembre 2026 :**
+- [Audit complet SEO / GEO, constats publics et limites des mesures](docs/audit-seo-geo-2026-11-01.md)
+- [Configuration du sitemap dans Google Search Console, pas à pas](docs/guide-gsc-sitemap-2026-11-01.md)
+
+Le sitemap existe déjà à `/sitemap.xml`. Un score interne ou des tests verts ne
+prouvent ni l’indexation, ni le classement, ni des citations IA. Les anciens
+rapports ci-dessous restent des historiques d’implémentation.
+
 - Métadonnées complètes par page (title, description, canonical, Open Graph
   ar_LY + alternate en_US, Twitter Card) générées via `src/lib/seo.ts`
 - Données structurées JSON-LD servies dans le HTML initial : Organization,
-  WebSite, ProfessionalService (SEO local, horaires, avis agrégé), FAQPage
+  WebSite, ProfessionalService (SEO local, horaires, sans avis auto-attribués), FAQPage
   (7 Q/R), OfferCatalog (prix USD), BreadcrumbList, CollectionPage,
   CreativeWork pour chaque réalisation
 - Aperçus des réalisations servis depuis `public/previews` (WebP desktop et
@@ -396,14 +405,16 @@ NOWPayments pour prendre une place en avance dans le planning.
   avec sommaire sticky, FAQ `FAQPage`, tableau tarifaire lu en direct depuis
   l'admin, schéma `BlogPosting` (dates + `wordCount`), carte OG dédiée et
   maillage vers services, secteurs et réalisations
-- **Badge de netlinking client** `/badge` : page officielle avec extraits
+- **Badge de crédit client** `/badge` : page officielle avec extraits
   copiables (HTML, React/Next.js) et visuels SVG auto-hébergés
-  (`public/badge/nukhba-badge{,-light}.svg`) à poser dans le pied de page de
-  chaque site livré — lien dofollow vers le domaine de l'agence
-  (`?utm_source=client_footer`, traçable). `npm run badge:audit` vérifie
-  chaque site client (dofollow / nofollow / manquant / hors ligne) et alimente
-  `public/badge/clients.json` ; workflow hebdomadaire + issue de suivi.
-  Procédure : `docs/badge-netlinking.md`.
+  (`public/badge/nukhba-badge{,-light}.svg`). Crédit volontaire, sans imposer
+  de lien dofollow ni d’ancre optimisée ; qualifier les liens commerciaux
+  selon leur contexte. Le paramètre `utm_source=client_footer` permet le suivi.
+  `npm run badge:audit` observe les liens (dofollow / nofollow / manquant /
+  hors ligne) et alimente `public/badge/clients.json` ; workflow hebdomadaire.
+  Les extraits existants restent à revoir selon les recommandations de
+  [l’audit actualisé](docs/audit-seo-geo-2026-11-01.md#10-autorité-liens-et-confiance).
+  Procédure technique historique : `docs/badge-netlinking.md`.
 - `/llms.txt` et `/llms-full.txt` **dynamiques** (`src/lib/llms-txt.ts`) :
   résumé et base de connaissances bilingue régénérés par requête depuis la
   base admin, avec `ETag` pour la revalidation des crawlers IA
