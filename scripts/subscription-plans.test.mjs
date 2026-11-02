@@ -2,7 +2,7 @@
 /** Tests du catalogue d'abonnements, des règles de période, grâce, statut, relances et gabarits. */
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { existsSync, mkdtempSync, rmSync, statSync } from "node:fs";
+import { existsSync, mkdtempSync, readFileSync, rmSync, statSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -372,4 +372,15 @@ test("gabarit HTML : données échappées", () => {
   const mail = mod.buildNoticeEmail("expired", { ...data, planName: "<script>x</script>" });
   assert.ok(!mail.html.includes("<script>x</script>"));
   assert.ok(mail.html.includes("&lt;script&gt;"));
+});
+
+test("A03 : la page abonnements ne promet pas un paiement unique « sans renouvellement »", () => {
+  // Audit SEO/GEO 2026-11-01 (A03) : l'hébergement n'est inclus que la
+  // première année ; aucune page ne doit nier le renouvellement annuel.
+  const page = readFileSync(join(srcRoot, "app/(site)/abonnements/page.tsx"), "utf8");
+  assert.ok(!page.includes("بلا تجديد"), "la page abonnements ne doit pas nier le renouvellement");
+  assert.ok(!/no annual renewal|nothing to renew/i.test(page));
+  // La nuance correcte doit être présente : hébergement 1 an inclus puis renouvellement.
+  assert.ok(page.includes("سنة استضافة أولى مشمولة"), "préciser l'hébergement 1 an inclus (AR)");
+  assert.ok(/first year of hosting included/i.test(page), "préciser l'hébergement 1 an inclus (EN)");
 });
