@@ -438,3 +438,24 @@ test("runSeoAudit calcule un score 100/100 quand les réalisations sont auto-com
   assert.equal(report.summary.error, 0);
   assert.equal(report.summary.demosWithCompleteSeo, defaultDemos.length);
 });
+
+test("A09 : le JSON-LD openingHoursSpecification est dérivé de config.hoursEn, jamais en dur", async () => {
+  const { openingHoursFromConfig } = await import("../src/lib/opening-hours.ts");
+  const lb = localBusinessJsonLd(siteConfig, defaultTestimonials);
+  const spec = lb.openingHoursSpecification[0];
+  const expected = openingHoursFromConfig(siteConfig.hoursEn);
+  assert.deepEqual(spec.dayOfWeek, expected.dayOfWeek);
+  assert.equal(spec.opens, expected.opens);
+  assert.equal(spec.closes, expected.closes);
+  // Cas concret : la config actuelle se termine à 23:00.
+  assert.equal(spec.closes, "23:00");
+  // Et si l'admin change les horaires dans les réglages, le JSON-LD suit.
+  const changed = { ...siteConfig, hoursEn: "Mon - Fri: 8:00 AM - 6:00 PM" };
+  const lb2 = localBusinessJsonLd(changed, defaultTestimonials);
+  const spec2 = lb2.openingHoursSpecification[0];
+  assert.equal(spec2.closes, "18:00");
+  assert.equal(spec2.opens, "08:00");
+  assert.deepEqual(spec2.dayOfWeek, [
+    "Monday", "Tuesday", "Wednesday", "Thursday", "Friday",
+  ]);
+});

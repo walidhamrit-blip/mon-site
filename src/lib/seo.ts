@@ -11,6 +11,7 @@ import {
 } from "@/lib/market";
 import type { Demo, Faq, ProcessStep, Testimonial } from "@/lib/site-types";
 import { DEFAULT_SITE_DOMAIN, domainFromOrigin } from "@/lib/site-identity";
+import { openingHoursFromConfig } from "@/lib/opening-hours";
 
 /**
  * Central SEO + structured-data (JSON-LD) helpers.
@@ -36,6 +37,9 @@ type SiteConfig = {
   whatsapp: string;
   address: string;
   addressEn: string;
+  /** Horaires affichés (source unique, éditable dans l'admin). */
+  hours?: string;
+  hoursEn?: string;
   /** Profil de marché (ville, pays, fuseau, devise locale…). */
   market?: (MarketConfig & { globalReach?: boolean }) | null;
   /** Apparence : langue de référence, thème, mode. */
@@ -280,6 +284,9 @@ export function localBusinessJsonLd(
   const ar = marketLabels(market, "ar");
   const globalReach = Boolean(config.market?.globalReach) || market.id === "global";
   const hasGeo = market.localRadiusKm > 0 && (market.lat !== 0 || market.lng !== 0);
+  // A09 : l'horaire structuré est dérivé du texte des réglages (source unique),
+  // jamais écrit en dur ici — sinon le JSON-LD diverge du texte AR/EN affiché.
+  const openingHours = openingHoursFromConfig(config.hoursEn ?? "");
   return {
     "@context": "https://schema.org",
     "@type": "ProfessionalService",
@@ -350,17 +357,11 @@ export function localBusinessJsonLd(
     openingHoursSpecification: [
       {
         "@type": "OpeningHoursSpecification",
-        // Samedi → jeudi (fermeture le vendredi), cf. config.hours.
-        dayOfWeek: [
-          "Saturday",
-          "Sunday",
-          "Monday",
-          "Tuesday",
-          "Wednesday",
-          "Thursday",
-        ],
-        opens: "09:00",
-        closes: "23:00",
+        // Dérivé de config.hoursEn (A09) : mêmes jours et mêmes heures que le
+        // texte affiché en AR/EN.
+        dayOfWeek: openingHours.dayOfWeek,
+        opens: openingHours.opens,
+        closes: openingHours.closes,
       },
     ],
     contactPoint: {
