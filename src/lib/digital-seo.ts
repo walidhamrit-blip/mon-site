@@ -163,6 +163,26 @@ export function productDisplayName(product: DigitalProduct, locale: Locale): str
   return name || raw;
 }
 
+/**
+ * Nom SEO d'une fiche produit : nom commercial + qualificatif de région.
+ *
+ * Quand la fiche est verrouillée sur des régions précises (MENA, EU, SA…),
+ * la région fait partie de l'identité du produit : deux variantes d'un même
+ * jeu (ex. « Free Fire (MENA) » et « Free Fire (EU) ») doivent avoir des
+ * title, H1 et nom structuré DISTINCTS — sinon les moteurs voient deux
+ * pages dupliquées (audit SEO/GEO 2026-11-01, point A01). Les fiches
+ * globales restent sans suffixe.
+ */
+export function productSeoName(product: DigitalProduct, locale: Locale): string {
+  const base = productDisplayName(product, locale);
+  const closed = regionalOnlyRegions(product.regions);
+  if (closed.length === 0) return base;
+  const labels = closed
+    .map((region) => regionLabel(region, locale))
+    .join(locale === "ar" ? "، " : ", ");
+  return `${base} (${labels})`;
+}
+
 /** Questions fréquentes d'une fiche produit — toutes visibles sur la page. */
 export function productFaqs(product: DigitalProduct, locale: Locale): DigitalFaq[] {
   const ar = locale === "ar";
@@ -269,7 +289,9 @@ export function storeFaqs(locale: Locale): DigitalFaq[] {
  */
 export function productSeoTitle(product: DigitalProduct, locale: Locale): string {
   const ar = locale === "ar";
-  const name = productDisplayName(product, locale);
+  // Nom SEO avec la région quand la fiche est régionale (A01) : deux
+  // variantes d'un même jeu ne doivent pas partager le même title.
+  const name = productSeoName(product, locale);
   const kind = ar
     ? DIGITAL_KIND_LABELS[product.kind].ar
     : DIGITAL_KIND_LABELS[product.kind].en;

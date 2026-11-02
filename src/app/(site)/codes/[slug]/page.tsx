@@ -8,9 +8,9 @@ import { getSiteDataCached } from "@/lib/store";
 import { resolveMarket } from "@/lib/market";
 import { DIGITAL_KIND_LABELS, lowestPriceUsd } from "@/lib/digital-types";
 import {
-  productDisplayName,
   productFaqs,
   productSeoDescription,
+  productSeoName,
   productSeoTitle,
 } from "@/lib/digital-seo";
 
@@ -99,8 +99,9 @@ export default async function DigitalProductPage({
   // Nom nettoyé (« Game Top-Up — PUBG Mobile (Auto) » → « PUBG Mobile ») :
   // c'est lui qui sert de H1, de nom de produit structuré et de texte de
   // maillage. Les qualificatifs opérationnels du fournisseur n'ont pas leur
-  // place dans un titre indexé.
-  const localeTitle = productDisplayName(product, locale);
+  // place dans un titre indexé. La région est conservée quand la fiche est
+  // régionale (A01) : « Free Fire (MENA) » ≠ « Free Fire (EU) ».
+  const localeTitle = productSeoName(product, locale);
   const localeDescription = ar ? product.descriptionAr : product.descriptionEn;
   const faqs = productFaqs(product, locale);
 
@@ -116,9 +117,9 @@ export default async function DigitalProductPage({
     .slice(0, 4)
     .map((candidate) => ({
       slug: candidate.slug,
-      title: productDisplayName(candidate, locale),
-      titleAr: productDisplayName(candidate, "ar"),
-      titleEn: productDisplayName(candidate, "en"),
+      title: productSeoName(candidate, locale),
+      titleAr: productSeoName(candidate, "ar"),
+      titleEn: productSeoName(candidate, "en"),
       platform: candidate.platform,
       image: candidate.image,
       fromUsd: lowestPriceUsd(candidate),
