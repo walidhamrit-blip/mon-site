@@ -64,10 +64,8 @@ type SiteConfig = {
       customizationPercent?: number | null;
     }>;
   };
-  stats?: {
-    ratingValue?: string;
-    reviewCount?: string;
-  };
+  // A11 : pas de `stats.ratingValue` / `reviewCount` — aucune note
+  // agrégée auto-déclarée n'alimente le JSON-LD (voir localBusinessJsonLd).
   standaloneServices?: ReadonlyArray<{
     id: string;
     titleAr: string;
@@ -380,8 +378,8 @@ export function localBusinessJsonLd(
     // entreprise sur sa propre page (self-serving reviews) et considère leur
     // balisage comme du spam de données structurées. Les témoignages restent
     // visibles dans la section dédiée ; les avis éligibles sont ceux d'une
-    // fiche Google Business Profile vérifiée. Les mentions « 4.9/5 » de
-    // l'interface sont donc décoratives, pas un signal SEO.
+    // fiche Google Business Profile vérifiée. Cohérence A11 : l'interface
+    // n'affiche ni note moyenne ni compteur d'avis agrégé non sourcé.
     parentOrganization: { "@id": absoluteUrl(config, ORG_ID) },
   };
 }
