@@ -12,7 +12,13 @@
     />
     <meta name="keywords" content="تولين, بضائع أوروبية, طرابلس, ليبيا, أثاث, أجهزة كهربائية, بريكولاج, استيراد" />
     <meta name="author" content="TOLIN European Goods" />
-    <meta name="robots" content="index, follow" />
+    <!--
+      Aperçu embarqué uniquement (iframe même origine, voir
+      src/components/live-site-frames.tsx). Ce document autonome ne doit pas
+      être indexé : la page éditoriale /demos/tulin-magazin reste, elle,
+      indexable et canonicalisée. Audit SEO/GEO 2026-11-01, point A13.
+    -->
+    <meta name="robots" content="noindex, follow" />
 
     <!-- Open Graph / WhatsApp / Facebook -->
     <meta property="og:type" content="website" />

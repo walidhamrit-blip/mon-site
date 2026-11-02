@@ -63,3 +63,35 @@ test("CSRF accepte l'hôte réel de la requête (Host / X-Forwarded-Host / VERCE
   assert.match(csrfSrc, /VERCEL_URL/);
   assert.match(csrfSrc, /VERCEL_PROJECT_PRODUCTION_URL/);
 });
+
+test("A13 : la démo HTML embarquée reste noindex et hors du sitemap", () => {
+  const demoDir = path.join(rootDir, "public/live-demos");
+  const demoFiles = fs
+    .readdirSync(demoDir, { withFileTypes: true })
+    .filter((entry) => entry.isDirectory())
+    .map((entry) => path.join(demoDir, entry.name, "index.html"))
+    .filter((file) => fs.existsSync(file));
+  assert.ok(demoFiles.length > 0, "Au moins une démo HTML autonome attendue");
+
+  for (const file of demoFiles) {
+    const html = fs.readFileSync(file, "utf8");
+    const relative = path.relative(rootDir, file);
+    const robots = html.match(/<meta\s+name=["']robots["']\s+content=["']([^"']+)["']/i);
+    assert.ok(robots, `${relative} doit déclarer explicitement une directive robots`);
+    assert.match(robots[1], /noindex/i, `${relative} est un aperçu embarqué : noindex attendu`);
+    assert.doesNotMatch(robots[1], /(^|,)\s*index\b/i, `${relative} ne doit pas rester indexable`);
+  }
+
+  assert.match(
+    nextConfigSrc,
+    /source:\s*"\/live-demos\/:path\*"[\s\S]*?key:\s*"X-Robots-Tag",\s*value:\s*"noindex/,
+    "next.config.ts doit confirmer le noindex des démos par X-Robots-Tag",
+  );
+
+  const sitemapSrc = fs.readFileSync(path.join(rootDir, "src/app/sitemap.ts"), "utf8");
+  assert.doesNotMatch(
+    sitemapSrc,
+    /live-demos/,
+    "les aperçus /live-demos/* ne doivent jamais entrer dans le sitemap",
+  );
+});
