@@ -30,7 +30,7 @@ import { DigitalBuyDialog } from "@/components/digital-buy-dialog";
 import { RegionalAlert } from "@/components/regional-alert";
 import { gamePlatformSummary } from "@/lib/digital-platform-core";
 import { productVisual } from "@/lib/game-covers";
-import { productDisplayName, productFaqs, redeemSteps } from "@/lib/digital-seo";
+import { productFaqs, productSeoName, redeemSteps } from "@/lib/digital-seo";
 
 /**
  * Fiche d'un produit du catalogue digital.
@@ -56,14 +56,16 @@ export function DigitalProductDetails({
   related = [],
 }: {
   product: DigitalProduct;
-  /** Nom commercial nettoyé (voir `productDisplayName`) — H1 et textes. */
+  /** Nom SEO (voir `productSeoName`) — H1 et textes. */
   displayName: string;
   related?: RelatedDigitalProduct[];
 }) {
   const siteConfig = useSiteConfig();
   const { locale } = useI18n();
   const ar = locale === "ar";
-  const displayName = productDisplayName(product, locale) || initialDisplayName;
+  // H1 avec la région quand la fiche est régionale (A01) : deux variantes
+  // d'un même jeu ne doivent pas afficher le même titre.
+  const displayName = productSeoName(product, locale) || initialDisplayName;
   // Contenu unique par fiche : étapes d'activation et FAQ générées à partir
   // des données réelles (type, plateforme, régions, montants).
   const steps = redeemSteps(product, locale);
