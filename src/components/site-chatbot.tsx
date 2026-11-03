@@ -209,7 +209,7 @@ function ChatShell() {
   };
 
   /** Question libre : `/api/chat` (site complet), repli local si échec. */
-  const ask = async (question: string) => {
+  const ask = async (question: string, fallbackNodeId?: string) => {
     const history = messages
       .filter((m) => m.key !== 0)
       .slice(-MAX_HISTORY_MESSAGES)
@@ -245,19 +245,21 @@ function ChatShell() {
       if (controller.signal.aborted && abortRef.current !== controller) return; // remplacé
       if (error instanceof Error && error.name !== "AbortError") setOnline(false);
       setTyping(false);
-      answerLocal(matchChatNode(question, nodes));
+      answerLocal(fallbackNodeId ?? matchChatNode(question, nodes));
     } finally {
       window.clearTimeout(timer);
     }
   };
 
   const pick = (suggestion: Suggestion) => {
-    if (suggestion.nodeId) {
+    // En ligne, toutes les puces passent par l'assistant complet (même
+    // comportement qu'une question tapée) ; hors ligne, réponse locale.
+    if (suggestion.nodeId && !online) {
       setMessages((prev) => [...prev, { key: nextKey.current++, role: "user", text: suggestion.label }]);
       setSuggestions([]);
       answerLocal(suggestion.nodeId);
     } else {
-      void ask(suggestion.label);
+      void ask(suggestion.label, suggestion.nodeId);
     }
   };
 
