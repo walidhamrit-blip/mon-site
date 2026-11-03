@@ -263,8 +263,10 @@ test("le dialogue d'achat route vers la caisse du bon fournisseur", () => {
 });
 
 test("les fiches produit ne sont plus pré-générées au build", () => {
-  assert.match(code(detailsPage), /export async function generateStaticParams\(\): Promise<\{ slug: string \}\[\]> \{ return \[\]; \}/);
-  assert.match(code(detailsPage), /export const revalidate = 60;/);
+  // A08 : rendu par requête pour servir AR/EN depuis la même URL selon ?lang.
+  assert.match(code(detailsPage), /export const dynamic = "force-dynamic";/);
+  assert.doesNotMatch(code(detailsPage), /export const revalidate = 60;/);
+  assert.doesNotMatch(code(detailsPage), /export async function generateStaticParams/);
 });
 
 test("l'API catalogue public n'expose jamais le coût d'achat", () => {

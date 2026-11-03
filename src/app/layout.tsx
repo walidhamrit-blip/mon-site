@@ -2,7 +2,7 @@ import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";
 import "./globals.css";
 import "./gaming.css";
-import { I18nProvider, type Locale } from "@/lib/i18n";
+import { I18nProvider } from "@/lib/i18n";
 import { ThemeProvider, type ThemeMode } from "@/components/theme-provider";
 import { SiteProvider } from "@/components/site-provider";
 import { CurrencyProvider } from "@/components/currency-provider";
@@ -22,6 +22,8 @@ import {
   websiteJsonLd,
 } from "@/lib/seo";
 import { marketLabels, resolveMarket } from "@/lib/market";
+import { languageAlternates, localizedAbsoluteUrl } from "@/lib/locale";
+import { requestLocale } from "@/lib/locale-server";
 
 /**
  * Métadonnéesracine — générées depuis la configuration VIVANTE
@@ -35,17 +37,16 @@ import { marketLabels, resolveMarket } from "@/lib/market";
 export async function generateMetadata(): Promise<Metadata> {
   const { config } = await getSiteDataCached();
   const market = resolveMarket(config.market);
-  const labels = marketLabels(market, "ar");
-  const labelsEn = marketLabels(market, "en");
   const globalReach = Boolean(config.market?.globalReach) || market.id === "global";
   const baseUrl = config.url || siteConfig.url;
 
-  // Langue de référence : celle du marché (arabe pour la Libye) sauf choix
-  // explicite dans /admin. Le HTML initial, les métadonnées et les données
-  // structurées doivent parler la même langue — sinon Google reçoit un
-  // signal contradictoire (cas historique : <html lang="en"> avec une
-  // description arabe).
-  const locale = siteLocale(config);
+  // L'URL (`?lang=en`) prime sur la langue de référence et sur toute
+  // préférence navigateur. HTML, métadonnées et JSON-LD restent alignés.
+  const { locale, isPublic } = await requestLocale(siteLocale(config));
+  const defaultLocale = siteLocale(config);
+  const labels = marketLabels(market, locale);
+  const labelsEn = marketLabels(market, "en");
+  const canonical = localizedAbsoluteUrl(baseUrl, "/", locale, defaultLocale);
   const title = serpTitle(
     globalReach
       ? locale === "ar"
@@ -91,17 +92,15 @@ export async function generateMetadata(): Promise<Metadata> {
     category: "technology",
     applicationName: "نخبة Nukhba",
     alternates: {
-      // Canonique racine : les pages internes surchargent avec leur propre URL.
-      // Les langues sont gérées côté client (pas d'URL /ar /en réelles) : on ne
-      // déclare donc pas de hreflang pointant vers des redirections — Google
-      // pénaliserait des alternates sans page canonique distincte.
-      canonical: "/",
+      // Canonique auto-référente + cluster AR/EN réciproque sur chaque URL.
+      canonical,
+      ...(isPublic ? { languages: languageAlternates(baseUrl, "/", defaultLocale) } : {}),
     },
     manifest: "/manifest.webmanifest",
     openGraph: {
       title,
       description,
-      url: baseUrl,
+      url: canonical,
       siteName: "نخبة Nukhba",
       locale: locale === "ar" ? ogLocale(market.locale) : "en_US",
       alternateLocale: locale === "ar" ? ["en_US"] : [ogLocale(market.locale)],
@@ -165,7 +164,7 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
   };
   // Même résolution que les métadonnées : HTML, `<html lang>` et contenu
   // initial ne peuvent pas diverger.
-  const defaultLocale: Locale = siteLocale(config);
+  const { locale: defaultLocale, urlLocale, isPublic } = await requestLocale(siteLocale(config));
   const defaultMode: ThemeMode = appearance.mode === "dark" ? "dark" : "light";
   const defaultPalette = resolveThemeId(appearance.themeId) ?? DEFAULT_THEME_ID;
 
@@ -225,7 +224,7 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
         style={{ fontFamily: "var(--font-cairo), var(--font-plex-ar), system-ui" }}
       >
         <ThemeProvider defaultMode={defaultMode} defaultPalette={defaultPalette}>
-          <I18nProvider defaultLocale={defaultLocale}>
+          <I18nProvider defaultLocale={defaultLocale} urlLocale={urlLocale ?? (isPublic ? defaultLocale : null)}>
             <SiteProvider config={config} content={content}>
               <CurrencyProvider
                 rates={config.currency?.rates ?? siteConfig.currency.rates}

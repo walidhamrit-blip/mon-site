@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import Link from "next/link";
+import { LocalizedLink as Link } from "@/components/localized-link";
 import { ArrowUpRight, Bitcoin } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import { CRYPTO_GUIDE_PATH, CRYPTO_GUIDE_SLUG } from "@/lib/blog";

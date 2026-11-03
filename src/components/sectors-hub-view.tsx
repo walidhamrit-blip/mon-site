@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import { LocalizedLink as Link } from "@/components/localized-link";
 import { useI18n } from "@/lib/i18n";
 import { fillTemplate } from "@/lib/text-template";
 import type { SectorSeo } from "@/lib/sectors";

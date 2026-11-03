@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { LocalizedLink as Link } from "@/components/localized-link";
 import { ArrowUpRight, Check } from "lucide-react";
 import type { Demo } from "@/lib/site-types";
 import type { siteConfig } from "@/lib/config";

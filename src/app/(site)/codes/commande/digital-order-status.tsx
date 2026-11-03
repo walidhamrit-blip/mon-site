@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import Link from "next/link";
+import { LocalizedLink as Link } from "@/components/localized-link";
 import {
   BadgeCheck,
   Check,

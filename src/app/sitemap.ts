@@ -6,6 +6,8 @@ import { getDemoCapturedAt, getDemoPreviewImages } from "@/lib/preview-manifest"
 import { digitalCatalogStatus, getDigitalCatalog } from "@/lib/digital-store";
 import { comparisonIds } from "@/lib/comparisons";
 import { lowestPriceUsd } from "@/lib/digital-types";
+import { languageAlternates, type Locale } from "@/lib/locale";
+import { siteLocale } from "@/lib/seo";
 
 /**
  * Le sitemap est rendu **à chaque requête**, jamais pré-généré au build.
@@ -37,6 +39,7 @@ export const dynamic = "force-dynamic";
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const { config, content } = await getSiteDataCached();
   const base = config.url.replace(/\/+$/, "");
+  const defaultLocale = siteLocale(config);
 
   const mainRoutes: MetadataRoute.Sitemap = [
     { url: `${base}/`, changeFrequency: "weekly", priority: 1 },
@@ -142,7 +145,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     };
   });
 
-  return [
+  const canonicalRoutes: MetadataRoute.Sitemap = [
     ...mainRoutes,
     ...sectorRoutes,
     ...serviceRoutes,
@@ -152,4 +155,17 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ...categoryRoutes,
     ...comparisonRoutes,
   ];
+
+  // Chaque page indexable existe en AR (URL historique) et EN (`?lang=en`).
+  // On publie les deux URLs avec le même cluster hreflang réciproque, pour que
+  // les moteurs découvrent la version anglaise même sans suivre le sélecteur.
+  return canonicalRoutes.flatMap((entry) => {
+    const path = entry.url.slice(base.length) || "/";
+    const languages = languageAlternates(base, path, defaultLocale);
+    return (["ar", "en"] as Locale[]).map((locale) => ({
+      ...entry,
+      url: languages[locale],
+      alternates: { languages },
+    }));
+  });
 }

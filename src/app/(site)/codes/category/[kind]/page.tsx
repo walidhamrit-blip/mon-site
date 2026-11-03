@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import Link from "next/link";
+import { LocalizedLink as Link } from "@/components/localized-link";
 import { notFound } from "next/navigation";
 import { cache } from "react";
 import { DigitalCategoryNavigation } from "@/components/digital-category-navigation";
@@ -9,7 +9,8 @@ import { categoryHref, categoryProducts, CATEGORY_PAGE_SIZE, getDigitalCategory,
 import { productSeoName } from "@/lib/digital-seo";
 import { digitalCatalogStatus, getDigitalCatalog } from "@/lib/digital-store";
 import { lowestPriceUsd } from "@/lib/digital-types";
-import { absoluteUrl, breadcrumbJsonLd, pageMetadata, siteLocale } from "@/lib/seo";
+import { breadcrumbJsonLd, pageMetadata, siteLocale } from "@/lib/seo";
+import { localizedAbsoluteUrl, localeFromSearchParams, type LocalePageProps, type RouteSearchParams } from "@/lib/locale";
 import { getSiteDataCached } from "@/lib/store";
 
 export const dynamic = "force-dynamic";
@@ -17,13 +18,13 @@ export const maxDuration = 60;
 
 type Props = {
   params: Promise<{ kind: string }>;
-  searchParams: Promise<{ page?: string | string[] }>;
+  searchParams: LocalePageProps["searchParams"];
 };
 
 // Metadata and HTML use the same catalogue snapshot during a request.
-const loadCategory = cache(async (kind: string, pageValue: string | string[] | undefined) => {
+const loadCategory = cache(async (kind: string, params: RouteSearchParams) => {
   const category = getDigitalCategory(kind);
-  const page = parseCategoryPage(pageValue);
+  const page = parseCategoryPage(params.page);
   if (!category || page === null) notFound();
   const { config } = await getSiteDataCached();
   const catalog = await getDigitalCatalog({ publicOnly: true });
@@ -31,29 +32,31 @@ const loadCategory = cache(async (kind: string, pageValue: string | string[] | u
   const listing = categoryProducts(degraded ? [] : catalog, category.kind, page);
   // A database outage must not turn previously valid paginated URLs into 404s.
   if (!degraded && page > listing.pageCount) notFound();
-  const ar = siteLocale(config) === "ar";
+  const locale = localeFromSearchParams(params, siteLocale(config));
+  const ar = locale === "ar";
   const name = ar ? category.ar : category.en;
   const suffix = page > 1 ? (ar ? ` — الصفحة ${page}` : ` — Page ${page}`) : "";
   const description = ar ? category.descriptionAr : category.descriptionEn;
-  return { category, page, config, degraded, listing, ar, name, suffix, description };
+  return { category, page, config, degraded, listing, ar, locale, name, suffix, description };
 });
 
 export async function generateMetadata({ params, searchParams }: Props): Promise<Metadata> {
   const { kind } = await params;
-  const { page: pageValue } = await searchParams;
-  const { category, page, config, degraded, name, suffix, description } = await loadCategory(kind, pageValue);
+  const query = await searchParams;
+  const { category, page, config, degraded, locale, name, suffix, description } = await loadCategory(kind, query);
   return pageMetadata(config, {
+    locale,
     path: categoryHref(category.kind, page),
     title: `${name}${suffix}`,
-    description: `${page > 1 ? (siteLocale(config) === "ar" ? `الصفحة ${page}. ` : `Page ${page}. `) : ""}${description}`,
+    description: `${page > 1 ? (locale === "ar" ? `الصفحة ${page}. ` : `Page ${page}. `) : ""}${description}`,
     noindex: degraded,
   });
 }
 
 export default async function DigitalCategoryPage({ params, searchParams }: Props) {
   const { kind } = await params;
-  const { page: pageValue } = await searchParams;
-  const { category, page, config, degraded, listing, ar, name, suffix, description } = await loadCategory(kind, pageValue);
+  const query = await searchParams;
+  const { category, page, config, degraded, listing, ar, locale, name, suffix, description } = await loadCategory(kind, query);
   const path = categoryHref(category.kind, page);
   return (
     <>
@@ -62,17 +65,17 @@ export default async function DigitalCategoryPage({ params, searchParams }: Prop
           { name: ar ? "الرئيسية" : "Home", path: "/" },
           { name: ar ? "الأكواد" : "Digital codes", path: "/codes" },
           { name: `${name}${suffix}`, path },
-        ]),
+        ], locale),
         {
           "@context": "https://schema.org", "@type": "CollectionPage",
-          "@id": `${absoluteUrl(config, path)}#collection`, url: absoluteUrl(config, path),
+          "@id": `${localizedAbsoluteUrl(config.url, path, locale, siteLocale(config))}#collection`, url: localizedAbsoluteUrl(config.url, path, locale, siteLocale(config)),
           name: `${name}${suffix}`, description, inLanguage: ar ? "ar" : "en",
           ...(!degraded ? { mainEntity: {
             "@type": "ItemList", numberOfItems: listing.products.length,
             itemListElement: listing.products.map((product, index) => ({
               "@type": "ListItem", position: (page - 1) * CATEGORY_PAGE_SIZE + index + 1,
               name: productSeoName(product, ar ? "ar" : "en"),
-              url: absoluteUrl(config, `/codes/${product.slug}`),
+              url: localizedAbsoluteUrl(config.url, `/codes/${product.slug}`, locale, siteLocale(config)),
             })),
           } } : {}),
         },

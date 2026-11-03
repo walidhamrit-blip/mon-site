@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { LocalizedLink as Link } from "@/components/localized-link";
 import Image from "next/image";
 import { ArrowUpRight, Gamepad2, ShieldCheck, Zap } from "lucide-react";
 import { DIGITAL_KIND_LABELS, type DigitalKind } from "@/lib/digital-types";

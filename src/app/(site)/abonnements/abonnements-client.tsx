@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useI18n } from "@/lib/i18n";
+import { localizedPath } from "@/lib/locale";
 
 export interface SubscriptionPlanView {
   id: string;
@@ -97,6 +98,7 @@ export function AbonnementsClient({
           email,
           phone,
           acceptGraceRule: true,
+          locale,
         }),
       });
       const data = (await response.json().catch(() => ({}))) as
@@ -144,7 +146,7 @@ export function AbonnementsClient({
           {success.notice}
         </p>
         <a
-          href={success.trackingUrl}
+          href={localizedPath(success.trackingUrl, locale)}
           className="inline-flex items-center rounded-2xl bg-[var(--accent)] px-5 py-3 font-bold text-[var(--accent-foreground)]"
         >
           {ar ? "متابعة اشتراكي" : "Follow my subscription"}

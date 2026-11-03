@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import { pageLocale } from "@/lib/locale-server";
+import type { LocalePageProps } from "@/lib/locale";
 import { notFound } from "next/navigation";
 import { getSiteDataCached } from "@/lib/store";
 import { breadcrumbJsonLd, pageMetadata, siteLocale } from "@/lib/seo";
@@ -19,16 +21,18 @@ export async function generateStaticParams() {
 
 export async function generateMetadata({
   params,
+  searchParams,
 }: {
   params: Promise<{ sector: string }>;
-}): Promise<Metadata> {
+} & LocalePageProps): Promise<Metadata> {
   const { sector: sectorId } = await params;
   const sector = getSectorSeo(sectorId);
   if (!sector) return {};
   const { config } = await getSiteDataCached();
   // Métadonnées dans la langue principale du site (/admin).
-  const locale = siteLocale(config);
+  const locale = await pageLocale(config, searchParams);
   return pageMetadata(config, {
+    locale,
     path: `/sectors/${sector.id}`,
     title: locale === "ar" ? sector.titleAr : sector.titleEn,
     description: locale === "ar" ? sector.descriptionAr : sector.descriptionEn,
@@ -40,14 +44,16 @@ export async function generateMetadata({
 
 export default async function SectorPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ sector: string }>;
-}) {
+} & LocalePageProps) {
   const { sector: sectorId } = await params;
   const sector = getSectorSeo(sectorId);
   if (!sector) notFound();
 
   const { config, content } = await getSiteDataCached();
+  const locale = await pageLocale(config, searchParams);
   const demosInSector = getDemosForSector(content.demos, sectorId);
 
   // Fonctionnalités réellement livrées dans ce secteur (agrégées depuis
@@ -89,8 +95,8 @@ export default async function SectorPage({
     .filter((item): item is NonNullable<typeof item> => Boolean(item))
     .map((item) => ({ id: item.id, labelAr: item.labelAr, labelEn: item.labelEn }));
 
-  const collectionLd = sectorCollectionJsonLd(config, sector, demosInSector);
-  const faqLd = sectorFaqJsonLd(sector);
+  const collectionLd = sectorCollectionJsonLd(config, sector, demosInSector, locale);
+  const faqLd = sectorFaqJsonLd(sector, locale);
 
   return (
     <>
@@ -100,7 +106,7 @@ export default async function SectorPage({
             { name: "الرئيسية", path: "/" },
             { name: "القطاعات", path: "/sectors" },
             { name: sector.labelAr, path: `/sectors/${sector.id}` },
-          ]),
+          ], locale),
           collectionLd,
           faqLd,
         ]}

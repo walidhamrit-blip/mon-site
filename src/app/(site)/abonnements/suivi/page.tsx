@@ -1,16 +1,28 @@
 import type { Metadata } from "next";
-import Link from "next/link";
+import { pageLocale } from "@/lib/locale-server";
+import type { LocalePageProps } from "@/lib/locale";
+import { LocalizedLink as Link } from "@/components/localized-link";
 import { findSubscriptionForTracking } from "@/lib/subscriptions";
 import { getSiteDataCached } from "@/lib/store";
 import { resolveMarket } from "@/lib/market";
 import { SUBSCRIPTION_GRACE_DAYS } from "@/lib/subscription-plans";
 import { CancelRenewal } from "./cancel-renewal";
+import { pageMetadata } from "@/lib/seo";
 import type { SubscriptionDisplayStatus } from "@/lib/subscription-lifecycle";
 
-export const metadata: Metadata = {
-  title: "متابعة الاشتراك — Nukhba",
-  robots: { index: false, follow: false },
-};
+export async function generateMetadata({ searchParams }: LocalePageProps): Promise<Metadata> {
+  const { config } = await getSiteDataCached();
+  const locale = await pageLocale(config, searchParams);
+  return pageMetadata(config, {
+    path: "/abonnements/suivi",
+    locale,
+    title: locale === "ar" ? "متابعة الاشتراك — نخبة" : "Subscription Tracking — Nukhba",
+    description: locale === "ar"
+      ? "تابع حالة اشتراكك وموعد التجديد وفترة السماح."
+      : "Track your subscription status, renewal date and grace period.",
+    noindex: true,
+  });
+}
 
 export const dynamic = "force-dynamic";
 
@@ -39,24 +51,25 @@ export default async function SubscriptionTrackingPage({
   searchParams,
 }: {
   searchParams: Promise<{ ref?: string; t?: string }>;
-}) {
+} & LocalePageProps) {
   const { ref, t } = await searchParams;
   const view = ref ? await findSubscriptionForTracking(ref, t ?? null) : null;
   // Les dates sont affichées dans le fuseau du marché configuré (et non un
   // fuseau figé) : un abonné à l'étranger voit des dates cohérentes.
   const { config } = await getSiteDataCached();
   const market = resolveMarket(config.market);
+  const ar = (await pageLocale(config, searchParams)) === "ar";
 
   if (!view) {
     return (
       <main className="pt-6 min-h-[70vh]">
         <div className="mx-auto max-w-[720px] px-4 py-16 space-y-4 text-center">
-          <h1 className="text-2xl font-black">لم نجد هذا الاشتراك</h1>
+          <h1 className="text-2xl font-black">{ar ? "لم نجد هذا الاشتراك" : "Subscription not found"}</h1>
           <p className="text-[var(--muted-foreground)]">
-            الرابط غير صحيح أو منتهي. تحقق من الرابط الذي وصلك.
+            {ar ? "الرابط غير صحيح أو منتهي. تحقق من الرابط الذي وصلك." : "The link is invalid or expired. Check the link you received."}
           </p>
           <Link href="/abonnements" className="inline-block underline">
-            الاشتراكات
+            {ar ? "الاشتراكات" : "Subscriptions"}
           </Link>
         </div>
       </main>
@@ -75,30 +88,30 @@ export default async function SubscriptionTrackingPage({
           </p>
           <h1 className="text-3xl font-black">{view.planName}</h1>
           <p className={`text-lg font-bold ${label.tone}`}>
-            {label.ar} · {label.en}
+            {ar ? label.ar : label.en}
           </p>
         </header>
 
         <section className="rounded-[24px] border border-[var(--border)] bg-[var(--card)] p-6 grid gap-3 text-sm sm:grid-cols-2">
           <div>
-            <div className="text-[var(--muted-foreground)]">الدورة / Cycle</div>
+            <div className="text-[var(--muted-foreground)]">{ar ? "الدورة" : "Cycle"}</div>
             <div className="font-bold">{cycleLabel}</div>
           </div>
           <div>
-            <div className="text-[var(--muted-foreground)]">المبلغ / Amount</div>
+            <div className="text-[var(--muted-foreground)]">{ar ? "المبلغ" : "Amount"}</div>
             <div className="font-bold">${view.priceUsd}</div>
           </div>
           <div>
-            <div className="text-[var(--muted-foreground)]">نهاية الفترة المدفوعة / Paid until</div>
+            <div className="text-[var(--muted-foreground)]">{ar ? "نهاية الفترة المدفوعة" : "Paid until"}</div>
             <div className="font-bold">{formatDate(view.currentPeriodEnd, market.timezone)}</div>
           </div>
           <div>
-            <div className="text-[var(--muted-foreground)]">آخر يوم للوصول / Access until</div>
+            <div className="text-[var(--muted-foreground)]">{ar ? "آخر يوم للوصول" : "Access until"}</div>
             <div className="font-bold">{formatDate(view.accessEndsAt, market.timezone)}</div>
           </div>
           {view.emailMasked && (
             <div className="sm:col-span-2">
-              <div className="text-[var(--muted-foreground)]">البريد الإلكتروني / E-mail</div>
+              <div className="text-[var(--muted-foreground)]">{ar ? "البريد الإلكتروني" : "E-mail"}</div>
               <div className="font-bold" dir="ltr">{view.emailMasked}</div>
             </div>
           )}
@@ -139,7 +152,7 @@ export default async function SubscriptionTrackingPage({
             href="/abonnements"
             className="inline-flex items-center rounded-2xl bg-[var(--accent)] px-5 py-3 font-bold text-[var(--accent-foreground)]"
           >
-            الاشتراك من جديد / Subscribe again
+            {ar ? "الاشتراك من جديد" : "Subscribe again"}
           </Link>
         )}
       </div>

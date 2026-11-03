@@ -4,6 +4,7 @@ import { createClientSubscription } from "@/lib/subscriptions";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { enforceSameOrigin } from "@/lib/csrf";
 import { SUBSCRIPTION_GRACE_DAYS } from "@/lib/subscription-plans";
+import { localizedPath } from "@/lib/locale";
 
 export const runtime = "nodejs";
 
@@ -23,6 +24,7 @@ const subscribeSchema = z.object({
   phone: z.string().trim().min(6).max(24),
   /** Le client doit avoir pris connaissance de la règle de grâce (5 jours). */
   acceptGraceRule: z.literal(true),
+  locale: z.enum(["ar", "en"]).optional(),
 });
 
 /**
@@ -84,7 +86,7 @@ export async function POST(req: Request) {
         planName: result.planName,
         priceUsd: result.priceUsd,
         intervalDay: result.intervalDay,
-        trackingUrl: `/abonnements/suivi?${params.toString()}`,
+        trackingUrl: localizedPath(`/abonnements/suivi?${params.toString()}`, parsed.data.locale ?? "ar"),
         graceDays: SUBSCRIPTION_GRACE_DAYS,
         notice: `La période de grâce ne peut pas dépasser ${SUBSCRIPTION_GRACE_DAYS} jours selon les règles de la passerelle de paiement. Passé ce délai, l'abonnement est suspendu : vous pouvez alors vous réabonner.`,
       },

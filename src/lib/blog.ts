@@ -1,4 +1,5 @@
 import type { Faq } from "./site-types";
+import { localizedAbsoluteUrl, type Locale } from "@/lib/locale";
 
 /**
  * Blog / guides éditoriaux bilingues (`/blog`, `/blog/[slug]`).
@@ -167,7 +168,9 @@ export function articleJsonLd(
   options: { image?: string; locale?: "ar" | "en" } = {},
 ) {
   const base = config.url.replace(/\/+$/, "");
-  const url = `${base}${articlePath(article.slug)}`;
+  const url = options.locale
+    ? localizedAbsoluteUrl(config.url, articlePath(article.slug), options.locale)
+    : `${base}${articlePath(article.slug)}`;
   const publisherId = `${base}/#organization`;
   // Le balisage doit décrire la page RÉELLEMENT servie : sur un site arabe,
   // `headline`/`description` en anglais contredisent le H1 et la description
@@ -205,23 +208,24 @@ export function articleJsonLd(
           "@type": "Thing",
           name: sector,
         }))
-      : [{ "@type": "Thing", name: article.categoryAr }],
+      : [{ "@type": "Thing", name: ar ? article.categoryAr : article.categoryEn }],
   };
 }
 
 /** `FAQPage` de l'article — uniquement si les Q/R sont visibles sur la page. */
-export function articleFaqJsonLd(article: BlogArticle) {
+export function articleFaqJsonLd(article: BlogArticle, locale?: Locale) {
+  const ar = locale !== "en";
   return {
     "@context": "https://schema.org",
     "@type": "FAQPage",
-    inLanguage: ["en", "ar"],
+    inLanguage: locale ?? ["en", "ar"],
     mainEntity: article.faqs.map((faq) => ({
       "@type": "Question",
-      name: faq.qAr,
-      alternateName: faq.qEn,
+      name: ar ? faq.qAr : faq.qEn,
+      ...(locale ? {} : { alternateName: faq.qEn }),
       acceptedAnswer: {
         "@type": "Answer",
-        text: `${faq.aAr} — ${faq.aEn}`,
+        text: locale ? (ar ? faq.aAr : faq.aEn) : `${faq.aAr} — ${faq.aEn}`,
       },
     })),
   };
@@ -231,9 +235,10 @@ export function articleFaqJsonLd(article: BlogArticle) {
 export function blogCollectionJsonLd(
   config: SeoConfig,
   articles: ReadonlyArray<BlogArticle>,
+  locale?: Locale,
 ) {
   const base = config.url.replace(/\/+$/, "");
-  const url = `${base}/blog`;
+  const url = locale ? localizedAbsoluteUrl(config.url, "/blog", locale) : `${base}/blog`;
   const sorted = sortArticles(articles);
   return {
     "@context": "https://schema.org",
@@ -243,7 +248,7 @@ export function blogCollectionJsonLd(
     description:
       "Practical English and Arabic guides for business owners worldwide: paying with USDT step by step, website costs in USD, choosing an agency, online stores and AI search visibility.",
     url,
-    inLanguage: ["en", "ar"],
+    inLanguage: locale ?? ["en", "ar"],
     isPartOf: { "@id": `${base}/#website` },
     numberOfItems: sorted.length,
     mainEntity: {
@@ -252,9 +257,9 @@ export function blogCollectionJsonLd(
       itemListElement: sorted.map((article, index) => ({
         "@type": "ListItem",
         position: index + 1,
-        url: `${base}${articlePath(article.slug)}`,
-        name: article.titleEn,
-        description: article.descriptionEn,
+        url: locale ? localizedAbsoluteUrl(config.url, articlePath(article.slug), locale) : `${base}${articlePath(article.slug)}`,
+        name: locale === "ar" ? article.titleAr : article.titleEn,
+        description: locale === "ar" ? article.descriptionAr : article.descriptionEn,
       })),
     },
   };

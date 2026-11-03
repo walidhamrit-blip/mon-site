@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useSyncExternalStore } from "react";
 import { createPortal } from "react-dom";
-import Link from "next/link";
+import { LocalizedLink as Link } from "@/components/localized-link";
 import {
   Monitor,
   Smartphone,
