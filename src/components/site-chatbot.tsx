@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
-import Link from "next/link";
+import { LocalizedLink as Link } from "@/components/localized-link";
 import { AnimatePresence, motion } from "framer-motion";
 import { ArrowRight, RotateCcw, Send, X } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
