@@ -12,6 +12,14 @@ import {
 import type { Demo, Faq, ProcessStep, Testimonial } from "@/lib/site-types";
 import { DEFAULT_SITE_DOMAIN, domainFromOrigin } from "@/lib/site-identity";
 import { openingHoursFromConfig } from "@/lib/opening-hours";
+import {
+  DIGITAL_KIND_LABELS,
+  denominationLabel,
+  regionLabel,
+  type DigitalProduct,
+} from "@/lib/digital-types";
+import { productSeoName } from "@/lib/digital-seo";
+import { quoteDigitalOrder } from "@/lib/digital-order-core";
 
 /**
  * Central SEO + structured-data (JSON-LD) helpers.
@@ -67,10 +75,8 @@ type SiteConfig = {
       customizationPercent?: number | null;
     }>;
   };
-  stats?: {
-    ratingValue?: string;
-    reviewCount?: string;
-  };
+  // A11 : pas de `stats.ratingValue` / `reviewCount` — aucune note
+  // agrégée auto-déclarée n'alimente le JSON-LD (voir localBusinessJsonLd).
   standaloneServices?: ReadonlyArray<{
     id: string;
     titleAr: string;
@@ -387,8 +393,8 @@ export function localBusinessJsonLd(
     // entreprise sur sa propre page (self-serving reviews) et considère leur
     // balisage comme du spam de données structurées. Les témoignages restent
     // visibles dans la section dédiée ; les avis éligibles sont ceux d'une
-    // fiche Google Business Profile vérifiée. Les mentions « 4.9/5 » de
-    // l'interface sont donc décoratives, pas un signal SEO.
+    // fiche Google Business Profile vérifiée. Cohérence A11 : l'interface
+    // n'affiche ni note moyenne ni compteur d'avis agrégé non sourcé.
     parentOrganization: { "@id": absoluteUrl(config, ORG_ID) },
   };
 }
@@ -525,6 +531,93 @@ export function storeJsonLd(
           },
         }
       : {}),
+  };
+}
+
+/**
+ * Fiche produit digitale — audit SEO/GEO 2026-11-01, point A10.
+ *
+ * Les montants d'une carte sont des variantes vendues par NOTRE boutique,
+ * pas une comparaison d'offres de marchands. Google déconseille
+ * `AggregateOffer` pour ces variantes : on publie donc un `Offer` par
+ * montant réellement proposé à la vente, avec le même vendeur explicite.
+ * Aucun `lowPrice`, `highPrice` ou `offerCount` ne peut ainsi diverger des
+ * offres publiées.
+ *
+ * Une fiche « bientôt » n'accepte aucune commande : elle n'émet aucune
+ * offre (et ne prétend pas accepter de précommandes). Les montants désactivés
+ * ou sans prix valide sont exclus, comme au devis de la caisse.
+ *
+ * Ce balisage décrit les faits ; il ne garantit ni snippet produit ni fiche
+ * marchand. Ces deux expériences ont des règles distinctes, à contrôler
+ * séparément dans Search Console après publication. On n'invente ni date
+ * d'expiration du prix, ni livraison physique, ni avis pour les compléter.
+ * https://developers.google.com/search/docs/appearance/structured-data/product-snippet
+ * https://developers.google.com/search/docs/appearance/structured-data/merchant-listing
+ */
+export function digitalProductJsonLd(
+  config: Pick<SiteConfig, "url" | "market">,
+  product: DigitalProduct,
+  locale: "ar" | "en",
+) {
+  const ar = locale === "ar";
+  const market = resolveMarket(config.market);
+  const canonical = absoluteUrl(config, `/codes/${product.slug}`);
+  const name = productSeoName(product, locale);
+  const seller = { "@id": absoluteUrl(config, ORG_ID) };
+  const offers = product.status === "available"
+    ? product.denominations.flatMap((denomination) => {
+        // Source unique du prix facturé : le devis serveur applique déjà
+        // l'arrondi en centimes et refuse les prix nuls ou non configurés.
+        const quote = quoteDigitalOrder(product, denomination.id, 1);
+        if (!quote.ok) return [];
+        return [{
+          "@type": "Offer",
+          "@id": `${canonical}#offer-${encodeURIComponent(denomination.id)}`,
+          name: `${denominationLabel(denomination, locale)} — ${regionLabel(denomination.region, locale)}`,
+          url: canonical,
+          priceCurrency: "USD",
+          price: quote.quote.unitPriceUsd.toFixed(2),
+          availability: "https://schema.org/InStock",
+          itemCondition: "https://schema.org/NewCondition",
+          seller,
+        }];
+      })
+    : [];
+
+  return {
+    "@context": "https://schema.org",
+    "@type": "Product",
+    "@id": `${canonical}#product`,
+    name,
+    alternateName: ar ? product.titleEn : product.titleAr,
+    description: ar ? product.descriptionAr : product.descriptionEn,
+    url: canonical,
+    image: product.image
+      ? [product.image.startsWith("http") ? product.image : absoluteUrl(config, product.image)]
+      : [absoluteUrl(config, "/og.jpg")],
+    sku: product.id,
+    inLanguage: ar ? market.locale : "en",
+    // La marque est la plateforme lorsqu'elle est identifiable ; une
+    // plateforme technique (« Mobile », « PC »…) n'est pas une marque.
+    brand: {
+      "@type": "Brand",
+      name: /^(mobile|pc|console|web|android|ios)$/i.test(product.platform || "")
+        ? name
+        : product.platform || name,
+    },
+    category: ar
+      ? DIGITAL_KIND_LABELS[product.kind].ar
+      : DIGITAL_KIND_LABELS[product.kind].en,
+    // Politique commune à tous les montants, déclarée une seule fois au
+    // niveau Product. Elle reste factuelle même sans offre ouverte.
+    hasMerchantReturnPolicy: {
+      "@type": "MerchantReturnPolicy",
+      applicableCountry: market.countryCode || "LY",
+      returnPolicyCategory: "https://schema.org/MerchantReturnNotPermitted",
+      merchantReturnLink: absoluteUrl(config, "/remboursement"),
+    },
+    ...(offers.length > 0 ? { offers } : {}),
   };
 }
 

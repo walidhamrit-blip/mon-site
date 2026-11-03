@@ -37,13 +37,13 @@ export const demos = [
     title: "عيادة سانتي — طبيبك القريب منك",
     titleEn: "Cabinet Santé — Your Local Doctor",
     description:
-      "موقع أنيق لعيادة طبية عامة — حجز موعد حسب نوع الاستشارة والتاريخ مع عرض أقرب موعد متاح، تعريف بالطبيب والخدمات، تقييم 4.9/5، وتواصل مباشر عبر واتساب",
+      "موقع أنيق لعيادة طبية عامة — حجز موعد حسب نوع الاستشارة والتاريخ مع عرض أقرب موعد متاح، تعريف بالطبيب والخدمات، تقييمات مرضى معروضة، وتواصل مباشر عبر واتساب",
     descriptionEn:
-      "Elegant general practice site — appointment booking by consultation type & date with next availability shown, doctor & services showcase, 4.9/5 trust rating and direct WhatsApp contact",
+      "Elegant general practice site — appointment booking by consultation type & date with next availability shown, doctor & services showcase, displayed patient reviews and direct WhatsApp contact",
     image: "https://demo-cabinet-medecin.vercel.app/images/doctor.jpg",
     color: "#059669",
-    features: ["حجز مواعيد واختيار التاريخ", "تقييم 4.9/5 وشارة ثقة", "تواصل واتساب مباشر", "فرنسي + عربي + إنجليزي"],
-    featuresEn: ["Appointment & Date Booking", "4.9/5 Trust Rating", "Direct WhatsApp Contact", "FR + AR + EN Trilingual"],
+    features: ["حجز مواعيد واختيار التاريخ", "تقييمات مرضى وشارة ثقة", "تواصل واتساب مباشر", "فرنسي + عربي + إنجليزي"],
+    featuresEn: ["Appointment & Date Booking", "Patient Reviews & Trust Badge", "Direct WhatsApp Contact", "FR + AR + EN Trilingual"],
     previewUrl: "https://demo-cabinet-medecin.vercel.app/",
     planId: "vitrine-plus",
     categoryTier: 2,
@@ -444,10 +444,11 @@ export const heroContent: HeroContent = {
   ctaPrimaryEn: "Get free quote",
   ctaSecondaryAr: "شاهد المعارض الحية",
   ctaSecondaryEn: "View live demos",
-  trustedAr: "يثق بنا 120+ نشاط حول العالم",
-  trustedEn: "Trusted by 120+ businesses worldwide",
-  ratingAr: "تقييم 4.9/5",
-  ratingEn: "4.9/5 rating",
+  // A11 : formulations sans chiffre non vérifiable (voir config.stats).
+  trustedAr: "مواقع حقيقية منشورة في معرض أعمالنا",
+  trustedEn: "Real websites published in our portfolio",
+  ratingAr: "شهادات عملاء منشورة في الموقع",
+  ratingEn: "Client testimonials published on this site",
   chipsAr: ["✓ تسليم 7 أيام", "✓ بدون دفعة كبيرة", "✓ دعم واتساب"],
   chipsEn: ["✓ 7-day delivery", "✓ No big upfront", "✓ WhatsApp support"],
 };

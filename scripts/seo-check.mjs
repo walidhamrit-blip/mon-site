@@ -371,8 +371,11 @@ function checkPage(pathname, html) {
       if (!product.sku) {
         record(page, "warn", "schéma Product sans sku");
       }
-      if (product.offers && !product.offers.priceCurrency) {
-        record(page, "error", "offres Product sans priceCurrency");
+      const productOffers = product.offers
+        ? (Array.isArray(product.offers) ? product.offers : [product.offers])
+        : [];
+      if (productOffers.some((offer) => offer?.priceCurrency !== "USD")) {
+        record(page, "error", "offres Product sans priceCurrency USD");
       }
     }
     if (!hasFaqSchema) {

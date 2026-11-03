@@ -1,128 +1,64 @@
-# Badge de netlinking client — procédure
+# Crédit client « Website by Nukhba » — A12
 
-Le badge « Website by Nukhba » est le seul levier d'autorité hors contenu encore
-disponible : chaque site livré pointe vers `nokhba.net.ly` avec une ancre
-descriptive bilingue. Ce document décrit la pose, la vérification et le
-traitement des exceptions.
+Le badge est un crédit de réalisation **facultatif**, pas un dispositif de
+netlinking ni une promesse de classement. Le client choisit librement de garder
+le lien, de le refuser ou de le retirer, y compris après une refonte. Aucune
+réduction, prestation ou condition contractuelle ne doit imposer un lien suivi.
 
-- Page à envoyer au client : **https://nokhba.net.ly/badge**
-- Statut à jour de tous les sites : section « المواقع المنجزة » de cette page
-- Audit en ligne de commande : `npm run badge:audit`
+## Ancre et qualification
 
----
+- Ancre neutre : `Website by Nukhba` / `نخبة`, aussi dans le `alt` et le `title`.
+- Pas de mots-clés de service ou de ville ajoutés à l'ancre.
+- Les extraits HTML et React de `/badge` utilisent par défaut
+  `rel="sponsored nofollow noopener"` avec `target="_blank"`. Ce choix prudent
+  qualifie le crédit lié à une prestation commerciale ; `noopener` protège
+  l'ouverture d'onglet mais ne qualifie pas la relation commerciale.
+- Tout crédit rémunéré, imposé contractuellement ou obtenu en échange d'un
+  avantage doit conserver `sponsored` (éventuellement avec `nofollow`). Il ne
+  doit jamais être présenté comme une recommandation éditoriale indépendante.
+- Un lien réellement éditorial, sans contrepartie ni obligation, reste à la
+  discrétion du client. Ne jamais lui demander de retirer `nofollow` pour
+  « transmettre l'autorité ». Ces attributs sont des indications pour les
+  moteurs, pas une garantie de suivi ou d'absence d'autorité.
 
-## 1. Pourquoi un lien dofollow
+## Installation volontaire
 
-Un lien `rel="nofollow"` n'apporte aucune autorité : il indique à Google de ne
-pas suivre le lien. Pour que le badge compte, il doit être **dofollow** (aucun
-`nofollow` dans `rel`) et **réellement présent dans le HTML initial** du pied de
-page — pas injecté par JavaScript après chargement, sinon les robots ne le
-voient pas.
+Après accord du client, copier l'extrait HTML ou React de
+**https://nokhba.net.ly/badge** dans son footer. HTML convient aussi aux blocs
+personnalisés WordPress, Webflow et Shopify. Les assets sont hébergés sur le
+domaine configuré : `/badge/nukhba-badge.svg` et
+`/badge/nukhba-badge-light.svg` (176 × 44). Le crédit et sa destination restent
+visibles et compréhensibles ; pas de lien caché ni d'injection SEO.
 
-Deux attributs restent utiles et ne neutralisent rien : `rel="noopener"` (sécurité
-d'onglet) et `target="_blank"`. L'audit les accepte.
+Le footer du site agence ne porte pas de crédit client externe : ses liens
+internes de navigation ne nécessitent pas cette qualification commerciale.
 
-## 2. Poses par type de site
-
-### Site statique / HTML
-
-Copier l'extrait « HTML » de `/badge` juste avant `</body>`, dans le pied de page
-partagé (sinon dans chaque page). Le fichier SVG est servi par nokhba.net.ly :
-rien à héberger.
-
-### React / Next.js
-
-Utiliser l'onglet « React / Next.js ». Le composant `NukhbaBadge` s'insère dans le
-`<footer>` du layout racine. Pour un site en `next/image`, remplacer le `<img>`
-par `<Image src="https://nokhba.net.ly/badge/nukhba-badge.svg" width={176} height={44} alt="…" />`
-et ajouter `nokhba.net.ly` à `images.remotePatterns`.
-
-### WordPress / Webflow / Shopify
-
-Insérer l'extrait HTML dans un bloc « HTML personnalisé » du pied de page
-(Apparence → Widgets, ou Footer du thème). Ne pas utiliser un plugin de badges
-tiers : il ajouterait un `nofollow` et un script externe.
-
-## 3. Variantes
-
-| Fichier | Usage |
-| --- | --- |
-| `/badge/nukhba-badge.svg` | fond sombre, pour les pieds de page clairs |
-| `/badge/nukhba-badge-light.svg` | fond clair, pour les pieds de page sombres |
-
-Les deux font 176 × 44 px, ~1 Ko, texte vectoriel (net à toute résolution). Le
-`alt` recommandé est le même dans les deux cas :
-
-```
-تصميم وتطوير المواقع — نخبة طرابلس | Website by Nukhba — Tripoli web design agency
-```
-
-## 4. Vérification
+## Vérification et statuts historiques
 
 ```bash
-npm run badge:audit                      # tous les clients
-npm run badge:audit -- --only=hala-dun   # un seul
-npm run badge:audit -- --dry-run         # plan, sans réseau
+npm run badge:audit
+npm run badge:audit -- --only=hala-dun
+npm run badge:audit -- --dry-run
 ```
 
-Sortie type :
+L'audit lit le HTML initial à la racine, puis `/ar` et `/en`, accepte les
+origines configurées et rejette les imitations de domaine. Les noms de statuts
+restent compatibles avec `public/badge/clients.json` :
 
-```
-✓ al-manhaj-company — badge en place — « Website by Nukhba »
-~ hala-dun — lien en nofollow
-· demo-jouets — aucun lien vers nokhba.net.ly
-✖ pizzeria-demo1 — hors ligne (503)
+| Statut | Lecture et action |
+| --- | --- |
+| `verified` | lien présent sans `nofollow` détecté ; pas une certification SEO ou commerciale, vérifier le `rel` selon le contexte |
+| `nofollow` | crédit présent et qualifié `nofollow` ; accepté, ne pas retirer l'attribut |
+| `missing` | crédit non trouvé ; respecter le refus client, proposer seulement avec son accord |
+| `down` | site injoignable ; réessayer plus tard |
+| `pending` | pas encore contrôlé |
 
-1 vérifié(s) · 1 nofollow · 1 manquant(s) · 1 hors ligne · 9 en attente · 0 erreur(s)
-```
+Le `rel` brut est conservé dans le diagnostic : le statut seul ne prouve pas
+l'absence ou la présence de `sponsored`. L'audit ne mesure pas le consentement.
+Le workflow hebdomadaire met à jour les statuts via PR ; `nofollow` ne doit
+jamais déclencher une demande de déqualification. Retirer du suivi les clients
+qui refusent le crédit pour ne pas les relancer indéfiniment.
 
-Statuts :
-
-| Statut | Signification | Action |
-| --- | --- | --- |
-| `verified` | lien dofollow trouvé | rien, il est compté |
-| `nofollow` | lien présent mais neutralisé | retirer `rel="nofollow"` |
-| `missing` | aucun lien vers nokhba.net.ly | poser le badge |
-| `down` | site injoignable | relancer plus tard |
-| `pending` | jamais vérifié | lancer l'audit |
-
-L'audit contrôle la racine, puis `/ar` et `/en` : certains sites séparent le pied
-de page par langue. Il ignore les imitations de domaine (`nokhba.net.ly.exemple.com`,
-`notnokhba.net.ly`) et les liens construits uniquement en JavaScript.
-
-## 5. Automatisation
-
-`.github/workflows/badge-audit.yml` s'exécute **chaque lundi à 07:30 UTC**, à
-chaque modification de l'audit ou de la liste des démos sur `main`, et à la
-demande (`workflow_dispatch`) :
-
-1. audit des 12+ sites clients ;
-2. pull request `chore(badge)` si un statut change — `public/badge/clients.json`
-   alimente alors `/badge` et `llms-full.txt` §7f. Ce passage par une PR évite
-   les échecs si `main` est protégée et laisse une trace lisible ;
-3. ouverture — ou mise à jour — d'une issue `badge-client` listant les sites à
-   corriger, avec l'extrait prêt à coller ;
-4. fermeture automatique de cette issue quand plus aucun site n'est en
-   `nofollow`/`missing`.
-
-Le workflow peut être relancé à la main (`workflow_dispatch`, champ `only`).
-
-## 6. Exceptions et cas limites
-
-- **Site refait par un autre prestataire** : le badge peut être retiré, mais
-  l'ancien site doit alors rediriger ou le client doit accepter de perdre le
-  crédit. À documenter dans la fiche client.
-- **Site vendu sans mention de crédit** : c'est un choix commercial. Retirer
-  l'URL de `public/badge/clients.json` plutôt que de laisser un `missing`
-  éternel dans l'issue.
-- **Sous-domaine ou site vitrine sur mesure** : même règle, un lien par site.
-- **Ne jamais** acheter de liens, ni poser le badge sur des sites qui ne sont pas
-  des réalisations : le badge doit rester une preuve vérifiable.
-
-## 7. Empreinte mesurable
-
-Le lien porte `utm_source=client_footer&utm_medium=badge&utm_campaign=client_credit` :
-dans Vercel Analytics (ou Plausible/GA), les sessions issues de ce `utm_source`
-mesurent directement l'apport du parc client. Un pic de trafic référent sans
-`utm` sur `/` signale un lien posé sans extrait officiel — à corriger pour garder
-la traçabilité.
+Les paramètres `utm_source=client_footer&utm_medium=badge&utm_campaign=client_credit`
+servent uniquement à mesurer les visites référentes. Ils ne sont ni une
+qualification commerciale pour les robots ni une obligation pour le client.

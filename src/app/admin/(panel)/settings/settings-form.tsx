@@ -314,39 +314,9 @@ export function SettingsForm({ initial, initialTab }: Props) {
                   className={ADMIN_INPUT_CLS}
                 />
               </Field>
-              <Field label="Sites livrés">
-                <input
-                  value={form.stats.sitesDelivered}
-                  onChange={(e) =>
-                    patch({
-                      stats: { ...form.stats, sitesDelivered: e.target.value },
-                    })
-                  }
-                  className={ADMIN_INPUT_CLS}
-                />
-              </Field>
-              <Field label="Taux de satisfaction">
-                <input
-                  value={form.stats.satisfaction}
-                  onChange={(e) =>
-                    patch({
-                      stats: { ...form.stats, satisfaction: e.target.value },
-                    })
-                  }
-                  className={ADMIN_INPUT_CLS}
-                />
-              </Field>
-              <Field label="Disponibilité support">
-                <input
-                  value={form.stats.support}
-                  onChange={(e) =>
-                    patch({
-                      stats: { ...form.stats, support: e.target.value },
-                    })
-                  }
-                  className={ADMIN_INPUT_CLS}
-                />
-              </Field>
+              {/* A11 : « sites livrés », « satisfaction » et « support
+                  24/7 » retirés — chiffres non sourcés, ne doivent pas
+                  être réintroduits via l'admin. */}
             </div>
           </div>
         </div>

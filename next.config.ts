@@ -156,6 +156,18 @@ const nextConfig: NextConfig = {
         source: "/(.*)",
         headers: SECURITY_HEADERS,
       },
+      {
+        // Démos HTML autonomes servies depuis `public/live-demos/` : ce sont
+        // des aperçus embarqués en iframe même origine (voir
+        // `src/components/live-site-frames.tsx`), pas des pages éditoriales.
+        // Le document porte déjà `<meta name="robots" content="noindex">` ;
+        // cet en-tête le confirme au niveau HTTP (X-Robots-Tag est prioritaire
+        // et reste lisible même si le HTML est mis en cache ou transformé).
+        // La fiche éditoriale `/demos/<slug>` reste indexable et canonicalisée.
+        // Audit SEO/GEO 2026-11-01, point A13.
+        source: "/live-demos/:path*",
+        headers: [{ key: "X-Robots-Tag", value: "noindex, follow" }],
+      },
     ];
   },
   async redirects() {

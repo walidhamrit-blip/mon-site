@@ -81,9 +81,11 @@ const {
   offerCatalogJsonLd,
   howToJsonLd,
   demoJsonLd,
+  digitalProductJsonLd,
 } = await compileModule("lib/seo.ts", "seo.mjs");
 
 const { siteConfig } = await compileModule("lib/config.ts", "config.mjs");
+const { defaultDigitalProducts } = await compileModule("lib/digital-seed.ts", "digital-seed.mjs");
 const {
   demos: defaultDemos,
   faqs: defaultFaqs,
@@ -425,11 +427,103 @@ test("schémas JSON-LD incluent geo, offre, HowTo — et aucun avis auto-déclar
   assert.equal(work.about["@type"], "Thing");
 });
 
+
+// ── A10 : offres réelles d'un seul vendeur, pas agrégat de variantes ──────
+const offerProduct = (overrides = {}) => ({
+  ...defaultDigitalProducts[0],
+  status: "available",
+  denominations: [
+    { id: "amount-5", label: "$5", faceValue: "5 USD", region: "global", priceUsd: 5.4, available: true },
+    { id: "amount-10", label: "$10", faceValue: "10 USD", region: "global", priceUsd: 10.6, available: true },
+    { id: "amount-25", label: "$25", faceValue: "25 USD", region: "global", priceUsd: 25.9, available: true },
+    { id: "disabled", label: "$100", faceValue: "100 USD", region: "global", priceUsd: 100.4, available: false },
+  ],
+  ...overrides,
+});
+
+test("A10 : plusieurs montants → Offer individuels, même vendeur et plage/comptage cohérents", () => {
+  const schema = digitalProductJsonLd(siteConfig, offerProduct(), "en");
+  assert.ok(Array.isArray(schema.offers));
+  assert.equal(schema.offers.length, 3);
+  assert.deepEqual(schema.offers.map((offer) => offer.price), ["5.40", "10.60", "25.90"]);
+  const prices = schema.offers.map((offer) => Number(offer.price));
+  assert.equal(Math.min(...prices), 5.4);
+  assert.equal(Math.max(...prices), 25.9);
+  assert.equal(schema.offers.length, 3, "le montant désactivé ne compte pas comme offre");
+  assert.equal(new Set(schema.offers.map((offer) => offer["@id"])).size, 3);
+  for (const offer of schema.offers) {
+    assert.equal(offer["@type"], "Offer");
+    assert.equal(offer.priceCurrency, "USD");
+    assert.equal(offer.availability, "https://schema.org/InStock");
+    assert.equal(offer.url, schema.url);
+    assert.deepEqual(offer.seller, { "@id": `${siteConfig.url.replace(/\/+$/, "")}/#organization` });
+  }
+  const serialized = JSON.stringify(schema);
+  for (const field of ["AggregateOffer", "lowPrice", "highPrice", "offerCount"]) {
+    assert.ok(!serialized.includes(field), `${field} ne doit pas décrire des variantes de montants`);
+  }
+});
+
+test("A10 : un seul montant reste un Offer au prix exact, jamais un agrégat", () => {
+  const schema = digitalProductJsonLd(siteConfig, offerProduct({
+    denominations: [
+      { id: "only", label: "$10", faceValue: "10 USD", region: "US", priceUsd: 10.6, available: true },
+    ],
+  }), "en");
+  assert.equal(schema.offers.length, 1);
+  assert.equal(schema.offers[0]["@type"], "Offer");
+  assert.equal(schema.offers[0].price, "10.60");
+  assert.match(schema.offers[0].name, /\$10.*United States/);
+  assert.equal(schema.offers[0].lowPrice, undefined);
+  assert.equal(schema.offers[0].highPrice, undefined);
+  assert.equal(schema.offers[0].offerCount, undefined);
+});
+
+test("A10 : aucune offre ouvrable → aucun prix structuré ni fausse précommande", () => {
+  const invalid = [0, -1, NaN, Infinity, 0.004].map((priceUsd, index) => ({
+    id: `invalid-${index}`, label: "Invalid", faceValue: "Invalid", region: "global", priceUsd, available: true,
+  }));
+  for (const product of [
+    offerProduct({ status: "coming_soon" }),
+    offerProduct({ status: "draft" }),
+    offerProduct({ status: "archived" }),
+    offerProduct({ denominations: [] }),
+    offerProduct({ denominations: invalid }),
+    offerProduct({ denominations: [{ id: "disabled", label: "$5", faceValue: "5 USD", region: "global", priceUsd: 5.4, available: false }] }),
+  ]) {
+    const schema = digitalProductJsonLd(siteConfig, product, "en");
+    assert.equal(schema["@type"], "Product");
+    assert.equal(schema.offers, undefined);
+    assert.ok(!JSON.stringify(schema).includes("PreOrder"));
+  }
+});
+
+test("A10 : le balisage reste factuel, sans champs inventés pour promettre un rich result", () => {
+  const config = { ...siteConfig, url: "https://store.example.com/" };
+  const schema = digitalProductJsonLd(config, offerProduct(), "ar");
+  assert.equal(schema.name, "بطاقة محفظة Steam");
+  assert.equal(schema.description, defaultDigitalProducts[0].descriptionAr);
+  assert.equal(schema.inLanguage, "ar-LY");
+  assert.equal(schema.hasMerchantReturnPolicy.returnPolicyCategory, "https://schema.org/MerchantReturnNotPermitted");
+  assert.equal(schema.hasMerchantReturnPolicy.merchantReturnLink, "https://store.example.com/remboursement");
+  for (const offer of schema.offers) {
+    assert.deepEqual(offer.seller, { "@id": "https://store.example.com/#organization" });
+    assert.equal(offer.priceValidUntil, undefined, "aucune date d'expiration connue");
+    assert.equal(offer.shippingDetails, undefined, "pas de livraison physique inventée");
+    assert.equal(offer.hasMerchantReturnPolicy, undefined, "politique commune portée par Product");
+  }
+  assert.equal(schema.aggregateRating, undefined);
+  assert.equal(schema.review, undefined);
+});
+
+
+
 // A14 : le score est un score de complétude technique (présence/cohérence
 // des champs et contrôles), pas une preuve de référencement. Le test vérifie
 // donc aussi la portée explicite du score et l'absence de fausse promesse
 // « Review » (les avis auto-déclarés ne sont pas balisés).
 test("runSeoAudit calcule un score de complétude technique de 100/100 quand les réalisations sont auto-complétées", () => {
+
   const report = runSeoAudit(
     {
       demos: defaultDemos.map((d) => ensureDemoSeoFields(d)),

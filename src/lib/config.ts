@@ -226,19 +226,16 @@ export const siteConfig = {
     tiktok: "https://tiktok.com/@nukhba.ly",
   },
 
-  // Réassurance
+  // Réassurance — A11 (audit SEO/GEO 2026-11-01) : aucun chiffre de
+  // confiance non sourcé n'est publié (ni « sites livrés », ni taux de
+  // satisfaction, ni note moyenne / nombre d'avis, ni « support 24/7 »,
+  // contredit par les horaires ci-dessus). Ne restent que des faits
+  // vérifiables dans le site lui-même : le délai d'entrée de gamme des
+  // formules (pricing), le portfolio publié (/demos), les témoignages
+  // affichés tels quels et les horaires de contact (hours/hoursEn).
   stats: {
     delivery: "7 أيام",
     deliveryEn: "7 days",
-    sitesDelivered: "120+",
-    satisfaction: "98%",
-    support: "24/7",
-    // Note moyenne + nombre d'avis — SOURCE UNIQUE : affichage site,
-    // JSON-LD (aggregateRating, src/lib/seo.ts) et llms.txt lisent ces
-    // deux champs. À garder synchronisés avec les avis réellement
-    // affichés (section témoignages / fiche Google).
-    ratingValue: "4.9",
-    reviewCount: "86",
   },
 
   // Réservation prioritaire — petit acompte pour prendre une place
