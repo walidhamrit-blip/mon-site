@@ -1,19 +1,23 @@
 #!/usr/bin/env node
 /**
- * SEO des fiches produits — audit SEO/GEO 2026-11-01, point A01 (P1).
+ * SEO des fiches produits — audit SEO/GEO 2026-11-01, points A01 et A10.
  *
- * Deux variantes d'un même jeu verrouillées sur des régions différentes
+ * A01 : deux variantes d'un même jeu verrouillées sur des régions différentes
  * (ex. Free Fire MENA vs Free Fire EU) doivent avoir des title, H1 et nom
  * structuré DISTINCTS : la région fait partie de l'identité du produit.
  * Le nom d'affichage du catalogue (`productDisplayName`) ne change pas :
  * la région y est déjà dans un champ dédié.
  *
- * `src/lib/digital-seo.ts` utilise l'alias `@/` : on le bundle avec esbuild
- * (comme digital-audit.test.mjs) avant de l'importer.
+ * A10 : les montants sont des variantes d'un même vendeur, pas un agrégat
+ * d'offres concurrentes. Le JSON-LD publie les offres réelles au prix de la
+ * caisse ; une fiche en attente n'annonce pas de précommande.
+ *
+ * Les modules TypeScript utilisent l'alias `@/` : on les bundle avec esbuild
+ * (comme digital-audit.test.mjs) avant de les importer.
  */
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { existsSync, mkdtempSync, rmSync, statSync } from "node:fs";
+import { existsSync, mkdtempSync, readFileSync, rmSync, statSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
@@ -37,18 +41,24 @@ const aliasPlugin = {
   },
 };
 
-const outfile = join(outDir, "digital-seo.mjs");
-await build({
-  entryPoints: [join(srcRoot, "lib/digital-seo.ts")],
-  outfile,
-  bundle: true,
-  format: "esm",
-  platform: "node",
-  target: "node22",
-  plugins: [aliasPlugin],
-  logLevel: "silent",
-});
-const seo = await import(pathToFileURL(outfile).href);
+async function compileModule(relPath, outName) {
+  const outfile = join(outDir, outName);
+  await build({
+    entryPoints: [join(srcRoot, relPath)],
+    outfile,
+    bundle: true,
+    format: "esm",
+    platform: "node",
+    target: "node22",
+    plugins: [aliasPlugin],
+    logLevel: "silent",
+  });
+  return import(pathToFileURL(outfile).href);
+}
+
+const seo = await compileModule("lib/digital-seo.ts", "digital-seo.mjs");
+const { digitalProductJsonLd } = await compileModule("lib/seo.ts", "seo.mjs");
+const { quoteDigitalOrder } = await compileModule("lib/digital-order-core.ts", "digital-order-core.mjs");
 
 test.after(() => rmSync(outDir, { recursive: true, force: true }));
 
@@ -155,4 +165,90 @@ test("A02 : deliveryText couvre les kinds — jamais d'e-mail pour un top-up", (
   assert.ok(/emailed/i.test(seo.deliveryText(key, "en")));
   const sub = product({ kind: "subscription_code" });
   assert.ok(/emailed/i.test(seo.deliveryText(sub, "en")));
+});
+
+/* --------------------- A10 : offres et variantes --------------------- */
+const config = { url: "https://store.example.com", market: null };
+const structuredProduct = (overrides = {}) => ({
+  ...mena,
+  id: "fzr-topup-free-fire-mena",
+  descriptionAr: "شحن مباشر على معرّف اللاعب.",
+  descriptionEn: "Direct top-up to the player ID.",
+  image: "/digital-products/free-fire.jpg",
+  denominations: [
+    { id: "d1", label: "110 Diamonds", faceValue: "110 Diamonds", region: "MENA", priceUsd: 1.5, available: true },
+    { id: "d2", label: "341 Diamonds", faceValue: "341 Diamonds", region: "MENA", priceUsd: 4.75, available: true },
+    { id: "d3", label: "572 Diamonds", faceValue: "572 Diamonds", region: "MENA", priceUsd: 7.9, available: true },
+    { id: "disabled", label: "2398 Diamonds", faceValue: "2398 Diamonds", region: "MENA", priceUsd: 31.5, available: false },
+  ],
+  ...overrides,
+});
+
+test("A10 : chaque montant achetable a son Offer, au prix exact de la caisse", () => {
+  const product = structuredProduct();
+  const schema = digitalProductJsonLd(config, product, "en");
+  const sellable = product.denominations.filter((denomination) => denomination.available);
+  assert.equal(schema.offers.length, sellable.length);
+  assert.deepEqual(schema.offers.map((offer) => offer["@id"]), sellable.map((denomination) => `${schema.url}#offer-${denomination.id}`));
+  for (const [index, denomination] of sellable.entries()) {
+    const quote = quoteDigitalOrder(product, denomination.id, 1);
+    assert.equal(quote.ok, true);
+    assert.equal(Number(schema.offers[index].price), quote.quote.unitPriceUsd);
+    assert.equal(schema.offers[index].priceCurrency, "USD");
+    assert.equal(schema.offers[index]["@type"], "Offer");
+    assert.match(schema.offers[index].name, /Diamonds/);
+  }
+  const prices = schema.offers.map((offer) => Number(offer.price));
+  assert.equal(Math.min(...prices), 1.5);
+  assert.equal(Math.max(...prices), 7.9);
+  assert.equal(schema.offers.length, 3, "le montant désactivé est exclu du comptage comme des prix");
+});
+
+test("A10 : l'arrondi JSON-LD suit le devis serveur, sans offre à prix nul", () => {
+  const product = structuredProduct({
+    denominations: [
+      { id: "fraction", label: "Fraction", faceValue: "Fraction", region: "MENA", priceUsd: 9.999, available: true },
+      { id: "tiny", label: "Tiny", faceValue: "Tiny", region: "MENA", priceUsd: 0.004, available: true },
+      { id: "zero", label: "Zero", faceValue: "Zero", region: "MENA", priceUsd: 0, available: true },
+    ],
+  });
+  const schema = digitalProductJsonLd(config, product, "en");
+  assert.equal(schema.offers.length, 1);
+  const quote = quoteDigitalOrder(product, "fraction", 1);
+  assert.equal(quote.ok, true);
+  assert.equal(schema.offers[0].price, quote.quote.unitPriceUsd.toFixed(2));
+  assert.equal(quoteDigitalOrder(product, "tiny", 1).ok, false);
+  assert.equal(quoteDigitalOrder(product, "zero", 1).ok, false);
+});
+
+test("A10 : liste d'attente et montants indisponibles ne créent aucune offre", () => {
+  for (const product of [
+    structuredProduct({ status: "coming_soon" }),
+    structuredProduct({ denominations: [] }),
+    structuredProduct({ denominations: [{ id: "off", label: "110 Diamonds", faceValue: "110 Diamonds", region: "MENA", priceUsd: 1.5, available: false }] }),
+  ]) {
+    const schema = digitalProductJsonLd(config, product, "ar");
+    assert.equal(schema.offers, undefined);
+    assert.equal(schema["@type"], "Product");
+    assert.ok(!JSON.stringify(schema).includes("PreOrder"));
+    assert.equal(quoteDigitalOrder(product, product.denominations[0]?.id ?? "missing", 1).ok, false);
+  }
+});
+
+test("A10 : un vendeur unique et identifié pour toutes les variantes", () => {
+  const schema = digitalProductJsonLd(config, structuredProduct(), "ar");
+  assert.deepEqual(new Set(schema.offers.map((offer) => offer.seller["@id"])), new Set(["https://store.example.com/#organization"]));
+  assert.equal(schema.offers[0].availability, "https://schema.org/InStock");
+  assert.equal(schema.hasMerchantReturnPolicy.returnPolicyCategory, "https://schema.org/MerchantReturnNotPermitted");
+  assert.ok(!JSON.stringify(schema).includes("AggregateOffer"));
+});
+
+test("A10 : la fiche utilise le générateur centralisé et l'audit n'exige plus lowPrice", () => {
+  const page = readFileSync(join(root, "src/app/(site)/codes/[slug]/page.tsx"), "utf8");
+  assert.match(page, /digitalProductJsonLd\(config, product, locale\)/);
+  assert.match(page, /productSchema/);
+  assert.ok(!page.includes('"@type": "AggregateOffer"'));
+  const audit = readFileSync(join(root, "scripts/catalog-audit.mjs"), "utf8");
+  assert.ok(!audit.includes('JSON-LD sans prix (lowPrice)'));
+  assert.match(audit, /Offer/);
 });

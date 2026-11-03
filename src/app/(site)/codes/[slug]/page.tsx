@@ -6,13 +6,19 @@ import {
   getDigitalProductBySlug,
 } from "@/lib/digital-store";
 import { productPageFallback } from "@/lib/digital-fallback";
-import { absoluteUrl, breadcrumbJsonLd, pageMetadata, siteLocale } from "@/lib/seo";
+import {
+  absoluteUrl,
+  breadcrumbJsonLd,
+  digitalProductJsonLd,
+  pageMetadata,
+  siteLocale,
+} from "@/lib/seo";
 import { JsonLd } from "@/components/json-ld";
 import { StoreUnavailableProduct } from "@/components/store-status-notice";
 import { DigitalProductDetails } from "./digital-product-details";
 import { getSiteDataCached } from "@/lib/store";
 import { resolveMarket } from "@/lib/market";
-import { DIGITAL_KIND_LABELS, lowestPriceUsd } from "@/lib/digital-types";
+import { lowestPriceUsd } from "@/lib/digital-types";
 import {
   productFaqs,
   productSeoDescription,
@@ -113,7 +119,6 @@ export default async function DigitalProductPage({
   const market = resolveMarket(config.market);
   const locale = siteLocale(config);
   const ar = locale === "ar";
-  const fromUsd = lowestPriceUsd(product);
   const canonical = absoluteUrl(config, `/codes/${product.slug}`);
   // Nom nettoyé (« Game Top-Up — PUBG Mobile (Auto) » → « PUBG Mobile ») :
   // c'est lui qui sert de H1, de nom de produit structuré et de texte de
@@ -121,7 +126,6 @@ export default async function DigitalProductPage({
   // place dans un titre indexé. La région est conservée quand la fiche est
   // régionale (A01) : « Free Fire (MENA) » ≠ « Free Fire (EU) ».
   const localeTitle = productSeoName(product, locale);
-  const localeDescription = ar ? product.descriptionAr : product.descriptionEn;
   const faqs = productFaqs(product, locale);
 
   // Fiches proches : même nature ou même plateforme. Elles créent un
@@ -144,79 +148,10 @@ export default async function DigitalProductPage({
       fromUsd: lowestPriceUsd(candidate),
     }));
 
-  // Schéma Product : la fiche est publiée et décrit précisément le produit.
-  // `availability` suit le statut : une fiche « coming soon » reste
-  // indexable (elle prépare l'ouverture) mais n'est pas proposée en stock.
-  const availability =
-    product.status === "available"
-      ? "https://schema.org/InStock"
-      : "https://schema.org/PreOrder";
-
-  const productSchema = {
-    "@context": "https://schema.org",
-    "@type": "Product",
-    "@id": `${canonical}#product`,
-    name: localeTitle,
-    alternateName: ar ? product.titleEn : product.titleAr,
-    description: localeDescription,
-    url: canonical,
-    // `image` manquait : sans visuel, Google n'affiche pas de vignette dans
-    // les résultats produit et le balisage est incomplet.
-    image: product.image
-      ? [
-          product.image.startsWith("http")
-            ? product.image
-            : absoluteUrl(config, product.image),
-        ]
-      : [absoluteUrl(config, "/og.jpg")],
-    sku: product.id,
-    inLanguage: ar ? market.locale : "en",
-    // Marque : la plateforme quand elle est identifiable (« Steam »,
-    // « PlayStation »). Les fiches de recharge portent souvent une
-    // plateforme technique (« Mobile », « PC ») qui n'est pas une marque —
-    // dans ce cas on retombe sur le nom du produit.
-    brand: {
-      "@type": "Brand",
-      name: /^(mobile|pc|console|web|android|ios)$/i.test(product.platform || "")
-        ? localeTitle
-        : product.platform || localeTitle,
-    },
-    category: ar
-      ? DIGITAL_KIND_LABELS[product.kind].ar
-      : DIGITAL_KIND_LABELS[product.kind].en,
-    ...(fromUsd != null
-      ? {
-          offers: {
-            "@type": "AggregateOffer",
-            priceCurrency: "USD",
-            lowPrice: String(fromUsd),
-            highPrice: String(
-              Math.max(
-                ...product.denominations
-                  .filter((denomination) => denomination.available)
-                  .map((denomination) => denomination.priceUsd),
-                fromUsd,
-              ),
-            ),
-            offerCount: product.denominations.filter((d) => d.available).length,
-            availability,
-            url: canonical,
-            itemCondition: "https://schema.org/NewCondition",
-            seller: { "@id": absoluteUrl(config, "#organization") },
-            // Politique de retour : obligatoire pour prétendre à
-            // l'expérience « fiches marchand » de Google. Les codes
-            // numériques ne sont pas remboursables après livraison — on le
-            // déclare au lieu de laisser Google le deviner.
-            hasMerchantReturnPolicy: {
-              "@type": "MerchantReturnPolicy",
-              applicableCountry: market.countryCode || "LY",
-              returnPolicyCategory: "https://schema.org/MerchantReturnNotPermitted",
-              merchantReturnLink: absoluteUrl(config, "/remboursement"),
-            },
-          },
-        }
-      : {}),
-  };
+  // A10 : une offre par montant vendu par notre boutique, jamais un
+  // AggregateOffer de variantes. Le générateur centralisé exclut les prix
+  // invalides et n'ouvre pas d'offre pour une fiche en liste d'attente.
+  const productSchema = digitalProductJsonLd(config, product, locale);
 
   // FAQ propre à la fiche, strictement identique au bloc visible.
   const faqSchema = {

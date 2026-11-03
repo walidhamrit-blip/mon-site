@@ -5,8 +5,9 @@
  * Contrôle, produit par produit :
  *   - la fiche répond 200 et est liée depuis la boutique ;
  *   - elle est présente dans le sitemap.xml (donc soumise aux moteurs) ;
- *   - titre, description, canonique, Open Graph et JSON-LD (Product + offre
- *     avec prix et disponibilité) sont complets ;
+ *   - titre, description, canonique, Open Graph et JSON-LD Product sont
+ *     complets ; les offres publiées sont des Offer avec prix et disponibilité
+ *     (une fiche en liste d'attente n'a pas d'offre ouverte) ;
  *   - le prix et la région sont affichés dans la page ;
  *   - la version anglaise ne laisse pas fuir de l'arabe (invariant bilingue).
  *
@@ -109,15 +110,33 @@ if (shop.status !== 200) {
     if (!ogDescription) note(scope, "og:description manquant");
     if (!h1) note(scope, "h1 manquant");
 
-    // JSON-LD Product + offre chiffrée
-    const ld = [
+    // JSON-LD Product + offres réelles. A10 : les montants sont des variantes
+    // d'un même vendeur, pas un AggregateOffer. Une fiche « bientôt » peut
+    // n'avoir aucune offre ouverte ; on ne réclame plus de plage lowPrice.
+    const schemas = [
       ...page.body.matchAll(/<script[^>]+application\/ld\+json[^>]*>([\s\S]*?)<\/script>/g),
-    ]
-      .map((m) => m[1])
-      .join("\n");
-    if (!/"@type":"Product"/.test(ld)) note(scope, "JSON-LD Product absent");
-    if (!/"lowPrice"/.test(ld)) note(scope, "JSON-LD sans prix (lowPrice)");
-    if (!/"availability"/.test(ld)) note(scope, "JSON-LD sans disponibilité");
+    ].flatMap((match) => {
+      try {
+        const parsed = JSON.parse(match[1]);
+        return Array.isArray(parsed) ? parsed : [parsed];
+      } catch {
+        return [];
+      }
+    });
+    const productSchema = schemas.find((schema) => schema?.["@type"] === "Product");
+    if (!productSchema) note(scope, "JSON-LD Product absent");
+    const structuredOffers = productSchema?.offers
+      ? (Array.isArray(productSchema.offers) ? productSchema.offers : [productSchema.offers])
+      : [];
+    if (structuredOffers.some((offer) => offer?.["@type"] !== "Offer")) {
+      note(scope, "les montants doivent être des Offer individuels, pas un AggregateOffer");
+    }
+    if (structuredOffers.some((offer) => !Number.isFinite(Number(offer?.price)) || Number(offer?.price) <= 0 || offer?.priceCurrency !== "USD")) {
+      note(scope, "Offer sans prix USD valide");
+    }
+    if (structuredOffers.some((offer) => offer?.availability !== "https://schema.org/InStock")) {
+      note(scope, "Offer ouverte sans disponibilité InStock");
+    }
 
     // Prix et région affichés
     if (!/\$\s?\d/.test(page.body)) note(scope, "aucun prix affiché");
