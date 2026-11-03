@@ -14,7 +14,16 @@ export interface SeoAuditCheck {
 }
 
 export interface SeoAuditReport {
+  /**
+   * Score de complétude technique (0–100) : présence et cohérence des champs
+   * et des contrôles. Ce n'est ni un score de classement, ni une mesure
+   * d'éligibilité aux résultats enrichis, ni un taux de citation IA.
+   */
   score: number;
+  /** Étiquette de portée affichée avec le score (A14). */
+  scoreScope: "technical-completeness";
+  scoreLabel: string;
+  scoreDisclaimer: string;
   summary: {
     pass: number;
     warn: number;
@@ -80,9 +89,15 @@ function isCompleteDemoSeo(demo: Demo): boolean {
 }
 
 /**
- * Exécute un audit SEO & GEO (Référencement IA) complet sur les données
- * vivantes du site (utilisable côté serveur, dans l'admin en temps réel
- * et dans les tests automatisés).
+ * Exécute un audit de complétude technique SEO & GEO sur les données vivantes
+ * du site (utilisable côté serveur, dans l'admin en temps réel et dans les
+ * tests automatisés).
+ *
+ * ⚠️ Portée (A14) : les contrôles vérifient la présence, la syntaxe et la
+ * cohérence de champs ou de schémas. Ils ne mesurent ni le classement, ni
+ * l'éligibilité aux résultats enrichis, ni les citations IA. Un score de 100
+ * signifie « tous les contrôles techniques sont satisfaits », pas « le site
+ * est référencé ».
  */
 export function runSeoAudit(
   content: AuditContentInput,
@@ -112,7 +127,7 @@ export function runSeoAudit(
       level: "pass",
       title: `Métadonnées SEO bilingues complètes (${completeDemos.length}/${demos.length})`,
       detail:
-        "Chaque réalisation possède ses 6 champs SEO (titre, description et alt image en AR + EN).",
+        "Chaque réalisation possède ses 6 champs SEO (titre, description et alt image en AR + EN). Complétude des champs uniquement : cela ne garantit ni l'indexation ni le classement.",
     });
   } else {
     const missing = demos.length - completeDemos.length;
@@ -199,8 +214,9 @@ export function runSeoAudit(
       id: "demos-lengths",
       category: "demos",
       level: "pass",
-      title: "Longueurs SERP Google respectées (60 / 160 / 125 car.)",
-      detail: "Tous les titres, descriptions et textes alternatifs sont dans les seuils optimaux.",
+      title: "Longueurs dans les seuils recommandés (60 / 160 / 125 car.)",
+      detail:
+        "Tous les titres, descriptions et textes alternatifs sont dans les seuils de présentation SERP recommandés. Google peut tronquer autrement et aucun classement n'est garanti.",
     });
   }
 
@@ -215,7 +231,7 @@ export function runSeoAudit(
       level: "warn",
       title: `FAQ peu fournie (${faqs.length} questions)`,
       detail:
-        "Les moteurs IA (Perplexity, ChatGPT, Google AI Overviews) privilégient au moins 5 à 8 Q/R détaillées.",
+        "Les recommandations pratiques visent au moins 5 à 8 Q/R détaillées. C'est un pré-requis éditorial, pas une garantie de citation par les moteurs IA.",
     });
   } else if (shortFaqs.length > 0) {
     checks.push({
@@ -230,8 +246,9 @@ export function runSeoAudit(
       id: "geo-faq-ready",
       category: "geo",
       level: "pass",
-      title: `FAQ bilingue optimisée pour les citations IA (${faqs.length} Q/R)`,
-      detail: "Schéma FAQPage actif sur / et /pricing + export dynamique dans /llms.txt et /llms-full.txt.",
+      title: `FAQ bilingue complète — pré-requis technique (${faqs.length} Q/R)`,
+      detail:
+        "Le schéma FAQPage est présent et les Q/R sont exportées dans /llms.txt et /llms-full.txt. L'affichage d'un résultat enrichi et une citation IA ne sont pas garantis par ce contrôle.",
     });
   }
 
@@ -243,8 +260,8 @@ export function runSeoAudit(
     id: "geo-llms-dynamic",
     category: "geo",
     level: "pass",
-    title: "Flux IA dynamiques /llms.txt & /llms-full.txt synchronisés",
-    detail: `${demos.length} réalisations (${liveDemosCount} sites live) et ${faqs.length} Q/R exposés en Markdown temps réel pour les crawlers LLM.`,
+    title: "Flux IA /llms.txt & /llms-full.txt publiés et synchronisés (contrôle de présence)",
+    detail: `${demos.length} réalisations (${liveDemosCount} sites live) et ${faqs.length} Q/R sont exposés en Markdown. Ce contrôle vérifie la présence dans les flux ; l'ingestion réelle par les crawlers LLM n'est pas mesurée ici.`,
   });
 
   // 5. Schémas JSON-LD : Offres tarifaires (OfferCatalog) & Processus (HowTo)
@@ -255,40 +272,50 @@ export function runSeoAudit(
     (s) => typeof s.priceFromUsd === "number" && s.priceFromUsd > 0,
   ).length;
 
-  if (config?.pricing && plansWithUsd === 0) {
+  if (!config?.pricing) {
+    checks.push({
+      id: "schema-offers",
+      category: "schema",
+      level: "warn",
+      title: "Configuration tarifaire absente — schéma OfferCatalog non évalué",
+      detail:
+        "Renseignez les formules et services dans /admin/settings pour pouvoir évaluer la présence de l'OfferCatalog.",
+    });
+  } else if (plansWithUsd === 0) {
     checks.push({
       id: "schema-offers",
       category: "schema",
       level: "warn",
       title: "Aucun prix USD renseigné pour le schéma OfferCatalog",
-      detail: "Renseignez priceUsd dans /admin/settings pour exposer les tarifs aux comparateurs et assistants IA.",
+      detail:
+        "Renseignez priceUsd dans /admin/settings pour exposer les tarifs aux comparateurs et assistants IA. L'éligibilité aux résultats enrichis n'est pas garantie pour autant.",
     });
   } else {
     checks.push({
       id: "schema-offers",
       category: "schema",
       level: "pass",
-      title: "Schéma OfferCatalog complet (formules + services à la carte)",
-      detail: `${plansWithUsd || 3} formule(s) et ${servicesWithUsd || 6} service(s) structurés avec prix USD machine-lisibles.`,
+      title: "Schéma OfferCatalog présent et syntaxiquement valide",
+      detail: `${plansWithUsd} formule(s) et ${servicesWithUsd} service(s) structurés avec prix USD machine-lisibles. La validité du schéma ne garantit pas l'éligibilité aux résultats enrichis.`,
     });
   }
 
-  if (processSteps.length >= 3 && testimonials.length >= 1) {
+  if (processSteps.length >= 3) {
     checks.push({
-      id: "schema-howto-reviews",
+      id: "schema-howto",
       category: "schema",
       level: "pass",
-      title: `Schémas HowTo (${processSteps.length} étapes) & Review (${testimonials.length} avis) actifs`,
-      detail:
-        "Processus de livraison et avis clients injectés automatiquement en JSON-LD côté serveur.",
+      title: `Schéma HowTo présent (${processSteps.length} étapes)`,
+      detail: `Le processus de livraison est structuré en JSON-LD. Les ${testimonials.length} témoignage(s) restent visibles dans le HTML mais ne sont pas balisés en Review : les avis auto-déclarés ne sont pas éligibles aux résultats enrichis Google. La présence du schéma ne garantit pas un résultat enrichi.`,
     });
   } else {
     checks.push({
-      id: "schema-howto-reviews",
+      id: "schema-howto",
       category: "schema",
       level: "warn",
-      title: "Étapes HowTo ou témoignages clients incomplets",
-      detail: "Conservez au moins 3 étapes de processus et 1 témoignage client pour enrichir les schémas JSON-LD.",
+      title: "Étapes HowTo incomplètes",
+      detail:
+        "Conservez au moins 3 étapes de processus pour structurer le schéma HowTo. La présence du schéma ne garantit pas un résultat enrichi.",
     });
   }
 
@@ -298,9 +325,9 @@ export function runSeoAudit(
       id: "integration-indexnow",
       category: "integrations",
       level: env.indexNowConfigured !== false ? "pass" : "warn",
-      title: "IndexNow — Ping automatique à chaque sauvegarde Admin",
+      title: "IndexNow — notification configurée à chaque sauvegarde Admin",
       detail:
-        "Notifie automatiquement Bing, Yandex, Naver et Seznam des mises à jour des pages, du sitemap et de /llms.txt.",
+        "Le code appelle IndexNow pour les pages, le sitemap et /llms.txt. La prise en compte par les moteurs n'est pas garantie et n'est pas vérifiée ici.",
     });
     checks.push({
       id: "integration-ai-seo",
@@ -310,8 +337,8 @@ export function runSeoAudit(
         ? "Assistant SEO IA : modèle OpenAI actif + repli gabarit"
         : "Assistant SEO IA : mode gabarit automatique actif (sans clé OpenAI)",
       detail: env.openAiConfigured
-        ? "Génération unitaire et en lot par LLM activée."
-        : "Les 6 champs SEO bilingues sont générés automatiquement par gabarit déterministe (ajoutez OPENAI_API_KEY pour activer le LLM).",
+        ? "Génération unitaire et en lot par LLM activée. La génération de métadonnées ne garantit ni l'indexation ni le classement."
+        : "Les 6 champs SEO bilingues sont générés automatiquement par gabarit déterministe (ajoutez OPENAI_API_KEY pour activer le LLM). La complétude des champs ne garantit ni l'indexation ni le classement.",
     });
   }
 
@@ -319,11 +346,18 @@ export function runSeoAudit(
   const warn = checks.filter((c) => c.level === "warn").length;
   const error = checks.filter((c) => c.level === "error").length;
   const total = Math.max(checks.length, 1);
+  // Score de complétude technique : les contrôles satisfaits rapportent des
+  // points, les avertissements moitié, les erreurs sont pénalisées. Ce score
+  // ne mesure ni le classement, ni l'éligibilité, ni les citations IA (A14).
   const rawScore = Math.round(((pass + warn * 0.5) / total) * 100);
   const score = Math.max(0, Math.min(100, rawScore - error * 10));
 
   return {
     score,
+    scoreScope: "technical-completeness",
+    scoreLabel: "Score de complétude technique",
+    scoreDisclaimer:
+      "Mesure la présence et la cohérence des champs et contrôles techniques. Ne mesure ni le classement, ni l'éligibilité aux résultats enrichis, ni les citations IA.",
     summary: {
       pass,
       warn,

@@ -383,8 +383,10 @@ NOWPayments pour prendre une place en avance dans le planning.
 - [Configuration du sitemap dans Google Search Console, pas à pas](docs/guide-gsc-sitemap-2026-11-01.md)
 
 Le sitemap existe déjà à `/sitemap.xml`. Un score interne ou des tests verts ne
-prouvent ni l’indexation, ni le classement, ni des citations IA. Les anciens
-rapports ci-dessous restent des historiques d’implémentation.
+prouvent ni l’indexation, ni le classement, ni l’éligibilité aux résultats
+enrichis, ni des citations IA. Un schéma JSON-LD valide est un pré-requis
+technique, pas une garantie d’affichage. Les anciens rapports ci-dessous
+restent des historiques d’implémentation.
 
 - Métadonnées complètes par page (title, description, canonical, Open Graph
   ar_LY + alternate en_US, Twitter Card) générées via `src/lib/seo.ts`

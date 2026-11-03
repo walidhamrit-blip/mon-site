@@ -1,5 +1,14 @@
 import { metaDescription } from "@/lib/seo";
 
+/**
+ * Génération des métadonnées SEO d'une réalisation (titre, description, alt).
+ *
+ * ⚠️ Portée (A14) : ce module produit des champs de métadonnées. Il ne
+ * garantit ni l'indexation, ni le classement, ni l'affichage d'un résultat
+ * enrichi. Un score de complétude (présence des champs) ne mesure pas le
+ * référencement réel. Les limites ci-dessous sont des seuils de présentation
+ * SERP recommandés, pas des garanties de position.
+ */
 export const LIMITS = { title: 60, description: 160, alt: 125 } as const;
 
 export interface SeoDemoInput {
@@ -41,12 +50,22 @@ export interface SeoGenerationResult {
   engine: SeoEngine;
   /** Renseigné pour `template` (missing_key) et `error` (cause). */
   warning?: SeoWarningCode;
+  /**
+   * Portée explicite du résultat : métadonnées seulement. Aucun classement,
+   * aucune éligibilité à un résultat enrichi et aucune citation IA ne sont
+   * garantis par la génération.
+   */
+  scope: "metadata-only";
 }
 
 function clamp(text: string, max: number): string {
   return metaDescription(text, max);
 }
 
+/**
+ * Gabarit déterministe de secours. Il garantit la complétude des champs, pas
+ * un meilleur référencement : c'est un repli technique, pas une optimisation.
+ */
 export function templateSeoCopy(demo: SeoDemoInput): SeoCopy {
   return {
     metaTitle: clamp(`${demo.title} — موقع من إنجاز نخبة`, LIMITS.title),
@@ -60,7 +79,10 @@ export function templateSeoCopy(demo: SeoDemoInput): SeoCopy {
 
 /**
  * Complète automatiquement tout champ SEO bilingue vide d'une réalisation
- * avec le gabarit optimisé local, sans jamais écraser un champ déjà saisi.
+ * avec le gabarit local, sans jamais écraser un champ déjà saisi.
+ *
+ * Complétude uniquement : l'auto-complétion ne prouve ni l'indexation, ni
+ * le classement, ni l'éligibilité à un résultat enrichi.
  */
 export function ensureDemoSeoFields<T extends SeoDemoInput & Partial<SeoCopy>>(
   demo: T,
@@ -187,29 +209,35 @@ async function llmSeoCopy(demo: SeoDemoInput): Promise<LlmOutcome> {
  * `copy` est toujours renvoyé (repli gabarit local si besoin). L'état
  * `engine` + `warning` permet à l'admin de distinguer une absence de clé
  * (normal) d'une clé refusée ou d'un service indisponible (à corriger).
+ *
+ * ⚠️ Le résultat est un pré-requis technique (métadonnées présentes et
+ * bornées). Il ne prouve ni l'indexation, ni le classement, ni une citation
+ * par un moteur IA.
  */
 export async function generateSeoCopy(demo: SeoDemoInput): Promise<SeoGenerationResult> {
   const fallback = templateSeoCopy(demo);
   if (!process.env.OPENAI_API_KEY?.trim()) {
-    return { copy: fallback, engine: "template", warning: "missing_key" };
+    return { copy: fallback, engine: "template", warning: "missing_key", scope: "metadata-only" };
   }
   const outcome = await llmSeoCopy(demo);
   if (!outcome.ok) {
     console.warn(`[ai-seo] appel LLM échoué (${outcome.code}) — repli sur le gabarit local.`);
-    return { copy: fallback, engine: "error", warning: outcome.code };
+    return { copy: fallback, engine: "error", warning: outcome.code, scope: "metadata-only" };
   }
   const copy = { ...fallback };
   for (const key of KEYS) {
     const value = outcome.raw[key];
     if (typeof value === "string" && value.trim().length > 0) copy[key] = clamp(value.trim(), MAX_BY_KEY[key]);
   }
-  return { copy, engine: "llm" };
+  return { copy, engine: "llm", scope: "metadata-only" };
 }
 
 export interface SeoBatchGenerationResult {
   items: SeoGenerationResult[];
   engine: SeoEngine;
   warning?: SeoWarningCode;
+  /** Portée explicite : métadonnées seulement, pas un résultat de référencement. */
+  scope: "metadata-only";
 }
 
 /**
@@ -220,7 +248,11 @@ export async function generateSeoCopyBatch(
   demos: readonly SeoDemoInput[],
 ): Promise<SeoBatchGenerationResult> {
   if (demos.length === 0) {
-    return { items: [], engine: process.env.OPENAI_API_KEY?.trim() ? "llm" : "template" };
+    return {
+      items: [],
+      engine: process.env.OPENAI_API_KEY?.trim() ? "llm" : "template",
+      scope: "metadata-only",
+    };
   }
   const items: SeoGenerationResult[] = [];
   const chunkSize = 3;
@@ -233,5 +265,5 @@ export async function generateSeoCopyBatch(
   const llmItem = items.find((r) => r.engine === "llm");
   const engine: SeoEngine = errorItem ? "error" : llmItem ? "llm" : "template";
   const warning = errorItem?.warning ?? items.find((r) => r.warning)?.warning;
-  return { items, engine, ...(warning ? { warning } : {}) };
+  return { items, engine, scope: "metadata-only", ...(warning ? { warning } : {}) };
 }

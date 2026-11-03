@@ -48,13 +48,14 @@ export async function POST(request: Request) {
       );
     }
     try {
-      const { items, engine, warning } = await generateSeoCopyBatch(
+      const { items, engine, warning, scope } = await generateSeoCopyBatch(
         parsedBatch.data.demos,
       );
       return NextResponse.json({
         copies: items.map((item) => item.copy),
         engine,
         warning,
+        scope,
       });
     } catch (error) {
       console.error("[ai-seo:batch]", error);
@@ -78,8 +79,8 @@ export async function POST(request: Request) {
     // Statut 200 conservé : `copy` est toujours exploitable (repli gabarit).
     // `engine: "error"` + `warning` indiquent à l'admin qu'une clé existe mais
     // que l'appel a échoué (clé refusée, quota, timeout…).
-    const { copy, engine, warning } = await generateSeoCopy(demo);
-    return NextResponse.json({ copy, engine, warning });
+    const { copy, engine, warning, scope } = await generateSeoCopy(demo);
+    return NextResponse.json({ copy, engine, warning, scope });
   } catch (error) {
     console.error("[ai-seo]", error);
     return NextResponse.json(

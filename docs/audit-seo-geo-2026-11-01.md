@@ -97,6 +97,12 @@ Le nombre **63** décrit l’environnement local sans base. Le nombre **788** d�
 
 **Contrôles de publication prioritaires mais non tranchés :** propriété GSC, sitemap soumis et lu, redirections HTTP/HTTPS et www, protection des previews, couverture indexée et performance mobile. Leur absence de mesure n’est pas une preuve de défaillance.
 
+> **Suivi A14 (2026-11-02).** Le score admin est désormais explicitement un
+> score de complétude technique (`scoreScope: "technical-completeness"`), le
+> contrôle HowTo ne prétend plus que les témoignages sont balisés en `Review`,
+> et les scripts/docs distinguent « schéma valide », « éligibilité » et
+> « résultat réel ». Détail dans `docs/seo-audit.md` §7.
+
 ## 4. SEO technique et sitemap
 
 ### 4.1 Points déjà bien construits

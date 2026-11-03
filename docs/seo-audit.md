@@ -19,11 +19,18 @@
 | Pilier | Audit initial | Avant ce nouvel audit | Après ce nouvel audit (+ automatisations) |
 |---|---|---|---|
 | **SEO Technique & Métadonnées** | ~55 / 100 | 92 / 100 | **98 / 100** |
-| **Données structurées (JSON-LD)** | ~35 / 100 | 85 / 100 | **99 / 100** |
+| **Complétude des schémas JSON-LD (syntaxe/présence)** | ~35 / 100 | 85 / 100 | **99 / 100** |
 | **Contenu serveur & Maillage interne** | ~50 / 100 | 72 / 100 | **96 / 100** |
-| **Référencement IA / GEO (`llms.txt`, RAG, Crawlers)** | ~20 / 100 | 78 / 100 | **98 / 100** |
+| **Pré-requis GEO (`llms.txt`, flux, crawlers)** | ~20 / 100 | 78 / 100 | **98 / 100** |
 | **Automatisations SEO & Admin IA** | ~10 / 100 | 70 / 100 | **97 / 100** |
-| **Score Global SEO + IA** | **~55 / 100** | **~84 / 100** | **~97 / 100** |
+| **Score de complétude technique (auto-évaluation)** | **~55 / 100** | **~84 / 100** | **~97 / 100** |
+
+> **Portée des scores (A14).** Les valeurs ci-dessous sont des appréciations
+> d'implémentation datées, pas des mesures Google. Un score de 100/100
+> signifie que les champs et contrôles techniques sont présents et cohérents ;
+> il ne prouve ni l'indexation, ni le classement, ni l'éligibilité aux
+> résultats enrichis, ni une citation IA. La validité syntaxique d'un
+> JSON-LD est une condition nécessaire, pas une garantie d'affichage.
 
 ---
 
@@ -49,7 +56,7 @@
 
 ### 2.4 Faille #4 (Majeur — Données structurées Schema.org incomplètes)
 - **Constat** :
-  1. `ProfessionalService` (`localBusinessJsonLd`) n'avait ni coordonnées GPS (`geo: GeoCoordinates`), ni `hasMap`, ni `knowsAbout`, ni les avis individuels (`review: Review[]`) pourtant présents dans `content.testimonials`.
+  1. `ProfessionalService` (`localBusinessJsonLd`) n'avait ni coordonnées GPS (`geo: GeoCoordinates`), ni `hasMap`, ni `knowsAbout`. Les avis individuels (`review: Review[]`) ne sont volontairement pas balisés : les avis auto-déclarés ne sont pas éligibles aux résultats enrichis Google.
   2. `OfferCatalog` (`offerCatalogJsonLd`) n'exposait que les 3 formules principales et ignorait les **6 services à la carte** (`config.standaloneServices` : refonte 49 $, section 19 $, slides 29 $, branding 39 $, landing page 59 $, audit 15 $).
   3. Le processus en 5 étapes (`content.process`) n'était pas structuré en schéma `HowTo`.
   4. `CreativeWork` (`demoJsonLd` sur `/demos/[slug]`) n'exposait pas l'offre tarifaire (`offers: Offer` avec le prix USD calculé pour la réalisation), ni les fonctionnalités (`features` AR/EN), ni `workExample`.
@@ -65,7 +72,7 @@
 - **Constat** : Dans `/admin/content`, l'administrateur devait cliquer manuellement sur « Générer avec l'IA » sur chacune des 12 réalisations l'une après l'autre, et une réalisation enregistrée sans clic laissait ses 6 champs SEO vides en base.
 - **Correction & Automatisation** :
   - Auto-complétion automatique (`ensureDemoSeoFields`) lors de la lecture et de la sauvegarde (`saveContentSection("demos")`) : aucun projet ne peut plus avoir de champ SEO vide.
-  - Mode **Batch IA** (`POST /api/admin/ai/seo` avec `{ demos: [...] }`) + bouton **« Générer tout le SEO avec l'IA (12) »** + barre de **Score SEO & IA en direct (/100)** dans `/admin/content`.
+  - Mode **Batch IA** (`POST /api/admin/ai/seo` avec `{ demos: [...] }`) + bouton **« Générer tout le SEO avec l'IA (12) »** + barre de **Score de complétude technique en direct (/100)** dans `/admin/content`.
 
 ---
 
@@ -75,20 +82,26 @@
 
 | # | Automatisation | Fichiers clés | Déclencheur | Impact Web & IA |
 |---|---|---|---|---|
-| **A1** | **Flux IA `/llms.txt` et `/llms-full.txt` 100 % dynamiques** | `src/lib/llms-txt.ts`, `src/app/llms.txt/route.ts`, `src/app/llms-full.txt/route.ts` | Chaque requête + invalidation ISR automatique au `save` Admin | Les LLM (ChatGPT, Perplexity, Claude, Gemini) ingèrent toujours les tarifs, démos, services et FAQ à jour en AR et EN. |
+| **A1** | **Flux IA `/llms.txt` et `/llms-full.txt` 100 % dynamiques** | `src/lib/llms-txt.ts`, `src/app/llms.txt/route.ts`, `src/app/llms-full.txt/route.ts` | Chaque requête + invalidation ISR automatique au `save` Admin | Les flux publient les tarifs, démos, services et FAQ à jour en AR et EN. L'ingestion réelle par les LLM (ChatGPT, Perplexity, Claude, Gemini) n'est pas garantie par la publication. |
 | **A2** | **Auto-complétion & Génération SEO IA en lot (Batch)** | `src/lib/ai/seo-generator.ts`, `src/app/api/admin/ai/seo/route.ts`, `src/app/admin/actions.ts` | Clic « Générer tout le SEO » dans `/admin/content` + auto-fill à chaque sauvegarde | Génère et borne automatiquement (60 / 160 / 125 car.) les 6 champs SEO bilingues (`metaTitle`, `metaDescription`, `imageAlt` AR/EN) de toutes les réalisations. |
-| **A3** | **Synchronisation temps réel des 9 schémas JSON-LD** | `src/lib/seo.ts`, `src/app/layout.tsx`, `page.tsx`, `pricing/page.tsx`, `demos/[slug]/page.tsx` | Chaque rendu SSR / ISR | Met à jour automatiquement `Organization`, `WebSite`, `ProfessionalService` (+ `geo` + `Review[]`), `OfferCatalog` (3 formules + 6 services), `HowTo` (5 étapes), `FAQPage`, `CollectionPage`, `BreadcrumbList`, `CreativeWork` (+ `Offer`). |
+| **A3** | **Synchronisation temps réel des 9 schémas JSON-LD** | `src/lib/seo.ts`, `src/app/layout.tsx`, `page.tsx`, `pricing/page.tsx`, `demos/[slug]/page.tsx` | Chaque rendu SSR / ISR | Met à jour automatiquement `Organization`, `WebSite`, `ProfessionalService` (+ `geo`, sans avis auto-déclarés), `OfferCatalog` (3 formules + 6 services), `HowTo` (5 étapes), `FAQPage`, `CollectionPage`, `BreadcrumbList`, `CreativeWork` (+ `Offer`). La validité des schémas ne garantit pas l'éligibilité aux résultats enrichis. |
 | **A4** | **Maillage interne & contenu sémantique serveur automatique sur `/demos/[slug]`** | `src/components/live-site-frames.tsx`, `src/app/(site)/demos/[slug]/demo-viewer.tsx` | Rendu serveur de chaque fiche réalisation | Sélectionne automatiquement les 4 projets les plus proches (même secteur + même catégorie) et injecte l'étude de cas bilingue complète dans le DOM initial. |
 | **A5** | **Cartes Open Graph & Twitter 1200×630 générées à la volée (Satori)** | `src/lib/og-image.tsx`, `src/app/(site)/demos/[slug]/opengraph-image.tsx` | Build / requête sur chaque `/demos/[slug]` | Chaque nouvelle réalisation ajoutée dans `/admin` obtient automatiquement son visuel social brandé en arabe/anglais sans graphiste. |
-| **A6** | **Ping automatique IndexNow multi-moteurs (Pages + Sitemap + Flux IA)** | `src/lib/indexnow.ts`, `src/app/admin/actions.ts` | Chaque sauvegarde ou réinitialisation dans `/admin` | Notifie instantanément Bing, Yandex, Naver, Seznam (et les moteurs IA qui s'appuient sur Bing/IndexNow comme ChatGPT Search et Copilot) de toutes les URLs + `/llms.txt` + `/llms-full.txt`. |
-| **A7** | **Moteur d'audit SEO & GEO en direct dans l'Admin** | `src/lib/seo-audit.ts`, `src/app/api/admin/seo-audit/route.ts`, `content-editor.tsx` | Temps réel à chaque frappe dans `/admin/content` + API `GET /api/admin/seo-audit` | Calcule le score `/100`, détecte les doublons de slugs/titres, les dépassements de longueur SERP et la richesse des FAQ pour l'IA. |
-| **A8** | **Garde-fou CI/CD SEO + GEO + Lighthouse** | `scripts/seo-check.mjs`, `scripts/seo-generator.test.mjs`, `.github/workflows/seo.yml` | Chaque `push` ou `pull_request` GitHub | Bloque toute régression : vérifie les 21 URLs/ressources, la présence de chaque démo dans `/llms.txt` & `/llms-full.txt`, la conformité `FAQPage`/`HowTo`/`ProfessionalService`, le maillage interne et les scores Lighthouse ≥ 90. |
+| **A6** | **Ping automatique IndexNow multi-moteurs (Pages + Sitemap + Flux IA)** | `src/lib/indexnow.ts`, `src/app/admin/actions.ts` | Chaque sauvegarde ou réinitialisation dans `/admin` | Appelle IndexNow pour toutes les URLs + `/llms.txt` + `/llms-full.txt`. La prise en compte par Bing, Yandex, Naver, Seznam ou les moteurs IA n'est pas garantie. |
+| **A7** | **Moteur d'audit de complétude technique SEO & GEO en direct dans l'Admin** | `src/lib/seo-audit.ts`, `src/app/api/admin/seo-audit/route.ts`, `content-editor.tsx` | Temps réel à chaque frappe dans `/admin/content` + API `GET /api/admin/seo-audit` | Calcule un score de complétude technique `/100`, détecte les doublons de slugs/titres, les dépassements de longueur SERP et la richesse des FAQ. Le score ne mesure ni le classement, ni l'éligibilité, ni les citations IA. |
+| **A8** | **Garde-fou CI/CD SEO + GEO + Lighthouse** | `scripts/seo-check.mjs`, `scripts/seo-generator.test.mjs`, `.github/workflows/seo.yml` | Chaque `push` ou `pull_request` GitHub | Signale les régressions techniques : présence de chaque démo dans `/llms.txt` & `/llms-full.txt`, syntaxe et cohérence `FAQPage`/`HowTo`/`ProfessionalService`, maillage interne et scores Lighthouse ≥ 90. Un code 0 ne prouve pas le référencement. |
 
 ---
 
 ### 3.2 Automatisations complémentaires à connecter (Roadmap Infrastructure & Croissance)
 
 Voici toutes les automatisations externes et workflows additionnels pouvant être branchés autour du site pour maximiser le référencement Web et IA :
+
+> **Pré-requis, pas résultats.** Ces automatisations produisent des signaux
+> techniques (flux, schémas, pings, exports). Elles ne garantissent ni
+> l'indexation, ni le classement, ni une citation par un moteur IA. Les
+> résultats réels se mesurent dans Search Console, les rapports de
+> performance et les outils de suivi de citations.
 
 #### 1. Automatisation de l'indexation Google (Google Indexing / Search Console API) — ✅ **implémenté le 2026-10-20**
 - **Objectif** : Compléter IndexNow (qui couvre Bing / ChatGPT Search / Perplexity / Yandex) par une soumission directe à Google.
@@ -231,6 +244,11 @@ Ajouts techniques : `src/lib/services.ts` (contenu éditorial + schémas), `src/
 | Automatisations SEO & Admin IA | 97 | **99** |
 | **Score global** | **97** | **~98,5** |
 
+> **Portée (A14).** Ce tableau est une auto-évaluation de complétude
+> d'implémentation, pas une mesure de référencement. Les scores ne prouvent ni
+> l'indexation, ni le classement, ni l'éligibilité aux résultats enrichis, ni
+> les citations IA.
+
 Reste à brancher (roadmap) : blog/guides éditoriaux bilingues, captures Playwright des démos et badges de netlinking client. Le monitoring des citations IA est désormais outillé (GEO Tracker) — il suffit d'ajouter les clés API dans les secrets GitHub.
 
 
@@ -296,3 +314,33 @@ L'intégration du badge dans chaque dépôt client reste manuelle (ce sont des d
 ### 6.6 Roadmap restante
 
 Le générateur d'articles bilingues dans `/admin` (§3.2 point 3, volet administration) est le dernier chantier non outillé. Search Console, le GEO Tracker, le blog, les captures d'aperçu et le badge de netlinking sont désormais en place.
+
+---
+
+## 7. Correctif A14 — distinguer schéma valide, éligibilité et résultat réel
+
+Le 2 novembre 2026, les formulations qui laissaient croire qu'un score ou un
+schéma valide prouvait un bénéfice de référencement ont été corrigées :
+
+- **Score admin** (`src/lib/seo-audit.ts`) : le score est désormais explicitement
+  un **score de complétude technique**. L'API `/api/admin/seo-audit` renvoie
+  `scoreScope: "technical-completeness"`, un libellé et un avertissement de
+  portée. Un score de 100/100 signifie que les contrôles sont satisfaits, pas
+  que le site est indexé, classé ou cité par une IA.
+- **Avis clients** : le contrôle HowTo ne prétend plus que les témoignages sont
+  balisés en `Review`. Les avis auto-déclarés ne sont pas éligibles aux
+  résultats enrichis Google ; les témoignages restent visibles dans le HTML.
+- **Schémas JSON-LD** : les commentaires et documents distinguent maintenant
+  « schéma présent et syntaxiquement valide », « éligibilité aux résultats
+  enrichis » (non garantie) et « résultat réel » (classement, clic, citation),
+  qui relèvent d'autres mesures.
+- **Garde-fou `scripts/seo-check.mjs`** : le script annonce des contrôles
+  techniques et précise qu'un code 0 ne mesure ni le classement, ni
+  l'éligibilité, ni les citations IA.
+- **Générateur de métadonnées** (`src/lib/ai/seo-generator.ts`) : la
+  complétion des champs est présentée comme un pré-requis technique, sans
+  promesse de classement. Le résultat expose `scope: "metadata-only"` et
+  l'API `/api/admin/ai/seo` renvoie cette portée avec les copies générées.
+
+Les scores historiques des sections 1 et 5 restent des auto-évaluations
+d'implémentation ; ils ne doivent pas être cités comme des résultats SEO.
