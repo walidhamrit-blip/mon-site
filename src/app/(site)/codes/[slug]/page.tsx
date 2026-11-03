@@ -1,3 +1,5 @@
+import Link from "next/link";
+import { categoryHref, getDigitalCategory } from "@/lib/digital-categories";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import {
@@ -125,6 +127,7 @@ export default async function DigitalProductPage({
   // maillage. Les qualificatifs opérationnels du fournisseur n'ont pas leur
   // place dans un titre indexé. La région est conservée quand la fiche est
   // régionale (A01) : « Free Fire (MENA) » ≠ « Free Fire (EU) ».
+  const category = getDigitalCategory(product.kind);
   const localeTitle = productSeoName(product, locale);
   const faqs = productFaqs(product, locale);
 
@@ -178,12 +181,14 @@ export default async function DigitalProductPage({
                 : "Digital codes & gift cards",
               path: "/codes",
             },
+            ...(category ? [{ name: ar ? category.ar : category.en, path: categoryHref(category.kind) }] : []),
             { name: localeTitle, path: `/codes/${product.slug}` },
           ]),
           productSchema,
           faqSchema,
         ]}
       />
+      {category && <nav aria-label={ar ? "فئة المنتج" : "Product category"} className="site-container px-4 pt-4 sm:px-6 lg:px-8"><Link href={categoryHref(category.kind)} className="text-sm underline">{ar ? category.ar : category.en}</Link></nav>}
       <DigitalProductDetails product={product} displayName={localeTitle} related={related} />
     </>
   );

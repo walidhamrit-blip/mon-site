@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useI18n } from "@/lib/i18n";
 import { useSiteConfig } from "./site-provider";
 import { EditorialVisual } from "./editorial-visual";
+import { DigitalCategoryNavigation } from "./digital-category-navigation";
 import { DigitalCatalog } from "./digital-catalog";
 import { StoreUnavailableNotice } from "./store-status-notice";
 import { storeCategories } from "@/lib/site-hierarchy";
@@ -104,6 +105,7 @@ export function DigitalStoreView({ products, degraded, initialKind }: {
         catalogue réel — c'est exactement ce qui a trompé les visiteurs (et
         le sitemap) le 29/10/2026.
       */}
+      <DigitalCategoryNavigation ar={ar} />
       <nav aria-label={ar ? "فئات المتجر" : "Store categories"} className="site-container flex flex-wrap gap-2 px-4 py-6 sm:px-6 lg:px-8">
         {storeCategories.map((category) => <Link key={category.kind} href={category.kind === "all" ? "/codes" : `/codes?kind=${category.kind}`} aria-current={initialKind === category.kind ? "page" : undefined} className={`rounded-full border px-4 py-2 text-sm font-bold ${initialKind === category.kind ? "border-[var(--accent)] bg-[var(--accent)] text-[var(--accent-foreground)]" : "border-[var(--border)] bg-[var(--card)]"}`}>{ar ? category.ar : category.en}</Link>)}
       </nav>

@@ -67,6 +67,8 @@ async function fetchText(url) {
 
 function checkPage(pathname, html) {
   const page = pathname || "/";
+  const isCodeCategory = page.startsWith("/codes/category/");
+  const isCodeProduct = /^\/codes\/[^/?]+$/.test(page) && page !== "/codes/commande";
   let title = "";
 
   // ── Title ──
@@ -116,7 +118,8 @@ function checkPage(pathname, html) {
   } else {
     // La canonique doit désigner LA page testée, pas une autre URL du site.
     try {
-      const canonicalPath = new URL(canonicalMatch[1]).pathname.replace(/\/+$/, "") || "/";
+      const canonicalUrl = new URL(decode(canonicalMatch[1]));
+      const canonicalPath = (canonicalUrl.pathname.replace(/\/+$/, "") || "/") + canonicalUrl.search;
       const expected = page === "/" ? "/" : page.replace(/\/+$/, "");
       if (canonicalPath !== expected) {
         record(page, "error", `canonical incohérente (${canonicalPath}) pour ${expected}`);
@@ -223,7 +226,7 @@ function checkPage(pathname, html) {
     page.startsWith("/services/") ||
     page.startsWith("/blog/") ||
     page.startsWith("/compare/") ||
-    page.startsWith("/codes/");
+    isCodeProduct;
   if (isFaqExpected) {
     if (!hasFaqSchema) {
       record(page, "error", "schéma FAQPage attendu sur cette page mais absent");
@@ -345,7 +348,7 @@ function checkPage(pathname, html) {
   }
 
   // ── Fiches produits du catalogue digital ──
-  if (page.startsWith("/codes/") && page !== "/codes" && !page.startsWith("/codes/commande")) {
+  if (isCodeProduct) {
     const product = parsedSchemas.find((s) => s && s["@type"] === "Product");
     if (!product) {
       record(page, "error", "schéma Product absent sur la fiche produit");
@@ -374,6 +377,18 @@ function checkPage(pathname, html) {
     // sinon les pages profondes n'irriguent plus le hub.
     if (!/href=["']\/codes["']/.test(html)) {
       record(page, "error", "aucun lien de retour vers /codes depuis la fiche produit");
+    }
+  }
+
+  // ── Rayons paginés : collections, pas fiches produits ──
+  if (isCodeCategory) {
+    const collection = parsedSchemas.find((schema) => schema?.["@type"] === "CollectionPage");
+    if (!collection) record(page, "error", "schéma CollectionPage absent du rayon");
+    if (collection?.mainEntity?.["@type"] !== "ItemList") {
+      record(page, "error", "ItemList absent du rayon");
+    }
+    if (!/href=["']\/codes["']/.test(html)) {
+      record(page, "error", "aucun lien de retour vers /codes depuis le rayon");
     }
   }
 
@@ -551,7 +566,8 @@ async function main() {
     // quel que soit son hôte (local, preview CI, production).
     paths = urls.map((u) => {
       try {
-        return new URL(u).pathname || "/";
+        const url = new URL(decode(u));
+        return (url.pathname || "/") + url.search;
       } catch {
         return u;
       }

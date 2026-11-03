@@ -8,7 +8,7 @@ export const primaryNavigation = [
   { href: "/contact", ar: "تواصل معنا", en: "Contact" },
 ] as const;
 
-// Facets, not SEO landing pages: /codes remains the canonical catalogue.
+// Legacy ?kind= facets stay supported; SEO categories live under /codes/category/[kind].
 // The supplier classifies game keys and software together as software_key.
 export const storeCategories = [
   { kind: "all", ar: "الكل", en: "All products" },
