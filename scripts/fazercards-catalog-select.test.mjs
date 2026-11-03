@@ -9,14 +9,15 @@
  * Pannes couvertes :
  *   - 03/11/2026 : « GooglePlay » (sans espace) n'était pas reconnue comme
  *     marque prioritaire « google play » → jamais synchronisée ;
- *   - 03/11/2026 : avec un plafond rempli par les variantes régionales de
- *     PlayStation/Steam/Xbox/Roblox, « google play » n'avait plus de slot.
+ *   - 03/11/2026 : le plafond tronquait les marques prioritaires → non
+ *     seulement les marques tardives, mais aussi les variantes régionales
+ *     classées en dernier dans une marque (ex. « Google Play (US) » en ordre
+ *     alphabétique) n'étaient jamais synchronisées.
  */
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
   brandPriority,
-  MIN_SLOTS_PER_BRAND,
   normalizeBrandText,
   PRIORITY_BRANDS,
   selectCategories,
@@ -48,53 +49,46 @@ test("brandPriority : une catégorie inconnue n'est pas prioritaire", () => {
   assert.equal(brandPriority("Some Random Brand"), NOT_PRIORITY);
 });
 
-test("selectCategories : chaque marque prioritaire a son minimum garanti même avec un petit plafond", () => {
-  // 50 PlayStation + 50 Steam + 5 GooglePlay + 100 autres, plafond = 20.
+test("selectCategories : TOUTES les variantes prioritaires sont retenues, même au-delà du plafond", () => {
+  // 50 PlayStation + 5 GooglePlay (US en dernier, ordre alphabétique API) + 100 autres.
   const items = [
     ...Array.from({ length: 50 }, (_, i) => `PlayStation (R${i})`),
-    ...Array.from({ length: 50 }, (_, i) => `Steam (R${i})`),
-    ...Array.from({ length: 5 }, (_, i) => `GooglePlay (R${i})`),
+    ...["GooglePlay (AE)", "GooglePlay (EG)", "GooglePlay (SA)", "GooglePlay (TR)", "GooglePlay (US)"],
     ...Array.from({ length: 100 }, (_, i) => `Marque diverse ${i}`),
   ];
   const { selected, nextOffset } = selectCategories(items, (x) => x, 20, 0);
   const google = selected.filter((x) => brandPriority(x) === GOOGLE_PLAY);
-  // Avant le correctif, les 20 slots étaient pris par PlayStation/Steam et
-  // Google Play en avait 0.
-  assert.ok(
-    google.length >= MIN_SLOTS_PER_BRAND,
-    `google play doit avoir au moins ${MIN_SLOTS_PER_BRAND} slots, reçu ${google.length}`,
-  );
-  assert.equal(google.length, 5, "les 5 variantes Google Play tiennent dans le plafond");
-  assert.equal(selected.length, 20, "le plafond est rempli");
-  assert.equal(nextOffset, 0, "aucun reste consommé tant que des prioritaires restent");
+  // Avant le correctif, le plafond de 20 ne retenait que des PlayStation :
+  // Google Play (US) n'avait aucun slot.
+  assert.equal(google.length, 5, `les 5 variantes Google Play doivent être retenues, reçu ${google.length}`);
+  assert.ok(selected.includes("GooglePlay (US)"), "la variante US (classée en dernier) est retenue");
+  assert.equal(selected.length, 55, "toutes les prioritaires passent avant le plafond");
+  assert.equal(nextOffset, 0, "aucun slot restant pour le reste : rotation inchangée");
 });
 
-test("selectCategories : le plafond très petit répartit quand même entre les marques", () => {
+test("selectCategories : le plafond ne s'applique qu'à la fenêtre glissante sur le reste", () => {
   const items = [
-    ...Array.from({ length: 10 }, (_, i) => `PlayStation (R${i})`),
-    ...Array.from({ length: 10 }, (_, i) => `GooglePlay (R${i})`),
+    "Steam (EU)",
+    "Google Play (US)",
+    ...Array.from({ length: 25 }, (_, i) => `Autre ${i}`),
   ];
-  const { selected } = selectCategories(items, (x) => x, 4, 0);
-  assert.equal(selected.length, 4);
-  assert.ok(selected.some((x) => brandPriority(x) === GOOGLE_PLAY), "Google Play servi malgré le petit plafond");
-  assert.ok(selected.some((x) => brandPriority(x) === 0), "PlayStation servi aussi");
-});
+  const first = selectCategories(items, (x) => x, 10, 0);
+  assert.equal(first.selected.length, 10, "2 prioritaires + 8 du reste");
+  assert.deepEqual(first.selected.slice(0, 2).sort(), ["Google Play (US)", "Steam (EU)"]);
+  assert.deepEqual(first.selected.slice(2), Array.from({ length: 8 }, (_, i) => `Autre ${i}`));
+  assert.equal(first.nextOffset, 8);
 
-test("selectCategories : fenêtre glissante sur le reste, avec rotation reprise au passage suivant", () => {
-  const rest = Array.from({ length: 25 }, (_, i) => `Autre ${i}`);
-  const first = selectCategories(rest, (x) => x, 10, 0);
-  assert.equal(first.selected.length, 10);
-  assert.deepEqual(first.selected.map((x) => x), rest.slice(0, 10));
-  assert.equal(first.nextOffset, 10);
+  const second = selectCategories(items, (x) => x, 10, first.nextOffset);
+  assert.deepEqual(second.selected.slice(2), Array.from({ length: 8 }, (_, i) => `Autre ${8 + i}`));
+  assert.equal(second.nextOffset, 16);
 
-  const second = selectCategories(rest, (x) => x, 10, first.nextOffset);
-  assert.deepEqual(second.selected.map((x) => x), rest.slice(10, 20));
-  assert.equal(second.nextOffset, 20);
-
-  // La fenêtre prend `min(cap, reste)` éléments en bouclant : 20..24 puis 0..4.
-  const third = selectCategories(rest, (x) => x, 10, second.nextOffset);
-  assert.deepEqual(third.selected.map((x) => x), [...rest.slice(20, 25), ...rest.slice(0, 5)]);
-  assert.equal(third.nextOffset, 5, "la rotation boucle en enveloppant");
+  // Bouclage de la rotation : offset 24 → Autre 24 puis enveloppe 0..6.
+  const third = selectCategories(items, (x) => x, 10, 24);
+  assert.deepEqual(third.selected.slice(2), [
+    "Autre 24",
+    ...Array.from({ length: 7 }, (_, i) => `Autre ${i}`),
+  ]);
+  assert.equal(third.nextOffset, 7);
 });
 
 test("selectCategories : sans reste, nextOffset vaut 0", () => {
@@ -108,4 +102,12 @@ test("selectCategories : plafond supérieur au nombre d'items retourne tout", ()
   const items = ["Google Play (US)", "PlayStation (SA)", "Autre chose"];
   const { selected } = selectCategories(items, (x) => x, 80, 0);
   assert.equal(selected.length, 3);
+});
+
+test("selectCategories : les prioritaires restent prioritaires même avec un plafond de 1", () => {
+  const items = ["Google Play (US)", "PlayStation (SA)", "Autre 1", "Autre 2"];
+  const { selected } = selectCategories(items, (x) => x, 1, 0);
+  assert.ok(selected.includes("Google Play (US)"));
+  assert.ok(selected.includes("PlayStation (SA)"));
+  assert.equal(selected.length, 2, "le reste n'entre pas tant que des prioritaires existent");
 });

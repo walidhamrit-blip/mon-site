@@ -41,19 +41,17 @@ import {
 } from "@/lib/fazercards-catalog-store";
 // Sélection des catégories à synchroniser : module pur, testé directement
 // (scripts/fazercards-catalog-select.test.mjs). Voir les pannes 28/10 et
-// 03/11/2026 documentées dans ce module — notamment le minimum garanti de
-// MIN_SLOTS_PER_BRAND catégories par marque prioritaire, sans quoi les
-// variantes régionales des premières marques (PlayStation, Steam…) pouvaient
-// occuper seules tout le plafond et laisser « google play » sans aucun slot.
+// 03/11/2026 documentées dans ce module — TOUTES les catégories des marques
+// prioritaires sont toujours synchronisées (y compris « Google Play (US) ») ;
+// le plafond ne borne que la fenêtre glissante sur le reste du catalogue.
 import {
   brandPriority,
-  MIN_SLOTS_PER_BRAND,
   normalizeBrandText,
   PRIORITY_BRANDS,
   selectCategories,
 } from "@/lib/fazercards-catalog-select";
 
-export { brandPriority, MIN_SLOTS_PER_BRAND, normalizeBrandText, PRIORITY_BRANDS, selectCategories };
+export { brandPriority, normalizeBrandText, PRIORITY_BRANDS, selectCategories };
 import {
   DIGITAL_KINDS,
   type DigitalDenomination,
@@ -346,13 +344,19 @@ function catalogConcurrency(): number {
 }
 
 /**
- * Plafond de catégories DÉTAILLÉES par famille et par synchronisation.
+ * Plafond de catégories « hors marques prioritaires » DÉTAILLÉES par famille
+ * et par synchronisation.
+ *
+ * ⚠️ Le plafond ne s'applique PAS aux marques prioritaires (PlayStation,
+ * Steam, Google Play…) : elles sont TOUJOURS toutes sélectionnées, sinon
+ * leurs variantes régionales classées en dernier (ordre alphabétique de
+ * l'API, ex. « Google Play (US) ») ne seraient jamais synchronisées.
  *
  * Une synchro coûte UN appel HTTP par catégorie (les listes, elles, sont
  * paginées et peu coûteuses). Ce plafond borne le temps d'exécution d'une
- * fonction serverless. Les catégories non détaillées ne sont pas perdues :
- * elles sont prises au passage suivant (rotation) et le catalogue déjà
- * synchronisé est conservé et fusionné.
+ * fonction serverless pour le reste du catalogue. Les catégories non
+ * détaillées ne sont pas perdues : elles sont prises au passage suivant
+ * (rotation) et le catalogue déjà synchronisé est conservé et fusionné.
  */
 function catalogMaxCategories(): number {
   const raw = Number(process.env.FAZERCARDS_CATALOG_MAX_CATEGORIES);
@@ -450,8 +454,8 @@ async function collectCategories<T>(
 }
 
 // `selectCategories` est importé depuis `@/lib/fazercards-catalog-select`
-// (voir l'en-tête de section ci-dessus) : minimum garanti par marque
-// prioritaire + round-robin + fenêtre glissante sur le reste.
+// (voir l'en-tête de section ci-dessus) : toutes les marques prioritaires
+// d'abord, puis fenêtre glissante sur le reste.
 
 /** Extrait la région d'un libellé de catégorie : « PlayStation (US) » → US. */
 export function regionFromCategoryName(name: string): string | null {
