@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import { pageLocale } from "@/lib/locale-server";
+import type { LocalePageProps } from "@/lib/locale";
 import { getAllKnownDemos, getSiteDataCached } from "@/lib/store";
 import {
   breadcrumbJsonLd,
@@ -19,15 +21,18 @@ export async function generateStaticParams() {
 
 export async function generateMetadata({
   params,
+  searchParams,
 }: {
   params: Promise<{ slug: string }>;
-}): Promise<Metadata> {
+} & LocalePageProps): Promise<Metadata> {
   const { slug } = await params;
   const { config, content } = await getSiteDataCached();
+  const locale = await pageLocale(config, searchParams);
   const allDemos = getAllKnownDemos(content);
   const demo = allDemos.find((d) => d.slug === slug);
   if (!demo) {
     return pageMetadata(config, {
+    locale,
       path: `/demos/${slug}`,
       title: "معرض غير موجود",
       description: "هذا المعرض غير متاح حالياً.",
@@ -35,10 +40,10 @@ export async function generateMetadata({
     });
   }
 
-  const locale = siteLocale(config);
   const seo = demoSeoMeta(demo, locale);
 
   return pageMetadata(config, {
+    locale,
     path: `/demos/${demo.slug}`,
     title: seo.title,
     description: seo.description,
@@ -50,9 +55,10 @@ export async function generateMetadata({
   });
 }
 
-export default async function DemoPage({ params }: { params: Promise<{ slug: string }> }) {
+export default async function DemoPage({ params, searchParams }: { params: Promise<{ slug: string }> } & LocalePageProps) {
   const { slug } = await params;
   const { config, content } = await getSiteDataCached();
+  const locale = await pageLocale(config, searchParams);
   const allDemos = getAllKnownDemos(content);
   const demo = allDemos.find((d) => d.slug === slug);
   if (!demo) notFound();
@@ -65,8 +71,8 @@ export default async function DemoPage({ params }: { params: Promise<{ slug: str
             { name: "الرئيسية", path: "/" },
             { name: "المعارض", path: "/demos" },
             { name: demo.title, path: `/demos/${demo.slug}` },
-          ]),
-          demoJsonLd(config, demo),
+          ], locale),
+          demoJsonLd(config, demo, locale),
         ]}
       />
       <DemoViewer demo={demo} allDemos={allDemos} />

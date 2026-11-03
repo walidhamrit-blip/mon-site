@@ -1,4 +1,7 @@
 import type { Metadata } from "next";
+import { pageLocale } from "@/lib/locale-server";
+import type { LocalePageProps } from "@/lib/locale";
+import { localizedAbsoluteUrl } from "@/lib/locale";
 import { notFound } from "next/navigation";
 import { getSiteDataCached } from "@/lib/store";
 import {
@@ -27,14 +30,17 @@ export async function generateStaticParams() {
 
 export async function generateMetadata({
   params,
+  searchParams,
 }: {
   params: Promise<{ slug: string }>;
-}): Promise<Metadata> {
+} & LocalePageProps): Promise<Metadata> {
   const { slug } = await params;
   const { config } = await getSiteDataCached();
   const article = findArticle(blogArticles, slug);
+  const locale = await pageLocale(config, searchParams);
   if (!article) {
     return pageMetadata(config, {
+    locale,
       path: articlePath(slug),
       title: "Guide not found",
       description: "This guide is not available right now.",
@@ -44,8 +50,8 @@ export async function generateMetadata({
   // Les métadonnées suivent la langue de référence du site : un titre
   // anglais sur un corps arabe envoie un signal contradictoire à Google et
   // dégrade le taux de clic dans la SERP arabe.
-  const locale = siteLocale(config);
   return pageMetadata(config, {
+    locale,
     path: articlePath(article.slug),
     title: locale === "ar" ? article.titleAr : article.titleEn,
     description: locale === "ar" ? article.excerptAr : article.excerptEn,
@@ -57,17 +63,18 @@ export async function generateMetadata({
 
 export default async function ArticlePage({
   params,
+  searchParams,
 }: {
   params: Promise<{ slug: string }>;
-}) {
+} & LocalePageProps) {
   const { slug } = await params;
   const { config, content } = await getSiteDataCached();
   const article = findArticle(blogArticles, slug);
   if (!article) notFound();
 
-  const locale = siteLocale(config);
+  const locale = await pageLocale(config, searchParams);
   const ar = locale === "ar";
-  const canonical = absoluteUrl(config, articlePath(article.slug));
+  const canonical = localizedAbsoluteUrl(config.url, articlePath(article.slug), locale, siteLocale(config));
   const services = (article.relatedServices ?? [])
     .map((id) => config.standaloneServices.find((service) => service.id === id) ?? null)
     .filter((service): service is NonNullable<typeof service> => Boolean(service))
@@ -118,9 +125,10 @@ export default async function ArticlePage({
               name: ar ? article.titleAr : article.titleEn,
               path: articlePath(article.slug),
             },
-          ]),
+          ], locale),
           webPageJsonLd(config, {
             path: articlePath(article.slug),
+            locale,
             name: ar ? article.titleAr : article.titleEn,
             description: ar ? article.answerAr : article.answerEn,
             speakable: ["h1", "#article-answer"],
@@ -128,7 +136,7 @@ export default async function ArticlePage({
             dateModified: article.updatedAt,
           }),
           articleJsonLd(config, article, { locale }),
-          articleFaqJsonLd(article),
+          articleFaqJsonLd(article, locale),
         ]}
       />
       <ArticleView

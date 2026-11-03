@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import { LocalizedLink as Link } from "@/components/localized-link";
 import { EditorialVisual } from "./editorial-visual";
 import { useI18n } from "@/lib/i18n";
 import { useSiteConfig, useSiteContent } from "./site-provider";

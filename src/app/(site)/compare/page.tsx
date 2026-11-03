@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import { pageLocale } from "@/lib/locale-server";
+import type { LocalePageProps } from "@/lib/locale";
 import { getSiteDataCached } from "@/lib/store";
 import { breadcrumbJsonLd, faqJsonLd, pageMetadata, siteLocale, webPageJsonLd } from "@/lib/seo";
 import {
@@ -21,13 +23,14 @@ import { ComparisonHubView } from "@/components/comparison-hub-view";
  * Le rendu visible est un composant **client** : la page suit la langue du
  * site (arabe / anglais) sans rechargement.
  */
-export async function generateMetadata(): Promise<Metadata> {
+export async function generateMetadata({ searchParams }: LocalePageProps): Promise<Metadata> {
   const { config } = await getSiteDataCached();
   // Métadonnées dans la langue principale du site (/admin → Apparence),
   // alignées sur le HTML initial rendu.
-  const locale = siteLocale(config);
+  const locale = await pageLocale(config, searchParams);
 
   return pageMetadata(config, {
+    locale,
     path: "/compare",
     title:
       locale === "ar"
@@ -48,8 +51,9 @@ export async function generateMetadata(): Promise<Metadata> {
   });
 }
 
-export default async function CompareHubPage() {
+export default async function CompareHubPage({ searchParams }: LocalePageProps) {
   const { config } = await getSiteDataCached();
+  const locale = await pageLocale(config, searchParams);
   const sitePriceUsd = config.pricing.plans[0]?.priceUsd ?? 300;
   // Les jetons de marché ({city}, {cityEn}…) sont résolus ici : le
   // composant client reçoit du texte prêt à afficher.
@@ -65,9 +69,10 @@ export default async function CompareHubPage() {
           breadcrumbJsonLd(config, [
             { name: "الرئيسية", path: "/" },
             { name: "المقارنات", path: "/compare" },
-          ]),
+          ], locale),
           webPageJsonLd(config, {
             path: "/compare",
+            locale,
             name: "مقارنات صريحة — نخبة Nukhba",
             description:
               "مقارنات صريحة: إعلانات جوجل وفيسبوك ومنشئات المواقع والمستقلون واشتراكات SEO، مقابل موقع نخبة. التكلفة والملكية والسرعة والأثر بعد المشروع.",

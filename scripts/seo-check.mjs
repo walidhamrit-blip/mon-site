@@ -65,8 +65,9 @@ async function fetchText(url) {
   return { status: res.status, headers: res.headers, body: await res.text() };
 }
 
-function checkPage(pathname, html) {
-  const page = pathname || "/";
+function checkPage(entry, html) {
+  const page = entry || "/";
+  const pathname = page.split("?")[0] || "/";
   let title = "";
 
   // ── Title ──
@@ -116,13 +117,53 @@ function checkPage(pathname, html) {
   } else {
     // La canonique doit désigner LA page testée, pas une autre URL du site.
     try {
-      const canonicalPath = new URL(canonicalMatch[1]).pathname.replace(/\/+$/, "") || "/";
-      const expected = page === "/" ? "/" : page.replace(/\/+$/, "");
-      if (canonicalPath !== expected) {
-        record(page, "error", `canonical incohérente (${canonicalPath}) pour ${expected}`);
+      const canonicalUrl = new URL(canonicalMatch[1]);
+      const canonicalPath = canonicalUrl.pathname.replace(/\/+$/, "") || "/";
+      const expectedPath = pathname === "/" ? "/" : pathname.replace(/\/+$/, "");
+      if (canonicalPath !== expectedPath) {
+        record(page, "error", `canonical incohérente (${canonicalPath}) pour ${expectedPath}`);
       }
     } catch {
       record(page, "error", `canonical illisible : ${canonicalMatch[1]}`);
+    }
+  }
+
+  // ── hreflang réciproques AR/EN ──
+  const alternates = [...html.matchAll(/<link\s+rel=["']alternate["']\s+hrefLang=["']([^"']+)["']\s+href=["']([^"']+)["']/gi)];
+  const byLang = new Map(alternates.map((m) => [m[1].toLowerCase(), m[2]]));
+  for (const required of ["ar", "en", "x-default"]) {
+    if (!byLang.has(required)) record(page, "error", `hreflang ${required} absent`);
+  }
+  if (byLang.has("ar") && byLang.has("en")) {
+    try {
+      const expectedPath = pathname === "/" ? "/" : pathname.replace(/\/+$/, "");
+      const normPath = (href) => {
+        const u = new URL(href);
+        return u.pathname === "/" ? "/" : u.pathname.replace(/\/+$/, "");
+      };
+      const langOf = (href) => new URL(href).searchParams.get("lang");
+      const arHref = byLang.get("ar");
+      const enHref = byLang.get("en");
+      const xDefault = byLang.get("x-default");
+      if (normPath(arHref) !== expectedPath || normPath(enHref) !== expectedPath) {
+        record(page, "error", "hreflang AR/EN ne pointent pas vers le chemin testé");
+      }
+      if (arHref === enHref) record(page, "error", "hreflang AR/EN doivent avoir des URL distinctes");
+      // La langue par défaut garde le chemin propre ; l'autre porte ?lang=…
+      // (on compare chemin + query, pas l'origine : BASE_URL peut être local).
+      if (xDefault && (normPath(xDefault) !== expectedPath || langOf(xDefault))) {
+        record(page, "error", "x-default doit pointer vers le chemin propre sans query de langue");
+      }
+      for (const [code, href] of [["ar", arHref], ["en", enHref]]) {
+        const langParam = langOf(href);
+        const isDefault = !langParam;
+        if (isDefault && xDefault && href !== xDefault) {
+          record(page, "error", `hreflang ${code} par défaut différent de x-default`);
+        }
+        if (!isDefault && langParam !== code) record(page, "error", `hreflang ${code} incorrect : ${href}`);
+      }
+    } catch {
+      record(page, "error", "hreflang illisible");
     }
   }
 
@@ -131,6 +172,15 @@ function checkPage(pathname, html) {
   const lang = langMatch ? langMatch[1].toLowerCase().slice(0, 2) : "";
   if (!lang || (lang !== "ar" && lang !== "en")) {
     record(page, "error", `<html lang> absent ou invalide (« ${lang || "?"} »)`);
+  }
+  if (canonicalMatch && lang && byLang.has(lang)) {
+    try {
+      const canonicalSelf = new URL(canonicalMatch[1]).href.replace(/\/$/, "");
+      const alternateSelf = new URL(byLang.get(lang)).href.replace(/\/$/, "");
+      if (canonicalSelf !== alternateSelf) {
+        record(page, "error", `canonical ${canonicalSelf} différente du hreflang ${lang} ${alternateSelf}`);
+      }
+    } catch { /* already recorded */ }
   }
   const ogLocaleMatch = html.match(
     /<meta\s+property=["']og:locale["']\s+content=["']([^"']+)["']/i,
@@ -211,19 +261,19 @@ function checkPage(pathname, html) {
   const schemaTypes = new Set(parsedSchemas.map((s) => s && s["@type"]).filter(Boolean));
   const hasFaqSchema = schemaTypes.has("FAQPage");
   const isFaqExpected =
-    page === "/" ||
-    page === "/pricing" ||
-    page === "/creation-sites" ||
-    page === "/services" ||
-    page === "/blog" ||
-    page === "/compare" ||
-    page === "/abonnements" ||
-    page === "/codes" ||
-    page.startsWith("/sectors/") ||
-    page.startsWith("/services/") ||
-    page.startsWith("/blog/") ||
-    page.startsWith("/compare/") ||
-    page.startsWith("/codes/");
+    pathname === "/" ||
+    pathname === "/pricing" ||
+    pathname === "/creation-sites" ||
+    pathname === "/services" ||
+    pathname === "/blog" ||
+    pathname === "/compare" ||
+    pathname === "/abonnements" ||
+    pathname === "/codes" ||
+    pathname.startsWith("/sectors/") ||
+    pathname.startsWith("/services/") ||
+    pathname.startsWith("/blog/") ||
+    pathname.startsWith("/compare/") ||
+    pathname.startsWith("/codes/");
   if (isFaqExpected) {
     if (!hasFaqSchema) {
       record(page, "error", "schéma FAQPage attendu sur cette page mais absent");
@@ -232,7 +282,7 @@ function checkPage(pathname, html) {
     record(page, "error", "schéma FAQPage présent sur une page sans section FAQ visible (non-conformité Google)");
   }
 
-  if (page === "/creation-sites" && !schemaTypes.has("HowTo")) {
+  if (pathname === "/creation-sites" && !schemaTypes.has("HowTo")) {
     record(page, "error", "schéma HowTo attendu sur la page création de sites mais absent");
   }
 
@@ -257,7 +307,7 @@ function checkPage(pathname, html) {
     }
   }
 
-  if (page.startsWith("/blog/") && page !== "/blog") {
+  if (pathname.startsWith("/blog/") && pathname !== "/blog") {
     const post = parsedSchemas.find((s) => s && s["@type"] === "BlogPosting");
     if (!post) {
       record(page, "error", "schéma BlogPosting absent sur l'article");
@@ -284,7 +334,7 @@ function checkPage(pathname, html) {
     }
   }
 
-  if (page.startsWith("/services/") && page !== "/services") {
+  if (pathname.startsWith("/services/") && pathname !== "/services") {
     const serviceSchema = parsedSchemas.find((s) => s && s["@type"] === "Service");
     if (!serviceSchema) {
       record(page, "error", "schéma Service absent sur la page service");
@@ -306,7 +356,7 @@ function checkPage(pathname, html) {
     }
   }
 
-  if (page.startsWith("/compare/") && page !== "/compare") {
+  if (pathname.startsWith("/compare/") && pathname !== "/compare") {
     // Page comparative : schéma Service + Offer (notre prix) et réponse
     // directe lisible par les assistants IA.
     const comparisonSchema = parsedSchemas.find((s) => s && s["@type"] === "Service");
@@ -328,7 +378,7 @@ function checkPage(pathname, html) {
     }
   }
 
-  if (page.startsWith("/demos/") && page !== "/demos") {
+  if (pathname.startsWith("/demos/") && pathname !== "/demos") {
     const work = parsedSchemas.find((s) => s && s["@type"] === "CreativeWork");
     if (!work) {
       record(page, "error", "schéma CreativeWork absent sur la fiche réalisation");
@@ -336,16 +386,16 @@ function checkPage(pathname, html) {
       record(page, "warn", "schéma CreativeWork sans bloc Offer tarifaire");
     }
     // Maillage interne serveur vers d'autres démos
-    const internalDemoLinks = [...html.matchAll(/href=["']\/demos\/([a-z0-9-]+)["']/gi)]
+    const internalDemoLinks = [...html.matchAll(/href=["']\/demos\/([a-z0-9-]+)(?:\?[^"']*)?["']/gi)]
       .map((m) => `/demos/${m[1]}`)
-      .filter((href) => href !== page);
+      .filter((href) => href !== pathname);
     if (internalDemoLinks.length === 0) {
       record(page, "error", "aucun lien de maillage interne vers d'autres réalisations dans le HTML serveur");
     }
   }
 
   // ── Fiches produits du catalogue digital ──
-  if (page.startsWith("/codes/") && page !== "/codes" && !page.startsWith("/codes/commande")) {
+  if (pathname.startsWith("/codes/") && pathname !== "/codes" && !pathname.startsWith("/codes/commande")) {
     const product = parsedSchemas.find((s) => s && s["@type"] === "Product");
     if (!product) {
       record(page, "error", "schéma Product absent sur la fiche produit");
@@ -372,13 +422,13 @@ function checkPage(pathname, html) {
     }
     // Maillage de retour : une fiche produit doit ramener vers le rayon,
     // sinon les pages profondes n'irriguent plus le hub.
-    if (!/href=["']\/codes["']/.test(html)) {
+    if (!/href=["']\/codes(?:\?[^"']*)?["']/.test(html)) {
       record(page, "error", "aucun lien de retour vers /codes depuis la fiche produit");
     }
   }
 
   // ── Hub boutique ──
-  if (page === "/codes") {
+  if (pathname === "/codes") {
     if (!parsedSchemas.some((s) => s && s["@type"] === "Store")) {
       record(page, "error", "schéma Store absent du hub /codes");
     }
@@ -551,7 +601,8 @@ async function main() {
     // quel que soit son hôte (local, preview CI, production).
     paths = urls.map((u) => {
       try {
-        return new URL(u).pathname || "/";
+        const parsed = new URL(u);
+        return `${parsed.pathname || "/"}${parsed.search}`;
       } catch {
         return u;
       }
@@ -597,7 +648,8 @@ async function main() {
   // Vérifie que chaque réalisation du sitemap est bien synchronisée dans /llms.txt et /llms-full.txt
   const llmsBody = resourceBodies.get("/llms.txt") || "";
   const llmsFullBody = resourceBodies.get("/llms-full.txt") || "";
-  for (const pathname of paths) {
+  for (const entry of paths) {
+    const pathname = entry.split("?")[0];
     const mustBeInLlms =
       (pathname.startsWith("/demos/") && pathname !== "/demos") ||
       (pathname.startsWith("/services/") && pathname !== "/services") ||

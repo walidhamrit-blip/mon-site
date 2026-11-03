@@ -1,5 +1,6 @@
 import type { Faq } from "./site-types";
 import { absoluteUrl } from "./seo";
+import { localizedAbsoluteUrl, type Locale } from "@/lib/locale";
 
 /**
  * Pages de services à la carte (/services et /services/[service]).
@@ -622,15 +623,17 @@ export function serviceJsonLd(
   config: { url: string; name: string; nameAr: string; phone?: string; email?: string },
   service: ServiceLike,
   landing: ServiceLandingContent,
+  locale?: Locale,
 ) {
-  const url = absoluteUrl(config, servicePath(service.id));
+  const url = locale ? localizedAbsoluteUrl(config.url, servicePath(service.id), locale) : absoluteUrl(config, servicePath(service.id));
+  const ar = locale !== "en";
   return {
     "@context": "https://schema.org",
     "@type": "Service",
     "@id": `${url}#service`,
-    name: `${service.titleAr} — ${service.titleEn}`,
+    name: ar ? service.titleAr : service.titleEn,
     serviceType: service.titleEn,
-    description: landing.answerAr,
+    description: ar ? landing.answerAr : landing.answerEn,
     url,
     image: absoluteUrl(config, "/og.jpg"),
     provider: { "@id": absoluteUrl(config, "#organization") },
@@ -644,15 +647,15 @@ export function serviceJsonLd(
       ? {
           serviceOutput: {
             "@type": "Thing",
-            name: service.titleAr,
-            description: service.featuresAr.join(" · "),
+            name: ar ? service.titleAr : service.titleEn,
+            description: (ar ? service.featuresAr : service.featuresEn).join(" · "),
           },
         }
       : {}),
     offers: {
       "@type": "Offer",
-      name: `${service.titleAr} — ${service.titleEn}`,
-      description: landing.descriptionAr,
+      name: ar ? service.titleAr : service.titleEn,
+      description: ar ? landing.descriptionAr : landing.descriptionEn,
       url,
       priceCurrency: "USD",
       price: String(service.priceFromUsd),
@@ -669,18 +672,19 @@ export function serviceJsonLd(
 }
 
 /** FAQPage d'un service. */
-export function serviceFaqJsonLd(landing: ServiceLandingContent) {
+export function serviceFaqJsonLd(landing: ServiceLandingContent, locale?: Locale) {
+  const ar = locale !== "en";
   return {
     "@context": "https://schema.org",
     "@type": "FAQPage",
-    inLanguage: ["en", "ar"],
+    inLanguage: locale ?? ["en", "ar"],
     mainEntity: landing.faqs.map((faq) => ({
       "@type": "Question",
-      name: faq.qAr,
-      alternateName: faq.qEn,
+      name: ar ? faq.qAr : faq.qEn,
+      ...(locale ? {} : { alternateName: faq.qEn }),
       acceptedAnswer: {
         "@type": "Answer",
-        text: `${faq.aAr} — ${faq.aEn}`,
+        text: locale ? (ar ? faq.aAr : faq.aEn) : `${faq.aAr} — ${faq.aEn}`,
       },
     })),
   };
@@ -694,8 +698,10 @@ export function serviceFaqJsonLd(landing: ServiceLandingContent) {
 export function servicesCollectionJsonLd(
   config: { url: string; name: string; nameAr: string },
   services: ReadonlyArray<ServiceLike>,
+  locale?: Locale,
 ) {
-  const url = absoluteUrl(config, "/services");
+  const url = locale ? localizedAbsoluteUrl(config.url, "/services", locale) : absoluteUrl(config, "/services");
+  const ar = locale !== "en";
   return {
     "@context": "https://schema.org",
     "@type": "CollectionPage",
@@ -704,7 +710,7 @@ export function servicesCollectionJsonLd(
     description:
       "خدمات رقمية سريعة في طرابلس: إعادة تصميم موقع، إضافة قسم، عروض تقديمية، هوية بصرية، صفحة هبوط، وإصلاح وتحسين — بأسعار معلنة وتسليم سريع.",
     url,
-    inLanguage: ["en", "ar"],
+    inLanguage: locale ?? ["en", "ar"],
     isPartOf: { "@id": absoluteUrl(config, "#website") },
     mainEntity: {
       "@type": "ItemList",
@@ -712,9 +718,9 @@ export function servicesCollectionJsonLd(
       itemListElement: services.map((service, index) => ({
         "@type": "ListItem",
         position: index + 1,
-        url: absoluteUrl(config, servicePath(service.id)),
-        name: `${service.titleAr} — ${service.titleEn}`,
-        description: service.descAr,
+        url: locale ? localizedAbsoluteUrl(config.url, servicePath(service.id), locale) : absoluteUrl(config, servicePath(service.id)),
+        name: ar ? service.titleAr : service.titleEn,
+        description: ar ? service.descAr : service.descEn,
       })),
     },
   };

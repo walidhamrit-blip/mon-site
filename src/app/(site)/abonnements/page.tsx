@@ -1,5 +1,8 @@
 import type { Metadata } from "next";
-import Link from "next/link";
+import { pageLocale } from "@/lib/locale-server";
+import type { LocalePageProps } from "@/lib/locale";
+import { localizedAbsoluteUrl } from "@/lib/locale";
+import { LocalizedLink as Link } from "@/components/localized-link";
 import { getSiteDataCached } from "@/lib/store";
 import { absoluteUrl, pageMetadata, siteLocale } from "@/lib/seo";
 import { JsonLd } from "@/components/json-ld";
@@ -9,10 +12,11 @@ import {
 } from "@/lib/subscription-plans";
 import { AbonnementsClient } from "./abonnements-client";
 
-export async function generateMetadata(): Promise<Metadata> {
+export async function generateMetadata({ searchParams }: LocalePageProps): Promise<Metadata> {
   const { config } = await getSiteDataCached();
-  const locale = siteLocale(config);
+  const locale = await pageLocale(config, searchParams);
   return pageMetadata(config, {
+    locale,
     path: "/abonnements",
     title:
       locale === "ar"
@@ -38,9 +42,9 @@ export async function generateMetadata(): Promise<Metadata> {
  * ne comptait que ~250 mots, ce qui la rendait inéligible à un bon classement
  * sur « اشتراك موقع » alors qu'elle porte une offre commerciale réelle.
  */
-export default async function AbonnementsPage() {
+export default async function AbonnementsPage({ searchParams }: LocalePageProps) {
   const { config } = await getSiteDataCached();
-  const locale = siteLocale(config);
+  const locale = await pageLocale(config, searchParams);
   const ar = locale === "ar";
   const plans = SUBSCRIPTION_PLANS.map((plan) => ({
     id: plan.id,
@@ -129,7 +133,7 @@ export default async function AbonnementsPage() {
   const faqSchema = {
     "@context": "https://schema.org",
     "@type": "FAQPage",
-    "@id": `${absoluteUrl(config, "/abonnements")}#faq`,
+    "@id": `${localizedAbsoluteUrl(config.url, "/abonnements", locale, siteLocale(config))}#faq`,
     inLanguage: ar ? "ar" : "en",
     mainEntity: faqs.map((faq) => ({
       "@type": "Question",

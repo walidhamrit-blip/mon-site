@@ -1,4 +1,7 @@
 import type { Metadata } from "next";
+import { pageLocale } from "@/lib/locale-server";
+import type { LocalePageProps } from "@/lib/locale";
+import { localizedAbsoluteUrl } from "@/lib/locale";
 import { notFound } from "next/navigation";
 import { getSiteDataCached } from "@/lib/store";
 import { whatsappLink } from "@/lib/utils";
@@ -27,14 +30,17 @@ export async function generateStaticParams() {
 
 export async function generateMetadata({
   params,
+  searchParams,
 }: {
   params: Promise<{ service: string }>;
-}): Promise<Metadata> {
+} & LocalePageProps): Promise<Metadata> {
   const { service: serviceId } = await params;
   const { config } = await getSiteDataCached();
+  const locale = await pageLocale(config, searchParams);
   const service = findService(config.standaloneServices, serviceId);
   if (!service) {
     return pageMetadata(config, {
+    locale,
       path: servicePath(serviceId),
       title: "خدمة غير موجودة",
       description: "هذه الخدمة غير متاحة حالياً.",
@@ -44,8 +50,8 @@ export async function generateMetadata({
   const landing = resolveServiceLanding(service);
   // Métadonnées dans la langue principale du site (/admin) : une seule
   // version servie par URL, alignée sur le HTML initial.
-  const locale = siteLocale(config);
   return pageMetadata(config, {
+    locale,
     path: servicePath(service.id),
     title: locale === "ar" ? landing.titleAr : landing.titleEn,
     description: locale === "ar" ? landing.descriptionAr : landing.descriptionEn,
@@ -56,11 +62,13 @@ export async function generateMetadata({
 
 export default async function ServicePage({
   params,
+  searchParams,
 }: {
   params: Promise<{ service: string }>;
-}) {
+} & LocalePageProps) {
   const { service: serviceId } = await params;
   const { config, content } = await getSiteDataCached();
+  const locale = await pageLocale(config, searchParams);
   const service = findService(config.standaloneServices, serviceId);
   if (!service) notFound();
 
@@ -100,7 +108,7 @@ export default async function ServicePage({
     config.whatsapp,
     `مرحبا نخبة 👋 أريد طلب خدمة: ${service.titleAr} (تبدأ من ${service.priceFromUsd}$)`,
   );
-  const canonical = absoluteUrl(config, servicePath(service.id));
+  const canonical = localizedAbsoluteUrl(config.url, servicePath(service.id), locale, siteLocale(config));
 
   return (
     <>
@@ -110,16 +118,17 @@ export default async function ServicePage({
             { name: "الرئيسية", path: "/" },
             { name: "الخدمات", path: "/services" },
             { name: service.titleAr, path: servicePath(service.id) },
-          ]),
+          ], locale),
           webPageJsonLd(config, {
             path: servicePath(service.id),
+            locale,
             name: landing.titleAr,
             description: landing.answerAr,
             speakable: ["h1", "#service-answer"],
             about: `${service.titleEn} — Tripoli, Libya`,
           }),
-          serviceJsonLd(config, service, landing),
-          serviceFaqJsonLd(landing),
+          serviceJsonLd(config, service, landing, locale),
+          serviceFaqJsonLd(landing, locale),
         ]}
       />
 

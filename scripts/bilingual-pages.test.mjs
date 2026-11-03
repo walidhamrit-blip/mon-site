@@ -10,7 +10,7 @@
  */
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { existsSync, readFileSync, mkdtempSync, rmSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
@@ -209,4 +209,105 @@ test("les coquilles serveur des pages bilingues restent côté serveur", () => {
 
 test.after(() => {
   rmSync(outDir, { recursive: true, force: true });
+});
+
+// ── A08 : routes anglaises réelles, URL autoritaire ────────────────────────
+test("A08 : localizedPath conserve le chemin, les paramètres et les ancres", async () => {
+  const { localizedPath, languageAlternates } = await compileModule("lib/locale.ts", "locale.mjs");
+  assert.equal(localizedPath("/pricing", "ar"), "/pricing");
+  assert.equal(localizedPath("/pricing", "en"), "/pricing?lang=en");
+  assert.equal(localizedPath("/codes?kind=gift_card#buy", "en"), "/codes?kind=gift_card&lang=en#buy");
+  assert.equal(localizedPath("/codes?lang=en&kind=gift_card", "ar"), "/codes?kind=gift_card");
+  assert.equal(localizedPath("/codes?lang=ar", "en"), "/codes?lang=en");
+  assert.equal(localizedPath("/#lead-form", "en"), "/?lang=en#lead-form");
+  assert.equal(localizedPath("https://example.com/x", "en"), "https://example.com/x");
+  assert.equal(localizedPath("/admin/orders", "en"), "/admin/orders");
+  assert.equal(localizedPath("/api/lead", "en"), "/api/lead");
+  assert.equal(localizedPath("/live-demos/x/index.html", "en"), "/live-demos/x/index.html");
+
+  const alternates = languageAlternates("https://nokhba.net.ly/", "/services/restyle");
+  assert.deepEqual(alternates, {
+    ar: "https://nokhba.net.ly/services/restyle",
+    en: "https://nokhba.net.ly/services/restyle?lang=en",
+    "x-default": "https://nokhba.net.ly/services/restyle",
+  });
+});
+
+test("A08 : la langue par défaut admin reste l'URL propre, l'autre langue porte ?lang", async () => {
+  const { localizedPath, languageAlternates } = await compileModule("lib/locale.ts", "locale.mjs");
+  assert.equal(localizedPath("/pricing", "en", "en"), "/pricing");
+  assert.equal(localizedPath("/pricing", "ar", "en"), "/pricing?lang=ar");
+  assert.deepEqual(languageAlternates("https://example.com", "/pricing", "en"), {
+    ar: "https://example.com/pricing?lang=ar",
+    en: "https://example.com/pricing",
+    "x-default": "https://example.com/pricing",
+  });
+});
+
+test("A08 : le script de démarrage ne remplace jamais la langue de l'URL", async () => {
+  const { localeBootScript } = await compileModule("lib/locale.ts", "locale.mjs");
+  const forced = localeBootScript("ar", "en");
+  assert.match(forced, /var forced="en"/);
+  assert.match(forced, /var l=forced/);
+  const fallback = localeBootScript("ar", null);
+  assert.match(fallback, /var forced=null/);
+});
+
+test("A08 : le sélecteur produit de vrais href localisés, pas un simple état client", () => {
+  const source = readFileSync(join(srcRoot, "components/locale-switcher.tsx"), "utf8");
+  assert.match(source, /<Link/);
+  assert.match(source, /href=\{localizedPath\(currentPath, item\.id, defaultLocale\)\}/);
+  assert.match(source, /hrefLang=\{item\.id\}/);
+  assert.match(source, /router\.replace\(localizedPath\(currentPath, item\.id, defaultLocale\)/);
+  assert.doesNotMatch(source, /setLocale\(item\.id/);
+});
+
+test("A08 : les liens internes publics conservent la langue via LocalizedLink", () => {
+  const offenders = [];
+  const walk = (dir) => {
+    for (const entry of readdirSync(dir, { withFileTypes: true })) {
+      const full = join(dir, entry.name);
+      if (entry.isDirectory()) walk(full);
+      else if (entry.name.endsWith(".tsx") && entry.name !== "localized-link.tsx" && entry.name !== "locale-switcher.tsx") {
+        const source = readFileSync(full, "utf8");
+        if (/import Link from "next\/link"/.test(source)) offenders.push(full);
+      }
+    }
+  };
+  walk(join(srcRoot, "components"));
+  walk(join(srcRoot, "app/(site)"));
+  assert.deepEqual(offenders, [], `liens non localisés : ${offenders.join(", ")}`);
+});
+
+test("A08 : chaque page publique indexable lit la langue de l'URL côté serveur", () => {
+  const pages = [
+    "app/(site)/page.tsx",
+    "app/(site)/creation-sites/page.tsx",
+    "app/(site)/codes/page.tsx",
+    "app/(site)/codes/[slug]/page.tsx",
+    "app/(site)/demos/page.tsx",
+    "app/(site)/demos/[slug]/page.tsx",
+    "app/(site)/services/page.tsx",
+    "app/(site)/services/[service]/page.tsx",
+    "app/(site)/pricing/page.tsx",
+    "app/(site)/sectors/page.tsx",
+    "app/(site)/sectors/[sector]/page.tsx",
+    "app/(site)/blog/page.tsx",
+    "app/(site)/blog/[slug]/page.tsx",
+    "app/(site)/compare/page.tsx",
+    "app/(site)/compare/[slug]/page.tsx",
+    "app/(site)/products/page.tsx",
+    "app/(site)/apps/page.tsx",
+    "app/(site)/abonnements/page.tsx",
+    "app/(site)/contact/page.tsx",
+    "app/(site)/badge/page.tsx",
+    "app/(site)/remboursement/page.tsx",
+    "app/(site)/conditions/page.tsx",
+  ];
+  for (const page of pages) {
+    const source = readFileSync(join(srcRoot, page), "utf8");
+    assert.match(source, /generateMetadata\(\{ searchParams \}|searchParams,\n/, `${page} reçoit searchParams`);
+    assert.match(source, /pageLocale\(config, searchParams\)/, `${page} résout la langue depuis l'URL`);
+    assert.match(source, /pageMetadata\(config, \{\n\s*locale,/, `${page} transmet la langue aux métadonnées`);
+  }
 });

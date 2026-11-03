@@ -22,7 +22,7 @@ import {
   ScaledLiveIframe,
   FullscreenLiveViewer,
 } from "@/components/live-site-frames";
-import Link from "next/link";
+import { LocalizedLink as Link } from "@/components/localized-link";
 import { ProjectPreview } from "@/components/project-preview";
 import { ReservationButton } from "@/components/reservation-dialog";
 import { demoImageAlt, resolveDemoClassification } from "@/lib/classification";

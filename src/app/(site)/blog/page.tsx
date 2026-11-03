@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import { pageLocale } from "@/lib/locale-server";
+import type { LocalePageProps } from "@/lib/locale";
 import { getSiteDataCached } from "@/lib/store";
 import {
   breadcrumbJsonLd,
@@ -33,11 +35,12 @@ const HUB_FAQS = [
   },
 ];
 
-export async function generateMetadata(): Promise<Metadata> {
+export async function generateMetadata({ searchParams }: LocalePageProps): Promise<Metadata> {
   const { config } = await getSiteDataCached();
   // Titre et description dans la langue principale du site (arabe par défaut).
-  const locale = siteLocale(config);
+  const locale = await pageLocale(config, searchParams);
   return pageMetadata(config, {
+    locale,
     path: "/blog",
     title:
       locale === "ar"
@@ -64,8 +67,9 @@ export async function generateMetadata(): Promise<Metadata> {
   });
 }
 
-export default async function BlogPage() {
+export default async function BlogPage({ searchParams }: LocalePageProps) {
   const { config } = await getSiteDataCached();
+  const locale = await pageLocale(config, searchParams);
   // Guide crypto en premier, puis le reste du plus récent au plus ancien.
   const sorted = sortArticles(blogArticles);
   const articles = [
@@ -90,9 +94,10 @@ export default async function BlogPage() {
           breadcrumbJsonLd(config, [
             { name: "Home", path: "/" },
             { name: "Guides", path: "/blog" },
-          ]),
+          ], locale),
           webPageJsonLd(config, {
             path: "/blog",
+            locale,
             name: "Nukhba Guides — Crypto Payments, Website Costs & Growth",
             description:
               "Practical English and Arabic guides: the USDT photo payment guide first, then USD website pricing, agency selection, e-commerce launch and AI search visibility.",

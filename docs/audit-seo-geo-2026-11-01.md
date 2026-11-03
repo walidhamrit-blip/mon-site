@@ -87,7 +87,7 @@ Le nombre **63** décrit l’environnement local sans base. Le nombre **788** d�
 | A05 | P1 | En cas de perte de toutes les sources du catalogue, une fiche connue peut devenir une 404 | Chemin de code, pas panne observée | Conserver un dernier catalogue valide ; distinguer indisponibilité temporaire et suppression réelle |
 | A06 | P1 mesure | Le « taux de citation IA » compte de simples mentions et accepte des faux positifs | Tests de fonctions + code | Séparer mention, citation d’URL vérifiée et visite/conversion |
 | A07 | P2 | Catalogue très plat, sans pagination serveur ni véritables pages de catégories SEO | Code + catalogue public | Pages de catégories utiles, pagination accessible par liens, sans casser la découverte des fiches |
-| A08 | P2 | Pas de version anglaise à URL propre | Code | Si l’international est prioritaire : vraies routes EN et `hreflang` réciproques |
+| A08 | P2 | ~~Pas de version anglaise à URL propre~~ **résolu** | Code | URL `?lang=en`, canoniques auto-référentes, `hreflang` AR/EN/x-default et sitemap doublé |
 | A09 | P2 | Horaires divergents : 22 h, 18 h et 23 h selon la source | Public + code | Un horaire structuré unique, rendu AR/EN et JSON-LD concordants |
 | A10 | P2 | `AggregateOffer` représente les montants/options d’un même vendeur | Code | Revoir les offres et variantes ; tester l’éligibilité snippets séparément des fiches marchand |
 | A11 | P2 | Chiffres de confiance et promesses sans preuve auditée ; réalisation avec texte de remplissage | Public | Justifier les chiffres, documenter les cas clients, remplacer les placeholders |
@@ -365,7 +365,9 @@ Si cette cible est prioritaire :
 5. Ajouter des `hreflang` absolus, réciproques et incluant chaque version elle-même. [3](https://developers.google.com/search/docs/specialty/international/localized-versions)
 6. Lier le sélecteur aux URL réelles et enrichir le sitemap après recette.
 
-En attendant, l’absence de faux `hreflang` est préférable à des annotations pointant vers des redirections ou 404.
+**Mise à jour A08** : les URL anglaises `?lang=en` existent désormais, avec
+canoniques auto-référentes, `hreflang` réciproques et entrées de sitemap
+dédiées. Les annotations ne pointent plus vers des URL inexistantes.
 
 ## 9. Performance et expérience mobile
 

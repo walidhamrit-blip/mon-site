@@ -18,6 +18,7 @@ import { LEGACY_SUPPLIER_RETIRED, RETIRED_SUPPLIER_MESSAGE } from "@/lib/retired
 // silencieux.
 
 import { and, desc, eq, ne } from "drizzle-orm";
+import { localizedPath } from "@/lib/locale";
 import { db, ensureSchema } from "@/db";
 import { digitalOrders, orders, type DigitalOrder } from "@/db/schema";
 import { getDigitalProductBySlug } from "@/lib/digital-store";
@@ -278,8 +279,8 @@ export async function createDigitalCheckout(
       orderId: ref,
       orderDescription: `${config.name} — ${label}`.slice(0, 190),
       ipnCallbackUrl: `${baseUrl}/api/payments/ipn`,
-      successUrl: `${baseUrl}/codes/commande?${query}`,
-      cancelUrl: `${baseUrl}/pay/cancel?${query}`,
+      successUrl: `${baseUrl}${localizedPath(`/codes/commande?${query}`, locale)}`,
+      cancelUrl: `${baseUrl}${localizedPath(`/pay/cancel?${query}`, locale)}`,
     });
   } catch (error) {
     // Aucune facture : on retire la commande et sa ligne de paiement pour

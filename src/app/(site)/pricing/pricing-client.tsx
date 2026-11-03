@@ -1,5 +1,5 @@
 "use client";
-import Link from "next/link";
+import { LocalizedLink as Link } from "@/components/localized-link";
 import { Pricing } from "@/components/sections/pricing";
 import { FAQ } from "@/components/sections/faq";
 import { useI18n } from "@/lib/i18n";

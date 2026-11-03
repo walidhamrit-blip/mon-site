@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
-import Link from "next/link";
+import { LocalizedLink as Link } from "@/components/localized-link";
 import { usePathname, useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import { ArrowUpRight, Menu, Moon, Sun, X } from "lucide-react";
@@ -13,6 +13,7 @@ import { useSiteConfig } from "@/components/site-provider";
 import { marketLabels, resolveMarket } from "@/lib/market";
 import { primaryNavigation } from "@/lib/site-hierarchy";
 import { whatsappLink } from "@/lib/utils";
+import { localizedPath } from "@/lib/locale";
 
 /**
  * Quatre destinations principales, identiques sur ordinateur et mobile.
@@ -26,7 +27,7 @@ export function Navbar() {
   const router = useRouter();
   const pathname = usePathname();
   const siteConfig = useSiteConfig();
-  const { locale } = useI18n();
+  const { locale, defaultLocale } = useI18n();
   const { mode, toggle } = useTheme();
   const [open, setOpen] = useState(false);
   const ar = locale === "ar";
@@ -68,7 +69,7 @@ export function Navbar() {
 
   const quote = () => {
     setOpen(false);
-    router.push("/creation-sites#lead-form");
+    router.push(localizedPath("/creation-sites#lead-form", locale, defaultLocale));
   };
 
   return (

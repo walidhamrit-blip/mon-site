@@ -1,5 +1,8 @@
 import type { Metadata } from "next";
-import Link from "next/link";
+import { pageLocale } from "@/lib/locale-server";
+import type { LocalePageProps } from "@/lib/locale";
+import { localizedAbsoluteUrl } from "@/lib/locale";
+import { LocalizedLink as Link } from "@/components/localized-link";
 import { getSiteDataCached } from "@/lib/store";
 import { absoluteUrl, breadcrumbJsonLd, pageMetadata, siteLocale } from "@/lib/seo";
 import { JsonLd } from "@/components/json-ld";
@@ -19,11 +22,12 @@ import {
 } from "@/lib/badge";
 import { resolveSiteOrigin } from "@/lib/site-identity";
 
-export async function generateMetadata(): Promise<Metadata> {
+export async function generateMetadata({ searchParams }: LocalePageProps): Promise<Metadata> {
   const { config } = await getSiteDataCached();
-  const locale = siteLocale(config);
+  const locale = await pageLocale(config, searchParams);
   const origin = resolveSiteOrigin({ url: config.url, domain: config.domain });
   return pageMetadata(config, {
+    locale,
     path: "/badge",
     title:
       locale === "ar"
@@ -44,8 +48,9 @@ export async function generateMetadata(): Promise<Metadata> {
   });
 }
 
-export default async function BadgePage() {
+export default async function BadgePage({ searchParams }: LocalePageProps) {
   const { config } = await getSiteDataCached();
+  const locale = await pageLocale(config, searchParams);
   const stats = badgeStats();
   // Origine canonique : suit le domaine configuré dans /admin.
   const origin = resolveSiteOrigin({ url: config.url, domain: config.domain });
@@ -55,13 +60,13 @@ export default async function BadgePage() {
   const schema = {
     "@context": "https://schema.org",
     "@type": "WebPage",
-    "@id": `${absoluteUrl(config, "/badge")}#webpage`,
+    "@id": `${localizedAbsoluteUrl(config.url, "/badge", locale, siteLocale(config))}#webpage`,
     name: "شارة نخبة — Badge « Website by Nukhba »",
     alternateName: "Nukhba Client Badge",
     description:
       "Page officielle de la شارة نخبة : extraits HTML et React, ancres bilingues et liste des sites clients validés.",
-    url: absoluteUrl(config, "/badge"),
-    inLanguage: ["en", "ar"],
+    url: localizedAbsoluteUrl(config.url, "/badge", locale, siteLocale(config)),
+    inLanguage: locale,
     isPartOf: { "@id": absoluteUrl(config, "#website") },
     about: {
       "@type": "ImageObject",
@@ -94,7 +99,7 @@ export default async function BadgePage() {
           breadcrumbJsonLd(config, [
             { name: "الرئيسية", path: "/" },
             { name: "شارة نخبة", path: "/badge" },
-          ]),
+          ], locale),
           schema,
         ]}
       />

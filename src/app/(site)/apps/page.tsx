@@ -1,15 +1,19 @@
 import type { Metadata } from "next";
+import { pageLocale } from "@/lib/locale-server";
+import type { LocalePageProps } from "@/lib/locale";
+import { localizedAbsoluteUrl } from "@/lib/locale";
 import { getSiteDataCached } from "@/lib/store";
 import { absoluteUrl, breadcrumbJsonLd, pageMetadata, siteLocale } from "@/lib/seo";
 import { JsonLd } from "@/components/json-ld";
 import { UpcomingShowcaseView } from "@/components/upcoming-showcase-view";
 import { DigitalStoreBanner } from "@/components/digital-store-banner";
 
-export async function generateMetadata(): Promise<Metadata> {
+export async function generateMetadata({ searchParams }: LocalePageProps): Promise<Metadata> {
   const { config } = await getSiteDataCached();
   // Les métadonnées suivent la langue principale du site (/admin → Réglages).
-  const locale = siteLocale(config);
+  const locale = await pageLocale(config, searchParams);
   return pageMetadata(config, {
+    locale,
     path: "/apps",
     title:
       locale === "ar"
@@ -30,21 +34,21 @@ export async function generateMetadata(): Promise<Metadata> {
   });
 }
 
-export default async function AppsPage() {
+export default async function AppsPage({ searchParams }: LocalePageProps) {
   const { config, content } = await getSiteDataCached();
   const page = content.appsPage;
-  const locale = siteLocale(config);
+  const locale = await pageLocale(config, searchParams);
 
   const collectionSchema = {
     "@context": "https://schema.org",
     "@type": "CollectionPage",
-    "@id": `${absoluteUrl(config, "/apps")}#collection`,
+    "@id": `${localizedAbsoluteUrl(config.url, "/apps", locale, siteLocale(config))}#collection`,
     name:
       locale === "ar"
         ? `${page.titleAr} — ${page.statusBadgeAr}`
         : `${page.titleEn} — ${page.statusBadgeEn}`,
-    url: absoluteUrl(config, "/apps"),
-    inLanguage: ["en", "ar"],
+    url: localizedAbsoluteUrl(config.url, "/apps", locale, siteLocale(config)),
+    inLanguage: locale,
     isPartOf: { "@id": absoluteUrl(config, "#website") },
     mainEntity: {
       "@type": "ItemList",
@@ -52,7 +56,7 @@ export default async function AppsPage() {
       itemListElement: page.items.map((item, idx) => ({
         "@type": "ListItem",
         position: idx + 1,
-        url: `${absoluteUrl(config, "/apps")}#${item.slug}`,
+        url: `${localizedAbsoluteUrl(config.url, "/apps", locale, siteLocale(config))}#${item.slug}`,
         name: locale === "ar" ? item.titleAr : item.titleEn,
         description: locale === "ar" ? item.descriptionAr : item.descriptionEn,
         image: item.image,
@@ -67,7 +71,7 @@ export default async function AppsPage() {
           breadcrumbJsonLd(config, [
             { name: locale === "ar" ? "الرئيسية" : "Home", path: "/" },
             { name: locale === "ar" ? "تطبيقاتنا" : "Our apps", path: "/apps" },
-          ]),
+          ], locale),
           collectionSchema,
         ]}
       />
