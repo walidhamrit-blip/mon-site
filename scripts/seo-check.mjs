@@ -14,13 +14,20 @@
  *   - balises Open Graph (og:title, og:description, og:url) et Twitter Card
  *   - balises <link rel="alternate" type="text/markdown"> vers /llms.txt et /llms-full.txt
  *   - un seul <h1>
- *   - blocs JSON-LD tous parsables + conformité Google (FAQPage sur les pages avec FAQ visible,
- *     HowTo sur /creation-sites, ProfessionalService avec geo, CreativeWork avec offers sur /demos/[slug])
+ *   - blocs JSON-LD tous parsables + cohérence avec les règles de contenu visible
+ *     (FAQPage sur les pages avec FAQ visible, HowTo sur /creation-sites,
+ *     ProfessionalService avec geo, CreativeWork avec offers sur /demos/[slug])
  *   - maillage interne serveur sur chaque fiche /demos/[slug]
  *   - absence de noindex accidentel sur une page indexable
  *   - aucune image sans attribut alt
  * Vérifie aussi robots.txt, sitemap.xml, llms.txt, llms-full.txt (et la présence de
  * toutes les réalisations du sitemap dans llms.txt & llms-full.txt) et le manifest.
+ *
+ * ⚠️ Portée (A14) : ce script vérifie la présence et la syntaxe de signaux
+ * techniques. Il ne mesure ni le classement, ni l'éligibilité aux résultats
+ * enrichis, ni les citations IA. Un schéma JSON-LD valide est une condition
+ * technique nécessaire, pas une preuve de résultat. Un code 0 signifie
+ * « aucune erreur bloquante détectée », pas « le site est référencé ».
  *
  * Code de sortie 1 si au moins une erreur bloquante (les warnings ne font
  * pas échouer la CI).
@@ -190,7 +197,9 @@ function checkPage(pathname, html) {
     record(page, "error", "page indexable mais marquée noindex");
   }
 
-  // ── JSON-LD valide & conformité des schémas ──
+  // ── JSON-LD valide & cohérence des schémas ──
+  // La validité JSON ne prouve pas l'éligibilité aux résultats enrichis :
+  // on contrôle ici la syntaxe et la cohérence avec le contenu visible.
   const ldBlocks = [...html.matchAll(
     /<script[^>]+type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi,
   )];
@@ -229,9 +238,15 @@ function checkPage(pathname, html) {
       record(page, "error", "schéma FAQPage attendu sur cette page mais absent");
     }
   } else if (hasFaqSchema) {
-    record(page, "error", "schéma FAQPage présent sur une page sans section FAQ visible (non-conformité Google)");
+    record(
+      page,
+      "error",
+      "schéma FAQPage présent sans section FAQ visible : le balisage doit correspondre au contenu visible (règle Google ; l'éligibilité aux résultats enrichis n'est pas garantie)",
+    );
   }
 
+  // HowTo reste utile sémantiquement, mais Google a retiré les résultats
+  // enrichis HowTo : la présence du schéma n'est pas une garantie de visibilité.
   if (page === "/creation-sites" && !schemaTypes.has("HowTo")) {
     record(page, "error", "schéma HowTo attendu sur la page création de sites mais absent");
   }
@@ -252,7 +267,7 @@ function checkPage(pathname, html) {
       record(
         page,
         "warn",
-        "avis auto-déclarés dans ProfessionalService (non éligibles Google — utiliser une fiche Google Business Profile)",
+        "avis auto-déclarés dans ProfessionalService (non éligibles aux résultats enrichis Google — utiliser une fiche Google Business Profile)",
       );
     }
   }
@@ -417,7 +432,7 @@ function checkPage(pathname, html) {
 }
 
 async function main() {
-  console.log(`\n🔍 Audit SEO & Référencement IA (GEO) — ${BASE}\n`);
+  console.log(`\n🔍 Audit technique SEO & GEO — ${BASE}\n`);
 
   // 1. Ressources globales
   const globalResources = [
@@ -621,7 +636,11 @@ async function main() {
         continue;
       }
       checkPage(pathname, body);
-      record(pathname, "pass", "vérifications de page OK");
+      record(
+        pathname,
+        "pass",
+        "contrôles techniques de page OK (présence/syntaxe ; classement et éligibilité non mesurés)",
+      );
     } catch (err) {
       record(pathname, "error", `requête impossible : ${err.message}`);
     }
@@ -638,13 +657,17 @@ async function main() {
     console.log(`${icon}  [${r.level.toUpperCase()}] ${r.page} — ${r.message}`);
   }
 
-  console.log(`\n${passes.length} pages/ressources validées · ${warnings.length} avertissement(s) · ${errors.length} erreur(s)\n`);
+  console.log(
+    `\n${passes.length} pages/ressources sans erreur bloquante · ${warnings.length} avertissement(s) · ${errors.length} erreur(s)\n`,
+  );
 
   if (errors.length > 0) {
-    console.log("❌ Audit SEO & GEO échoué — corrigez les erreurs ci-dessus.");
+    console.log("❌ Audit technique SEO & GEO — corrigez les erreurs ci-dessus.");
     process.exit(1);
   }
-  console.log("✅ Audit SEO & GEO réussi.");
+  console.log(
+    "✅ Aucune erreur bloquante — contrôles techniques uniquement (pas une mesure de référencement).",
+  );
 }
 
 main().catch((err) => {

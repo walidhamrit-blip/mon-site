@@ -141,14 +141,20 @@ présence dans `/llms.txt` et `/llms-full.txt`, et absence de `noindex`.
 
 ## 5. Impact SEO attendu
 
+> **Portée.** Les effets ci-dessous sont attendus et non mesurés. La présence
+> de schémas JSON-LD, d'une FAQ ou de `llms.txt` est un pré-requis technique :
+> elle ne garantit ni le classement, ni l'éligibilité aux résultats enrichis,
+> ni une citation par un moteur IA. Les résultats réels se mesurent dans
+> Search Console et les outils de suivi de citations.
+
 - **Pages de longue traîne** : « google ads vs website », « wix vs custom
   website », « seo retainer »… — requêtes de comparaison à forte intention
   commerciale, faible concurrence sur le marché arabe/libyen.
 - **Cluster topical** : un hub + N pages se renforcent mutuellement (liens
   internes dans les deux sens : hub → page, page → hub, page → page liée).
 - **GEO (référencement IA)** : réponse directe, FAQ balis `FAQPage`,
-  `ItemList` des critères, `llms.txt` — les LLM peuvent citer la comparaison
-  entière.
+  `ItemList` des critères, `llms.txt` — ces briques peuvent aider un LLM à
+  citer la comparaison, sans garantie de citation ni de position.
 - **Partage social** : chaque page a sa carte 1200×630 générée à la volée,
   au format de l'affiche (rouge ✗ / vert ✓), donc partageable sur WhatsApp,
   Facebook et LinkedIn sans production graphique.
