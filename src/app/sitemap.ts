@@ -1,3 +1,4 @@
+import { categorySitemapPaths } from "@/lib/digital-categories";
 import type { MetadataRoute } from "next";
 import { getAllKnownDemos, getSiteDataCached } from "@/lib/store";
 import { blogArticles } from "@/lib/blog-articles";
@@ -117,6 +118,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // sitemap ne doit pas proposer au crawl des 404, ni faire croire que la
   // boutique vend 8 fiches de démonstration.
   const catalog = await getDigitalCatalog({ publicOnly: true });
+  const categoryRoutes: MetadataRoute.Sitemap = categorySitemapPaths(catalog, digitalCatalogStatus().degraded).map((path) => ({
+    url: `${base}${path}`, changeFrequency: "daily", priority: 0.8,
+  }));
   const digitalProducts = (digitalCatalogStatus().degraded ? [] : catalog).filter(
     // On ne soumet au crawl que les fiches qui ont un contenu transactionnel
     // réel : vendables, ou au moins dotées d'un prix. Une fiche vide
@@ -145,6 +149,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ...articleRoutes,
     ...demoRoutes,
     ...digitalRoutes,
+    ...categoryRoutes,
     ...comparisonRoutes,
   ];
 }
