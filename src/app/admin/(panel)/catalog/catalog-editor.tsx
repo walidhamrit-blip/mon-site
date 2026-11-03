@@ -13,9 +13,11 @@ import {
   Plus,
   RotateCcw,
   Smartphone,
+  Sparkles,
   Trash2,
 } from "lucide-react";
 import { resetContentSection, saveContentSection } from "@/app/admin/actions";
+import { optimizeUpcomingCatalogItemSeoGeo } from "@/lib/ai/digital-seo-generator";
 import type {
   LaunchStatus,
   ShowcasePageConfig,
@@ -528,6 +530,25 @@ export function CatalogEditor({
                 </button>
 
                 <div className="flex items-center gap-1 shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const optimized = optimizeUpcomingCatalogItemSeoGeo(
+                        item,
+                        tab === "apps" ? "appsPage" : "productsPage",
+                      );
+                      updateItem(idx, optimized);
+                      setOpenIds((prev) => ({ ...prev, [item.id]: true }));
+                      flash(
+                        `SEO & GEO optimisés pour « ${optimized.titleEn || optimized.titleAr} » — pensez à enregistrer.`,
+                        "ok",
+                      );
+                    }}
+                    className="h-8 px-2.5 rounded-lg border border-[#C6A664] bg-[#C6A664]/15 text-[#6F5620] hover:bg-[#C6A664]/25 text-xs font-bold inline-flex items-center gap-1 cursor-pointer"
+                  >
+                    <Sparkles className="h-3.5 w-3.5" />
+                    <span className="hidden sm:inline">Optimiser SEO & GEO</span>
+                  </button>
                   <button
                     type="button"
                     disabled={idx === 0}

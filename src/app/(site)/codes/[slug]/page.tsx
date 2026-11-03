@@ -27,6 +27,7 @@ import { lowestPriceUsd } from "@/lib/digital-types";
 import {
   productFaqs,
   productSeoDescription,
+  productSeoKeywords,
   productSeoName,
   productSeoTitle,
 } from "@/lib/digital-seo";
@@ -76,15 +77,7 @@ export async function generateMetadata({
     // description fournisseur était identique sur toutes les URLs.
     description: productSeoDescription(product, locale),
     image: product.image ? product.image : false,
-    keywords: [
-      locale === "ar" ? product.titleAr : product.titleEn,
-      locale === "ar" ? product.titleEn : product.titleAr,
-      product.platform,
-      locale === "ar" ? "بطاقة هدايا" : "gift card",
-      locale === "ar" ? "كود رقمي" : "digital code",
-      `${product.platform} gift card`,
-      "digital code",
-    ],
+    keywords: productSeoKeywords(product),
   });
 }
 

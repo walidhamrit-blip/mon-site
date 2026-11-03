@@ -44,7 +44,7 @@ import { createInvoice } from "@/lib/nowpayments";
 import { recordDigitalEmailOutcome } from "@/lib/digital-email-log";
 import { createTrackingToken, newOrderReference } from "@/lib/order-tracking";
 import { siteBaseUrl } from "@/lib/site-url";
-import { getSiteData } from "@/lib/store";
+import { getSiteData, resolveFazercardsMaxOrderUsd } from "@/lib/store";
 import {
   sendDigitalCodePendingEmail,
   sendDigitalCodesEmail,
@@ -319,16 +319,20 @@ export async function createFazercardsCheckout(
     );
   }
 
-  // Plafond d'achat automatique : au-delà, la livraison basculerait en
-  // manuel APRÈS encaissement. On refuse donc la vente tout de suite — le
-  // client n'a aucune raison de payer un article qu'on ne livrera pas seul.
-  const maxOrderUsd = fazercardsMaxOrderUsd();
+  // Plafond d'achat automatique (modifiable dans /admin/settings) : au-delà,
+  // la livraison basculerait en manuel APRÈS encaissement. On refuse donc la
+  // vente tout de suite — le client n'a aucune raison de payer un article
+  // qu'on ne livrera pas seul.
+  const maxOrderUsd = await resolveFazercardsMaxOrderUsd();
   if (totalUsd > maxOrderUsd) {
     const maxQuantityByCap = Math.max(1, Math.floor(maxOrderUsd / unitPriceUsd));
+    const formattedMax = Number.isInteger(maxOrderUsd)
+      ? maxOrderUsd.toFixed(0)
+      : maxOrderUsd.toFixed(2);
     throw new FazercardsOrderError(
       "above_limit",
       409,
-      `Montant maximum ${maxOrderUsd.toFixed(0)} $ par commande — réduisez la quantité (au plus ${maxQuantityByCap}) ou écrivez-nous sur WhatsApp.`,
+      `Montant maximum ${formattedMax} $ par commande — réduisez la quantité (au plus ${maxQuantityByCap}) ou écrivez-nous sur WhatsApp.`,
     );
   }
 
@@ -632,7 +636,8 @@ export async function deliverPaidFazercardsOrder(
   }
 
   const totalUsd = Number(loaded.totalUsd);
-  const cap = fazercardsDeliveryMaxOrderUsd();
+  const configuredMaxOrderUsd = await resolveFazercardsMaxOrderUsd();
+  const cap = fazercardsDeliveryMaxOrderUsd(configuredMaxOrderUsd);
   if (!Number.isFinite(totalUsd) || totalUsd <= 0) {
     return flagManual(loaded, "Montant de commande invalide.");
   }

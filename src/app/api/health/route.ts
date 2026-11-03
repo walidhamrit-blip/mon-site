@@ -10,10 +10,10 @@ import {
   checkFazercardsCredentials,
   fazercardsApiBase,
   fazercardsConfigured,
-  fazercardsMaxOrderUsd,
 } from "@/lib/fazercards";
 import { fazercardsCatalogStatusLive } from "@/lib/fazercards-catalog";
 import { databaseConfigured } from "@/lib/digital-store";
+import { resolveFazercardsMaxOrderUsd } from "@/lib/store";
 import {
   checkNowPaymentsApiKey,
   nowPaymentsApiBase,
@@ -200,7 +200,7 @@ export async function GET() {
     configured: fazercardsCheck.configured,
     credentialsValid: fazercardsCheck.valid,
     apiBase: fazercardsApiBase(),
-    maxOrderUsd: fazercardsMaxOrderUsd(),
+    maxOrderUsd: await resolveFazercardsMaxOrderUsd(),
     // Cache du catalogue : évite de deviner si la boutique affiche des
     // données fraîches (TTL 10 min par défaut).
     // Hydraté depuis la copie partagée : une instance neuve n'a pas de

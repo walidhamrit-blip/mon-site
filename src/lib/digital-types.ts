@@ -200,6 +200,56 @@ export interface DigitalDenomination {
   fields?: { key: string; label: string; type: string }[];
   /** Quantité maximale autorisée par le fournisseur pour ce montant. */
   maxQuantity?: number | null;
+  /** Identifiant d'offre chez FazerCards (`offer_id` / `card_id` / `key_id`). */
+  supplierOfferId?: string;
+}
+
+/** Question / réponse bilingue d'une fiche produit (affichée + FAQPage JSON-LD). */
+export interface DigitalProductFaqItem {
+  qAr: string;
+  aAr: string;
+  qEn: string;
+  aEn: string;
+}
+
+/**
+ * Métadonnées et contenus SEO + GEO d'une fiche produit digitale.
+ *
+ * Tous les champs sont optionnels : lorsqu'un champ est vide ou omis, le site
+ * retombe automatiquement sur les générateurs déterministes conformes à
+ * l'audit SEO/GEO (A01 région, A02 mode de livraison, A10 offres, A11 faits).
+ */
+export interface DigitalProductSeo {
+  /** Balise <title> personnalisée en arabe (≤ 60 car. recommandé). */
+  seoTitleAr?: string;
+  /** Balise <title> personnalisée en anglais (≤ 60 car. recommandé). */
+  seoTitleEn?: string;
+  /** Meta description personnalisée en arabe (≤ 155–160 car. recommandé). */
+  seoDescriptionAr?: string;
+  /** Meta description personnalisée en anglais (≤ 155–160 car. recommandé). */
+  seoDescriptionEn?: string;
+  /** Titre H1 & nom structuré Product JSON-LD personnalisé en arabe. */
+  h1Ar?: string;
+  /** Titre H1 & nom structuré Product JSON-LD personnalisé en anglais. */
+  h1En?: string;
+  /** Texte alternatif de l'image produit en arabe (≤ 125 car.). */
+  imageAltAr?: string;
+  /** Texte alternatif de l'image produit en anglais (≤ 125 car.). */
+  imageAltEn?: string;
+  /** Mots-clés SEO ciblés en arabe. */
+  keywordsAr?: string[];
+  /** Mots-clés SEO ciblés en anglais. */
+  keywordsEn?: string[];
+  /** Résumé factuel « Answer-First » GEO pour moteurs IA (ChatGPT, Perplexity, AI Overviews) en arabe. */
+  geoSummaryAr?: string;
+  /** Résumé factuel « Answer-First » GEO pour moteurs IA en anglais. */
+  geoSummaryEn?: string;
+  /** Étapes d'utilisation / activation personnalisées en arabe. */
+  redeemStepsAr?: string[];
+  /** Étapes d'utilisation / activation personnalisées en anglais. */
+  redeemStepsEn?: string[];
+  /** Questions fréquentes bilingues personnalisées (page + FAQPage JSON-LD). */
+  faqs?: DigitalProductFaqItem[];
 }
 
 const ARABIC_SCRIPT = /[\u0600-\u06ff\u0750-\u077f\u08a0-\u08ff\ufb50-\ufdff\ufe70-\ufeff]/;
@@ -290,6 +340,10 @@ export interface DigitalProduct {
    * de livraison — jamais d'un préfixe de slug deviné côté navigateur.
    */
   supplier?: DigitalSupplier;
+  /** Identifiant de catégorie / jeu chez FazerCards (`category_id` / `game_id`). */
+  supplierCategoryId?: string;
+  /** Métadonnées et contenus SEO + GEO personnalisés (éditables dans /admin). */
+  seo?: DigitalProductSeo;
 }
 
 /** Fournisseur de codes d'une fiche. */

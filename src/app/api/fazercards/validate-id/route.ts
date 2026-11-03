@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { getFazercardsCatalog } from "@/lib/fazercards-catalog";
+import { readDigitalOverrides } from "@/lib/digital-overrides";
+import { resolveFazercardsCheckoutProduct } from "@/lib/digital-overrides-core";
 import { checkFazercardsPlayerId } from "@/lib/fazercards-player-id";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { enforceSameOrigin } from "@/lib/csrf";
@@ -60,9 +62,16 @@ export async function POST(request: Request) {
   }
 
   try {
-    // Catalogue brut : c'est lui qui porte le `category_id` FazerCards.
-    const { products } = await getFazercardsCatalog({ noSync: true });
-    const product = products.find((item) => item.slug === parsed.data.productSlug);
+    // Catalogue brut + surcharges admin : résout par id, slug d'origine ou slug personnalisé.
+    const [{ products }, overridesState] = await Promise.all([
+      getFazercardsCatalog({ noSync: true }),
+      readDigitalOverrides(),
+    ]);
+    const product = resolveFazercardsCheckoutProduct(
+      products,
+      overridesState,
+      parsed.data.productSlug,
+    );
     if (!product) {
       return NextResponse.json({ ok: false, error: "Produit introuvable." }, { status: 404 });
     }

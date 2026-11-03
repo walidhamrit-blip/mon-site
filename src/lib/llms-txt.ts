@@ -563,6 +563,11 @@ export function buildLlmsFullTxt({
     lines.push(
       `- **${code.titleEn} (${code.titleAr})** [${code.platform}]: ${code.descriptionEn} | ${code.descriptionAr}`,
     );
+    if (code.seo?.geoSummaryEn || code.seo?.geoSummaryAr) {
+      lines.push(
+        `  - Summary (GEO): ${code.seo.geoSummaryEn || ""} ${code.seo.geoSummaryAr ? `| ${code.seo.geoSummaryAr}` : ""}`.trimEnd(),
+      );
+    }
     if (amounts) lines.push(`  - Amounts: ${amounts}`);
   }
   lines.push("");

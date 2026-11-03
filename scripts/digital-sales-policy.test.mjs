@@ -27,8 +27,12 @@ test("la politique est appliquée aux catalogues en cache et de repli, et la cai
   assert.match(read("src/lib/fazercards-catalog.ts"), /entry\.result\.products\.map\(applyGiftCardSalesPolicy\)/);
   assert.match(read("src/lib/digital-store.ts"), /\.map\(applyGiftCardSalesPolicy\)/);
   assert.equal(MAX_DIGITAL_ORDER_USD, 50);
-  assert.match(read("src/lib/fazercards.ts"), /Math\.min\(envNumber\("FAZERCARDS_MAX_ORDER_USD", DEFAULT_MAX_ORDER_USD\), MAX_DIGITAL_ORDER_USD\)/);
+  assert.match(read("src/lib/fazercards.ts"), /DEFAULT_FAZERCARDS_MAX_ORDER_USD = 25/);
+  assert.match(
+    read("src/lib/fazercards.ts"),
+    /envNumber\("FAZERCARDS_MAX_ORDER_USD", DEFAULT_FAZERCARDS_MAX_ORDER_USD\)/,
+  );
   assert.match(read("src/lib/fazercards-orders.ts"), /totalUsd > maxOrderUsd/);
   assert.match(read("src/lib/digital-order-core.ts"), /totalUsd > MAX_DIGITAL_ORDER_USD/);
-  assert.match(read("src/lib/fazercards-orders.ts"), /const cap = fazercardsDeliveryMaxOrderUsd\(\)/);
+  assert.match(read("src/lib/fazercards-orders.ts"), /const cap = fazercardsDeliveryMaxOrderUsd\(/);
 });

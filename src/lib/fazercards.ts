@@ -24,22 +24,44 @@ import { MAX_DIGITAL_ORDER_USD } from "@/lib/digital-sales-policy";
 
 const FAZERCARDS_BASE = "https://api.fzr.cards/api/v2";
 
-/** Plafond de sécurité d'un achat automatique (USD), surchargeable. */
-const DEFAULT_MAX_ORDER_USD = 300;
+/** Valeur par défaut du plafond de commande FazerCards (en USD), modifiable depuis /admin/settings. */
+export const DEFAULT_FAZERCARDS_MAX_ORDER_USD = 25;
+const DEFAULT_DELIVERY_MAX_ORDER_USD = 300;
 
 function envNumber(name: string, fallback: number): number {
   const value = Number(sanitizeSecret(process.env[name]));
   return Number.isFinite(value) && value > 0 ? value : fallback;
 }
 
-/** Plafond à la caisse : une ancienne valeur Vercel ne peut dépasser 50 USD. */
-export function fazercardsMaxOrderUsd(): number {
-  return Math.min(envNumber("FAZERCARDS_MAX_ORDER_USD", DEFAULT_MAX_ORDER_USD), MAX_DIGITAL_ORDER_USD);
+/**
+ * Plafond à la caisse FazerCards (USD).
+ *
+ * Priorité :
+ *   1. `configuredMaxUsd` enregistré dans `/admin/settings` (`site_config.fazercards.maxOrderUsd`),
+ *      appliqué tel quel (l'exploitant peut descendre sous 25 $ ou monter au-dessus de 50 $) ;
+ *   2. variable d'environnement `FAZERCARDS_MAX_ORDER_USD` (bornée par `MAX_DIGITAL_ORDER_USD` en l'absence de réglage admin) ;
+ *   3. `DEFAULT_FAZERCARDS_MAX_ORDER_USD` (25 $).
+ */
+export function fazercardsMaxOrderUsd(configuredMaxUsd?: number | null): number {
+  if (
+    typeof configuredMaxUsd === "number" &&
+    Number.isFinite(configuredMaxUsd) &&
+    configuredMaxUsd > 0
+  ) {
+    return Math.round(configuredMaxUsd * 100) / 100;
+  }
+  return Math.min(
+    envNumber("FAZERCARDS_MAX_ORDER_USD", DEFAULT_FAZERCARDS_MAX_ORDER_USD),
+    MAX_DIGITAL_ORDER_USD,
+  );
 }
 
-/** Ancien garde-fou de livraison : ne pas bloquer les factures déjà émises. */
-export function fazercardsDeliveryMaxOrderUsd(): number {
-  return envNumber("FAZERCARDS_MAX_ORDER_USD", DEFAULT_MAX_ORDER_USD);
+/** Garde-fou de livraison : couvre toujours le plafond configuré ainsi que les factures déjà émises. */
+export function fazercardsDeliveryMaxOrderUsd(configuredMaxUsd?: number | null): number {
+  return Math.max(
+    envNumber("FAZERCARDS_MAX_ORDER_USD", DEFAULT_DELIVERY_MAX_ORDER_USD),
+    fazercardsMaxOrderUsd(configuredMaxUsd),
+  );
 }
 
 /** Montant minimal d'une facture (aligné sur la caisse publique). */

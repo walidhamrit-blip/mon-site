@@ -372,7 +372,7 @@ test("la caisse refuse une facture sous le minimum crypto", () => {
 
 test("le plafond d'achat est refusé AVANT l'encaissement", () => {
   const flat = code(orders);
-  assert.match(flat, /const maxOrderUsd = fazercardsMaxOrderUsd\(\);/);
+  assert.match(flat, /const maxOrderUsd = await resolveFazercardsMaxOrderUsd\(\);/);
   assert.match(flat, /"above_limit"/);
   // La caisse doit refuser, pas laisser livrer en manuel après paiement.
   assert.ok(

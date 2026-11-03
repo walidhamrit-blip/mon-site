@@ -70,14 +70,22 @@ export function FazercardsCatalogPanel({
             {fetchedAt ? ` Dernière synchronisation : ${fetchedAt}.` : ""}
           </p>
         </div>
-        <Link
-          href="/codes"
-          target="_blank"
-          className="inline-flex items-center gap-1 rounded-lg border border-stone-300 px-3 py-2 text-[12px] font-bold text-stone-700 hover:bg-stone-50"
-        >
-          Voir la boutique
-          <ArrowUpRight className="h-3.5 w-3.5" />
-        </Link>
+        <div className="flex flex-wrap items-center gap-2">
+          <Link
+            href="/admin/digital/products"
+            className="inline-flex items-center gap-1.5 rounded-lg bg-stone-900 px-3 py-2 text-[12px] font-bold text-white hover:bg-stone-800"
+          >
+            Modifier les produits & SEO/GEO
+          </Link>
+          <Link
+            href="/codes"
+            target="_blank"
+            className="inline-flex items-center gap-1 rounded-lg border border-stone-300 px-3 py-2 text-[12px] font-bold text-stone-700 hover:bg-stone-50"
+          >
+            Voir la boutique
+            <ArrowUpRight className="h-3.5 w-3.5" />
+          </Link>
+        </div>
       </div>
 
       {error && (
@@ -137,6 +145,7 @@ export function FazercardsCatalogPanel({
                 <th className="px-3 py-2 font-bold">Fiche</th>
                 <th className="px-3 py-2 font-bold">Montants</th>
                 <th className="px-3 py-2 font-bold">Prix à partir de</th>
+                <th className="px-3 py-2 font-bold text-right">Action</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-stone-100">
@@ -153,6 +162,14 @@ export function FazercardsCatalogPanel({
                     <td className="px-3 py-1.5 text-stone-600">{available.length}</td>
                     <td className="px-3 py-1.5 text-stone-800">
                       {lowest > 0 ? `${lowest.toFixed(2)} $` : "—"}
+                    </td>
+                    <td className="px-3 py-1.5 text-right">
+                      <Link
+                        href={`/admin/digital/products?edit=${encodeURIComponent(product.slug)}`}
+                        className="font-bold text-[#8A6D2F] hover:underline"
+                      >
+                        Modifier
+                      </Link>
                     </td>
                   </tr>
                 );

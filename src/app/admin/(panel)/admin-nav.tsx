@@ -14,6 +14,7 @@ import {
   FileText,
   Gift,
   ShoppingBag,
+  Sparkles,
   Settings,
   ExternalLink,
   LogOut,
@@ -50,7 +51,8 @@ export function AdminNav({ newLeads, paidOrders }: Props) {
       { href: "/admin", label: "Tableau de bord", sublabel: "Parcours publics & activité", icon: LayoutDashboard, exact: true },
     ] },
     { title: "Boutique digitale", items: [
-      { href: "/admin/digital", label: "Catalogue & fournisseurs", sublabel: "FazerCards, prix & disponibilité", icon: Gift },
+      { href: "/admin/digital", label: "Catalogue & fournisseurs", sublabel: "FazerCards, solde & disponibilité", icon: Gift },
+      { href: "/admin/digital/products", label: "Modifier les produits", sublabel: "Cartes cadeaux, prix & SEO/GEO", icon: Sparkles },
       { href: "/admin/digital/orders", label: "Commandes digitales", sublabel: "Paiements, livraison & relances", icon: ShoppingBag },
     ] },
     { title: "Création de sites & Contact", items: [
@@ -61,7 +63,7 @@ export function AdminNav({ newLeads, paidOrders }: Props) {
     ] },
     { title: "Contenus & Réglages", items: [
       { href: "/admin/content", label: "Textes, FAQ & Avis", sublabel: "Contenus partagés arabe / anglais", icon: FileText },
-      { href: "/admin/settings", label: "Identité, thèmes & tarifs", sublabel: "Contacts, apparence & offres web", icon: Settings },
+      { href: "/admin/settings", label: "Identité, thèmes & tarifs", sublabel: "Contacts, FazerCards & offres web", icon: Settings },
     ] },
     { title: "Pages secondaires & Héritage", items: [
       { href: "/admin/sections", label: "Ancien constructeur", sublabel: "Données conservées, accueil fixe", icon: Blocks },

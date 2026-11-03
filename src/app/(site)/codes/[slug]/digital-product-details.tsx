@@ -30,7 +30,13 @@ import { DigitalBuyDialog } from "@/components/digital-buy-dialog";
 import { RegionalAlert } from "@/components/regional-alert";
 import { gamePlatformSummary } from "@/lib/digital-platform-core";
 import { productVisual } from "@/lib/game-covers";
-import { productFaqs, productSeoName, redeemSteps } from "@/lib/digital-seo";
+import {
+  productFaqs,
+  productGeoSummary,
+  productImageAlt,
+  productSeoName,
+  redeemSteps,
+} from "@/lib/digital-seo";
 
 /**
  * Fiche d'un produit du catalogue digital.
@@ -70,6 +76,8 @@ export function DigitalProductDetails({
   // des données réelles (type, plateforme, régions, montants).
   const steps = redeemSteps(product, locale);
   const faqs = productFaqs(product, locale);
+  const imageAlt = productImageAlt(product, locale);
+  const geoSummary = productGeoSummary(product, locale);
   const features = ar ? product.featuresAr : product.featuresEn;
   const available = product.denominations.filter((denomination) => denomination.available);
   const sellable = isSellable(product);
@@ -107,7 +115,7 @@ export function DigitalProductDetails({
                 <div className="relative mb-6 aspect-[16/9] max-h-[380px] overflow-hidden rounded-[var(--radius-lg)] border border-[var(--border)] bg-[#0b1220] shadow-[var(--shadow-sm)]">
                   <Image
                     src={visual}
-                    alt={ar ? `صورة ${displayName}` : `${displayName} product visual`}
+                    alt={imageAlt}
                     fill
                     sizes="(max-width: 1024px) 100vw, 58vw"
                     quality={88}
@@ -154,6 +162,15 @@ export function DigitalProductDetails({
               <p className="mt-4 max-w-[62ch] text-[15px] leading-8 text-[var(--muted-foreground)]">
                 {ar ? product.descriptionAr : product.descriptionEn}
               </p>
+
+              {geoSummary && (
+                <div
+                  data-geo-summary="true"
+                  className="mt-5 max-w-[62ch] rounded-[var(--radius-md)] border border-[var(--accent)]/30 bg-[var(--accent)]/5 px-4 py-3 text-[13.5px] leading-7 text-[var(--foreground)]/90"
+                >
+                  {geoSummary}
+                </div>
+              )}
 
               {/* Recharge : la fiche doit dire sur quelle plateforme la recharge
                   s'applique et quel identifiant saisir. Un identifiant d'un

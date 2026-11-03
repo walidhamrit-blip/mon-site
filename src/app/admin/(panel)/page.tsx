@@ -15,6 +15,7 @@ import {
   FileText,
   ShoppingBag,
   Gift,
+  Sparkles,
   ExternalLink,
 } from "lucide-react";
 import { db, ensureSchema } from "@/db";
@@ -165,6 +166,7 @@ export default async function AdminDashboardPage() {
 
   const workspaceCards = [
     { href: "/admin/digital", icon: Gift, badge: "Boutique /codes", title: "Catalogue digital & fournisseurs", desc: "Consultez le catalogue réellement vendu, le solde fournisseur, les prix et la disponibilité. Aucun stock fictif." },
+    { href: "/admin/digital/products", icon: Sparkles, badge: "Édition & SEO/GEO", title: "Modifier les produits & cartes cadeaux", desc: "Modifiez tous les champs des fiches /codes (prix, montants, textes AR/EN, régions, statuts) et optimisez le SEO / GEO en un clic." },
     { href: "/admin/digital/orders", icon: ShoppingBag, badge: "Ventes digitales", title: "Commandes & livraisons", desc: "Suivez les paiements et livraisons de codes. Les relances restent des actions explicites, jamais automatiques depuis ce tableau de bord." },
     {
       href: "/admin/sections",

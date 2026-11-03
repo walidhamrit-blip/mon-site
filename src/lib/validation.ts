@@ -455,6 +455,15 @@ export const siteConfigSchema = z.object({
       }),
     )
     .max(30),
+  /** Paramètres FazerCards modifiables dans /admin → Réglages. */
+  fazercards: z
+    .object({
+      maxOrderUsd: z.coerce
+        .number()
+        .min(1.5, "La valeur maximale doit être d'au moins 1,50 $.")
+        .max(10_000, "La valeur maximale ne peut pas dépasser 10 000 $."),
+    })
+    .default({ maxOrderUsd: 25 }),
 });
 
 /* ---------- Statut d'une demande ---------- */
@@ -522,5 +531,98 @@ export const digitalProductSchema = z.object({
   /** Frais / remise publiés par Reloadly (null = inconnus). */
   supplierFeePercent: z.coerce.number().min(0).max(100).nullable().optional(),
   supplierDiscountPercent: z.coerce.number().min(0).max(100).nullable().optional(),
+});
+
+/* ---------- Éditeur complet de la boutique (/admin/digital/products) ---------- */
+
+export const digitalProductFaqSchema = z.object({
+  qAr: z.string().max(400).default(""),
+  aAr: z.string().max(2000).default(""),
+  qEn: z.string().max(400).default(""),
+  aEn: z.string().max(2000).default(""),
+});
+
+export const digitalProductSeoSchema = z.object({
+  seoTitleAr: z.string().max(180).optional(),
+  seoTitleEn: z.string().max(180).optional(),
+  seoDescriptionAr: z.string().max(350).optional(),
+  seoDescriptionEn: z.string().max(350).optional(),
+  h1Ar: z.string().max(240).optional(),
+  h1En: z.string().max(240).optional(),
+  imageAltAr: z.string().max(200).optional(),
+  imageAltEn: z.string().max(200).optional(),
+  keywordsAr: z.array(z.string().max(120)).max(30).optional(),
+  keywordsEn: z.array(z.string().max(120)).max(30).optional(),
+  geoSummaryAr: z.string().max(1500).optional(),
+  geoSummaryEn: z.string().max(1500).optional(),
+  redeemStepsAr: z.array(z.string().max(500)).max(12).optional(),
+  redeemStepsEn: z.array(z.string().max(500)).max(12).optional(),
+  faqs: z.array(digitalProductFaqSchema).max(20).optional(),
+});
+
+export const boutiqueBuyerFieldSchema = z.object({
+  key: z.string().trim().min(1).max(80),
+  label: z.string().trim().min(1).max(140),
+  type: z.string().trim().min(1).max(40).default("text"),
+});
+
+export const boutiqueDenominationSchema = z.object({
+  id: z.string().trim().min(1).max(160),
+  label: z.string().trim().min(1).max(160),
+  faceValue: z.string().max(160).default(""),
+  region: z.string().trim().min(1).max(32).default("GLOBAL"),
+  priceUsd: z.coerce.number().min(0).max(1_000_000),
+  noteAr: z.string().max(400).optional(),
+  noteEn: z.string().max(400).optional(),
+  available: z.boolean().default(true),
+  reloadlyUnitPrice: z.coerce.number().min(0).max(100_000).nullable().optional(),
+  faceCurrency: z
+    .string()
+    .max(16)
+    .transform((value) => {
+      const cleaned = value.trim().toUpperCase();
+      return cleaned || null;
+    })
+    .nullable()
+    .optional(),
+  supplierCostUsd: z.coerce.number().min(0).max(100_000).nullable().optional(),
+  supplierOfferId: z.string().trim().max(160).optional(),
+  maxQuantity: z.coerce.number().int().min(1).max(100).nullable().optional(),
+  fields: z.array(boutiqueBuyerFieldSchema).max(15).optional(),
+});
+
+export const boutiqueProductSchema = z.object({
+  id: z.string().trim().min(1).max(160),
+  slug: z
+    .string()
+    .trim()
+    .min(1)
+    .max(140)
+    .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, "Slug invalide (minuscules, chiffres, tirets)"),
+  kind: z.enum(DIGITAL_KINDS),
+  status: z.enum(DIGITAL_STATUSES),
+  platform: z.string().trim().max(140).default(""),
+  color: z
+    .string()
+    .trim()
+    .regex(/^#[0-9a-fA-F]{3,8}$/, "Couleur hexadécimale attendue (#RRGGBB)")
+    .default("#172554"),
+  titleAr: z.string().trim().min(1).max(260),
+  titleEn: z.string().trim().min(1).max(260),
+  descriptionAr: z.string().max(4000).default(""),
+  descriptionEn: z.string().max(4000).default(""),
+  image: z.string().trim().max(1000).default(""),
+  regions: z.array(z.string().trim().min(1).max(32)).max(40).default(["GLOBAL"]),
+  featuresAr: z.array(z.string().max(400)).max(30).default([]),
+  featuresEn: z.array(z.string().max(400)).max(30).default([]),
+  deliveryNoteAr: z.string().max(1000).default(""),
+  deliveryNoteEn: z.string().max(1000).default(""),
+  denominations: z.array(boutiqueDenominationSchema).max(300).default([]),
+  sortOrder: z.coerce.number().int().min(-1000).max(100_000).default(0),
+  fulfillment: z.enum(["manual", "auto"]).optional(),
+  supplier: z.enum(["fazercards", "reloadly"]).optional(),
+  supplierCategoryId: z.string().trim().max(160).optional(),
+  marginPercent: z.coerce.number().min(0).max(500).nullable().optional(),
+  seo: digitalProductSeoSchema.optional(),
 });
 
