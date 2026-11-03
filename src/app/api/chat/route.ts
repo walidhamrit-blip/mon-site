@@ -28,9 +28,10 @@ import {
  *  1. La connaissance est construite à la demande à partir des données
  *     réelles (réglages /admin, contenu éditorial, catalogue digital live)
  *     et mémorisée 2 minutes.
- *  2. Si une clé LLM est configurée (`AI_GATEWAY_API_KEY` → Vercel AI
- *     Gateway, ou `OPENAI_API_KEY` en repli), la réponse est générée par le
- *     modèle, ancrée sur un prompt système = résumé du site + fiches
+ *  2. Si une clé LLM est configurée (`GEMINI_API_KEY`, `CHAT_API_KEY`,
+ *     `AI_GATEWAY_API_KEY` ou `OPENAI_API_KEY` — voir `resolveProvider`),
+ *     la réponse est générée par le modèle, ancrée sur un prompt système =
+ *     résumé du site + fiches
  *     pertinentes (retrieval par mots-clés, indispensable car le catalogue
  *     peut dépasser 2 000 produits).
  *  3. Sans clé, ou si l'appel échoue / dépasse le délai, on renvoie la
@@ -48,6 +49,9 @@ const KNOWLEDGE_TTL_MS = 120_000;
 
 const DEFAULT_GATEWAY_MODEL = "anthropic/claude-sonnet-5.5";
 const DEFAULT_OPENAI_MODEL = "gpt-4o-mini";
+// Gemini expose un point d'entrée compatible OpenAI Chat Completions.
+const GEMINI_BASE_URL = "https://generativelanguage.googleapis.com/v1beta/openai";
+const DEFAULT_GEMINI_MODEL = "gemini-2.5-flash";
 
 const RATE_LIMIT = { prefix: "chat", windowMs: 60_000, max: 20, minIntervalMs: 500 };
 
@@ -101,11 +105,73 @@ async function loadKnowledge(): Promise<SiteKnowledge> {
 /* ───────────────────────── Fournisseurs LLM ─────────────────────────────── */
 
 interface LlmProvider {
-  name: "gateway" | "openai";
+  name: "gemini" | "chat" | "gateway" | "openai";
   run: (system: string, messages: ChatMessage[], signal: AbortSignal) => Promise<string>;
 }
 
+/**
+ * Fournisseur compatible « OpenAI Chat Completions » (Gemini, DeepSeek,
+ * OpenRouter, OpenAI…) : même format de requête, seule l'URL change.
+ */
+function openAiCompatible(
+  name: LlmProvider["name"],
+  apiKey: string,
+  baseUrl: string,
+  model: string,
+): LlmProvider {
+  const base = baseUrl.replace(/\/+$/, "");
+  return {
+    name,
+    run: async (system, messages, signal) => {
+      const response = await fetch(`${base}/chat/completions`, {
+        method: "POST",
+        signal,
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
+        body: JSON.stringify({
+          model,
+          temperature: 0.3,
+          max_tokens: MAX_OUTPUT_TOKENS,
+          messages: [{ role: "system", content: system }, ...messages],
+        }),
+      });
+      if (!response.ok) throw new Error(`${name} HTTP ${response.status}`);
+      const payload = (await response.json()) as { choices?: Array<{ message?: { content?: string } }> };
+      const text = payload.choices?.[0]?.message?.content;
+      if (typeof text !== "string" || !text.trim()) throw new Error(`${name}: réponse vide`);
+      return text;
+    },
+  };
+}
+
+/**
+ * Ordre de priorité (la première clé présente l'emporte) :
+ *  1. GEMINI_API_KEY   — Google Gemini (point d'entrée compatible OpenAI) ;
+ *  2. CHAT_API_KEY     — tout fournisseur compatible OpenAI (DeepSeek,
+ *                        OpenRouter, Mistral…) via CHAT_BASE_URL / CHAT_MODEL ;
+ *  3. AI_GATEWAY_API_KEY — Vercel AI Gateway (modèles Claude) ;
+ *  4. OPENAI_API_KEY   — clé partagée avec le générateur SEO de l'admin.
+ */
 function resolveProvider(): LlmProvider | null {
+  const geminiKey = process.env.GEMINI_API_KEY?.trim();
+  if (geminiKey) {
+    return openAiCompatible(
+      "gemini",
+      geminiKey,
+      process.env.GEMINI_BASE_URL?.trim() || GEMINI_BASE_URL,
+      process.env.GEMINI_MODEL?.trim() || DEFAULT_GEMINI_MODEL,
+    );
+  }
+
+  const chatKey = process.env.CHAT_API_KEY?.trim();
+  if (chatKey) {
+    return openAiCompatible(
+      "chat",
+      chatKey,
+      process.env.CHAT_BASE_URL?.trim() || "https://api.openai.com/v1",
+      process.env.CHAT_MODEL?.trim() || DEFAULT_OPENAI_MODEL,
+    );
+  }
+
   const gatewayKey = process.env.AI_GATEWAY_API_KEY?.trim();
   if (gatewayKey) {
     const anthropic = createAnthropic({
@@ -131,29 +197,12 @@ function resolveProvider(): LlmProvider | null {
 
   const openaiKey = process.env.OPENAI_API_KEY?.trim();
   if (openaiKey) {
-    const baseUrl = (process.env.OPENAI_BASE_URL?.trim() || "https://api.openai.com/v1").replace(/\/+$/, "");
-    const model = process.env.OPENAI_MODEL?.trim() || DEFAULT_OPENAI_MODEL;
-    return {
-      name: "openai",
-      run: async (system, messages, signal) => {
-        const response = await fetch(`${baseUrl}/chat/completions`, {
-          method: "POST",
-          signal,
-          headers: { "Content-Type": "application/json", Authorization: `Bearer ${openaiKey}` },
-          body: JSON.stringify({
-            model,
-            temperature: 0.3,
-            max_tokens: MAX_OUTPUT_TOKENS,
-            messages: [{ role: "system", content: system }, ...messages],
-          }),
-        });
-        if (!response.ok) throw new Error(`OpenAI HTTP ${response.status}`);
-        const payload = (await response.json()) as { choices?: Array<{ message?: { content?: string } }> };
-        const text = payload.choices?.[0]?.message?.content;
-        if (typeof text !== "string" || !text.trim()) throw new Error("OpenAI: réponse vide");
-        return text;
-      },
-    };
+    return openAiCompatible(
+      "openai",
+      openaiKey,
+      process.env.OPENAI_BASE_URL?.trim() || "https://api.openai.com/v1",
+      process.env.OPENAI_MODEL?.trim() || DEFAULT_OPENAI_MODEL,
+    );
   }
   return null;
 }
