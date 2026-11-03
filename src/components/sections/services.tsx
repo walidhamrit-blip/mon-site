@@ -1,6 +1,6 @@
 "use client";
 import { useState } from "react";
-import Link from "next/link";
+import { LocalizedLink as Link } from "@/components/localized-link";
 import { motion } from "framer-motion";
 import {
   ArrowUpRight,

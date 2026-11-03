@@ -962,6 +962,7 @@ type Translations = typeof translations.ar;
 
 const I18nContext = createContext<{
   locale: Locale;
+  defaultLocale: Locale;
   t: Translations;
   dir: "rtl" | "ltr";
   setLocale: (l: Locale) => void;
@@ -978,24 +979,30 @@ const LOCALE_KEY = LOCALE_STORAGE_KEY;
 export function I18nProvider({
   children,
   defaultLocale = "ar",
+  urlLocale = null,
 }: {
   children: React.ReactNode;
-  /**
-   * Langue principale du site, choisie dans /admin → Réglages.
-   * Le visiteur qui a déjà choisi une langue (localStorage) la conserve.
-   */
+  /** Langue de référence du site (arabe par défaut, réglable dans /admin). */
   defaultLocale?: Locale;
+  /**
+   * Langue explicite de l'URL (`?lang=…`). Elle est autoritaire : aucune
+   * préférence mémorisée ne peut faire diverger le contenu de son URL SEO.
+   */
+  urlLocale?: Locale | null;
 }) {
-  const [locale, setLocaleState] = useState<Locale>(defaultLocale);
+  const [locale, setLocaleState] = useState<Locale>(urlLocale ?? defaultLocale);
 
   useEffect(() => {
-    // Priorité : langue explicitement choisie par le visiteur >
-    // langue principale (admin), y compris si elle change après coup.
+    // L'URL gagne toujours. Le choix mémorisé ne sert que hors URL localisée.
+    if (urlLocale) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setLocaleState(urlLocale);
+      return;
+    }
     try {
       localStorage.removeItem("nukhba-locale");
       const saved = localStorage.getItem(LOCALE_KEY);
       if (isLocale(saved)) {
-        // eslint-disable-next-line react-hooks/set-state-in-effect
         setLocaleState(saved);
         return;
       }
@@ -1003,7 +1010,7 @@ export function I18nProvider({
       /* localStorage indisponible */
     }
     setLocaleState(defaultLocale);
-  }, [defaultLocale]);
+  }, [defaultLocale, urlLocale]);
 
   useEffect(() => {
     // ⚠️ Aucune écriture localStorage ici : enregistrer la langue courante
@@ -1019,14 +1026,15 @@ export function I18nProvider({
     } catch {
       /* localStorage indisponible */
     }
-    setLocaleState(l);
+    // Sur une URL localisée, seul le changement d'URL change la langue.
+    if (!urlLocale) setLocaleState(l);
   };
   const toggleLocale = () => setLocale(locale === "ar" ? "en" : "ar");
   const t = translations[locale];
   const dir = dirOf(locale);
 
   return (
-    <I18nContext.Provider value={{ locale, t, dir, setLocale, toggleLocale }}>
+    <I18nContext.Provider value={{ locale, defaultLocale, t, dir, setLocale, toggleLocale }}>
       {children}
     </I18nContext.Provider>
   );

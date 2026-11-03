@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { LocalizedLink as Link } from "@/components/localized-link";
 import { digitalCatalogStatus } from "@/lib/digital-store";
 import { getSiteDataCached } from "@/lib/store";
 import { siteLocale } from "@/lib/seo";

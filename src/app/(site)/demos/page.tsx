@@ -1,4 +1,7 @@
 import type { Metadata } from "next";
+import { pageLocale } from "@/lib/locale-server";
+import type { LocalePageProps } from "@/lib/locale";
+import { localizedAbsoluteUrl } from "@/lib/locale";
 import { getAllKnownDemos, getSiteDataCached } from "@/lib/store";
 import {
   absoluteUrl,
@@ -9,10 +12,11 @@ import {
 import { JsonLd } from "@/components/json-ld";
 import { DemosClient } from "./demos-client";
 
-export async function generateMetadata(): Promise<Metadata> {
+export async function generateMetadata({ searchParams }: LocalePageProps): Promise<Metadata> {
   const { config } = await getSiteDataCached();
-  const locale = siteLocale(config);
+  const locale = await pageLocale(config, searchParams);
   return pageMetadata(config, {
+    locale,
     path: "/demos",
     title:
       locale === "ar"
@@ -31,8 +35,9 @@ export async function generateMetadata(): Promise<Metadata> {
   });
 }
 
-export default async function DemosPage() {
+export default async function DemosPage({ searchParams }: LocalePageProps) {
   const { config, content } = await getSiteDataCached();
+  const locale = await pageLocale(config, searchParams);
   const allDemos = getAllKnownDemos(content);
 
   // CollectionPage + ItemList : chaque réalisation est listée avec son
@@ -40,10 +45,10 @@ export default async function DemosPage() {
   const collectionSchema = {
     "@context": "https://schema.org",
     "@type": "CollectionPage",
-    "@id": `${absoluteUrl(config, "/demos")}#collection`,
+    "@id": `${localizedAbsoluteUrl(config.url, "/demos", locale, siteLocale(config))}#collection`,
     name: "معارض الأعمال الحية — نخبة",
-    url: absoluteUrl(config, "/demos"),
-    inLanguage: ["en", "ar"],
+    url: localizedAbsoluteUrl(config.url, "/demos", locale, siteLocale(config)),
+    inLanguage: locale,
     isPartOf: { "@id": absoluteUrl(config, "#website") },
     mainEntity: {
       "@type": "ItemList",
@@ -51,7 +56,7 @@ export default async function DemosPage() {
       itemListElement: allDemos.map((d, i) => ({
         "@type": "ListItem",
         position: i + 1,
-        url: absoluteUrl(config, `/demos/${d.slug}`),
+        url: localizedAbsoluteUrl(config.url, `/demos/${d.slug}`, locale, siteLocale(config)),
         name: d.title,
         image: d.image,
       })),
@@ -65,7 +70,7 @@ export default async function DemosPage() {
           breadcrumbJsonLd(config, [
             { name: "الرئيسية", path: "/" },
             { name: "المعارض", path: "/demos" },
-          ]),
+          ], locale),
           collectionSchema,
         ]}
       />

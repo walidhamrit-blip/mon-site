@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import { pageLocale } from "@/lib/locale-server";
+import type { LocalePageProps } from "@/lib/locale";
 import { getSiteDataCached } from "@/lib/store";
 import {
   breadcrumbJsonLd,
@@ -9,10 +11,11 @@ import {
 import { JsonLd } from "@/components/json-ld";
 import { PricingClient } from "./pricing-client";
 
-export async function generateMetadata(): Promise<Metadata> {
+export async function generateMetadata({ searchParams }: LocalePageProps): Promise<Metadata> {
   const { config } = await getSiteDataCached();
-  const locale = siteLocale(config);
+  const locale = await pageLocale(config, searchParams);
   return pageMetadata(config, {
+    locale,
     path: "/pricing",
     title:
       locale === "ar"
@@ -36,8 +39,9 @@ export async function generateMetadata(): Promise<Metadata> {
   });
 }
 
-export default async function PricingPage() {
+export default async function PricingPage({ searchParams }: LocalePageProps) {
   const { config, content } = await getSiteDataCached();
+  const locale = await pageLocale(config, searchParams);
   return (
     <>
       {/* Le catalogue d'offres (#offer-catalog) est déjà injecté par le
@@ -47,8 +51,8 @@ export default async function PricingPage() {
           breadcrumbJsonLd(config, [
             { name: "Home", path: "/" },
             { name: "Pricing", path: "/pricing" },
-          ]),
-          faqJsonLd(content.faqs),
+          ], locale),
+          faqJsonLd(content.faqs, config.market, locale),
         ]}
       />
       <PricingClient />

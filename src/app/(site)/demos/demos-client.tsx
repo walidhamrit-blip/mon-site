@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import Link from "next/link";
+import { LocalizedLink as Link } from "@/components/localized-link";
 import { useSiteConfig, useSiteContent } from "@/components/site-provider";
 import { collectAllDemos } from "@/lib/site-types";
 import { useI18n } from "@/lib/i18n";

@@ -1,6 +1,9 @@
-import Link from "next/link";
+import { LocalizedLink as Link } from "@/components/localized-link";
 import { categoryHref, getDigitalCategory } from "@/lib/digital-categories";
 import type { Metadata } from "next";
+import { pageLocale } from "@/lib/locale-server";
+import type { LocalePageProps } from "@/lib/locale";
+import { localizedAbsoluteUrl } from "@/lib/locale";
 import { notFound } from "next/navigation";
 import {
   digitalCatalogStatus,
@@ -29,42 +32,31 @@ import {
 } from "@/lib/digital-seo";
 
 /**
- * Aucune page produit n'est pré-générée à la construction.
- *
- * Le catalogue vient désormais du FOURNISSEUR (FazerCards) : il change sans
- * déploiement, et un build ne doit pas dépendre d'une API tierce. Les fiches
- * sont donc rendues à la demande puis mises en cache par ISR (60 s).
+ * Rendu à la demande : le catalogue vient du fournisseur et la langue vient
+ * de l'URL (`?lang=en`). Le layout racine lit cette langue côté serveur, la
+ * fiche ne peut donc pas être pré-générée statiquement au build.
  */
-export async function generateStaticParams(): Promise<{ slug: string }[]> {
-  return [];
-}
-
-/**
- * Filet de sécurité : les fiches sont pré-générées au build, et l'admin peut
- * modifier statut / prix / montants à tout moment. Sans fenêtre de
- * revalidation, une fiche reste figée sur l'état du dernier déploiement
- * (statut « bientôt disponible », aucun bouton d'achat) jusqu'au build
- * suivant. On rafraîchit donc au plus tard une minute après un changement.
- */
-export const revalidate = 60;
+export const dynamic = "force-dynamic";
 
 /** Même raison que la liste : aucune synchronisation pendant le rendu. */
 export const maxDuration = 60;
 
 export async function generateMetadata({
   params,
+  searchParams,
 }: {
   params: Promise<{ slug: string }>;
-}): Promise<Metadata> {
+} & LocalePageProps): Promise<Metadata> {
   const { slug } = await params;
   const { config } = await getSiteDataCached();
   // Les métadonnées suivent la langue principale du site (/admin → Réglages) :
   // une fiche produit ne doit pas s'annoncer en arabe dans la version
   // anglaise (elle est indexée sur le mot-clé de la plateforme).
-  const locale = siteLocale(config);
+  const locale = await pageLocale(config, searchParams);
   const product = await getDigitalProductBySlug(slug);
   if (!product) {
     return pageMetadata(config, {
+    locale,
       path: `/codes/${slug}`,
       title:
         locale === "ar" ? "منتج غير متاح" : "Product not available",
@@ -77,6 +69,7 @@ export async function generateMetadata({
   }
 
   return pageMetadata(config, {
+    locale,
     path: `/codes/${product.slug}`,
     title: productSeoTitle(product, locale),
     // Description unique par fiche (type + région + prix de départ) : la
@@ -97,9 +90,10 @@ export async function generateMetadata({
 
 export default async function DigitalProductPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ slug: string }>;
-}) {
+} & LocalePageProps) {
   const { slug } = await params;
   const { config } = await getSiteDataCached();
   const product = await getDigitalProductBySlug(slug);
@@ -110,7 +104,7 @@ export default async function DigitalProductPage({
     if (productPageFallback(digitalCatalogStatus().degraded) === "unavailable") {
       return (
         <StoreUnavailableProduct
-          ar={siteLocale(config) === "ar"}
+          ar={(await pageLocale(config, searchParams)) === "ar"}
           phone={config.phone}
         />
       );
@@ -119,9 +113,9 @@ export default async function DigitalProductPage({
   }
 
   const market = resolveMarket(config.market);
-  const locale = siteLocale(config);
+  const locale = await pageLocale(config, searchParams);
   const ar = locale === "ar";
-  const canonical = absoluteUrl(config, `/codes/${product.slug}`);
+  const canonical = localizedAbsoluteUrl(config.url, `/codes/${product.slug}`, locale, siteLocale(config));
   // Nom nettoyé (« Game Top-Up — PUBG Mobile (Auto) » → « PUBG Mobile ») :
   // c'est lui qui sert de H1, de nom de produit structuré et de texte de
   // maillage. Les qualificatifs opérationnels du fournisseur n'ont pas leur
@@ -183,7 +177,7 @@ export default async function DigitalProductPage({
             },
             ...(category ? [{ name: ar ? category.ar : category.en, path: categoryHref(category.kind) }] : []),
             { name: localeTitle, path: `/codes/${product.slug}` },
-          ]),
+          ], locale),
           productSchema,
           faqSchema,
         ]}

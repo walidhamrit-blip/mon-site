@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import { LocalizedLink as Link } from "@/components/localized-link";
 import { ArrowUpRight, Code2, Gamepad2, Mail, MapPin, Phone } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import { useSiteConfig } from "./site-provider";

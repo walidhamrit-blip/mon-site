@@ -1,6 +1,7 @@
 import type { Faq } from "./site-types";
 import { absoluteUrl, applyMarketTokens } from "./seo";
 import { resolveMarket } from "./market";
+import { localizedAbsoluteUrl, type Locale } from "@/lib/locale";
 
 /**
  * Moteur de pages comparatives (/compare et /compare/[slug]).
@@ -987,15 +988,17 @@ export function comparisonServiceJsonLd(
   },
   comparison: ComparisonSeo,
   priceUsd: number,
+  locale?: Locale,
 ) {
-  const url = absoluteUrl(config, comparePath(comparison.id));
+  const url = locale ? localizedAbsoluteUrl(config.url, comparePath(comparison.id), locale) : absoluteUrl(config, comparePath(comparison.id));
+  const ar = locale !== "en";
   return {
     "@context": "https://schema.org",
     "@type": "Service",
     "@id": `${url}#service`,
-    name: `${comparison.competitorAr} مقابل ${comparison.usPriceLabelAr} — ${comparison.h1Ar}`,
+    name: ar ? `${comparison.competitorAr} مقابل ${comparison.usPriceLabelAr} — ${comparison.h1Ar}` : `${comparison.competitorEn} vs ${comparison.usPriceLabelEn} — ${comparison.h1En}`,
     serviceType: comparison.competitorEn,
-    description: comparison.answerAr,
+    description: ar ? comparison.answerAr : comparison.answerEn,
     url,
     image: absoluteUrl(config, "/og.jpg"),
     provider: { "@id": absoluteUrl(config, "#organization") },
@@ -1013,16 +1016,16 @@ export function comparisonServiceJsonLd(
             itemListElement: comparison.criteria.map((criterion, index) => ({
               "@type": "ListItem",
               position: index + 1,
-              name: criterion.labelAr,
-              description: `${criterion.usAr} — ${criterion.themAr ?? ""}`.trim(),
+              name: ar ? criterion.labelAr : criterion.labelEn,
+              description: ar ? `${criterion.usAr} — ${criterion.themAr ?? ""}`.trim() : `${criterion.usEn} — ${criterion.themEn ?? ""}`.trim(),
             })),
           },
         }
       : {}),
     offers: {
       "@type": "Offer",
-      name: comparison.h1Ar,
-      description: comparisonText(comparison.descriptionAr, config.market, "ar"),
+      name: ar ? comparison.h1Ar : comparison.h1En,
+      description: comparisonText(ar ? comparison.descriptionAr : comparison.descriptionEn, config.market, ar ? "ar" : "en"),
       url,
       priceCurrency: "USD",
       price: String(priceUsd),
@@ -1045,37 +1048,40 @@ export function comparisonServiceJsonLd(
 export function comparisonCriteriaJsonLd(
   config: { url: string },
   comparison: ComparisonSeo,
+  locale?: Locale,
 ) {
-  const url = absoluteUrl(config, comparePath(comparison.id));
+  const url = locale ? localizedAbsoluteUrl(config.url, comparePath(comparison.id), locale) : absoluteUrl(config, comparePath(comparison.id));
+  const ar = locale !== "en";
   return {
     "@context": "https://schema.org",
     "@type": "ItemList",
     "@id": `${url}#criteria`,
-    name: `${comparison.h1Ar} — معايير المقارنة`,
+    name: ar ? `${comparison.h1Ar} — معايير المقارنة` : `${comparison.h1En} — comparison criteria`,
     numberOfItems: comparison.criteria.length,
     itemListElement: comparison.criteria.map((criterion, index) => ({
       "@type": "ListItem",
       position: index + 1,
-      name: criterion.labelAr,
-      alternateName: criterion.labelEn,
-      description: `${criterion.labelAr}: ${criterion.usAr}`,
+      name: ar ? criterion.labelAr : criterion.labelEn,
+      alternateName: ar ? criterion.labelEn : criterion.labelAr,
+      description: ar ? `${criterion.labelAr}: ${criterion.usAr}` : `${criterion.labelEn}: ${criterion.usEn}`,
     })),
   };
 }
 
 /** FAQPage d'une comparaison. */
-export function comparisonFaqJsonLd(comparison: ComparisonSeo) {
+export function comparisonFaqJsonLd(comparison: ComparisonSeo, locale?: Locale) {
+  const ar = locale !== "en";
   return {
     "@context": "https://schema.org",
     "@type": "FAQPage",
-    inLanguage: ["en", "ar"],
+    inLanguage: locale ?? ["en", "ar"],
     mainEntity: comparison.faqs.map((faq) => ({
       "@type": "Question",
-      name: faq.qAr,
-      alternateName: faq.qEn,
+      name: ar ? faq.qAr : faq.qEn,
+      ...(locale ? {} : { alternateName: faq.qEn }),
       acceptedAnswer: {
         "@type": "Answer",
-        text: `${faq.aAr} — ${faq.aEn}`,
+        text: locale ? (ar ? faq.aAr : faq.aEn) : `${faq.aAr} — ${faq.aEn}`,
       },
     })),
   };
@@ -1093,8 +1099,10 @@ export function comparisonsCollectionJsonLd(
     market?: Parameters<typeof resolveMarket>[0];
   },
   items: ReadonlyArray<ComparisonSeo>,
+  locale?: Locale,
 ) {
-  const url = absoluteUrl(config, "/compare");
+  const url = locale ? localizedAbsoluteUrl(config.url, "/compare", locale) : absoluteUrl(config, "/compare");
+  const ar = locale !== "en";
   return {
     "@context": "https://schema.org",
     "@type": "CollectionPage",
@@ -1103,7 +1111,7 @@ export function comparisonsCollectionJsonLd(
     description:
       "مقارنات صريحة بين نخبة والإعلانات المدفوعة ومنشئات المواقع والمستقلين واشتراكات SEO: التكلفة، السرعة، الملكية والأثر بعد المشروع.",
     url,
-    inLanguage: ["en", "ar"],
+    inLanguage: locale ?? ["en", "ar"],
     isPartOf: { "@id": absoluteUrl(config, "#website") },
     mainEntity: {
       "@type": "ItemList",
@@ -1111,9 +1119,9 @@ export function comparisonsCollectionJsonLd(
       itemListElement: items.map((comparison, index) => ({
         "@type": "ListItem",
         position: index + 1,
-        url: absoluteUrl(config, comparePath(comparison.id)),
-        name: `${comparison.h1Ar} — ${comparison.competitorAr}`,
-        description: comparisonText(comparison.descriptionAr, config.market, "ar"),
+        url: locale ? localizedAbsoluteUrl(config.url, comparePath(comparison.id), locale) : absoluteUrl(config, comparePath(comparison.id)),
+        name: ar ? `${comparison.h1Ar} — ${comparison.competitorAr}` : `${comparison.h1En} — ${comparison.competitorEn}`,
+        description: comparisonText(ar ? comparison.descriptionAr : comparison.descriptionEn, config.market, ar ? "ar" : "en"),
       })),
     },
   };

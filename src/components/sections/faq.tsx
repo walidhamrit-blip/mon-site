@@ -1,5 +1,6 @@
 "use client";
 import { useState } from "react";
+import { LocalizedLink as Link } from "@/components/localized-link";
 import { Plus, Minus } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import { useSectionHeading, useSiteContent } from "@/components/site-provider";
@@ -63,9 +64,9 @@ export function FAQ() {
 
         <div className="mt-6 text-center text-sm opacity-60">
           {locale === "ar" ? "لم تجد جوابك؟ " : "Didn't find answer? "}
-          <a href="/contact" className="font-bold underline decoration-[var(--accent)] underline-offset-4">
+          <Link href="/contact" className="font-bold underline decoration-[var(--accent)] underline-offset-4">
             {locale === "ar" ? "راسلنا" : "Contact us"}
-          </a>
+          </Link>
         </div>
       </div>
     </section>

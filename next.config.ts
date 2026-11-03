@@ -172,14 +172,16 @@ const nextConfig: NextConfig = {
   },
   async redirects() {
     return [
-      // Les variants /ar et /en déclarés auparavant n'existent pas comme
-      // routes (la langue est gérée côté client) : on évite les 404 SEO.
-      { source: "/ar", destination: "/", permanent: false },
-      { source: "/en", destination: "/", permanent: false },
+      // Anciens alias de langue : ils rejoignent une URL explicitement
+      // localisée, quelle que soit la langue par défaut choisie dans l'admin.
+      // La canonique de la langue par défaut reste le chemin propre.
+      { source: "/ar", destination: "/?lang=ar", permanent: false },
+      { source: "/ar/:path+", destination: "/:path*?lang=ar", permanent: false },
+      { source: "/en", destination: "/?lang=en", permanent: false },
+      { source: "/en/:path+", destination: "/:path*?lang=en", permanent: false },
       // Alias conviviaux vers les pages Applications & Produits numériques.
       // Permanents (301) : ces alias sont stables, la consolidation SEO est
-      // donc souhaitable. Les /ar et /en ci-dessus restent temporaires —
-      // de vraies routes localisées pourraient exister un jour.
+      // donc souhaitable.
       { source: "/applications", destination: "/apps", permanent: true },
       { source: "/nos-applications", destination: "/apps", permanent: true },
       { source: "/produits", destination: "/products", permanent: true },

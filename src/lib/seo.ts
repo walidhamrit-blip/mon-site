@@ -20,6 +20,7 @@ import {
 } from "@/lib/digital-types";
 import { productSeoName } from "@/lib/digital-seo";
 import { quoteDigitalOrder } from "@/lib/digital-order-core";
+import { languageAlternates, localizedAbsoluteUrl, localizedPath, type Locale } from "@/lib/locale";
 
 /**
  * Central SEO + structured-data (JSON-LD) helpers.
@@ -407,15 +408,17 @@ export function localBusinessJsonLd(
 export function faqJsonLd(
   faqs: ReadonlyArray<Faq>,
   market?: MarketConfig | null,
+  locale?: Locale,
 ) {
+  const ar = (locale ?? resolveMarket(market).locale.slice(0, 2)) !== "en";
   return {
     "@context": "https://schema.org",
     "@type": "FAQPage",
-    inLanguage: resolveMarket(market).locale,
+    inLanguage: locale ?? resolveMarket(market).locale,
     mainEntity: faqs.map((f) => ({
       "@type": "Question",
-      name: f.qAr,
-      acceptedAnswer: { "@type": "Answer", text: f.aAr },
+      name: ar ? f.qAr : f.qEn,
+      acceptedAnswer: { "@type": "Answer", text: ar ? f.aAr : f.aEn },
     })),
   };
 }
@@ -487,8 +490,10 @@ export function storeJsonLd(
     image?: string | null;
     priceUsd?: number | null;
   }> = [],
+  locale?: Locale,
+  defaultLocale: Locale = "ar",
 ) {
-  const storeUrl = absoluteUrl(config, "/codes");
+  const storeUrl = locale ? localizedAbsoluteUrl(config.url, "/codes", locale, defaultLocale) : absoluteUrl(config, "/codes");
   const market = resolveMarket(config.market);
   return {
     "@context": "https://schema.org",
@@ -499,7 +504,9 @@ export function storeJsonLd(
     url: storeUrl,
     image: absoluteUrl(config, "/og.jpg"),
     description:
-      "متجر رقمي لبطاقات الهدايا وأكواد الألعاب والبرامج: Steam، PlayStation، Xbox، Roblox، Google Play، Amazon وغيرها. أسعار بالدولار وتسليم إلكتروني.",
+      locale === "en"
+        ? "Digital store for gift cards, game top-ups and software codes: Steam, PlayStation, Xbox, Roblox, Google Play, Amazon and more. Prices in USD, electronic delivery."
+        : "متجر رقمي لبطاقات الهدايا وأكواد الألعاب والبرامج: Steam، PlayStation، Xbox، Roblox، Google Play، Amazon وغيرها. أسعار بالدولار وتسليم إلكتروني.",
     parentOrganization: { "@id": absoluteUrl(config, ORG_ID) },
     currenciesAccepted: "USD",
     paymentAccepted: "Cryptocurrency (USDT), NOWPayments",
@@ -509,7 +516,7 @@ export function storeJsonLd(
       ? {
           hasOfferCatalog: {
             "@type": "OfferCatalog",
-            name: "أكواد وبطاقات رقمية — Digital codes & gift cards",
+            name: locale === "en" ? "Digital codes & gift cards" : "أكواد وبطاقات رقمية — Digital codes & gift cards",
             numberOfItems: products.length,
             itemListElement: products.map((product) => ({
               "@type": "Offer",
@@ -556,13 +563,14 @@ export function storeJsonLd(
  * https://developers.google.com/search/docs/appearance/structured-data/merchant-listing
  */
 export function digitalProductJsonLd(
-  config: Pick<SiteConfig, "url" | "market">,
+  config: Pick<SiteConfig, "url" | "market"> & Partial<Pick<SiteConfig, "appearance">>,
   product: DigitalProduct,
   locale: "ar" | "en",
 ) {
   const ar = locale === "ar";
   const market = resolveMarket(config.market);
-  const canonical = absoluteUrl(config, `/codes/${product.slug}`);
+  const defaultLocale = siteLocale(config as SiteConfig);
+  const canonical = localizedAbsoluteUrl(config.url, `/codes/${product.slug}`, locale, defaultLocale);
   const name = productSeoName(product, locale);
   const seller = { "@id": absoluteUrl(config, ORG_ID) };
   const offers = product.status === "available"
@@ -615,7 +623,7 @@ export function digitalProductJsonLd(
       "@type": "MerchantReturnPolicy",
       applicableCountry: market.countryCode || "LY",
       returnPolicyCategory: "https://schema.org/MerchantReturnNotPermitted",
-      merchantReturnLink: absoluteUrl(config, "/remboursement"),
+      merchantReturnLink: localizedAbsoluteUrl(config.url, "/remboursement", locale),
     },
     ...(offers.length > 0 ? { offers } : {}),
   };
@@ -651,9 +659,11 @@ export function howToJsonLd(
 
 /** Fil d'Ariane structuré pour les pages internes. */
 export function breadcrumbJsonLd(
-  config: Pick<SiteConfig, "url">,
+  config: Pick<SiteConfig, "url"> & Partial<Pick<SiteConfig, "appearance" | "market">>,
   items: ReadonlyArray<{ name: string; path: string }>,
+  locale?: Locale,
 ) {
+  const defaultLocale = siteLocale(config);
   return {
     "@context": "https://schema.org",
     "@type": "BreadcrumbList",
@@ -661,7 +671,7 @@ export function breadcrumbJsonLd(
       "@type": "ListItem",
       position: index + 1,
       name: item.name,
-      item: absoluteUrl(config, item.path),
+      item: locale ? localizedAbsoluteUrl(config.url, item.path, locale, defaultLocale) : absoluteUrl(config, item.path),
     })),
   };
 }
@@ -680,6 +690,8 @@ export interface WebPageSchemaOptions {
   speakable?: string[];
   about?: string;
   dateModified?: string;
+  /** Langue de la version servie ; sans valeur, schéma historique bilingue. */
+  locale?: Locale;
 }
 
 /** Schéma `WebPage` d'une page interne, avec résumé `speakable` optionnel. */
@@ -687,7 +699,9 @@ export function webPageJsonLd(
   config: Pick<SiteConfig, "url" | "market">,
   opts: WebPageSchemaOptions,
 ) {
-  const url = absoluteUrl(config, opts.path);
+  const url = opts.locale
+    ? localizedAbsoluteUrl(config.url, opts.path, opts.locale)
+    : absoluteUrl(config, opts.path);
   return {
     "@context": "https://schema.org",
     "@type": "WebPage",
@@ -695,7 +709,7 @@ export function webPageJsonLd(
     url,
     name: opts.name,
     description: metaDescription(opts.description, 300),
-    inLanguage: marketLanguages(resolveMarket(config.market)),
+    inLanguage: opts.locale ?? marketLanguages(resolveMarket(config.market)),
     isPartOf: { "@id": absoluteUrl(config, WEBSITE_ID) },
     ...(opts.about ? { about: { "@type": "Thing", name: opts.about } } : {}),
     primaryImageOfPage: {
@@ -716,12 +730,15 @@ export function webPageJsonLd(
 }
 
 /** Schéma d'une réalisation du portfolio (page /demos/[slug]). */
-export function demoJsonLd(config: SiteConfig, demo: Demo) {
+export function demoJsonLd(config: SiteConfig, demo: Demo, locale?: Locale) {
   const market = resolveMarket(config.market);
+  const ar = locale !== "en";
   const marketEn = marketLabels(market, "en");
   const globalReach = Boolean(config.market?.globalReach) || market.id === "global";
   const cls = resolveDemoClassification(demo, config.pricing.plans);
-  const canonicalUrl = absoluteUrl(config, `/demos/${demo.slug}`);
+  const canonicalUrl = locale
+    ? localizedAbsoluteUrl(config.url, `/demos/${demo.slug}`, locale)
+    : absoluteUrl(config, `/demos/${demo.slug}`);
   const hasLivePreview =
     Boolean(demo.previewUrl) && /^https?:\/\//i.test(demo.previewUrl.trim());
 
@@ -743,10 +760,10 @@ export function demoJsonLd(config: SiteConfig, demo: Demo) {
     "@context": "https://schema.org",
     "@type": "CreativeWork",
     "@id": `${canonicalUrl}#work`,
-    name: demo.title,
-    alternateName: demo.titleEn,
-    description: demo.description,
-    genre: demo.sectorAr,
+    name: ar ? demo.title : demo.titleEn,
+    alternateName: ar ? demo.titleEn : demo.title,
+    description: ar ? demo.description : demo.descriptionEn,
+    genre: ar ? demo.sectorAr : demo.sectorEn,
     image: primaryImage,
     ...(localPreviews.length > 0
       ? {
@@ -755,7 +772,7 @@ export function demoJsonLd(config: SiteConfig, demo: Demo) {
         }
       : {}),
     url: canonicalUrl,
-    inLanguage: marketLanguages(market),
+    inLanguage: locale ?? marketLanguages(market),
     ...(capturedIso
       ? { datePublished: capturedIso, dateModified: capturedIso }
       : {}),
@@ -765,8 +782,8 @@ export function demoJsonLd(config: SiteConfig, demo: Demo) {
     mainEntityOfPage: { "@type": "WebPage", "@id": canonicalUrl },
     about: {
       "@type": "Thing",
-      name: demo.sectorAr,
-      alternateName: demo.sectorEn,
+      name: ar ? demo.sectorAr : demo.sectorEn,
+      alternateName: ar ? demo.sectorEn : demo.sectorAr,
     },
     audience: {
       "@type": "BusinessAudience",
@@ -979,12 +996,12 @@ export function applyMarketTokens(
  * Open Graph (en_US + alternate ar), Twitter Card et robots.
  */
 export function pageMetadata(config: SiteConfig, opts: PageSeoOptions): Metadata {
-  const canonical = absoluteUrl(config, opts.path);
-  // Les jetons de marché ({city}, {country}…) sont résolus ici : les titres
-  // et descriptions restent lisibles dans le code, mais suivent le marché
-  // configuré.
   const market = resolveMarket(config.market);
-  const locale = opts.locale ?? siteLocale(config);
+  const defaultLocale = siteLocale(config);
+  const locale = opts.locale ?? defaultLocale;
+  // Chaque langue a sa canonique auto-référente. Une page noindex (suivi,
+  // paiement, ressource absente) ne doit pas entrer dans un cluster hreflang.
+  const canonical = localizedAbsoluteUrl(config.url, opts.path, locale, defaultLocale);
   // Titre borné à 60 caractères, suffixe de marque ajouté une seule fois.
   const title = serpTitle(applyMarketTokens(opts.title, market, locale), locale);
   // Description bornée à ~155 caractères (largeur d'affichage Google).
@@ -1009,7 +1026,10 @@ export function pageMetadata(config: SiteConfig, opts: PageSeoOptions): Metadata
     title,
     description,
     keywords,
-    alternates: { canonical },
+    alternates: {
+      canonical,
+      ...(!opts.noindex ? { languages: languageAlternates(config.url, opts.path, defaultLocale) } : {}),
+    },
     robots: opts.noindex
       ? { index: false, follow: false, googleBot: { index: false, follow: false } }
       : {

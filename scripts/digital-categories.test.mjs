@@ -18,10 +18,11 @@ await build({
   },
   outfile, bundle: true, platform: "node", format: "cjs", jsx: "automatic",
   plugins: [{ name: "category-fixtures", setup(builder) {
-    builder.onResolve({ filter: /^(next\/link|next\/navigation|@\/lib\/store|@\/lib\/digital-store|@\/components\/store-status-notice)$/ }, (args) => ({ path: args.path, namespace: "fixtures" }));
+    builder.onResolve({ filter: /^(next\/link|next\/navigation|@\/lib\/store|@\/lib\/digital-store|@\/components\/store-status-notice|@\/components\/localized-link)$/ }, (args) => ({ path: args.path, namespace: "fixtures" }));
     builder.onLoad({ filter: /.*/, namespace: "fixtures" }, ({ path }) => {
       const fixtures = {
         "next/link": `import {createElement} from 'react'; export default function Link({children,...props}) { return createElement('a',props,children); }`,
+        "@/components/localized-link": `import {createElement} from 'react'; export function LocalizedLink({children,...props}) { return createElement('a',props,children); }`,
         "next/navigation": `export function notFound() { throw new Error('NOT_FOUND'); }`,
         "@/lib/store": `export async function getSiteDataCached() { return {config: {url:'https://store.example',market:null,appearance:{primaryLocale:globalThis.__categoryLocale || 'en'},phone:''}}; }`,
         "@/lib/digital-store": `export async function getDigitalCatalog() { return globalThis.__categoryProducts; } export function digitalCatalogStatus() { return {degraded:!!globalThis.__categoryDegraded}; }`,
@@ -126,4 +127,21 @@ test("A07: discovery is wired into the store, product breadcrumbs and sitemap wi
   assert.match(audit, /if \(isCodeCategory\)/);
   assert.match(audit, /if \(isCodeProduct\)/);
   assert.match(audit, /return \(url.pathname \|\| "\/"\) \+ url.search/);
+});
+
+test("A08: category ?lang=en overrides the default locale with self canonical and reciprocal hreflang", async () => {
+  globalThis.__categoryProducts = products;
+  globalThis.__categoryLocale = "ar";
+  try {
+    const props = { params: Promise.resolve({ kind: "gift_card" }), searchParams: Promise.resolve({ page: "2", lang: "en" }) };
+    const html = category.renderToStaticMarkup(await category.Page(props));
+    assert.match(html, /<h1[^>]*>Gift cards.*Page 2<\/h1>/);
+    const meta = await category.generateMetadata(props);
+    assert.equal(meta.alternates.canonical, "https://store.example/codes/category/gift_card?page=2&lang=en");
+    assert.deepEqual(meta.alternates.languages, {
+      ar: "https://store.example/codes/category/gift_card?page=2",
+      en: "https://store.example/codes/category/gift_card?page=2&lang=en",
+      "x-default": "https://store.example/codes/category/gift_card?page=2",
+    });
+  } finally { globalThis.__categoryLocale = "en"; }
 });

@@ -32,10 +32,11 @@ Passe de refonte appliquée en octobre 2026 sur le site **نخبة Nukhba**.
   (défauts Zod), `src/lib/i18n.tsx` → `defaultLocale = "ar"`.
 - Le HTML est rendu **dès la première requête** avec `<html lang="ar" dir="rtl">`.
 - Nouveau module partagé **`src/lib/locale.ts`** : langues disponibles, clé
-  `nukhba-locale-choice`, `dirOf()`, et `localeBootScript()` injecté dans le
-  `<head>` — le choix explicite du visiteur est appliqué **avant le premier
-  rendu** (aucun flash de sens de lecture ; les anciennes clés `nukhba-locale`
-  sont nettoyées).
+  `nukhba-locale-choice`, `dirOf()`, URL `?lang=en`, et `localeBootScript()` injecté dans le
+  `<head>` comme filet de sécurité hors pages publiques. Sur le site public,
+  la langue de l'URL (ou la langue par défaut) est rendue côté serveur et
+  prime sur la mémorisation locale ; les anciennes clés `nukhba-locale` sont
+  nettoyées.
 - Nouveau composant **`src/components/locale-switcher.tsx`** : sélecteur de langue
   (barre supérieure + menu mobile) où l’arabe est marqué « langue principale ».
   L’anglais reste intégralement servi en un clic.
@@ -107,4 +108,5 @@ Contrôles sur le serveur de développement :
   l’existant : il suffit de les rajouter dans `THEMES` (le sélecteur s’adapte)
   et de vider `RETIRED_THEMES`.
 - Aucune URL `/ar` ou `/en` n’est créée : le site conserve une seule URL
-  canonique par page, la langue étant un réglage client mémorisé.
+  canonique par langue (`?lang=en` pour l'anglais), `hreflang` réciproques et
+  sitemap AR/EN. La langue de l'URL prime toujours sur la mémorisation locale.

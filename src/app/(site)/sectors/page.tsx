@@ -1,14 +1,18 @@
 import type { Metadata } from "next";
+import { pageLocale } from "@/lib/locale-server";
+import type { LocalePageProps } from "@/lib/locale";
+import { localizedAbsoluteUrl } from "@/lib/locale";
 import { getSiteDataCached } from "@/lib/store";
 import { absoluteUrl, breadcrumbJsonLd, pageMetadata, siteLocale } from "@/lib/seo";
 import { JsonLd } from "@/components/json-ld";
 import { sectorSeo, sectorIds } from "@/lib/sectors";
 import { SectorsHubView } from "@/components/sectors-hub-view";
 
-export async function generateMetadata(): Promise<Metadata> {
+export async function generateMetadata({ searchParams }: LocalePageProps): Promise<Metadata> {
   const { config } = await getSiteDataCached();
-  const locale = siteLocale(config);
+  const locale = await pageLocale(config, searchParams);
   return pageMetadata(config, {
+    locale,
     path: "/sectors",
     title:
       locale === "ar"
@@ -27,18 +31,19 @@ export async function generateMetadata(): Promise<Metadata> {
   });
 }
 
-export default async function SectorsIndexPage() {
+export default async function SectorsIndexPage({ searchParams }: LocalePageProps) {
   const { config, content } = await getSiteDataCached();
+  const locale = await pageLocale(config, searchParams);
 
   const collectionSchema = {
     "@context": "https://schema.org",
     "@type": "CollectionPage",
-    "@id": `${absoluteUrl(config, "/sectors")}#collection`,
+    "@id": `${localizedAbsoluteUrl(config.url, "/sectors", locale, siteLocale(config))}#collection`,
     name: "قطاعات تصميم المواقع — نخبة",
     alternateName: "Website Design by Sector — Nukhba",
     description: "تصفح خدمات نخبة حسب قطاع نشاطك في طرابلس",
-    url: absoluteUrl(config, "/sectors"),
-    inLanguage: ["en", "ar"],
+    url: localizedAbsoluteUrl(config.url, "/sectors", locale, siteLocale(config)),
+    inLanguage: locale,
     isPartOf: { "@id": absoluteUrl(config, "#website") },
     mainEntity: {
       "@type": "ItemList",
@@ -49,7 +54,7 @@ export default async function SectorsIndexPage() {
         return {
           "@type": "ListItem",
           position: i + 1,
-          url: absoluteUrl(config, `/sectors/${id}`),
+          url: localizedAbsoluteUrl(config.url, `/sectors/${id}`, locale, siteLocale(config)),
           name: s.titleAr,
           description: s.descriptionAr,
           numberOfItems: count,
@@ -72,7 +77,7 @@ export default async function SectorsIndexPage() {
           breadcrumbJsonLd(config, [
             { name: "الرئيسية", path: "/" },
             { name: "القطاعات", path: "/sectors" },
-          ]),
+          ], locale),
           collectionSchema,
         ]}
       />

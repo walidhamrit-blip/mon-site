@@ -9,7 +9,7 @@ import {
   Loader2,
   X,
 } from "lucide-react";
-import Link from "next/link";
+import { LocalizedLink as Link } from "@/components/localized-link";
 import { CRYPTO_GUIDE_PATH } from "@/lib/blog";
 import { useI18n } from "@/lib/i18n";
 import { useSiteConfig } from "@/components/site-provider";

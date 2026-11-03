@@ -1,7 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
-import Link from "next/link";
+import { LocalizedLink as Link } from "@/components/localized-link";
 import { ArrowUpRight, CheckCircle2 } from "lucide-react";
 import { HomeLegacyAnchors } from "../home-legacy-anchors";
 import { Hero } from "./hero";
