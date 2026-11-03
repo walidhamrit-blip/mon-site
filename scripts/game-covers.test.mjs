@@ -125,10 +125,10 @@ test("l'image enregistrée en admin passe avant la jaquette locale", () => {
 
 const catalog = read("src/components/digital-catalog.tsx");
 
-test("la barre de filtres est collante et la grille affiche 4 cartes par ligne", () => {
+test("la barre de filtres est collante et la grille affiche 3 cartes sur mobile, 4 sur grand écran", () => {
   assert.match(catalog, /sticky top-0 z-30/);
   assert.match(catalog, /xl:grid-cols-4/);
-  assert.match(catalog, /grid-cols-2/);
+  assert.match(catalog, /grid-cols-3/);
 });
 
 test("le rail est écrit en propriétés logiques (gauche LTR / droite RTL)", () => {
