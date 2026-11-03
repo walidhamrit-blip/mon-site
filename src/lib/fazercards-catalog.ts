@@ -39,6 +39,21 @@ import {
   readStoredFazercardsCatalog,
   writeStoredFazercardsCatalog,
 } from "@/lib/fazercards-catalog-store";
+// Sélection des catégories à synchroniser : module pur, testé directement
+// (scripts/fazercards-catalog-select.test.mjs). Voir les pannes 28/10 et
+// 03/11/2026 documentées dans ce module — notamment le minimum garanti de
+// MIN_SLOTS_PER_BRAND catégories par marque prioritaire, sans quoi les
+// variantes régionales des premières marques (PlayStation, Steam…) pouvaient
+// occuper seules tout le plafond et laisser « google play » sans aucun slot.
+import {
+  brandPriority,
+  MIN_SLOTS_PER_BRAND,
+  normalizeBrandText,
+  PRIORITY_BRANDS,
+  selectCategories,
+} from "@/lib/fazercards-catalog-select";
+
+export { brandPriority, MIN_SLOTS_PER_BRAND, normalizeBrandText, PRIORITY_BRANDS, selectCategories };
 import {
   DIGITAL_KINDS,
   type DigitalDenomination,
@@ -321,55 +336,8 @@ function mapGameKeyCategory(
 
 /* ---------------------- Couverture du catalogue ---------------------- */
 
-/**
- * Marques mises en tête de synchro, dans cet ordre.
- *
- * ⚠️ Pourquoi : l'API renvoie ses catégories par ordre alphabétique et la
- * synchro ne détaillait que les N premières. Résultat constaté en production
- * le 28/10/2026 : les cartes cadeaux s'arrêtaient à « Apex Legends Mobile » —
- * ni PlayStation, ni Steam, ni Xbox, ni Roblox, ni Google Play n'existaient
- * dans la boutique, alors que le fournisseur les propose.
- *
- * Ces marques sont donc TOUJOURS synchronisées en premier, quel que soit le
- * plafond de catégories : ce sont celles que les clients cherchent.
- */
-export const PRIORITY_BRANDS = [
-  "playstation",
-  "steam",
-  "xbox",
-  "roblox",
-  "google play",
-  "itunes",
-  "apple",
-  "nintendo",
-  "amazon",
-  "netflix",
-  "spotify",
-  "epic games",
-  "fortnite",
-  "free fire",
-  "pubg",
-  "mobile legends",
-  "razer gold",
-  "battlenet",
-  "blizzard",
-  "riot",
-  "valorant",
-  "minecraft",
-  "discord",
-  "paysafecard",
-  "binance",
-  "uber",
-] as const;
-
-/** Rang de priorité d'une catégorie (0 = à synchroniser en premier). */
-export function brandPriority(name: string): number {
-  const haystack = name.toLowerCase();
-  for (let index = 0; index < PRIORITY_BRANDS.length; index += 1) {
-    if (haystack.includes(PRIORITY_BRANDS[index])) return index;
-  }
-  return PRIORITY_BRANDS.length;
-}
+// `selectCategories` / `brandPriority` / `PRIORITY_BRANDS` viennent de
+// `@/lib/fazercards-catalog-select` (importé en tête de fichier).
 
 /** Nombre de catégories traitées simultanément (borne la charge fournisseur). */
 function catalogConcurrency(): number {
@@ -481,45 +449,9 @@ async function collectCategories<T>(
   return { items, pages, truncated };
 }
 
-/**
- * Choisit les catégories à détailler : d'abord les marques prioritaires,
- * puis une FENÊTRE GLISSANTE sur le reste (rotation), pour couvrir
- * progressivement tout le catalogue sans dépasser le budget d'appels.
- *
- * @param offset position de départ dans le reste (reprise au passage suivant)
- * @returns les catégories retenues et la position suivante
- */
-function selectCategories<T>(
-  items: T[],
-  nameOf: (item: T) => string,
-  cap: number,
-  offset: number,
-): { selected: T[]; nextOffset: number } {
-  const ordered = [...items].sort(
-    (a, b) => brandPriority(nameOf(a)) - brandPriority(nameOf(b)),
-  );
-  const priority = ordered.filter((item) => brandPriority(nameOf(item)) < PRIORITY_BRANDS.length);
-  const rest = ordered.filter((item) => brandPriority(nameOf(item)) >= PRIORITY_BRANDS.length);
-
-  const prioritySlots = Math.min(priority.length, cap);
-  const selected = priority.slice(0, prioritySlots);
-  const remaining = cap - selected.length;
-
-  if (rest.length === 0 || remaining <= 0) {
-    return { selected, nextOffset: 0 };
-  }
-
-  const start = rest.length > 0 ? Math.max(0, Math.floor(offset)) % rest.length : 0;
-  const taken: T[] = [];
-  for (let index = 0; index < Math.min(remaining, rest.length); index += 1) {
-    taken.push(rest[(start + index) % rest.length]);
-  }
-
-  return {
-    selected: [...selected, ...taken],
-    nextOffset: rest.length > 0 ? (start + taken.length) % rest.length : 0,
-  };
-}
+// `selectCategories` est importé depuis `@/lib/fazercards-catalog-select`
+// (voir l'en-tête de section ci-dessus) : minimum garanti par marque
+// prioritaire + round-robin + fenêtre glissante sur le reste.
 
 /** Extrait la région d'un libellé de catégorie : « PlayStation (US) » → US. */
 export function regionFromCategoryName(name: string): string | null {

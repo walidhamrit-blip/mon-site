@@ -300,14 +300,23 @@ test("les listes du fournisseur sont lues page par page (curseur suivi)", () => 
   assert.doesNotMatch(flat, /items\.slice\(0, limit\)/);
 });
 
-test("les marques demandées passent devant le reste (PlayStation, Steam, Xbox…)", () => {
-  const flat = code(catalog);
-  assert.match(flat, /export const PRIORITY_BRANDS = \[/);
+test("les marques demandées passent devant le reste (PlayStation, Steam, Xbox, Google Play…)", () => {
+  // La sélection vit dans un module pur, testé comportementalement
+  // (scripts/fazercards-catalog-select.test.mjs) ; ici on vérifie le câblage.
+  const select = code(read("src/lib/fazercards-catalog-select.ts"));
+  assert.match(select, /export const PRIORITY_BRANDS = \[/);
   for (const brand of ["playstation", "steam", "xbox", "roblox", "google play"]) {
-    assert.ok(flat.includes(`"${brand}"`), `marque prioritaire absente : ${brand}`);
+    assert.ok(select.includes(`"${brand}"`), `marque prioritaire absente : ${brand}`);
   }
-  assert.match(flat, /export function brandPriority\(name: string\): number/);
-  assert.match(flat, /function selectCategories<T>/);
+  assert.match(select, /export function brandPriority\(name: string\): number/);
+  assert.match(select, /export function selectCategories<T>/);
+  // Minimum garanti par marque : un plafond rempli par les variantes
+  // régionales des premières marques ne doit plus priver « google play ».
+  assert.match(select, /export const MIN_SLOTS_PER_BRAND = \d+/);
+
+  const flat = code(catalog);
+  assert.match(flat, /from "@\/lib\/fazercards-catalog-select"/);
+  assert.match(flat, /selectCategories\(page\.items, \(cat\) => cat\.name, cap, rotation\.giftcards\)/);
 });
 
 test("la rotation est persistée et le catalogue fusionné (aucune fiche perdue)", () => {
