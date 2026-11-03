@@ -15,7 +15,7 @@ Chaque rayon possède un H1, un title, une description et un CollectionPage/Item
 - Liens HTML numérotés et précédent/suivant, `aria-current` sur la page courante, sans dépendance au JavaScript.
 - Page 1 canonique sans query ; les suivantes sont auto-canoniques (`?page=2`, etc.) avec title/H1/description distinguant le numéro de page.
 - Paramètre invalide ou page au-delà de la dernière : 404 lorsque le catalogue est sain.
-- Navigation depuis `/codes` et entre les catégories. Les anciens liens `/codes?kind=…`, les facettes et tous les liens produits du catalogue restent inchangés.
+- Navigation entre les catégories (pages de rayon) et depuis les fiches produit. Sur `/codes`, une seule barre de catégories : les pastilles `?kind=…` qui filtrent le catalogue en place (la rangée de liens vers les rayons n'y est plus dupliquée). Les facettes et tous les liens produits du catalogue restent inchangés ; les rayons restent déclarés au sitemap et liés depuis les fiches, donc toujours crawlables.
 - Sitemap : quatre pages de catégorie et toutes les pages supplémentaires réellement nécessaires ; entrées des fiches existantes conservées.
 
 Une catégorie vide reste un guide accessible avec texte propre, message d’absence et liens vers les autres rayons. Pendant une panne déclarée : maintenance + noindex, sans ItemList ni liens vers des fiches de démonstration ; les URL paginées déjà connues ne deviennent pas des 404. Le sitemap n’ajoute alors aucune pagination issue du repli.

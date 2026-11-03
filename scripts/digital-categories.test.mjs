@@ -115,8 +115,15 @@ test("A07: Arabic H1 and metadata stay aligned with the configured locale", asyn
 });
 
 test("A07: discovery is wired into the store, product breadcrumbs and sitemap without removing legacy kind filters", () => {
-  assert.match(read("src/components/digital-store-view.tsx"), /<DigitalCategoryNavigation ar=/);
-  assert.match(read("src/components/digital-store-view.tsx"), /codes\?kind=/);
+  // Une seule barre de catégories sur /codes : les pastilles `?kind=` qui
+  // filtrent le catalogue en place. La rangée de liens vers les rayons
+  // `/codes/category/<kind>` n'y est plus dupliquée ; elle reste sur les
+  // pages de rayon (navigation transversale) et les fiches produit gardent
+  // le lien vers leur catégorie.
+  const storeView = read("src/components/digital-store-view.tsx");
+  assert.doesNotMatch(storeView, /<DigitalCategoryNavigation ar=/);
+  assert.match(storeView, /codes\?kind=/);
+  assert.match(read("src/app/(site)/codes/category/[kind]/page.tsx"), /<DigitalCategoryNavigation ar=\{ar\} current=\{category\.kind\} \/>/);
   assert.match(read("src/app/(site)/codes/page.tsx"), /storeCategories\.find/);
   assert.match(read("src/app/(site)/codes/[slug]/page.tsx"), /path: categoryHref\(category.kind\)/);
   const sitemap = read("src/app/sitemap.ts");
