@@ -17,11 +17,15 @@
  *        l'espace : une catégorie nommée « GooglePlay » ou « Google-Play »
  *        n'était PAS reconnue prioritaire et n'était atteinte que par la
  *        fenêtre glissante (qui peut ne jamais l'atteindre) ;
- *     b) le plafond de catégories prenait les N premières marques
- *        prioritaires DANS L'ORDRE : si PlayStation + Steam + Xbox + Roblox
- *        cumulaient seules plus de `cap` variantes régionales (une par
- *        pays), « google play » (5ᵉ marque) n'avait plus aucun slot.
- *     → matching normalisé + MIN_SLOTS_PER_BRAND garantis par marque.
+ *     b) le plafond s'appliquait d'abord aux marques prioritaires : non
+ *        seulement les marques tardives (Google Play 5ᵉ) pouvaient manquer
+ *        de slots, mais même AU SEIN d'une marque prioritaire, seules les
+ *        premières variantes étaient retenues — « Google Play (US) », classée
+ *        en dernier par l'ordre alphabétique de l'API, n'était JAMAIS
+ *        synchronisée (constaté le 03/11/2026).
+ *     → matching normalisé + TOUTES les catégories prioritaires sont
+ *       sélectionnées à chaque synchro ; le plafond ne borne plus que la
+ *       fenêtre glissante sur le reste du catalogue.
  */
 
 /**
@@ -83,22 +87,15 @@ export function brandPriority(name: string): number {
 }
 
 /**
- * Nombre minimal de catégories DÉTAILLÉES par marque prioritaire, avant
- * qu'une marque ne reçoive des slots supplémentaires.
- *
- * Sans ce minimum, un plafond atteint par les premières marques (une variante
- * régionale par pays suffit) privait les suivantes — Google Play comprise —
- * de toute synchronisation.
- */
-export const MIN_SLOTS_PER_BRAND = 3;
-
-/**
  * Choisit les catégories à détailler :
- *   1. un minimum garanti de `MIN_SLOTS_PER_BRAND` catégories PAR MARQUE
- *      prioritaire, dans l'ordre des marques ;
- *   2. les slots restants répartis en round-robin entre les prioritaires ;
- *   3. une FENÊTRE GLISSANTE sur le reste (rotation), pour couvrir
- *      progressivement tout le catalogue sans dépasser le budget d'appels.
+ *   1. TOUTES les catégories des marques prioritaires, triées par marque
+ *      (l'ordre de la liste API est conservé dans chaque marque) — le
+ *      plafond ne s'applique JAMAIS aux prioritaires, sinon les variantes
+ *      régionales classées en dernier (« Google Play (US) » en ordre
+ *      alphabétique) ne seraient jamais synchronisées ;
+ *   2. puis une FENÊTRE GLISSANTE sur le reste, bornée par `cap`, pour
+ *      couvrir progressivement tout le catalogue sans dépasser le budget
+ *      d'appels.
  *
  * @param offset position de départ dans le reste (reprise au passage suivant)
  * @returns les catégories retenues et la position suivante
@@ -109,56 +106,20 @@ export function selectCategories<T>(
   cap: number,
   offset: number,
 ): { selected: T[]; nextOffset: number } {
-  // Regroupe les prioritaires par marque (l'ordre de la liste est conservé) ;
-  // le reste garde son ordre pour la fenêtre glissante.
-  const byBrand = new Map<number, T[]>();
+  const priority: T[] = [];
   const rest: T[] = [];
   for (const item of items) {
-    const priority = brandPriority(nameOf(item));
-    if (priority < PRIORITY_BRANDS.length) {
-      const list = byBrand.get(priority) ?? [];
-      list.push(item);
-      byBrand.set(priority, list);
-    } else {
-      rest.push(item);
-    }
+    if (brandPriority(nameOf(item)) < PRIORITY_BRANDS.length) priority.push(item);
+    else rest.push(item);
   }
-  const brands = Array.from(byBrand.keys()).sort((a, b) => a - b);
+  // Tri stable par marque : chaque marque prioritaire est entièrement
+  // retenue, dans l'ordre des marques prioritaires.
+  priority.sort((a, b) => brandPriority(nameOf(a)) - brandPriority(nameOf(b)));
 
-  const selected: T[] = [];
+  const selected: T[] = [...priority];
 
-  // 1. Minimum garanti par marque prioritaire, dans l'ordre des marques.
-  for (const brand of brands) {
-    if (selected.length >= cap) break;
-    const list = byBrand.get(brand) ?? [];
-    selected.push(...list.slice(0, Math.min(MIN_SLOTS_PER_BRAND, cap - selected.length)));
-  }
-
-  // 2. Slots restants : round-robin entre les marques prioritaires, pour
-  //    qu'aucune marque ne monopole le plafond avec ses variantes régionales.
-  if (selected.length < cap) {
-    const leftovers = new Map<number, T[]>();
-    for (const brand of brands) {
-      const list = byBrand.get(brand) ?? [];
-      leftovers.set(brand, list.slice(Math.min(MIN_SLOTS_PER_BRAND, list.length)));
-    }
-    let progressed = true;
-    while (selected.length < cap && progressed) {
-      progressed = false;
-      for (const brand of brands) {
-        if (selected.length >= cap) break;
-        const queue = leftovers.get(brand) ?? [];
-        const next = queue.shift();
-        if (next !== undefined) {
-          selected.push(next);
-          progressed = true;
-        }
-      }
-    }
-  }
-
-  // 3. Fenêtre glissante sur le reste (rotation reprise au passage suivant).
-  const remaining = cap - selected.length;
+  // Fenêtre glissante sur le reste, dans la limite restante du plafond.
+  const remaining = Math.max(0, cap - selected.length);
   if (rest.length === 0 || remaining <= 0) {
     return { selected, nextOffset: 0 };
   }

@@ -310,9 +310,11 @@ test("les marques demandées passent devant le reste (PlayStation, Steam, Xbox, 
   }
   assert.match(select, /export function brandPriority\(name: string\): number/);
   assert.match(select, /export function selectCategories<T>/);
-  // Minimum garanti par marque : un plafond rempli par les variantes
-  // régionales des premières marques ne doit plus priver « google play ».
-  assert.match(select, /export const MIN_SLOTS_PER_BRAND = \d+/);
+  // Contrat : TOUTES les marques prioritaires sont sélectionnées (le plafond
+  // ne borne que la fenêtre glissante sur le reste) — sinon les variantes
+  // régionales classées en dernier, ex. « Google Play (US) », sont perdues.
+  assert.match(select, /const selected: T\[\] = \[...priority\]/);
+  assert.match(select, /priority\.sort\(\(a, b\) => brandPriority\(nameOf\(a\)\) - brandPriority\(nameOf\(b\)\)\)/);
 
   const flat = code(catalog);
   assert.match(flat, /from "@\/lib\/fazercards-catalog-select"/);
