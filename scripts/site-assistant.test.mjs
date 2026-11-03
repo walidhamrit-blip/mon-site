@@ -326,6 +326,8 @@ globalThis.__assistantProducts = defaultDigitalProducts;
 globalThis.__assistantDegraded = false;
 delete process.env.AI_GATEWAY_API_KEY;
 delete process.env.OPENAI_API_KEY;
+delete process.env.GEMINI_API_KEY;
+delete process.env.CHAT_API_KEY;
 delete process.env.INTERNAL_API_SECRET;
 
 const route = await compileModule("app/api/chat/route.ts", "chat-route.mjs", [stubsPlugin, aliasPlugin]);
@@ -416,6 +418,54 @@ test("/api/chat avec OPENAI_API_KEY : prompt ancré, historique transmis, mode l
   } finally {
     globalThis.fetch = originalFetch;
     delete process.env.OPENAI_API_KEY;
+  }
+});
+
+test("/api/chat avec GEMINI_API_KEY : endpoint Gemini compatible OpenAI, prioritaire, modèle par défaut", async () => {
+  process.env.GEMINI_API_KEY = "AIza-test";
+  process.env.OPENAI_API_KEY = "sk-should-not-be-used";
+  const originalFetch = globalThis.fetch;
+  let captured = null;
+  globalThis.fetch = async (url, init) => {
+    captured = { url: String(url), auth: init.headers.Authorization, body: JSON.parse(init.body) };
+    return new Response(JSON.stringify({ choices: [{ message: { content: "Les tarifs sont sur /pricing." } }] }), { status: 200, headers: { "Content-Type": "application/json" } });
+  };
+  try {
+    const reply = await (await post({ prompt: "Combien coûte un site ?", locale: "en" })).json();
+    assert.equal(reply.mode, "llm");
+    assert.equal(captured.url, "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions");
+    assert.equal(captured.auth, "Bearer AIza-test");
+    assert.equal(captured.body.model, "gemini-2.5-flash");
+    assert.equal(captured.body.messages[0].role, "system");
+    assert.match(captured.body.messages[0].content, /Answer in French/);
+    assert.equal(reply.actions[0].href, "/pricing");
+  } finally {
+    globalThis.fetch = originalFetch;
+    delete process.env.GEMINI_API_KEY;
+    delete process.env.OPENAI_API_KEY;
+  }
+});
+
+test("/api/chat avec CHAT_API_KEY : fournisseur compatible OpenAI configurable (ex. DeepSeek)", async () => {
+  process.env.CHAT_API_KEY = "ds-test";
+  process.env.CHAT_BASE_URL = "https://api.deepseek.com/v1/";
+  process.env.CHAT_MODEL = "deepseek-chat";
+  const originalFetch = globalThis.fetch;
+  let captured = null;
+  globalThis.fetch = async (url, init) => {
+    captured = { url: String(url), body: JSON.parse(init.body) };
+    return new Response(JSON.stringify({ choices: [{ message: { content: "ok" } }] }), { status: 200, headers: { "Content-Type": "application/json" } });
+  };
+  try {
+    const reply = await (await post({ prompt: "hello there", locale: "en" })).json();
+    assert.equal(reply.mode, "llm");
+    assert.equal(captured.url, "https://api.deepseek.com/v1/chat/completions");
+    assert.equal(captured.body.model, "deepseek-chat");
+  } finally {
+    globalThis.fetch = originalFetch;
+    delete process.env.CHAT_API_KEY;
+    delete process.env.CHAT_BASE_URL;
+    delete process.env.CHAT_MODEL;
   }
 });
 
