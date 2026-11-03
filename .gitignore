@@ -23,3 +23,7 @@ next-env.d.ts
 .DS_Store
 .vercel
 npm-debug.log*
+
+# Images sources brutes (recherche) — seules les versions traitées dans
+# public/ sont versionnées.
+/image-search/
