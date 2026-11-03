@@ -73,7 +73,11 @@ export const GAME_COVERS: GameCover[] = [
   },
   {
     file: "/game-covers/pubg-mobile.jpg",
-    keys: ["pubg mobile", "pubg new state", "pubg"],
+    keys: ["pubg mobile", "pubg"],
+  },
+  {
+    file: "/game-covers/pubg-new-state.jpg",
+    keys: ["pubg new state", "new state"],
   },
   {
     file: "/game-covers/genshin-impact.jpg",
@@ -187,7 +191,11 @@ export const GAME_COVERS: GameCover[] = [
   },
   {
     file: "/game-covers/brand-xbox.jpg",
-    keys: ["xbox game pass", "xbox live", "xbox"],
+    keys: ["xbox live", "xbox"],
+  },
+  {
+    file: "/game-covers/brand-xbox-game-pass.jpg",
+    keys: ["xbox game pass", "game pass"],
   },
   {
     file: "/game-covers/brand-google-play.jpg",
@@ -212,6 +220,208 @@ export const GAME_COVERS: GameCover[] = [
   {
     file: "/game-covers/brand-airbnb.jpg",
     keys: ["airbnb"],
+  },
+
+  /* --- Cartes-cadeaux & abonnements : visuels officiels des cartes. --- */
+  {
+    file: "/game-covers/brand-itunes.jpg",
+    keys: ["app store itunes", "app store", "itunes"],
+  },
+  {
+    file: "/game-covers/brand-netflix.jpg",
+    keys: ["netflix"],
+  },
+  {
+    file: "/game-covers/brand-nintendo.jpg",
+    keys: ["nintendo eshop", "nintendo"],
+  },
+  {
+    file: "/game-covers/brand-battle-net.jpg",
+    keys: ["battle net", "blizzard"],
+  },
+  {
+    file: "/game-covers/brand-razer-gold.jpg",
+    keys: ["razer gold"],
+  },
+  {
+    file: "/game-covers/brand-riot.jpg",
+    keys: ["riot access", "riot"],
+  },
+  {
+    file: "/game-covers/brand-discord.jpg",
+    keys: ["discord nitro", "discord"],
+  },
+  {
+    file: "/game-covers/brand-fortnite.jpg",
+    keys: ["fortnite", "v bucks", "vbucks"],
+  },
+  {
+    file: "/game-covers/brand-tiktok.jpg",
+    keys: ["tiktok", "tik tok"],
+  },
+  {
+    file: "/game-covers/brand-binance.jpg",
+    keys: ["binance"],
+  },
+  {
+    file: "/game-covers/brand-ea.jpg",
+    keys: ["electronic arts", "ea"],
+    excludes: ["ea sports"],
+  },
+  {
+    file: "/game-covers/brand-pubg-gcoin.jpg",
+    keys: ["pubg battlegrounds", "g coin", "gcoin"],
+  },
+  {
+    file: "/game-covers/brand-adobe.jpg",
+    keys: ["adobe", "creative cloud"],
+  },
+  {
+    file: "/game-covers/brand-airalo.jpg",
+    keys: ["airalo"],
+  },
+  {
+    file: "/game-covers/brand-capcut.jpg",
+    keys: ["capcut", "cap cut"],
+  },
+
+  /* --- Recharges & clés : jaquettes / key arts officiels des jeux. --- */
+  {
+    file: "/game-covers/honkai-star-rail.jpg",
+    keys: ["honkai star rail", "star rail"],
+  },
+  {
+    file: "/game-covers/zenless-zone-zero.jpg",
+    keys: ["zenless zone zero", "zenless"],
+  },
+  {
+    file: "/game-covers/wuthering-waves.jpg",
+    keys: ["wuthering waves", "wuthering"],
+  },
+  {
+    file: "/game-covers/honor-of-kings.jpg",
+    keys: ["honor of kings"],
+  },
+  {
+    file: "/game-covers/wild-rift.jpg",
+    keys: ["wild rift"],
+  },
+  {
+    file: "/game-covers/arena-breakout.jpg",
+    keys: ["arena breakout"],
+  },
+  {
+    file: "/game-covers/mobile-legends-adventure.jpg",
+    keys: ["mobile legends adventure"],
+  },
+  {
+    file: "/game-covers/blood-strike.jpg",
+    keys: ["blood strike"],
+  },
+  {
+    file: "/game-covers/delta-force.jpg",
+    keys: ["delta force"],
+  },
+  {
+    file: "/game-covers/league-of-legends.jpg",
+    keys: ["league of legends"],
+    excludes: ["wild rift"],
+  },
+  {
+    file: "/game-covers/apex-legends.jpg",
+    keys: ["apex legends"],
+  },
+  {
+    file: "/game-covers/asphalt-9.jpg",
+    keys: ["asphalt 9", "asphalt legends", "asphalt"],
+  },
+  {
+    file: "/game-covers/destiny-rising.jpg",
+    keys: ["destiny rising"],
+  },
+  {
+    file: "/game-covers/stumble-guys.jpg",
+    keys: ["stumble guys"],
+  },
+  {
+    file: "/game-covers/marvel-rivals.jpg",
+    keys: ["marvel rivals"],
+  },
+  {
+    file: "/game-covers/once-human.jpg",
+    keys: ["once human"],
+  },
+  {
+    file: "/game-covers/lords-mobile.jpg",
+    keys: ["lords mobile"],
+  },
+  {
+    file: "/game-covers/yalla-ludo.jpg",
+    keys: ["yalla ludo"],
+  },
+  {
+    file: "/game-covers/whiteout-survival.jpg",
+    keys: ["whiteout survival", "whiteout"],
+  },
+  {
+    file: "/game-covers/azur-lane.jpg",
+    keys: ["azur lane"],
+  },
+  {
+    file: "/game-covers/8-ball-pool.jpg",
+    keys: ["8 ball pool", "8 ball"],
+  },
+  {
+    file: "/game-covers/bigo-live.jpg",
+    keys: ["bigo live", "bigo"],
+  },
+  {
+    file: "/game-covers/honkai-impact-3rd.jpg",
+    keys: ["honkai impact 3rd", "honkai impact"],
+  },
+  {
+    file: "/game-covers/forza-horizon-5.jpg",
+    keys: ["forza horizon 5", "forza horizon", "forza"],
+  },
+  {
+    file: "/game-covers/sekiro.jpg",
+    keys: ["sekiro"],
+  },
+  {
+    file: "/game-covers/resident-evil-4.jpg",
+    keys: ["resident evil 4"],
+  },
+  {
+    file: "/game-covers/resident-evil-2.jpg",
+    keys: ["resident evil 2"],
+  },
+  {
+    file: "/game-covers/resident-evil-village.jpg",
+    keys: ["resident evil village", "resident evil 8"],
+  },
+  {
+    file: "/game-covers/monster-hunter-world.jpg",
+    keys: ["monster hunter world"],
+  },
+  {
+    file: "/game-covers/marvel-s-spider-man-remastered.jpg",
+    keys: ["spider man remastered", "spider man"],
+  },
+  {
+    file: "/game-covers/metro-exodus.jpg",
+    keys: ["metro exodus"],
+  },
+  {
+    file: "/game-covers/the-elder-scrolls-v-skyrim.jpg",
+    keys: ["skyrim", "elder scrolls v"],
+  },
+  {
+    file: "/game-covers/tekken-8.jpg",
+    keys: ["tekken 8"],
+  },
+  {
+    file: "/game-covers/starfield.jpg",
+    keys: ["starfield"],
   },
 ];
 

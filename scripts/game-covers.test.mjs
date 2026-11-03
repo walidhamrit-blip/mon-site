@@ -68,7 +68,7 @@ test("les fiches réelles du catalogue retombent sur une couverture connue", () 
   const cases = [
     ["fzr-giftcard-steam-wallet-us", "Gift Card — Steam Wallet (US)", "brand-steam"],
     ["fzr-giftcard-playstation-us", "Gift Card — PlayStation (US)", "brand-playstation"],
-    ["fzr-giftcard-xbox-game-pass-eu", "Gift Card — Xbox Game Pass (EU)", "brand-xbox"],
+    ["fzr-giftcard-xbox-game-pass-eu", "Gift Card — Xbox Game Pass (EU)", "brand-xbox-game-pass"],
     ["fzr-topup-free-fire-mena", "Game Top-Up — Free Fire (MENA)", "free-fire"],
     ["fzr-topup-pubg-mobile-fast", "Game Top-Up — PUBG Mobile (Fast)", "pubg-mobile"],
     ["fzr-topup-genshin-impact", "Game Top-Up — Genshin Impact", "genshin-impact"],
@@ -89,13 +89,14 @@ test("les fiches réelles du catalogue retombent sur une couverture connue", () 
 });
 
 test("un homonyme plus court ne prête pas son visuel", () => {
-  // « Mobile Legends: Adventure » est un AUTRE jeu que « Mobile Legends ».
+  // « Mobile Legends: Adventure » est un AUTRE jeu que « Mobile Legends » :
+  // il a sa PROPRE jaquette et n'emprunte jamais celle du MOBA.
   assert.equal(
     covers.gameCoverFor({
       slug: "fzr-topup-mobile-legends-adventure",
       titleEn: "Game Top-Up — Mobile Legends: Adventure",
     }),
-    null,
+    "/game-covers/mobile-legends-adventure.jpg",
   );
   // …alors que le MOBA, lui, garde bien son visuel.
   assert.equal(
