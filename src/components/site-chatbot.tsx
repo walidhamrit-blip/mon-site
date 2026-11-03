@@ -45,10 +45,11 @@ const MAX_INPUT_CHARS = 500;
 const MAX_HISTORY_MESSAGES = 12;
 
 /**
- * Avatar Einstein du assistant. L'image est harmonisée avec le thème
- * actif : un calque couleur (`mix-blend-mode: color`) teinté par
- * `--accent` se superpose au portrait, et l'anneau suit la palette
- * choisie (or, bleu, émeraude…). Aucun code couleur en dur.
+ * Avatar Einstein du assistant : badge circulaire (Einstein au casque
+ * IA, ampoule, ADN, atome). L'image est affichée telle quelle, sans
+ * calque de teinte, pour préserver ses couleurs d'origine ; seul
+ * l'anneau autour du lanceur suit la palette du thème actif.
+ * Source 192 px pour rester net sur les écrans retina (2x).
  */
 function EinsteinAvatar({
   className = "",
@@ -63,7 +64,7 @@ function EinsteinAvatar({
       className={`isolate relative block overflow-hidden rounded-full bg-[var(--secondary)] ${className}`}
     >
       <Image
-        src="/chatbot/einstein-96.webp"
+        src="/chatbot/einstein-192.webp"
         alt=""
         width={96}
         height={96}
@@ -71,7 +72,6 @@ function EinsteinAvatar({
         decoding="async"
         className={`h-full w-full object-cover ${imgClassName}`}
       />
-      <span className="chatbot-tint pointer-events-none absolute inset-0" />
     </span>
   );
 }
