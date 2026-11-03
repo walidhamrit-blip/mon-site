@@ -44,6 +44,9 @@ export async function GET(req: Request) {
         cached: catalog.cached,
         stale: catalog.stale,
         fetchedAt: catalog.fetchedAt,
+        // Erreurs de la dernière synchro (ex. « budget de temps atteint ») :
+        // utiles pour diagnostiquer une fiche absente ; aucun secret n'y figure.
+        syncErrors: catalog.errors,
         products: catalog.products.map((product) => ({
           slug: product.slug,
           kind: product.kind,
