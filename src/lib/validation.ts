@@ -386,9 +386,8 @@ export const siteConfigSchema = z.object({
   stats: z.object({
     delivery: z.string().max(50),
     deliveryEn: z.string().max(50),
-    sitesDelivered: z.string().max(50),
-    satisfaction: z.string().max(50),
-    support: z.string().max(50),
+    // A11 : anciens champs non sourcés (sitesDelivered, satisfaction,
+    // support) retirés — les clés héritées en base sont ignorées.
   }),
   reservation: z.object({
     enabled: z.boolean(),

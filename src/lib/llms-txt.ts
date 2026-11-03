@@ -81,8 +81,12 @@ export function buildLlmsTxt({
   lines.push(
     `- Contact: Phone ${config.phone} — WhatsApp ${whatsappLink(config.whatsapp)} — Email ${config.email}`,
   );
+  // A11 : faits vérifiables uniquement — compteurs dérivés du contenu
+  // publié (portfolio /demos, témoignages affichés), horaires réels et
+  // durées de support incluses dans les formules. Aucun chiffre de
+  // confiance auto-déclaré (sites livrés, satisfaction, note, « 24/7 »).
   lines.push(
-    `- Track record: ${config.stats.sitesDelivered} websites delivered, ${config.stats.satisfaction} client satisfaction, ${config.stats.ratingValue ?? "4.9"}/5 average rating (${config.stats.reviewCount ?? "86"} reviews), ${config.stats.support} support`,
+    `- Track record: ${content.demos.length} live website examples published in the portfolio (${cleanUrl(base, "/demos")}), ${content.testimonials.length} client testimonials published on the site; delivery from ${config.stats.deliveryEn} depending on plan; support via WhatsApp and the contact page during opening hours (${config.hoursEn}), with 30–90 days of post-delivery support included depending on plan`,
   );
   // Langue de référence : identique à celle servie dans le HTML et les
   // métadonnées (arabe pour un marché arabophone, sauf choix explicite).
@@ -294,8 +298,9 @@ export function buildLlmsFullTxt({
   lines.push(
     `- **Social profiles**: Instagram (${config.social.instagram}), Facebook (${config.social.facebook}), TikTok (${config.social.tiktok})`,
   );
+  // A11 : mêmes faits vérifiables que /llms.txt (voir buildLlmsTxt).
   lines.push(
-    `- **Key metrics**: Delivery in ${config.stats.deliveryEn} (${config.stats.delivery}), ${config.stats.sitesDelivered} websites delivered, ${config.stats.satisfaction} satisfaction, ${config.stats.support} support`,
+    `- **Key metrics**: Delivery from ${config.stats.deliveryEn} (${config.stats.delivery}) depending on plan, ${content.demos.length} live website examples published in the portfolio (${cleanUrl(base, "/demos")}), ${content.testimonials.length} client testimonials published on the site; support via WhatsApp and the contact page during opening hours (${config.hoursEn}), with 30–90 days of post-delivery support included depending on plan`,
   );
 
   lines.push("");
@@ -527,8 +532,8 @@ export function buildLlmsFullTxt({
   lines.push(`- **Badge page URL**: ${cleanUrl(base, "/badge")}`);
   lines.push(`- **Credit link (canonical)**: ${badgeOrigin} — campaign variant: ${badgeLink(origin)}`);
   lines.push(`- **Badge asset**: ${cleanUrl(base, "/badge/nukhba-badge.svg")} (dark, 176×44) · ${cleanUrl(base, "/badge/nukhba-badge-light.svg")} (light)`);
-  lines.push(`- **Recommended anchor (EN / AR)**: ${BADGE_ANCHOR_EN} / تصميم وتطوير المواقع — نخبة طرابلس`);
-  lines.push(`- **Rule**: one dofollow link per delivered site footer, pointing to ${origin.replace(/^https?:\/\//i, "")}, with a bilingual alt text. No \`rel="nofollow"\`.`);
+  lines.push(`- **Recommended anchor (EN / AR)**: ${BADGE_ANCHOR_EN} / نخبة`);
+  lines.push(`- **Rule**: optional brand credit in the client footer, pointing to ${origin.replace(/^https?:\/\//i, "")}, with a bilingual alt text. Use \`rel="sponsored nofollow noopener"\` for the commercial credit; clients may decline or remove it.`);
   lines.push(`- **Verification**: automated weekly audit of every client homepage (\`npm run badge:audit\`). ${badge.verified} verified · ${badge.nofollow} nofollow · ${badge.missing + badge.pending} awaiting · ${badge.total} client sites tracked.`);
   if (credited.length > 0) {
     lines.push("- **Sites currently crediting Nukhba**:");

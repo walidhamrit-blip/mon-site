@@ -381,8 +381,8 @@ const translations = {
         "نحوّل فكرتك إلى موقع فاخر، سريع، ويبيع — مصمم على هويتك، محسّن لجوجل، وجاهز ليستقبل عملاءك من أول يوم.",
       ctaPrimary: "اطلب عرض سعر مجاني",
       ctaSecondary: "شاهد المعارض الحية",
-      trusted: "يثق بنا 120+ نشاط حول العالم",
-      rating: "تقييم 4.9/5",
+      trusted: "مواقع حقيقية منشورة في معرض أعمالنا",
+      rating: "شهادات عملاء منشورة في الموقع",
     },
     trust: {
       delivery: "أيام للتسليم",
@@ -680,8 +680,8 @@ const translations = {
         "We turn your idea into a luxurious, fast, selling machine — crafted on your brand, optimized for Google, ready from day one.",
       ctaPrimary: "Get free quote",
       ctaSecondary: "View live demos",
-      trusted: "Trusted by 120+ businesses worldwide",
-      rating: "4.9/5 rating",
+      trusted: "Real websites published in our portfolio",
+      rating: "Client testimonials published on this site",
     },
     trust: {
       delivery: "days delivery",

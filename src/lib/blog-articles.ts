@@ -833,11 +833,11 @@ export const blogArticles: BlogArticle[] = [
         headingEn: "3. Trust Signals: Reviews, Directories, Consistency",
         paragraphsAr: [
           "المحركات تتحقق من وجودك خارج موقعك: ملف Google Business Profile، صفحات الأدلة الليبية، حسابات التواصل الاجتماعي، وذكر اسمك في مقالات أو مواقع أخرى. تطابق الاسم والعنوان والهاتف بين كل هذه المصادر شرط أساسي.",
-          "اطلب من كل عميل راضٍ مراجعة على Google، واذكر عدد المراجعات والتقييم في موقعك بصيغة قابلة للقراءة الآلية. التقييم 4.9/5 مع 86 مراجعة أقوى من أي شعار «الأفضل».",
+          "اطلب من كل عميل راضٍ مراجعة على Google، ولا تذكر في موقعك إلا تقييماً وعدد مراجعات يمكن التحقق منهما في مصدر خارجي مثل ملفك على Google. الدليل القابل للتحقق أقوى من أي شعار «الأفضل».",
         ],
         paragraphsEn: [
           "Engines verify you exist outside your site: a Google Business Profile, directory listings in your market, social accounts, and mentions of your name in articles or other sites. Consistent name, address and phone across all sources is a prerequisite.",
-          "Ask every satisfied client for a Google review, and state your review count and rating on your site in machine-readable form. A 4.9/5 with 86 reviews is stronger than any 'best agency' badge.",
+          "Ask every satisfied client for a Google review, and only state a rating and review count on your site when they can be verified on an external source such as your Google profile. Verifiable proof is stronger than any 'best agency' badge.",
         ],
         calloutAr: "اسم وعنوان وهاتف متطابقون في كل مكان — أصغر اختلاف يضعف الثقة الآلية.",
         calloutEn: "Identical name, address and phone everywhere — the smallest mismatch weakens machine trust.",
