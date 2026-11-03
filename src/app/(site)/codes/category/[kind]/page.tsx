@@ -92,7 +92,7 @@ export default async function DigitalCategoryPage({ params, searchParams }: Prop
           {listing.products.length === 0 ? (
             <p>{ar ? "لا توجد منتجات في هذه الفئة حالياً. تصفح الفئات الأخرى لمعرفة المتاح." : "No products in this category right now. Browse the other categories for available products."}</p>
           ) : (
-            <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <ul className="grid grid-cols-2 gap-4 sm:grid-cols-2 lg:grid-cols-4">
               {listing.products.map((product) => {
                 const price = lowestPriceUsd(product);
                 return <li key={product.id} className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-5">
