@@ -40,11 +40,14 @@ import {
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+// Sur Vercel, une fonction dépasse facilement les 10 s par défaut quand un
+// LLM rédige une réponse longue : on autorise 30 s (timeout LLM à 18 s).
+export const maxDuration = 30;
 
 const MAX_MESSAGE_CHARS = 1000;
 const MAX_HISTORY = 12;
 const MAX_OUTPUT_TOKENS = 700;
-const LLM_TIMEOUT_MS = 20_000;
+const LLM_TIMEOUT_MS = 18_000;
 const KNOWLEDGE_TTL_MS = 120_000;
 
 const DEFAULT_GATEWAY_MODEL = "anthropic/claude-sonnet-5.5";
@@ -104,8 +107,11 @@ async function loadKnowledge(): Promise<SiteKnowledge> {
 
 /* ───────────────────────── Fournisseurs LLM ─────────────────────────────── */
 
+type ProviderName = "gemini" | "chat" | "gateway" | "openai";
+
 interface LlmProvider {
-  name: "gemini" | "chat" | "gateway" | "openai";
+  name: ProviderName;
+  model: string;
   run: (system: string, messages: ChatMessage[], signal: AbortSignal) => Promise<string>;
 }
 
@@ -114,14 +120,16 @@ interface LlmProvider {
  * OpenRouter, OpenAI…) : même format de requête, seule l'URL change.
  */
 function openAiCompatible(
-  name: LlmProvider["name"],
+  name: ProviderName,
   apiKey: string,
   baseUrl: string,
   model: string,
+  extra: Record<string, unknown> = {},
 ): LlmProvider {
   const base = baseUrl.replace(/\/+$/, "");
   return {
     name,
+    model,
     run: async (system, messages, signal) => {
       const response = await fetch(`${base}/chat/completions`, {
         method: "POST",
@@ -132,9 +140,15 @@ function openAiCompatible(
           temperature: 0.3,
           max_tokens: MAX_OUTPUT_TOKENS,
           messages: [{ role: "system", content: system }, ...messages],
+          ...extra,
         }),
       });
-      if (!response.ok) throw new Error(`${name} HTTP ${response.status}`);
+      if (!response.ok) {
+        // Le détail (modèle inconnu, clé refusée, quota…) va dans les logs
+        // serveur pour diagnostiquer depuis Vercel → Runtime Logs.
+        const detail = (await response.text().catch(() => "")).replace(/\s+/g, " ").slice(0, 300);
+        throw new Error(`${name} HTTP ${response.status}${detail ? ` — ${detail}` : ""}`);
+      }
       const payload = (await response.json()) as { choices?: Array<{ message?: { content?: string } }> };
       const text = payload.choices?.[0]?.message?.content;
       if (typeof text !== "string" || !text.trim()) throw new Error(`${name}: réponse vide`);
@@ -159,6 +173,9 @@ function resolveProvider(): LlmProvider | null {
       geminiKey,
       process.env.GEMINI_BASE_URL?.trim() || GEMINI_BASE_URL,
       process.env.GEMINI_MODEL?.trim() || DEFAULT_GEMINI_MODEL,
+      // Gemini 2.5 « réfléchit » avant de répondre : on limite ce budget
+      // pour rester sous le délai d'une fonction serverless.
+      { reasoning_effort: "low" },
     );
   }
 
@@ -181,6 +198,7 @@ function resolveProvider(): LlmProvider | null {
     const model = process.env.AI_CHAT_MODEL?.trim() || DEFAULT_GATEWAY_MODEL;
     return {
       name: "gateway",
+      model,
       run: async (system, messages, signal) => {
         const { text } = await generateText({
           model: anthropic(model),
@@ -211,6 +229,21 @@ function resolveProvider(): LlmProvider | null {
 
 function json(body: unknown, init?: ResponseInit): Response {
   return Response.json(body, { ...init, headers: { "Cache-Control": "no-store", ...(init?.headers ?? {}) } });
+}
+
+/**
+ * Diagnostic public sans secret : quel fournisseur l'assistant utilise-t-il
+ * sur ce déploiement ? (`provider: null` = mode local). Permet de vérifier
+ * en une visite que la clé est bien lue par la production.
+ */
+export async function GET(): Promise<Response> {
+  const provider = resolveProvider();
+  return json({
+    assistant: "ok",
+    provider: provider?.name ?? null,
+    model: provider?.model ?? null,
+    mode: provider ? "llm" : "local",
+  });
 }
 
 export async function POST(req: Request): Promise<Response> {
@@ -257,7 +290,7 @@ export async function POST(req: Request): Promise<Response> {
   const local = answerLocally(knowledge, current, lang);
   const provider = resolveProvider();
   if (!provider) {
-    return json(local satisfies AssistantReply);
+    return json({ ...local, provider: null } satisfies AssistantReply & { provider: null });
   }
 
   const userQueries = history.filter((m) => m.role === "user").map((m) => m.content).slice(-3);
@@ -274,11 +307,12 @@ export async function POST(req: Request): Promise<Response> {
       suggestions: local.suggestions.length > 0 ? local.suggestions : starterSuggestions(lang).slice(0, 4),
       mode: "llm",
     };
-    return json(reply);
+    return json({ ...reply, provider: provider.name });
   } catch (error) {
     // Détail côté serveur uniquement ; le visiteur reçoit la réponse locale.
-    console.error(`[/api/chat] échec LLM (${provider.name}) :`, error instanceof Error ? error.message : error);
-    return json(local satisfies AssistantReply);
+    const message = error instanceof Error ? (error.name === "AbortError" ? `timeout après ${LLM_TIMEOUT_MS} ms` : error.message) : String(error);
+    console.error(`[/api/chat] échec LLM (${provider.name}, ${provider.model}) : ${message}`);
+    return json({ ...local, provider: provider.name, fallback: message.slice(0, 80) });
   } finally {
     clearTimeout(timer);
   }

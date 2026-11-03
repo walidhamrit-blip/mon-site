@@ -436,6 +436,8 @@ test("/api/chat avec GEMINI_API_KEY : endpoint Gemini compatible OpenAI, priorit
     assert.equal(captured.url, "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions");
     assert.equal(captured.auth, "Bearer AIza-test");
     assert.equal(captured.body.model, "gemini-2.5-flash");
+    assert.equal(captured.body.reasoning_effort, "low");
+    assert.equal(reply.provider, "gemini");
     assert.equal(captured.body.messages[0].role, "system");
     assert.match(captured.body.messages[0].content, /Answer in French/);
     assert.equal(reply.actions[0].href, "/pricing");
@@ -469,6 +471,21 @@ test("/api/chat avec CHAT_API_KEY : fournisseur compatible OpenAI configurable (
   }
 });
 
+test("GET /api/chat : diagnostic du fournisseur sans secret", async () => {
+  let diag = await (await route.GET()).json();
+  assert.deepEqual(diag, { assistant: "ok", provider: null, model: null, mode: "local" });
+  process.env.GEMINI_API_KEY = "AIza-test";
+  try {
+    diag = await (await route.GET()).json();
+    assert.equal(diag.provider, "gemini");
+    assert.equal(diag.model, "gemini-2.5-flash");
+    assert.equal(diag.mode, "llm");
+    assert.ok(!JSON.stringify(diag).includes("AIza-test"));
+  } finally {
+    delete process.env.GEMINI_API_KEY;
+  }
+});
+
 test("/api/chat : échec LLM → repli local transparent", async () => {
   process.env.OPENAI_API_KEY = "sk-test";
   const originalFetch = globalThis.fetch;
@@ -476,6 +493,8 @@ test("/api/chat : échec LLM → repli local transparent", async () => {
   try {
     const reply = await (await post({ prompt: "What are the subscriptions?", locale: "en" })).json();
     assert.equal(reply.mode, "local");
+    assert.equal(reply.provider, "openai");
+    assert.match(reply.fallback, /HTTP 502/);
     assert.match(reply.text, /\$69\/year/);
   } finally {
     globalThis.fetch = originalFetch;
