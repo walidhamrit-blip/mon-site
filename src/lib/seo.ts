@@ -27,9 +27,12 @@ import { languageAlternates, localizedAbsoluteUrl, localizedPath, type Locale } 
  *
  * Tout le référencement du site passe par ici : métadonnées Next.js
  * (title/description/canonical/Open Graph/Twitter) et schémas schema.org
- * utilisés par Google Search et les moteurs IA (ChatGPT, Perplexity,
+ * exposés à Google Search et aux moteurs IA (ChatGPT, Perplexity,
  * Google AI Overviews…). Les builders acceptent la configuration vivante
  * lue depuis la base (/admin → Réglages) avec repli sur les défauts code.
+ *
+ * ⚠️ Un schéma valide est un pré-requis technique : il ne garantit ni
+ * l'indexation, ni le classement, ni l'éligibilité aux résultats enrichis.
  *
  * Aucune ville ni aucun pays n'est écrit en dur : tout provient du
  * « marché » (`config.market`), ce qui permet d'ouvrir le site à d'autres
@@ -273,9 +276,13 @@ export function websiteJsonLd(config: SiteConfig) {
 }
 
 /**
- * Schéma ProfessionalService (sous-type de LocalBusiness) — riche pour le
- * SEO local et les réponses IA : coordonnées GPS, horaires, contact, avis
- * individuels synchronisés depuis l'admin, réseaux et expertises.
+ * Schéma ProfessionalService (sous-type de LocalBusiness) : coordonnées GPS,
+ * horaires, contact, réseaux et expertises. Le schéma est syntaxiquement
+ * valide, mais son éligibilité aux résultats enrichis n'est pas garantie.
+ *
+ * Les avis auto-déclarés ne sont volontairement pas balisés (voir plus bas) :
+ * Google ne les affiche pas et les considère comme du spam de données
+ * structurées. Les témoignages restent visibles dans le HTML.
  *
  * Tout le volet géographique vient du marché configuré ; `globalReach` ouvre
  * en plus la zone desservie au monde entier (le SEO local reste déclaré).
@@ -624,7 +631,8 @@ export function digitalProductJsonLd(
 
 /**
  * Schéma HowTo — structure les étapes du processus de création de site
- * (content.process) pour les rich results et les moteurs de réponse IA.
+ * (content.process). Le schéma est sémantiquement utile, mais Google a retiré
+ * les résultats enrichis HowTo : sa présence ne garantit aucune visibilité.
  */
 export function howToJsonLd(
   config: Pick<SiteConfig, "url" | "market">,
@@ -651,10 +659,11 @@ export function howToJsonLd(
 
 /** Fil d'Ariane structuré pour les pages internes. */
 export function breadcrumbJsonLd(
-  config: Pick<SiteConfig, "url">,
+  config: Pick<SiteConfig, "url"> & Partial<Pick<SiteConfig, "appearance" | "market">>,
   items: ReadonlyArray<{ name: string; path: string }>,
   locale?: Locale,
 ) {
+  const defaultLocale = siteLocale(config);
   return {
     "@context": "https://schema.org",
     "@type": "BreadcrumbList",
@@ -662,7 +671,7 @@ export function breadcrumbJsonLd(
       "@type": "ListItem",
       position: index + 1,
       name: item.name,
-      item: locale ? localizedAbsoluteUrl(config.url, item.path, locale) : absoluteUrl(config, item.path),
+      item: locale ? localizedAbsoluteUrl(config.url, item.path, locale, defaultLocale) : absoluteUrl(config, item.path),
     })),
   };
 }

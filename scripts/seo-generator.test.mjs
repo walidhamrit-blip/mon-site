@@ -141,6 +141,7 @@ test("clé absente → engine template, warning missing_key, copy complète", as
   const result = await generateSeoCopy(DEMO);
   assert.equal(result.engine, "template");
   assert.equal(result.warning, "missing_key");
+  assert.equal(result.scope, "metadata-only");
   assert.deepEqual(result.copy, templateSeoCopy(DEMO));
   for (const [key, max] of Object.entries({
     metaTitle: LIMITS.title,
@@ -273,6 +274,7 @@ test("generateSeoCopyBatch traite plusieurs démos en un appel", async () => {
   useKey(undefined);
   const batch = await generateSeoCopyBatch([DEMO, { ...DEMO, titleEn: "Second Project" }]);
   assert.equal(batch.engine, "template");
+  assert.equal(batch.scope, "metadata-only");
   assert.equal(batch.items.length, 2);
   assert.ok(batch.items[1].copy.metaTitleEn.includes("Second Project"));
 });
@@ -426,6 +428,7 @@ test("schémas JSON-LD incluent geo, offre, HowTo — et aucun avis auto-déclar
   assert.equal(work.about["@type"], "Thing");
 });
 
+
 // ── A10 : offres réelles d'un seul vendeur, pas agrégat de variantes ──────
 const offerProduct = (overrides = {}) => ({
   ...defaultDigitalProducts[0],
@@ -514,7 +517,14 @@ test("A10 : le balisage reste factuel, sans champs inventés pour promettre un r
   assert.equal(schema.review, undefined);
 });
 
-test("runSeoAudit calcule un score 100/100 quand les réalisations sont auto-complétées", () => {
+
+
+// A14 : le score est un score de complétude technique (présence/cohérence
+// des champs et contrôles), pas une preuve de référencement. Le test vérifie
+// donc aussi la portée explicite du score et l'absence de fausse promesse
+// « Review » (les avis auto-déclarés ne sont pas balisés).
+test("runSeoAudit calcule un score de complétude technique de 100/100 quand les réalisations sont auto-complétées", () => {
+
   const report = runSeoAudit(
     {
       demos: defaultDemos.map((d) => ensureDemoSeoFields(d)),
@@ -526,8 +536,38 @@ test("runSeoAudit calcule un score 100/100 quand les réalisations sont auto-com
     { openAiConfigured: false, indexNowConfigured: true },
   );
   assert.equal(report.score, 100);
+  assert.equal(report.scoreScope, "technical-completeness");
+  assert.match(report.scoreLabel, /complétude technique/i);
+  assert.match(report.scoreDisclaimer, /ne mesure ni le classement/i);
   assert.equal(report.summary.error, 0);
   assert.equal(report.summary.demosWithCompleteSeo, defaultDemos.length);
+
+  const howTo = report.checks.find((check) => check.id === "schema-howto");
+  assert.ok(howTo, "le contrôle HowTo doit être présent");
+  assert.doesNotMatch(howTo.title, /Review/);
+  assert.match(howTo.detail, /ne sont pas balisés en Review/);
+  assert.match(howTo.detail, /pas éligibles aux résultats enrichis/i);
+
+  const offers = report.checks.find((check) => check.id === "schema-offers");
+  assert.ok(offers, "le contrôle OfferCatalog doit être présent");
+  assert.match(offers.title, /syntaxiquement valide/i);
+  assert.match(offers.detail, /ne garantit pas l'éligibilité/i);
+});
+
+test("A14 : un score incomplet reste un score de complétude, pas un résultat SEO", () => {
+  const report = runSeoAudit(
+    {
+      demos: [{ ...defaultDemos[0], metaTitle: "" }],
+      faqs: defaultFaqs,
+      testimonials: defaultTestimonials,
+      process: defaultProcess,
+    },
+    siteConfig,
+    { openAiConfigured: false, indexNowConfigured: true },
+  );
+  assert.ok(report.score < 100, "un champ SEO manquant doit faire baisser le score");
+  assert.equal(report.scoreScope, "technical-completeness");
+  assert.match(report.scoreDisclaimer, /ni l'éligibilité aux résultats enrichis/i);
 });
 
 test("A09 : le JSON-LD openingHoursSpecification est dérivé de config.hoursEn, jamais en dur", async () => {
