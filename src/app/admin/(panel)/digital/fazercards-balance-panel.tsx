@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { CircleAlert, Landmark, TriangleAlert } from "lucide-react";
 import type { FazercardsBalanceStatus } from "@/lib/fazercards-balance";
 
@@ -47,7 +48,13 @@ export function FazercardsBalancePanel({ status }: { status: FazercardsBalanceSt
         </p>
         <p className={palette.text}>
           <span className="font-bold">Plafond de vente :</span>{" "}
-          {assessment.maxOrderUsd.toFixed(2)} $
+          {assessment.maxOrderUsd.toFixed(2)} ${" "}
+          <Link
+            href="/admin/settings?tab=fazercards"
+            className="underline underline-offset-2 font-semibold hover:opacity-80"
+          >
+            (modifier)
+          </Link>
         </p>
         <p className={palette.text}>
           <span className="font-bold">Coût fournisseur du plafond :</span>{" "}
@@ -65,8 +72,14 @@ export function FazercardsBalancePanel({ status }: { status: FazercardsBalanceSt
         <p className={`mt-1 text-[12px] leading-5 ${palette.text}`}>
           <span className="font-bold">Recharge conseillée :</span>{" "}
           {assessment.recommendedTopUpUsd.toFixed(2)} $ (marge de sécurité incluse) — à créditer
-          dans le hub fournisseur, puis{" "}
-          <span className="font-bold">redéployer si vous changez le plafond</span>.
+          dans le hub fournisseur, ou{" "}
+          <Link
+            href="/admin/settings?tab=fazercards"
+            className="font-bold underline underline-offset-2"
+          >
+            abaisser le plafond dans Réglages
+          </Link>
+          .
         </p>
       )}
 

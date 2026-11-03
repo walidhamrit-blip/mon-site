@@ -17,6 +17,7 @@ import { sectorSeo } from "@/lib/sectors";
 import { siteConfig } from "@/lib/config";
 import { checkRateLimitHeaders } from "@/lib/rate-limit";
 import {
+  boutiqueProductSchema,
   contentSchemas,
   digitalProductSchema,
   leadStatusSchema,
@@ -24,9 +25,17 @@ import {
   type ContentSection,
 } from "@/lib/validation";
 import {
+  clearPublicCatalogCache,
   deleteDigitalProduct,
   upsertDigitalProduct,
 } from "@/lib/digital-store";
+import {
+  removeDigitalProduct,
+  resetDigitalProductOverride,
+  restoreDigitalProduct,
+  upsertDigitalProductOverride,
+  upsertDigitalProductOverridesBatch,
+} from "@/lib/digital-overrides";
 import {
   deliverDigitalOrderManually,
   deliverPaidDigitalOrder,
@@ -201,7 +210,12 @@ export async function saveSiteConfig(input: unknown): Promise<ActionResult> {
   }
   try {
     await upsertSetting(SETTINGS_KEYS.config, parsed.data);
+    const { invalidateFazercardsBalanceCache } = await import("@/lib/fazercards-balance");
+    invalidateFazercardsBalanceCache();
     revalidatePath("/", "layout");
+    revalidatePath("/codes", "layout");
+    revalidatePath("/admin/digital");
+    revalidatePath("/admin/settings");
     // Notification IndexNow en arrière-plan (ne bloque pas la réponse admin).
     void pingAllPublicPages();
     return { ok: true, message: "Configuration enregistrée — le site public est à jour." };
@@ -214,7 +228,12 @@ export async function resetSiteConfig(): Promise<ActionResult> {
   await requireAdmin();
   try {
     await deleteSetting(SETTINGS_KEYS.config);
+    const { invalidateFazercardsBalanceCache } = await import("@/lib/fazercards-balance");
+    invalidateFazercardsBalanceCache();
     revalidatePath("/", "layout");
+    revalidatePath("/codes", "layout");
+    revalidatePath("/admin/digital");
+    revalidatePath("/admin/settings");
     void pingAllPublicPages();
     return { ok: true, message: "Configuration réinitialisée aux valeurs par défaut." };
   } catch (error) {
@@ -912,6 +931,144 @@ export async function manualDigitalDeliveryAction(
         ? `${result.delivered} code(s) enregistré(s). ${result.error}`
         : `${result.delivered} code(s) enregistré(s) et envoyé(s) au client.`,
     };
+  } catch (error) {
+    return { ok: false, error: dbIssue(error) };
+  }
+}
+
+/* ---------------- Modification complète des produits de la boutique (/codes) ---------------- */
+
+function revalidateBoutiquePages(slug?: string): void {
+  clearPublicCatalogCache();
+  revalidatePath("/");
+  revalidatePath("/codes", "layout");
+  if (slug) {
+    revalidatePath(`/codes/${slug}`);
+  }
+  revalidatePath("/llms.txt");
+  revalidatePath("/llms-full.txt");
+  revalidatePath("/sitemap.xml");
+  revalidatePath("/admin/digital");
+  revalidatePath("/admin/digital/products");
+}
+
+export async function saveBoutiqueProductAction(
+  input: unknown,
+  options: { isBaseProduct: boolean },
+): Promise<ActionResult> {
+  await requireAdmin();
+  const parsed = boutiqueProductSchema.safeParse(input);
+  if (!parsed.success) {
+    return {
+      ok: false,
+      error: `Fiche produit invalide — ${firstIssue(parsed.error)}`,
+    };
+  }
+
+  try {
+    await upsertDigitalProductOverride(parsed.data, {
+      isBaseProduct: Boolean(options?.isBaseProduct),
+    });
+    revalidateBoutiquePages(parsed.data.slug);
+    void pingAllPublicPages();
+    return {
+      ok: true,
+      message: `Fiche « ${parsed.data.titleEn} » enregistrée et publiée sur la boutique.`,
+    };
+  } catch (error) {
+    return { ok: false, error: dbIssue(error) };
+  }
+}
+
+export async function saveBoutiqueProductsBatchAction(
+  items: { product: unknown; isBaseProduct: boolean }[],
+): Promise<ActionResult> {
+  await requireAdmin();
+  if (!Array.isArray(items) || items.length === 0) {
+    return { ok: false, error: "Aucune fiche à enregistrer." };
+  }
+  if (items.length > 200) {
+    return { ok: false, error: "Lot trop volumineux (maximum 200 fiches par enregistrement)." };
+  }
+
+  const validated: { product: DigitalProduct; isBaseProduct: boolean }[] = [];
+  for (const item of items) {
+    const parsed = boutiqueProductSchema.safeParse(item?.product);
+    if (!parsed.success) {
+      return {
+        ok: false,
+        error: `Fiche invalide dans le lot — ${firstIssue(parsed.error)}`,
+      };
+    }
+    validated.push({
+      product: parsed.data,
+      isBaseProduct: Boolean(item?.isBaseProduct),
+    });
+  }
+
+  try {
+    await upsertDigitalProductOverridesBatch(validated);
+    revalidateBoutiquePages();
+    void pingAllPublicPages();
+    return {
+      ok: true,
+      message: `${validated.length} fiche(s) enregistrée(s) avec succès.`,
+    };
+  } catch (error) {
+    return { ok: false, error: dbIssue(error) };
+  }
+}
+
+export async function resetBoutiqueProductAction(
+  productId: string,
+): Promise<ActionResult> {
+  await requireAdmin();
+  const id = String(productId ?? "").trim();
+  if (!id) return { ok: false, error: "Identifiant produit manquant." };
+  try {
+    await resetDigitalProductOverride(id);
+    revalidateBoutiquePages();
+    void pingAllPublicPages();
+    return {
+      ok: true,
+      message: "Fiche réinitialisée aux données d'origine du fournisseur.",
+    };
+  } catch (error) {
+    return { ok: false, error: dbIssue(error) };
+  }
+}
+
+export async function deleteBoutiqueProductAction(
+  productId: string,
+  isBaseProduct: boolean,
+): Promise<ActionResult> {
+  await requireAdmin();
+  const id = String(productId ?? "").trim();
+  if (!id) return { ok: false, error: "Identifiant produit manquant." };
+  try {
+    await removeDigitalProduct(id, { isBaseProduct: Boolean(isBaseProduct) });
+    revalidateBoutiquePages();
+    return {
+      ok: true,
+      message: isBaseProduct
+        ? "Fiche masquée de la boutique (restaurable à tout moment depuis l'onglet Masqués)."
+        : "Fiche personnalisée supprimée.",
+    };
+  } catch (error) {
+    return { ok: false, error: dbIssue(error) };
+  }
+}
+
+export async function restoreBoutiqueProductAction(
+  productId: string,
+): Promise<ActionResult> {
+  await requireAdmin();
+  const id = String(productId ?? "").trim();
+  if (!id) return { ok: false, error: "Identifiant produit manquant." };
+  try {
+    await restoreDigitalProduct(id);
+    revalidateBoutiquePages();
+    return { ok: true, message: "Fiche restaurée dans la boutique." };
   } catch (error) {
     return { ok: false, error: dbIssue(error) };
   }

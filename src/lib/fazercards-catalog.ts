@@ -31,6 +31,8 @@ import {
 } from "@/lib/fazercards";
 import { after } from "next/server";
 import { applyGiftCardSalesPolicy } from "@/lib/digital-sales-policy";
+import { readDigitalOverrides } from "@/lib/digital-overrides";
+import { applyDigitalOverrides } from "@/lib/digital-overrides-core";
 import { marginTierFor, retailPriceForCost } from "@/lib/fazercards-pricing";
 import { revalidatePath } from "next/cache";
 import {
@@ -1232,6 +1234,7 @@ export function fazercardsProductToDigital(
       priceUsd: denomination.priceUsd,
       available: denomination.available,
       supplierCostUsd: denomination.supplierCostUsd,
+      supplierOfferId: denomination.supplierOfferId,
       fields: denomination.fields,
       maxQuantity: denomination.maxOrderQuantity,
     }));
@@ -1265,6 +1268,7 @@ export function fazercardsProductToDigital(
     sortOrder: index,
     fulfillment: "auto",
     supplier: "fazercards",
+    supplierCategoryId: product.categoryId,
   };
 }
 
@@ -1293,9 +1297,24 @@ export async function getFazercardsDigitalCatalog(
   errors: string[];
 }> {
   const catalog = await getFazercardsCatalog(options);
-  const products = catalog.products
-    .map((product, index) => fazercardsProductToDigital(product, index))
-    .filter(hasSellableDenomination);
+  const overridesState = await readDigitalOverrides();
+  const overriddenIds = new Set([
+    ...Object.keys(overridesState.overrides),
+    ...overridesState.customProducts.map((item) => item.id),
+  ]);
+  const rawProducts = catalog.products.map((product, index) =>
+    fazercardsProductToDigital(product, index),
+  );
+  const merged = applyDigitalOverrides(rawProducts, overridesState, {
+    publicOnly: true,
+    keepInternalFields: true,
+  });
+  const products = merged.filter(
+    (product) =>
+      hasSellableDenomination(product) ||
+      product.status === "coming_soon" ||
+      overriddenIds.has(product.id),
+  );
   return {
     products,
     cached: catalog.cached,

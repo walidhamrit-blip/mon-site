@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { CheckCircle2, Loader2, Lock, Minus, Plus, ShieldCheck, X, Zap } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
+import { useSiteConfig } from "@/components/site-provider";
 import { Price } from "@/components/price";
 import {
   MIN_CRYPTO_INVOICE_USD,
@@ -33,6 +34,7 @@ interface Props {
  */
 export function DigitalBuyDialog({ product, denominationId, onClose }: Props) {
   const { locale } = useI18n();
+  const siteConfig = useSiteConfig();
   const ar = locale === "ar";
 
   const available = useMemo(
@@ -90,9 +92,15 @@ export function DigitalBuyDialog({ product, denominationId, onClose }: Props) {
     isFazercards && selected != null && total < MIN_CRYPTO_INVOICE_USD;
   // Plafond d'achat automatique : au-delà, la commande basculerait en
   // livraison manuelle après paiement. Le navigateur reflète la règle
-  // serveur pour éviter d'encaisser pour rien.
+  // serveur (modifiable dans /admin/settings) pour éviter d'encaisser pour rien.
+  const configuredFazercardsMax = Number(siteConfig.fazercards?.maxOrderUsd);
+  const maxOrderLimitUsd = isFazercards
+    ? Number.isFinite(configuredFazercardsMax) && configuredFazercardsMax > 0
+      ? configuredFazercardsMax
+      : 25
+    : MAX_DIGITAL_ORDER_USD;
   const aboveLimit =
-    selected != null && Math.round(total * 100) / 100 > MAX_DIGITAL_ORDER_USD;
+    selected != null && Math.round(total * 100) / 100 > maxOrderLimitUsd;
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
@@ -244,9 +252,13 @@ export function DigitalBuyDialog({ product, denominationId, onClose }: Props) {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             // Les deux routes acceptent `productSlug`/`productId` : on envoie
-            // les deux clés pour rester compatible avec l'existant.
+            // `product.id` (toujours préfixé `fzr-`) pour FazerCards afin que
+            // la livraison auto fonctionne même si le slug public a été personnalisé.
             productSlug: product.slug,
-            productId: product.slug,
+            productId:
+              isFazercards && product.id.startsWith("fzr-")
+                ? product.id
+                : product.slug,
             denominationId: selected.id,
             quantity,
             email: email.trim(),
@@ -548,8 +560,8 @@ export function DigitalBuyDialog({ product, denominationId, onClose }: Props) {
         {aboveLimit && (
           <p className="mt-3 rounded-lg border border-amber-300/60 bg-amber-50 px-3 py-2 text-[12.5px] leading-5 text-amber-800">
             {ar
-              ? `الحد الأقصى ${MAX_DIGITAL_ORDER_USD} $ للطلب الواحد — قلّل الكمية أو تواصل معنا على واتساب.`
-              : `Maximum ${MAX_DIGITAL_ORDER_USD} $ per order — reduce the quantity or contact us on WhatsApp.`}
+              ? `الحد الأقصى ${maxOrderLimitUsd} $ للطلب الواحد — قلّل الكمية أو تواصل معنا على واتساب.`
+              : `Maximum ${maxOrderLimitUsd} $ per order — reduce the quantity or contact us on WhatsApp.`}
           </p>
         )}
 

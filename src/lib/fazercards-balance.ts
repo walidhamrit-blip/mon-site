@@ -34,7 +34,7 @@ import { sendEmail } from "@/lib/mailer";
 import { readReplenishmentSettings } from "@/lib/fazercards-replenishment";
 import { replenishmentNeed, replenishmentAlertLevel, type ReplenishmentSettings } from "@/lib/fazercards-replenishment-core";
 import { escapeHtml } from "@/lib/emails";
-import { getSiteData } from "@/lib/store";
+import { getSiteData, resolveFazercardsMaxOrderUsd } from "@/lib/store";
 
 /** Clé `settings` qui mémorise la dernière alerte envoyée. */
 export const FAZERCARDS_BALANCE_ALERT_KEY = "fazercards:balance-alert";
@@ -77,7 +77,7 @@ export function invalidateFazercardsBalanceCache(): void {
 export async function getFazercardsBalanceStatus(
   options: { fresh?: boolean; timeoutMs?: number } = {},
 ): Promise<FazercardsBalanceStatus> {
-  const maxOrderUsd = fazercardsMaxOrderUsd();
+  const maxOrderUsd = await resolveFazercardsMaxOrderUsd();
 
   if (!options.fresh && cache && Date.now() - cache.readAt < BALANCE_CACHE_TTL_MS) {
     return withCurrentCap(cache.status, maxOrderUsd);

@@ -4,7 +4,19 @@ import { db, ensureSchema } from "@/db";
 import { digitalDenominations, digitalProducts } from "@/db/schema";
 import { defaultDigitalProducts } from "@/lib/digital-seed";
 import { fazercardsConfigured } from "@/lib/fazercards";
-import { getFazercardsDigitalCatalog } from "@/lib/fazercards-catalog";
+import {
+  fazercardsProductToDigital,
+  getFazercardsCatalog,
+  getFazercardsDigitalCatalog,
+} from "@/lib/fazercards-catalog";
+import {
+  invalidateDigitalOverridesCache,
+  readDigitalOverrides,
+} from "@/lib/digital-overrides";
+import {
+  applyDigitalOverrides,
+  stripInternalProductFields,
+} from "@/lib/digital-overrides-core";
 import {
   PUBLIC_DIGITAL_STATUSES,
   type DigitalDenomination,
@@ -98,6 +110,7 @@ let publicCatalogCache: { products: DigitalProduct[]; at: number } | null = null
 /** À appeler après toute écriture du catalogue (admin, cron, seed). */
 export function clearPublicCatalogCache(): void {
   publicCatalogCache = null;
+  invalidateDigitalOverridesCache();
 }
 
 /**
@@ -410,14 +423,91 @@ export async function getDigitalCatalog(
   }
 
   const live = await getLiveCatalog();
-  const products = (live ?? (await getStoredCatalog({ publicOnly: true })))
-    .map(applyGiftCardSalesPolicy);
+  let products: DigitalProduct[];
+  if (live) {
+    products = live.map(stripInternalProductFields);
+  } else {
+    const storedBase = (await getStoredCatalog({ publicOnly: false })).map(applyGiftCardSalesPolicy);
+    const overridesState = await readDigitalOverrides();
+    products = applyDigitalOverrides(storedBase, overridesState, {
+      publicOnly: true,
+      keepInternalFields: false,
+    });
+  }
   // On ne mémorise pas un repli dû à une panne : dès que la base revient,
   // la page doit le voir tout de suite plutôt qu'au bout de deux minutes.
   if (live || !digitalCatalogStatus().degraded) {
     publicCatalogCache = { products, at: now };
   }
   return products;
+}
+
+export interface AdminBoutiqueCatalogData {
+  /** Toutes les fiches actives, en brouillon, archivées ou bientôt disponibles (avec surcharges appliquées). */
+  products: DigitalProduct[];
+  /** Fiches sources non modifiées par `id` (pour afficher les écarts et permettre la réinitialisation). */
+  baseById: Record<string, DigitalProduct>;
+  /** Fiches fournisseur masquées/supprimées par l'admin (restaurables en 1 clic). */
+  deletedProducts: DigitalProduct[];
+  /** Identifiants des fiches ayant une surcharge admin enregistrée. */
+  overriddenIds: string[];
+  /** Identifiants des fiches créées manuellement dans l'admin. */
+  customIds: string[];
+  /** Source principale actuellement servie par la boutique. */
+  source: "fazercards" | "stored";
+  /** Horodatage ISO de la dernière synchro fournisseur (si FazerCards). */
+  fetchedAt: string | null;
+}
+
+/**
+ * Charge l'intégralité des produits de la boutique pour l'éditeur `/admin/digital/products`
+ * (y compris `supplierCostUsd`, les fiches en brouillon/archivées et la corbeille).
+ */
+export async function getAdminBoutiqueCatalog(): Promise<AdminBoutiqueCatalogData> {
+  let baseProducts: DigitalProduct[] = [];
+  let source: "fazercards" | "stored" = "stored";
+  let fetchedAt: string | null = null;
+
+  if (fazercardsConfigured()) {
+    try {
+      const fzr = await getFazercardsCatalog({ noSync: true });
+      if (fzr.products.length > 0) {
+        baseProducts = fzr.products.map((p, idx) => fazercardsProductToDigital(p, idx));
+        source = "fazercards";
+        fetchedAt = fzr.fetchedAt;
+      }
+    } catch {
+      // Repli sur le catalogue stocké si aucune copie FazerCards n'est encore en cache.
+    }
+  }
+
+  if (baseProducts.length === 0) {
+    baseProducts = (await getStoredCatalog({ publicOnly: false })).map(applyGiftCardSalesPolicy);
+    source = "stored";
+  }
+
+  const overridesState = await readDigitalOverrides({ fresh: true });
+  const baseById: Record<string, DigitalProduct> = {};
+  for (const base of baseProducts) {
+    baseById[base.id] = base;
+  }
+
+  const deletedSet = new Set(overridesState.deletedIds);
+  const deletedProducts = baseProducts.filter((base) => deletedSet.has(base.id));
+  const products = applyDigitalOverrides(baseProducts, overridesState, {
+    publicOnly: false,
+    keepInternalFields: true,
+  });
+
+  return {
+    products,
+    baseById,
+    deletedProducts,
+    overriddenIds: Object.keys(overridesState.overrides),
+    customIds: overridesState.customProducts.map((p) => p.id),
+    source,
+    fetchedAt,
+  };
 }
 
 /** Fiche unique par slug (public : seules les fiches publiées sont visées). */

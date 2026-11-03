@@ -259,6 +259,12 @@ export const siteConfig = {
       "Some coins require a minimum (e.g. $3–5 depending on the coin). Your selected amount is locked at checkout. If it is too low, return here to choose a new amount. Always pay the exact amount shown on the invoice.",
   },
 
+  // Paramètres de la boutique digitale FazerCards — modifiables depuis /admin → Réglages.
+  fazercards: {
+    /** Valeur maximale d'une commande automatique chez FazerCards (en USD). */
+    maxOrderUsd: 25,
+  },
+
   // Services libres / à la carte — petites missions vendues au forfait
   standaloneServices: [
     {

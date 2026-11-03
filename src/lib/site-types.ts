@@ -144,6 +144,9 @@ export interface SiteConfigData {
   };
   flexiblePayment: FlexiblePaymentConfig;
   standaloneServices: StandaloneService[];
+  fazercards: {
+    maxOrderUsd: number;
+  };
 }
 
 /** Profil de marché éditable depuis /admin → Réglages. */

@@ -3,6 +3,7 @@ import { eq } from "drizzle-orm";
 import { db, ensureSchema } from "@/db";
 import { settings } from "@/db/schema";
 import { siteConfig } from "@/lib/config";
+import { fazercardsMaxOrderUsd } from "@/lib/fazercards";
 import { ensureDemoSeoFields } from "@/lib/ai/seo-generator";
 import {
   demos as defaultDemos,
@@ -70,9 +71,19 @@ export const getAllKnownDemos = collectAllDemos;
 
 /** Fusionne une configuration enregistrée par-dessus les valeurs par défaut. */
 export function mergeConfig(override: unknown): typeof siteConfig {
-  if (!override || typeof override !== "object") return siteConfig;
+  const defaultMaxOrderUsd = fazercardsMaxOrderUsd();
+  const baseWithEnv = {
+    ...siteConfig,
+    fazercards: {
+      ...siteConfig.fazercards,
+      maxOrderUsd: defaultMaxOrderUsd,
+    },
+  };
+  if (!override || typeof override !== "object") {
+    return baseWithEnv as unknown as typeof siteConfig;
+  }
   const o = override as Record<string, unknown>;
-  const base = siteConfig as unknown as Record<string, unknown>;
+  const base = baseWithEnv as unknown as Record<string, unknown>;
   const merged: Record<string, unknown> = { ...base };
   for (const key of Object.keys(o)) {
     const value = o[key];
@@ -147,7 +158,26 @@ export function mergeConfig(override: unknown): typeof siteConfig {
       merged[key] = value;
     }
   }
+  const fzrRaw = merged.fazercards as { maxOrderUsd?: unknown } | undefined;
+  const fzrMax = Number(fzrRaw?.maxOrderUsd);
+  merged.fazercards = {
+    maxOrderUsd:
+      Number.isFinite(fzrMax) && fzrMax > 0 ? Math.round(fzrMax * 100) / 100 : defaultMaxOrderUsd,
+  };
   return merged as unknown as typeof siteConfig;
+}
+
+/**
+ * Résout le plafond de commande FazerCards en USD à partir des réglages
+ * enregistrés dans `/admin/settings` (avec repli sur `FAZERCARDS_MAX_ORDER_USD` / 25 $).
+ */
+export async function resolveFazercardsMaxOrderUsd(): Promise<number> {
+  try {
+    const { config } = await getSiteData();
+    return fazercardsMaxOrderUsd(config.fazercards?.maxOrderUsd);
+  } catch {
+    return fazercardsMaxOrderUsd();
+  }
 }
 
 /**

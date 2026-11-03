@@ -34,9 +34,15 @@ export interface DigitalFaq {
   a: string;
 }
 
-/** Étapes d'activation, adaptées au type de produit et à la plateforme. */
+/** Étapes d'activation, adaptées au type de produit et à la plateforme (surchargeables dans /admin). */
 export function redeemSteps(product: DigitalProduct, locale: Locale): string[] {
   const ar = locale === "ar";
+  const customSteps = (ar ? product.seo?.redeemStepsAr : product.seo?.redeemStepsEn)
+    ?.map((step) => step.trim())
+    .filter(Boolean);
+  if (customSteps && customSteps.length > 0) {
+    return customSteps;
+  }
   const platform = product.platform || (ar ? "المنصة" : "the platform");
   switch (product.kind) {
     case "game_topup":
@@ -174,6 +180,8 @@ export function productDisplayName(product: DigitalProduct, locale: Locale): str
  * globales restent sans suffixe.
  */
 export function productSeoName(product: DigitalProduct, locale: Locale): string {
+  const customH1 = (locale === "ar" ? product.seo?.h1Ar : product.seo?.h1En)?.trim();
+  if (customH1) return customH1;
   const base = productDisplayName(product, locale);
   const closed = regionalOnlyRegions(product.regions);
   if (closed.length === 0) return base;
@@ -204,9 +212,18 @@ export function deliveryText(product: DigitalProduct, locale: Locale): string {
     : "The code is emailed to you right after payment.";
 }
 
-/** Questions fréquentes d'une fiche produit — toutes visibles sur la page. */
+/** Questions fréquentes d'une fiche produit — toutes visibles sur la page (surchargeables dans /admin). */
 export function productFaqs(product: DigitalProduct, locale: Locale): DigitalFaq[] {
   const ar = locale === "ar";
+  if (Array.isArray(product.seo?.faqs) && product.seo.faqs.length > 0) {
+    const customFaqs = product.seo.faqs
+      .map((item) => ({
+        q: (ar ? item.qAr || item.qEn : item.qEn || item.qAr).trim(),
+        a: (ar ? item.aAr || item.aEn : item.aEn || item.aAr).trim(),
+      }))
+      .filter((item) => item.q.length > 0 && item.a.length > 0);
+    if (customFaqs.length > 0) return customFaqs;
+  }
   const title = productDisplayName(product, locale);
   const platform = product.platform || (ar ? "المنصة" : "the platform");
   const from = lowestPriceUsd(product);
@@ -309,6 +326,10 @@ export function storeFaqs(locale: Locale): DigitalFaq[] {
  * 60 caractères.
  */
 export function productSeoTitle(product: DigitalProduct, locale: Locale): string {
+  const customTitle = (
+    locale === "ar" ? product.seo?.seoTitleAr : product.seo?.seoTitleEn
+  )?.trim();
+  if (customTitle) return customTitle;
   const ar = locale === "ar";
   // Nom SEO avec la région quand la fiche est régionale (A01) : deux
   // variantes d'un même jeu ne doivent pas partager le même title.
@@ -341,6 +362,10 @@ export function productSeoDescription(
   product: DigitalProduct,
   locale: Locale,
 ): string {
+  const customDesc = (
+    locale === "ar" ? product.seo?.seoDescriptionAr : product.seo?.seoDescriptionEn
+  )?.trim();
+  if (customDesc) return customDesc;
   const ar = locale === "ar";
   const title = productDisplayName(product, locale);
   const kind = ar
@@ -363,4 +388,49 @@ export function productSeoDescription(
   }
   const head = `${title} — ${kind}${from != null ? ` from $${from.toFixed(2)}` : ""}.`;
   return `${head} Region: ${region}. ${deliveryText(product, "en")} (1 USD = 1 USDT).`;
+}
+
+/** Texte alternatif SEO de l'image produit (≤ 125 car.). */
+export function productImageAlt(product: DigitalProduct, locale: Locale): string {
+  const customAlt = (
+    locale === "ar" ? product.seo?.imageAltAr : product.seo?.imageAltEn
+  )?.trim();
+  if (customAlt) return customAlt;
+  const name = productSeoName(product, locale);
+  return locale === "ar" ? `صورة ${name}` : `${name} product visual`;
+}
+
+/** Résumé factuel « Answer-First » GEO pour moteurs IA (ChatGPT, Perplexity, AI Overviews). */
+export function productGeoSummary(product: DigitalProduct, locale: Locale): string {
+  const customGeo = (
+    locale === "ar" ? product.seo?.geoSummaryAr : product.seo?.geoSummaryEn
+  )?.trim();
+  return customGeo || "";
+}
+
+/** Liste dédoublonnée des mots-clés SEO bilingues d'une fiche produit. */
+export function productSeoKeywords(product: DigitalProduct): string[] {
+  const base = [
+    ...(product.seo?.keywordsAr ?? []),
+    ...(product.seo?.keywordsEn ?? []),
+    product.titleAr,
+    product.titleEn,
+    product.platform,
+    `${product.platform} code`,
+    `${product.platform} gift card`,
+    `${product.platform} ليبيا`,
+    `شراء ${product.titleAr}`,
+    `buy ${product.titleEn} USDT`,
+  ];
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const kw of base) {
+    const clean = String(kw ?? "").trim();
+    if (!clean) continue;
+    const key = clean.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push(clean);
+  }
+  return out.slice(0, 24);
 }

@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { FazercardsCatalogPanel } from "./fazercards-catalog-panel";
 import { FazercardsReplenishmentPanel } from "./fazercards-replenishment-panel";
 import { readReplenishmentSettings } from "@/lib/fazercards-replenishment";
@@ -46,8 +47,26 @@ export default async function AdminDigitalPage() {
 
   return (
     <div className="space-y-4">
-      <h1 className="text-2xl font-black text-stone-900">Boutique digitale — FazerCards</h1>
-      <p className="text-sm text-stone-600">Gérez le catalogue actuel, le solde et la disponibilité. Les anciennes commandes restent consultables ; aucun ancien fournisseur n’est utilisé pour les nouvelles ventes.</p>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-black text-stone-900">Boutique digitale — FazerCards</h1>
+          <p className="text-sm text-stone-600">Gérez le catalogue actuel, le solde et la disponibilité. Les anciennes commandes restent consultables ; aucun ancien fournisseur n’est utilisé pour les nouvelles ventes.</p>
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <Link
+            href="/admin/digital/products"
+            className="rounded-xl bg-stone-900 px-4 py-2 text-xs font-bold text-white hover:bg-stone-800 shadow-xs"
+          >
+            Modifier les produits & SEO/GEO →
+          </Link>
+          <Link
+            href="/admin/settings?tab=fazercards"
+            className="rounded-xl border border-stone-300 bg-white px-3.5 py-2 text-xs font-bold text-stone-700 hover:bg-stone-50"
+          >
+            Plafond max FazerCards ({balance.assessment.maxOrderUsd.toFixed(0)} $)
+          </Link>
+        </div>
+      </div>
       <FazercardsBalancePanel status={balance} />
       {replenishmentRule ? <FazercardsReplenishmentPanel rule={replenishmentRule} balanceUsd={balance.assessment.balanceUsd} /> : (
         <p className="rounded-xl border border-red-300 bg-red-50 p-4 text-sm text-red-800">Règle de recharge inaccessible : vérifiez la connexion à la base de données. La surveillance ne peut pas être garantie.</p>

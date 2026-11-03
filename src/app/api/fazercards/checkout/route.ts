@@ -5,6 +5,8 @@ import {
   FazercardsOrderError,
 } from "@/lib/fazercards-orders";
 import { getFazercardsCatalog } from "@/lib/fazercards-catalog";
+import { readDigitalOverrides } from "@/lib/digital-overrides";
+import { resolveFazercardsCheckoutProduct } from "@/lib/digital-overrides-core";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { enforceSameOrigin } from "@/lib/csrf";
 
@@ -104,9 +106,22 @@ export async function POST(req: Request) {
     );
   }
 
+  const overridesState = await readDigitalOverrides();
+  const matchedProduct = resolveFazercardsCheckoutProduct(
+    catalog.products,
+    overridesState,
+    parsed.data.productId,
+  );
+  // Conserve toujours l'identifiant canonique `fzr-*` dans la commande afin que
+  // `digitalOrderSupplier` route bien la livraison auto même si le slug public est personnalisé.
+  const canonicalProductId = matchedProduct?.id ?? parsed.data.productId;
+
   const productsAdapter = {
     findBySlug: (slug: string) => {
-      const p = catalog.products.find((x) => x.slug === slug);
+      const p =
+        slug === canonicalProductId && matchedProduct
+          ? matchedProduct
+          : resolveFazercardsCheckoutProduct(catalog.products, overridesState, slug);
       if (!p) return null;
       return {
         kind: p.kind,
@@ -128,7 +143,7 @@ export async function POST(req: Request) {
   try {
     const result = await createFazercardsCheckout(
       {
-        productId: parsed.data.productId,
+        productId: canonicalProductId,
         denominationId: parsed.data.denominationId,
         quantity: parsed.data.quantity,
         email: parsed.data.email,

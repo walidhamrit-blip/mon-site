@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   ArrowDown,
@@ -32,7 +33,13 @@ import type {
 } from "@/lib/site-types";
 import { ADMIN_INPUT_CLS, ADMIN_TEXTAREA_CLS } from "../site-item-editor";
 
-type SettingsTab = "appearance" | "contact" | "market" | "pricing" | "flex";
+type SettingsTab =
+  | "appearance"
+  | "contact"
+  | "market"
+  | "pricing"
+  | "flex"
+  | "fazercards";
 
 interface Props {
   initial: SiteConfigData;
@@ -47,11 +54,23 @@ export function SettingsForm({ initial, initialTab }: Props) {
     if (raw === "market" || raw === "currency") return "market";
     if (raw === "pricing") return "pricing";
     if (raw === "flex" || raw === "services") return "flex";
+    if (raw === "fazercards" || raw === "boutique" || raw === "digital") {
+      return "fazercards";
+    }
     return "appearance";
   };
 
   const [tab, setTab] = useState<SettingsTab>(resolveTab(initialTab));
-  const [form, setForm] = useState<SiteConfigData>(initial);
+  const [form, setForm] = useState<SiteConfigData>({
+    ...initial,
+    fazercards: {
+      maxOrderUsd:
+        Number.isFinite(Number(initial.fazercards?.maxOrderUsd)) &&
+        Number(initial.fazercards?.maxOrderUsd) > 0
+          ? Number(initial.fazercards.maxOrderUsd)
+          : 25,
+    },
+  });
   const [dirty, setDirty] = useState(false);
   const [toast, setToast] = useState<{ msg: string; kind: "ok" | "err" } | null>(
     null,
@@ -123,6 +142,7 @@ export function SettingsForm({ initial, initialTab }: Props) {
     { id: "market", label: "Marché & Devises" },
     { id: "pricing", label: "Formules & Réservation 1 $" },
     { id: "flex", label: "Paiement libre & Services à la carte" },
+    { id: "fazercards", label: "Boutique & FazerCards" },
   ];
 
   return (
@@ -1225,6 +1245,117 @@ export function SettingsForm({ initial, initialTab }: Props) {
               </div>
             </div>
           ))}
+        </div>
+      )}
+
+      {tab === "fazercards" && (
+        <div className="space-y-6">
+          <div className="rounded-2xl border border-stone-200 bg-white p-5 sm:p-6 shadow-xs space-y-5">
+            <div>
+              <span className="text-[11px] font-bold uppercase tracking-wider text-[#8A6D2F]">
+                Boutique digitale · FazerCards
+              </span>
+              <h2 className="mt-1 text-lg font-extrabold text-stone-900">
+                Plafond de commande maximale chez FazerCards
+              </h2>
+              <p className="mt-1 text-xs sm:text-sm text-stone-500 leading-relaxed max-w-2xl">
+                Définit le montant maximal en USD autorisé pour une seule commande dans la boutique{" "}
+                <span className="font-mono text-stone-700">/codes</span> (par défaut{" "}
+                <strong>25 $</strong>). Au-delà de ce montant, l’achat en ligne est bloqué avant la
+                facturation crypto et le client est invité à réduire la quantité ou à vous contacter
+                sur WhatsApp. Ce réglage prend effet immédiatement sans redéploiement.
+              </p>
+            </div>
+
+            <div className="grid sm:grid-cols-2 gap-4 items-end">
+              <Field label="Valeur maximale d’une commande FazerCards ($ USD)">
+                <div className="relative">
+                  <input
+                    type="number"
+                    min={1.5}
+                    max={10000}
+                    step="0.5"
+                    dir="ltr"
+                    value={form.fazercards?.maxOrderUsd ?? 25}
+                    onChange={(e) => {
+                      const val = Number(e.target.value);
+                      patch({
+                        fazercards: {
+                          ...form.fazercards,
+                          maxOrderUsd: Number.isFinite(val) ? val : 0,
+                        },
+                      });
+                    }}
+                    className={`${ADMIN_INPUT_CLS} pr-14 font-mono text-base font-bold`}
+                  />
+                  <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-xs font-bold text-stone-400">
+                    USD $
+                  </span>
+                </div>
+              </Field>
+
+              <div className="space-y-1.5">
+                <span className="block text-xs font-semibold text-stone-600">
+                  Valeurs rapides
+                </span>
+                <div className="flex flex-wrap gap-2">
+                  {[15, 25, 50, 100, 250].map((preset) => {
+                    const active = Number(form.fazercards?.maxOrderUsd) === preset;
+                    return (
+                      <button
+                        key={preset}
+                        type="button"
+                        onClick={() =>
+                          patch({
+                            fazercards: {
+                              ...form.fazercards,
+                              maxOrderUsd: preset,
+                            },
+                          })
+                        }
+                        className={`h-9 px-3.5 rounded-xl border text-xs font-bold transition-colors cursor-pointer ${
+                          active
+                            ? "border-[#8A6D2F] bg-[#8A6D2F] text-white"
+                            : "border-stone-200 bg-stone-50 text-stone-700 hover:bg-stone-100"
+                        }`}
+                      >
+                        {preset} $
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+
+            <div className="rounded-xl border border-amber-200/80 bg-amber-50/70 px-4 py-3 text-xs text-amber-900 space-y-1 leading-relaxed">
+              <p className="font-semibold">
+                Cohérence avec votre solde fournisseur FazerCards
+              </p>
+              <p>
+                Assurez-vous que votre solde revendeur FazerCards couvre le coût fournisseur d’une
+                commande à{" "}
+                <strong>
+                  {Number(form.fazercards?.maxOrderUsd ?? 25).toFixed(2)} $
+                </strong>{" "}
+                afin que toutes les ventes jusqu’à ce plafond soient livrées automatiquement.
+              </p>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2.5 pt-1">
+              <Link
+                href="/admin/digital"
+                className="inline-flex items-center gap-1.5 rounded-xl border border-stone-200 bg-stone-50 px-3.5 py-2 text-xs font-semibold text-stone-700 hover:bg-stone-100"
+              >
+                Voir le solde & la couverture FazerCards →
+              </Link>
+              <Link
+                href="/admin/digital/products"
+                className="inline-flex items-center gap-1.5 rounded-xl border border-[#C6A664]/50 bg-[#C6A664]/10 px-3.5 py-2 text-xs font-semibold text-[#8A6D2F] hover:bg-[#C6A664]/20"
+              >
+                Modifier les cartes cadeaux & produits (SEO/GEO) →
+              </Link>
+            </div>
+          </div>
         </div>
       )}
 
