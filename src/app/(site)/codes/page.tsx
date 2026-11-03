@@ -1,4 +1,7 @@
 import { DigitalStoreView } from "@/components/digital-store-view";
+import { pageLocale } from "@/lib/locale-server";
+import type { LocalePageProps } from "@/lib/locale";
+import { localizedAbsoluteUrl } from "@/lib/locale";
 import { storeCategories } from "@/lib/site-hierarchy";
 import type { Metadata } from "next";
 import { digitalCatalogStatus, getDigitalCatalog } from "@/lib/digital-store";
@@ -16,11 +19,12 @@ import { resolveMarket } from "@/lib/market";
 import { storeFaqs } from "@/lib/digital-seo";
 import { lowestPriceUsd } from "@/lib/digital-types";
 
-export async function generateMetadata(): Promise<Metadata> {
+export async function generateMetadata({ searchParams }: LocalePageProps): Promise<Metadata> {
   const { config } = await getSiteDataCached();
   // Les métadonnées suivent la langue principale du site (/admin → Réglages).
-  const locale = siteLocale(config);
+  const locale = await pageLocale(config, searchParams);
   return pageMetadata(config, {
+    locale,
     path: "/codes",
     title:
       locale === "ar"
@@ -90,7 +94,7 @@ export default async function CodesPage({ searchParams }: { searchParams: Promis
   const status = digitalCatalogStatus();
   const degraded = status.degraded;
   const market = resolveMarket(config.market);
-  const locale = siteLocale(config);
+  const locale = await pageLocale(config, searchParams);
   const ar = locale === "ar";
   const faqs = storeFaqs(locale);
 
@@ -109,7 +113,7 @@ export default async function CodesPage({ searchParams }: { searchParams: Promis
         itemListElement: products.map((product, index) => ({
           "@type": "ListItem",
           position: index + 1,
-          url: absoluteUrl(config, `/codes/${product.slug}`),
+          url: localizedAbsoluteUrl(config.url, `/codes/${product.slug}`, locale, siteLocale(config)),
           name: ar ? product.titleAr : product.titleEn,
           ...(product.image
             ? {
@@ -124,11 +128,11 @@ export default async function CodesPage({ searchParams }: { searchParams: Promis
   const collectionSchema = {
     "@context": "https://schema.org",
     "@type": "CollectionPage",
-    "@id": `${absoluteUrl(config, "/codes")}#collection`,
+    "@id": `${localizedAbsoluteUrl(config.url, "/codes", locale, siteLocale(config))}#collection`,
     name: ar
       ? "بطاقات الهدايا وأكواد الألعاب والبرامج — نخبة"
       : "Gift cards, game keys and software codes — Nukhba",
-    url: absoluteUrl(config, "/codes"),
+    url: localizedAbsoluteUrl(config.url, "/codes", locale, siteLocale(config)),
     inLanguage: ar ? market.locale : "en",
     isPartOf: { "@id": absoluteUrl(config, "#website") },
     description: ar
@@ -145,7 +149,7 @@ export default async function CodesPage({ searchParams }: { searchParams: Promis
       ? []
       : products.map((product) => ({
           name: ar ? product.titleAr : product.titleEn,
-          url: absoluteUrl(config, `/codes/${product.slug}`),
+          url: localizedAbsoluteUrl(config.url, `/codes/${product.slug}`, locale, siteLocale(config)),
           image: product.image
             ? product.image.startsWith("http")
               ? product.image
@@ -158,7 +162,7 @@ export default async function CodesPage({ searchParams }: { searchParams: Promis
   const faqSchema = {
     "@context": "https://schema.org",
     "@type": "FAQPage",
-    "@id": `${absoluteUrl(config, "/codes")}#faq`,
+    "@id": `${localizedAbsoluteUrl(config.url, "/codes", locale, siteLocale(config))}#faq`,
     inLanguage: ar ? market.locale : "en",
     mainEntity: faqs.map((faq) => ({
       "@type": "Question",
@@ -177,7 +181,7 @@ export default async function CodesPage({ searchParams }: { searchParams: Promis
               name: ar ? "الأكواد وبطاقات الهدايا" : "Codes & gift cards",
               path: "/codes",
             },
-          ]),
+          ], locale),
           collectionSchema,
           storeSchema,
           faqSchema,

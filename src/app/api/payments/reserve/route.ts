@@ -20,6 +20,7 @@ import {
 } from "@/lib/order-tracking";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { enforceSameOrigin } from "@/lib/csrf";
+import { localizedPath } from "@/lib/locale";
 
 /**
  * Réservation prioritaire : le client verse un petit acompte (1 $ par
@@ -220,8 +221,8 @@ export async function POST(req: Request) {
       orderId: ref,
       orderDescription: `${config.name} — ${tierInfo} — ${demo.titleEn} (réservation prioritaire)`,
       ipnCallbackUrl: `${baseUrl}/api/payments/ipn`,
-      successUrl: `${baseUrl}/pay/success?${trackingParams}`,
-      cancelUrl: `${baseUrl}/pay/cancel?${trackingParams}`,
+      successUrl: `${baseUrl}${localizedPath(`/pay/success?${trackingParams}`, data.locale ?? "ar")}`,
+      cancelUrl: `${baseUrl}${localizedPath(`/pay/cancel?${trackingParams}`, data.locale ?? "ar")}`,
     });
   } catch (error) {
     console.error("[reservation] NOWPayments refusé :", errorMessage(error));

@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
+import { LocalizedLink as Link } from "@/components/localized-link";
 import { AnimatePresence, motion } from "framer-motion";
 import { ArrowRight, RotateCcw, Send, X } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
@@ -10,16 +11,38 @@ import { whatsappLink } from "@/lib/utils";
 import {
   buildChatNodes,
   matchChatNode,
+  FALLBACK_NODE,
   START_NODES,
-  type ChatNode,
 } from "@/lib/chatbot";
+
+interface ChatAction {
+  label: string;
+  href: string;
+  external?: boolean;
+}
 
 interface Message {
   key: number;
   role: "bot" | "user";
   text: string;
-  action?: ChatNode["action"];
+  actions?: ChatAction[];
 }
+
+/** Puce proposée : soit un nœud local (id), soit une question libre. */
+interface Suggestion {
+  label: string;
+  nodeId?: string;
+}
+
+interface ChatApiReply {
+  text: string;
+  actions?: ChatAction[];
+  suggestions?: string[];
+  mode?: "local" | "llm";
+}
+
+const MAX_INPUT_CHARS = 500;
+const MAX_HISTORY_MESSAGES = 12;
 
 /**
  * Avatar Einstein du assistant. L'image est harmonisée avec le thème
@@ -54,10 +77,14 @@ function EinsteinAvatar({
 }
 
 /**
- * Petit assistant du site : il propose des questions, répond avec les
- * données réelles (prix, délais, paiement crypto) puis enchaîne sur les questions
- * de suivi. Aucun appel réseau, aucune clé API — la conversation est un
- * arbre de décision local (voir src/lib/chatbot.ts).
+ * Assistant du site : il répond à toutes les questions sur le contenu du
+ * site (formules, paiement, abonnements, services, codes digitaux,
+ * portfolio, secteurs, comparatifs, blog, conditions, contact…).
+ *
+ * Les questions sont envoyées à `/api/chat`, qui s'appuie sur l'index
+ * complet du site (voir src/lib/site-assistant.ts) et, si une clé est
+ * configurée, sur un LLM ancré sur ces données. Hors ligne ou en cas
+ * d'erreur réseau, l'arbre local (src/lib/chatbot.ts) prend le relais.
  */
 export function SiteChatbot() {
   const { locale } = useI18n();
@@ -79,11 +106,12 @@ function ChatShell() {
       role: "bot",
       text:
         locale === "ar"
-          ? "مرحبًا 👋 أنا مساعد نخبة. اختر سؤالًا وسأجيبك فورًا."
-          : "Hi 👋 I'm the Nukhba assistant. Pick a question and I'll answer right away.",
+          ? "مرحبًا 👋 أنا مساعد نخبة. اسألني أي شيء عن الموقع: الأسعار، الدفع، الاشتراكات، الخدمات، متجر الأكواد، معرض الأعمال، الشروط… أو اختر سؤالًا."
+          : "Hi 👋 I'm the Nukhba assistant. Ask me anything about the site: pricing, payment, subscriptions, services, the codes store, portfolio, terms… or pick a question.",
     },
   ]);
-  const [suggestions, setSuggestions] = useState<string[]>([...START_NODES]);
+  const [online, setOnline] = useState(true);
+  const abortRef = useRef<AbortController | null>(null);
   const [bubble, setBubble] = useState(false);
   // Le visiteur a-t-il déjà ouvert l'assistant ? La bulle d'accueil
   // n'a plus lieu d'être après une première ouverture.
@@ -107,9 +135,24 @@ function ChatShell() {
         ),
         reservationUsd: siteConfig.reservation?.depositUsd ?? 1,
         hours: ar ? siteConfig.hours : siteConfig.hoursEn,
+        phone: siteConfig.phone,
+        email: siteConfig.email,
+        address: ar ? siteConfig.address : siteConfig.addressEn,
+        services: siteConfig.standaloneServices,
       }),
     [locale, siteConfig, ar],
   );
+
+  const startSuggestions = useCallback(
+    (): Suggestion[] =>
+      START_NODES.filter((id) => nodes[id]).map((id) => ({ label: nodes[id].label, nodeId: id })),
+    [nodes],
+  );
+
+  const [suggestions, setSuggestions] = useState<Suggestion[]>(() => startSuggestions());
+
+  // Annule une requête en cours au démontage (changement de langue…).
+  useEffect(() => () => abortRef.current?.abort(), []);
 
   // Garde le dernier message visible.
   useEffect(() => {
@@ -147,53 +190,97 @@ function ChatShell() {
     };
   }, [open]);
 
-  const answer = (nodeId: string, userLabel?: string) => {
-    const node = nodes[nodeId] ?? nodes.unknown;
-    if (!node) return;
+  const pushBot = (text: string, actions?: ChatAction[]) => {
+    setMessages((prev) => [...prev, { key: nextKey.current++, role: "bot", text, actions }]);
+  };
 
-    const userMessage: Message[] = userLabel
-      ? [{ key: nextKey.current++, role: "user", text: userLabel }]
-      : [];
-    setMessages((prev) => [...prev, ...userMessage]);
+  /** Réponse locale immédiate (puce cliquée ou repli hors ligne). */
+  const answerLocal = (nodeId: string) => {
+    const node = nodes[nodeId] ?? nodes[FALLBACK_NODE];
+    if (!node) return;
+    setTyping(true);
+    window.setTimeout(() => {
+      setTyping(false);
+      pushBot(node.answer, node.action ? [node.action] : undefined);
+      setSuggestions(
+        node.followUps.filter((id) => nodes[id]).map((id) => ({ label: nodes[id].label, nodeId: id })),
+      );
+    }, 380);
+  };
+
+  /** Question libre : `/api/chat` (site complet), repli local si échec. */
+  const ask = async (question: string) => {
+    const history = messages
+      .filter((m) => m.key !== 0)
+      .slice(-MAX_HISTORY_MESSAGES)
+      .map((m) => ({ role: m.role === "bot" ? "assistant" : "user", content: m.text }));
+    setMessages((prev) => [...prev, { key: nextKey.current++, role: "user", text: question }]);
     setSuggestions([]);
     setTyping(true);
 
-    // Petit délai : donne l'impression d'une vraie réponse (et laisse
-    // apparaître l'indicateur de saisie).
-    window.setTimeout(() => {
+    abortRef.current?.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
+    const timer = window.setTimeout(() => controller.abort(), 25_000);
+    try {
+      const response = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          locale,
+          messages: [...history, { role: "user", content: question }],
+        }),
+        signal: controller.signal,
+      });
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      const reply = (await response.json()) as ChatApiReply;
+      if (!reply || typeof reply.text !== "string" || !reply.text.trim()) throw new Error("empty");
+      setOnline(true);
       setTyping(false);
-      setMessages((prev) => [
-        ...prev,
-        {
-          key: nextKey.current++,
-          role: "bot",
-          text: node.answer,
-          action: node.action,
-        },
-      ]);
-      setSuggestions(node.followUps.filter((id) => nodes[id]));
-    }, 380);
+      pushBot(reply.text, reply.actions?.slice(0, 3));
+      setSuggestions(
+        (reply.suggestions ?? []).slice(0, 4).map((label) => ({ label })),
+      );
+    } catch (error) {
+      if (controller.signal.aborted && abortRef.current !== controller) return; // remplacé
+      if (error instanceof Error && error.name !== "AbortError") setOnline(false);
+      setTyping(false);
+      answerLocal(matchChatNode(question, nodes));
+    } finally {
+      window.clearTimeout(timer);
+    }
+  };
+
+  const pick = (suggestion: Suggestion) => {
+    if (suggestion.nodeId) {
+      setMessages((prev) => [...prev, { key: nextKey.current++, role: "user", text: suggestion.label }]);
+      setSuggestions([]);
+      answerLocal(suggestion.nodeId);
+    } else {
+      void ask(suggestion.label);
+    }
   };
 
   const send = (e: React.FormEvent) => {
     e.preventDefault();
     const value = input.trim();
-    if (!value) return;
+    if (!value || typing) return;
     setInput("");
-    answer(matchChatNode(value, nodes), value);
+    void ask(value);
   };
 
   const restart = () => {
+    abortRef.current?.abort();
     setMessages([
       {
         key: 0,
         role: "bot",
         text: ar
-          ? "هيا بنا من جديد — اختر سؤالًا:"
-          : "Let's start again — pick a question:",
+          ? "هيا بنا من جديد — اسأل أي شيء عن الموقع أو اختر سؤالًا:"
+          : "Let's start again — ask anything about the site or pick a question:",
       },
     ]);
-    setSuggestions([...START_NODES]);
+    setSuggestions(startSuggestions());
     setTyping(false);
     setInput("");
   };
@@ -220,8 +307,10 @@ function ChatShell() {
                   {ar ? "مساعد نخبة" : "Nukhba assistant"}
                 </div>
                 <div className="flex items-center gap-1 text-[10px] opacity-70">
-                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
-                  {ar ? "رد فوري — بدون انتظار" : "Instant answers"}
+                  <span className={`h-1.5 w-1.5 rounded-full ${online ? "bg-emerald-400" : "bg-amber-400"}`} />
+                  {online
+                    ? ar ? "يجيب عن كل محتوى الموقع" : "Answers about the whole site"
+                    : ar ? "وضع غير متصل — إجابات أساسية" : "Offline — basic answers"}
                 </div>
               </div>
               <button
@@ -257,16 +346,33 @@ function ChatShell() {
                       <div className="max-w-[92%] whitespace-pre-line rounded-2xl rounded-ss-sm bg-[var(--secondary)] px-3 py-2 text-[12.5px] leading-5">
                         {message.text}
                       </div>
-                      {message.action && (
-                        <a
-                          href={message.action.href}
-                          target={message.action.external ? "_blank" : undefined}
-                          rel={message.action.external ? "noopener noreferrer" : undefined}
-                          className="inline-flex items-center gap-1 rounded-full bg-[var(--accent)] px-3 py-1.5 text-[11.5px] font-black text-[var(--accent-foreground)] hover:bg-[var(--accent-hover)] transition-colors"
-                        >
-                          {message.action.label}
-                          <ArrowRight className="h-3 w-3 rtl:rotate-180" />
-                        </a>
+                      {message.actions && message.actions.length > 0 && (
+                        <div className="flex flex-wrap gap-1.5">
+                          {message.actions.map((action) =>
+                            action.external ? (
+                              <a
+                                key={action.href + action.label}
+                                href={action.href}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center gap-1 rounded-full bg-[var(--accent)] px-3 py-1.5 text-[11.5px] font-black text-[var(--accent-foreground)] hover:bg-[var(--accent-hover)] transition-colors"
+                              >
+                                {action.label}
+                                <ArrowRight className="h-3 w-3 rtl:rotate-180" />
+                              </a>
+                            ) : (
+                              <Link
+                                key={action.href + action.label}
+                                href={action.href}
+                                onClick={() => setOpen(false)}
+                                className="inline-flex items-center gap-1 rounded-full bg-[var(--accent)] px-3 py-1.5 text-[11.5px] font-black text-[var(--accent-foreground)] hover:bg-[var(--accent-hover)] transition-colors"
+                              >
+                                {action.label}
+                                <ArrowRight className="h-3 w-3 rtl:rotate-180" />
+                              </Link>
+                            ),
+                          )}
+                        </div>
                       )}
                     </div>
                   </div>
@@ -296,22 +402,18 @@ function ChatShell() {
             </div>
 
             {/* Questions proposées */}
-            {suggestions.length > 0 && (
+            {suggestions.length > 0 && !typing && (
               <div className="flex max-h-[104px] flex-wrap gap-1.5 overflow-y-auto border-t border-[var(--border)] px-3 pb-2.5 pt-2">
-                {suggestions.map((id) => {
-                  const node = nodes[id];
-                  if (!node) return null;
-                  return (
-                    <button
-                      key={id}
-                      type="button"
-                      onClick={() => answer(id, node.label)}
-                      className="rounded-full border border-[var(--border)] bg-[var(--card)] px-2.5 py-1.5 text-[11.5px] font-semibold hover:border-[var(--accent)] hover:bg-[var(--accent)]/10 transition-colors cursor-pointer"
-                    >
-                      {node.label}
-                    </button>
-                  );
-                })}
+                {suggestions.map((suggestion) => (
+                  <button
+                    key={(suggestion.nodeId ?? "q:") + suggestion.label}
+                    type="button"
+                    onClick={() => pick(suggestion)}
+                    className="rounded-full border border-[var(--border)] bg-[var(--card)] px-2.5 py-1.5 text-[11.5px] font-semibold hover:border-[var(--accent)] hover:bg-[var(--accent)]/10 transition-colors cursor-pointer"
+                  >
+                    {suggestion.label}
+                  </button>
+                ))}
               </div>
             )}
 
@@ -326,13 +428,15 @@ function ChatShell() {
                 onChange={(e) => setInput(e.target.value)}
                 placeholder={ar ? "اسأل سؤالك…" : "Ask your question…"}
                 aria-label={ar ? "اكتب سؤالك" : "Type your question"}
-                maxLength={160}
+                maxLength={MAX_INPUT_CHARS}
+                disabled={typing}
                 className="h-9 min-w-0 flex-1 rounded-full border border-[var(--border)] bg-[var(--secondary)]/50 px-3 text-[12.5px] outline-none focus:border-[var(--accent)]"
               />
               <button
                 type="submit"
                 aria-label={ar ? "إرسال" : "Send"}
-                className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-[var(--accent)] text-[var(--accent-foreground)] hover:bg-[var(--accent-hover)] transition-colors cursor-pointer"
+                disabled={typing || input.trim().length === 0}
+                className="disabled:opacity-50 grid h-9 w-9 shrink-0 place-items-center rounded-full bg-[var(--accent)] text-[var(--accent-foreground)] hover:bg-[var(--accent-hover)] transition-colors cursor-pointer"
               >
                 <Send className="h-4 w-4 rtl:rotate-180" />
               </button>

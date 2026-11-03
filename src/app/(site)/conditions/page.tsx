@@ -1,12 +1,15 @@
 import type { Metadata } from "next";
+import { pageLocale } from "@/lib/locale-server";
+import type { LocalePageProps } from "@/lib/locale";
 import { getSiteDataCached } from "@/lib/store";
 import { pageMetadata, siteLocale } from "@/lib/seo";
 import { ConditionsClient } from "./conditions-client";
 
-export async function generateMetadata(): Promise<Metadata> {
+export async function generateMetadata({ searchParams }: LocalePageProps): Promise<Metadata> {
   const { config } = await getSiteDataCached();
-  const locale = siteLocale(config);
+  const locale = await pageLocale(config, searchParams);
   return pageMetadata(config, {
+    locale,
     path: "/conditions",
     title:
       locale === "ar"

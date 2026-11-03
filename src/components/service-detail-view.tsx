@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import { LocalizedLink as Link } from "@/components/localized-link";
 import { ArrowLeft, Check, Clock, MessageCircle, ShieldCheck, Sparkles } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import { Price } from "@/components/price";

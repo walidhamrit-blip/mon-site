@@ -1,4 +1,5 @@
 import type { Demo, Faq } from "./site-types";
+import { localizedAbsoluteUrl, type Locale } from "@/lib/locale";
 
 /**
  * Données SEO sectorielles — source unique pour les pages /sectors/[sector].
@@ -421,23 +422,25 @@ export function sectorCollectionJsonLd(
   config: { url: string; name: string; nameAr: string },
   sector: SectorSeo,
   demosInSector: Demo[],
+  locale?: Locale,
 ) {
   const base = config.url.replace(/\/+$/, "");
-  const url = `${base}/sectors/${sector.id}`;
+  const url = locale ? localizedAbsoluteUrl(config.url, `/sectors/${sector.id}`, locale) : `${base}/sectors/${sector.id}`;
+  const ar = locale !== "en";
   return {
     "@context": "https://schema.org",
     "@type": "CollectionPage",
     "@id": `${url}#collection`,
-    name: sector.titleAr,
-    alternateName: sector.titleEn,
-    description: sector.descriptionAr,
+    name: ar ? sector.titleAr : sector.titleEn,
+    alternateName: ar ? sector.titleEn : sector.titleAr,
+    description: ar ? sector.descriptionAr : sector.descriptionEn,
     url,
-    inLanguage: ["en", "ar"],
+    inLanguage: locale ?? ["en", "ar"],
     isPartOf: { "@id": `${base}/#website` },
     about: {
       "@type": "Thing",
-      name: sector.labelAr,
-      alternateName: sector.labelEn,
+      name: ar ? sector.labelAr : sector.labelEn,
+      alternateName: ar ? sector.labelEn : sector.labelAr,
     },
     numberOfItems: demosInSector.length,
     mainEntity: {
@@ -446,23 +449,25 @@ export function sectorCollectionJsonLd(
       itemListElement: demosInSector.map((d, i) => ({
         "@type": "ListItem",
         position: i + 1,
-        url: `${base}/demos/${d.slug}`,
-        name: d.title,
+        url: locale ? localizedAbsoluteUrl(config.url, `/demos/${d.slug}`, locale) : `${base}/demos/${d.slug}`,
+        name: ar ? d.title : d.titleEn,
         image: d.image,
       })),
     },
   };
 }
 
-export function sectorFaqJsonLd(sector: SectorSeo) {
+export function sectorFaqJsonLd(sector: SectorSeo, locale?: Locale) {
+  const ar = locale !== "en";
+  const faqs = sector.faqsAr;
   return {
     "@context": "https://schema.org",
     "@type": "FAQPage",
-    inLanguage: "en",
-    mainEntity: sector.faqsAr.map((f) => ({
+    inLanguage: locale ?? "en",
+    mainEntity: faqs.map((f) => ({
       "@type": "Question",
-      name: f.qAr,
-      acceptedAnswer: { "@type": "Answer", text: f.aAr },
+      name: ar ? f.qAr : f.qEn,
+      acceptedAnswer: { "@type": "Answer", text: ar ? f.aAr : f.aEn },
     })),
   };
 }

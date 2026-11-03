@@ -59,8 +59,12 @@ test("supprimer une fiche revalide aussi les fiches /codes/<slug>", () => {
   assert.match(body, /revalidatePath\("\/codes", "layout"\)/);
 });
 
-test("la fiche produit se rafraîchit d'elle-même (filet de sécurité)", () => {
-  assert.match(code(productPage), /export const revalidate = 60;/);
+test("la fiche produit est rendue par requête (langue d'URL + fraîcheur)", () => {
+  // A08 : la fiche lit la langue de l'URL via le layout/proxy ; elle ne peut
+  // plus être SSG/ISR. Le rendu dynamique garde aussi le catalogue à jour.
+  assert.match(code(productPage), /export const dynamic = "force-dynamic";/);
+  assert.doesNotMatch(code(productPage), /export const revalidate = 60;/);
+  assert.doesNotMatch(code(productPage), /export async function generateStaticParams/);
 });
 
 test("la liste n'est jamais pré-générée avec le catalogue de repli", () => {

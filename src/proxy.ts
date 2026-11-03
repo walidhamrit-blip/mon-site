@@ -1,4 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
+import {
+  LOCALE_DEFAULT_SIGNAL,
+  LOCALE_HEADER,
+  LOCALE_QUERY_PARAM,
+  isLocalizablePath,
+  localeFromQuery,
+} from "@/lib/locale";
 
 /**
  * Proxy de sécurité (convention Next.js 16, ex-« middleware ») : applique
@@ -46,7 +53,22 @@ export function proxy(request: NextRequest) {
     return NextResponse.next();
   }
 
-  const response = NextResponse.next();
+  // La langue SEO vient de l'URL, jamais d'un en-tête fourni par le client.
+  // On nettoie donc l'en-tête interne avant de le recalculer pour le layout.
+  const requestHeaders = new Headers(request.headers);
+  requestHeaders.delete(LOCALE_HEADER);
+  const publicPage = isLocalizablePath(pathname);
+  const rawLang = request.nextUrl.searchParams.getAll(LOCALE_QUERY_PARAM);
+  const urlLocale = publicPage && rawLang.length === 1 ? localeFromQuery(rawLang[0]) : null;
+
+  // Toutes les pages publiques reçoivent un signal interne : langue explicite
+  // ou défaut. Cela permet au layout de distinguer le public de /admin et
+  // d'épingler la langue par défaut sans laisser localStorage la remplacer.
+  if (publicPage) requestHeaders.set(LOCALE_HEADER, urlLocale ?? LOCALE_DEFAULT_SIGNAL);
+
+  const response = NextResponse.next({ request: { headers: requestHeaders } });
+  // Le contenu varie avec la langue transmise en interne (et la query publique).
+  response.headers.append("Vary", LOCALE_HEADER);
   response.headers.set(
     "Strict-Transport-Security",
     "max-age=31536000; includeSubDomains",

@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import { pageLocale } from "@/lib/locale-server";
+import type { LocalePageProps } from "@/lib/locale";
 import { HomeSections } from "@/components/sections/home-sections";
 import { getSiteDataCached } from "@/lib/store";
 import {
@@ -20,12 +22,13 @@ import { productDisplayName } from "@/lib/digital-seo";
  */
 export const revalidate = 3600;
 
-export async function generateMetadata(): Promise<Metadata> {
+export async function generateMetadata({ searchParams }: LocalePageProps): Promise<Metadata> {
   const { config } = await getSiteDataCached();
   // La page d'accueil est la porte d'entrée du marché : son titre suit la
   // langue de référence (arabe pour la Libye) et reste sous 60 caractères.
-  const locale = siteLocale(config);
+  const locale = await pageLocale(config, searchParams);
   return pageMetadata(config, {
+    locale,
     path: "/",
     title:
       locale === "ar"
@@ -53,9 +56,9 @@ export async function generateMetadata(): Promise<Metadata> {
   });
 }
 
-export default async function HomePage() {
+export default async function HomePage({ searchParams }: LocalePageProps) {
   const { config } = await getSiteDataCached();
-  const locale = siteLocale(config);
+  const locale = await pageLocale(config, searchParams);
   // Vitrine de la boutique : les six produits les plus demandés, ordonnés
   // côté serveur. Le maillage vers /codes et les fiches est ainsi présent
   // dans le HTML initial de la page d'accueil.

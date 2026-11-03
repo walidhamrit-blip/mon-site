@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { LocalizedLink as Link } from "@/components/localized-link";
 import { AlertTriangle, MessageCircle } from "lucide-react";
 import { whatsappLink } from "@/lib/utils";
 

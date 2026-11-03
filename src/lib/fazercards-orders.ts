@@ -19,6 +19,7 @@
 // les réutilise telles quelles pour éviter toute modification de schéma.
 
 import { desc, eq } from "drizzle-orm";
+import { localizedPath } from "@/lib/locale";
 import { db, ensureSchema } from "@/db";
 import { digitalOrders, orders, type DigitalOrder } from "@/db/schema";
 import {
@@ -529,8 +530,8 @@ export async function createFazercardsCheckout(
       orderId: ref,
       orderDescription: `${config.name} — ${label}`.slice(0, 190),
       ipnCallbackUrl: `${baseUrl}/api/payments/ipn`,
-      successUrl: `${baseUrl}/codes/commande?${query}`,
-      cancelUrl: `${baseUrl}/pay/cancel?${query}`,
+      successUrl: `${baseUrl}${localizedPath(`/codes/commande?${query}`, input.locale === "en" ? "en" : "ar")}`,
+      cancelUrl: `${baseUrl}${localizedPath(`/pay/cancel?${query}`, input.locale === "en" ? "en" : "ar")}`,
     });
   } catch (error) {
     await db.delete(orders).where(eq(orders.ref, ref)).catch(() => null);

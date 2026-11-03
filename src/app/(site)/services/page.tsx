@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import { pageLocale } from "@/lib/locale-server";
+import type { LocalePageProps } from "@/lib/locale";
 import { getSiteDataCached } from "@/lib/store";
 import { breadcrumbJsonLd, faqJsonLd, pageMetadata, siteLocale, webPageJsonLd } from "@/lib/seo";
 import {
@@ -21,7 +23,7 @@ function startingPrice(
   return services.find((service) => service.id === id)?.priceFromUsd ?? fallback;
 }
 
-export async function generateMetadata(): Promise<Metadata> {
+export async function generateMetadata({ searchParams }: LocalePageProps): Promise<Metadata> {
   const { config } = await getSiteDataCached();
   const services: ReadonlyArray<ServiceLike> = config.standaloneServices;
   const price = (id: string, fallback: number) =>
@@ -30,7 +32,7 @@ export async function generateMetadata(): Promise<Metadata> {
   // La langue des métadonnées suit la langue principale du site
   // (/admin → Réglages) : une seule version servie par URL, cohérente avec
   // le HTML initial.
-  const locale = siteLocale(config);
+  const locale = await pageLocale(config, searchParams);
 
   const titleAr = "خدمات رقمية سريعة بأسعار معلنة في {city}";
   const titleEn = "Fast Digital Services at Fixed Prices — {cityEn}";
@@ -46,6 +48,7 @@ export async function generateMetadata(): Promise<Metadata> {
     `fix from ${price("fix-optimize", 15)}.`;
 
   return pageMetadata(config, {
+    locale,
     path: "/services",
     title: locale === "ar" ? titleAr : titleEn,
     description: locale === "ar" ? descriptionAr : descriptionEn,
@@ -61,8 +64,9 @@ export async function generateMetadata(): Promise<Metadata> {
   });
 }
 
-export default async function ServicesPage() {
+export default async function ServicesPage({ searchParams }: LocalePageProps) {
   const { config } = await getSiteDataCached();
+  const locale = await pageLocale(config, searchParams);
   const services: ReadonlyArray<ServiceLike> = config.standaloneServices;
   const lowestPrice = services.reduce(
     (min, service) => Math.min(min, service.priceFromUsd),
@@ -77,6 +81,7 @@ export default async function ServicesPage() {
 
   const webPage = webPageJsonLd(config, {
     path: "/services",
+    locale,
     name: "خدمات نخبة الرقمية السريعة — أسعار معلنة وتسليم سريع",
     description:
       `خدمات رقمية à la carte في طرابلس: إعادة تصميم موقع، إضافة قسم، عروض تقديمية، هوية بصرية، صفحة هبوط، وإصلاح وتحسين — بأسعار تبدأ من ${Number.isFinite(lowestPrice) ? lowestPrice : 15} دولاراً.`,
@@ -91,10 +96,10 @@ export default async function ServicesPage() {
           breadcrumbJsonLd(config, [
             { name: "الرئيسية", path: "/" },
             { name: "الخدمات", path: "/services" },
-          ]),
+          ], locale),
           webPage,
-          servicesCollectionJsonLd(config, services),
-          faqJsonLd(servicesHubFaqs),
+          servicesCollectionJsonLd(config, services, locale),
+          faqJsonLd(servicesHubFaqs, config.market, locale),
         ]}
       />
 

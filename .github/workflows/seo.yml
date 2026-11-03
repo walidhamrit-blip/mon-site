@@ -34,6 +34,9 @@ jobs:
       - name: Tests des prix digitaux et de l'affichage USDT
         run: npm run test:digital
 
+      - name: Tests de l'assistant du site (/api/chat, AR/EN/FR)
+        run: npm run test:assistant
+
       - name: Build de production
         run: npm run build
         env:

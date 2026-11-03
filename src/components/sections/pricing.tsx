@@ -1,5 +1,5 @@
 "use client";
-import Link from "next/link";
+import { LocalizedLink as Link } from "@/components/localized-link";
 import { motion } from "framer-motion";
 import { CalendarCheck, Check, Sparkles, ArrowUpRight } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
@@ -128,9 +128,9 @@ export function Pricing() {
         <div className="mt-8 text-center">
           <p className="text-sm opacity-60">
             {locale === "ar" ? "تحتاج شيئاً مخصصاً؟ " : "Need something custom? "}
-            <a href="/contact" className="font-bold underline decoration-[var(--accent)] underline-offset-4">
+            <Link href="/contact" className="font-bold underline decoration-[var(--accent)] underline-offset-4">
               {locale === "ar" ? "تحدث معنا" : "Talk to us"}
-            </a>
+            </Link>
             {" — "}
             {locale === "ar" ? "نصمم باقة على مقاسك" : "we tailor a plan"}
           </p>

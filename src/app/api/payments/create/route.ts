@@ -27,6 +27,7 @@ import {
 } from "@/lib/order-tracking";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { enforceSameOrigin } from "@/lib/csrf";
+import { localizedPath, type Locale } from "@/lib/locale";
 
 /* Limite la cadence de création de factures crypto par IP+UA. Bloque
  * les bots qui tentent de générer des dizaines de liens de paiement
@@ -125,13 +126,13 @@ function databaseDetail(error: unknown): ErrorDetail {
 }
 
 /** Paramètres de paiement communs (retour NOWPayments → nos pages). */
-function paymentUrls(req: Request, ref: string, trackingToken?: string | null) {
+function paymentUrls(req: Request, ref: string, trackingToken?: string | null, locale: Locale = "ar") {
   const baseUrl = siteBaseUrl(req);
   const query = trackingQuery(ref, trackingToken);
   return {
     ipnCallbackUrl: `${baseUrl}/api/payments/ipn`,
-    successUrl: `${baseUrl}/pay/success?${query}`,
-    cancelUrl: `${baseUrl}/pay/cancel?${query}`,
+    successUrl: `${baseUrl}${localizedPath(`/pay/success?${query}`, locale)}`,
+    cancelUrl: `${baseUrl}${localizedPath(`/pay/cancel?${query}`, locale)}`,
   };
 }
 
@@ -205,7 +206,7 @@ async function payExistingOrder(
       // notre `ref` (voir refCandidates dans ipn/route.ts).
       orderId: `${order.ref}-R${Date.now().toString(36).toUpperCase()}`,
       orderDescription: label,
-      ...paymentUrls(req, order.ref, access === "granted" ? trackingToken : null),
+      ...paymentUrls(req, order.ref, access === "granted" ? trackingToken : null, order.locale === "en" ? "en" : "ar"),
     });
   } catch (error) {
     console.error(
@@ -368,7 +369,7 @@ async function createFlexibleOrder(
       priceAmount: amount,
       orderId: ref,
       orderDescription: `${config.name} — ${label}`.slice(0, 190),
-      ...paymentUrls(req, ref, tracking.token),
+      ...paymentUrls(req, ref, tracking.token, data.locale ?? "ar"),
     });
   } catch (error) {
     console.error(
@@ -625,7 +626,7 @@ export async function POST(req: Request) {
         count > 1
           ? `${config.name} — ${planLabel} (1/${count})`
           : `${config.name} — ${planLabel} plan`,
-      ...paymentUrls(req, baseRef, tracking.token),
+      ...paymentUrls(req, baseRef, tracking.token, data.locale ?? "ar"),
     });
   } catch (error) {
     console.error("[payments] NOWPayments refusé :", errorMessage(error));

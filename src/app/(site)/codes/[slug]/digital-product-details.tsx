@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import Link from "next/link";
+import { LocalizedLink as Link } from "@/components/localized-link";
 import { useState } from "react";
 import {
   ArrowUpRight,

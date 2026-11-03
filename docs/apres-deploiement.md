@@ -452,8 +452,8 @@ un signal négatif.
    sans effet sur les pages faibles : elles entrent par le sitemap et le maillage.
 3. **Ne pas renommer les slugs `fzr-…`** maintenant : 399 URLs déjà en ligne,
    chaque renommage = une 301 à contrôler (voir audit § 8).
-4. **Ne pas ajouter `hreflang`/`/en/…`** avant que les routes anglaises
-   existent : un `hreflang` vers une page inexistante est une erreur.
+4. Vérifier les URL anglaises `?lang=en` et les `hreflang` AR/EN réciproques
+   après déploiement : chaque langue doit répondre 200 avec sa propre canonique.
 5. **Ne pas bloquer les robots IA** dans `robots.txt` : ils amènent des visites
    (ChatGPT, Copilot, Perplexity), et le site est justement cité dans les
    réponses génératives.
@@ -480,7 +480,7 @@ au-delà de 8 semaines :
 | **Pagination du rayon `/codes`** (48 produits/page) | HTML plus léger, crawl plus profond | après stabilisation de l'indexation |
 | **Pages de catégories** (`/codes/steam`, `/codes/recharges`, `/codes/cles-logiciels`) | capter « بطاقة ستيم », « شحن ببجي » au niveau rayon | mois 1 |
 | **Enrichir 20 fiches** (PUBG, Free Fire, Mobile Legends, Steam, PlayStation, Xbox, Roblox) | sortir du contenu « mince » qui bloque l'indexation | mois 1 |
-| **Version anglaise `/en/…` + `hreflang`** | clientèle internationale revendiquée par la home | mois 2 |
+| **Version anglaise `?lang=en` + `hreflang`** | clientèle internationale revendiquée par la home | livré (A08) |
 | **Noms de jeux en arabe** (ببجي، فري فاير، ماين كرافت) | correspondre aux requêtes réellement tapées | mois 1–2 |
 | **Nouveaux articles de blog** (2/mois, en arabe) | maillage éditorial + longue traîne | continu |
 

@@ -11,7 +11,7 @@
  */
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { existsSync, statSync, mkdtempSync, rmSync } from "node:fs";
+import { existsSync, statSync, readFileSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
@@ -82,6 +82,7 @@ const {
   howToJsonLd,
   demoJsonLd,
   digitalProductJsonLd,
+  pageMetadata,
 } = await compileModule("lib/seo.ts", "seo.mjs");
 
 const { siteConfig } = await compileModule("lib/config.ts", "config.mjs");
@@ -588,4 +589,78 @@ test("A09 : le JSON-LD openingHoursSpecification est dérivé de config.hoursEn,
   assert.deepEqual(spec2.dayOfWeek, [
     "Monday", "Tuesday", "Wednesday", "Thursday", "Friday",
   ]);
+});
+
+// ── A08 : URL anglaises, canoniques et hreflang réciproques ────────────────
+test("A08 : pageMetadata émet une canonique par langue et un cluster hreflang réciproque", () => {
+  const base = siteConfig.url.replace(/\/+$/, "");
+  const opts = {
+    path: "/pricing",
+    title: "Website pricing in USD",
+    description: "Clear website pricing in USD with model price, customization fee and total before checkout.",
+  };
+  const ar = pageMetadata(siteConfig, { ...opts, locale: "ar" });
+  const en = pageMetadata(siteConfig, { ...opts, locale: "en" });
+
+  assert.equal(ar.alternates.canonical, `${base}/pricing`);
+  assert.equal(en.alternates.canonical, `${base}/pricing?lang=en`);
+  for (const meta of [ar, en]) {
+    assert.deepEqual(meta.alternates.languages, {
+      ar: `${base}/pricing`,
+      en: `${base}/pricing?lang=en`,
+      "x-default": `${base}/pricing`,
+    });
+    assert.equal(meta.robots.index, true);
+  }
+  assert.equal(ar.openGraph.url, `${base}/pricing`);
+  assert.equal(en.openGraph.url, `${base}/pricing?lang=en`);
+  assert.equal(en.openGraph.locale, "en_US");
+  assert.ok(ar.openGraph.locale.startsWith("ar"));
+});
+
+test("A08 : si l'admin choisit EN par défaut, la canonique propre est EN et AR porte ?lang=ar", () => {
+  const config = { ...siteConfig, appearance: { ...siteConfig.appearance, primaryLocale: "en" } };
+  const base = config.url.replace(/\/+$/, "");
+  const en = pageMetadata(config, { path: "/contact", title: "Contact Nukhba", description: "Contact the Nukhba team.", locale: "en" });
+  const ar = pageMetadata(config, { path: "/contact", title: "تواصل مع نخبة", description: "تواصل مع فريق نخبة.", locale: "ar" });
+  assert.equal(en.alternates.canonical, `${base}/contact`);
+  assert.equal(ar.alternates.canonical, `${base}/contact?lang=ar`);
+  assert.deepEqual(en.alternates.languages, {
+    ar: `${base}/contact?lang=ar`,
+    en: `${base}/contact`,
+    "x-default": `${base}/contact`,
+  });
+});
+
+test("A08 : les pages noindex ne déclarent pas de hreflang vers une page privée", () => {
+  const meta = pageMetadata(siteConfig, {
+    path: "/pay/success",
+    title: "Payment confirmation",
+    description: "Private payment status page.",
+    locale: "en",
+    noindex: true,
+  });
+  assert.equal(meta.robots.index, false);
+  assert.equal(meta.alternates.canonical, `${siteConfig.url.replace(/\/+$/, "")}/pay/success?lang=en`);
+  assert.equal(meta.alternates.languages, undefined);
+});
+
+test("A08 : le sitemap publie AR et EN avec les mêmes alternates réciproques", () => {
+  const sitemap = readFileSync(join(root, "src/app/sitemap.ts"), "utf8");
+  assert.match(sitemap, /languageAlternates\(base, path, defaultLocale\)/);
+  assert.match(sitemap, /\(\["ar", "en"\] as Locale\[\]\)\.map/);
+  assert.match(sitemap, /alternates: \{ languages \}/);
+  const nextConfig = readFileSync(join(root, "next.config.ts"), "utf8");
+  assert.match(nextConfig, /source: "\/en", destination: "\/\?lang=en"/);
+  assert.match(nextConfig, /source: "\/en\/:path\+", destination: "\/:path\*\?lang=en"/);
+});
+
+test("A08 : le proxy nettoie l'en-tête de langue interne et le recalcule depuis l'URL", () => {
+  const proxy = readFileSync(join(root, "src/proxy.ts"), "utf8");
+  assert.match(proxy, /requestHeaders\.delete\(LOCALE_HEADER\)/);
+  assert.match(proxy, /localeFromQuery\(rawLang\[0\]\)/);
+  assert.match(proxy, /requestHeaders\.set\(LOCALE_HEADER, urlLocale \?\? LOCALE_DEFAULT_SIGNAL\)/);
+  const layout = readFileSync(join(root, "src/app/layout.tsx"), "utf8");
+  assert.match(layout, /requestLocale\(siteLocale\(config\)\)/);
+  assert.match(layout, /<I18nProvider defaultLocale=\{defaultLocale\} urlLocale=\{urlLocale \?\? \(isPublic \? defaultLocale : null\)\}>/);
 });

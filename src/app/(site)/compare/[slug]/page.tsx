@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import { pageLocale } from "@/lib/locale-server";
+import type { LocalePageProps } from "@/lib/locale";
 import { notFound } from "next/navigation";
 import { getSiteDataCached } from "@/lib/store";
 import { breadcrumbJsonLd, pageMetadata, siteLocale, webPageJsonLd } from "@/lib/seo";
@@ -33,14 +35,17 @@ export async function generateStaticParams() {
 
 export async function generateMetadata({
   params,
+  searchParams,
 }: {
   params: Promise<{ slug: string }>;
-}): Promise<Metadata> {
+} & LocalePageProps): Promise<Metadata> {
   const { slug } = await params;
   const comparison = getComparison(slug);
   const { config } = await getSiteDataCached();
+  const locale = await pageLocale(config, searchParams);
   if (!comparison) {
     return pageMetadata(config, {
+    locale,
       path: comparePath(slug),
       title: "مقارنة غير موجودة — Comparison not found",
       description: "هذه المقارنة غير متاحة حالياً.",
@@ -50,9 +55,9 @@ export async function generateMetadata({
   // Les métadonnées suivent la langue principale du site (/admin) : le
   // titre servi est toujours celui de la langue par défaut, comme le HTML
   // initial. Le visiteur peut basculer la langue côté client ensuite.
-  const locale = siteLocale(config);
 
   return pageMetadata(config, {
+    locale,
     path: comparePath(comparison.id),
     title: locale === "ar" ? comparison.titleAr : comparison.titleEn,
     description: locale === "ar" ? comparison.descriptionAr : comparison.descriptionEn,
@@ -69,14 +74,16 @@ export async function generateMetadata({
 
 export default async function ComparisonPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ slug: string }>;
-}) {
+} & LocalePageProps) {
   const { slug } = await params;
   const comparison = getComparison(slug);
   if (!comparison) notFound();
 
   const { config } = await getSiteDataCached();
+  const locale = await pageLocale(config, searchParams);
 
   // Prix vivants : le site part du modèle le moins cher, les services à la
   // carte du service le moins cher. Ils sont pilotables depuis /admin.
@@ -111,17 +118,18 @@ export default async function ComparisonPage({
             { name: "الرئيسية", path: "/" },
             { name: "المقارنات", path: "/compare" },
             { name: comparison.h1Ar, path: comparePath(comparison.id) },
-          ]),
+          ], locale),
           webPageJsonLd(config, {
             path: comparePath(comparison.id),
+            locale,
             name: comparison.h1Ar,
             description: comparison.answerAr,
             speakable: ["h1", "#compare-answer"],
             about: `${comparison.competitorEn} — Nukhba comparison`,
           }),
-          comparisonServiceJsonLd(config, comparison, sitePriceUsd),
-          comparisonCriteriaJsonLd(config, comparison),
-          comparisonFaqJsonLd(comparison),
+          comparisonServiceJsonLd(config, comparison, sitePriceUsd, locale),
+          comparisonCriteriaJsonLd(config, comparison, locale),
+          comparisonFaqJsonLd(comparison, locale),
         ]}
       />
 

@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import Link from "next/link";
+import { LocalizedLink as Link } from "@/components/localized-link";
 import { ArrowUpRight, Code2, Gift, Gamepad2 } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 

@@ -2,8 +2,9 @@
 
 Site vitrine haut de gamme construit avec Next.js 16 + Tailwind + Framer Motion.
 **Langue principale : l’arabe** (`dir="rtl"`, servi dès le HTML initial) —
-l’anglais reste disponible en un clic via le sélecteur de langue de la barre
-supérieure, et la langue principale se règle dans `/admin → Réglages`.
+l’anglais dispose de vraies URL indexables (`?lang=en`) annoncées en
+`hreflang`, avec un sélecteur de langue dans la barre supérieure. La langue
+par défaut des URL propres se règle dans `/admin → Réglages`.
 **Portée mondiale** : Tripoli / Libye est le *marché par défaut*, pas une
 constante — ville, pays, fuseau, devise et libellés se règlent dans
 `/admin → Réglages → Marché & Devises`, sans toucher au code.
@@ -105,15 +106,16 @@ Google Play, Amazon, Spotify…) :
 - `siteConfig.appearance.defaultLocale = "ar"` (`src/lib/config.ts`) : le HTML
   est rendu en arabe, `<html lang="ar" dir="rtl">`, dès la première requête.
 - `src/lib/locale.ts` — module partagé serveur/client : langues disponibles
-  (`ar`, `en`), clé de mémorisation `nukhba-locale-choice`, et
+  (`ar`, `en`), URL localisées (`?lang=en`), clé de mémorisation `nukhba-locale-choice`, et
   `localeBootScript()` qui applique le choix du visiteur **avant le premier
   rendu** (aucun flash de sens de lecture).
 - `src/components/locale-switcher.tsx` — sélecteur de langue (barre
   supérieure + menu mobile). L’arabe y est marqué « langue principale ».
-- L’anglais reste intégralement servi (traductions `src/lib/i18n.tsx`) : un
-  visiteur anglophone bascule en un clic, et son choix est mémorisé sur son
-  appareil. Changer la langue principale depuis `/admin` s’applique aux
-  visiteurs qui n’ont pas exprimé de choix explicite.
+- L’anglais reste intégralement servi (traductions `src/lib/i18n.tsx`) sur
+  `?lang=en`, rendu côté serveur avec `<html lang="en" dir="ltr">`. Le
+  sélecteur navigue vers la vraie URL ; la langue de l'URL prime sur la
+  mémorisation locale. Changer la langue par défaut depuis `/admin` déplace
+  la langue servie sur les chemins propres (l'autre langue porte `?lang=…`).
 - Le manifest PWA (`src/app/manifest.ts`) reprend la langue principale
   (`lang` / `dir`) : une application installée s’ouvre en RTL.
 
@@ -441,8 +443,11 @@ restent des historiques d’implémentation.
   reste des sections dynamiques du site.
   Procédure : [`docs/comparisons.md`](docs/comparisons.md).
 - `manifest.ts` (PWA), `not-found.tsx` (404 noindex), pages de paiement noindex
-- Les langues sont gérées côté client (pas d'URL /ar /en réelles) : aucun
-  hreflang invalide n'est émis ; les redirections /ar et /en restent en place
+- Chaque page publique a deux URL réelles : le chemin propre pour la langue
+  par défaut (arabe par défaut) et `?lang=en` pour l'anglais. Canoniques
+  auto-référentes, `hreflang` AR/EN/x-default réciproques et sitemap doublé.
+  Les anciens `/ar` et `/en` restent redirigés ; les pages privées (admin,
+  paiement, suivi) sont bilingues mais `noindex` et hors cluster hreflang.
 - Vérification Google : fichier `public/googleaf….html` actif, ou meta-tag via
   la variable `GOOGLE_SITE_VERIFICATION`
 - Détail complet de l'audit : `docs/seo-audit.md` et

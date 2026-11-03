@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { LocalizedLink as Link } from "@/components/localized-link";
 import { categoryHref, digitalCategories } from "@/lib/digital-categories";
 import type { DigitalKind } from "@/lib/digital-types";
 

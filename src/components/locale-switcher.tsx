@@ -1,25 +1,32 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
+import Link from "next/link";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Check, Globe, X } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
-import { LOCALES, type Locale } from "@/lib/locale";
+import { LOCALES, localizedPath, rememberLocale } from "@/lib/locale";
 
 /**
  * Sélecteur de langue du site.
  *
- * L'arabe est la langue principale (elle est servie en RTL dès le HTML
- * initial) ; l'anglais reste disponible en un clic. Le choix est mémorisé sur
- * l'appareil du visiteur (`nukhba-locale-choice`) et prime sur la langue
- * principale définie dans /admin → Réglages.
+ * L'arabe est la langue principale (RTL dès le HTML initial). Chaque option
+ * est un vrai lien vers l'URL de la page dans la langue choisie : le contenu,
+ * les métadonnées et le sens de lecture sont régénérés côté serveur. Le choix
+ * est aussi mémorisé, mais ne peut jamais remplacer la langue d'une URL.
  *
  * - `compact` : bouton + liste déroulante, pour la barre supérieure ;
  * - `list` : la même liste affichée d'un bloc, pour le menu mobile.
  */
 export function LocaleSwitcher({ variant = "compact" }: { variant?: "compact" | "list" }) {
-  const { locale, setLocale } = useI18n();
+  const { locale, defaultLocale } = useI18n();
   const ar = locale === "ar";
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const [open, setOpen] = useState(false);
   const wrapRef = useRef<HTMLDivElement | null>(null);
+  const query = searchParams.toString();
+  const currentPath = `${pathname}${query ? `?${query}` : ""}`;
 
   useEffect(() => {
     if (!open) return;
@@ -41,16 +48,25 @@ export function LocaleSwitcher({ variant = "compact" }: { variant?: "compact" | 
     <ul className="space-y-1">
       {LOCALES.map((item) => {
         const active = item.id === locale;
-        const primary = item.id === "ar";
+        const primary = item.id === defaultLocale;
         return (
           <li key={item.id}>
-            <button
-              type="button"
-              onClick={() => {
-                setLocale(item.id as Locale);
-                setOpen(false);
-              }}
+            <Link
+              href={localizedPath(currentPath, item.id, defaultLocale)}
+              hrefLang={item.id}
+              rel="alternate"
+              role="option"
+              aria-selected={active}
               aria-current={active ? "true" : undefined}
+              onClick={(event) => {
+                // Navigation client sans rechargement, mais le href reste la
+                // source de vérité (partage, ouverture dans un nouvel onglet).
+                if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || event.button !== 0) return;
+                event.preventDefault();
+                rememberLocale(item.id);
+                setOpen(false);
+                router.replace(localizedPath(currentPath, item.id, defaultLocale), { scroll: false });
+              }}
               lang={item.id}
               dir={item.id === "ar" ? "rtl" : "ltr"}
               className={`flex w-full cursor-pointer items-center justify-between gap-2 rounded-xl px-3 py-2 text-[13px] font-semibold transition-colors ${
@@ -69,7 +85,7 @@ export function LocaleSwitcher({ variant = "compact" }: { variant?: "compact" | 
                 )}
               </span>
               {active && <Check className="h-3.5 w-3.5 shrink-0" />}
-            </button>
+            </Link>
           </li>
         );
       })}

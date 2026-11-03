@@ -32,14 +32,25 @@ export interface ChatContext {
   reservationUsd: number;
   /** Horaires affichés dans la langue courante (source : réglages du site). */
   hours: string;
+  /** Coordonnées (source : réglages du site). */
+  phone: string;
+  email: string;
+  address: string;
+  /** Services à la carte publiés (titre + prix de départ). */
+  services: ReadonlyArray<{ titleAr: string; titleEn: string; priceFromUsd: number }>;
 }
 
 /** Question de départ proposées à l'ouverture. */
 export const START_NODES = [
   "prices",
   "delivery",
-  "custom",
   "payment",
+  "subscriptions",
+  "codes",
+  "order",
+  "services",
+  "refund",
+  "human",
 ] as const;
 
 /** Nœuds de secours. */
@@ -180,6 +191,76 @@ export function buildChatNodes(ctx: ChatContext): Record<string, ChatNode> {
         label: ar ? "اختر موقعًا واحجز" : "Pick a site & reserve",
         href: "/demos",
       },
+    },
+    {
+      id: "subscriptions",
+      label: ar ? "ما هي الاشتراكات؟" : "What are the subscriptions?",
+      answer: ar
+        ? "اشتراكات اختيارية بعد السنة الأولى لتجديد الاستضافة والصيانة (بالدولار، تُدفع بالكريبتو):\n• الواجهة: 10 $/شهر أو 69 $/سنة\n• الواجهة بلس: 12 $/شهر أو 89 $/سنة\n• المتجر / الحجز: 25 $/شهر أو 199 $/سنة\n\nيصلك رابط التجديد بالبريد مع تذكير قبل 3 أيام، وفترة سماح 5 أيام كحد أقصى. يمكنك المتابعة أو الإلغاء في أي وقت من صفحة المتابعة (الرابط في بريدك)؛ لا تُسترد الفترة الحالية."
+        : "Optional subscriptions after the first year to renew hosting and maintenance (USD, paid in crypto):\n• Vitrine: $10/month or $69/year\n• Vitrine+: $12/month or $89/year\n• Boutique: $25/month or $199/year\n\nA renewal link is emailed with a reminder 3 days before, and the grace period is at most 5 days. Track or cancel anytime from the tracking page (link in your email); the current period is not refunded.",
+      followUps: ["payment", "refund", "prices", "human"],
+      keywords: ["اشتراك", "اشتراكات", "تجديد", "صيانة", "استضافة", "subscription", "abonnement", "renew", "renouvellement", "hosting", "maintenance", "hébergement", "annuler", "cancel", "إلغاء"],
+      action: { label: ar ? "صفحة الاشتراكات" : "Subscriptions page", href: "/abonnements" },
+    },
+    {
+      id: "codes",
+      label: ar ? "كيف أشتري بطاقة هدايا أو كود؟" : "How do I buy a gift card or code?",
+      answer: ar
+        ? "متجر الأكواد الرقمية يضم بطاقات هدايا (Steam, PlayStation, Xbox, Google Play…)، شحن ألعاب عبر معرّف اللاعب، مفاتيح برامج وأكواد اشتراكات.\n\nاختر المنتج والقيمة والمنطقة ثم ادفع بالدولار/USDT عبر NOWPayments بدون حساب. الحد الأقصى للطلب 50 $، وبطاقات الهدايا حتى 100 $. تحقّق من منطقة حسابك قبل الشراء — الأكواد لا تُسترد بعد التسليم (استبدال خلال 48 ساعة إذا كان الكود غير صالح مع لقطة شاشة)."
+        : "The digital codes store offers gift cards (Steam, PlayStation, Xbox, Google Play…), game top-ups via Player ID, software keys and subscription codes.\n\nPick the product, amount and region, then pay in USD/USDT via NOWPayments, no account needed. Max $50 per order, gift cards up to $100. Check your account region before buying — codes are non-refundable once delivered (replacement within 48h if invalid, with a screenshot).",
+      followUps: ["order", "payment", "refund", "human"],
+      keywords: ["كود", "اكواد", "أكواد", "بطاقة", "بطاقات", "هدايا", "شحن", "مفتاح", "لعبة", "العاب", "ألعاب", "code", "codes", "gift", "card", "carte", "cadeau", "top-up", "topup", "recharge", "key", "clé", "steam", "playstation", "xbox", "google play", "pubg", "free fire", "roblox", "jeu", "game"],
+      action: { label: ar ? "افتح متجر الأكواد" : "Open the codes store", href: "/codes" },
+    },
+    {
+      id: "order",
+      label: ar ? "أين طلبي / كودي؟" : "Where is my order / code?",
+      answer: ar
+        ? "بعد تأكيد الدفع بالكريبتو، تظهر بطاقات الهدايا والمفاتيح وأكواد الاشتراكات في صفحة «طلبي» وتُرسل إلى بريدك (عادة خلال دقائق، وحتى بضع ساعات في الذروة). شحن الألعاب يُضاف مباشرة إلى حساب اللعبة عبر معرّف اللاعب — لا يُرسل كود.\n\nتتبّع طلبك بالمرجع والرمز الموجودين في بريد التأكيد، أو من نفس الجهاز الذي طلبت منه."
+        : "After crypto payment confirms, gift cards, keys and subscription codes appear on the “My order” page and are emailed to you (usually within minutes, up to a few hours at peak). Game top-ups are credited directly to the game account via Player ID — no code is sent.\n\nTrack your order with the reference and token from the confirmation email, or from the same device you ordered on.",
+      followUps: ["codes", "refund", "human"],
+      keywords: ["طلبي", "طلب", "تتبع", "وصل", "لم يصل", "استلام", "order", "commande", "track", "tracking", "suivi", "received", "reçu", "livraison", "delivery code", "player id", "معرف اللاعب"],
+      action: { label: ar ? "تتبع طلبي" : "Track my order", href: "/codes/commande" },
+    },
+    {
+      id: "services",
+      label: ar ? "ما خدماتكم المفتوحة؟" : "What open services do you offer?",
+      answer: ar
+        ? "مهام صغيرة بأسعار ثابتة بالدولار:\n" + ctx.services.map((s) => `• ${s.titleAr} — من ${price(s.priceFromUsd, ctx)}`).join("\n") + "\n\nكل خدمة لها صفحة تشرح التسليمات ومدة التنفيذ والأسئلة الشائعة."
+        : "Small fixed-price tasks in USD:\n" + ctx.services.map((s) => `• ${s.titleEn} — from ${price(s.priceFromUsd, ctx)}`).join("\n") + "\n\nEach service has a page describing deliverables, delivery time and FAQs.",
+      followUps: ["prices", "payment", "human"],
+      keywords: ["خدمة", "خدمات", "إعادة تصميم", "شعار", "هوية", "صفحة هبوط", "عرض تقديمي", "service", "services", "restyle", "refonte", "redesign", "logo", "landing", "slides", "présentation", "design", "fix", "correction", "section"],
+      action: { label: ar ? "صفحة الخدمات" : "Services page", href: "/services" },
+    },
+    {
+      id: "refund",
+      label: ar ? "ما سياسة الاسترداد؟" : "What is the refund policy?",
+      answer: ar
+        ? "• العربون يُخصم من السعر ولا يُسترد بعد بدء العمل إلا بخطأ واضح من نخبة.\n• ضمان الاسترداد الكامل إذا لم يُسلَّم الموقع وفق المواصفات المتفق عليها كتابياً.\n• الاشتراكات: الإلغاء في أي وقت، يبقى الوصول حتى نهاية الفترة المدفوعة، ولا تُسترد الفترة الحالية.\n• الأكواد الرقمية لا تُسترد بعد التسليم (استبدال خلال 48 ساعة إذا كان الكود غير صالح).\n\nلطلب الاسترداد راسلنا بالبريد أو واتساب مع مرجع الطلب والمبلغ ومرجع المعاملة والسبب. لا ترسل أبداً كلمات مرور أو مفاتيح خاصة."
+        : "• The deposit is deducted from the price and not refunded once work has started, unless Nukhba is clearly at fault.\n• Full-refund guarantee if the website is not delivered to the agreed written specifications.\n• Subscriptions: cancel anytime, access stays until the end of the paid period, the current period is not refunded.\n• Digital codes are non-refundable once delivered (replacement within 48h if invalid).\n\nTo request a refund, email or WhatsApp us with the order reference, amount, transaction reference and reason. Never send passwords or private keys.",
+      followUps: ["terms", "human", "prices"],
+      keywords: ["استرداد", "استرجاع", "ارجاع", "إرجاع", "ضمان", "refund", "remboursement", "rembourser", "garantie", "guarantee", "money back"],
+      action: { label: ar ? "سياسة الاسترداد" : "Refund policy", href: "/remboursement" },
+    },
+    {
+      id: "terms",
+      label: ar ? "الشروط والأحكام" : "Terms & conditions",
+      answer: ar
+        ? "الأسعار بالدولار وتُدفع بالكريبتو عبر NOWPayments. يُؤكَّد الطلب عند استلام العربون. تنتقل ملكية الموقع إليك بعد سداد كامل المبلغ. يُعتبر الموقع مقبولاً إذا لم تُرسل ملاحظات خلال 7 أيام من مشاركة النسخة التجريبية. بياناتك تُستخدم للخدمة فقط ولا تُباع. القانون الليبي ومحاكم طرابلس هي المرجع."
+        : "Prices are in USD and paid in crypto via NOWPayments. An order is confirmed once the deposit is received. Website ownership passes to you after full payment. The website is deemed accepted if no feedback is sent within 7 days of the test version. Your data is used only for the service and never sold. Libyan law applies, courts of Tripoli.",
+      followUps: ["refund", "payment", "human"],
+      keywords: ["شروط", "أحكام", "قانون", "ملكية", "terms", "conditions", "cgv", "legal", "ownership", "propriété", "loi"],
+      action: { label: ar ? "الشروط والأحكام" : "Terms & conditions", href: "/conditions" },
+    },
+    {
+      id: "contact",
+      label: ar ? "كيف أتواصل معكم؟" : "How can I contact you?",
+      answer: ar
+        ? `واتساب/هاتف: ${ctx.phone}\nالبريد: ${ctx.email}\nالعنوان: ${ctx.address} — ونخدم العالم كله عن بُعد.\nساعات العمل: ${ctx.hours}.`
+        : `WhatsApp/phone: ${ctx.phone}\nEmail: ${ctx.email}\nAddress: ${ctx.address} — we serve clients worldwide remotely.\nHours: ${ctx.hours}.`,
+      followUps: ["human", "prices", "reservation"],
+      keywords: ["تواصل", "اتصل", "هاتف", "رقم", "بريد", "ايميل", "عنوان", "ساعات", "دوام", "contact", "phone", "téléphone", "email", "adresse", "address", "horaires", "hours", "où", "where", "أين"],
+      action: { label: ar ? "صفحة اتصل بنا" : "Contact page", href: "/contact" },
     },
     {
       id: "apps",
