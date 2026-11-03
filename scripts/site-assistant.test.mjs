@@ -471,6 +471,33 @@ test("/api/chat avec CHAT_API_KEY : fournisseur compatible OpenAI configurable (
   }
 });
 
+test("/api/chat Gemini : 404 sur le modèle → essai des modèles de repli, config normalisée", async () => {
+  process.env.GEMINI_API_KEY = "AIza-test";
+  process.env.GEMINI_MODEL = "models/gemini-9-pro";
+  process.env.GEMINI_BASE_URL = "https://generativelanguage.googleapis.com/v1beta/";
+  const originalFetch = globalThis.fetch;
+  const tried = [];
+  globalThis.fetch = async (url, init) => {
+    const body = JSON.parse(init.body);
+    tried.push({ url: String(url), model: body.model });
+    if (body.model !== "gemini-2.0-flash") {
+      return new Response(JSON.stringify({ error: { code: 404, message: `models/${body.model} is not found` } }), { status: 404 });
+    }
+    return new Response(JSON.stringify({ choices: [{ message: { content: "Voir /pricing." } }] }), { status: 200, headers: { "Content-Type": "application/json" } });
+  };
+  try {
+    const reply = await (await post({ prompt: "Combien coûte un site ?", locale: "fr" })).json();
+    assert.equal(reply.mode, "llm");
+    assert.deepEqual(tried.map((t) => t.model), ["gemini-9-pro", "gemini-2.5-flash", "gemini-2.0-flash"]);
+    assert.equal(tried[0].url, "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions");
+  } finally {
+    globalThis.fetch = originalFetch;
+    delete process.env.GEMINI_API_KEY;
+    delete process.env.GEMINI_MODEL;
+    delete process.env.GEMINI_BASE_URL;
+  }
+});
+
 test("GET /api/chat : diagnostic du fournisseur sans secret", async () => {
   let diag = await (await route.GET()).json();
   assert.deepEqual(diag, { assistant: "ok", provider: null, model: null, mode: "local" });

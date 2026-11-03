@@ -55,6 +55,23 @@ const DEFAULT_OPENAI_MODEL = "gpt-4o-mini";
 // Gemini expose un point d'entrée compatible OpenAI Chat Completions.
 const GEMINI_BASE_URL = "https://generativelanguage.googleapis.com/v1beta/openai";
 const DEFAULT_GEMINI_MODEL = "gemini-2.5-flash";
+/** Modèles essayés tour à tour si Google répond 404 (modèle inconnu/retiré). */
+const GEMINI_FALLBACK_MODELS = ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-flash-latest"];
+
+/** `models/gemini-2.5-flash` → `gemini-2.5-flash` (forme attendue par l'API OpenAI-compatible). */
+function normalizeGeminiModel(model: string): string {
+  return model.replace(/^models\//, "");
+}
+
+/**
+ * Tolère une base URL saisie sans le suffixe `/openai`
+ * (ex. `https://generativelanguage.googleapis.com/v1beta`).
+ */
+function normalizeGeminiBaseUrl(url: string): string {
+  const base = url.replace(/\/+$/, "");
+  if (/generativelanguage\.googleapis\.com\/v1(beta)?$/.test(base)) return `${base}/openai`;
+  return base;
+}
 
 const RATE_LIMIT = { prefix: "chat", windowMs: 60_000, max: 20, minIntervalMs: 500 };
 
@@ -125,34 +142,58 @@ function openAiCompatible(
   baseUrl: string,
   model: string,
   extra: Record<string, unknown> = {},
+  fallbackModels: string[] = [],
 ): LlmProvider {
   const base = baseUrl.replace(/\/+$/, "");
+  // Modèle configuré d'abord, puis les solutions de repli (sans doublon).
+  const candidates = [model, ...fallbackModels.filter((m) => m !== model)];
+
+  async function complete(
+    candidate: string,
+    system: string,
+    messages: ChatMessage[],
+    signal: AbortSignal,
+  ): Promise<string> {
+    const response = await fetch(`${base}/chat/completions`, {
+      method: "POST",
+      signal,
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
+      body: JSON.stringify({
+        model: candidate,
+        temperature: 0.3,
+        max_tokens: MAX_OUTPUT_TOKENS,
+        messages: [{ role: "system", content: system }, ...messages],
+        ...extra,
+      }),
+    });
+    if (!response.ok) {
+      // Le détail (modèle inconnu, clé refusée, quota…) va dans les logs
+      // serveur pour diagnostiquer depuis Vercel → Runtime Logs.
+      const detail = (await response.text().catch(() => "")).replace(/\s+/g, " ").slice(0, 300);
+      throw new Error(`${name} HTTP ${response.status}${detail ? ` — ${detail}` : ""}`);
+    }
+    const payload = (await response.json()) as { choices?: Array<{ message?: { content?: string } }> };
+    const text = payload.choices?.[0]?.message?.content;
+    if (typeof text !== "string" || !text.trim()) throw new Error(`${name}: réponse vide`);
+    return text;
+  }
+
   return {
     name,
     model,
     run: async (system, messages, signal) => {
-      const response = await fetch(`${base}/chat/completions`, {
-        method: "POST",
-        signal,
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
-        body: JSON.stringify({
-          model,
-          temperature: 0.3,
-          max_tokens: MAX_OUTPUT_TOKENS,
-          messages: [{ role: "system", content: system }, ...messages],
-          ...extra,
-        }),
-      });
-      if (!response.ok) {
-        // Le détail (modèle inconnu, clé refusée, quota…) va dans les logs
-        // serveur pour diagnostiquer depuis Vercel → Runtime Logs.
-        const detail = (await response.text().catch(() => "")).replace(/\s+/g, " ").slice(0, 300);
-        throw new Error(`${name} HTTP ${response.status}${detail ? ` — ${detail}` : ""}`);
+      let lastError: Error | null = null;
+      for (const candidate of candidates) {
+        try {
+          return await complete(candidate, system, messages, signal);
+        } catch (error) {
+          lastError = error instanceof Error ? error : new Error(String(error));
+          // Seul un 404 (modèle introuvable) justifie d'essayer le suivant.
+          if (!/ HTTP 404\b/.test(lastError.message) || signal.aborted) throw lastError;
+          console.warn(`[/api/chat] modèle « ${candidate} » introuvable (404), essai du suivant`);
+        }
       }
-      const payload = (await response.json()) as { choices?: Array<{ message?: { content?: string } }> };
-      const text = payload.choices?.[0]?.message?.content;
-      if (typeof text !== "string" || !text.trim()) throw new Error(`${name}: réponse vide`);
-      return text;
+      throw lastError ?? new Error(`${name}: aucun modèle disponible`);
     },
   };
 }
@@ -171,11 +212,12 @@ function resolveProvider(): LlmProvider | null {
     return openAiCompatible(
       "gemini",
       geminiKey,
-      process.env.GEMINI_BASE_URL?.trim() || GEMINI_BASE_URL,
-      process.env.GEMINI_MODEL?.trim() || DEFAULT_GEMINI_MODEL,
+      normalizeGeminiBaseUrl(process.env.GEMINI_BASE_URL?.trim() || GEMINI_BASE_URL),
+      normalizeGeminiModel(process.env.GEMINI_MODEL?.trim() || DEFAULT_GEMINI_MODEL),
       // Gemini 2.5 « réfléchit » avant de répondre : on limite ce budget
       // pour rester sous le délai d'une fonction serverless.
       { reasoning_effort: "low" },
+      GEMINI_FALLBACK_MODELS,
     );
   }
 
