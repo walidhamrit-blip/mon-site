@@ -375,6 +375,28 @@ export interface ShowcasePageConfig {
   items: UpcomingCatalogItem[];
 }
 
+/* ---------- Bannières & visuels des sections ---------- */
+
+export const VISUAL_IMAGE_IDS = [
+  "homeHero",
+  "webBanner",
+  "storeBanner",
+  "gatewayWebsites",
+  "gatewayGiftCards",
+  "gatewayTopUps",
+] as const;
+
+export type VisualImageId = (typeof VISUAL_IMAGE_IDS)[number];
+
+export interface SiteVisualImage {
+  /** Chemin local (/visuals/… ou /api/media/…) ou URL HTTPS absolue. */
+  src: string;
+  altAr: string;
+  altEn: string;
+}
+
+export type SiteVisuals = Record<VisualImageId, SiteVisualImage>;
+
 export interface SiteContent {
   demos: Demo[];
   faqs: Faq[];
@@ -387,6 +409,7 @@ export interface SiteContent {
   layout: HomeLayoutConfig;
   appsPage: ShowcasePageConfig;
   productsPage: ShowcasePageConfig;
+  visuals: SiteVisuals;
 }
 
 /**

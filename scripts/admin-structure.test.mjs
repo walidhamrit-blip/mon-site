@@ -37,7 +37,8 @@ test("the dashboard promotes digital catalog and orders without fake counts", ()
 test("legacy controls no longer promise to change the fixed homepage", () => {
   assert.match(read("sections/sections-studio.tsx"), /ne pilotent plus l’accueil/);
   assert.doesNotMatch(read("sections/sections-studio.tsx"), /Sections affichées sur l’accueil/);
-  assert.match(read("content/content-editor.tsx"), /photo fixe, sans texte ni boutons/);
+  assert.match(read("content/content-editor.tsx"), /photo sans texte ni boutons/);
+  assert.match(read("content/content-editor.tsx"), /href="\/admin\/media"/);
   assert.match(read("content/content-editor.tsx"), /Seul le sous-titre/);
   assert.match(read("catalog/page.tsx"), /distinct de la boutique/);
 });

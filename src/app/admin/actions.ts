@@ -255,6 +255,7 @@ const CONTENT_KEYS: Record<ContentSection, string> = {
   layout: SETTINGS_KEYS.layout,
   appsPage: SETTINGS_KEYS.appsPage,
   productsPage: SETTINGS_KEYS.productsPage,
+  visuals: SETTINGS_KEYS.visuals,
 };
 
 export async function saveContentSection(

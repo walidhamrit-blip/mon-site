@@ -13,6 +13,7 @@ import {
   AppWindow,
   Settings,
   FileText,
+  Camera,
   ShoppingBag,
   Gift,
   Sparkles,
@@ -195,6 +196,13 @@ export default async function AdminDashboardPage() {
       badge: `${content.faqs.length} FAQ · ${content.testimonials.length} avis`,
       title: "Textes, FAQ & Témoignages",
       desc: "Gérez les contenus partagés et les étapes du parcours web. La bannière d’accueil est une photo sans texte ; les anciennes rubriques restent identifiées.",
+    },
+    {
+      href: "/admin/media",
+      icon: Camera,
+      badge: "6 visuels modifiables",
+      title: "Bannières & photos de sections",
+      desc: "Importez vos propres photos ou collez une URL pour personnaliser l’accueil, la boutique et la page Création de sites.",
     },
     {
       href: "/admin/settings",

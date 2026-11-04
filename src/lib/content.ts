@@ -4,6 +4,7 @@ import type {
   RibbonContent,
   SectionHeadings,
   ShowcasePageConfig,
+  SiteVisuals,
   WhyUsItem,
   ProcessStep,
 } from "./site-types";
@@ -570,6 +571,43 @@ export const defaultHomeLayout: HomeLayoutConfig = {
     enabled: true,
   })),
   customSections: [],
+};
+
+/**
+ * Photos des bannières et cartes de sections actuellement visibles sur le site.
+ * Chaque visuel est remplaçable depuis /admin/media, sans redéploiement.
+ */
+export const defaultVisuals: SiteVisuals = {
+  homeHero: {
+    src: "/visuals/futuristic-gaming-hero.webp",
+    altAr: "مشهد توضيحي واقعي لمحطة حاسوب وألعاب مستقبلية بإضاءة زرقاء وبنفسجية",
+    altEn: "Photorealistic illustration of a futuristic computing and gaming workstation with blue and violet lighting",
+  },
+  webBanner: {
+    src: "/previews/al-manhaj-company-desktop.webp",
+    altAr: "نموذج تصميم موقع إلكتروني من إنجاز نخبة",
+    altEn: "Website design example created by Nukhba",
+  },
+  storeBanner: {
+    src: "/visuals/futuristic-gaming-hero.webp",
+    altAr: "مشهد حاسوب وألعاب مستقبلي بإضاءة زرقاء وبنفسجية",
+    altEn: "Futuristic computing and gaming illustration with blue and violet lighting",
+  },
+  gatewayWebsites: {
+    src: "/previews/al-manhaj-company-desktop.webp",
+    altAr: "معاينة موقع ومتجر إلكتروني احترافي",
+    altEn: "Professional website and online store preview",
+  },
+  gatewayGiftCards: {
+    src: "/digital-products/steam-wallet.jpg",
+    altAr: "بطاقات هدايا ومفاتيح رقمية",
+    altEn: "Gift cards and digital keys",
+  },
+  gatewayTopUps: {
+    src: "/visuals/digital-universe.webp",
+    altAr: "عالم الألعاب وشحن الرصيد الرقمي",
+    altEn: "Gaming and digital top-up universe",
+  },
 };
 
 /** Page « Nos applications » (en cours de préparation / prochainement). */

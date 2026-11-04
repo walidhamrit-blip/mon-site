@@ -17,6 +17,7 @@ import {
   defaultHomeLayout,
   defaultAppsPage,
   defaultProductsPage,
+  defaultVisuals,
 } from "@/lib/content";
 import {
   BUILTIN_SECTION_IDS,
@@ -36,7 +37,10 @@ import {
   type SiteContent,
   type Testimonial,
   type UpcomingCatalogItem,
+  VISUAL_IMAGE_IDS,
   type WhyUsItem,
+  type SiteVisualImage,
+  type SiteVisuals,
 } from "@/lib/site-types";
 
 // Accès aux données « vivantes » du site (configuration + contenu éditables
@@ -56,6 +60,7 @@ const KEY_HEADINGS = "content_headings";
 const KEY_LAYOUT = "content_layout";
 const KEY_APPS_PAGE = "content_apps_page";
 const KEY_PRODUCTS_PAGE = "content_products_page";
+const KEY_VISUALS = "content_visuals";
 
 export interface SiteData {
   config: typeof siteConfig;
@@ -208,6 +213,26 @@ function resolveHero(value: unknown): HeroContent {
     chipsAr: Array.isArray(merged.chipsAr) ? merged.chipsAr : defaultHero.chipsAr,
     chipsEn: Array.isArray(merged.chipsEn) ? merged.chipsEn : defaultHero.chipsEn,
   };
+}
+
+function resolveVisuals(value: unknown): SiteVisuals {
+  const stored = value && typeof value === "object" && !Array.isArray(value)
+    ? value as Record<string, unknown>
+    : {};
+  const result = {} as SiteVisuals;
+  for (const id of VISUAL_IMAGE_IDS) {
+    const merged = mergeObject(defaultVisuals[id], stored[id]);
+    result[id] = {
+      ...merged,
+      // Une ancienne valeur vide ou corrompue ne doit jamais casser next/image.
+      src: typeof merged.src === "string" && merged.src.trim()
+        ? merged.src
+        : defaultVisuals[id].src,
+      altAr: typeof merged.altAr === "string" ? merged.altAr : defaultVisuals[id].altAr,
+      altEn: typeof merged.altEn === "string" ? merged.altEn : defaultVisuals[id].altEn,
+    } satisfies SiteVisualImage;
+  }
+  return result;
 }
 
 function resolveRibbon(map: Map<string, unknown>): RibbonContent {
@@ -398,6 +423,7 @@ export async function getSiteData(): Promise<SiteData> {
         layout: resolveLayout(map.get(KEY_LAYOUT)),
         appsPage: resolveShowcasePage(map, KEY_APPS_PAGE, defaultAppsPage),
         productsPage: resolveShowcasePage(map, KEY_PRODUCTS_PAGE, defaultProductsPage),
+        visuals: resolveVisuals(map.get(KEY_VISUALS)),
       },
     };
   } catch (error) {
@@ -428,6 +454,7 @@ export async function getSiteData(): Promise<SiteData> {
           ...defaultProductsPage,
           items: defaultProductsPage.items.map((item) => ({ ...item })),
         },
+        visuals: resolveVisuals(null),
       },
     };
   }
@@ -464,4 +491,5 @@ export const SETTINGS_KEYS = {
   layout: KEY_LAYOUT,
   appsPage: KEY_APPS_PAGE,
   productsPage: KEY_PRODUCTS_PAGE,
+  visuals: KEY_VISUALS,
 } as const;
