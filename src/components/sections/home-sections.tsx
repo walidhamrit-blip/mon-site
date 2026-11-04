@@ -5,6 +5,7 @@ import { LocalizedLink as Link } from "@/components/localized-link";
 import { ArrowUpRight, CheckCircle2 } from "lucide-react";
 import { HomeLegacyAnchors } from "../home-legacy-anchors";
 import { Hero } from "./hero";
+import { HomeIntro } from "./home-intro";
 import { HomeGateway } from "./home-gateway";
 import { useI18n } from "@/lib/i18n";
 import { useSiteConfig } from "@/components/site-provider";
@@ -20,8 +21,9 @@ export function HomeSections({ storeShowcase }: { storeShowcase?: ReactNode }) {
   return (
     <>
       <HomeLegacyAnchors />
-      <Hero />
+      <HomeIntro />
       <HomeGateway />
+      <Hero />
       <section className="gaming-store-section border-y border-[var(--border)] bg-[var(--secondary)]/30">
         <div className="site-container px-4 py-12 sm:px-6 lg:px-8">
           <p className="gaming-kicker">{ar ? "المتجر الرقمي" : "DIGITAL STORE"}</p>

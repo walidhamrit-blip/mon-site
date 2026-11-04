@@ -643,7 +643,7 @@ html[dir="rtl"] .home-intro h1 { line-height: 1.45; letter-spacing: -.025em; }
   position: relative;
   isolation: isolate;
   width: 100%;
-  height: clamp(320px, 43vw, 720px);
+  height: clamp(240px, 30vw, 520px);
   overflow: hidden;
   background: #080b13;
 }
@@ -689,7 +689,7 @@ html[dir="rtl"] .home-intro h1 { line-height: 1.45; letter-spacing: -.025em; }
   object-fit: cover;
 }
 @media (max-width: 640px) {
-  .panoramic-hero { height: 360px; }
+  .panoramic-hero { height: 240px; }
 }
 @media (prefers-reduced-motion: reduce) {
   .hero-marquee-track { animation: none; width: 100%; }
@@ -729,7 +729,7 @@ html[dir="rtl"] .public-shell .site-main :is(h1,h2,h3) { line-height: 1.5; lette
 .public-shell .site-main :is(a,button)[class*="bg-[var(--primary)]"] { background: var(--accent); color: var(--accent-foreground); }
 .public-shell .site-main :is(a,button)[class*="rounded-full"][class*="bg-[var(--accent)]"] { min-height: 44px; padding-inline: 1.25rem; font-weight: 800; }
 .public-shell .site-main :is(a,button)[class*="bg-[var(--accent)]"]:hover { background: var(--accent-hover); }
-.home-gateway { margin-top: -64px; padding-bottom: 3rem; }
+.home-gateway { margin-top: 0; padding-bottom: 3rem; }
 .public-shell .gateway-card { box-shadow: 0 15px 45px -22px rgb(15 23 42 / 30%); }
 .gateway-art { position: relative; height: 160px; overflow: hidden; border-radius: 1rem; background: var(--secondary); }
 .gateway-art::after { content: ""; position: absolute; inset: 0; background: linear-gradient(transparent 50%, rgb(0 0 0 / 20%)); pointer-events: none; }
@@ -742,8 +742,8 @@ html[dir="rtl"] .public-shell .site-main :is(h1,h2,h3) { line-height: 1.5; lette
 .editorial-visual-image.is-web { object-position: center 15%; }
 .public-shell .public-footer { background: #111118; color: #f7f7fa; margin-top: 0; }
 @media (max-width: 767px) {
-  .home-gateway { margin-top: -28px; padding-bottom: 2rem; }
-  .gateway-art { height: 180px; }
+  .home-gateway { margin-top: 0; padding-bottom: 2rem; }
+  .gateway-art { height: 160px; }
   .public-header .site-container { padding-inline: .75rem; }
   .editorial-visual { height: 240px; }
 }
