@@ -51,6 +51,8 @@ export default async function robots(): Promise<MetadataRoute.Robots> {
     // et exposent des références de commande.
     "/codes/commande",
     "/abonnements/suivi",
+    // Dossier de livraison : lien privé client (référence + jeton).
+    "/livraison",
   ];
 
   return {

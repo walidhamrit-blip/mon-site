@@ -19,6 +19,7 @@ import { checkRateLimitHeaders } from "@/lib/rate-limit";
 import {
   boutiqueProductSchema,
   contentSchemas,
+  deliveryInputSchema,
   digitalProductSchema,
   leadStatusSchema,
   siteConfigSchema,
@@ -47,6 +48,15 @@ import { getGiftCardProduct, reloadlyConfigured } from "@/lib/reloadly";
 import { mailDiagnostics, sendTestEmail } from "@/lib/mailer";
 import { applyDigitalSync, type SyncApplyResult, type SyncRequest } from "@/lib/digital-sync";
 import { applyCatalogRecalc } from "@/lib/digital-audit";
+import {
+  createDelivery,
+  deleteDelivery,
+  deliveryTokenForRef,
+  findDeliveryByRef,
+} from "@/lib/deliveries";
+import { deliveryAcceptUrl } from "@/lib/delivery-kit";
+import { sendDeliveryLinkEmail } from "@/lib/delivery-notifications";
+import { resolveSiteOrigin } from "@/lib/site-identity";
 
 export interface ActionResult {
   ok: boolean;
@@ -1070,6 +1080,127 @@ export async function restoreBoutiqueProductAction(
     await restoreDigitalProduct(id);
     revalidateBoutiquePages();
     return { ok: true, message: "Fiche restaurée dans la boutique." };
+  } catch (error) {
+    return { ok: false, error: dbIssue(error) };
+  }
+}
+
+/* ---------------- Livraison des projets web (remise des clés) ---------------- */
+
+export interface CreateDeliveryResult extends ActionResult {
+  delivery?: { ref: string; token: string; url: string };
+}
+
+/**
+ * Crée le dossier de livraison et renvoie le lien de validation à transmettre
+ * au client. Le jeton n'existe que dans cette réponse et dans l'URL : la base
+ * ne conserve que son empreinte.
+ */
+export async function createDeliveryAction(input: unknown): Promise<CreateDeliveryResult> {
+  await requireAdmin();
+  const parsed = deliveryInputSchema.safeParse(input);
+  if (!parsed.success) return { ok: false, error: firstIssue(parsed.error) };
+  const data = parsed.data;
+  try {
+    const { ref, token } = await createDelivery({
+      clientName: data.clientName,
+      projectTitle: data.projectTitle,
+      email: data.email || null,
+      phone: data.phone || null,
+      amountUsd: data.amountUsd || "",
+      links: data.links ?? [],
+      checklist: data.checklist ?? [],
+      warrantyDays: data.warrantyDays,
+      notes: data.notes || null,
+    });
+    const { config } = await getSiteData();
+    const url = deliveryAcceptUrl(
+      resolveSiteOrigin({ url: config.url, domain: config.domain }),
+      ref,
+      token,
+    );
+    revalidatePath("/admin/livraisons");
+    revalidatePath("/admin");
+    return { ok: true, message: `Dossier ${ref} créé.`, delivery: { ref, token, url } };
+  } catch (error) {
+    return { ok: false, error: dbIssue(error) };
+  }
+}
+
+/**
+ * Lien public de validation d'un dossier. Le jeton est relu depuis sa forme
+ * chiffrée : il n'est jamais exposé ailleurs qu'à l'admin.
+ */
+export async function deliveryLinkAction(
+  ref: string,
+): Promise<ActionResult & { url?: string }> {
+  await requireAdmin();
+  const cleanRef = String(ref ?? "").trim().toUpperCase();
+  if (!cleanRef) return { ok: false, error: "Référence manquante." };
+  try {
+    const row = await findDeliveryByRef(cleanRef);
+    if (!row) return { ok: false, error: "Dossier introuvable." };
+    const token = await deliveryTokenForRef(cleanRef);
+    if (!token) {
+      return {
+        ok: false,
+        error:
+          "Jeton illisible : aucun secret configuré (DIGITAL_CODES_SECRET ou SESSION_SECRET) ou dossier créé avant cette version.",
+      };
+    }
+    const { config } = await getSiteData();
+    return {
+      ok: true,
+      url: deliveryAcceptUrl(
+        resolveSiteOrigin({ url: config.url, domain: config.domain }),
+        row.ref,
+        token,
+      ),
+    };
+  } catch (error) {
+    return { ok: false, error: dbIssue(error) };
+  }
+}
+
+/** Renvoie au client le lien de validation de sa livraison. */
+export async function sendDeliveryLinkAction(ref: string): Promise<ActionResult> {
+  await requireAdmin();
+  const cleanRef = String(ref ?? "").trim().toUpperCase();
+  if (!cleanRef) return { ok: false, error: "Référence manquante." };
+  try {
+    const row = await findDeliveryByRef(cleanRef);
+    if (!row) return { ok: false, error: "Dossier introuvable." };
+    if (!row.email) {
+      return {
+        ok: false,
+        error:
+          "Aucun e-mail client sur ce dossier : copiez le lien et envoyez-le par WhatsApp.",
+      };
+    }
+    const link = await deliveryLinkAction(cleanRef);
+    if (!link.ok || !link.url) return { ok: false, error: link.error ?? "Lien indisponible." };
+    const { config } = await getSiteData();
+    const result = await sendDeliveryLinkEmail(row, config, link.url);
+    if (result && !result.ok) {
+      return { ok: false, error: `Envoi impossible : ${result.error ?? "fournisseur indisponible"}` };
+    }
+    return { ok: true, message: `Lien envoyé à ${row.email}.` };
+  } catch (error) {
+    return { ok: false, error: dbIssue(error) };
+  }
+}
+
+export async function deleteDeliveryAction(id: number): Promise<ActionResult> {
+  await requireAdmin();
+  const parsedId = Number(id);
+  if (!Number.isInteger(parsedId) || parsedId <= 0) {
+    return { ok: false, error: "Identifiant invalide." };
+  }
+  try {
+    await deleteDelivery(parsedId);
+    revalidatePath("/admin/livraisons");
+    revalidatePath("/admin");
+    return { ok: true, message: "Dossier supprimé." };
   } catch (error) {
     return { ok: false, error: dbIssue(error) };
   }
