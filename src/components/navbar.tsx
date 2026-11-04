@@ -136,7 +136,7 @@ export function Navbar() {
       <header ref={headerRef} className="public-header sticky top-0 z-50 border-b border-[var(--border)] bg-[var(--background)]/95 py-3 backdrop-blur-md">
         <div className="site-container px-4 sm:px-6">
           <div className="flex items-center justify-between gap-3 px-1 py-2 sm:px-4">
-            <Link href="/" className="group flex shrink-0 items-center gap-2.5">
+            <Link href="/" className="group flex min-h-11 shrink-0 items-center gap-2.5">
               <span className="gaming-brand grid h-9 w-9 place-items-center bg-[var(--primary)] text-sm font-black text-[var(--primary-foreground)] transition-transform group-hover:scale-105">
                 {ar ? "ن" : "N"}
               </span>
@@ -186,7 +186,7 @@ export function Navbar() {
                 onClick={toggle}
                 aria-label={ar ? "تبديل الوضع الفاتح والداكن" : "Toggle light / dark mode"}
                 title={ar ? "فاتح / داكن" : "Light / dark"}
-                className="grid h-9 w-9 cursor-pointer place-items-center rounded-full bg-[var(--secondary)] transition-colors hover:bg-[var(--muted)]"
+                className="grid h-11 w-11 cursor-pointer place-items-center rounded-full bg-[var(--secondary)] transition-colors hover:bg-[var(--muted)]"
               >
                 {mode === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
               </button>
@@ -199,13 +199,13 @@ export function Navbar() {
                 href={whatsappLink(siteConfig.whatsapp, whatsappMsg)}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="hidden h-9 items-center gap-1.5 rounded-full bg-[var(--secondary)] px-4 text-[12.5px] font-semibold text-[var(--foreground)] transition-colors hover:bg-[var(--muted)] 2xl:inline-flex"
+                className="hidden h-11 items-center gap-1.5 rounded-full bg-[var(--secondary)] px-4 text-[12.5px] font-semibold text-[var(--foreground)] transition-colors hover:bg-[var(--muted)] 2xl:inline-flex"
               >
                 WhatsApp
               </a>
               <button
                 onClick={quote}
-                className="hidden h-9 cursor-pointer items-center gap-1.5 rounded-full bg-[var(--primary)] px-4 text-[12.5px] font-bold text-[var(--primary-foreground)] transition-opacity hover:opacity-90 sm:inline-flex"
+                className="hidden h-11 cursor-pointer items-center gap-1.5 rounded-full bg-[var(--primary)] px-4 text-[12.5px] font-bold text-[var(--primary-foreground)] transition-opacity hover:opacity-90 sm:inline-flex"
               >
                 {ar ? "طلب عرض" : "Get quote"}
                 <ArrowUpRight className="h-3.5 w-3.5" />
@@ -218,7 +218,7 @@ export function Navbar() {
                 aria-controls="mobile-menu"
                 aria-haspopup="dialog"
                 aria-label={open ? (ar ? "إغلاق القائمة" : "Close menu") : ar ? "فتح القائمة" : "Open menu"}
-                className="grid h-9 w-9 cursor-pointer place-items-center rounded-full bg-[var(--primary)] text-[var(--primary-foreground)] lg:hidden"
+                className="grid h-11 w-11 cursor-pointer place-items-center rounded-full bg-[var(--primary)] text-[var(--primary-foreground)] lg:hidden"
               >
                 {open ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
               </button>

@@ -113,7 +113,7 @@ export function LocaleSwitcher({ variant = "compact" }: { variant?: "compact" | 
         aria-haspopup="listbox"
         aria-label={ar ? "تغيير اللغة" : "Change language"}
         title={ar ? "لغة الموقع" : "Site language"}
-        className="inline-flex h-9 cursor-pointer items-center gap-1.5 rounded-full bg-[var(--secondary)] px-2.5 text-[12.5px] font-semibold transition-colors hover:bg-[var(--muted)]"
+        className="inline-flex h-11 cursor-pointer items-center gap-1.5 rounded-full bg-[var(--secondary)] px-2.5 text-[12.5px] font-semibold transition-colors hover:bg-[var(--muted)]"
       >
         <Globe className="h-3.5 w-3.5" />
         <span className="hidden sm:inline">{ar ? "العربية" : "English"}</span>
@@ -132,7 +132,7 @@ export function LocaleSwitcher({ variant = "compact" }: { variant?: "compact" | 
               type="button"
               onClick={() => setOpen(false)}
               aria-label={ar ? "إغلاق" : "Close"}
-              className="grid h-5 w-5 cursor-pointer place-items-center rounded-full bg-[var(--secondary)] hover:bg-[var(--muted)]"
+              className="grid h-9 w-9 cursor-pointer place-items-center rounded-full bg-[var(--secondary)] hover:bg-[var(--muted)]"
             >
               <X className="h-2.5 w-2.5" />
             </button>

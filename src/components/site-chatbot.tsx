@@ -329,7 +329,7 @@ function ChatShell() {
                 <div className="text-[13px] font-black">
                   {ar ? "مساعد نخبة" : "Nukhba assistant"}
                 </div>
-                <div className="flex items-center gap-1 text-[10px] opacity-70">
+                <div className="flex items-center gap-1 text-[12px] opacity-80">
                   <span className={`h-1.5 w-1.5 rounded-full ${online ? "bg-emerald-400" : "bg-amber-400"}`} />
                   {online
                     ? ar ? "يجيب عن كل محتوى الموقع" : "Answers about the whole site"
@@ -341,7 +341,7 @@ function ChatShell() {
                 onClick={restart}
                 title={ar ? "إعادة البدء" : "Restart"}
                 aria-label={ar ? "إعادة البدء" : "Restart"}
-                className="grid h-7 w-7 place-items-center rounded-full opacity-70 hover:opacity-100 cursor-pointer"
+                className="grid h-11 w-11 place-items-center rounded-full opacity-70 hover:opacity-100 cursor-pointer"
               >
                 <RotateCcw className="h-3.5 w-3.5" />
               </button>
@@ -349,7 +349,7 @@ function ChatShell() {
                 type="button"
                 onClick={() => setOpen(false)}
                 aria-label={ar ? "إغلاق" : "Close"}
-                className="grid h-7 w-7 place-items-center rounded-full opacity-70 hover:opacity-100 cursor-pointer"
+                className="grid h-11 w-11 place-items-center rounded-full opacity-70 hover:opacity-100 cursor-pointer"
               >
                 <X className="h-4 w-4" />
               </button>
@@ -453,13 +453,13 @@ function ChatShell() {
                 aria-label={ar ? "اكتب سؤالك" : "Type your question"}
                 maxLength={MAX_INPUT_CHARS}
                 disabled={typing}
-                className="h-9 min-w-0 flex-1 rounded-full border border-[var(--border)] bg-[var(--secondary)]/50 px-3 text-[12.5px] outline-none focus:border-[var(--accent)]"
+                className="h-11 min-w-0 flex-1 rounded-full border border-[var(--border)] bg-[var(--secondary)]/50 px-3 text-[13px] outline-none focus:border-[var(--accent)]"
               />
               <button
                 type="submit"
                 aria-label={ar ? "إرسال" : "Send"}
                 disabled={typing || input.trim().length === 0}
-                className="disabled:opacity-50 grid h-9 w-9 shrink-0 place-items-center rounded-full bg-[var(--accent)] text-[var(--accent-foreground)] hover:bg-[var(--accent-hover)] transition-colors cursor-pointer"
+                className="disabled:opacity-50 grid h-11 w-11 shrink-0 place-items-center rounded-full bg-[var(--accent)] text-[var(--accent-foreground)] hover:bg-[var(--accent-hover)] transition-colors cursor-pointer"
               >
                 <Send className="h-4 w-4 rtl:rotate-180" />
               </button>
@@ -494,7 +494,7 @@ function ChatShell() {
                 type="button"
                 onClick={dismissBubble}
                 aria-label={ar ? "إغلاق رسالة الترحيب" : "Dismiss welcome message"}
-                className="grid h-6 w-6 cursor-pointer place-items-center rounded-full text-[var(--muted-foreground)] transition-colors hover:bg-[var(--secondary)] hover:text-[var(--foreground)]"
+                className="grid h-9 w-9 cursor-pointer place-items-center rounded-full text-[var(--muted-foreground)] transition-colors hover:bg-[var(--secondary)] hover:text-[var(--foreground)]"
               >
                 <X className="h-3 w-3" />
               </button>
