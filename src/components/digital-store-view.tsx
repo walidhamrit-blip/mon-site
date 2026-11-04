@@ -1,5 +1,6 @@
 "use client";
 
+import { useCallback, useEffect, useState } from "react";
 import { LocalizedLink as Link } from "@/components/localized-link";
 import { useI18n } from "@/lib/i18n";
 import { useSiteConfig } from "./site-provider";
@@ -20,6 +21,29 @@ export function DigitalStoreView({ products, degraded, initialKind }: {
   const { locale } = useI18n();
   const ar = locale === "ar";
   const faqs = storeFaqs(locale);
+  // Une seule source de vérité pour la famille active : l'URL `?kind=`.
+  // Les pastilles, le rail et la nav SEO partagent cet état.
+  const [kind, setKind] = useState<DigitalKind | "all">(initialKind);
+  const [syncedInitialKind, setSyncedInitialKind] = useState(initialKind);
+  if (syncedInitialKind !== initialKind) {
+    setSyncedInitialKind(initialKind);
+    setKind(initialKind);
+  }
+  const selectKind = useCallback((next: DigitalKind | "all") => {
+    setKind(next);
+    const url = new URL(window.location.href);
+    if (next === "all") url.searchParams.delete("kind");
+    else url.searchParams.set("kind", next);
+    window.history.replaceState(null, "", url);
+  }, []);
+  useEffect(() => {
+    const onPopState = () => {
+      const value = new URL(window.location.href).searchParams.get("kind");
+      setKind(storeCategories.some((category) => category.kind === value) ? (value as DigitalKind) : "all");
+    };
+    window.addEventListener("popstate", onPopState);
+    return () => window.removeEventListener("popstate", onPopState);
+  }, []);
   const prices = products.map(lowestPriceUsd).filter((price): price is number => price != null);
   const cheapest = prices.length ? Math.min(...prices) : null;
   return <>
@@ -105,9 +129,9 @@ export function DigitalStoreView({ products, degraded, initialKind }: {
         le sitemap) le 29/10/2026.
       */}
       <nav aria-label={ar ? "فئات المتجر" : "Store categories"} className="site-container flex flex-wrap gap-2 px-4 py-6 sm:px-6 lg:px-8">
-        {storeCategories.map((category) => <Link key={category.kind} href={category.kind === "all" ? "/codes" : `/codes?kind=${category.kind}`} aria-current={initialKind === category.kind ? "page" : undefined} className={`rounded-full border px-4 py-2 text-sm font-bold ${initialKind === category.kind ? "border-[var(--accent)] bg-[var(--accent)] text-[var(--accent-foreground)]" : "border-[var(--border)] bg-[var(--card)]"}`}>{ar ? category.ar : category.en}</Link>)}
+        {storeCategories.map((category) => <Link key={category.kind} href={category.kind === "all" ? "/codes" : `/codes?kind=${category.kind}`} onClick={(event) => { event.preventDefault(); selectKind(category.kind); }} aria-current={kind === category.kind ? "page" : undefined} className={`rounded-full border px-4 py-2 text-sm font-bold ${kind === category.kind ? "border-[var(--accent)] bg-[var(--accent)] text-[var(--accent-foreground)]" : "border-[var(--border)] bg-[var(--card)]"}`}>{ar ? category.ar : category.en}</Link>)}
       </nav>
-      {!degraded && <DigitalCatalog key={initialKind} products={products} initialKind={initialKind} />}
+      {!degraded && <DigitalCatalog products={products} kind={kind} onKindChange={selectKind} />}
 
       {/*
         Contenu de rayon : ces sections répondent aux questions réellement
