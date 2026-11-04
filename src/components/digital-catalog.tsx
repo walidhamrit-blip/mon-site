@@ -675,38 +675,18 @@ export function DigitalCatalog({ products, kind, onKindChange }: { products: Dig
                       >
                         {visual ? (
                           visualFit === "contain" ? (
-                            /* Visuel de marque enregistré en admin, désormais
-                               toujours au ratio 2:3 (600×900) : il remplit
-                               toute la jaquette, le fond flou reste en
-                               filet de sécurité si un ratio exotique arrive. */
-                            <>
-                              <Image
-                                src={visual}
-                                alt=""
-                                aria-hidden="true"
-                                fill
-                                sizes="(max-width: 359px) 100vw, (max-width: 767px) 50vw, (max-width: 1023px) 33vw, 22vw"
-                                quality={75}
-                                className="scale-110 object-cover opacity-55 blur-xl"
-                              />
-                              <div
-                                aria-hidden="true"
-                                className="absolute inset-0 bg-black/25"
-                              />
-                              <Image
-                                src={visual}
-                                alt={
-                                  ar
-                                    ? `صورة ${displayName(product)}`
-                                    : `${displayName(product)} product visual`
-                                }
-                                fill
-                                sizes="(max-width: 359px) 100vw, (max-width: 767px) 50vw, (max-width: 1023px) 33vw, 22vw"
-                                quality={88}
-                                priority={index < 4}
-                                className="object-contain p-2.5 transition-transform duration-500 ease-out group-hover:scale-[1.045]"
-                              />
-                            </>
+                            /* Visuel admin : ratio mesuré au chargement —
+                               2:3 = plein cadre, sinon contenu sur fond flou. */
+                            <AdminCoverImage
+                              src={visual}
+                              alt={
+                                ar
+                                  ? `صورة ${displayName(product)}`
+                                  : `${displayName(product)} product visual`
+                              }
+                              sizes="(max-width: 359px) 100vw, (max-width: 767px) 50vw, (max-width: 1023px) 33vw, 22vw"
+                              priority={index < 4}
+                            />
                           ) : (
                             <Image
                               src={visual}
@@ -1071,5 +1051,61 @@ function FallbackArt({
         </span>
       </div>
     </div>
+  );
+}
+
+/**
+ * Visuel de marque enregistré en admin (`product.image`) : son ratio est
+ * inconnu à l'avance. Au chargement, on mesure le ratio RÉEL de l'image :
+ *  - 2:3 (600×900) → `object-cover` : l'image remplit toute la carte ;
+ *  - tout autre ratio (souvent 16:9) → `object-contain` sur fond flou issu
+ *    d'elle-même : le logo n'est jamais rogné.
+ * Les cartes non conformes sont donc ajustées automatiquement.
+ */
+function AdminCoverImage({
+  src,
+  alt,
+  sizes,
+  priority,
+}: {
+  src: string;
+  alt: string;
+  sizes: string;
+  priority: boolean;
+}) {
+  const [offRatio, setOffRatio] = useState(false);
+  return (
+    <>
+      <Image
+        src={src}
+        alt=""
+        aria-hidden="true"
+        fill
+        sizes={sizes}
+        quality={75}
+        className="scale-110 object-cover opacity-55 blur-xl"
+      />
+      <div aria-hidden="true" className="absolute inset-0 bg-black/25" />
+      <Image
+        src={src}
+        alt={alt}
+        fill
+        sizes={sizes}
+        quality={88}
+        priority={priority}
+        onLoad={(event) => {
+          const img = event.currentTarget;
+          if (img.naturalWidth > 0 && img.naturalHeight > 0) {
+            const ratio = img.naturalWidth / img.naturalHeight;
+            if (Math.abs(ratio - 2 / 3) > 0.03) setOffRatio(true);
+          }
+        }}
+        className={
+          offRatio
+            ? "object-contain p-2.5 transition-transform duration-500 ease-out group-hover:scale-[1.045]"
+            : "object-cover transition-transform duration-500 ease-out group-hover:scale-[1.045]"
+        }
+      />
+    </>
   );
 }
