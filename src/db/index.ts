@@ -347,6 +347,39 @@ export function ensureSchema(): Promise<void> {
       await pool.query(
         "CREATE INDEX IF NOT EXISTS orders_digital_order_id_idx ON orders (digital_order_id)",
       );
+
+      // Livraison des projets web : récapitulatif remis au client + validation
+      // de recette horodatée (page publique /livraison/<ref>?t=<jeton>).
+      await pool.query(`
+        CREATE TABLE IF NOT EXISTS site_deliveries (
+          id serial PRIMARY KEY,
+          created_at timestamptz NOT NULL DEFAULT now(),
+          updated_at timestamptz NOT NULL DEFAULT now(),
+          ref text NOT NULL UNIQUE,
+          tracking_token_hash text NOT NULL,
+          client_name text NOT NULL,
+          email text,
+          phone text,
+          project_title text NOT NULL,
+          amount_usd text NOT NULL DEFAULT '',
+          links jsonb NOT NULL DEFAULT '[]'::jsonb,
+          checklist jsonb NOT NULL DEFAULT '[]'::jsonb,
+          warranty_days integer NOT NULL DEFAULT 30,
+          status text NOT NULL DEFAULT 'delivered',
+          accepted_at timestamptz,
+          accepted_by_name text,
+          locale text,
+          notes text
+        )
+      `);
+      await pool.query(
+        "CREATE INDEX IF NOT EXISTS site_deliveries_status_idx ON site_deliveries (status, created_at DESC)",
+      );
+      // Jeton chiffré : permet à l'admin de renvoyer le lien de validation
+      // sans jamais le stocker en clair.
+      await pool.query(
+        "ALTER TABLE site_deliveries ADD COLUMN IF NOT EXISTS tracking_token_cipher text",
+      );
     })().catch((error) => {
       schemaReady = null; // permet de réessayer au prochain accès
       throw error;

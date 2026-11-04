@@ -16,6 +16,7 @@ import {
   Gift,
   ShoppingBag,
   Sparkles,
+  ClipboardCheck,
   Settings,
   ExternalLink,
   LogOut,
@@ -60,6 +61,7 @@ export function AdminNav({ newLeads, paidOrders }: Props) {
       { href: "/admin/leads", label: "Demandes & devis", sublabel: "Projets web & messages clients", icon: Inbox, badge: newLeads, badgeTone: "amber" },
       { href: "/admin/sites", label: "Exemples & réalisations", sublabel: "Galerie du parcours création de sites", icon: Globe },
       { href: "/admin/orders", label: "Paiements projets web", sublabel: "Acomptes & paiements libres", icon: Wallet, badge: paidOrders, badgeTone: "emerald" },
+      { href: "/admin/livraisons", label: "Livraisons & recette", sublabel: "Remise des clés & validation client", icon: ClipboardCheck },
       { href: "/admin/subscriptions", label: "Abonnements web", sublabel: "Maintenance & revenu récurrent", icon: Repeat },
     ] },
     { title: "Contenus & Réglages", items: [

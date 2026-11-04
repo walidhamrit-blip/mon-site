@@ -9,7 +9,7 @@ import { buildLlmsFullTxt } from "@/lib/llms-txt";
  *
  * Expose en un seul document Markdown bilingue (AR + EN) la totalité du
  * catalogue de réalisations, les tarifs, les services à la carte, le
- * processus en 5 étapes, les témoignages et la FAQ.
+ * processus en 6 étapes, les témoignages et la FAQ.
  */
 export async function GET() {
   const [data, digitalProducts] = await Promise.all([

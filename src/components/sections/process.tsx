@@ -7,14 +7,30 @@ import { SectionHeading } from "@/components/section-heading";
 import { LocalizedLink as Link } from "@/components/localized-link";
 
 /**
- * Processus en 5 étapes — frise horizontale sur grand écran, liste verticale
- * sur mobile. Les numéros, durées et cartes partagent désormais le même
- * gabarit que le reste du site (rayons, ombres, typographie).
+ * Processus de création d'un site — frise horizontale sur très grand écran,
+ * grille de cartes sur mobile et tablette. Le nombre de colonnes suit le
+ * nombre d'étapes réellement configurées dans /admin → Contenu : au-delà de
+ * cinq étapes, une seule rangée donnerait des cartes illisibles, on repasse
+ * sur deux rangées en dessous de 2xl.
+ *
+ * Les numéros, durées et cartes partagent le même gabarit que le reste du
+ * site (rayons, ombres, typographie).
  */
 export function Process() {
   const { locale } = useI18n();
   const { process: processSteps } = useSiteContent();
   const heading = useSectionHeading("process");
+  const gridClass =
+    processSteps.length >= 6
+      ? "sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-6"
+      : processSteps.length === 5
+        ? "sm:grid-cols-2 lg:grid-cols-5"
+        : processSteps.length === 4
+          ? "sm:grid-cols-2 lg:grid-cols-4"
+          : "sm:grid-cols-2 lg:grid-cols-3";
+  // Le filet horizontal ne relie les pastilles que lorsque la frise tient
+  // sur une seule rangée.
+  const lineClass = processSteps.length >= 6 ? "2xl:block" : "lg:block";
 
   return (
     <section className="section section-muted">
@@ -37,10 +53,10 @@ export function Process() {
         <div className="relative mt-12">
           <div
             aria-hidden="true"
-            className="absolute inset-x-0 top-[26px] hidden h-px bg-gradient-to-r from-transparent via-[var(--accent)]/35 to-transparent lg:block"
+            className={`absolute inset-x-0 top-[26px] hidden h-px bg-gradient-to-r from-transparent via-[var(--accent)]/35 to-transparent ${lineClass}`}
           />
 
-          <ol className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+          <ol className={`grid gap-4 ${gridClass}`}>
             {processSteps.map((step, i) => (
               <motion.li
                 key={step.num}

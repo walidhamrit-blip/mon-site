@@ -558,6 +558,7 @@ restent des historiques d’implémentation.
 - **Modules** :
   - **Tableau de bord** — statistiques (total, nouveaux, en cours, traités), activité 14 jours, dernières demandes
   - **Demandes** — les formulaires du site sont enregistrés en base (table `leads`, créée automatiquement) : filtres, recherche, statuts, notes internes, contact WhatsApp/email, export CSV
+  - **Livraisons & recette** — remise des clés d'un projet web : on crée un dossier (client, projet, montant, liens remis, éléments livrés, garantie), l'admin copie ou envoie le lien privé `/livraison/<ref>?t=<jeton>`, et le client valide la recette en ligne (horodaté + reçu par e-mail). Table `site_deliveries` créée automatiquement. Démarche complète : [`docs/livraison-site-apres-paiement-2026-11-04.md`](docs/livraison-site-apres-paiement-2026-11-04.md)
   - **Configuration** — apparence (thème, mode, langue), coordonnées, réseaux sociaux, chiffres, tarifs/catégories, **paiement flexible**, **services à la carte** et réservation prioritaire éditables, visibles immédiatement sur le site
   - **Marché & Devises** — profil de marché (ville, pays, fuseau, locale, devise locale, indicatif, GPS, rayon de service), positionnement international, et taux de conversion des devises d'affichage
   - **Codes & Cartes cadeaux** — catalogue digital : fiches (nature, plateforme, titres AR/EN, régions, statut) et montants (libellé, région, prix USD, disponibilité)

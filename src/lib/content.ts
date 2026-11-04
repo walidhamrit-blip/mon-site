@@ -339,6 +339,15 @@ export const processSteps = [
     durationAr: "يوم واحد",
     durationEn: "1 day",
   },
+  {
+    num: "06",
+    titleAr: "التسليم والضمان",
+    titleEn: "Handover & Warranty",
+    descAr: "رابط تسليم واحد يجمع موقعك ولوحة التحكم والكود وملفاتك، مع تدريب مسجّل. تعتمد الاستلام بنقرة، ويبدأ الضمان (30-90 يوماً حسب الباقة).",
+    descEn: "One handover link with your site, admin panel, code and files, plus recorded training. Accept in one click and the warranty starts (30-90 days by plan).",
+    durationAr: "يوم واحد",
+    durationEn: "1 day",
+  },
 ] as const;
 
 export const testimonials = [
@@ -511,8 +520,8 @@ export const defaultSectionHeadings: SectionHeadings = {
   process: {
     titleAr: "من الفكرة إلى الإطلاق",
     titleEn: "From idea to launch",
-    subtitleAr: "5 خطوات واضحة — تعرف أين نحن كل يوم",
-    subtitleEn: "5 clear steps — you know where we are every day",
+    subtitleAr: "6 خطوات واضحة — تعرف أين نحن كل يوم",
+    subtitleEn: "6 clear steps — you know where we are every day",
     noteAr: "إجمالي المدة: 7-14 يوم",
     noteEn: "Total: 7-14 days",
   },

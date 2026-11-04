@@ -656,3 +656,35 @@ export const boutiqueProductSchema = z.object({
   seo: digitalProductSeoSchema.optional(),
 });
 
+
+/* ---------- Livraison d'un projet web (dossier remis au client) ---------- */
+//
+// Le contrôle fin des URL (http/https uniquement) est fait côté serveur par
+// `sanitizeDeliveryLinks` : une validation zod seule laisserait passer
+// `javascript:…` qui serait cliqué depuis la page de livraison.
+
+export const deliveryInputSchema = z.object({
+  clientName: z.string().trim().min(2, "Nom du client trop court").max(120),
+  projectTitle: z.string().trim().min(2, "Intitulé du projet trop court").max(160),
+  email: z
+    .string()
+    .trim()
+    .email("E-mail invalide")
+    .max(200)
+    .optional()
+    .or(z.literal("")),
+  phone: z.string().trim().max(40).optional().or(z.literal("")),
+  amountUsd: z.string().trim().max(20).optional().or(z.literal("")),
+  links: z
+    .array(z.object({ label: z.string().trim().max(120), url: z.string().trim().max(600) }))
+    .max(12)
+    .optional(),
+  checklist: z
+    .array(z.object({ label: z.string().trim().max(120) }))
+    .max(30)
+    .optional(),
+  warrantyDays: z.number().int().min(1).max(365).optional(),
+  notes: z.string().trim().max(2000).optional().or(z.literal("")),
+});
+
+export type DeliveryInput = z.infer<typeof deliveryInputSchema>;

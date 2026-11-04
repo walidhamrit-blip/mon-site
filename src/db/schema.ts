@@ -353,3 +353,57 @@ export const digitalOrders = pgTable("digital_orders", {
 
 export type DigitalOrder = typeof digitalOrders.$inferSelect;
 export type NewDigitalOrder = typeof digitalOrders.$inferInsert;
+
+/**
+ * Livraison d'un projet web : le « procès-verbal de remise » remis au client.
+ *
+ * Une ligne = un projet livré. Le client ouvre `/livraison/<ref>?t=<jeton>`,
+ * consulte le récapitulatif (liens, éléments livrés, garantie) et valide la
+ * recette d'un clic. La validation est horodatée : elle met fin à la
+ * discussion sur ce qui était attendu et ouvre la période de garantie.
+ *
+ * Aucune donnée sensible ici : les mots de passe ne passent jamais par cette
+ * table (voir docs/livraison-site-apres-paiement-2026-11-04.md §6).
+ */
+export const siteDeliveries = pgTable("site_deliveries", {
+  id: serial("id").primaryKey(),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+  /** Référence lisible (LIV-…) — seul identifiant public du dossier. */
+  ref: text("ref").notNull().unique(),
+  /** SHA-256 du jeton de validation ; le jeton en clair n'est jamais stocké. */
+  trackingTokenHash: text("tracking_token_hash").notNull(),
+  /**
+   * Jeton chiffré (AES-256-GCM) — uniquement pour renvoyer le lien au client.
+   * `null` si aucun secret d'environnement n'est configuré.
+   */
+  trackingTokenCipher: text("tracking_token_cipher"),
+  clientName: text("client_name").notNull(),
+  email: text("email"),
+  phone: text("phone"),
+  /** Intitulé du projet, tel qu'il figure au devis. */
+  projectTitle: text("project_title").notNull(),
+  /** Montant encaissé (total ou solde), en USD — texte : pas d'arrondi flottant. */
+  amountUsd: text("amount_usd").notNull().default(""),
+  /** Liens remis : [{ label, url }] — site, admin, dépôt, dossier, vidéo… */
+  links: jsonb("links").notNull().default([]),
+  /** Éléments livrés, repris du devis : [{ label }]. */
+  checklist: jsonb("checklist").notNull().default([]),
+  /** Jours de garantie annoncés au client (défaut : 30). */
+  warrantyDays: integer("warranty_days").notNull().default(30),
+  /** « delivered » = remis, en attente de validation ; « accepted » = validé. */
+  status: text("status").notNull().default("delivered"),
+  acceptedAt: timestamp("accepted_at", { withTimezone: true }),
+  /** Nom de la personne qui valide (tracé, affiché sur le reçu). */
+  acceptedByName: text("accepted_by_name"),
+  locale: text("locale"),
+  /** Notes internes (jamais affichées au client). */
+  notes: text("notes"),
+});
+
+export type SiteDelivery = typeof siteDeliveries.$inferSelect;
+export type NewSiteDelivery = typeof siteDeliveries.$inferInsert;

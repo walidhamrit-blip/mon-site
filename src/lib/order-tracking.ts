@@ -10,7 +10,10 @@ import { Buffer } from "node:buffer";
 import { createHash, randomBytes, timingSafeEqual } from "node:crypto";
 
 /** Référence de commande à forte entropie (96 bits, hexadécimal). */
-export function newOrderReference(prefix: "NKH" | "RSV" | "ABO" | "DGC"): string {
+/** Préfixes : NKH projet, RSV réservation, ABO abonnement, DGC digital, LIV livraison. */
+export function newOrderReference(
+  prefix: "NKH" | "RSV" | "ABO" | "DGC" | "LIV",
+): string {
   return `${prefix}-${randomBytes(12).toString("hex").toUpperCase()}`;
 }
 
