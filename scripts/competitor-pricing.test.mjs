@@ -47,8 +47,10 @@ const official = (usd) => ({
 });
 
 test("plancher : commission incluse sur le prix final, jamais sous le coût", () => {
-  // (42,63 + 1 + 0,50) / (1 − 1,5 %) = 44,80
-  assert.equal(floorPriceUsd(42.63, DEFAULT_ALIGNMENT_OPTIONS), 44.8);
+  // Barème de frais : 1,4 % multi-devises (taux du compte NOWPayments depuis
+  // l'e-mail du 18/10/2026), 0,9 % en mono-devise — voir config.ts.
+  // (42,63 + 1 + 0,50) / (1 − 1,4 %) = 44,76
+  assert.equal(floorPriceUsd(42.63, DEFAULT_ALIGNMENT_OPTIONS), 44.76);
   // Un coût nul ou absent ne produit aucun plancher (l'appelant signale « no_cost »).
   assert.equal(floorPriceUsd(0, DEFAULT_ALIGNMENT_OPTIONS), 0);
   assert.equal(floorPriceUsd(Number.NaN, DEFAULT_ALIGNMENT_OPTIONS), 0);
@@ -69,7 +71,7 @@ test("référence revendeur : le prix descend à −1,5 % sous le marché", () =
 });
 
 test("marché sous le plancher : aucun prix appliqué, statut « bloqué »", () => {
-  // Steam 50 : coût 49,25, marché 51,39 → cible 50,62 < plancher 51,52.
+  // Steam 50 : coût 49,25, marché 51,39 → cible 50,62 < plancher 51,47.
   const result = alignPrice(
     {
       currentUsd: 55.97,
@@ -80,7 +82,7 @@ test("marché sous le plancher : aucun prix appliqué, statut « bloqué »", ()
   );
   assert.equal(result.status, "blocked");
   assert.equal(result.recommendedUsd, null);
-  assert.equal(result.floorUsd, 51.52);
+  assert.equal(result.floorUsd, 51.47);
   assert.ok(result.targetUsd < result.floorUsd);
 });
 
@@ -155,8 +157,8 @@ test("les états incomplets ont leur propre statut (jamais de prix inventé)", (
 });
 
 test("marge nette : commission en pourcentage + frais fixes déduits", () => {
-  // 45,24 − 42,63 − (45,24 × 1,5 % = 0,68) − 1,00 = 0,93
-  assert.equal(netMarginUsd(45.24, 42.63, DEFAULT_ALIGNMENT_OPTIONS), 0.93);
+  // 45,24 − 42,63 − (45,24 × 1,4 % = 0,63) − 1,00 = 0,98
+  assert.equal(netMarginUsd(45.24, 42.63, DEFAULT_ALIGNMENT_OPTIONS), 0.98);
   assert.equal(netMarginUsd(10, null, DEFAULT_ALIGNMENT_OPTIONS), null);
 });
 
@@ -173,7 +175,7 @@ test("application au catalogue : seul le prix change, la fiche reste intacte", (
   const [aligned] = applyCompetitorPricing([product], DEFAULT_ALIGNMENT_OPTIONS);
   // PSN 50 : 45,93 (G2A) × 0,985 = 45,24
   assert.equal(aligned.denominations[0].priceUsd, 45.24);
-  // PSN 25 : 23,29 (Eneba) × 0,985 = 22,94, sous le plancher 23,66 → repli
+  // PSN 25 : 23,29 (Eneba) × 0,985 = 22,94, sous le plancher 23,13 → repli
   // coût + 1 % (21,81 × 1,01 = 22,03), donc sous le marché.
   assert.equal(aligned.denominations[1].priceUsd, 22.03);
   assert.equal(Object.keys(aligned.denominations[0]).sort().join(","), Object.keys(product.denominations[0]).sort().join(","));

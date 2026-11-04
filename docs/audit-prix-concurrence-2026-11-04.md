@@ -52,6 +52,8 @@
 
 **Hypothèse de coût de transaction** utilisée pour la « marge nette » boutique : **1,5 % NOWPayments + 1,00 $ de frais fixes** (réseau + retrait). C'est l'hypothèse défavorable ; avec 0,40 $ de frais fixes, toutes les marges remontent d'environ 0,6 $. Le seuil de rentabilité de chaque référence est donc à lire comme un **plancher**.
 
+> **Mise à jour du 4 novembre — le taux réel n'est plus 1,5 %.** L'e-mail NOWPayments « Your service fee has changed » du 18 octobre 2026 annonce **1 % → 0,9 %** pour les paiements mono-devises et **1,5 % → 1,4 %** pour les multi-devises (notre cas : facture en USD, règlement en crypto → conversion). Les marges de ce document restent calculées à **1,5 %** : elles sont donc légèrement pessimistes (moins de 0,10 $ par vente), mais l'ordre des conclusions ne change pas. Le taux appliqué par la formule de prix est **1,4 %** (voir `docs/alignement-marche-2026-11-04.md`, § 2).
+
 **Limites**
 
 - Les prix en base peuvent avoir été modifiés via `/admin` : l'audit porte sur les valeurs du code (catalogue par défaut) et sur les règles de calcul.

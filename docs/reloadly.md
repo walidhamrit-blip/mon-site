@@ -145,7 +145,7 @@ et **« Valeurs acceptées »** (montants du fournisseur, frais, remise).
    prix vente = coût réel ÷ (1 − marge% − fraisPaiement%)
    ```
 
-   `fraisPaiement%` = `PAYMENT_FEE_PERCENT` (1 % par défaut, NOWPayments).
+   `fraisPaiement%` = `PAYMENT_FEE_PERCENT` (1,4 % par défaut, NOWPayments multi-devises ; 0,9 % en mono-devise).
    Le diviseur est essentiel : 4 % **sur la face** (20 → 20,80) ne laisse que
    ~2,9 % net ; 4 % **net** sur un coût de 20 donne 21,05 $.
 3. Chaque montant affiche **coût réel, prix et marge nette obtenue** ; un prix

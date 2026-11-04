@@ -283,8 +283,18 @@ export const siteConfig = {
     enabled: true,
     /** Décote visée sous la référence revendeur (%). */
     undercutPercent: 1.5,
-    /** Commission passerelle (% du prix de vente). */
-    feePercent: 1.5,
+    /**
+     * Commission passerelle (% du prix de vente).
+     *
+     * Taux réel du compte : **1,4 %** — paiements multi-devises (facture en
+     * USD, réglée dans la crypto choisie par le client, donc convertie).
+     * Source : e-mail NOWPayments du 18/10/2026, « your service fee has
+     * changed from 1% to 0.9% for mono-currency payments, and from 1.5% to
+     * 1.4% for multi-currency payments ». Le 0,9 % ne s'appliquerait qu'à
+     * une facture émise ET réglée dans la même devise — ce n'est pas notre
+     * cas. Passer à 0,9 ici le jour où l'on facture directement en USDT.
+     */
+    feePercent: 1.4,
     /** Frais fixes par commande (réseau + retrait), en USD. */
     fixedFeeUsd: 1,
     /** Profit minimal par vente, en USD. */

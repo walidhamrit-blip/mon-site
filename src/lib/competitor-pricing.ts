@@ -63,7 +63,9 @@ export interface AlignmentOptions {
 export const DEFAULT_ALIGNMENT_OPTIONS: AlignmentOptions = {
   enabled: true,
   undercutPercent: 1.5,
-  feePercent: 1.5,
+  // Taux réel du compte NOWPayments (multi-devises, e-mail du 18/10/2026) :
+  // 1,4 %. Mono-devise = 0,9 % — voir `siteConfig.pricingAlignment`.
+  feePercent: 1.4,
   fixedFeeUsd: 1,
   minProfitUsd: 0.5,
   maxStepPercent: 25,

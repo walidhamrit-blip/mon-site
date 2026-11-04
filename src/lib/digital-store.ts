@@ -129,12 +129,13 @@ export function clearPublicCatalogCache(): void {
  */
 
 /**
- * Frais du processeur de paiement, en % (défaut 1 % — NOWPayments).
+ * Frais du processeur de paiement, en % (défaut 1,4 % — NOWPayments
+ * multi-devises, e-mail du 18/10/2026 ; 0,9 % en mono-devise).
  * Override : `PAYMENT_FEE_PERCENT`. Sert au calcul du prix de vente.
  */
 export function paymentFeePercent(): number {
   const raw = Number(process.env.PAYMENT_FEE_PERCENT);
-  return Number.isFinite(raw) && raw >= 0 && raw < 20 ? raw : 1;
+  return Number.isFinite(raw) && raw >= 0 && raw < 20 ? raw : 1.4;
 }
 
 let seeded: Promise<void> | null = null;
