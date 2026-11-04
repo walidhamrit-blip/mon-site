@@ -38,6 +38,22 @@ export type Lead = typeof leads.$inferSelect;
 export type NewLead = typeof leads.$inferInsert;
 export type Setting = typeof settings.$inferSelect;
 
+// Images importées depuis l'admin. Le contenu WebP est stocké en base pour
+// survivre aux déploiements serverless (le système de fichiers Vercel est
+// éphémère). Les URLs publiques sont immuables : /api/media/<uuid>.
+export const mediaAssets = pgTable("media_assets", {
+  id: text("id").primaryKey(),
+  mimeType: text("mime_type").notNull(),
+  data: text("data").notNull(),
+  sizeBytes: integer("size_bytes").notNull(),
+  originalName: text("original_name"),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
+export type MediaAsset = typeof mediaAssets.$inferSelect;
+
 // Commandes payées en crypto via NOWPayments.
 export const orders = pgTable("orders", {
   id: serial("id").primaryKey(),

@@ -269,7 +269,7 @@ export function ContentEditor({
             Introduction création de sites & anciens champs Hero
           </h2>
           <p className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs leading-relaxed text-amber-900">
-            La bannière d’accueil est une photo fixe, sans texte ni boutons. Seul le sous-titre de cette rubrique est repris dans l’introduction de /creation-sites. Les autres champs Hero sont conservés pour compatibilité et ne changent pas la bannière actuelle.
+            La bannière d’accueil reste une photo sans texte ni boutons ; changez-la depuis <Link href="/admin/media" className="font-bold underline underline-offset-2">Bannières & images</Link>. Seul le sous-titre de cette rubrique est repris dans l’introduction de /creation-sites. Les autres champs Hero sont conservés pour compatibilité.
           </p>
           <div className="grid sm:grid-cols-2 gap-3.5">
             <Field label="Badge au-dessus du titre (arabe)">

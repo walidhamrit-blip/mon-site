@@ -134,6 +134,8 @@ const nextConfig: NextConfig = {
     // Captures locales servies avec un hash anti-cache (`?v=…`) : autorise
     // l'optimisation Next (srcset retina) malgré la query string.
     localPatterns: [
+      // Photos importées depuis /admin/media et servies depuis PostgreSQL.
+      { pathname: "/api/media/**" },
       // Full-width hero and shared editorial imagery.
       { pathname: "/visuals/**" },
       { pathname: "/previews/**" },

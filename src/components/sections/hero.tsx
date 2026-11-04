@@ -2,10 +2,13 @@
 
 import Image from "next/image";
 import { useI18n } from "@/lib/i18n";
+import { useSiteContent } from "@/components/site-provider";
 
 /** A single edge-to-edge visual. The visible navigation follows immediately. */
 export function Hero() {
   const { locale } = useI18n();
+  const { visuals } = useSiteContent();
+  const image = visuals.homeHero;
   const ar = locale === "ar";
   return (
     <section className="panoramic-hero">
@@ -13,8 +16,8 @@ export function Hero() {
         {ar ? "نخبة — إنشاء مواقع وبطاقات رقمية وألعاب وشحن" : "Nukhba — Website creation, digital gift cards, gaming & top-ups"}
       </h1>
       <Image
-        src="/visuals/futuristic-gaming-hero.webp"
-        alt={ar ? "مشهد توضيحي واقعي لمحطة حاسوب وألعاب مستقبلية بإضاءة زرقاء وبنفسجية" : "Photorealistic illustration of a futuristic computing and gaming workstation with blue and violet lighting"}
+        src={image.src}
+        alt={ar ? image.altAr : image.altEn}
         fill
         preload
         sizes="100vw"

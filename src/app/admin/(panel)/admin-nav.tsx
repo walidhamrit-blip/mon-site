@@ -12,6 +12,7 @@ import {
   Globe,
   AppWindow,
   FileText,
+  Camera,
   Gift,
   ShoppingBag,
   Sparkles,
@@ -63,6 +64,7 @@ export function AdminNav({ newLeads, paidOrders }: Props) {
     ] },
     { title: "Contenus & Réglages", items: [
       { href: "/admin/content", label: "Textes, FAQ & Avis", sublabel: "Contenus partagés arabe / anglais", icon: FileText },
+      { href: "/admin/media", label: "Bannières & images", sublabel: "Accueil, boutique & sections", icon: Camera },
       { href: "/admin/settings", label: "Identité, thèmes & tarifs", sublabel: "Contacts, FazerCards & offres web", icon: Settings },
     ] },
     { title: "Pages secondaires & Héritage", items: [

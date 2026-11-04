@@ -260,6 +260,35 @@ export const showcasePageSchema = z.object({
   items: z.array(upcomingCatalogItemSchema).max(60),
 });
 
+export const visualImageSchema = z.object({
+  src: z
+    .string()
+    .trim()
+    .min(1, "Ajoutez une image ou une URL")
+    .max(1500)
+    .refine((value) => {
+      if (value.startsWith("/")) {
+        return !value.startsWith("//") && !/[\\\u0000-\u001f]/.test(value);
+      }
+      try {
+        return new URL(value).protocol === "https:";
+      } catch {
+        return false;
+      }
+    }, "Utilisez un chemin local (/…) ou une URL HTTPS"),
+  altAr: z.string().max(240),
+  altEn: z.string().max(240),
+});
+
+export const siteVisualsSchema = z.object({
+  homeHero: visualImageSchema,
+  webBanner: visualImageSchema,
+  storeBanner: visualImageSchema,
+  gatewayWebsites: visualImageSchema,
+  gatewayGiftCards: visualImageSchema,
+  gatewayTopUps: visualImageSchema,
+});
+
 export const contentSchemas = {
   demos: z.array(demoSchema).max(80),
   faqs: z.array(faqSchema).max(60),
@@ -272,6 +301,7 @@ export const contentSchemas = {
   layout: homeLayoutSchema,
   appsPage: showcasePageSchema,
   productsPage: showcasePageSchema,
+  visuals: siteVisualsSchema,
 } as const;
 
 export type ContentSection = keyof typeof contentSchemas;

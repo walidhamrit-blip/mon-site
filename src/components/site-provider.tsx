@@ -13,6 +13,7 @@ import {
   defaultHomeLayout,
   defaultAppsPage,
   defaultProductsPage,
+  defaultVisuals,
 } from "@/lib/content";
 import { useI18n } from "@/lib/i18n";
 import type { SectionHeadingId, SiteContent } from "@/lib/site-types";
@@ -34,6 +35,7 @@ const defaultContent: SiteContent = {
   layout: defaultHomeLayout,
   appsPage: defaultAppsPage,
   productsPage: defaultProductsPage,
+  visuals: defaultVisuals,
 };
 
 const SiteContext = createContext<SiteContextValue>({

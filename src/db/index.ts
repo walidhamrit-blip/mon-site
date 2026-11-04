@@ -54,6 +54,16 @@ export function ensureSchema(): Promise<void> {
           updated_at timestamptz NOT NULL DEFAULT now()
         )
       `);
+      await pool.query(`
+        CREATE TABLE IF NOT EXISTS media_assets (
+          id text PRIMARY KEY,
+          mime_type text NOT NULL,
+          data text NOT NULL,
+          size_bytes integer NOT NULL,
+          original_name text,
+          created_at timestamptz NOT NULL DEFAULT now()
+        )
+      `);
       await pool.query(
         "CREATE INDEX IF NOT EXISTS leads_created_at_idx ON leads (created_at DESC)",
       );
