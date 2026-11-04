@@ -184,6 +184,14 @@ Le client qui a été accompagné 30 jours après la mise en ligne recommande ; 
 | Étape 06 « التسليم والضمان / Handover & Warranty » sur `/creation-sites` | `processSteps` dans `src/lib/content.ts` (frise adaptative : `src/components/sections/process.tsx`) |
 | Tests (19 assertions) | `scripts/delivery-handover.test.mjs` (`npm run test:deliveries`) |
 
+**Migration automatique** — une base dont la section « Processus » a déjà été
+enregistrée gardait ses 5 étapes et masquait l'étape 06. `src/lib/process-migration.ts`
+l'ajoute une seule fois au premier rendu, avec le sous-titre « 6 étapes », puis
+pose le marqueur `content_process_step06_migrated` : si vous supprimez
+ensuite l'étape volontairement, elle ne réapparaît pas. Vérifié sur une base
+« legacy » reconstituée (5 étapes + ancien sous-titre) : 6 étapes servies,
+6 étapes enregistrées, aucun doublon aux rendus suivants.
+
 Sécurité appliquée :
 - le jeton n'existe qu'en clair dans l'URL ; la base ne garde que son SHA-256,
   et une copie chiffrée (AES-256-GCM) pour permettre le renvoi ;

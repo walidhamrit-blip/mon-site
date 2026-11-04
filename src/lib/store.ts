@@ -6,6 +6,11 @@ import { siteConfig } from "@/lib/config";
 import { fazercardsMaxOrderUsd } from "@/lib/fazercards";
 import { ensureDemoSeoFields } from "@/lib/ai/seo-generator";
 import {
+  PROCESS_STEP_06_MARKER,
+  migrateProcessHeading,
+  withProcessStep06,
+} from "@/lib/process-migration";
+import {
   demos as defaultDemos,
   faqs as defaultFaqs,
   testimonials as defaultTestimonials,
@@ -397,6 +402,43 @@ function resolveShowcasePage(
   };
 }
 
+/**
+ * Migration unique de l'étape 06 — voir src/lib/process-migration.ts.
+ *
+ * L'écriture est déclenchée depuis une lecture (`getSiteData`) parce que le
+ * site n'a aucun point d'entrée d'administration au déploiement : c'est le
+ * seul endroit où l'on voit le contenu réellement servi. Elle est
+ * idempotente, journalisée, et ne bloque jamais le rendu : en cas d'échec
+ * (base inaccessible), la page s'affiche quand même avec l'étape 06 et la
+ * migration est retentée au prochain rendu.
+ */
+let processStep06Migration: Promise<void> | null = null;
+
+function persistProcessStep06(payload: {
+  process: ProcessStep[] | null;
+  headings: SectionHeadings | null;
+}): Promise<void> {
+  if (processStep06Migration) return processStep06Migration;
+  processStep06Migration = (async () => {
+    try {
+      if (payload.process) await upsertSetting(KEY_PROCESS, payload.process);
+      if (payload.headings) await upsertSetting(KEY_HEADINGS, payload.headings);
+      await upsertSetting(PROCESS_STEP_06_MARKER, {
+        migratedAt: new Date().toISOString(),
+        reason: "process-step-06-handover-warranty",
+      });
+      console.log("[store] migration étape 06 appliquée : étape ajoutée au processus enregistré.");
+    } catch (error) {
+      processStep06Migration = null; // autorise une nouvelle tentative
+      console.error(
+        "[store] migration étape 06 impossible :",
+        error instanceof Error ? error.message : error,
+      );
+    }
+  })();
+  return processStep06Migration;
+}
+
 /** Lit configuration + contenu depuis la base (avec repli sur les défauts). */
 export async function getSiteData(): Promise<SiteData> {
   try {
@@ -405,6 +447,23 @@ export async function getSiteData(): Promise<SiteData> {
     const map = new Map<string, unknown>(
       rows.map((r) => [r.key, r.value] as [string, unknown]),
     );
+    const headings = resolveHeadings(map.get(KEY_HEADINGS));
+    const storedProcess = resolveStoredList<ProcessStep>(
+      map,
+      KEY_PROCESS,
+      defaultProcess,
+    );
+    const step06 = withProcessStep06(storedProcess, defaultProcess);
+    const headingFix = migrateProcessHeading(headings.process);
+    if (headingFix.heading) headings.process = headingFix.heading;
+    // Déjà migrée ? On respecte le choix de l'administrateur : une étape 06
+    // supprimée volontairement ne doit pas réapparaître.
+    if ((step06.added || headingFix.changed) && !map.has(PROCESS_STEP_06_MARKER)) {
+      void persistProcessStep06({
+        process: step06.added ? step06.steps : null,
+        headings: headingFix.changed ? headings : null,
+      });
+    }
     return {
       config: mergeConfig(map.get(KEY_CONFIG)),
       content: {
@@ -418,8 +477,8 @@ export async function getSiteData(): Promise<SiteData> {
         hero: resolveHero(map.get(KEY_HERO)),
         ribbon: resolveRibbon(map),
         whyUs: resolveStoredList<WhyUsItem>(map, KEY_WHY_US, defaultWhyUs),
-        process: resolveStoredList<ProcessStep>(map, KEY_PROCESS, defaultProcess),
-        headings: resolveHeadings(map.get(KEY_HEADINGS)),
+        process: step06.steps,
+        headings,
         layout: resolveLayout(map.get(KEY_LAYOUT)),
         appsPage: resolveShowcasePage(map, KEY_APPS_PAGE, defaultAppsPage),
         productsPage: resolveShowcasePage(map, KEY_PRODUCTS_PAGE, defaultProductsPage),
