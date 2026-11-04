@@ -675,9 +675,10 @@ export function DigitalCatalog({ products, initialKind = "all" }: { products: Di
                       >
                         {visual ? (
                           visualFit === "contain" ? (
-                            /* Visuel de marque enregistré en admin (souvent
-                               16:9) : contenu sur son propre fond flou, pour
-                               ne jamais rogner le logo. */
+                            /* Visuel de marque enregistré en admin, désormais
+                               toujours au ratio 2:3 (600×900) : il remplit
+                               toute la jaquette, le fond flou reste en
+                               filet de sécurité si un ratio exotique arrive. */
                             <>
                               <Image
                                 src={visual}
