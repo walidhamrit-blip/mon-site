@@ -1,8 +1,10 @@
 "use client";
 import { motion } from "framer-motion";
+import { MessageCircle } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import { useSectionHeading, useSiteContent } from "@/components/site-provider";
 import { SectionHeading } from "@/components/section-heading";
+import { LocalizedLink as Link } from "@/components/localized-link";
 
 /**
  * Processus en 5 étapes — frise horizontale sur grand écran, liste verticale
@@ -65,6 +67,24 @@ export function Process() {
               </motion.li>
             ))}
           </ol>
+        </div>
+
+        {/* Rassurance paiement : dès le paiement, le client reçoit un site
+            exemple en ligne qu'on personnalise ensuite pour sa boutique. */}
+        <div className="mx-auto mt-8 max-w-3xl">
+          <p className="flex items-start gap-3 rounded-2xl border border-[#0B6B3A]/35 bg-[#0B6B3A]/10 p-5 text-sm font-bold leading-6">
+            <MessageCircle className="mt-0.5 h-5 w-5 shrink-0 text-[#0B6B3A]" aria-hidden="true" />
+            <span>
+              {locale === "ar"
+                ? "فور الدفع، يصلك موقع مثال مباشر على الإنترنت. ثم نقوم بتخصيصه لمتجرك: ألوانك، شعارك، منتجاتك."
+                : "As soon as you pay, you receive a live example website. Then we customize it for your shop: your colors, your logo, your products."}
+            </span>
+          </p>
+          <p className="mt-4 text-center text-sm">
+            <Link href="/demos" className="font-bold text-[var(--accent)] hover:underline">
+              {locale === "ar" ? "شاهد أمثلة مواقع تم تسليمها ↗" : "See example websites already delivered ↗"}
+            </Link>
+          </p>
         </div>
       </div>
     </section>
