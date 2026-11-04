@@ -10,14 +10,14 @@ import { useSectionHeading, useSiteConfig } from "@/components/site-provider";
 import { whatsappLink } from "@/lib/utils";
 
 const schema = z.object({
-  business: z.string().min(2, "Required"),
-  sector: z.string().min(2),
-  need: z.string().min(2),
-  budget: z.string().min(1),
-  deadline: z.string().min(1),
-  name: z.string().min(2),
-  phone: z.string().min(8),
-  email: z.string().email().optional().or(z.literal("")),
+  business: z.string().min(2, "businessMin"),
+  sector: z.string().min(2, "sectorRequired"),
+  need: z.string().min(2, "needRequired"),
+  budget: z.string().min(1, "budgetRequired"),
+  deadline: z.string().min(1, "deadlineRequired"),
+  name: z.string().min(2, "nameMin"),
+  phone: z.string().min(8, "phoneMin"),
+  email: z.string().email("emailInvalid").optional().or(z.literal("")),
   message: z.string().optional(),
 });
 
@@ -27,6 +27,29 @@ export function CTAForm() {
   const siteConfig = useSiteConfig();
   const heading = useSectionHeading("cta");
   const { locale, t } = useI18n();
+  const ar = locale === "ar";
+  const errorMessages: Record<string, string> = ar
+    ? {
+        businessMin: "أدخل اسم النشاط (حرفان على الأقل).",
+        sectorRequired: "اختر القطاع.",
+        needRequired: "اختر نوع الموقع.",
+        budgetRequired: "اختر الميزانية.",
+        deadlineRequired: "اختر الموعد.",
+        nameMin: "أدخل الاسم (حرفان على الأقل).",
+        phoneMin: "أدخل رقم هاتف صحيح (8 أرقام على الأقل).",
+        emailInvalid: "أدخل بريداً إلكترونياً صحيحاً.",
+      }
+    : {
+        businessMin: "Enter the business name (at least 2 characters).",
+        sectorRequired: "Choose a sector.",
+        needRequired: "Choose the type of website.",
+        budgetRequired: "Choose a budget.",
+        deadlineRequired: "Choose a deadline.",
+        nameMin: "Enter your name (at least 2 characters).",
+        phoneMin: "Enter a valid phone number (at least 8 digits).",
+        emailInvalid: "Enter a valid email address.",
+      };
+  const fieldError = (key?: string) => (key ? errorMessages[key] ?? key : undefined);
   const [step, setStep] = useState(1);
   const [submitted, setSubmitted] = useState(false);
   const [submitError, setSubmitError] = useState(false);
@@ -34,7 +57,7 @@ export function CTAForm() {
 
   const { register, handleSubmit, watch, trigger, formState: { errors } } = useForm<FormData>({
     resolver: zodResolver(schema),
-    defaultValues: { sector: "restaurant", need: "vitrine", budget: "1500-2500", deadline: "7-14" },
+    defaultValues: { sector: "restaurant", need: "vitrine", budget: "300-600", deadline: "7-14" },
   });
 
   const onSubmit = async (data: FormData) => {
@@ -63,7 +86,7 @@ export function CTAForm() {
       2: ["need", "budget", "deadline"],
       3: ["name", "phone"],
     };
-    const ok = await trigger(fieldsByStep[step]);
+    const ok = await trigger(fieldsByStep[step], { shouldFocus: true });
     if (ok) setStep((s) => Math.min(s + 1, totalSteps));
   };
 
@@ -137,13 +160,13 @@ export function CTAForm() {
                   {step === 1 && (
                     <motion.div initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} className="space-y-4">
                       <div>
-                        <label className="text-sm font-semibold">{locale === "ar" ? "اسم النشاط" : "Business name"} *</label>
-                        <input {...register("business")} placeholder={locale === "ar" ? "مثال: مطعم السرايا" : "e.g. Saraya Restaurant"} className="mt-2 h-11 w-full rounded-full border border-[var(--border)] bg-[var(--secondary)]/50 px-4 outline-none transition-colors focus:border-[var(--accent)] focus:bg-[var(--card)]" />
-                        {errors.business && <p className="text-xs text-red-500 mt-1">{errors.business.message}</p>}
+                        <label htmlFor="lead-business" className="text-sm font-semibold">{locale === "ar" ? "اسم النشاط" : "Business name"} *</label>
+                        <input id="lead-business" {...register("business")} aria-invalid={!!errors.business} aria-describedby={errors.business ? "lead-business-error" : undefined} placeholder={locale === "ar" ? "مثال: مطعم السرايا" : "e.g. Saraya Restaurant"} className="mt-2 h-11 w-full rounded-full border border-[var(--border)] bg-[var(--secondary)]/50 px-4 outline-none transition-colors focus:border-[var(--accent)] focus:bg-[var(--card)]" />
+                        {errors.business && <p id="lead-business-error" role="alert" className="mt-1 text-xs font-semibold text-red-600 dark:text-red-400">{fieldError(errors.business.message)}</p>}
                       </div>
                       <div>
-                        <label className="text-sm font-semibold">{locale === "ar" ? "القطاع" : "Sector"} *</label>
-                        <select {...register("sector")} className="mt-2 h-11 w-full rounded-full border border-[var(--border)] bg-[var(--secondary)]/50 px-4 outline-none transition-colors focus:border-[var(--accent)]">
+                        <label htmlFor="lead-sector" className="text-sm font-semibold">{locale === "ar" ? "القطاع" : "Sector"} *</label>
+                        <select id="lead-sector" {...register("sector")} aria-invalid={!!errors.sector} aria-describedby={errors.sector ? "lead-sector-error" : undefined} className="mt-2 h-11 w-full rounded-full border border-[var(--border)] bg-[var(--secondary)]/50 px-4 outline-none transition-colors focus:border-[var(--accent)]">
                           <option value="restaurant">{locale === "ar" ? "مطعم / مقهى" : "Restaurant / Café"}</option>
                           <option value="clinic">{locale === "ar" ? "عيادة / مركز" : "Clinic"}</option>
                           <option value="boutique">{locale === "ar" ? "متجر / بوتيك" : "Shop / Boutique"}</option>
@@ -152,6 +175,7 @@ export function CTAForm() {
                           <option value="hotel">{locale === "ar" ? "فندق / شقق" : "Hotel"}</option>
                           <option value="other">{locale === "ar" ? "أخرى" : "Other"}</option>
                         </select>
+                        {errors.sector && <p id="lead-sector-error" role="alert" className="mt-1 text-xs font-semibold text-red-600 dark:text-red-400">{fieldError(errors.sector.message)}</p>}
                       </div>
                     </motion.div>
                   )}
@@ -159,31 +183,34 @@ export function CTAForm() {
                   {step === 2 && (
                     <motion.div initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} className="space-y-4">
                       <div>
-                        <label className="text-sm font-semibold">{locale === "ar" ? "ماذا تحتاج؟" : "What do you need?"} *</label>
-                        <select {...register("need")} className="mt-2 h-11 w-full rounded-full border border-[var(--border)] bg-[var(--secondary)]/50 px-4 outline-none transition-colors focus:border-[var(--accent)]">
+                        <label htmlFor="lead-need" className="text-sm font-semibold">{locale === "ar" ? "ماذا تحتاج؟" : "What do you need?"} *</label>
+                        <select id="lead-need" {...register("need")} aria-invalid={!!errors.need} aria-describedby={errors.need ? "lead-need-error" : undefined} className="mt-2 h-11 w-full rounded-full border border-[var(--border)] bg-[var(--secondary)]/50 px-4 outline-none transition-colors focus:border-[var(--accent)]">
                           <option value="vitrine">{locale === "ar" ? "موقع واجهة" : "Vitrine site"}</option>
                           <option value="vitrine-plus">{locale === "ar" ? "واجهة بلس + حجز" : "Vitrine+ + booking"}</option>
                           <option value="shop">{locale === "ar" ? "متجر / حجز كامل" : "Full shop / booking"}</option>
                           <option value="redesign">{locale === "ar" ? "إعادة تصميم" : "Redesign"}</option>
                         </select>
+                        {errors.need && <p id="lead-need-error" role="alert" className="mt-1 text-xs font-semibold text-red-600 dark:text-red-400">{fieldError(errors.need.message)}</p>}
                       </div>
                       <div className="grid grid-cols-2 gap-3">
                         <div>
-                          <label className="text-sm font-semibold">{locale === "ar" ? "الميزانية" : "Budget"}</label>
-                          <select {...register("budget")} className="mt-2 h-11 w-full rounded-full border border-[var(--border)] bg-[var(--secondary)]/50 px-4 outline-none transition-colors focus:border-[var(--accent)]">
+                          <label htmlFor="lead-budget" className="text-sm font-semibold">{locale === "ar" ? "الميزانية" : "Budget"} *</label>
+                          <select id="lead-budget" {...register("budget")} aria-invalid={!!errors.budget} aria-describedby={errors.budget ? "lead-budget-error" : undefined} className="mt-2 h-11 w-full rounded-full border border-[var(--border)] bg-[var(--secondary)]/50 px-4 outline-none transition-colors focus:border-[var(--accent)]">
                             <option value="under-300">{locale === "ar" ? "أقل من 300 $" : "Under $300"}</option>
                             <option value="300-600">$300–600</option>
                             <option value="600-1000">$600–1,000</option>
                             <option value="1000+">{locale === "ar" ? "أكثر من 1000 $" : "$1,000+"}</option>
                           </select>
+                          {errors.budget && <p id="lead-budget-error" role="alert" className="mt-1 text-xs font-semibold text-red-600 dark:text-red-400">{fieldError(errors.budget.message)}</p>}
                         </div>
                         <div>
-                          <label className="text-sm font-semibold">{locale === "ar" ? "الموعد" : "Deadline"}</label>
-                          <select {...register("deadline")} className="mt-2 h-11 w-full rounded-full border border-[var(--border)] bg-[var(--secondary)]/50 px-4 outline-none transition-colors focus:border-[var(--accent)]">
+                          <label htmlFor="lead-deadline" className="text-sm font-semibold">{locale === "ar" ? "الموعد" : "Deadline"} *</label>
+                          <select id="lead-deadline" {...register("deadline")} aria-invalid={!!errors.deadline} aria-describedby={errors.deadline ? "lead-deadline-error" : undefined} className="mt-2 h-11 w-full rounded-full border border-[var(--border)] bg-[var(--secondary)]/50 px-4 outline-none transition-colors focus:border-[var(--accent)]">
                             <option value="urgent">{locale === "ar" ? "مستعجل (أسبوع)" : "Urgent (1 week)"}</option>
                             <option value="7-14">{locale === "ar" ? "7-14 يوم" : "7-14 days"}</option>
                             <option value="flexible">{locale === "ar" ? "مرن" : "Flexible"}</option>
                           </select>
+                          {errors.deadline && <p id="lead-deadline-error" role="alert" className="mt-1 text-xs font-semibold text-red-600 dark:text-red-400">{fieldError(errors.deadline.message)}</p>}
                         </div>
                       </div>
                     </motion.div>
@@ -193,30 +220,31 @@ export function CTAForm() {
                     <motion.div initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} className="space-y-4">
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <div>
-                          <label className="text-sm font-semibold">{locale === "ar" ? "الاسم" : "Name"} *</label>
-                          <input {...register("name")} placeholder={locale === "ar" ? "الاسم الكامل" : "Full name"} className="mt-2 h-11 w-full rounded-full border border-[var(--border)] bg-[var(--secondary)]/50 px-4 outline-none transition-colors focus:border-[var(--accent)]" />
-                          {errors.name && <p className="text-xs text-red-500 mt-1">{errors.name.message}</p>}
+                          <label htmlFor="lead-name" className="text-sm font-semibold">{locale === "ar" ? "الاسم" : "Name"} *</label>
+                          <input id="lead-name" {...register("name")} aria-invalid={!!errors.name} aria-describedby={errors.name ? "lead-name-error" : undefined} placeholder={locale === "ar" ? "الاسم الكامل" : "Full name"} className="mt-2 h-11 w-full rounded-full border border-[var(--border)] bg-[var(--secondary)]/50 px-4 outline-none transition-colors focus:border-[var(--accent)]" />
+                          {errors.name && <p id="lead-name-error" role="alert" className="mt-1 text-xs font-semibold text-red-600 dark:text-red-400">{fieldError(errors.name.message)}</p>}
                         </div>
                         <div>
-                          <label className="text-sm font-semibold">{locale === "ar" ? "واتساب / هاتف" : "WhatsApp / Phone"} *</label>
-                          <input {...register("phone")} placeholder="+218 9X XXX XXXX" className="mt-2 h-11 w-full rounded-full border border-[var(--border)] bg-[var(--secondary)]/50 px-4 outline-none transition-colors focus:border-[var(--accent)]" dir="ltr" />
-                          {errors.phone && <p className="text-xs text-red-500 mt-1">{errors.phone.message}</p>}
+                          <label htmlFor="lead-phone" className="text-sm font-semibold">{locale === "ar" ? "واتساب / هاتف" : "WhatsApp / Phone"} *</label>
+                          <input id="lead-phone" {...register("phone")} aria-invalid={!!errors.phone} aria-describedby={errors.phone ? "lead-phone-error" : undefined} placeholder="+218 9X XXX XXXX" className="mt-2 h-11 w-full rounded-full border border-[var(--border)] bg-[var(--secondary)]/50 px-4 outline-none transition-colors focus:border-[var(--accent)]" dir="ltr" />
+                          {errors.phone && <p id="lead-phone-error" role="alert" className="mt-1 text-xs font-semibold text-red-600 dark:text-red-400">{fieldError(errors.phone.message)}</p>}
                         </div>
                       </div>
                       <div>
-                        <label className="text-sm font-semibold">{locale === "ar" ? "البريد (اختياري)" : "Email (optional)"}</label>
-                        <input {...register("email")} placeholder="you@example.com" className="mt-2 h-11 w-full rounded-full border border-[var(--border)] bg-[var(--secondary)]/50 px-4 outline-none transition-colors focus:border-[var(--accent)]" dir="ltr" />
+                        <label htmlFor="lead-email" className="text-sm font-semibold">{locale === "ar" ? "البريد (اختياري)" : "Email (optional)"}</label>
+                        <input id="lead-email" {...register("email")} aria-invalid={!!errors.email} aria-describedby={errors.email ? "lead-email-error" : undefined} placeholder="you@example.com" className="mt-2 h-11 w-full rounded-full border border-[var(--border)] bg-[var(--secondary)]/50 px-4 outline-none transition-colors focus:border-[var(--accent)]" dir="ltr" />
+                        {errors.email && <p id="lead-email-error" role="alert" className="mt-1 text-xs font-semibold text-red-600 dark:text-red-400">{fieldError(errors.email.message)}</p>}
                       </div>
                       <div>
-                        <label className="text-sm font-semibold">{locale === "ar" ? "تفاصيل إضافية" : "Extra details"}</label>
-                        <textarea {...register("message")} rows={3} placeholder={locale === "ar" ? "أخبرنا أكثر عن فكرتك..." : "Tell us more..."} className="mt-2 w-full resize-none rounded-[var(--radius-sm)] border border-[var(--border)] bg-[var(--secondary)]/50 px-4 py-3 outline-none transition-colors focus:border-[var(--accent)]" />
+                        <label htmlFor="lead-message" className="text-sm font-semibold">{locale === "ar" ? "تفاصيل إضافية" : "Extra details"}</label>
+                        <textarea id="lead-message" {...register("message")} rows={3} placeholder={locale === "ar" ? "أخبرنا أكثر عن فكرتك..." : "Tell us more..."} className="mt-2 w-full resize-none rounded-[var(--radius-sm)] border border-[var(--border)] bg-[var(--secondary)]/50 px-4 py-3 outline-none transition-colors focus:border-[var(--accent)]" />
                       </div>
                     </motion.div>
                   )}
 
                   <div className="flex flex-wrap gap-3 pt-2">
                     {submitError && (
-                      <div className="w-full rounded-2xl border border-red-500/40 bg-red-500/10 px-4 py-2.5 text-xs text-red-500 text-center">
+                      <div className="w-full rounded-2xl border border-red-500/40 bg-red-500/10 px-4 py-2.5 text-xs text-red-600 dark:text-red-400 text-center">
                         {locale === "ar"
                           ? "تعذّر إرسال الطلب — أعد المحاولة أو"
                           : "Sending failed — try again or"}{" "}
