@@ -29,7 +29,7 @@ export function WhatsAppFloat() {
       rel="noopener noreferrer"
       aria-label={locale === "ar" ? "تواصل عبر واتساب" : "Chat on WhatsApp"}
       title={locale === "ar" ? "تواصل عبر واتساب" : "Chat on WhatsApp"}
-      className="group fixed bottom-[max(1.25rem,env(safe-area-inset-bottom))] end-5 z-[70] grid h-14 w-14 place-items-center rounded-full bg-[#25D366] text-white shadow-[0_10px_28px_-6px_rgba(37,211,102,0.65)] transition-transform duration-200 hover:scale-105 print:hidden"
+      className="whatsapp-float group fixed bottom-[max(1.25rem,env(safe-area-inset-bottom))] end-5 z-[70] grid h-14 w-14 place-items-center rounded-full bg-[#25D366] text-white shadow-[0_10px_28px_-6px_rgba(37,211,102,0.65)] transition-transform duration-200 hover:scale-105 print:hidden"
     >
       <MessageCircle className="h-6 w-6" />
       <span

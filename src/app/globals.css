@@ -715,3 +715,10 @@ html[dir="rtl"] .public-shell .site-main :is(h1,h2,h3) { line-height: 1.5; lette
 .store-preview-art { position: relative; display: block; aspect-ratio: 16 / 9; width: 100%; overflow: hidden; background: var(--secondary); }
 .store-preview-card { box-shadow: var(--shadow-xs); transition: box-shadow .25s, border-color .25s; }
 .store-preview-card:hover { box-shadow: var(--shadow-md); }
+
+/* Quand le menu mobile est ouvert, aucun widget flottant ne doit le recouvrir
+   ni concurrence l'action commerciale principale. */
+html[data-mobile-menu="open"] .whatsapp-float,
+html[data-mobile-menu="open"] .site-chatbot {
+  display: none !important;
+}

@@ -13,6 +13,31 @@ test("four primary destinations, same bilingual source for both menus", () => {
   assert.match(read("src/components/navbar.tsx"), /primaryNavigation\.map/);
 });
 
+test("mobile menu puts commercial actions first and behaves as a modal dialog", () => {
+  const navbar = read("src/components/navbar.tsx");
+  const css = read("src/app/globals.css");
+  // Dialogue modal + focus piégé + retour au bouton d'ouverture.
+  assert.match(navbar, /role="dialog"/);
+  assert.match(navbar, /aria-modal="true"/);
+  assert.match(navbar, /aria-labelledby="mobile-menu-title"/);
+  assert.match(navbar, /event\.key !== "Tab"/);
+  assert.match(navbar, /previousFocus\?\.focus\(\)/);
+  // Les réglages sont repliés dans un accordéon, après les CTA.
+  const actions = navbar.indexOf("Actions commerciales avant les préférences secondaires");
+  const settings = navbar.indexOf('<details className="group mt-5');
+  assert.ok(actions > 0 && settings > actions);
+  assert.match(navbar, /<summary/);
+  assert.match(navbar, /LocaleSwitcher variant="list"/);
+  assert.match(navbar, /ThemeList \/>/);
+  assert.match(navbar, /CurrencySwitcher variant="list"/);
+  // Les flotteurs ne doivent pas recouvrir le menu ouvert.
+  assert.match(navbar, /data-mobile-menu/);
+  assert.match(css, /html\[data-mobile-menu="open"\] \.whatsapp-float/);
+  assert.match(css, /html\[data-mobile-menu="open"\] \.site-chatbot/);
+  assert.match(read("src/components/whatsapp-float.tsx"), /whatsapp-float/);
+  assert.match(read("src/components/site-chatbot.tsx"), /site-chatbot/);
+});
+
 test("only supported supplier kinds are exposed as store facets", () => {
   assert.deepEqual(hierarchy.storeCategories.map((item) => item.kind), ["all", "gift_card", "software_key", "game_topup", "subscription_code"]);
   assert.match(read("src/app/(site)/codes/page.tsx"), /storeCategories\.find/);
