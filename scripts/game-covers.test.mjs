@@ -126,10 +126,12 @@ test("l'image enregistrée en admin passe avant la jaquette locale", () => {
 
 const catalog = read("src/components/digital-catalog.tsx");
 
-test("la barre de filtres est collante et la grille affiche 3 cartes sur mobile, 4 sur grand écran", () => {
-  assert.match(catalog, /sticky top-0 z-30/);
+test("la barre de filtres est collante sous le header et la grille reste responsive", () => {
+  assert.match(catalog, /sticky top-\[var\(--public-header-height,4\.25rem\)\] z-30/);
+  assert.match(catalog, /grid-cols-1/);
+  assert.match(catalog, /min-\[360px\]:grid-cols-2/);
+  assert.match(catalog, /md:grid-cols-3/);
   assert.match(catalog, /xl:grid-cols-4/);
-  assert.match(catalog, /grid-cols-3/);
 });
 
 test("le rail est écrit en propriétés logiques (gauche LTR / droite RTL)", () => {

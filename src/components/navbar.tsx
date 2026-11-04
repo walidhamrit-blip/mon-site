@@ -21,7 +21,7 @@ import { localizedPath } from "@/lib/locale";
  * - un seul lien actif surligné (`usePathname`) ;
  * - menu mobile en panneau plein écran, défilement de la page verrouillé ;
  * - fermeture au clavier (Échap) et au changement de page ;
- * - barre DANS LE FLUX de la page (elle défile avec le contenu).
+ * - barre collante compacte : elle reste visible pendant le défilement.
  */
 export function Navbar() {
   const router = useRouter();
@@ -32,6 +32,24 @@ export function Navbar() {
   const [open, setOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement | null>(null);
   const toggleRef = useRef<HTMLButtonElement | null>(null);
+  const headerRef = useRef<HTMLElement | null>(null);
+
+  // Les barres collantes secondaires (ancres création, filtres boutique)
+  // se calent sur la hauteur réelle du header, qui varie selon la langue
+  // et la largeur d'écran.
+  useEffect(() => {
+    const header = headerRef.current;
+    if (!header) return;
+    const publish = () =>
+      document.documentElement.style.setProperty(
+        "--public-header-height",
+        `${Math.ceil(header.getBoundingClientRect().height)}px`,
+      );
+    publish();
+    const observer = new ResizeObserver(publish);
+    observer.observe(header);
+    return () => observer.disconnect();
+  }, []);
   const ar = locale === "ar";
   // Marché de référence : la mention sous le logo suit le réglage /admin.
   const market = resolveMarket(siteConfig.market);
@@ -115,10 +133,10 @@ export function Navbar() {
 
   return (
     <>
-      <header className="public-header relative z-50 border-b border-[var(--border)] bg-[var(--background)] py-3">
+      <header ref={headerRef} className="public-header sticky top-0 z-50 border-b border-[var(--border)] bg-[var(--background)]/95 py-3 backdrop-blur-md">
         <div className="site-container px-4 sm:px-6">
           <div className="flex items-center justify-between gap-3 px-1 py-2 sm:px-4">
-            <Link href="/" className="group flex shrink-0 items-center gap-2.5" aria-label={siteConfig.name}>
+            <Link href="/" className="group flex shrink-0 items-center gap-2.5">
               <span className="gaming-brand grid h-9 w-9 place-items-center bg-[var(--primary)] text-sm font-black text-[var(--primary-foreground)] transition-transform group-hover:scale-105">
                 {ar ? "ن" : "N"}
               </span>

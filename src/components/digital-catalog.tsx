@@ -443,7 +443,7 @@ export function DigitalCatalog({ products, initialKind = "all" }: { products: Di
   return (
     <div>
       {/* ───────────────── Barre de filtres (collante) ───────────────── */}
-      <div className="sticky top-0 z-30 border-b border-[var(--border)] bg-[var(--background)]/92 backdrop-blur-md">
+      <div className="sticky top-[var(--public-header-height,4.25rem)] z-30 border-b border-[var(--border)] bg-[var(--background)]/92 backdrop-blur-md">
         <div className="site-container px-4 sm:px-6 lg:px-8">
           <div className="flex items-center gap-2 py-3">
             <div className="relative min-w-0 flex-1">
@@ -539,7 +539,7 @@ export function DigitalCatalog({ products, initialKind = "all" }: { products: Di
           <aside
             className={`${
               filtersOpen ? "block" : "hidden"
-            } mb-5 lg:sticky lg:top-[5.25rem] lg:mb-0 lg:block`}
+            } mb-5 lg:sticky lg:top-[calc(var(--public-header-height,4.25rem)+7.5rem)] lg:mb-0 lg:block`}
           >
             <div className="overflow-hidden rounded-[var(--radius-md)] border border-[var(--border)] bg-[var(--card)] shadow-[var(--shadow-xs)]">
               <div className="flex items-center justify-between gap-2 border-b border-[var(--border)]/70 px-4 py-3">
@@ -565,6 +565,7 @@ export function DigitalCatalog({ products, initialKind = "all" }: { products: Di
 
           {/* Résultats */}
           <div className="min-w-0">
+            <h2 className="sr-only">{ar ? "المنتجات" : "Products"}</h2>
             <div className="mb-4 flex flex-wrap items-center gap-x-3 gap-y-2">
               <p className="text-[12.5px] font-bold text-[var(--muted-foreground)]">
                 {ar
@@ -671,7 +672,6 @@ export function DigitalCatalog({ products, initialKind = "all" }: { products: Di
                       <Link
                         href={`/codes/${product.slug}`}
                         className="relative block aspect-[2/3] overflow-hidden bg-[#0b1220]"
-                        aria-label={displayName(product)}
                       >
                         {visual ? (
                           visualFit === "contain" ? (
