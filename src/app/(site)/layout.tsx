@@ -3,8 +3,7 @@ import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { Navbar } from "@/components/navbar";
 import { Footer } from "@/components/footer";
-import { WhatsAppFloat } from "@/components/whatsapp-float";
-import { SiteChatbot } from "@/components/site-chatbot";
+import { FloatingWidgets } from "@/components/floating-widgets";
 
 // Layout des pages publiques du site (groupe de routes `(site)`).
 // Le panneau d'administration /admin n'est PAS dans ce groupe :
@@ -20,8 +19,7 @@ export default function SiteLayout({ children }: { children: ReactNode }) {
       </main>
       <Footer />
       </div>
-      <WhatsAppFloat />
-      <SiteChatbot />
+      <FloatingWidgets />
       <Analytics />
       {/* Speed Insights : mesure des Core Web Vitals réels (LCP, INP, CLS…).
           Le script est servi depuis `/_vercel/speed-insights/script.js`

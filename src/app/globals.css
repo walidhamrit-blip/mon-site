@@ -279,10 +279,17 @@ body {
   display: none;
 }
 
-/* Les ancres gardent un peu d'air au-dessus de la cible (la barre de
-   navigation est dans le flux : elle ne recouvre plus le contenu). */
+/* Le header public est collant : les ancres ne doivent pas être masquées.
+   La hauteur réelle est publiée par le navbar (--public-header-height). */
 :where([id]) {
-  scroll-margin-top: 1.5rem;
+  scroll-margin-top: calc(var(--public-header-height, 4.25rem) + 1rem);
+}
+/* La page création ajoute une nav d'ancres collante sous le header. */
+#pricing,
+#demos,
+#website-process,
+#lead-form {
+  scroll-margin-top: calc(var(--public-header-height, 4.25rem) + 5rem);
 }
 
 ::selection {
@@ -719,6 +726,7 @@ html[dir="rtl"] .public-shell .site-main :is(h1,h2,h3) { line-height: 1.5; lette
 /* Quand le menu mobile est ouvert, aucun widget flottant ne doit le recouvrir
    ni concurrence l'action commerciale principale. */
 html[data-mobile-menu="open"] .whatsapp-float,
-html[data-mobile-menu="open"] .site-chatbot {
+html[data-mobile-menu="open"] .site-chatbot,
+html[data-mobile-menu="open"] .back-to-top {
   display: none !important;
 }
