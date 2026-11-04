@@ -46,6 +46,16 @@ export function HowItWorks() {
             </li>
           ))}
         </ol>
+        {/* Rassurance : dès le paiement, le client reçoit un site exemple en
+            ligne qu'on personnalise ensuite pour sa boutique. */}
+        <p className="mt-6 flex items-start gap-3 rounded-2xl border border-[#0B6B3A]/35 bg-[#0B6B3A]/10 p-5 text-sm font-bold leading-6">
+          <MessageCircle className="mt-0.5 h-5 w-5 shrink-0 text-[#0B6B3A]" aria-hidden="true" />
+          <span>
+            {ar
+              ? "Dès le paiement, tu reçois un site exemple en ligne. Ensuite, je le personnalise pour ta boutique : tes couleurs, ton logo, tes produits."
+              : "As soon as you pay, you receive a live example website. Then I customize it for your shop: your colors, your logo, your products."}
+          </span>
+        </p>
         <div className="mt-8">
           <a
             href={whatsappLink(config.whatsapp, WHATSAPP_SITE_MESSAGE)}
