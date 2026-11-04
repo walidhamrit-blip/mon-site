@@ -111,6 +111,9 @@ export const STEAM_ACCOUNT_TOPUP: DigitalProduct = {
     "Once payment is confirmed we credit the Steam account you entered. Double-check the login: a delivered top-up cannot be reverted.",
   denominations: [5, 10, 20, 50, 100].map(steamTopupDenomination),
   sortOrder: 12,
+  // Demande explicite du 4 novembre : la recharge Steam doit ouvrir la
+  // rubrique « شحن ألعاب » (et la vitrine), pas flotter derrière PUBG.
+  pinned: true,
   fulfillment: "manual",
   supplier: "fazercards",
   // Remise fournisseur mémorisée : elle explique pourquoi un prix inférieur

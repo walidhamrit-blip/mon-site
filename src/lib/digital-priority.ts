@@ -33,6 +33,8 @@ export interface Demandable {
   titleAr?: string | null;
   regions?: string[] | null;
   denominations?: { region?: string | null }[] | null;
+  /** Fiche épinglée en tête (voir `DigitalProduct.pinned`). */
+  pinned?: boolean | null;
 }
 
 /**
@@ -338,7 +340,15 @@ export function sortByDemand<T extends Demandable>(products: readonly T[]): T[] 
       if (item) result.push(item);
     }
   }
-  return result;
+
+  // Épinglage : une fiche marquée `pinned` passe devant tout le monde (et donc
+  // en tête de sa famille, puisque la vitrine filtre ce classement). Le tri
+  // reste stable : plusieurs épinglées gardent leur ordre de demande.
+  if (!result.some((product) => product.pinned)) return result;
+  return [
+    ...result.filter((product) => product.pinned),
+    ...result.filter((product) => !product.pinned),
+  ];
 }
 
 /**

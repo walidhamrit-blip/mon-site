@@ -297,11 +297,11 @@ test("devis : total recalculé côté serveur (prix × quantité)", () => {
   assert.equal(result.quote.reloadlyUnitPrice, 10);
 });
 
-test("devis : plafond de 50 USD inclus, au-delà refusé", () => {
+test("devis : plafond de 110 USD inclus, au-delà refusé", () => {
   const priced = (priceUsd) => ({ ...product, denominations: [{ ...product.denominations[0], priceUsd }] });
-  assert.equal(core.quoteDigitalOrder(priced(50), "d50", 1).ok, true);
-  assert.equal(core.quoteDigitalOrder(priced(50.01), "d50", 1).error, "above_limit");
-  assert.equal(core.quoteDigitalOrder(priced(25.01), "d50", 2).error, "above_limit");
+  assert.equal(core.quoteDigitalOrder(priced(110), "d50", 1).ok, true);
+  assert.equal(core.quoteDigitalOrder(priced(110.01), "d50", 1).error, "above_limit");
+  assert.equal(core.quoteDigitalOrder(priced(55.01), "d50", 2).error, "above_limit");
 });
 
 test("devis : valeur Reloadly déduite de la valeur faciale quand elle manque", () => {

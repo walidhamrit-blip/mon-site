@@ -307,8 +307,18 @@ export interface DigitalProduct {
   deliveryNoteEn: string;
   /** Dénominations vendables. */
   denominations: DigitalDenomination[];
-  /** Ordre d'affichage dans le catalogue. */
+  /** Ordre d'affichage dans le catalogue (secondaire : voir `pinned`). */
   sortOrder: number;
+  /**
+   * Épingle la fiche en tête de la vitrine et de sa famille.
+   *
+   * `sortOrder` ne suffit pas : le classement public vient de
+   * `sortByDemand()` (priorisation marchande), qui ignore l'ordre d'insertion.
+   * Une fiche épinglée passe devant, quel que soit son poids de demande —
+   * c'est le seul moyen fiable de mettre une ligne maison (recharge Steam)
+   * au-dessus des marques les plus demandées.
+   */
+  pinned?: boolean;
 
   /* ---------- Livraison à la commande (Reloadly) ---------- */
 
