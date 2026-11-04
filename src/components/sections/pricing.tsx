@@ -100,6 +100,27 @@ export function Pricing() {
           ))}
         </div>
 
+        {/* Remarque : tous les modèles du /demos peuvent servir de design aux
+            3 forfaits — ce qui change d'un forfait à l'autre, ce sont les
+            fonctions de dynamisation et la base de données, pas le design. */}
+        <div className="mx-auto mt-10 max-w-[760px] rounded-[20px] border border-[var(--border)] bg-[var(--card)] p-5 text-center">
+          <p className="text-sm font-black">
+            {locale === "ar"
+              ? "كل النماذج المعروضة في المعرض صالحة للتصميم في أي باقة من الباقات الثلاث."
+              : "Every model in our gallery works as the design of any of the 3 plans."}
+          </p>
+          <p className="mt-2 text-[13px] leading-6 text-[var(--muted-foreground)]">
+            {locale === "ar"
+              ? "التصميم لا يتغير من باقة إلى أخرى — ما يتغير هو التفعيل الديناميكي وقاعدة البيانات: موقع عرض (الواجهة)، موقع ديناميكي بمحتوى قابل للتعديل (الواجهة بلس)، أو متجر إلكتروني كامل بقاعدة بيانات ودفع (المتجر)."
+              : "The design does not change from one plan to another — what changes is the dynamization and the database: a showcase site (Vitrine), a dynamic site with editable content (Vitrine+), or a full online store with database and payment (Boutique)."}
+          </p>
+          <p className="mt-3 text-[13px]">
+            <Link href="/demos" className="font-bold text-[var(--accent)] hover:underline">
+              {locale === "ar" ? "شاهد النماذج في المعرض ↗" : "Browse the models in the gallery ↗"}
+            </Link>
+          </p>
+        </div>
+
         {siteConfig.reservation?.enabled && (
           <div className="mt-8 max-w-[760px] mx-auto rounded-[20px] border border-[var(--accent)]/30 bg-[var(--accent)]/5 p-5 flex flex-col sm:flex-row items-center justify-between gap-4">
             <div className="text-center sm:text-start">

@@ -123,6 +123,11 @@ export function DemosClient() {
                   ? "اعرف سعر نموذج الموقع أولاً، ثم تكلفة تخصيصه لهويتك. يظهر الإجمالي قبل الدفع؛ وإذا لم يُحدد السعر بعد، نرسل لك عرضاً مكتوباً للموافقة."
                   : "See each website model price and its separate brand-customization fee. The full total appears before checkout; if a fee is not set yet, request a written quote first."}
               </p>
+              <p className="mt-2 inline-flex items-center gap-2 rounded-full border border-[#0B6B3A]/35 bg-[#0B6B3A]/10 px-4 py-1.5 text-xs font-bold text-[#0B6B3A]">
+                {ar
+                  ? "كل النماذج هنا يمكن أن تكون تصميم أي باقة من الباقات الثلاث — ما يتغير هو التفعيل الديناميكي وقاعدة البيانات، لا التصميم."
+                  : "Every model here can be the design of any of the 3 plans — what changes is the dynamization & database, not the design."}
+              </p>
             </div>
 
             <div className="relative w-full lg:w-[280px] shrink-0">
