@@ -21,6 +21,7 @@ import {
   Sparkles,
   Trash2,
   Undo2,
+  Upload,
   Zap,
 } from "lucide-react";
 import {

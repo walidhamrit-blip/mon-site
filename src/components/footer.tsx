@@ -1,11 +1,12 @@
 "use client";
 
 import { LocalizedLink as Link } from "@/components/localized-link";
-import { ArrowUpRight, Code2, Gamepad2, Mail, MapPin, Phone } from "lucide-react";
+import { ArrowUpRight, Code2, Gamepad2, Mail, MapPin, MessageCircle, Phone } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import { useSiteConfig } from "./site-provider";
 import { marketLabels, resolveMarket } from "@/lib/market";
 import { whatsappLink } from "@/lib/utils";
+import { WHATSAPP_SITE_MESSAGE } from "./sections/home-intro";
 
 export function Footer() {
   const config = useSiteConfig();

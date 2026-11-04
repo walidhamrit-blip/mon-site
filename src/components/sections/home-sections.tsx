@@ -7,6 +7,7 @@ import { HomeLegacyAnchors } from "../home-legacy-anchors";
 import { Hero } from "./hero";
 import { HomeIntro } from "./home-intro";
 import { HomeGateway } from "./home-gateway";
+import { HowItWorks } from "./how-it-works";
 import { useI18n } from "@/lib/i18n";
 import { useSiteConfig } from "@/components/site-provider";
 import { homeFaqs, storeCategories } from "@/lib/site-hierarchy";
