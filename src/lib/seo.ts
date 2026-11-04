@@ -644,7 +644,7 @@ export function howToJsonLd(
     "@id": `${absoluteUrl(config, "/")}#howto`,
     name: "كيف نصمم ونطلق موقعك الاحترافي في 7 إلى 14 يوماً — How Nukhba builds your website",
     description:
-      "5 خطوات واضحة من جلسة الاكتشاف والتصميم الحي إلى الإطلاق والتدريب.",
+      "6 خطوات واضحة من جلسة الاكتشاف والتصميم الحي إلى التسليم والضمان.",
     inLanguage: marketLanguages(resolveMarket(config.market)),
     totalTime: "P14D",
     step: steps.map((s, idx) => ({

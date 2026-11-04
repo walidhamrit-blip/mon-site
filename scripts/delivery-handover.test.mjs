@@ -200,3 +200,43 @@ test("the admin owns the handover: creation, link, resend, deletion", () => {
 test("the documented process backs the feature", () => {
   assert.ok(existsSync("docs/livraison-site-apres-paiement-2026-11-04.md"));
 });
+
+/* ------------------- Promesse publique : étape 06 ---------------------- */
+
+test("the public journey now promises a step 06: handover & warranty", () => {
+  const content = readFileSync("src/lib/content.ts", "utf8");
+  const steps = content.match(/num: "0\d"/g) ?? [];
+  assert.equal(steps.length, 6, `6 étapes attendues, trouvées : ${steps.length}`);
+  assert.match(content, /num: "06"/);
+  assert.match(content, /التسليم والضمان/);
+  assert.match(content, /Handover & Warranty/);
+  // La section, le schéma HowTo et l'admin annoncent le même compte.
+  assert.match(content, /6 خطوات واضحة/);
+  assert.match(content, /6 clear steps/);
+  const seo = readFileSync("src/lib/seo.ts", "utf8");
+  assert.match(seo, /6 خطوات واضحة/);
+  const editor = readFileSync("src/app/admin/(panel)/content/content-editor.tsx", "utf8");
+  assert.match(editor, /Processus en 6 étapes/);
+});
+
+test("the step-06 promise matches what the delivery page actually gives", () => {
+  const content = readFileSync("src/lib/content.ts", "utf8");
+  // La garantie annoncée (30-90 jours selon la formule) couvre la garantie
+  // par défaut saisie dans un dossier de livraison : jamais plus, jamais
+  // une promesse que la page ne peut pas tenir.
+  assert.match(content, /30-90 يوماً حسب الباقة/);
+  assert.match(content, /30-90 days by plan/);
+  assert.ok(
+    DELIVERY_WARRANTY_DAYS >= 30 && DELIVERY_WARRANTY_DAYS <= 90,
+    `garantie par défaut hors de la fourchette annoncée : ${DELIVERY_WARRANTY_DAYS}`,
+  );
+});
+
+test("the process timeline adapts to the number of steps", () => {
+  const source = readFileSync("src/components/sections/process.tsx", "utf8");
+  assert.match(source, /processSteps\.length >= 6/);
+  assert.match(source, /2xl:grid-cols-6/);
+  assert.match(source, /lineClass/);
+  // Le filet ne relie les pastilles que sur une seule rangée.
+  assert.match(source, /processSteps\.length >= 6 \? "2xl:block" : "lg:block"/);
+});

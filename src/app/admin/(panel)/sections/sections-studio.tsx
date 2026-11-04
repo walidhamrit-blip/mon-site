@@ -78,7 +78,7 @@ const BUILTIN_META: Record<
     editHref: "/admin/content?tab=headings",
   },
   process: {
-    label: "Processus en 5 étapes",
+    label: "Processus en 6 étapes",
     desc: "Déroulement transparent du projet de l’appel découverte à la mise en ligne.",
     editHref: "/admin/content?tab=process",
   },

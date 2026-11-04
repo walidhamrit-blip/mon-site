@@ -181,7 +181,8 @@ Le client qui a été accompagné 30 jours après la mise en ligne recommande ; 
 | E-mails : lien de livraison, reçu de recette, notification | `src/lib/delivery-emails.ts` + `src/lib/delivery-notifications.ts` |
 | Jeton chiffré (renvoi du lien sans stockage en clair) | `src/lib/delivery-tokens.ts` |
 | Écran admin « Livraisons & recette » | `src/app/admin/(panel)/livraisons/` |
-| Tests (16 assertions) | `scripts/delivery-handover.test.mjs` (`npm run test:deliveries`) |
+| Étape 06 « التسليم والضمان / Handover & Warranty » sur `/creation-sites` | `processSteps` dans `src/lib/content.ts` (frise adaptative : `src/components/sections/process.tsx`) |
+| Tests (19 assertions) | `scripts/delivery-handover.test.mjs` (`npm run test:deliveries`) |
 
 Sécurité appliquée :
 - le jeton n'existe qu'en clair dans l'URL ; la base ne garde que son SHA-256,
@@ -194,6 +195,5 @@ Sécurité appliquée :
 ## 12. Ce qui reste à industrialiser
 
 1. **E-mail automatique du kit complet** : aujourd'hui l'admin crée le dossier puis transmet le lien (copié ou envoyé par e-mail) ; les identifiants restent à envoyer par un canal séparé, volontairement.
-2. **Étape 06 « Livraison & garantie »** dans `processSteps` (`src/lib/content.ts`) et sur `/creation-sites`, pour vendre la rigueur avant même le premier contact.
-3. **Relances de solde automatiques** (J+2, J+5, J+7) depuis la table des commandes, sur le modèle du cron `src/app/api/cron/digital-orders`.
-4. **Espace client projet** : avancement, documents, factures, tickets de support — le meilleur argument contre « vous avez disparu après le paiement ».
+2. **Relances de solde automatiques** (J+2, J+5, J+7) depuis la table des commandes, sur le modèle du cron `src/app/api/cron/digital-orders`.
+3. **Espace client projet** : avancement, documents, factures, tickets de support — le meilleur argument contre « vous avez disparu après le paiement ».
