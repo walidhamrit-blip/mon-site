@@ -191,6 +191,7 @@ export function BoutiqueProductsManager({
   const [optimizingId, setOptimizingId] = useState<string | null>(null);
   const [batchOptimizing, setBatchOptimizing] = useState(false);
   const [savingId, setSavingId] = useState<string | null>(null);
+  const [uploadingImageId, setUploadingImageId] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
   const [toast, setToast] = useState<{ msg: string; kind: "ok" | "err" } | null>(
     null,
@@ -273,6 +274,30 @@ export function BoutiqueProductsManager({
       prev.map((item) => (item.id === productId ? updater(item) : item)),
     );
     setDirtyIds((prev) => ({ ...prev, [productId]: true }));
+  };
+
+  /** Importe une image depuis le PC via /api/admin/media et la colle dans la fiche. */
+  const uploadProductImage = async (productId: string, file: File) => {
+    if (file.size > 4 * 1024 * 1024) {
+      flash("Image trop volumineuse : 4 Mo maximum.", "err");
+      return;
+    }
+    setUploadingImageId(productId);
+    try {
+      const body = new FormData();
+      body.append("file", file);
+      const response = await fetch("/api/admin/media", { method: "POST", body });
+      const result = (await response.json()) as { ok?: boolean; url?: string; error?: string };
+      if (!response.ok || !result.ok || !result.url) {
+        throw new Error(result.error || "Import impossible.");
+      }
+      patchProduct(productId, (prev) => ({ ...prev, image: result.url ?? "" }));
+      flash("Image importée et optimisée — pensez à enregistrer la fiche.", "ok");
+    } catch (error) {
+      flash(error instanceof Error ? error.message : "Import impossible.", "err");
+    } finally {
+      setUploadingImageId(null);
+    }
   };
 
   const addNewProduct = () => {
@@ -1171,18 +1196,41 @@ export function BoutiqueProductsManager({
                           </Field>
 
                           <Field label="Image / Visuel (URL ou chemin /…)">
-                            <input
-                              dir="ltr"
-                              value={product.image}
-                              onChange={(e) =>
-                                patchProduct(product.id, (prev) => ({
-                                  ...prev,
-                                  image: e.target.value,
-                                }))
-                              }
-                              placeholder="/digital-products/steam.svg ou https://…"
-                              className={`${ADMIN_INPUT_CLS} font-mono text-xs`}
-                            />
+                            <div className="flex items-center gap-2">
+                              <input
+                                dir="ltr"
+                                value={product.image}
+                                onChange={(e) =>
+                                  patchProduct(product.id, (prev) => ({
+                                    ...prev,
+                                    image: e.target.value,
+                                  }))
+                                }
+                                placeholder="/digital-products/steam.svg ou https://…"
+                                className={`${ADMIN_INPUT_CLS} font-mono text-xs`}
+                              />
+                              <label
+                                title="Importer une image depuis mon PC"
+                                aria-label="Importer une image depuis mon PC"
+                                className="grid h-9 w-9 shrink-0 cursor-pointer place-items-center rounded-lg border border-stone-300 bg-white text-stone-600 transition-colors hover:border-[#E5CA87] hover:text-[#8A6D2F]"
+                              >
+                                {uploadingImageId === product.id ? (
+                                  <Loader2 className="h-4 w-4 animate-spin" />
+                                ) : (
+                                  <Upload className="h-4 w-4" />
+                                )}
+                                <input
+                                  type="file"
+                                  accept="image/jpeg,image/png,image/webp,image/avif"
+                                  className="hidden"
+                                  onChange={(e) => {
+                                    const file = e.target.files?.[0];
+                                    e.target.value = "";
+                                    if (file) void uploadProductImage(product.id, file);
+                                  }}
+                                />
+                              </label>
+                            </div>
                           </Field>
                         </div>
 
