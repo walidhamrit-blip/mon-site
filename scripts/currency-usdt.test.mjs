@@ -68,7 +68,7 @@ test("USDT est la devise d'affichage par défaut", () => {
 });
 
 test("les monnaies locales restent proposées, converties correctement", () => {
-  const rates = { EUR: 0.92, LYD: 4.83 };
+  const rates = { EUR: 0.92, SAR: 3.75 };
   const euros = currency.convertFromBase(100, "EUR", rates);
   assert.equal(Math.round(euros * 100) / 100, 92);
   assert.equal(currency.formatMoney(euros, "EUR"), "€92.00");

@@ -301,9 +301,9 @@ function planDocs(config: AssistantConfig): KnowledgeDoc[] {
     title: { ar: "أسعار تصميم المواقع", en: "Website pricing" },
     body: {
       ar:
-        `جميع الأسعار بالدولار الأمريكي (1 دولار = 1 USDT عند الدفع). السعر = سعر النموذج + تكلفة التخصيص، ويُعرض الإجمالي قبل الدفع:\n${lines.map((l) => l.ar).join("\n")}\n\nالسعر يشمل سنة استضافة (Vercel) وربط الدومين؛ الدومين نفسه (~12 $/سنة) تشتريه باسمك. يمكنك عرض الأسعار بعملات أخرى (USDT, EUR, SAR, AED, EGP, LYD) للمعلومة فقط — الدفع بالدولار/USDT.`,
+        `جميع الأسعار بالدولار الأمريكي (1 دولار = 1 USDT عند الدفع). السعر = سعر النموذج + تكلفة التخصيص، ويُعرض الإجمالي قبل الدفع:\n${lines.map((l) => l.ar).join("\n")}\n\nالسعر يشمل سنة استضافة (Vercel) وربط الدومين؛ الدومين نفسه (~12 $/سنة) تشتريه باسمك. يمكنك عرض الأسعار بعملات أخرى (USDT, USD, EUR, SAR, AED, EGP) للمعلومة فقط — الدفع بالدولار/USDT.`,
       en:
-        `All prices are in US dollars (1 USD = 1 USDT at checkout). Price = model price + customization fee; the full total is shown before payment:\n${lines.map((l) => l.en).join("\n")}\n\nIncludes 1 year of hosting (Vercel) and domain connection; the domain itself (~$12/year) is bought in your name. Prices can be displayed in other currencies (USDT, EUR, SAR, AED, EGP, LYD) for information only — payment is in USD/USDT.`,
+        `All prices are in US dollars (1 USD = 1 USDT at checkout). Price = model price + customization fee; the full total is shown before payment:\n${lines.map((l) => l.en).join("\n")}\n\nIncludes 1 year of hosting (Vercel) and domain connection; the domain itself (~$12/year) is bought in your name. Prices can be displayed in other currencies (USDT, USD, EUR, SAR, AED, EGP) for information only — payment is in USD/USDT.`,
     },
     keywords: kw("price", "prices", "pricing", "cost", "prix", "tarif", "tarifs", "سعر", "اسعار", "بكم", "تكلفة", "plan", "plans", "formule", "باقة", "باقات", "فئة", "فئات", "website", "site", "موقع", "customization", "تخصيص", "personnalisation", "hosting", "استضافة", "vercel", "currency", "devise", "عملة"),
     weight: 1.4,

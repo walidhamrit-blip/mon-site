@@ -1,4 +1,7 @@
 import { applyGiftCardSalesPolicy } from "@/lib/digital-sales-policy";
+import { applyCompetitorPricing } from "@/lib/competitor-pricing";
+import { siteConfig } from "@/lib/config";
+import { OWN_DIGITAL_PRODUCTS, withOwnProducts } from "@/lib/digital-own-products";
 import { asc, eq, inArray } from "drizzle-orm";
 import { db, ensureSchema } from "@/db";
 import { digitalDenominations, digitalProducts } from "@/db/schema";
@@ -126,12 +129,13 @@ export function clearPublicCatalogCache(): void {
  */
 
 /**
- * Frais du processeur de paiement, en % (défaut 1 % — NOWPayments).
+ * Frais du processeur de paiement, en % (défaut 1,4 % — NOWPayments
+ * multi-devises, e-mail du 18/10/2026 ; 0,9 % en mono-devise).
  * Override : `PAYMENT_FEE_PERCENT`. Sert au calcul du prix de vente.
  */
 export function paymentFeePercent(): number {
   const raw = Number(process.env.PAYMENT_FEE_PERCENT);
-  return Number.isFinite(raw) && raw >= 0 && raw < 20 ? raw : 1;
+  return Number.isFinite(raw) && raw >= 0 && raw < 20 ? raw : 1.4;
 }
 
 let seeded: Promise<void> | null = null;
@@ -425,14 +429,28 @@ export async function getDigitalCatalog(
   const live = await getLiveCatalog();
   let products: DigitalProduct[];
   if (live) {
-    products = live.map(stripInternalProductFields);
+    // Les fiches maison (recharge Steam par identifiant…) n'existent pas chez
+    // le fournisseur : elles sont alignées ici, fusionnées au catalogue live,
+    // puis passées aux surcharges admin (masquage, prix manuel). Les fiches
+    // du fournisseur arrivent déjà alignées et surchargées : le second passage
+    // est idempotent.
+    const overridesState = await readDigitalOverrides();
+    const alignedOwn = applyCompetitorPricing(OWN_DIGITAL_PRODUCTS, siteConfig.pricingAlignment);
+    products = applyDigitalOverrides(
+      withOwnProducts([...live.map(stripInternalProductFields), ...alignedOwn]),
+      { ...overridesState, customProducts: [] },
+      { publicOnly: true, keepInternalFields: false },
+    );
   } else {
-    const storedBase = (await getStoredCatalog({ publicOnly: false })).map(applyGiftCardSalesPolicy);
+    const storedBase = withOwnProducts(
+      (await getStoredCatalog({ publicOnly: false })).map(applyGiftCardSalesPolicy),
+    );
     const overridesState = await readDigitalOverrides();
     products = applyDigitalOverrides(storedBase, overridesState, {
       publicOnly: true,
       keepInternalFields: false,
     });
+    products = applyCompetitorPricing(products, siteConfig.pricingAlignment);
   }
   // On ne mémorise pas un repli dû à une panne : dès que la base revient,
   // la page doit le voir tout de suite plutôt qu'au bout de deux minutes.
@@ -486,6 +504,10 @@ export async function getAdminBoutiqueCatalog(): Promise<AdminBoutiqueCatalogDat
     source = "stored";
   }
 
+  // Fiches maison (recharge Steam par identifiant…) : présentes dans
+  // l'administration comme les autres, avec leur coût, pour être alignées.
+  baseProducts = withOwnProducts(baseProducts);
+
   const overridesState = await readDigitalOverrides({ fresh: true });
   const baseById: Record<string, DigitalProduct> = {};
   for (const base of baseProducts) {
@@ -494,10 +516,13 @@ export async function getAdminBoutiqueCatalog(): Promise<AdminBoutiqueCatalogDat
 
   const deletedSet = new Set(overridesState.deletedIds);
   const deletedProducts = baseProducts.filter((base) => deletedSet.has(base.id));
-  const products = applyDigitalOverrides(baseProducts, overridesState, {
-    publicOnly: false,
-    keepInternalFields: true,
-  });
+  const products = applyCompetitorPricing(
+    applyDigitalOverrides(baseProducts, overridesState, {
+      publicOnly: false,
+      keepInternalFields: true,
+    }),
+    siteConfig.pricingAlignment,
+  );
 
   return {
     products,

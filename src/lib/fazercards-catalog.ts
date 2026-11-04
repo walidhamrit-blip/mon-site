@@ -31,6 +31,8 @@ import {
 } from "@/lib/fazercards";
 import { after } from "next/server";
 import { applyGiftCardSalesPolicy } from "@/lib/digital-sales-policy";
+import { applyCompetitorPricing } from "@/lib/competitor-pricing";
+import { siteConfig } from "@/lib/config";
 import { readDigitalOverrides } from "@/lib/digital-overrides";
 import { applyDigitalOverrides } from "@/lib/digital-overrides-core";
 import { marginTierFor, retailPriceForCost } from "@/lib/fazercards-pricing";
@@ -1020,7 +1022,13 @@ function snapshot(
 ): FazercardsCatalogSnapshot {
   return {
     ...entry.result,
-    products: entry.result.products.map(applyGiftCardSalesPolicy),
+    // Politique commerciale (plafond) puis alignement marché : les deux
+    // s'appliquent au même endroit, donc l'affichage ET la caisse voient le
+    // même prix.
+    products: applyCompetitorPricing(
+      entry.result.products.map(applyGiftCardSalesPolicy),
+      siteConfig.pricingAlignment,
+    ),
     fetchedAt: new Date(entry.fetchedAt).toISOString(),
     ageMs: Date.now() - entry.fetchedAt,
     cached: meta.cached,

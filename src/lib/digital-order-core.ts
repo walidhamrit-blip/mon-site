@@ -152,8 +152,13 @@ export function quoteDigitalOrder(
 
 /* ------------------------ Prix de vente & marge --------------------------- */
 
-/** Frais de paiement déduits par défaut (NOWPayments ≈ 1 %). */
-export const DEFAULT_PAYMENT_FEE_PERCENT = 1;
+/**
+ * Frais de paiement déduits par défaut : **1,4 %** — taux multi-devises du
+ * compte NOWPayments (e-mail du 18/10/2026 : 1 % → 0,9 % mono-devise, 1,5 % →
+ * 1,4 % multi-devises). Nos factures sont émises en USD et réglées dans la
+ * crypto choisie : il y a conversion, donc 1,4 %.
+ */
+export const DEFAULT_PAYMENT_FEE_PERCENT = 1.4;
 
 /** Marge nette maximale acceptée (au-delà, le diviseur devient instable). */
 export const MAX_MARGIN_PERCENT = 50;

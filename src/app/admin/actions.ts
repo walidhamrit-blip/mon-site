@@ -675,7 +675,7 @@ async function findLosses(product: DigitalProduct, reloadlyProductId: number): P
   }
 
   const fee = Number(process.env.PAYMENT_FEE_PERCENT);
-  const paymentFeePercent = Number.isFinite(fee) && fee >= 0 && fee < 20 ? fee : 1;
+  const paymentFeePercent = Number.isFinite(fee) && fee >= 0 && fee < 20 ? fee : 1.4;
 
   return product.denominations
     .filter((denomination) => denomination.available)
