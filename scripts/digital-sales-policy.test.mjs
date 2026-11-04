@@ -3,10 +3,13 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { applyGiftCardSalesPolicy, MAX_DIGITAL_ORDER_USD } from "../src/lib/digital-sales-policy.ts";
 
-test("cartes cadeaux : seuls les prix de vente strictement supérieurs à 100 sont mis en veille", () => {
+test("cartes cadeaux : seuls les prix de vente strictement supérieurs à 110 sont mis en veille", () => {
+  // Le seuil suit le plafond de commande (110 $) : une carte vendue 110 $
+  // reste achetable, donc elle reste en vente. Une carte à 110,01 $ serait
+  // affichée sans pouvoir être commandée — c'est exactement ce qu'on évite.
   const original = { kind: "gift_card", denominations: [
-    { id: "a", priceUsd: 100, available: true },
-    { id: "b", priceUsd: 100.01, available: true },
+    { id: "a", priceUsd: 110, available: true },
+    { id: "b", priceUsd: 110.01, available: true },
     { id: "c", priceUsd: 10, available: false },
   ] };
   const result = applyGiftCardSalesPolicy(original);
@@ -17,7 +20,7 @@ test("cartes cadeaux : seuls les prix de vente strictement supérieurs à 100 so
 
 test("la veille des cartes ne touche pas les recharges et clés", () => {
   for (const kind of ["game_topup", "software_key", "subscription_code"]) {
-    const product = { kind, denominations: [{ priceUsd: 101, available: true }] };
+    const product = { kind, denominations: [{ priceUsd: 111, available: true }] };
     assert.equal(applyGiftCardSalesPolicy(product), product);
   }
 });
@@ -26,7 +29,7 @@ test("la politique est appliquée aux catalogues en cache et de repli, et la cai
   const read = (path) => readFileSync(new URL(`../${path}`, import.meta.url), "utf8");
   assert.match(read("src/lib/fazercards-catalog.ts"), /entry\.result\.products\.map\(applyGiftCardSalesPolicy\)/);
   assert.match(read("src/lib/digital-store.ts"), /\.map\(applyGiftCardSalesPolicy\)/);
-  assert.equal(MAX_DIGITAL_ORDER_USD, 50);
+  assert.equal(MAX_DIGITAL_ORDER_USD, 110);
   assert.match(read("src/lib/fazercards.ts"), /DEFAULT_FAZERCARDS_MAX_ORDER_USD = 25/);
   assert.match(
     read("src/lib/fazercards.ts"),

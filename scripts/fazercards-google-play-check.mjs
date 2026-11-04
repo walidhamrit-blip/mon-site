@@ -47,7 +47,7 @@ const BASE = (process.env.FAZERCARDS_API_BASE ?? "https://api.fzr.cards/api/v2")
 
 // ── Reproduction fidèle de la politique de prix du site ────────────────────
 const MIN_RETAIL_USD = 1.5;
-const MAX_GIFT_CARD_PRICE_USD = 100; // src/lib/digital-sales-policy.ts
+const MAX_GIFT_CARD_PRICE_USD = 110; // src/lib/digital-sales-policy.ts
 const MARGIN_TIERS = [
   { maxCostUsd: 5, marginPercent: 20, minProfitUsd: 0.45 },
   { maxCostUsd: 20, marginPercent: 15, minProfitUsd: 1 },

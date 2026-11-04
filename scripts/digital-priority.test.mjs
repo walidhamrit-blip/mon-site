@@ -303,3 +303,35 @@ test("les zones prioritaires sont signalées dans le rail", () => {
   assert.match(catalogComponent, /isCryptoRegion\(item\.value\) \? "USDT" : undefined/);
   assert.match(catalogComponent, /sortRegionsForRail\(/);
 });
+
+test("une fiche épinglée passe devant, y compris dans sa famille", () => {
+  // Demande du 4 novembre : la recharge Steam ouvre la rubrique « شحن ألعاب »,
+  // même si PUBG et Free Fire ont un poids de demande supérieur.
+  const pubg = product({ slug: "fzr-topup-pubg", kind: "game_topup", platform: "PUBG Mobile" });
+  const steamTopup = product({
+    slug: "steam-account-topup",
+    kind: "game_topup",
+    platform: "Steam",
+    pinned: true,
+  });
+  const freefire = product({ slug: "fzr-topup-free-fire", kind: "game_topup", platform: "Free Fire" });
+
+  const ordered = priority.sortByDemand([pubg, steamTopup, freefire]);
+  assert.equal(ordered[0].slug, "steam-account-topup");
+  // Sans épinglage, rien ne change : le classement de demande reprend la main.
+  const plain = priority.sortByDemand([pubg, freefire]);
+  assert.ok(plain.length === 2 && plain[0].slug !== "steam-account-topup");
+  // Le reste de l'ordre est préservé (tri stable).
+  assert.deepEqual(
+    ordered.slice(1).map((p) => p.slug),
+    plain.map((p) => p.slug),
+  );
+});
+
+test("l'épinglage est un champ de fiche, pas un slug codé en dur", () => {
+  const source = read("src/lib/digital-priority.ts");
+  assert.match(source, /pinned\?: boolean \| null;/);
+  assert.match(source, /result\.filter\(\(product\) => product\.pinned\)/);
+  // Aucun slug d'un produit précis dans le moteur de tri.
+  assert.doesNotMatch(source, /steam-account-topup/);
+});
