@@ -714,7 +714,7 @@ html[dir="rtl"] .home-intro h1 { line-height: 1.45; letter-spacing: -.025em; }
 .public-shell .site-container { width: 100%; max-width: 1320px; margin-inline: auto; }
 .public-header { background: var(--background); }
 .public-header .primary-menu { background: none; }
-.public-header .primary-menu a { border-radius: .75rem; padding: .7rem 1rem; font-weight: 700; }
+.public-header .primary-menu a { min-height: 44px; border-radius: .75rem; padding: .7rem 1rem; font-weight: 700; }
 .public-header .primary-menu a[aria-current="page"] { color: var(--accent); background: color-mix(in srgb, var(--accent) 9%, var(--background)); }
 .public-header button[class*="bg-[var(--primary)]"] { background: var(--accent); color: var(--accent-foreground); }
 .public-shell .section-title { font-size: clamp(1.8rem, 2.8vw, 2.65rem); line-height: 1.3; font-weight: 850; letter-spacing: -.025em; }

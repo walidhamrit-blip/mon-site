@@ -293,7 +293,7 @@ export function DigitalCatalog({ products, kind, onKindChange }: { products: Dig
     <>
       {/* Familles */}
       <div className="border-b border-[var(--border)]/70 px-4 py-4">
-        <p className="mb-2.5 text-[10.5px] font-black uppercase tracking-[0.14em] text-[var(--muted-foreground)]">
+        <p className="mb-2.5 text-[12px] font-black uppercase tracking-[0.14em] text-[var(--muted-foreground)]">
           {ar ? "الأقسام" : "Sections"}
         </p>
         <ul className="space-y-0.5">
@@ -328,7 +328,7 @@ export function DigitalCatalog({ products, kind, onKindChange }: { products: Dig
       {/* Plateformes */}
       {platforms.length > 1 && (
         <div className="border-b border-[var(--border)]/70 px-4 py-4">
-          <p className="mb-2.5 text-[10.5px] font-black uppercase tracking-[0.14em] text-[var(--muted-foreground)]">
+          <p className="mb-2.5 text-[12px] font-black uppercase tracking-[0.14em] text-[var(--muted-foreground)]">
             {ar ? "المنصات" : "Platforms"}
           </p>
           <ul className="space-y-0.5 lg:max-h-[13rem] lg:overflow-y-auto lg:pe-1">
@@ -361,7 +361,7 @@ export function DigitalCatalog({ products, kind, onKindChange }: { products: Dig
       {/* Régions */}
       {regions.length > 1 && (
         <div className="border-b border-[var(--border)]/70 px-4 py-4">
-          <p className="mb-2.5 text-[10.5px] font-black uppercase tracking-[0.14em] text-[var(--muted-foreground)]">
+          <p className="mb-2.5 text-[12px] font-black uppercase tracking-[0.14em] text-[var(--muted-foreground)]">
             {ar ? "المناطق" : "Regions"}
           </p>
           <ul className="space-y-0.5 lg:max-h-[13rem] lg:overflow-y-auto lg:pe-1">
@@ -397,7 +397,7 @@ export function DigitalCatalog({ products, kind, onKindChange }: { products: Dig
 
       {/* Prix */}
       <div className="border-b border-[var(--border)]/70 px-4 py-4">
-        <p className="mb-2.5 text-[10.5px] font-black uppercase tracking-[0.14em] text-[var(--muted-foreground)]">
+        <p className="mb-2.5 text-[12px] font-black uppercase tracking-[0.14em] text-[var(--muted-foreground)]">
           {ar ? "السعر" : "Price"}
         </p>
         <ul className="space-y-0.5">
@@ -551,7 +551,7 @@ export function DigitalCatalog({ products, kind, onKindChange }: { products: Dig
                   <button
                     type="button"
                     onClick={resetFilters}
-                    className="cursor-pointer text-[11px] font-bold text-[var(--accent)] hover:underline"
+                    className="min-h-9 cursor-pointer text-[12px] font-bold text-[var(--accent)] hover:underline"
                   >
                     {ar ? "إعادة تعيين" : "Reset"}
                   </button>
@@ -775,7 +775,7 @@ export function DigitalCatalog({ products, kind, onKindChange }: { products: Dig
                             bouton pleine largeur sous le prix en mobile. */}
                         <div className="mt-auto flex flex-col gap-2 pt-3 sm:flex-row sm:items-end sm:justify-between">
                           <div className="min-w-0">
-                            <div className="text-[11px] font-bold uppercase tracking-wide text-[var(--muted-foreground)]">
+                            <div className="text-[12px] font-bold uppercase tracking-wide text-[var(--muted-foreground)]">
                               {ar ? "ابتداءً من" : "From"}
                             </div>
                             {from != null ? (
@@ -831,7 +831,7 @@ export function DigitalCatalog({ products, kind, onKindChange }: { products: Dig
                   </span>
                   <span className="min-w-0">
                     <span className="block text-[12px] font-black">{item.title}</span>
-                    <span className="block text-[11px] leading-4 text-[var(--muted-foreground)]">
+                    <span className="block text-[12px] leading-4 text-[var(--muted-foreground)]">
                       {item.text}
                     </span>
                   </span>
@@ -927,7 +927,7 @@ function RailButton({
       onClick={onClick}
       aria-pressed={active}
       title={hint ? hintLabel : undefined}
-      className={`flex w-full cursor-pointer items-center gap-2 rounded-lg px-2 py-[7px] text-start text-[12.5px] transition-colors ${
+      className={`flex min-h-11 w-full cursor-pointer items-center gap-2 rounded-lg px-2 py-[7px] text-start text-[12.5px] transition-colors ${
         active
           ? "bg-[var(--accent)]/14 font-black text-[var(--foreground)]"
           : "font-semibold text-[var(--muted-foreground)] hover:bg-[var(--secondary)] hover:text-[var(--foreground)]"
@@ -947,7 +947,7 @@ function RailButton({
         </span>
       )}
       <span
-        className={`shrink-0 rounded-full px-1.5 py-0.5 text-[10px] font-bold tabular-nums ${
+        className={`shrink-0 rounded-full px-1.5 py-0.5 text-[11px] font-bold tabular-nums ${
           active
             ? "bg-[var(--accent)] text-[var(--accent-foreground)]"
             : "bg-[var(--secondary)] text-[var(--muted-foreground)]"
@@ -978,7 +978,7 @@ function FamilyChip({
       type="button"
       onClick={onClick}
       aria-pressed={active}
-      className={`inline-flex shrink-0 cursor-pointer items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-[12px] transition-colors ${
+      className={`inline-flex min-h-11 shrink-0 cursor-pointer items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-[12px] transition-colors ${
         active
           ? "border-[var(--primary)] bg-[var(--primary)] font-black text-[var(--primary-foreground)]"
           : "border-[var(--border)] bg-[var(--card)] font-semibold hover:border-[var(--accent)]"
@@ -987,7 +987,7 @@ function FamilyChip({
       {icon}
       {label}
       <span
-        className={`rounded-full px-1.5 text-[10px] font-bold tabular-nums ${
+        className={`rounded-full px-1.5 text-[11px] font-bold tabular-nums ${
           active
             ? "bg-white/20"
             : "bg-[var(--secondary)] text-[var(--muted-foreground)]"
@@ -1005,7 +1005,7 @@ function ActiveChip({ label, onRemove }: { label: string; onRemove: () => void }
     <button
       type="button"
       onClick={onRemove}
-      className="inline-flex cursor-pointer items-center gap-1 rounded-full border border-[var(--accent)]/40 bg-[var(--accent)]/12 px-2.5 py-0.5 text-[11.5px] font-bold text-[var(--foreground)] transition-colors hover:bg-[var(--accent)]/20"
+      className="inline-flex min-h-9 cursor-pointer items-center gap-1 rounded-full border border-[var(--accent)]/40 bg-[var(--accent)]/12 px-2.5 py-0.5 text-[12px] font-bold text-[var(--foreground)] transition-colors hover:bg-[var(--accent)]/20"
     >
       {label}
       <X className="h-3 w-3 opacity-60" />

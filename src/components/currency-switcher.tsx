@@ -107,7 +107,7 @@ export function CurrencySwitcher({
         aria-haspopup="listbox"
         aria-label={ar ? "تغيير عملة العرض" : "Change display currency"}
         title={ar ? "عملة العرض" : "Display currency"}
-        className="inline-flex h-9 cursor-pointer items-center gap-1.5 rounded-full bg-[var(--secondary)] px-3 text-[12.5px] font-semibold transition-colors hover:bg-[var(--muted)]"
+        className="inline-flex h-11 cursor-pointer items-center gap-1.5 rounded-full bg-[var(--secondary)] px-3 text-[12.5px] font-semibold transition-colors hover:bg-[var(--muted)]"
       >
         <Coins className="h-3.5 w-3.5" />
         <span dir="ltr">{label}</span>

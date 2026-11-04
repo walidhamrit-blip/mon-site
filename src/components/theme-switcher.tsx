@@ -206,7 +206,7 @@ export function ThemeSwitcher() {
         aria-label={ar ? "لوحات الألعاب" : "Gaming palettes"}
         aria-expanded={open}
         title={ar ? "الثيمات والألوان" : "Themes & colors"}
-        className="relative grid h-9 w-9 cursor-pointer place-items-center rounded-full bg-[var(--secondary)] transition-colors hover:bg-[var(--muted)]"
+        className="relative grid h-11 w-11 cursor-pointer place-items-center rounded-full bg-[var(--secondary)] transition-colors hover:bg-[var(--muted)]"
       >
         <span className="relative grid place-items-center">
           <Palette className="h-4 w-4" />
@@ -234,7 +234,7 @@ export function ThemeSwitcher() {
               type="button"
               onClick={() => setOpen(false)}
               aria-label={ar ? "إغلاق" : "Close"}
-              className="grid h-6 w-6 shrink-0 cursor-pointer place-items-center rounded-full bg-[var(--secondary)] hover:bg-[var(--muted)]"
+              className="grid h-9 w-9 shrink-0 cursor-pointer place-items-center rounded-full bg-[var(--secondary)] hover:bg-[var(--muted)]"
             >
               <X className="h-3 w-3" />
             </button>
