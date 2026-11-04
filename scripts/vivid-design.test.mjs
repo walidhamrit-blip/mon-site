@@ -121,3 +121,16 @@ test("gold lighting is limited to dark Royal Gold and keeps gradient stops reada
     assert.ok(contrast(gold.dark["accent-foreground"], stop) >= 4.5);
   }
 });
+
+test("mobile catalog cards keep prices readable and touch targets large", () => {
+  const source = readFileSync("src/components/digital-catalog.tsx", "utf8");
+  // 1 colonne sous 360 px, 2 colonnes ensuite, 3/4 seulement quand la place utile le permet.
+  assert.match(source, /gaming-product-grid grid grid-cols-1 gap-3 min-\[360px\]:grid-cols-2 sm:gap-4 md:grid-cols-3 xl:grid-cols-4/);
+  // Le prix ne doit jamais être tronqué et doit pouvoir passer à la ligne.
+  assert.doesNotMatch(source, /block truncate text-\[14px\] font-black text-\[var\(--accent\)\]/);
+  assert.match(source, /block whitespace-normal break-words text-\[16px\] font-black leading-6 text-\[var\(--accent\)\]/);
+  // Cible tactile Détails >= 44 px, pleine largeur en mobile.
+  assert.match(source, /min-h-11 w-full shrink-0 items-center justify-center gap-1 rounded-full bg-\[var\(--primary\)\]/);
+  // Les badges catégorie/populaire sont en flux et passent à la ligne au lieu de se superposer.
+  assert.match(source, /absolute inset-x-2 top-2 flex flex-wrap items-start gap-1/);
+});
