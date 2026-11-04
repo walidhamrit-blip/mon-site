@@ -37,7 +37,7 @@ const STATUS_LABEL: Record<AlignmentStatus, string> = {
   lowered: "Baissé",
   raised: "Relevé",
   blocked: "Bloqué (marché < plancher)",
-  cost_margin: "Marge coût +1 %",
+  cost_margin: "Marge nette +1,5 %",
   step_blocked: "Écart trop fort",
   no_benchmark: "Sans référence",
   no_cost: "Coût inconnu",

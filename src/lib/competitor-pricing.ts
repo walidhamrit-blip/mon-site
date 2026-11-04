@@ -47,13 +47,17 @@ export interface AlignmentOptions {
   /** Prix public plancher absolu (aligné sur `MIN_RETAIL_USD`). */
   minRetailUsd?: number;
   /**
-   * Marge de repli appliquée quand le marché passe sous le plancher, en % du
-   * coût (1 = coût + 1 %). `0` = comportement historique (prix inchangé).
+   * Marge nette visée quand le marché passe sous le plancher, en % du prix de
+   * vente (1,5 = +1,5 % net). `0` = comportement historique (prix inchangé).
    *
-   * ⚠️ Ce prix reste SOUS le plancher de rentabilité : la commission
-   * (1,5 % + 1,00 $) coûte plus que la marge ajoutée. C'est un choix
-   * commercial assumé (rester au niveau du marché) — l'écran d'admin affiche
-   * la marge nette réelle, qui est négative sur les petits montants.
+   * Le prix est calculé à rebours pour que la marge RÉELLE — commission et
+   * frais fixes déduits — atteigne ce pourcentage :
+   *   prix = (coût + frais fixes) / (1 − commission % − marge nette %)
+   *
+   * Conséquence assumée depuis le 5 novembre 2026 : sur ces montants le prix
+   * passe AU-DESSUS du marché, puisqu'il faut couvrir 1 $ de frais fixes. Ce
+   * n'est plus « rester au niveau du marché à perte » mais « vendre au prix
+   * qui gagne de l'argent ». L'écran d'admin affiche l'écart au marché.
    */
   blockedMarginPercent?: number;
   /** Fiches dont le prix est fixé à la main : jamais réalignées. */
@@ -70,7 +74,7 @@ export const DEFAULT_ALIGNMENT_OPTIONS: AlignmentOptions = {
   minProfitUsd: 0.5,
   maxStepPercent: 25,
   minRetailUsd: 1.5,
-  blockedMarginPercent: 1,
+  blockedMarginPercent: 1.5,
   lockedProductIds: [],
 };
 
@@ -205,14 +209,18 @@ export function alignPrice(
 
   // Le marché est inaccessible sans perte. Deux politiques :
   //  - `blockedMarginPercent` = 0 → on ne touche à rien et on signale ;
-  //  - sinon → on applique « coût + marge » : ce n'est pas rentable une fois
-  //    la commission payée, mais le prix reste au niveau du marché au lieu
-  //    d'être 10 à 20 % plus cher que lui.
+  //  - sinon → on applique « coût + frais + marge nette garantie » : le prix
+  //    passe au-dessus du marché, puisque 1 $ de frais fixes ne se couvrent
+  //    pas autrement sur un petit montant.
   if (targetUsd < floorUsd) {
     const fallbackPercent = Math.min(Math.max(options.blockedMarginPercent ?? 0, 0), 50);
     if (fallbackPercent > 0) {
+      // Marge nette garantie : prix = (coût + frais fixes) / (1 − commission − marge).
+      // Le dénominateur est borné à 5 % pour qu'une configuration absurde
+      // (commission + marge ≥ 95 %) ne puisse pas produire un prix infini.
+      const netShare = 1 - options.feePercent / 100 - fallbackPercent / 100;
       const fallbackUsd = round2(
-        Math.max(input.costUsd * (1 + fallbackPercent / 100), options.minRetailUsd ?? 0),
+        Math.max((input.costUsd + options.fixedFeeUsd) / Math.max(netShare, 0.05), options.minRetailUsd ?? 0),
       );
       const fallbackChange =
         currentUsd > 0 ? round2(((fallbackUsd - currentUsd) / currentUsd) * 100) : null;
