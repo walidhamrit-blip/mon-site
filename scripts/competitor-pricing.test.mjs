@@ -111,21 +111,58 @@ test("au-dessus de la valeur faciale et sous le plancher : bloqué (pas de baiss
   assert.ok(result.currentVsBenchmarkPercent > 0, "le prix courant est bien au-dessus du marché");
 });
 
-test("marché sous le plancher + marge de repli : prix = coût + 1 %", () => {
-  // Décision du 4 novembre : plutôt que de rester 10 à 20 % au-dessus du
-  // marché, on applique coût + 1 % — même si la commission rend la vente
-  // déficitaire (c'est assumé et affiché dans l'admin).
+test("marché sous le plancher + marge de repli : 1,5 % de marge nette garantie", () => {
+  // Décision du 5 novembre 2026 : le repli ne vend plus à perte. Le prix est
+  // calculé à rebours — (coût + 1 $ de frais fixes) / (1 − 1,4 % − 1,5 %) —
+  // pour que la marge nette, commission déduite, atteigne 1,5 % du prix.
   const result = alignPrice({
     currentUsd: 55.97,
     costUsd: 49.25,
     benchmark: reseller(51.39),
   });
   assert.equal(result.status, "cost_margin");
-  assert.equal(result.recommendedUsd, 49.74); // 49,25 × 1,01
-  assert.ok(result.recommendedUsd < result.floorUsd, "le repli reste sous le plancher");
-  assert.ok(result.netMarginUsd < 0, "la commission n'est pas couverte : marge négative");
-  // Le prix de repli reste sous le marché, donc sous la concurrence.
-  assert.ok(result.recommendedUsd < result.benchmark.usd);
+  assert.equal(result.recommendedUsd, 51.75); // (49,25 + 1) / 0,971
+  assert.ok(result.netMarginUsd > 0, "la commission et les frais fixes sont couverts");
+  assert.equal(result.netMarginUsd, 0.78);
+  assert.equal(result.netMarginPercent, 1.51);
+  // Corollaire assumé : sur un montant bloqué, le prix de repli passe AU-DESSUS
+  // du plancher et du marché — c'est le prix de la rentabilité.
+  assert.ok(result.recommendedUsd > result.floorUsd);
+  assert.ok(result.recommendedUsd > result.benchmark.usd);
+});
+
+test("marge nette de repli : proportionnelle au prix, pas un forfait", () => {
+  // Le pourcentage tient sur toute l'échelle des prix, du plus petit montant
+  // (recharge Steam 5 $) au plus gros (100 $). Un forfait en dollars, lui,
+  // aurait écrasé les petits montants.
+  for (const costUsd of [4.88, 9.75, 19.5, 48.75, 97.5]) {
+    const result = alignPrice({
+      currentUsd: 0,
+      costUsd,
+      benchmark: reseller(costUsd * 1.02),
+    });
+    assert.equal(result.status, "cost_margin", `coût ${costUsd} : repli attendu`);
+    const expected = Math.round(((costUsd + 1) / 0.971) * 100) / 100;
+    assert.equal(result.recommendedUsd, expected, `coût ${costUsd} : prix à rebours`);
+    // Tolérance : la marge est arrondie au centime, ce qui pèse sur un prix
+    // de 6,06 $ (0,10 $ de marge = 1,65 %). Au-delà, on reste collé à 1,5 %.
+    assert.ok(
+      result.netMarginPercent >= 1.4 && result.netMarginPercent <= 1.7,
+      `coût ${costUsd} : marge nette ${result.netMarginPercent} % hors de la cible`,
+    );
+  }
+});
+
+test("repli désactivé : prix inchangé et statut « bloqué »", () => {
+  // Marge nette = 0 → aucune recommandation, le prix reste où il est et le
+  // montant remonte en « blocked » à l'écran d'admin.
+  const zeroMargin = { ...DEFAULT_ALIGNMENT_OPTIONS, blockedMarginPercent: 0 };
+  const result = alignPrice(
+    { currentUsd: 55.97, costUsd: 49.25, benchmark: reseller(51.39) },
+    zeroMargin,
+  );
+  assert.equal(result.status, "blocked");
+  assert.equal(result.recommendedUsd, null);
 });
 
 test("garde-fou : une variation supérieure au seuil n'est pas appliquée", () => {
@@ -175,9 +212,9 @@ test("application au catalogue : seul le prix change, la fiche reste intacte", (
   const [aligned] = applyCompetitorPricing([product], DEFAULT_ALIGNMENT_OPTIONS);
   // PSN 50 : 45,93 (G2A) × 0,985 = 45,24
   assert.equal(aligned.denominations[0].priceUsd, 45.24);
-  // PSN 25 : 23,29 (Eneba) × 0,985 = 22,94, sous le plancher 23,13 → repli
-  // coût + 1 % (21,81 × 1,01 = 22,03), donc sous le marché.
-  assert.equal(aligned.denominations[1].priceUsd, 22.03);
+  // PSN 25 : 23,29 (Eneba) × 0,985 = 22,94, sous le plancher 23,64 → repli
+  // marge nette 1,5 % : (21,81 + 1) / 0,971 = 23,49.
+  assert.equal(aligned.denominations[1].priceUsd, 23.49);
   assert.equal(Object.keys(aligned.denominations[0]).sort().join(","), Object.keys(product.denominations[0]).sort().join(","));
   assert.equal(aligned.title, product.title);
 });
@@ -206,7 +243,7 @@ test("résumé d'alignement : chaque montant dans une seule catégorie", () => {
   assert.equal(summary.total, 4);
   assert.equal(summary.aligned, 2); // 45,24 est déjà la cible ; 47,33 sous le plafond
   assert.equal(summary.lowered, 0);
-  assert.equal(summary.costMargin, 1); // Steam 50 : repli coût + 1 %
+  assert.equal(summary.costMargin, 1); // Steam 50 : repli marge nette 1,5 %
   assert.equal(summary.blocked, 0);
   assert.equal(summary.noBenchmark, 1);
   assert.equal(summary.unprofitableAtMarket, 1);
@@ -242,11 +279,19 @@ test("recharge Steam : fiche complète, alignée et non exposée aux coûts", ()
   assert.ok(ten, "la dénomination 10 USDT existe");
   assert.equal(ten.fields?.[0]?.key, "steamLogin");
   assert.equal(ten.supplierCostUsd, 9.75);
-  // Alignement : marché 10,75, plancher 11,42 → repli coût + 1 % = 9,85.
+  // Alignement : marché 10,75, plancher 11,41 → repli marge nette 1,5 % :
+  // (9,75 + 1) / 0,971 = 11,07.
   const [aligned] = applyCompetitorPricing([STEAM_ACCOUNT_TOPUP], DEFAULT_ALIGNMENT_OPTIONS);
   const alignedTen = aligned.denominations.find((d) => d.id === "steam-topup-10");
-  assert.equal(alignedTen.priceUsd, 9.85);
-  assert.ok(alignedTen.priceUsd < 10, "moins cher que la valeur faciale, donc qu'Eneba");
+  assert.equal(alignedTen.priceUsd, 11.07);
+  // Conséquence à assumer : 1 $ de frais fixes sur 10 $ crédités imposent de
+  // vendre 11,07 $ — au-dessus de la valeur faciale. Les petits montants
+  // (5 et 10 $) ne sont plus des prix d'appel ; 20/50/100 restent serrés.
+  assert.ok(alignedTen.priceUsd > 10, "au-dessus de la valeur faciale, assumé");
+  assert.equal(
+    netMarginUsd(alignedTen.priceUsd, alignedTen.supplierCostUsd, DEFAULT_ALIGNMENT_OPTIONS),
+    0.17,
+  );
 });
 
 test("fiches maison : fusion sans doublon ni écrasement", () => {

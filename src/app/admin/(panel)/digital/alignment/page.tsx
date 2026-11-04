@@ -122,7 +122,7 @@ export default async function AdminAlignmentPage() {
     { label: "Alignés", value: summary.aligned, tone: "text-emerald-700" },
     { label: "Prix ajustés", value: summary.lowered + summary.raised, tone: "text-sky-700" },
     {
-      label: "Marché sous plancher → coût + 1 %",
+      label: "Marché sous plancher → marge nette 1,5 %",
       value: summary.costMargin,
       tone: "text-amber-700",
     },
@@ -180,11 +180,11 @@ export default async function AdminAlignmentPage() {
           seulement de vendre plus cher que la plateforme elle-même.
         </p>
         <p className="mt-1">
-          Quand le marché passe <em>sous</em> le plancher, le prix est ramené à{" "}
-          <strong>coût + {options.blockedMarginPercent ?? 0} %</strong> (décision du
-          4 novembre) : le montant reste au niveau du marché. Attention, cette marge ne couvre
-          pas la commission — la colonne « Marge nette » affiche alors un montant négatif, et
-          les lignes concernées portent la mention « vente à perte ».
+          Quand le marché passe <em>sous</em> le plancher, le prix est calculé à rebours pour
+          laisser <strong>{options.blockedMarginPercent ?? 0} % de marge nette</strong> (décision
+          du 5 novembre) : prix = (coût + frais fixes) / (1 − commission − marge). La colonne
+          « Marge nette » affiche donc un montant positif, mais le prix passe alors au-dessus du
+          marché — c'est le prix de la rentabilité sur un petit montant.
         </p>
       </div>
 
