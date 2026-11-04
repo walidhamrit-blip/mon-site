@@ -501,11 +501,10 @@ export function productVisual(input: {
  * Cadrage à appliquer au visuel dans une vignette PORTRAIT (2:3).
  *
  *  - `cover`   : la jaquette locale du jeu est déjà en 2:3 → plein cadre ;
- *  - `contain` : l'image vient de l'admin (`product.image`) et ses
- *    proportions sont inconnues — souvent un visuel de marque en 16:9. La
- *    rogner en portrait couperait le logo : on la contient sur un fond
- *    flou issu d'elle-même (même principe que les vignettes de plateformes
- *    de streaming).
+ *  - `contain` : l'image vient de l'admin (`product.image`). Les visuels
+ *    admin sont livrés au ratio 2:3 (600×900, fond flou intégré), donc
+ *    `object-cover` les remplit parfaitement ; le double rendu flou/contenu
+ *    reste en filet de sécurité si un ratio exotique était déposé.
  */
 export function productVisualFit(input: {
   image?: string | null;
