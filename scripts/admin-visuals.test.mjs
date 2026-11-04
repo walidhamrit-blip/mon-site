@@ -18,10 +18,13 @@ test("all fixed homepage and journey images have editable defaults", () => {
 });
 
 test("public banners and section cards consume the saved visuals", () => {
+  // La bannière d'accueil défile désormais sur TOUS les visuels enregistrés :
+  // `homeHero` doit rester en tête (c'est le visuel choisi dans /admin → Médias)
+  // et chaque tuile garde son texte alternatif AR/EN.
   const hero = read("src/components/sections/hero.tsx");
-  assert.match(hero, /const image = visuals\.homeHero/);
-  assert.match(hero, /src=\{image\.src\}/);
-  assert.match(hero, /alt=\{ar \? image\.altAr : image\.altEn\}/);
+  assert.match(hero, /const ordered = \[visuals\.homeHero,/);
+  assert.match(hero, /src=\{visual\.src\}/);
+  assert.match(hero, /alt=\{ar \? visual\.altAr : visual\.altEn\}/);
 
   const gateway = read("src/components/sections/home-gateway.tsx");
   for (const id of ["gatewayWebsites", "gatewayGiftCards", "gatewayTopUps"]) {

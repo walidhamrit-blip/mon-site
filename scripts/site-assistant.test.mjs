@@ -16,6 +16,12 @@ import { existsSync, statSync, mkdirSync, mkdtempSync, rmSync, readFileSync } fr
 import { join } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { build } from "esbuild";
+// Les plafonds de la boutique sont lus depuis la politique (et non recopiés) :
+// quand le plafond change, l'attente suit au lieu de casser la CI.
+import {
+  MAX_DIGITAL_ORDER_USD,
+  MAX_GIFT_CARD_PRICE_USD,
+} from "../src/lib/digital-sales-policy.ts";
 
 const root = fileURLToPath(new URL("..", import.meta.url));
 const srcRoot = join(root, "src");
@@ -125,7 +131,12 @@ test("le résumé LLM cite les prix exacts, les horaires et les limites de la bo
   assert.match(knowledge.core, /\$10\/mo or \$69\/yr/);
   assert.match(knowledge.core, /\$25\/mo or \$199\/yr/);
   assert.match(knowledge.core, /grace period max 5 days/);
-  assert.match(knowledge.core, /Max \$50 per order, gift cards ≤ \$100/);
+  assert.match(
+    knowledge.core,
+    new RegExp(
+      `Max \\$${MAX_DIGITAL_ORDER_USD} per order, gift cards ≤ \\$${MAX_GIFT_CARD_PRICE_USD}`,
+    ),
+  );
   assert.match(knowledge.core, /Player ID/);
   assert.match(knowledge.core, new RegExp(siteConfig.hoursEn.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
   assert.match(knowledge.core, /Never claim 24\/7/);
