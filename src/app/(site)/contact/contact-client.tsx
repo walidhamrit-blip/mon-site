@@ -134,7 +134,7 @@ export function ContactClient() {
                   )}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex h-11 items-center gap-2 rounded-full bg-[#25D366] px-5 text-[13.5px] font-bold text-white transition-opacity hover:opacity-95"
+                  className="inline-flex h-11 items-center gap-2 rounded-full bg-[#0B6B3A] px-5 text-[13.5px] font-bold text-white transition-opacity hover:opacity-95"
                 >
                   <MessageCircle className="h-4 w-4" />
                   {ar ? "واتساب مباشر" : "WhatsApp"}

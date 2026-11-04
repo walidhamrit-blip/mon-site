@@ -53,23 +53,23 @@ export function Pricing() {
 
               <div className="flex items-start justify-between gap-4">
                 <div>
-                  <div className="text-[10px] font-black uppercase tracking-[0.14em] opacity-50">
+                  <div className="text-[11px] font-black uppercase tracking-[0.14em] text-[var(--muted-foreground)]">
                     {locale === "ar" ? `الفئة ${idx + 1}` : `Category ${idx + 1}`}
                   </div>
                   <h3 className="mt-0.5 text-lg font-black">{locale === "ar" ? plan.name : plan.nameEn}</h3>
-                  <p className={`mt-1 text-[13.5px] leading-6 ${plan.featured ? "opacity-70" : "text-[var(--muted-foreground)]"}`}>{locale === "ar" ? plan.description : plan.descriptionEn}</p>
+                  <p className={`mt-1 text-[13.5px] leading-6 text-[var(--muted-foreground)]`}>{locale === "ar" ? plan.description : plan.descriptionEn}</p>
                 </div>
                 {plan.featured && <span className="h-8 w-8 rounded-full bg-[var(--accent)] grid place-items-center">✦</span>}
               </div>
 
               <div className="mt-6 rounded-2xl border border-[var(--border)]/70 bg-[var(--secondary)]/35 p-4">
                 <ModelPriceBreakdown breakdown={resolvePlanPriceBreakdown(plan)} />
-                <div className="mt-2 text-[10px] opacity-55">
+                <div className="mt-2 text-xs leading-5 text-[var(--muted-foreground)]">
                   {locale === "ar" ? t.crypto.usdNoteAr : t.crypto.usdNoteEn}
                 </div>
                 {/* Prix après coupon : même calcul que le serveur de paiement. */}
               </div>
-              <div className="text-xs opacity-60">{locale === "ar" ? plan.period : plan.periodEn}</div>
+              <div className="text-xs text-[var(--muted-foreground)]">{locale === "ar" ? plan.period : plan.periodEn}</div>
 
               <ModelPurchaseButton
                 plan={plan}
@@ -77,7 +77,7 @@ export function Pricing() {
               />
 
               {resolvePlanPriceBreakdown(plan).totalPriceUsd != null && (
-                <p className="mt-2 text-center text-[11px] opacity-60">
+                <p className="mt-2 text-center text-xs text-[var(--muted-foreground)]">
                   {locale === "ar" ? t.crypto.installmentNoteAr : t.crypto.installmentNoteEn}
                 </p>
               )}
@@ -88,12 +88,12 @@ export function Pricing() {
                     <span className={`mt-0.5 h-5 w-5 rounded-full grid place-items-center flex-shrink-0 ${plan.featured ? "bg-[var(--accent)]/15 text-[var(--accent)]" : "bg-[var(--accent)]/15 text-[var(--accent)]"}`}>
                       <Check className="h-3.5 w-3.5" />
                     </span>
-                    <span className={plan.featured ? "opacity-90" : "opacity-80"}>{f}</span>
+                    <span>{f}</span>
                   </li>
                 ))}
               </ul>
 
-              <div className={`mt-6 text-xs pt-4 border-t ${plan.featured ? "opacity-60 border-[var(--border)]" : "opacity-50 border-[var(--border)]"}`}>
+              <div className={`mt-6 text-xs pt-4 border-t border-[var(--border)] text-[var(--muted-foreground)]`}>
                 {locale === "ar" ? "سنة استضافة + شهادة SSL مجاناً" : "1 year hosting + SSL free"}
               </div>
             </motion.div>
@@ -109,7 +109,7 @@ export function Pricing() {
                   ? "احجز مكانك في جدول العمل"
                   : "Reserve your place in our queue"}
               </div>
-              <p className="mt-1 text-xs opacity-60">
+              <p className="mt-1 text-xs text-[var(--muted-foreground)]">
                 {locale === "ar"
                   ? `عربون ${formatUsd(siteConfig.reservation?.depositUsd ?? 1)} $ فقط — يُخصم من سعر المشروع ويمنحك أولوية في التنفيذ.`
                   : `Only a $${formatUsd(siteConfig.reservation?.depositUsd ?? 1)} deposit — deducted from the project price and giving you priority.`}
@@ -126,7 +126,7 @@ export function Pricing() {
         )}
 
         <div className="mt-8 text-center">
-          <p className="text-sm opacity-60">
+          <p className="text-sm text-[var(--muted-foreground)]">
             {locale === "ar" ? "تحتاج شيئاً مخصصاً؟ " : "Need something custom? "}
             <Link href="/contact" className="font-bold underline decoration-[var(--accent)] underline-offset-4">
               {locale === "ar" ? "تحدث معنا" : "Talk to us"}

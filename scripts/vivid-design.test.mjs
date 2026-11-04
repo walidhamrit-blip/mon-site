@@ -122,6 +122,24 @@ test("gold lighting is limited to dark Royal Gold and keeps gradient stops reada
   }
 });
 
+test("WhatsApp actions use a green dark enough for white text and icons", () => {
+  assert.ok(contrast("#FFFFFF", "#0B6B3A") >= 4.5);
+  const publicSources = [
+    "src/components/whatsapp-float.tsx",
+    "src/components/navbar.tsx",
+    "src/components/sections/cta-form.tsx",
+    "src/components/sections/services.tsx",
+    "src/components/reservation-dialog.tsx",
+    "src/app/(site)/contact/contact-client.tsx",
+    "src/app/(site)/demos/[slug]/demo-details.tsx",
+    "src/app/(site)/demos/[slug]/demo-viewer.tsx",
+  ];
+  for (const path of publicSources) {
+    const source = readFileSync(path, "utf8");
+    assert.doesNotMatch(source, /bg-\[#25D366\]/, path);
+  }
+});
+
 test("mobile catalog cards keep prices readable and touch targets large", () => {
   const source = readFileSync("src/components/digital-catalog.tsx", "utf8");
   // 1 colonne sous 360 px, 2 colonnes ensuite, 3/4 seulement quand la place utile le permet.

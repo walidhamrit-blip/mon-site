@@ -200,7 +200,7 @@ export function LeadsTable({ rows }: { rows: LeadRow[] }) {
                     href={reviewModal.whatsappUrl}
                     target="_blank"
                     rel="noopener"
-                    className="inline-flex items-center gap-1.5 h-9 px-4 rounded-xl bg-[#25D366] text-white text-xs font-bold hover:brightness-95 shadow-xs"
+                    className="inline-flex items-center gap-1.5 h-9 px-4 rounded-xl bg-[#0B6B3A] text-white text-xs font-bold hover:brightness-95 shadow-xs"
                   >
                     <MessageCircle className="h-3.5 w-3.5" /> Envoyer sur WhatsApp
                   </a>

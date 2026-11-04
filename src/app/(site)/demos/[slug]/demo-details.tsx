@@ -180,7 +180,7 @@ export function DemoDetails({
                 href={whatsappUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="h-11 w-full rounded-full bg-[#25D366] text-white grid place-items-center font-bold text-sm"
+                className="h-11 w-full rounded-full bg-[#0B6B3A] text-white grid place-items-center font-bold text-sm"
               >
                 اطلب موقعاً مشابهاً عبر واتساب
               </a>
