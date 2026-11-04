@@ -37,6 +37,7 @@ const STATUS_LABEL: Record<AlignmentStatus, string> = {
   lowered: "Baissé",
   raised: "Relevé",
   blocked: "Bloqué (marché < plancher)",
+  cost_margin: "Marge coût +1 %",
   step_blocked: "Écart trop fort",
   no_benchmark: "Sans référence",
   no_cost: "Coût inconnu",
@@ -49,6 +50,7 @@ const STATUS_STYLE: Record<AlignmentStatus, string> = {
   lowered: "bg-sky-50 text-sky-800 ring-sky-200",
   raised: "bg-indigo-50 text-indigo-800 ring-indigo-200",
   blocked: "bg-rose-50 text-rose-800 ring-rose-200",
+  cost_margin: "bg-amber-50 text-amber-800 ring-amber-200",
   step_blocked: "bg-amber-50 text-amber-800 ring-amber-200",
   no_benchmark: "bg-stone-100 text-stone-600 ring-stone-200",
   no_cost: "bg-stone-100 text-stone-600 ring-stone-200",
@@ -60,7 +62,7 @@ function StatusBadge({ status }: { status: AlignmentStatus }) {
   const Icon =
     status === "aligned"
       ? CircleCheck
-      : status === "lowered"
+      : status === "lowered" || status === "cost_margin"
         ? ArrowDownRight
         : status === "raised"
           ? ArrowUpRight

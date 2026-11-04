@@ -121,7 +121,12 @@ export default async function AdminAlignmentPage() {
     { label: "Montants suivis", value: summary.total, tone: "text-stone-900" },
     { label: "Alignés", value: summary.aligned, tone: "text-emerald-700" },
     { label: "Prix ajustés", value: summary.lowered + summary.raised, tone: "text-sky-700" },
-    { label: "Bloqués (marché < plancher)", value: summary.blocked, tone: "text-rose-700" },
+    {
+      label: "Marché sous plancher → coût + 1 %",
+      value: summary.costMargin,
+      tone: "text-amber-700",
+    },
+    { label: "Bloqués (inchangés)", value: summary.blocked, tone: "text-rose-700" },
     {
       label: "Vendus sous le plancher",
       value: rows.filter((row) => row.floorUsd != null && row.servedUsd < row.floorUsd - 0.004).length,
@@ -157,7 +162,7 @@ export default async function AdminAlignmentPage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-2 md:grid-cols-6">
+      <div className="grid grid-cols-2 gap-2 md:grid-cols-4 lg:grid-cols-7">
         {cards.map((card) => (
           <div key={card.label} className="rounded-xl border border-stone-200 bg-white px-3 py-2">
             <div className={`text-xl font-black tabular-nums ${card.tone}`}>{card.value}</div>
@@ -173,6 +178,13 @@ export default async function AdminAlignmentPage() {
           caisse relit le même catalogue, donc le montant vu est le montant payé. Une référence
           « plafond » (valeur faciale) ne fait jamais <em>monter</em> un prix — elle empêche
           seulement de vendre plus cher que la plateforme elle-même.
+        </p>
+        <p className="mt-1">
+          Quand le marché passe <em>sous</em> le plancher, le prix est ramené à{" "}
+          <strong>coût + {options.blockedMarginPercent ?? 0} %</strong> (décision du
+          4 novembre) : le montant reste au niveau du marché. Attention, cette marge ne couvre
+          pas la commission — la colonne « Marge nette » affiche alors un montant négatif, et
+          les lignes concernées portent la mention « vente à perte ».
         </p>
       </div>
 

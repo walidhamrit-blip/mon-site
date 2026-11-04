@@ -46,6 +46,16 @@ export interface AlignmentOptions {
   maxStepPercent: number;
   /** Prix public plancher absolu (aligné sur `MIN_RETAIL_USD`). */
   minRetailUsd?: number;
+  /**
+   * Marge de repli appliquée quand le marché passe sous le plancher, en % du
+   * coût (1 = coût + 1 %). `0` = comportement historique (prix inchangé).
+   *
+   * ⚠️ Ce prix reste SOUS le plancher de rentabilité : la commission
+   * (1,5 % + 1,00 $) coûte plus que la marge ajoutée. C'est un choix
+   * commercial assumé (rester au niveau du marché) — l'écran d'admin affiche
+   * la marge nette réelle, qui est négative sur les petits montants.
+   */
+  blockedMarginPercent?: number;
   /** Fiches dont le prix est fixé à la main : jamais réalignées. */
   lockedProductIds?: readonly string[];
 }
@@ -58,6 +68,7 @@ export const DEFAULT_ALIGNMENT_OPTIONS: AlignmentOptions = {
   minProfitUsd: 0.5,
   maxStepPercent: 25,
   minRetailUsd: 1.5,
+  blockedMarginPercent: 1,
   lockedProductIds: [],
 };
 
@@ -70,6 +81,8 @@ export type AlignmentStatus =
   | "raised"
   /** Le marché est sous le plancher de rentabilité : aucun prix ne peut suivre. */
   | "blocked"
+  /** Marché sous le plancher : repli sur « coût + marge de repli ». */
+  | "cost_margin"
   /** Le changement dépasserait le garde-fou de variation. */
   | "step_blocked"
   /** Aucune référence de marché pour ce montant. */
@@ -188,8 +201,64 @@ export function alignPrice(
     ? round2(benchmarkUsd * (1 - undercut / 100))
     : benchmarkUsd;
 
-  // Le marché est inaccessible sans perte : on ne touche à rien et on signale.
+  // Le marché est inaccessible sans perte. Deux politiques :
+  //  - `blockedMarginPercent` = 0 → on ne touche à rien et on signale ;
+  //  - sinon → on applique « coût + marge » : ce n'est pas rentable une fois
+  //    la commission payée, mais le prix reste au niveau du marché au lieu
+  //    d'être 10 à 20 % plus cher que lui.
   if (targetUsd < floorUsd) {
+    const fallbackPercent = Math.min(Math.max(options.blockedMarginPercent ?? 0, 0), 50);
+    if (fallbackPercent > 0) {
+      const fallbackUsd = round2(
+        Math.max(input.costUsd * (1 + fallbackPercent / 100), options.minRetailUsd ?? 0),
+      );
+      const fallbackChange =
+        currentUsd > 0 ? round2(((fallbackUsd - currentUsd) / currentUsd) * 100) : null;
+      if (Math.abs(fallbackUsd - currentUsd) <= 0.004) {
+        const margin = netMarginUsd(currentUsd, input.costUsd, options);
+        return {
+          status: "aligned",
+          currentUsd,
+          benchmark,
+          targetUsd,
+          floorUsd,
+          recommendedUsd: null,
+          currentVsBenchmarkPercent,
+          changePercent: null,
+          netMarginUsd: margin,
+          netMarginPercent:
+            margin != null && currentUsd > 0 ? round2((margin / currentUsd) * 100) : null,
+        };
+      }
+      if (fallbackChange != null && Math.abs(fallbackChange) > options.maxStepPercent) {
+        return {
+          status: "step_blocked",
+          currentUsd,
+          benchmark,
+          targetUsd,
+          floorUsd,
+          recommendedUsd: null,
+          currentVsBenchmarkPercent,
+          changePercent: fallbackChange,
+          netMarginUsd: netMarginUsd(currentUsd, input.costUsd, options),
+          netMarginPercent: null,
+        };
+      }
+      const fallbackMargin = netMarginUsd(fallbackUsd, input.costUsd, options);
+      return {
+        status: "cost_margin",
+        currentUsd,
+        benchmark,
+        targetUsd,
+        floorUsd,
+        recommendedUsd: fallbackUsd,
+        currentVsBenchmarkPercent,
+        changePercent: fallbackChange,
+        netMarginUsd: fallbackMargin,
+        netMarginPercent:
+          fallbackMargin != null ? round2((fallbackMargin / fallbackUsd) * 100) : null,
+      };
+    }
     const margin = netMarginUsd(currentUsd, input.costUsd, options);
     return {
       status: "blocked",
@@ -319,6 +388,7 @@ export function summariseAlignment(results: readonly AlignmentResult[]): {
   lowered: number;
   raised: number;
   blocked: number;
+  costMargin: number;
   stepBlocked: number;
   locked: number;
   noBenchmark: number;
@@ -333,10 +403,11 @@ export function summariseAlignment(results: readonly AlignmentResult[]): {
     lowered: count("lowered"),
     raised: count("raised"),
     blocked: count("blocked"),
+    costMargin: count("cost_margin"),
     stepBlocked: count("step_blocked"),
     locked: count("locked"),
     noBenchmark: count("no_benchmark"),
     noCost: count("no_cost"),
-    unprofitableAtMarket: count("blocked"),
+    unprofitableAtMarket: count("blocked") + count("cost_margin"),
   };
 }

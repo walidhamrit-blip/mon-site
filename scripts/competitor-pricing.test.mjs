@@ -23,6 +23,15 @@ import {
   faceNumber,
   platformKey,
 } from "../src/lib/competitor-prices.ts";
+import {
+  OWN_DIGITAL_PRODUCTS,
+  STEAM_ACCOUNT_TOPUP,
+  steamTopupCostUsd,
+  withOwnProducts,
+} from "../src/lib/digital-own-products.ts";
+
+/** Politique historique : marché sous le plancher → prix inchangé. */
+const NO_FALLBACK = { ...DEFAULT_ALIGNMENT_OPTIONS, blockedMarginPercent: 0 };
 
 const reseller = (usd) => ({
   usd,
@@ -61,11 +70,14 @@ test("référence revendeur : le prix descend à −1,5 % sous le marché", () =
 
 test("marché sous le plancher : aucun prix appliqué, statut « bloqué »", () => {
   // Steam 50 : coût 49,25, marché 51,39 → cible 50,62 < plancher 51,52.
-  const result = alignPrice({
-    currentUsd: 55.97,
-    costUsd: 49.25,
-    benchmark: reseller(51.39),
-  });
+  const result = alignPrice(
+    {
+      currentUsd: 55.97,
+      costUsd: 49.25,
+      benchmark: reseller(51.39),
+    },
+    NO_FALLBACK,
+  );
   assert.equal(result.status, "blocked");
   assert.equal(result.recommendedUsd, null);
   assert.equal(result.floorUsd, 51.52);
@@ -84,14 +96,34 @@ test("valeur faciale = plafond : on ne relève jamais un prix vers elle", () => 
 
 test("au-dessus de la valeur faciale et sous le plancher : bloqué (pas de baisse possible)", () => {
   // Google Play 50 : coût 48,18 → plancher 50,43 > plafond officiel 50.
-  const result = alignPrice({
-    currentUsd: 54.75,
-    costUsd: 48.18,
-    benchmark: official(50),
-  });
+  const result = alignPrice(
+    {
+      currentUsd: 54.75,
+      costUsd: 48.18,
+      benchmark: official(50),
+    },
+    NO_FALLBACK,
+  );
   assert.equal(result.status, "blocked");
   assert.equal(result.recommendedUsd, null);
   assert.ok(result.currentVsBenchmarkPercent > 0, "le prix courant est bien au-dessus du marché");
+});
+
+test("marché sous le plancher + marge de repli : prix = coût + 1 %", () => {
+  // Décision du 4 novembre : plutôt que de rester 10 à 20 % au-dessus du
+  // marché, on applique coût + 1 % — même si la commission rend la vente
+  // déficitaire (c'est assumé et affiché dans l'admin).
+  const result = alignPrice({
+    currentUsd: 55.97,
+    costUsd: 49.25,
+    benchmark: reseller(51.39),
+  });
+  assert.equal(result.status, "cost_margin");
+  assert.equal(result.recommendedUsd, 49.74); // 49,25 × 1,01
+  assert.ok(result.recommendedUsd < result.floorUsd, "le repli reste sous le plancher");
+  assert.ok(result.netMarginUsd < 0, "la commission n'est pas couverte : marge négative");
+  // Le prix de repli reste sous le marché, donc sous la concurrence.
+  assert.ok(result.recommendedUsd < result.benchmark.usd);
 });
 
 test("garde-fou : une variation supérieure au seuil n'est pas appliquée", () => {
@@ -141,8 +173,9 @@ test("application au catalogue : seul le prix change, la fiche reste intacte", (
   const [aligned] = applyCompetitorPricing([product], DEFAULT_ALIGNMENT_OPTIONS);
   // PSN 50 : 45,93 (G2A) × 0,985 = 45,24
   assert.equal(aligned.denominations[0].priceUsd, 45.24);
-  // PSN 25 : 23,29 (Eneba) × 0,985 = 22,94, sous le plancher 23,66 → inchangé.
-  assert.equal(aligned.denominations[1].priceUsd, 25.9);
+  // PSN 25 : 23,29 (Eneba) × 0,985 = 22,94, sous le plancher 23,66 → repli
+  // coût + 1 % (21,81 × 1,01 = 22,03), donc sous le marché.
+  assert.equal(aligned.denominations[1].priceUsd, 22.03);
   assert.equal(Object.keys(aligned.denominations[0]).sort().join(","), Object.keys(product.denominations[0]).sort().join(","));
   assert.equal(aligned.title, product.title);
 });
@@ -171,12 +204,59 @@ test("résumé d'alignement : chaque montant dans une seule catégorie", () => {
   assert.equal(summary.total, 4);
   assert.equal(summary.aligned, 2); // 45,24 est déjà la cible ; 47,33 sous le plafond
   assert.equal(summary.lowered, 0);
-  assert.equal(summary.blocked, 1);
+  assert.equal(summary.costMargin, 1); // Steam 50 : repli coût + 1 %
+  assert.equal(summary.blocked, 0);
   assert.equal(summary.noBenchmark, 1);
+  assert.equal(summary.unprofitableAtMarket, 1);
   assert.equal(
     summary.total,
-    summary.aligned + summary.lowered + summary.raised + summary.blocked + summary.stepBlocked + summary.noBenchmark + summary.noCost + summary.locked,
+    summary.aligned +
+      summary.lowered +
+      summary.raised +
+      summary.blocked +
+      summary.costMargin +
+      summary.stepBlocked +
+      summary.noBenchmark +
+      summary.noCost +
+      summary.locked,
   );
+});
+
+test("recharge Steam : coût sous la valeur faciale (remise fournisseur)", () => {
+  // Remise Bronze 2,5 % : 10 USDT crédités coûtent 9,75 $, pas 10,01 $ comme
+  // la carte cadeau — c'est toute l'économie de cette ligne.
+  assert.equal(steamTopupCostUsd(10), 9.75);
+  assert.equal(steamTopupCostUsd(5), 4.88);
+  assert.ok(steamTopupCostUsd(50) < 50);
+});
+
+test("recharge Steam : fiche complète, alignée et non exposée aux coûts", () => {
+  assert.equal(STEAM_ACCOUNT_TOPUP.id, "steam-account-topup");
+  assert.equal(STEAM_ACCOUNT_TOPUP.kind, "game_topup");
+  assert.equal(STEAM_ACCOUNT_TOPUP.status, "coming_soon");
+  assert.equal(STEAM_ACCOUNT_TOPUP.fulfillment, "manual");
+  // Le montant réclame le login Steam : sans lui, aucune recharge possible.
+  const ten = STEAM_ACCOUNT_TOPUP.denominations.find((d) => d.id === "steam-topup-10");
+  assert.ok(ten, "la dénomination 10 USDT existe");
+  assert.equal(ten.fields?.[0]?.key, "steamLogin");
+  assert.equal(ten.supplierCostUsd, 9.75);
+  // Alignement : marché 10,75, plancher 11,42 → repli coût + 1 % = 9,85.
+  const [aligned] = applyCompetitorPricing([STEAM_ACCOUNT_TOPUP], DEFAULT_ALIGNMENT_OPTIONS);
+  const alignedTen = aligned.denominations.find((d) => d.id === "steam-topup-10");
+  assert.equal(alignedTen.priceUsd, 9.85);
+  assert.ok(alignedTen.priceUsd < 10, "moins cher que la valeur faciale, donc qu'Eneba");
+});
+
+test("fiches maison : fusion sans doublon ni écrasement", () => {
+  assert.equal(OWN_DIGITAL_PRODUCTS.length, 1);
+  const already = { id: "steam-account-topup", platform: "Steam", denominations: [], sortOrder: 99 };
+  assert.equal(withOwnProducts([already]).length, 1);
+  const merged = withOwnProducts([
+    { id: "fzr-a", platform: "Steam", denominations: [], sortOrder: 5 },
+  ]);
+  assert.equal(merged.length, 2);
+  // L'ordre reste celui du catalogue (sortOrder), la fiche maison s'insère.
+  assert.deepEqual(merged.map((p) => p.id), ["fzr-a", "steam-account-topup"]);
 });
 
 test("clés de plateforme : les libellés du catalogue tombent sur la bonne référence", () => {

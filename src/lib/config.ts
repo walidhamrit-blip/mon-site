@@ -289,6 +289,12 @@ export const siteConfig = {
     fixedFeeUsd: 1,
     /** Profit minimal par vente, en USD. */
     minProfitUsd: 0.5,
+    /**
+     * Marge de repli quand le marché passe sous le plancher : prix = coût
+     * + 1 %. Décision du 4 novembre 2026 — mieux vaut rester au niveau du
+     * marché à marge nulle que 10 à 20 % au-dessus.
+     */
+    blockedMarginPercent: 1,
     /** Variation maximale en une application (garde-fou), en %. */
     maxStepPercent: 25,
     /**
