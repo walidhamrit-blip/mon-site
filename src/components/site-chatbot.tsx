@@ -170,24 +170,45 @@ function ChatShell() {
     return () => window.removeEventListener("keydown", onKey);
   }, [open]);
 
-  // Petite bulle d'accueil : elle apparaît peu après l'arrivée sur le
-  // site puis repasse de temps en temps, pour signaler le assistant.
-  // Dès que le visiteur ouvre la conversation une première fois, elle
-  // ne revient plus (les minuteries sont aussi arrêtées à l'ouverture).
+  // Bulle d'accueil : une seule fois par session, fermable, sans boucle.
+  // Dès que le visiteur ouvre l'assistant ou ferme la bulle, elle ne
+  // revient plus pendant cette session.
   useEffect(() => {
     if (open || openedOnce.current) return;
+    let greeted = false;
+    try {
+      greeted = window.sessionStorage.getItem("nukhba-chat-greeted") === "1";
+    } catch {
+      greeted = false;
+    }
+    if (greeted) return;
     let hide: number | undefined;
-    const show = () => {
+    const first = window.setTimeout(() => {
       setBubble(true);
       hide = window.setTimeout(() => setBubble(false), 9000);
-    };
-    const first = window.setTimeout(show, 1600);
-    const loop = window.setInterval(show, 26000);
+    }, 1600);
     return () => {
       window.clearTimeout(first);
       if (hide) window.clearTimeout(hide);
-      window.clearInterval(loop);
     };
+  }, [open]);
+
+  const dismissBubble = () => {
+    setBubble(false);
+    openedOnce.current = true;
+    try {
+      window.sessionStorage.setItem("nukhba-chat-greeted", "1");
+    } catch {
+      // Session storage indisponible : la bulle ne reviendra pas après ouverture.
+    }
+  };
+
+  // Quand l'assistant est ouvert, les autres flotteurs ne concurrencent pas
+  // la conversation en cours.
+  useEffect(() => {
+    if (open) document.documentElement.setAttribute("data-chatbot", "open");
+    else document.documentElement.removeAttribute("data-chatbot");
+    return () => document.documentElement.removeAttribute("data-chatbot");
   }, [open]);
 
   const pushBot = (text: string, actions?: ChatAction[]) => {
@@ -448,8 +469,8 @@ function ChatShell() {
       </AnimatePresence>
 
       {/* Lanceur — avatar Einstein flottant : lévitation douce, halo
-          pulsant aux couleurs du thème, dandinement au survol et petite
-          bulle d'accueil périodique. */}
+          aux couleurs du thème, dandinement au survol et bulle d'accueil
+          unique (fermable, sans boucle). */}
       <div className={`relative ${open ? "" : "chatbot-float"}`}>
         {!open && (
           <span
@@ -466,9 +487,17 @@ function ChatShell() {
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.9 }}
               transition={{ duration: 0.22, ease: "easeOut" }}
-              className="pointer-events-none absolute bottom-2.5 end-[calc(100%+12px)] whitespace-nowrap rounded-full border border-[var(--border)] bg-[var(--popover)] px-3 py-1.5 text-[11.5px] font-bold text-[var(--popover-foreground)] shadow-[0_10px_25px_rgba(0,0,0,0.18)]"
+              className="absolute bottom-2.5 end-[calc(100%+12px)] flex items-center gap-2 whitespace-nowrap rounded-full border border-[var(--border)] bg-[var(--popover)] px-3 py-1.5 text-[12px] font-bold text-[var(--popover-foreground)] shadow-[0_10px_25px_rgba(0,0,0,0.18)]"
             >
               {ar ? "مرحبًا 👋 عندك سؤال؟" : "Hi 👋 Got a question?"}
+              <button
+                type="button"
+                onClick={dismissBubble}
+                aria-label={ar ? "إغلاق رسالة الترحيب" : "Dismiss welcome message"}
+                className="grid h-6 w-6 cursor-pointer place-items-center rounded-full text-[var(--muted-foreground)] transition-colors hover:bg-[var(--secondary)] hover:text-[var(--foreground)]"
+              >
+                <X className="h-3 w-3" />
+              </button>
             </motion.div>
           )}
         </AnimatePresence>
@@ -477,7 +506,14 @@ function ChatShell() {
           type="button"
           onClick={() => {
             setOpen((v) => {
-              if (!v) openedOnce.current = true;
+              if (!v) {
+                openedOnce.current = true;
+                try {
+                  window.sessionStorage.setItem("nukhba-chat-greeted", "1");
+                } catch {
+                  // ignore
+                }
+              }
               return !v;
             });
             setBubble(false);

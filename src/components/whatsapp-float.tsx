@@ -32,10 +32,6 @@ export function WhatsAppFloat() {
       className="whatsapp-float group fixed bottom-[max(1.25rem,env(safe-area-inset-bottom))] end-5 z-[70] grid h-14 w-14 place-items-center rounded-full bg-[#0B6B3A] text-white shadow-[0_10px_28px_-6px_rgba(11,107,58,0.45)] transition-transform duration-200 hover:scale-105 print:hidden"
     >
       <MessageCircle className="h-6 w-6" />
-      <span
-        aria-hidden="true"
-        className="absolute -top-0.5 -end-0.5 h-3 w-3 rounded-full border-2 border-[var(--background)] bg-red-500"
-      />
     </a>
   );
 }

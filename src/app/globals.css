@@ -761,3 +761,17 @@ html[data-mobile-menu="open"] .site-chatbot,
 html[data-mobile-menu="open"] .back-to-top {
   display: none !important;
 }
+/* L'assistant ouvert ne doit pas être concurrencé par les autres flotteurs. */
+html[data-chatbot="open"] .whatsapp-float,
+html[data-chatbot="open"] .back-to-top {
+  display: none !important;
+}
+/* Confort visuel : les animations décoratives répétitives sont coupées
+   quand le visiteur demande moins de mouvement. */
+@media (prefers-reduced-motion: reduce) {
+  .animate-pulse,
+  .animate-ping,
+  .animate-bounce {
+    animation: none !important;
+  }
+}
