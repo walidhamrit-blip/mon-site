@@ -288,7 +288,7 @@ function ChatShell() {
   };
 
   return (
-    <div className="fixed bottom-[92px] end-5 z-[70] flex flex-col items-end gap-2 print:hidden">
+    <div className="site-chatbot fixed bottom-[92px] end-5 z-[70] flex flex-col items-end gap-2 print:hidden">
       <AnimatePresence>
         {open && (
           <motion.section

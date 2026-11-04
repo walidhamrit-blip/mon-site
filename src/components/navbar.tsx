@@ -1,9 +1,9 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { LocalizedLink as Link } from "@/components/localized-link";
 import { usePathname, useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
-import { ArrowUpRight, Menu, Moon, Sun, X } from "lucide-react";
+import { ArrowUpRight, ChevronDown, Menu, Moon, Sun, X } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import { useTheme } from "./theme-provider";
 import { ThemeSwitcher, ThemeList } from "./theme-switcher";
@@ -30,23 +30,64 @@ export function Navbar() {
   const { locale, defaultLocale } = useI18n();
   const { mode, toggle } = useTheme();
   const [open, setOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement | null>(null);
+  const toggleRef = useRef<HTMLButtonElement | null>(null);
   const ar = locale === "ar";
   // Marché de référence : la mention sous le logo suit le réglage /admin.
   const market = resolveMarket(siteConfig.market);
   const marketText = marketLabels(market, locale);
 
-  // Panneau mobile : verrouille le fond et laisse Échap fermer.
+  // Panneau mobile : dialogue modal, fond verrouillé, focus piégé et rendu
+  // au bouton d'ouverture. Les widgets flottants sont masqués via CSS.
   useEffect(() => {
     if (!open) return;
-    const previous = document.body.style.overflow;
+    const previousOverflow = document.body.style.overflow;
+    const previousFocus = document.activeElement instanceof HTMLElement ? document.activeElement : toggleRef.current;
     document.body.style.overflow = "hidden";
+    document.documentElement.setAttribute("data-mobile-menu", "open");
+
+    const focusables = () =>
+      Array.from(
+        menuRef.current?.querySelectorAll<HTMLElement>(
+          'a[href], button:not([disabled]), summary, input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+        ) ?? [],
+      ).filter((element) => {
+        if (element.offsetParent === null) return false;
+        // Le contenu d'un <details> fermé ne doit pas entrer dans le cycle Tab.
+        const details = element.closest("details");
+        if (details && !details.open && element.tagName !== "SUMMARY") return false;
+        return true;
+      });
+
     const onKey = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setOpen(false);
+      if (event.key === "Escape") {
+        event.preventDefault();
+        setOpen(false);
+        return;
+      }
+      if (event.key !== "Tab") return;
+      const items = focusables();
+      if (items.length === 0) return;
+      const first = items[0];
+      const last = items[items.length - 1];
+      const active = document.activeElement;
+      if (event.shiftKey && (active === first || !menuRef.current?.contains(active))) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && (active === last || !menuRef.current?.contains(active))) {
+        event.preventDefault();
+        first.focus();
+      }
     };
+
     window.addEventListener("keydown", onKey);
+    const frame = window.requestAnimationFrame(() => focusables()[0]?.focus());
     return () => {
-      document.body.style.overflow = previous;
+      window.cancelAnimationFrame(frame);
+      document.body.style.overflow = previousOverflow;
+      document.documentElement.removeAttribute("data-mobile-menu");
       window.removeEventListener("keydown", onKey);
+      previousFocus?.focus();
     };
   }, [open]);
 
@@ -153,9 +194,11 @@ export function Navbar() {
               </button>
 
               <button
+                ref={toggleRef}
                 onClick={() => setOpen((value) => !value)}
                 aria-expanded={open}
                 aria-controls="mobile-menu"
+                aria-haspopup="dialog"
                 aria-label={open ? (ar ? "إغلاق القائمة" : "Close menu") : ar ? "فتح القائمة" : "Open menu"}
                 className="grid h-9 w-9 cursor-pointer place-items-center rounded-full bg-[var(--primary)] text-[var(--primary-foreground)] lg:hidden"
               >
@@ -170,13 +213,31 @@ export function Navbar() {
         {open && (
           <motion.div
             id="mobile-menu"
+            ref={menuRef}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="mobile-menu-title"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.2 }}
-            className="fixed inset-0 z-40 flex flex-col bg-[var(--background)]/95 pt-[84px] backdrop-blur-xl lg:hidden"
+            className="fixed inset-0 z-[60] flex flex-col bg-[var(--background)] lg:hidden"
           >
-            <div className="site-container flex-1 overflow-y-auto px-4 pb-10 sm:px-6">
+            <div className="flex h-[72px] shrink-0 items-center justify-between border-b border-[var(--border)] px-4 sm:px-6">
+              <span id="mobile-menu-title" className="text-[17px] font-black">
+                {ar ? "القائمة" : "Menu"}
+              </span>
+              <button
+                type="button"
+                onClick={() => setOpen(false)}
+                aria-label={ar ? "إغلاق القائمة" : "Close menu"}
+                className="grid h-11 w-11 cursor-pointer place-items-center rounded-full bg-[var(--secondary)] transition-colors hover:bg-[var(--muted)]"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <div className="site-container flex-1 overflow-y-auto px-4 py-4 sm:px-6">
               <div className="rounded-[var(--radius-lg)] border border-[var(--border)] bg-[var(--card)] p-4 shadow-[var(--shadow-lg)] sm:p-6">
                 <nav aria-label={ar ? "قائمة الجوال" : "Mobile menu"} className="flex flex-col gap-1">
                   {links.map((link) => (
@@ -184,7 +245,7 @@ export function Navbar() {
                       key={link.href}
                       href={link.href}
                       onClick={() => setOpen(false)}
-                      className={`flex items-center justify-between rounded-xl px-4 py-3 text-[15px] font-semibold transition-colors hover:bg-[var(--secondary)] ${
+                      className={`flex min-h-11 items-center justify-between rounded-xl px-4 py-3 text-[15px] font-semibold transition-colors hover:bg-[var(--secondary)] ${
                         isActive(link.href) ? "bg-[var(--secondary)] font-bold" : ""
                       }`}
                     >
@@ -194,34 +255,37 @@ export function Navbar() {
                   ))}
                 </nav>
 
-                <div className="mt-5 border-t border-[var(--border)] pt-5">
-                  <LocaleSwitcher variant="list" />
-                </div>
-
-                <div className="mt-5 border-t border-[var(--border)] pt-5">
-                  <ThemeList />
-                </div>
-
-                <div className="mt-5 border-t border-[var(--border)] pt-5 lg:hidden">
-                  <CurrencySwitcher variant="list" />
-                </div>
-
-                <div className="mt-5 grid grid-cols-2 gap-2.5">
+                {/* Actions commerciales avant les préférences secondaires. */}
+                <div className="mt-5 grid gap-2.5">
+                  <button
+                    type="button"
+                    onClick={quote}
+                    className="inline-flex min-h-11 w-full cursor-pointer items-center justify-center gap-1.5 rounded-full bg-[var(--primary)] px-4 text-[14px] font-bold text-[var(--primary-foreground)]"
+                  >
+                    {ar ? "طلب عرض" : "Get quote"}
+                    <ArrowUpRight className="h-4 w-4 rtl:rotate-180" />
+                  </button>
                   <a
                     href={whatsappLink(siteConfig.whatsapp, whatsappMsg)}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="grid h-11 place-items-center rounded-full bg-[#25D366] text-[13.5px] font-bold text-white"
+                    className="inline-flex min-h-11 w-full items-center justify-center rounded-full bg-[#0B6B3A] px-4 text-[14px] font-bold text-white"
                   >
                     WhatsApp
                   </a>
-                  <button
-                    onClick={quote}
-                    className="h-11 cursor-pointer rounded-full bg-[var(--primary)] text-[13.5px] font-bold text-[var(--primary-foreground)]"
-                  >
-                    {ar ? "طلب عرض" : "Get quote"}
-                  </button>
                 </div>
+
+                <details className="group mt-5 border-t border-[var(--border)] pt-5">
+                  <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between rounded-xl px-4 py-3 text-[14px] font-bold transition-colors hover:bg-[var(--secondary)] [&::-webkit-details-marker]:hidden">
+                    {ar ? "تخصيص العرض" : "Customize display"}
+                    <ChevronDown className="h-4 w-4 transition-transform group-open:rotate-180" />
+                  </summary>
+                  <div className="mt-4 space-y-5">
+                    <LocaleSwitcher variant="list" />
+                    <ThemeList />
+                    <CurrencySwitcher variant="list" />
+                  </div>
+                </details>
               </div>
             </div>
           </motion.div>
