@@ -42,7 +42,7 @@ export function Price({
     <span className={className}>
       <span dir="ltr">{compact ? formatCompact(usd) : format(usd)}</span>
       {!isBaseCurrency && (
-        <span className="ms-1 text-[0.85em] opacity-55">
+        <span className="ms-1 text-[0.85em] text-[var(--muted-foreground)]">
           {" · "}
           {ar ? "الفوترة بـ" : "billed in"} {formatMoney(usd, BASE_CURRENCY, "en")}
         </span>

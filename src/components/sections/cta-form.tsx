@@ -86,7 +86,7 @@ export function CTAForm() {
               </div>
               <h2 className="mt-4 text-[clamp(1.75rem,1.2rem+1.9vw,2.6rem)] font-black leading-[1.04] tracking-[-0.025em]">
                 {heading.title}
-                <span className="mt-1.5 block text-[0.72em] font-light italic opacity-75">
+                <span className="mt-1.5 block text-[0.72em] font-light italic">
                   {heading.subtitle}
                 </span>
               </h2>
@@ -101,18 +101,18 @@ export function CTAForm() {
                     <item.icon className="h-5 w-5 mt-0.5 text-[var(--accent)] flex-shrink-0" />
                     <div>
                       <div className="text-[13.5px] font-bold">{item.title}</div>
-                      <div className="mt-0.5 text-[11.5px] opacity-65">{item.desc}</div>
+                      <div className="mt-0.5 text-[12px] leading-5">{item.desc}</div>
                     </div>
                   </div>
                 ))}
               </div>
 
               <div className="mt-8 flex flex-wrap gap-3">
-                <a href={whatsappLink(siteConfig.whatsapp, whatsappMsg)} target="_blank" className="h-11 px-5 rounded-full bg-[#25D366] text-white inline-flex items-center gap-2 font-bold hover:brightness-95">
+                <a href={whatsappLink(siteConfig.whatsapp, whatsappMsg)} target="_blank" className="h-11 px-5 rounded-full bg-[#0B6B3A] text-white inline-flex items-center gap-2 font-bold hover:brightness-95">
                   {locale === "ar" ? "تحدث واتساب الآن" : "Chat on WhatsApp"}
                   <ArrowUpRight className="h-4 w-4" />
                 </a>
-                <div className="text-xs opacity-60 flex items-center">
+                <div className="text-xs flex items-center">
                   {heading.note || t.cta.guarantee}
                 </div>
               </div>
@@ -129,7 +129,7 @@ export function CTAForm() {
                     {[1,2,3].map(n=> (
                       <span key={n} className={`h-1.5 rounded-full transition-all ${n===step ? "w-8 bg-[var(--accent)]" : n<step ? "w-6 bg-[var(--primary)]" : "w-6 bg-[var(--border)]"}`} />
                     ))}
-                    <span className="ms-2 text-xs opacity-60">{step}/{totalSteps}</span>
+                    <span className="ms-2 text-xs text-[var(--muted-foreground)]">{step}/{totalSteps}</span>
                   </div>
                 </div>
 
@@ -248,7 +248,7 @@ export function CTAForm() {
                     )}
                   </div>
 
-                  <p className="text-xs opacity-50 text-center">
+                  <p className="text-xs text-[var(--muted-foreground)] text-center">
                     {locale === "ar" ? "بإرسالك توافق على تواصلنا عبر واتساب وهاتف • نحترم خصوصيتك" : "By sending you agree to WhatsApp/phone contact • We respect privacy"}
                   </p>
                 </form>
@@ -259,10 +259,10 @@ export function CTAForm() {
                   <CheckCircle2 className="h-8 w-8" />
                 </div>
                 <h3 className="mt-4 text-xl font-black">{locale === "ar" ? "تم الإرسال بنجاح!" : "Sent successfully!"}</h3>
-                <p className="mt-2 text-sm opacity-60 max-w-[32ch] mx-auto">
+                <p className="mt-2 text-sm text-[var(--muted-foreground)] max-w-[32ch] mx-auto">
                   {locale === "ar" ? "سنرد عليك عبر واتساب خلال ساعتين. شكراً لثقتك بنخبة." : "We'll reply on WhatsApp within 2 hours. Thanks for trusting Nukhba."}
                 </p>
-                <a href={whatsappLink(siteConfig.whatsapp, whatsappMsg)} target="_blank" className="mt-6 inline-flex h-10 px-5 rounded-full bg-[#25D366] text-white font-bold items-center gap-2">
+                <a href={whatsappLink(siteConfig.whatsapp, whatsappMsg)} target="_blank" className="mt-6 inline-flex h-10 px-5 rounded-full bg-[#0B6B3A] text-white font-bold items-center gap-2">
                   {locale === "ar" ? "متابعة على واتساب" : "Continue on WhatsApp"}
                 </a>
               </motion.div>

@@ -403,7 +403,7 @@ export function ReservationDialog({
                 href={whatsappUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="h-11 rounded-full bg-[#25D366] text-white font-bold text-sm inline-flex items-center justify-center gap-2"
+                className="h-11 rounded-full bg-[#0B6B3A] text-white font-bold text-sm inline-flex items-center justify-center gap-2"
               >
                 <MessageCircle className="h-4 w-4" />
                 {ar ? "احجز عبر واتساب" : "Reserve via WhatsApp"}

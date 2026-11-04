@@ -132,7 +132,7 @@ export function Services() {
                       href={whatsappUrl(title)}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="h-11 rounded-full bg-[#25D366] text-white font-bold text-sm inline-flex items-center justify-center gap-2 w-full hover:brightness-95 transition"
+                      className="h-11 rounded-full bg-[#0B6B3A] text-white font-bold text-sm inline-flex items-center justify-center gap-2 w-full hover:brightness-95 transition"
                     >
                       <MessageCircle className="h-4 w-4" />
                       {ar ? "أكمل الطلب عبر واتساب" : "Continue on WhatsApp"}

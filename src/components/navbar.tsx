@@ -125,7 +125,7 @@ export function Navbar() {
               <span className="leading-none">
                 <span className="flex items-center gap-1.5 text-[16px] font-black tracking-tight">
                   {siteConfig.name}
-                  <span className="hidden text-[10px] font-normal tracking-[0.2em] opacity-55 sm:inline">
+                  <span className="hidden text-[10px] font-normal tracking-[0.2em] text-[var(--muted-foreground)] sm:inline">
                     {ar ? "نخبة" : "NUKHBA"}
                   </span>
                 </span>

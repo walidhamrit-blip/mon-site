@@ -200,7 +200,7 @@ export function DemoViewer({ demo, allDemos }: { demo: Demo; allDemos: Demo[] })
                     )}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="h-11 rounded-full bg-[#25D366] text-white grid place-items-center font-bold text-sm"
+                    className="h-11 rounded-full bg-[#0B6B3A] text-white grid place-items-center font-bold text-sm"
                   >
                     {locale === "ar" ? "واتساب" : "WhatsApp"}
                   </a>

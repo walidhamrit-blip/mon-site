@@ -316,7 +316,7 @@ function InteractiveShowcase({
 
                 <div className="ms-2 flex items-center gap-2 px-3 py-1 rounded-full bg-[var(--secondary)] border border-[var(--border)] text-xs min-w-0 max-w-full">
                   {hasLiveUrl ? (
-                    <span className="inline-flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400 font-bold flex-shrink-0">
+                    <span className="inline-flex items-center gap-1.5 text-emerald-700 dark:text-emerald-400 font-bold flex-shrink-0">
                       <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
                       {locale === "ar" ? "موقع حقيقي حي" : "LIVE SITE"}
                     </span>
@@ -444,7 +444,7 @@ function InteractiveShowcase({
                     {locale === "ar" ? activeDemo.title : activeDemo.titleEn}
                   </span>
                   {hasLiveUrl && (
-                    <span className="text-[11px] whitespace-nowrap px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 font-bold">
+                    <span className="text-[11px] whitespace-nowrap px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 font-bold">
                       {locale === "ar" ? "✓ تصفح حقيقي مباشر" : "✓ Real Interactive Site"}
                     </span>
                   )}
