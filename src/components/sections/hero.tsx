@@ -24,9 +24,7 @@ export function Hero() {
   const items = ordered.filter((visual, index, all) => all.findIndex((v) => v.src === visual.src) === index);
   return (
     <section className="panoramic-hero" aria-label={ar ? "شريط صور نخبة" : "Nukhba visuals marquee"}>
-      <h1 className="sr-only">
-        {ar ? "نخبة — إنشاء مواقع وبطاقات رقمية وألعاب وشحن" : "Nukhba — Website creation, digital gift cards, gaming & top-ups"}
-      </h1>
+
       <div className="hero-marquee-window" dir="ltr">
         <div className="hero-marquee-track" style={{ animationDirection: ar ? "reverse" : "normal" }}>
           {[0, 1].map((copy) => (

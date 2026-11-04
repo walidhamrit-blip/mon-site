@@ -72,8 +72,8 @@ html[dir="rtl"] .public-shell .site-main :is(h1,h2,h3) { line-height: 1.5; lette
 .public-shell .site-main :is(a,button):focus-visible { outline: 3px solid var(--ring); outline-offset: 4px; }
 
 /* Homepage: the photo remains uncluttered, three clear editorial entry cards. */
-.public-shell .panoramic-hero { height: clamp(360px, 39vw, 640px); border-bottom: 3px solid var(--accent); }
-.public-shell .home-gateway { margin-top: -48px; padding-bottom: 4rem; }
+.public-shell .panoramic-hero { height: clamp(260px, 32vw, 560px); border-bottom: 3px solid var(--accent); }
+.public-shell .home-gateway { margin-top: 0; padding-bottom: 4rem; }
 .public-shell .gateway-card {
   --gateway-color: var(--accent);
   padding: 14px; border-radius: 1rem; border: 1px solid var(--border);
@@ -153,9 +153,9 @@ html[dir="rtl"] .public-shell .site-main :is(h1,h2,h3) { line-height: 1.5; lette
   .public-shell .gaming-footer-cta { align-items: flex-start; flex-direction: column; gap: 1.5rem; }
 }
 @media (max-width: 767px) {
-  .public-shell .panoramic-hero { height: 340px; }
-  .public-shell .home-gateway { margin-top: -24px; padding-bottom: 2.5rem; }
-  .public-shell .gateway-art { height: 175px; }
+  .public-shell .panoramic-hero { height: 260px; }
+  .public-shell .home-gateway { margin-top: 0; padding-bottom: 2.5rem; }
+  .public-shell .gateway-art { height: 150px; }
   .public-shell .gaming-brand { width: 34px; height: 34px; font-size: 1rem; }
   .public-shell .gaming-footer-grid { gap: 2rem 1.2rem; }
   .public-shell .gaming-footer-grid > div:first-child { grid-column: 1/-1; }
