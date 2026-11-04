@@ -92,14 +92,6 @@ export const CURRENCY_CATALOG = {
     shortEn: "EGP",
     decimals: 2,
   },
-  LYD: {
-    symbol: "د.ل",
-    labelAr: "دينار\libي",
-    labelEn: "Libyan Dinar",
-    shortAr: "د.ل",
-    shortEn: "LYD",
-    decimals: 2,
-  },
 } as const;
 
 export type CurrencyCode = keyof typeof CURRENCY_CATALOG;
@@ -115,7 +107,6 @@ export const DEFAULT_ENABLED_CURRENCIES: CurrencyCode[] = [
   "SAR",
   "AED",
   "EGP",
-  "LYD",
 ];
 
 /**
@@ -134,7 +125,6 @@ export const DEFAULT_RATES: Record<CurrencyCode, number> = {
   SAR: 3.75,
   AED: 3.6725,
   EGP: 48.5,
-  LYD: 4.83,
 };
 
 /** Forme de la section `currency` de la configuration du site. */

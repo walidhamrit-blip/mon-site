@@ -1,4 +1,6 @@
 import { applyGiftCardSalesPolicy } from "@/lib/digital-sales-policy";
+import { applyCompetitorPricing } from "@/lib/competitor-pricing";
+import { siteConfig } from "@/lib/config";
 import { asc, eq, inArray } from "drizzle-orm";
 import { db, ensureSchema } from "@/db";
 import { digitalDenominations, digitalProducts } from "@/db/schema";
@@ -433,6 +435,7 @@ export async function getDigitalCatalog(
       publicOnly: true,
       keepInternalFields: false,
     });
+    products = applyCompetitorPricing(products, siteConfig.pricingAlignment);
   }
   // On ne mémorise pas un repli dû à une panne : dès que la base revient,
   // la page doit le voir tout de suite plutôt qu'au bout de deux minutes.
@@ -494,10 +497,13 @@ export async function getAdminBoutiqueCatalog(): Promise<AdminBoutiqueCatalogDat
 
   const deletedSet = new Set(overridesState.deletedIds);
   const deletedProducts = baseProducts.filter((base) => deletedSet.has(base.id));
-  const products = applyDigitalOverrides(baseProducts, overridesState, {
-    publicOnly: false,
-    keepInternalFields: true,
-  });
+  const products = applyCompetitorPricing(
+    applyDigitalOverrides(baseProducts, overridesState, {
+      publicOnly: false,
+      keepInternalFields: true,
+    }),
+    siteConfig.pricingAlignment,
+  );
 
   return {
     products,

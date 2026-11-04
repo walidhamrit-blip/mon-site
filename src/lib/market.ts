@@ -34,11 +34,11 @@ export interface MarketProfile {
   timezone: string;
   /** Étiquette de langue BCP-47 du marché (ex. « ar-LY »). */
   locale: string;
-  /** Devise locale du marché (ex. « LYD »). */
+  /** Devise de référence du marché (ex. « USDT »). */
   currency: string;
-  /** Symbole de la devise locale en arabe (ex. « د.ل »). */
+  /** Symbole de la devise de référence en arabe (ex. « USDT »). */
   currencyAr: string;
-  /** Symbole de la devise locale en anglais (ex. « LYD »). */
+  /** Symbole de la devise de référence en anglais (ex. « USDT »). */
   currencyEn: string;
   /** Indicatif téléphonique international (ex. « +218 »). */
   phonePrefix: string;
@@ -63,9 +63,9 @@ export const DEFAULT_MARKET: MarketProfile = {
   cityEn: "Tripoli",
   timezone: "Africa/Tripoli",
   locale: "ar-LY",
-  currency: "LYD",
-  currencyAr: "د.ل",
-  currencyEn: "LYD",
+  currency: "USDT",
+  currencyAr: "USDT",
+  currencyEn: "USDT",
   phonePrefix: "+218",
   lat: 32.8872,
   lng: 13.1913,

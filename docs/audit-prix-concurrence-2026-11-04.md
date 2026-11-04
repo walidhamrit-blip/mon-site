@@ -2,11 +2,18 @@
 
 - **Date :** 4 novembre 2026
 - **Périmètre :** offres web (forfaits, services à la carte, abonnements, maintenance) **et** boutique codes & cartes cadeaux (`/codes`)
-- **Devise de référence :** USD (celle facturée par NOWPayments). **Taux de contrôle :** officiel **6,42 LYD/USD**, parallèle **9,90 LYD/USD** (relevés du 1er au 3 novembre 2026)
+- **Devise de référence :** **USDT** (facturé en USD par NOWPayments). Le LYD n'est plus une devise du site ; le taux ci-dessous ne sert qu'à lire les prix des concurrents libyens. **Taux de contrôle :** officiel **6,42 LYD/USD**, parallèle **9,90 LYD/USD** (relevés du 1er au 3 novembre 2026)
 - **Nature :** audit en lecture seule — aucun prix n'a été modifié dans le code ni en base.
-- **Convention :** « réel LYD » = conversion au taux parallèle (ce que le client paie effectivement pour obtenir des dollars/USDT) ; « affiché LYD » = conversion produite par le site (`siteConfig.currency.rates.LYD`).
+- **Convention :** « réel LYD » = conversion au taux parallèle (ce que le client paie effectivement pour obtenir des dollars/USDT) ; « affiché LYD » = conversion que le site produisait avant le retrait de la devise (`LYD: 4,83`, soit ~51 % sous la réalité).
 
 ---
+
+> **Décision du 4 novembre 2026 — le dinar libyen sort du site.**
+> La référence unique devient l'**USDT** (facturé en USD par NOWPayments) : le sélecteur de
+> devise, les taux de conversion et les équivalents LYD sont retirés de l'interface et de
+> l'administration. Les montants en د.ل qui subsistent ci-dessous décrivent **le marché local
+> tel qu'il se lit encore chez les concurrents libyens** — ils servent de contexte de lecture,
+> jamais de prix proposé au client.
 
 ## 0. Synthèse (60 secondes)
 

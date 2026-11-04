@@ -54,6 +54,12 @@ export default async function AdminDigitalPage() {
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <Link
+            href="/admin/digital/alignment"
+            className="rounded-xl border border-stone-300 bg-white px-4 py-2 text-xs font-bold text-stone-800 hover:bg-stone-50"
+          >
+            Alignement marché →
+          </Link>
+          <Link
             href="/admin/digital/products"
             className="rounded-xl bg-stone-900 px-4 py-2 text-xs font-bold text-white hover:bg-stone-800 shadow-xs"
           >

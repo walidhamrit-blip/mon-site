@@ -38,9 +38,9 @@ export const siteConfig = {
     cityEn: "Tripoli",
     timezone: "Africa/Tripoli",
     locale: "ar-LY",
-    currency: "LYD",
-    currencyAr: "د.ل",
-    currencyEn: "LYD",
+    currency: "USDT",
+    currencyAr: "USDT",
+    currencyEn: "USDT",
     phonePrefix: "+218",
     lat: 32.8872,
     lng: 13.1913,
@@ -51,6 +51,11 @@ export const siteConfig = {
 
   /**
    * Affichage des prix dans plusieurs devises.
+   *
+   * Le dinar libyen a été RETIRÉ : la référence du site est l'USDT (1 USDT =
+   * 1 USD, la valeur réellement encaissée par NOWPayments). Aucun prix n'est
+   * plus converti depuis un taux de marché local, donc aucun prix affiché ne
+   * peut être faux par rapport au montant payé.
    *
    * - `base` : devise de facturation (celle encaissée par NOWPayments).
    * - `rates` : 1 USD = X, modifiable depuis /admin → Réglages.
@@ -65,9 +70,8 @@ export const siteConfig = {
       SAR: 3.75,
       AED: 3.6725,
       EGP: 48.5,
-      LYD: 4.83,
     },
-    enabled: ["USDT", "USD", "EUR", "SAR", "AED", "EGP", "LYD"],
+    enabled: ["USDT", "USD", "EUR", "SAR", "AED", "EGP"],
   },
 
   // Apparence principale du site — modifiable depuis /admin → Réglages.
@@ -263,6 +267,35 @@ export const siteConfig = {
   fazercards: {
     /** Valeur maximale d'une commande automatique chez FazerCards (en USD). */
     maxOrderUsd: 25,
+  },
+
+  /**
+   * Alignement des prix de la boutique sur le marché (voir
+   * `src/lib/competitor-pricing.ts`).
+   *
+   * La formule vise la référence revendeur la moins chère (−`undercutPercent`),
+   * sans jamais descendre sous le plancher coût + frais + profit minimal, et
+   * sans jamais relever un prix au-dessus d'une valeur faciale. Les références
+   * et leur date vivent dans `src/lib/competitor-prices.ts` : un prix observé
+   * n'est jamais inventé.
+   */
+  pricingAlignment: {
+    enabled: true,
+    /** Décote visée sous la référence revendeur (%). */
+    undercutPercent: 1.5,
+    /** Commission passerelle (% du prix de vente). */
+    feePercent: 1.5,
+    /** Frais fixes par commande (réseau + retrait), en USD. */
+    fixedFeeUsd: 1,
+    /** Profit minimal par vente, en USD. */
+    minProfitUsd: 0.5,
+    /** Variation maximale en une application (garde-fou), en %. */
+    maxStepPercent: 25,
+    /**
+     * Fiches dont le prix est décidé à la main (ex. « steam-wallet ») :
+     * l'alignement automatique ne les touche jamais.
+     */
+    lockedProductIds: [] as string[],
   },
 
   // Services libres / à la carte — petites missions vendues au forfait

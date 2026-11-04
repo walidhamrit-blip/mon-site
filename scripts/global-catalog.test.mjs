@@ -131,8 +131,8 @@ test("normalizeCurrency retombe sur USD pour un code inconnu", () => {
 });
 
 test("enabledCurrencies respecte l'ordre du catalogue et déduplique", () => {
-  const list = currency.enabledCurrencies({ enabled: ["LYD", "USD", "LYD", "EUR"] });
-  assert.deepEqual(list, ["USD", "EUR", "LYD"]);
+  const list = currency.enabledCurrencies({ enabled: ["EGP", "USD", "EGP", "EUR"] });
+  assert.deepEqual(list, ["USD", "EUR", "EGP"]);
   assert.deepEqual(currency.enabledCurrencies({ enabled: [] }), ["USD"]);
 });
 
@@ -153,7 +153,7 @@ test("convertFromBase convertit puis retombe sur le montant d'origine", () => {
 test("formatMoney affiche le symbole de la devise et deux décimales", () => {
   assert.equal(currency.formatMoney(300, "USD", "en"), "$300.00");
   assert.equal(currency.formatMoney(300, "EUR", "en"), "€300.00");
-  assert.equal(currency.formatMoney(49.5, "LYD", "en"), "د.ل49.50");
+  assert.equal(currency.formatMoney(49.5, "EGP", "en"), "ج.م49.50");
   assert.ok(currency.formatMoney(1000, "EUR", "ar").includes("€"));
 });
 

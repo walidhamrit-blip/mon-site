@@ -15,7 +15,7 @@ import { BASE_CURRENCY, currencyRate, formatMoney } from "@/lib/currency";
  *
  * Le site n'affiche **aucun équivalent en devise locale** : la conversion se
  * fait dans la devise choisie par le visiteur (le sélecteur de la barre
- * supérieure propose USD, EUR, SAR, AED, EGP et LYD).
+ * supérieure propose USDT, USD, EUR, SAR, AED et EGP).
  *
  * Utilisable depuis un composant serveur comme client : la conversion se fait
  * dans le navigateur, où la devise choisie est connue.
