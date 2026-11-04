@@ -654,7 +654,7 @@ export function DigitalCatalog({ products, initialKind = "all" }: { products: Di
                 </div>
               </div>
             ) : (
-              <div className="gaming-product-grid grid grid-cols-3 gap-3 sm:gap-4 lg:grid-cols-3 xl:grid-cols-4">
+              <div className="gaming-product-grid grid grid-cols-1 gap-3 min-[360px]:grid-cols-2 sm:gap-4 md:grid-cols-3 xl:grid-cols-4">
                 {filtered.map((product, index) => {
                   const visual = productVisual(product);
                   const visualFit = productVisualFit(product);
@@ -684,7 +684,7 @@ export function DigitalCatalog({ products, initialKind = "all" }: { products: Di
                                 alt=""
                                 aria-hidden="true"
                                 fill
-                                sizes="(max-width: 640px) 50vw, 22vw"
+                                sizes="(max-width: 359px) 100vw, (max-width: 767px) 50vw, (max-width: 1023px) 33vw, 22vw"
                                 quality={75}
                                 className="scale-110 object-cover opacity-55 blur-xl"
                               />
@@ -700,7 +700,7 @@ export function DigitalCatalog({ products, initialKind = "all" }: { products: Di
                                     : `${displayName(product)} product visual`
                                 }
                                 fill
-                                sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 22vw"
+                                sizes="(max-width: 359px) 100vw, (max-width: 767px) 50vw, (max-width: 1023px) 33vw, 22vw"
                                 quality={88}
                                 priority={index < 4}
                                 className="object-contain p-2.5 transition-transform duration-500 ease-out group-hover:scale-[1.045]"
@@ -715,7 +715,7 @@ export function DigitalCatalog({ products, initialKind = "all" }: { products: Di
                                   : `${displayName(product)} cover art`
                               }
                               fill
-                              sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 22vw"
+                              sizes="(max-width: 359px) 100vw, (max-width: 767px) 50vw, (max-width: 1023px) 33vw, 22vw"
                               quality={88}
                               priority={index < 4}
                               className="object-cover transition-transform duration-500 ease-out group-hover:scale-[1.045]"
@@ -735,24 +735,28 @@ export function DigitalCatalog({ products, initialKind = "all" }: { products: Di
                           className="pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-[linear-gradient(180deg,transparent_0%,rgba(3,7,18,0.72)_100%)]"
                         />
 
-                        <span className="absolute start-2 top-2 inline-flex items-center gap-1 rounded-full border border-white/25 bg-black/55 px-2 py-0.5 text-[10px] font-black text-white backdrop-blur-md">
-                          <KindIcon className="h-2.5 w-2.5" />
-                          {ar
-                            ? DIGITAL_KIND_LABELS[product.kind].ar
-                            : DIGITAL_KIND_LABELS[product.kind].en}
-                        </span>
-
-                        {/* Les 8 fiches les plus demandées : repère visuel
-                            posé une fois pour toutes sur le catalogue. */}
-                        {popularSlugs.has(product.slug) && (
-                          <span
-                            className="absolute end-2 top-2 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-black text-[var(--accent-foreground)] shadow-[var(--shadow-xs)]"
-                            style={{ background: "var(--accent)" }}
-                          >
-                            <Flame className="h-2.5 w-2.5" />
-                            {ar ? "مطلوب" : "Popular"}
+                        {/* Badges en flux : ils passent à la ligne au lieu de
+                            se superposer quand la carte devient étroite. */}
+                        <div className="pointer-events-none absolute inset-x-2 top-2 flex flex-wrap items-start gap-1">
+                          <span className="inline-flex max-w-full items-center gap-1 rounded-full border border-white/25 bg-black/55 px-2 py-0.5 text-[10px] font-black text-white backdrop-blur-md">
+                            <KindIcon className="h-2.5 w-2.5 shrink-0" />
+                            {ar
+                              ? DIGITAL_KIND_LABELS[product.kind].ar
+                              : DIGITAL_KIND_LABELS[product.kind].en}
                           </span>
-                        )}
+
+                          {/* Les 8 fiches les plus demandées : repère visuel
+                              posé une fois pour toutes sur le catalogue. */}
+                          {popularSlugs.has(product.slug) && (
+                            <span
+                              className="inline-flex max-w-full items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-black text-[var(--accent-foreground)] shadow-[var(--shadow-xs)]"
+                              style={{ background: "var(--accent)" }}
+                            >
+                              <Flame className="h-2.5 w-2.5 shrink-0" />
+                              {ar ? "مطلوب" : "Popular"}
+                            </span>
+                          )}
+                        </div>
 
                         <div className="absolute inset-x-2 bottom-2 flex flex-wrap items-center gap-1">
                           <span className="inline-flex items-center gap-1 rounded-md border border-white/25 bg-white/12 px-1.5 py-0.5 text-[10px] font-bold text-white backdrop-blur-sm">
@@ -768,12 +772,12 @@ export function DigitalCatalog({ products, initialKind = "all" }: { products: Di
 
                       {/* Contenu */}
                       <div className="flex flex-1 flex-col p-3">
-                        <h3 className="line-clamp-2 text-[13px] font-black leading-[1.35] tracking-[-0.01em]">
+                        <h3 className="line-clamp-2 text-[14px] font-black leading-[1.35] tracking-[-0.01em] sm:text-[15px]">
                           {displayName(product)}
                         </h3>
 
                         {denominations.length > 0 && (
-                          <p className="mt-1 line-clamp-1 text-[10.5px] font-semibold text-[var(--muted-foreground)]" dir="ltr">
+                          <p className="mt-1 line-clamp-1 text-[12px] font-semibold text-[var(--muted-foreground)]" dir="ltr">
                             {denominations
                               .map((denomination) =>
                                 denominationLabel(denomination, locale),
@@ -786,25 +790,27 @@ export function DigitalCatalog({ products, initialKind = "all" }: { products: Di
                             être visible AVANT le clic sur la fiche. */}
                         <RegionalAlert regions={product.regions} compact className="mt-2" />
 
-                        <div className="mt-auto flex items-end justify-between gap-2 pt-3">
+                        {/* Prix toujours lisible : jamais de troncature, et
+                            bouton pleine largeur sous le prix en mobile. */}
+                        <div className="mt-auto flex flex-col gap-2 pt-3 sm:flex-row sm:items-end sm:justify-between">
                           <div className="min-w-0">
-                            <div className="text-[9.5px] font-bold uppercase tracking-wider opacity-50">
+                            <div className="text-[11px] font-bold uppercase tracking-wide text-[var(--muted-foreground)]">
                               {ar ? "ابتداءً من" : "From"}
                             </div>
                             {from != null ? (
                               <Price
                                 usd={from}
-                                className="block truncate text-[14px] font-black text-[var(--accent)]"
+                                className="block whitespace-normal break-words text-[16px] font-black leading-6 text-[var(--accent)]"
                               />
                             ) : (
-                              <span className="text-[11.5px] font-bold opacity-60">
+                              <span className="text-[12px] font-bold text-[var(--muted-foreground)]">
                                 {ar ? "قريباً" : "Soon"}
                               </span>
                             )}
                           </div>
                           <Link
                             href={`/codes/${product.slug}`}
-                            className="inline-flex h-8 shrink-0 items-center gap-1 rounded-full bg-[var(--primary)] px-3 text-[11px] font-black text-[var(--primary-foreground)] transition-opacity hover:opacity-90"
+                            className="inline-flex min-h-11 w-full shrink-0 items-center justify-center gap-1 rounded-full bg-[var(--primary)] px-4 text-[12px] font-black text-[var(--primary-foreground)] transition-opacity hover:opacity-90 sm:w-auto"
                           >
                             {ar ? "التفاصيل" : "Details"}
                           </Link>
