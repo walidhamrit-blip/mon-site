@@ -2,9 +2,7 @@
 
 import { MessageCircle } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
-import { useSiteConfig } from "@/components/site-provider";
-import { whatsappLink } from "@/lib/utils";
-import { WHATSAPP_SITE_MESSAGE } from "./home-intro";
+import { WhatsAppEnquiry } from "@/components/whatsapp-enquiry";
 
 const STEPS = [
   {
@@ -28,7 +26,6 @@ const STEPS = [
  */
 export function HowItWorks() {
   const { locale } = useI18n();
-  const config = useSiteConfig();
   const ar = locale === "ar";
   return (
     <section className="site-container px-4 py-14 sm:px-6 lg:px-8" aria-labelledby="how-it-works-title">
@@ -57,15 +54,12 @@ export function HowItWorks() {
           </span>
         </p>
         <div className="mt-8">
-          <a
-            href={whatsappLink(config.whatsapp, WHATSAPP_SITE_MESSAGE)}
-            target="_blank"
-            rel="noopener noreferrer"
+          <WhatsAppEnquiry
             className="inline-flex min-h-12 items-center justify-center gap-2 rounded-full bg-[#0B6B3A] px-7 text-[14px] font-black text-white shadow-[0_10px_28px_-8px_rgba(11,107,58,0.55)] transition-transform hover:scale-[1.03]"
           >
             <MessageCircle className="h-4 w-4" />
             {ar ? "تحدث على واتساب" : "Chat on WhatsApp"}
-          </a>
+          </WhatsAppEnquiry>
         </div>
       </div>
     </section>

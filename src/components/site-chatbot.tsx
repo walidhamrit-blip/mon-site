@@ -8,6 +8,7 @@ import { ArrowRight, RotateCcw, Send, X } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import { useSiteConfig } from "@/components/site-provider";
 import { whatsappLink } from "@/lib/utils";
+import { WhatsAppEnquiry } from "@/components/whatsapp-enquiry";
 import {
   buildChatNodes,
   matchChatNode,
@@ -361,7 +362,7 @@ function ChatShell() {
               className="max-h-[min(52vh,360px)] space-y-2 overflow-y-auto px-3 py-3"
               aria-live="polite"
             >
-              {messages.map((message) =>
+              {messages.map((message, messageIndex) =>
                 message.role === "bot" ? (
                   <div key={message.key} className="flex items-end gap-1.5">
                     <EinsteinAvatar className="h-6 w-6 shrink-0" />
@@ -372,7 +373,16 @@ function ChatShell() {
                       {message.actions && message.actions.length > 0 && (
                         <div className="flex flex-wrap gap-1.5">
                           {message.actions.map((action) =>
-                            action.external ? (
+                            action.external && /^https:\/\/wa\.me\//i.test(action.href) ? (
+                              <WhatsAppEnquiry
+                                key={action.href + action.label}
+                                initialSubject={messages.slice(0, messageIndex).reverse().find((item) => item.role === "user")?.text ?? ""}
+                                className="inline-flex items-center gap-1 rounded-full bg-[var(--accent)] px-3 py-1.5 text-[11.5px] font-black text-[var(--accent-foreground)] hover:bg-[var(--accent-hover)] transition-colors"
+                              >
+                                {action.label}
+                                <ArrowRight className="h-3 w-3 rtl:rotate-180" />
+                              </WhatsAppEnquiry>
+                            ) : action.external ? (
                               <a
                                 key={action.href + action.label}
                                 href={action.href}
