@@ -1,0 +1,461 @@
+#!/usr/bin/env node
+/**
+ * Tests des avis clients : validation des profils, demandes d'avis et
+ * identité légale.
+ *
+ * Ce que ces tests protègent :
+ *   1. **aucun lien d'avis hors plateforme** — un champ administrable finit
+ *      dans un `href` public et dans des e-mails clients ; une faute de
+ *      frappe ne doit pas envoyer un client chez un tiers ;
+ *   2. **aucune note inventée** — ni `aggregateRating`, ni « 5 étoiles »
+ *      dans une demande d'avis (les conditions de Trustpilot et de Google
+ *      l'interdisent) ;
+ *   3. **rien ne part tant que rien n'est configuré** — les valeurs par
+ *      défaut désactivent à la fois les liens et les e-mails ;
+ *   4. **compatibilité ascendante** — une configuration enregistrée avant
+ *      l'ajout des blocs `trust` / `legal` doit toujours s'enregistrer.
+ */
+import { test } from "node:test";
+import assert from "node:assert/strict";
+import { existsSync, statSync, mkdtempSync, rmSync, readFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { fileURLToPath, pathToFileURL } from "node:url";
+import { build } from "esbuild";
+
+const root = fileURLToPath(new URL("..", import.meta.url));
+const srcRoot = join(root, "src");
+const outDir = mkdtempSync(join(tmpdir(), "trust-reviews-"));
+
+const aliasPlugin = {
+  name: "alias-at-src",
+  setup(builder) {
+    builder.onResolve({ filter: /^@\// }, (args) => {
+      const base = join(srcRoot, args.path.slice(2));
+      const candidates = [base, `${base}.ts`, `${base}.tsx`, join(base, "index.ts")];
+      const found = candidates.find(
+        (candidate) => existsSync(candidate) && statSync(candidate).isFile(),
+      );
+      return { path: found ?? base };
+    });
+  },
+};
+
+async function compile(entry, name) {
+  const outfile = join(outDir, `${name}.mjs`);
+  await build({
+    entryPoints: [join(srcRoot, entry)],
+    outfile,
+    bundle: true,
+    format: "esm",
+    platform: "node",
+    target: "node22",
+    plugins: [aliasPlugin],
+    logLevel: "silent",
+  });
+  return import(pathToFileURL(outfile).href);
+}
+
+const trust = await compile("lib/trust.ts", "trust");
+const reviewEmails = await compile("lib/review-emails.ts", "review-emails");
+const deliveryEmails = await compile("lib/delivery-emails.ts", "delivery-emails");
+const validation = await compile("lib/validation.ts", "validation");
+const configModule = await compile("lib/config.ts", "config");
+
+test.after(() => {
+  rmSync(outDir, { recursive: true, force: true });
+});
+
+/* ------------------------------------------------------------------ */
+/* 1. Validation des URL de profils                                    */
+/* ------------------------------------------------------------------ */
+
+test("les URL de profils invalides sont rejetées", () => {
+  const { normalizeReviewUrl } = trust;
+  const rejected = [
+    "",
+    "   ",
+    "trustpilot.com/review/nokhba.net.ly", // pas de schéma
+    "http://fr.trustpilot.com/review/nokhba.net.ly", // pas https
+    "https://trustpilot.com.evil.example/review/nokhba.net.ly", // suffixe piégé
+    "https://evil-trustpilot.com/review/nokhba.net.ly", // préfixe piégé
+    "https://fr.fr.trustpilot.com/review/x", // sous-domaine imbriqué
+    "https://user:pass@fr.trustpilot.com/review/nokhba.net.ly",
+    "javascript:alert(1)",
+    "https://www.scamadviser.com.evil.io/check-website/nokhba.net.ly",
+    "https://example.com/review",
+  ];
+  for (const value of rejected) {
+    assert.equal(normalizeReviewUrl("trustpilot", value), "", `aurait dû être rejeté : ${value}`);
+  }
+});
+
+test("les URL de profils valides sont normalisées", () => {
+  const { normalizeReviewUrl } = trust;
+  assert.equal(
+    normalizeReviewUrl("trustpilot", " https://fr.trustpilot.com/review/nokhba.net.ly/ "),
+    "https://fr.trustpilot.com/review/nokhba.net.ly",
+  );
+  assert.equal(
+    normalizeReviewUrl("trustpilot", "https://www.trustpilot.com/review/nokhba.net.ly"),
+    "https://www.trustpilot.com/review/nokhba.net.ly",
+  );
+  assert.equal(
+    normalizeReviewUrl("scamadviser", "https://www.scamadviser.com/check-website/nokhba.net.ly"),
+    "https://www.scamadviser.com/check-website/nokhba.net.ly",
+  );
+  assert.equal(
+    normalizeReviewUrl("google", "https://g.page/r/abc123/review"),
+    "https://g.page/r/abc123/review",
+  );
+  assert.equal(
+    normalizeReviewUrl("google", "https://maps.app.goo.gl/xyz"),
+    "https://maps.app.goo.gl/xyz",
+  );
+});
+
+test("une URL Google n'est pas acceptée pour Trustpilot (et inversement)", () => {
+  const { normalizeReviewUrl } = trust;
+  assert.equal(normalizeReviewUrl("trustpilot", "https://g.page/r/abc/review"), "");
+  assert.equal(normalizeReviewUrl("google", "https://fr.trustpilot.com/review/x"), "");
+});
+
+/* ------------------------------------------------------------------ */
+/* 2. Liens publics + interrupteur d'envoi                             */
+/* ------------------------------------------------------------------ */
+
+test("reviewLinks : seuls les profils configurés sortent, dans un ordre stable", () => {
+  const { reviewLinks } = trust;
+  assert.deepEqual(reviewLinks(undefined), []);
+  assert.deepEqual(reviewLinks({ trustpilotUrl: "", scamadviserUrl: "", googleReviewUrl: "", reviewInvites: true }), []);
+
+  const links = reviewLinks({
+    trustpilotUrl: "https://fr.trustpilot.com/review/nokhba.net.ly",
+    scamadviserUrl: "https://www.scamadviser.com/check-website/nokhba.net.ly",
+    googleReviewUrl: "https://g.page/r/abc/review",
+    reviewInvites: true,
+  });
+  assert.deepEqual(
+    links.map((link) => link.platform),
+    ["trustpilot", "google", "scamadviser"],
+  );
+  for (const link of links) {
+    assert.ok(link.labelAr.length > 0 && link.labelEn.length > 0);
+    assert.ok(link.url.startsWith("https://"));
+  }
+});
+
+test("les demandes d'avis sont désactivées par défaut et exigent une cible", () => {
+  const { reviewInvitesEnabled, reviewLinks } = trust;
+  const base = { trustpilotUrl: "", googleReviewUrl: "", scamadviserUrl: "", reviewInvites: false };
+  assert.equal(reviewInvitesEnabled(base), false);
+  assert.equal(reviewInvitesEnabled(undefined), false);
+  // Activé mais aucun profil : rien à envoyer.
+  assert.equal(reviewInvitesEnabled({ ...base, reviewInvites: true }), false);
+  // Scamadviser seul ne suffit pas : le client y lit une fiche, il n'y écrit pas.
+  assert.equal(
+    reviewInvitesEnabled({
+      ...base,
+      reviewInvites: true,
+      scamadviserUrl: "https://www.scamadviser.com/check-website/nokhba.net.ly",
+    }),
+    false,
+  );
+  assert.equal(
+    reviewInvitesEnabled({
+      ...base,
+      reviewInvites: true,
+      trustpilotUrl: "https://fr.trustpilot.com/review/nokhba.net.ly",
+    }),
+    true,
+  );
+  assert.equal(reviewLinks({ ...base, reviewInvites: true }).length, 0);
+});
+
+/* ------------------------------------------------------------------ */
+/* 3. Contenu des demandes d'avis                                      */
+/* ------------------------------------------------------------------ */
+
+const INVITE_LINKS = [
+  {
+    platform: "trustpilot",
+    url: "https://fr.trustpilot.com/review/nokhba.net.ly",
+    labelAr: "اقرأ واكتب تقييماً على Trustpilot",
+    labelEn: "Read & write a review on Trustpilot",
+  },
+];
+
+test("reviewPromptForConfig : rien tant que l'envoi est désactivé", () => {
+  const { reviewPromptForConfig } = reviewEmails;
+  const config = {
+    name: "Nukhba",
+    nameAr: "نخبة",
+    url: "https://nokhba.net.ly",
+    email: "contact@nokhba.net.ly",
+    trust: { trustpilotUrl: "", googleReviewUrl: "", scamadviserUrl: "", reviewInvites: false },
+  };
+  assert.equal(reviewPromptForConfig(config, { kind: "digital", orderRef: "D-1" }), null);
+  assert.equal(
+    reviewPromptForConfig({ ...config, trust: { ...config.trust, reviewInvites: true } }, { kind: "digital" }),
+    null,
+    "activé sans profil = aucun bloc",
+  );
+});
+
+test("le bloc de demande d'avis est bilingue et ne dicte aucune note", () => {
+  const { reviewInviteBlock } = reviewEmails;
+  const block = reviewInviteBlock({
+    siteName: "Nukhba",
+    siteNameAr: "نخبة",
+    siteUrl: "https://nokhba.net.ly",
+    orderRef: "D-2026-0042",
+    kind: "digital",
+    links: INVITE_LINKS,
+    supportEmail: "contact@nokhba.net.ly",
+  });
+  assert.ok(block, "un bloc est attendu");
+  assert.match(block.html, /[\u0600-\u06FF]/, "version arabe attendue");
+  assert.match(block.html, /How was your experience|Your review helps|How did we do/i);
+  assert.ok(block.html.includes("https://fr.trustpilot.com/review/nokhba.net.ly"));
+  assert.ok(block.text.join("\n").includes("https://fr.trustpilot.com/review/nokhba.net.ly"));
+  assert.ok(block.html.includes("D-2026-0042"));
+
+  // Aucune consigne de note, aucune promesse de contrepartie.
+  const forbidden = [/5\s*(étoiles|stars|نجوم)/i, /\b5\s*\/\s*5\b/, /⭐/, /★/, /remise de|discount code|coupon/i];
+  for (const pattern of forbidden) {
+    assert.doesNotMatch(block.html, pattern, `formulation interdite : ${pattern}`);
+    assert.doesNotMatch(block.text.join("\n"), pattern, `formulation interdite : ${pattern}`);
+  }
+  // La porte de sortie (support) est présente dans le même bloc.
+  assert.ok(block.html.includes("mailto:contact@nokhba.net.ly"));
+
+  // Prénom échappé (le nom vient d'une commande, donc d'une saisie client).
+  const withName = reviewInviteBlock({
+    siteName: "Nukhba",
+    siteNameAr: "نخبة",
+    siteUrl: "https://nokhba.net.ly",
+    clientName: '<script>alert(1)</script>',
+    kind: "digital",
+    links: INVITE_LINKS,
+  });
+  assert.ok(withName);
+  assert.ok(!withName.html.includes("<script>"), "le prénom doit être échappé");
+  assert.ok(withName.html.includes("&lt;script&gt;"));
+  assert.match(withName.html, /مرحباً/);
+});
+
+test("l'e-mail autonome de demande d'avis porte la référence et les liens", () => {
+  const { buildReviewInviteEmail } = reviewEmails;
+  const email = buildReviewInviteEmail({
+    siteName: "Nukhba",
+    siteNameAr: "نخبة",
+    siteUrl: "https://nokhba.net.ly",
+    orderRef: "SITE-77",
+    kind: "website",
+    links: INVITE_LINKS,
+  });
+  assert.ok(email);
+  assert.ok(email.subject.includes("SITE-77"));
+  assert.ok(email.html.includes("https://fr.trustpilot.com/review/nokhba.net.ly"));
+  assert.ok(email.text.includes("https://fr.trustpilot.com/review/nokhba.net.ly"));
+  assert.equal(
+    buildReviewInviteEmail({
+      siteName: "Nukhba",
+      siteNameAr: "نخبة",
+      siteUrl: "https://nokhba.net.ly",
+      kind: "website",
+      links: [],
+    }),
+    null,
+  );
+});
+
+test("le reçu de recette intègre la demande d'avis quand elle est fournie", () => {
+  const { buildDeliveryAcceptedEmail } = deliveryEmails;
+  const { reviewInviteBlock } = reviewEmails;
+  const data = {
+    ref: "SITE-77",
+    clientName: "Walid",
+    projectTitle: "Site vitrine",
+    amountUsd: "250.00",
+    acceptUrl: "",
+    links: [],
+    items: [],
+    warrantyDays: 90,
+    siteUrl: "https://nokhba.net.ly",
+    siteName: "Nukhba",
+    siteNameAr: "نخبة",
+    supportEmail: "contact@nokhba.net.ly",
+    supportWhatsapp: "",
+    acceptedAt: new Date("2026-11-06T10:00:00Z"),
+  };
+  const withoutReview = buildDeliveryAcceptedEmail(data);
+  const review = reviewInviteBlock({
+    siteName: "Nukhba",
+    siteNameAr: "نخبة",
+    siteUrl: "https://nokhba.net.ly",
+    orderRef: "SITE-77",
+    kind: "website",
+    links: INVITE_LINKS,
+  });
+  const withReview = buildDeliveryAcceptedEmail({ ...data, review });
+
+  assert.ok(!withoutReview.html.includes("trustpilot.com"), "sans config : aucun lien d'avis");
+  assert.ok(withReview.html.includes("https://fr.trustpilot.com/review/nokhba.net.ly"));
+  assert.ok(withReview.text.includes("https://fr.trustpilot.com/review/nokhba.net.ly"));
+});
+
+/* ------------------------------------------------------------------ */
+/* 4. Identité légale                                                  */
+/* ------------------------------------------------------------------ */
+
+test("legalRows n'affiche jamais un champ vide", () => {
+  const { legalRows } = trust;
+  const rows = legalRows({
+    name: "Nukhba",
+    url: "https://nokhba.net.ly",
+    email: "contact@nokhba.net.ly",
+    phone: "+218 91 344 2640",
+    address: "شارع الجمهورية، طرابلس، ليبيا",
+    addressEn: "Al Jumhouriya Street, Tripoli, Libya",
+    legal: {
+      companyName: "",
+      registrationNumber: "",
+      registrationAuthority: "",
+      publisherName: "",
+      hostName: "Vercel Inc.",
+      hostWebsite: "https://vercel.com",
+    },
+  });
+  const labels = rows.map((row) => row.labelEn);
+  assert.ok(labels.includes("Trading name"));
+  assert.ok(labels.includes("Hosting"));
+  assert.ok(!labels.includes("Commercial registration no."), "aucun registre inventé");
+  const phone = rows.find((row) => row.labelEn === "Phone");
+  assert.equal(phone.href, "tel:+218913442640");
+});
+
+test("legalRows publie le registre et le responsable quand ils sont renseignés", () => {
+  const { legalRows } = trust;
+  const rows = legalRows({
+    name: "Nukhba",
+    legal: {
+      companyName: "Nukhba Studio SARL",
+      registrationNumber: "12345",
+      registrationAuthority: "Tripoli",
+      publisherName: "Walid Hamrit",
+      hostName: "Vercel Inc.",
+      hostWebsite: "https://vercel.com",
+    },
+  });
+  const registration = rows.find((row) => row.labelEn === "Commercial registration no.");
+  assert.ok(registration);
+  assert.equal(registration.value, "12345 — Tripoli");
+  assert.ok(rows.some((row) => row.labelEn === "Publication manager" && row.value === "Walid Hamrit"));
+  assert.ok(rows.some((row) => row.labelEn === "Legal name" && row.value === "Nukhba Studio SARL"));
+});
+
+/* ------------------------------------------------------------------ */
+/* 5. Configuration & compatibilité ascendante                         */
+/* ------------------------------------------------------------------ */
+
+test("les valeurs par défaut n'activent ni lien ni envoi d'avis", async () => {
+  const { siteConfig } = configModule;
+  const { reviewLinks, reviewInvitesEnabled } = trust;
+  assert.deepEqual(reviewLinks(siteConfig.trust), []);
+  assert.equal(reviewInvitesEnabled(siteConfig.trust), false);
+  assert.equal(siteConfig.legal.registrationNumber, "");
+  assert.equal(siteConfig.legal.hostName, "Vercel Inc.");
+});
+
+test("une configuration enregistrée avant les blocs trust/legal reste valide", () => {
+  const { siteConfigSchema } = validation;
+  const { siteConfig } = configModule;
+  const legacy = { ...siteConfig };
+  delete legacy.trust;
+  delete legacy.legal;
+
+  const parsed = siteConfigSchema.safeParse(legacy);
+  assert.ok(parsed.success, JSON.stringify(parsed.error?.issues ?? []));
+  assert.equal(parsed.data.trust.reviewInvites, false);
+  assert.equal(parsed.data.trust.trustpilotUrl, "");
+  assert.equal(parsed.data.legal.hostName, "Vercel Inc.");
+});
+
+test("le schéma refuse un lien d'avis non https", () => {
+  const { siteConfigSchema } = validation;
+  const { siteConfig } = configModule;
+  const parsed = siteConfigSchema.safeParse({
+    ...siteConfig,
+    trust: {
+      trustpilotUrl: "http://fr.trustpilot.com/review/nokhba.net.ly",
+      scamadviserUrl: "",
+      googleReviewUrl: "",
+      reviewInvites: false,
+    },
+  });
+  assert.equal(parsed.success, false);
+});
+
+test("le schéma accepte un profil https et l'interrupteur d'envoi", () => {
+  const { siteConfigSchema } = validation;
+  const { siteConfig } = configModule;
+  const parsed = siteConfigSchema.safeParse({
+    ...siteConfig,
+    trust: {
+      trustpilotUrl: "https://fr.trustpilot.com/review/nokhba.net.ly",
+      scamadviserUrl: "",
+      googleReviewUrl: "",
+      reviewInvites: true,
+    },
+  });
+  assert.ok(parsed.success, JSON.stringify(parsed.error?.issues ?? []));
+  assert.equal(parsed.data.trust.reviewInvites, true);
+});
+
+/* ------------------------------------------------------------------ */
+/* 6. Pages publiques et garde-fous                                    */
+/* ------------------------------------------------------------------ */
+
+const read = (path) => readFileSync(join(root, path), "utf8");
+
+test("les pages /avis et /mentions-legales existent et sont liées", () => {
+  for (const path of [
+    "src/app/(site)/avis/page.tsx",
+    "src/app/(site)/avis/reviews-client.tsx",
+    "src/app/(site)/mentions-legales/page.tsx",
+    "src/app/(site)/mentions-legales/legal-notice-client.tsx",
+  ]) {
+    assert.ok(existsSync(join(root, path)), `${path} manquant`);
+  }
+  assert.match(read("src/components/footer.tsx"), /"\/avis"/);
+  assert.match(read("src/components/footer.tsx"), /"\/mentions-legales"/);
+  assert.match(read("src/components/legal-links.tsx"), /"\/avis"/);
+  assert.match(read("src/components/legal-links.tsx"), /"\/mentions-legales"/);
+  const sitemap = read("src/app/sitemap.ts");
+  assert.match(sitemap, /\/avis`/);
+  assert.match(sitemap, /\/mentions-legales`/);
+});
+
+test("aucune note agrégée inventée dans les nouveaux modules", () => {
+  for (const path of [
+    "src/lib/trust.ts",
+    "src/lib/review-emails.ts",
+    "src/app/(site)/avis/page.tsx",
+    "src/app/(site)/avis/reviews-client.tsx",
+    "src/app/(site)/mentions-legales/page.tsx",
+    "src/app/(site)/mentions-legales/legal-notice-client.tsx",
+  ]) {
+    const source = read(path);
+    assert.doesNotMatch(source, /aggregateRating/, `${path} ne doit pas déclarer de note agrégée`);
+    assert.doesNotMatch(source, /ratingValue|reviewCount/, `${path} ne doit pas publier de note maison`);
+  }
+});
+
+test("les e-mails de livraison passent bien par reviewPromptForConfig", () => {
+  assert.match(read("src/lib/digital-orders.ts"), /reviewPromptForConfig\(config, \{ kind: "digital"/);
+  assert.match(read("src/lib/fazercards-orders.ts"), /reviewPromptForConfig\(config, \{ kind: "digital"/);
+  assert.match(read("src/app/api/deliveries/accept/route.ts"), /reviewPromptForConfig\(config, \{/);
+  assert.match(read("src/lib/digital-emails.ts"), /review \? review\.html : ""/);
+  assert.match(read("src/lib/digital-orders.ts"), /sendDigitalTopupDeliveredEmail\([\s\S]{0,200}reviewPromptForConfig/);
+});

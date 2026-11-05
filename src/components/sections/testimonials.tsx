@@ -4,6 +4,7 @@ import { Star, Quote } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import { useSectionHeading, useSiteContent } from "@/components/site-provider";
 import { SectionHeading } from "@/components/section-heading";
+import { LocalizedLink as Link } from "@/components/localized-link";
 
 /**
  * Avis clients.
@@ -38,14 +39,25 @@ export function Testimonials() {
           title={heading.title}
           lead={heading.subtitle}
           aside={
-            <div className="flex items-center gap-3 rounded-full border border-[var(--border)] bg-[var(--card)] px-4 py-2">
-              {/* A11 : pas de note moyenne ni de compteur d'avis agrégé
-                  non sourcé — seul le nombre de témoignages réellement
-                  publiés ci-dessous, dérivé de la liste affichée. */}
-              <span className="text-sm font-black">{testimonials.length}</span>
-              <span className="text-[12px] text-[var(--muted-foreground)]">
-                {ar ? "شهادات عملاء منشورة" : "published client testimonials"}
-              </span>
+            <div className="flex flex-wrap items-center gap-3">
+              <div className="flex items-center gap-3 rounded-full border border-[var(--border)] bg-[var(--card)] px-4 py-2">
+                {/* A15 : pas de note moyenne ni de compteur d'avis agrégé
+                    non sourcé — seul le nombre de témoignages réellement
+                    publiés ci-dessous, dérivé de la liste affichée. */}
+                <span className="text-sm font-black">{testimonials.length}</span>
+                <span className="text-[12px] text-[var(--muted-foreground)]">
+                  {ar ? "شهادات عملاء منشورة" : "published client testimonials"}
+                </span>
+              </div>
+              {/* Les avis vérifiés vivent sur une plateforme tierce : on
+                  renvoie vers la page qui explique où les lire et comment
+                  en laisser un, plutôt que d'afficher une note maison. */}
+              <Link
+                href="/avis"
+                className="text-[12px] font-bold underline underline-offset-4 text-[var(--accent,#C6A664)]"
+              >
+                {ar ? "أين تقرأ التقييمات؟" : "Where to read reviews?"}
+              </Link>
             </div>
           }
         />

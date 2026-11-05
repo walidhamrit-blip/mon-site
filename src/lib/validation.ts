@@ -367,6 +367,37 @@ export const currencyConfigSchema = z.object({
   enabled: z.array(z.string().min(2).max(8)).min(1).max(12),
 });
 
+/**
+ * URL de profil d'avis : vide (profil non configuré) ou https absolu.
+ * La restriction aux domaines des plateformes est faite à l'affichage par
+ * `src/lib/trust.ts` — ici on refuse déjà tout ce qui n'est pas https, ce qui
+ * bloque `javascript:` et les schémas exotiques avant même l'enregistrement.
+ */
+const reviewProfileUrlSchema = z
+  .string()
+  .trim()
+  .max(500)
+  .refine(
+    (value) => value === "" || /^https:\/\/[^\s]+$/i.test(value),
+    "URL https attendue (ou champ vide si le profil n'existe pas encore)",
+  );
+
+export const trustSchema = z.object({
+  trustpilotUrl: reviewProfileUrlSchema.default(""),
+  scamadviserUrl: reviewProfileUrlSchema.default(""),
+  googleReviewUrl: reviewProfileUrlSchema.default(""),
+  reviewInvites: z.boolean().default(false),
+});
+
+export const legalSchema = z.object({
+  companyName: z.string().trim().max(200).default(""),
+  registrationNumber: z.string().trim().max(120).default(""),
+  registrationAuthority: z.string().trim().max(200).default(""),
+  publisherName: z.string().trim().max(200).default(""),
+  hostName: z.string().trim().max(200).default(""),
+  hostWebsite: reviewProfileUrlSchema.default(""),
+});
+
 export const siteConfigSchema = z.object({
   name: z.string().min(1).max(100),
   nameAr: z.string().min(1).max(100),
@@ -494,6 +525,26 @@ export const siteConfigSchema = z.object({
         .max(10_000, "La valeur maximale ne peut pas dépasser 10 000 $."),
     })
     .default({ maxOrderUsd: 25 }),
+  /**
+   * Profils d'avis + demandes d'avis. `.default()` est indispensable : les
+   * configurations déjà enregistrées en base n'ont pas ce bloc, et un
+   * enregistrement depuis l'admin ne doit pas échouer pour autant.
+   */
+  trust: trustSchema.default({
+    trustpilotUrl: "",
+    scamadviserUrl: "",
+    googleReviewUrl: "",
+    reviewInvites: false,
+  }),
+  /** Identité légale — champs vides omis de la page publique. */
+  legal: legalSchema.default({
+    companyName: "",
+    registrationNumber: "",
+    registrationAuthority: "",
+    publisherName: "",
+    hostName: "Vercel Inc.",
+    hostWebsite: "https://vercel.com",
+  }),
 });
 
 /* ---------- Statut d'une demande ---------- */

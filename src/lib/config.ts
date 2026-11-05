@@ -1,4 +1,5 @@
 import { DEFAULT_SITE_DOMAIN, DEFAULT_SITE_ORIGIN } from "@/lib/site-identity";
+import type { LegalConfigData, TrustConfigData } from "@/lib/site-types";
 
 export const siteConfig = {
   name: "Nukhba",
@@ -268,6 +269,42 @@ export const siteConfig = {
     /** Valeur maximale d'une commande automatique chez FazerCards (en USD). */
     maxOrderUsd: 25,
   },
+
+  /**
+   * Avis clients — profils publics et demandes d'avis.
+   *
+   * Les URL sont **vides par défaut** : tant qu'elles ne sont pas renseignées
+   * dans `/admin → Réglages → Avis & mentions`, le site n'affiche aucun lien
+   * d'avis et les e-mails de livraison ne demandent rien. C'est volontaire :
+   * un lien mort vers un profil inexistant dégrade la confiance au lieu de
+   * la construire. Voir `docs/avis-clients-trustpilot-scamadviser-2026-11-05.md`.
+   *
+   * Aucune note moyenne n'est stockée ici — elle viendrait forcément d'une
+   * saisie manuelle, donc non sourcée.
+   */
+  trust: {
+    trustpilotUrl: "",
+    scamadviserUrl: "",
+    googleReviewUrl: "",
+    reviewInvites: false,
+  } as TrustConfigData,
+
+  /**
+   * Identité légale (page `/mentions-legales`).
+   *
+   * À compléter depuis `/admin → Réglages → Avis & mentions` avec les
+   * informations réelles du registre de commerce : chaque champ vide est
+   * omis de la page plutôt que rempli par une valeur inventée. L'hébergeur
+   * (Vercel) est le seul champ prérempli, parce qu'il est vérifiable.
+   */
+  legal: {
+    companyName: "",
+    registrationNumber: "",
+    registrationAuthority: "",
+    publisherName: "",
+    hostName: "Vercel Inc.",
+    hostWebsite: "https://vercel.com",
+  } as LegalConfigData,
 
   /**
    * Alignement des prix de la boutique sur le marché (voir

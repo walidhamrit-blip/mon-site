@@ -535,6 +535,39 @@ restent des historiques d’implémentation.
   description du projet (validation Zod, typage `Demo`, fallback dans
   `generateMetadata`).
 
+## Avis clients & mentions légales
+
+Deux pages publiques et deux blocs de réglages, pensés pour les plateformes
+d'avis (Trustpilot, Scamadviser, Google) sans jamais publier de note non
+sourcée : voir [`docs/avis-clients-trustpilot-scamadviser-2026-11-05.md`](docs/avis-clients-trustpilot-scamadviser-2026-11-05.md).
+
+- **`/admin → Réglages → Avis & Mentions légales`** — trois URL de profils
+  (`trust.trustpilotUrl`, `trust.googleReviewUrl`, `trust.scamadviserUrl`),
+  l'interrupteur `trust.reviewInvites`, et l'identité légale (`legal.*`).
+  Tous les champs sont **vides par défaut** : rien ne s'affiche et aucun
+  e-mail ne demande d'avis tant qu'ils ne sont pas renseignés.
+- **Validation** (`src/lib/trust.ts`) — seules les URL `https` sur les
+  domaines réels des plateformes sont acceptées (`fr.trustpilot.com`,
+  `g.page`, `www.scamadviser.com`…). Une faute de frappe ne peut donc pas
+  envoyer un client chez un tiers.
+- **Demande d'avis après livraison** (`src/lib/review-emails.ts`) — bloc
+  bilingue AR/EN ajouté à l'e-mail des codes (`sendDigitalCodesEmail`) et au
+  reçu de recette d'un site (`buildDeliveryAcceptedEmail`), conditionné à
+  `reviewInvites` **et** à la présence d'un profil Trustpilot ou Google.
+  Rédaction conforme : demande adressée à **tous** les clients livrés, sans
+  consigne de note, sans contrepartie, avec l'adresse de support dans le même
+  bloc.
+- **`/avis`** — où lire et laisser un avis (profils réellement configurés),
+  politique d'avis en cinq engagements, rappel de la procédure, témoignages
+  publiés tels que reçus. Aucune moyenne, aucun compteur : la note affichée
+  doit venir de la plateforme.
+- **`/mentions-legales`** — identité de l'éditeur, registre de commerce,
+  responsable de publication, hébergeur. Une information non renseignée est
+  **omise**, jamais inventée (voir `legalRows()`).
+- Les deux pages sont liées depuis le pied de page, `LegalLinks` et le
+  sitemap ; `npm run test:seo` vérifie qu'aucun des nouveaux modules ne
+  déclare `aggregateRating` / `ratingValue` / `reviewCount`.
+
 ## A personnaliser avant mise en ligne
 1. Prix réels dans config.ts
 2. Numéro WhatsApp réel

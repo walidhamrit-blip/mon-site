@@ -32,6 +32,12 @@ export interface DeliveryEmailData {
   supportWhatsapp: string;
   /** E-mail du client — affiché uniquement dans la notification interne. */
   clientEmail?: string | null;
+  /**
+   * Bloc de demande d'avis (bilingue, voir `src/lib/review-emails.ts`).
+   * Absent tant que l'envoi n'est pas activé dans /admin : le reçu reste
+   * alors identique à ce qu'il était.
+   */
+  review?: { html: string; text: string[] } | null;
   /** Renseigné uniquement pour le reçu de recette. */
   acceptedAt?: Date | null;
   acceptedByName?: string | null;
@@ -260,6 +266,7 @@ export function buildDeliveryAcceptedEmail(data: DeliveryEmailData): DeliveryEma
       "احتفظ بهذا البريد: هو إثبات الاستلام وتاريخ بدء الضمان.",
       "Keep this e-mail: it is the proof of acceptance and the start date of the warranty.",
     ),
+    data.review?.html ?? "",
   ].join("");
   const text = [
     `${subjectAr} — ${subjectEn}`,
@@ -267,6 +274,7 @@ export function buildDeliveryAcceptedEmail(data: DeliveryEmailData): DeliveryEma
     "",
     ...data.links.map((link) => `${link.label || link.url}: ${link.url}`),
     ...data.items.map((item) => `- ${item.label}`),
+    ...(data.review?.text ?? []),
   ].join("\n");
   return {
     subject: `${subjectAr} — ${subjectEn}`,

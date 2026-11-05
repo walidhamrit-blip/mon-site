@@ -72,6 +72,7 @@ import {
   sendDigitalTopupDeliveredEmail,
 } from "@/lib/digital-emails";
 import { recordDigitalEmailOutcome } from "@/lib/digital-email-log";
+import { reviewPromptForConfig } from "@/lib/review-emails";
 import { isFazercardsProductRef } from "@/lib/fazercards-catalog";
 import { deliverPaidFazercardsOrder } from "@/lib/fazercards-orders";
 import { sendPaymentConfirmedEmail } from "@/lib/order-emails";
@@ -743,6 +744,7 @@ export async function deliverPaidDigitalOrder(
         config.name,
         config.url,
         config.email,
+        reviewPromptForConfig(config, { kind: "digital", orderRef: delivered.ref }),
       );
       await recordDigitalEmailOutcome(order.id, email);
     } catch (error) {
@@ -1075,6 +1077,7 @@ export async function deliverDigitalOrderManually(
         config.name,
         config.url,
         config.email,
+        reviewPromptForConfig(config, { kind: "digital", orderRef: closed.ref }),
       );
       await recordDigitalEmailOutcome(order.id, email);
       if (!email.ok) emailError = email.error ?? "e-mail non envoyé";
@@ -1121,6 +1124,7 @@ export async function deliverDigitalOrderManually(
       config.name,
       config.url,
       config.email,
+      reviewPromptForConfig(config, { kind: "digital", orderRef: delivered.ref }),
     );
     await recordDigitalEmailOutcome(order.id, email);
     if (!email.ok) emailError = email.error ?? "e-mail non envoyé";
