@@ -53,6 +53,12 @@ export async function sendDigitalCodesEmail(
   siteName: string,
   siteUrl: string,
   siteEmail?: string,
+  /**
+   * Bloc de demande d'avis (voir `src/lib/review-emails.ts`). Absent tant que
+   * `/admin → Réglages → Avis & mentions` n'a pas activé l'envoi : l'e-mail
+   * est alors identique à ce qu'il était.
+   */
+  review?: { html: string; text: string[] } | null,
 ): Promise<DigitalEmailResult> {
   const to = emailAddressFrom(order.recipientEmail);
   if (!to) return { ok: false, provider: "none", error: "destinataire absent" };
@@ -89,6 +95,7 @@ export async function sendDigitalCodesEmail(
       : `N'essayez pas de l'activer avec un compte d'une autre région : le code serait refusé.`,
     ``,
     support ? `Une question ? Répondez à cet e-mail ou écrivez à ${support}.` : "",
+    ...(review ? review.text : []),
     `${siteName} — ${siteUrl}`,
   ]
     .filter((line) => line !== "")
@@ -135,6 +142,7 @@ export async function sendDigitalCodesEmail(
         (référence + lien reçus sur la page de paiement).
       </p>
       ${support ? `<p style="color:#666;font-size:13px">Une question ? Écrivez à <a href="mailto:${escapeHtml(support)}" style="color:#8A6D2F">${escapeHtml(support)}</a>.</p>` : ""}
+      ${review ? review.html : ""}
       <p style="color:#999;font-size:12px;margin-top:24px">${escapeHtml(siteName)} — ${escapeHtml(siteUrl)}</p>
     </div>`;
 
@@ -331,6 +339,8 @@ export async function sendDigitalTopupDeliveredEmail(
   siteName: string,
   siteUrl: string,
   siteEmail?: string,
+  /** Bloc de demande d'avis (voir `src/lib/review-emails.ts`), facultatif. */
+  review?: { html: string; text: string[] } | null,
 ): Promise<DigitalEmailResult> {
   const to = emailAddressFrom(order.recipientEmail);
   if (!to) return { ok: false, provider: "none", error: "destinataire absent" };
@@ -366,6 +376,7 @@ export async function sendDigitalTopupDeliveredEmail(
     `Si votre solde en jeu n'a pas changé d'ici quelques minutes, répondez à cet e-mail avec la référence de commande.`,
     ``,
     support ? `Une question ? Écrivez à ${support}.` : "",
+    ...(review ? review.text : []),
     `${siteName} — ${siteUrl}`,
   ]
     .filter((line) => line !== "")
@@ -398,6 +409,7 @@ export async function sendDigitalTopupDeliveredEmail(
         Suivi : <a href="${escapeHtml(siteLink(siteUrl, "/codes/commande"))}" style="color:#8A6D2F;font-weight:700">suivi de commande</a>.
       </p>
       ${support ? `<p style="color:#666;font-size:13px">Une question ? Écrivez à <a href="mailto:${escapeHtml(support)}" style="color:#8A6D2F">${escapeHtml(support)}</a>.</p>` : ""}
+      ${review ? review.html : ""}
       <p style="color:#999;font-size:12px;margin-top:24px">${escapeHtml(siteName)} — ${escapeHtml(siteUrl)}</p>
     </div>`;
 

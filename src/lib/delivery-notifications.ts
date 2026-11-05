@@ -25,6 +25,7 @@ export function deliveryEmailData(
   row: DeliveryRow,
   ctx: DeliveryMailContext,
   acceptUrl = "",
+  review: { html: string; text: string[] } | null = null,
 ): DeliveryEmailData {
   return {
     ref: row.ref,
@@ -41,6 +42,7 @@ export function deliveryEmailData(
     supportEmail: ctx.email,
     supportWhatsapp: ctx.whatsapp,
     clientEmail: row.email,
+    review,
     acceptedAt: row.acceptedAt ? new Date(row.acceptedAt) : null,
     acceptedByName: row.acceptedByName,
   };
@@ -82,8 +84,9 @@ export interface DeliveryAcceptedOutcome {
 export async function sendDeliveryAcceptedEmails(
   row: DeliveryRow,
   ctx: DeliveryMailContext,
+  review: { html: string; text: string[] } | null = null,
 ): Promise<DeliveryAcceptedOutcome> {
-  const data = deliveryEmailData(row, ctx);
+  const data = deliveryEmailData(row, ctx, "", review);
   const receiptContent = buildDeliveryAcceptedEmail(data);
   const noticeContent = buildDeliveryAcceptedNotification(data);
   const [receipt, notification] = await Promise.all([

@@ -87,6 +87,63 @@ export interface PricingPlanData {
   featuresEn: string[];
 }
 
+/**
+ * Profils d'avis et demandes d'avis.
+ *
+ * Aucune note n'est stockée ici : uniquement des **URL de profils réels**
+ * (validées par `src/lib/trust.ts`) et l'interrupteur d'envoi de la demande
+ * d'avis après livraison. Une note saisie à la main serait une note non
+ * sourcée — précisément ce que l'audit A11 a retiré du site.
+ */
+export interface TrustConfigData {
+  /** Profil Trustpilot (`https://fr.trustpilot.com/review/<domaine>`). */
+  trustpilotUrl: string;
+  /**
+   * Lien direct « écrire un avis » (`https://www.trustpilot.com/evaluate/<domaine>`),
+   * facultatif. Utilisé en priorité dans les e-mails d'invitation : un clic de
+   * moins entre la livraison et l'avis.
+   */
+  trustpilotReviewUrl: string;
+  /** Fiche Scamadviser (`https://www.scamadviser.com/check-website/<domaine>`). */
+  scamadviserUrl: string;
+  /** Lien « laisser un avis » du profil Google Business. */
+  googleReviewUrl: string;
+  /** Envoie la demande d'avis dans les e-mails de livraison. */
+  reviewInvites: boolean;
+  /**
+   * Identifiant du compte Trustpilot (business unit) — indispensable au
+   * widget. Visible dans l'URL du logo de la fiche publique.
+   */
+  businessUnitId: string;
+  /** Gabarit du widget : nom lisible (`micro-combo`…) ou identifiant. */
+  widgetTemplate: string;
+  /**
+   * Nombre d'avis à partir duquel le widget s'affiche. `1` évite le
+   * « 0,0 / 5 » d'un profil vide ; `0` force l'affichage.
+   */
+  widgetMinReviews: number;
+}
+
+/**
+ * Identité légale affichée sur `/mentions-legales`.
+ *
+ * Chaque champ vide est simplement **omis** de la page : mieux vaut une
+ * mention absente qu'un numéro de registre inventé.
+ */
+export interface LegalConfigData {
+  /** Raison sociale (si différente du nom de marque). */
+  companyName: string;
+  /** Numéro d'immatriculation (registre de commerce). */
+  registrationNumber: string;
+  /** Autorité / ville d'immatriculation. */
+  registrationAuthority: string;
+  /** Responsable de la publication. */
+  publisherName: string;
+  /** Hébergeur du site. */
+  hostName: string;
+  hostWebsite: string;
+}
+
 export interface SiteConfigData {
   name: string;
   nameAr: string;
@@ -147,6 +204,10 @@ export interface SiteConfigData {
   fazercards: {
     maxOrderUsd: number;
   };
+  /** Profils d'avis (Trustpilot, Google, Scamadviser) + demandes d'avis. */
+  trust: TrustConfigData;
+  /** Identité légale publiée sur /mentions-legales. */
+  legal: LegalConfigData;
 }
 
 /** Profil de marché éditable depuis /admin → Réglages. */

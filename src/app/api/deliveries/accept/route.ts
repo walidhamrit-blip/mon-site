@@ -5,6 +5,7 @@ import { checkRateLimit } from "@/lib/rate-limit";
 import { enforceSameOrigin } from "@/lib/csrf";
 import { getSiteData } from "@/lib/store";
 import { sendDeliveryAcceptedEmails } from "@/lib/delivery-notifications";
+import { reviewPromptForConfig } from "@/lib/review-emails";
 
 export const runtime = "nodejs";
 
@@ -81,14 +82,24 @@ export async function POST(req: Request) {
       const { config } = await getSiteData();
       const row = await findDeliveryByRef(parsed.data.ref);
       if (row) {
-        const outcome = await sendDeliveryAcceptedEmails(row, {
-          name: config.name,
-          nameAr: config.nameAr,
-          url: config.url,
-          email: config.email,
-          phone: config.phone,
-          whatsapp: config.whatsapp,
-        });
+        const outcome = await sendDeliveryAcceptedEmails(
+          row,
+          {
+            name: config.name,
+            nameAr: config.nameAr,
+            url: config.url,
+            email: config.email,
+            phone: config.phone,
+            whatsapp: config.whatsapp,
+          },
+          // Demande d'avis : uniquement si l'admin l'a activée ET qu'un profil
+          // (Trustpilot / Google) est configuré. Voir src/lib/trust.ts.
+          reviewPromptForConfig(config, {
+            kind: "website",
+            orderRef: row.ref,
+            clientName: row.clientName,
+          }),
+        );
         if (outcome.receipt && !outcome.receipt.ok) {
           console.error("[deliveries] reçu client non envoyé :", outcome.receipt.error);
         }

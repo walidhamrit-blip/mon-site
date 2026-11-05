@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { resolveDemoClassification, resolvePlanPriceBreakdown } from "@/lib/classification";
 import { getDemoCapturedAt, getDemoPreviewImages } from "@/lib/preview-manifest";
+import { reviewProfileUrls } from "@/lib/trust";
+import type { TrustConfigData } from "@/lib/site-types";
 import {
   marketAreaServed,
   marketLanguage,
@@ -65,6 +67,8 @@ type SiteConfig = {
     whatsapp: string;
     tiktok: string;
   };
+  /** Profils d'avis publics (Trustpilot, Scamadviser) déclarés en `sameAs`. */
+  trust?: TrustConfigData | null;
   pricing: {
     plans: ReadonlyArray<{
       id: string;
@@ -224,6 +228,20 @@ export function ogLocale(locale: string): string {
 }
 
 /** Schéma Organization — entité marque référencée par les autres nœuds. */
+/**
+ * Profils publics de l'entreprise : réseaux sociaux **et** profils d'avis.
+ *
+ * Déclarer la fiche Trustpilot et la fiche Scamadviser en `sameAs` sert deux
+ * buts : Google rapproche les entités, et Scamadviser retrouve une présence
+ * cohérente sur des sources tierces (l'un de ses signaux). Aucune note n'est
+ * déclarée ici — seulement des URL publiques.
+ */
+function sameAsLinks(config: SiteConfig): string[] {
+  const socials = [config.social.instagram, config.social.facebook, config.social.tiktok]
+    .filter((url) => url && /^https?:\/\//.test(url));
+  return [...new Set([...socials, ...reviewProfileUrls(config.trust)])];
+}
+
 export function organizationJsonLd(config: SiteConfig) {
   const market = resolveMarket(config.market);
   const en = marketLabels(market, "en");
@@ -252,9 +270,7 @@ export function organizationJsonLd(config: SiteConfig) {
       ? `وكالة تصميم وتطوير مواقع${market.id === "global" ? "" : ` في ${ar.city}`} تعمل لأسواق عربية وعالمية: مواقع واجهة، متاجر إلكترونية، أنظمة حجز، تحسين SEO وتسليم في 7 أيام — ومتجر رقمي لأكواد الألعاب والبرامج وبطاقات الهدايا.`
       : `وكالة تصميم وتطوير مواقع في ${ar.city} — ${ar.country}: مواقع واجهة، متاجر إلكترونية، أنظمة حجز، تحسين SEO وتسليم في 7 أيام — ومتجر رقمي لأكواد الألعاب والبرامج وبطاقات الهدايا.`,
     inLanguage: marketLanguages(market),
-    sameAs: [config.social.instagram, config.social.facebook, config.social.tiktok].filter(
-      (u) => u && /^https?:\/\//.test(u),
-    ),
+    sameAs: sameAsLinks(config),
   };
 }
 
@@ -386,9 +402,7 @@ export function localBusinessJsonLd(
       availableLanguage: ["Arabic", "English", "French"],
       areaServed: globalReach ? "WW" : market.countryCode,
     },
-    sameAs: [config.social.instagram, config.social.facebook, config.social.tiktok].filter(
-      (u) => u && /^https?:\/\//.test(u),
-    ),
+    sameAs: sameAsLinks(config),
     // Pas d'`aggregateRating` ni de `review` auto-déclarés ici.
     // Depuis 2019, Google n'affiche pas les avis « auto-attribués » d'une
     // entreprise sur sa propre page (self-serving reviews) et considère leur

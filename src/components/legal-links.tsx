@@ -11,6 +11,8 @@ export function LegalLinks() {
       <Link className="underline underline-offset-4" href="/conditions">{ar ? "الشروط العامة للبيع" : "Terms & conditions of sale"}</Link>
       <Link className="underline underline-offset-4" href="/remboursement">{ar ? "سياسة الاسترداد" : "Refund policy"}</Link>
       <Link className="underline underline-offset-4" href="/contact">{ar ? "التواصل المهني" : "Professional contact"}</Link>
+      <Link className="underline underline-offset-4" href="/avis">{ar ? "تقييمات العملاء" : "Customer reviews"}</Link>
+      <Link className="underline underline-offset-4" href="/mentions-legales">{ar ? "المعلومات القانونية" : "Legal notice"}</Link>
     </nav>
   );
 }

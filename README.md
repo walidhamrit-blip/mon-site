@@ -535,6 +535,54 @@ restent des historiques d’implémentation.
   description du projet (validation Zod, typage `Demo`, fallback dans
   `generateMetadata`).
 
+## Avis clients & mentions légales
+
+Deux pages publiques et deux blocs de réglages, pensés pour les plateformes
+d'avis (Trustpilot, Scamadviser, Google) sans jamais publier de note non
+sourcée : voir [`docs/avis-clients-trustpilot-scamadviser-2026-11-05.md`](docs/avis-clients-trustpilot-scamadviser-2026-11-05.md).
+
+- **`/admin → Réglages → Avis & Mentions légales`** — les URL de profils
+  (`trust.trustpilotUrl`, `trust.trustpilotReviewUrl` pour le formulaire
+  d'avis direct, `trust.googleReviewUrl`, `trust.scamadviserUrl`),
+  l'interrupteur `trust.reviewInvites`, et l'identité légale (`legal.*`).
+  Le profil Trustpilot revendiqué est prérempli dans `src/lib/config.ts` ;
+  tout le reste est **vide ou désactivé par défaut** : aucun e-mail ne demande
+  d'avis et aucune information légale n'est inventée.
+- **Validation** (`src/lib/trust.ts`) — seules les URL `https` sur les
+  domaines réels des plateformes sont acceptées (`fr.trustpilot.com`,
+  `g.page`, `www.scamadviser.com`…). Une faute de frappe ne peut donc pas
+  envoyer un client chez un tiers.
+- **Demande d'avis après livraison** (`src/lib/review-emails.ts`) — bloc
+  bilingue AR/EN ajouté à l'e-mail des codes (`sendDigitalCodesEmail`) et au
+  reçu de recette d'un site (`buildDeliveryAcceptedEmail`), conditionné à
+  `reviewInvites` **et** à la présence d'un profil Trustpilot ou Google.
+  Rédaction conforme : demande adressée à **tous** les clients livrés, sans
+  consigne de note, sans contrepartie, avec l'adresse de support dans le même
+  bloc.
+- **`/avis`** — où lire et laisser un avis (profils réellement configurés),
+  politique d'avis en cinq engagements, rappel de la procédure, témoignages
+  publiés tels que reçus. Aucune moyenne, aucun compteur : la note affichée
+  doit venir de la plateforme.
+- **`/mentions-legales`** — identité de l'éditeur, registre de commerce,
+  responsable de publication, hébergeur. Une information non renseignée est
+  **omise**, jamais inventée (voir `legalRows()`).
+- Les deux pages sont liées depuis le pied de page, `LegalLinks` et le
+  sitemap ; `npm run test:seo` vérifie qu'aucun des nouveaux modules ne
+  déclare `aggregateRating` / `ratingValue` / `reviewCount`.
+- **Widget Trustpilot** : `TrustpilotBadge` (serveur) lit la note publique de la
+  fiche (JSON-LD, cache 1 h, 4 s de délai max) et n'affiche le TrustBox qu'à
+  partir du nombre d'avis configuré (`trust.widgetMinReviews`, 1 par défaut :
+  jamais de « 0,0/5 » public). Présent sur l'accueil, `/codes` et `/avis`.
+  Le profil Trustpilot et la fiche Scamadviser sont déclarés en `sameAs` du
+  JSON-LD (cohérence d'entité entre plateformes).
+- **Vérification de domaine Trustpilot** : renseigner `TRUSTPILOT_VERIFICATION`
+  (Vercel → Environment Variables) et la balise
+  `trustpilot-one-time-domain-verification-id` est émise sur toutes les pages
+  (`trustpilotVerificationMeta()`), sans toucher au code. Utile quand l'e-mail
+  du compte Business n'est pas sur le domaine — le runbook complet, avec les
+  valeurs exactes à saisir et la description de profil prête à copier, est au
+  §9 du document ci-dessus.
+
 ## A personnaliser avant mise en ligne
 1. Prix réels dans config.ts
 2. Numéro WhatsApp réel

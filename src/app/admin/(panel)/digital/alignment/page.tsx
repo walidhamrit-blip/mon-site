@@ -184,7 +184,7 @@ export default async function AdminAlignmentPage() {
           laisser <strong>{options.blockedMarginPercent ?? 0} % de marge nette</strong> (décision
           du 5 novembre) : prix = (coût + frais fixes) / (1 − commission − marge). La colonne
           « Marge nette » affiche donc un montant positif, mais le prix passe alors au-dessus du
-          marché — c'est le prix de la rentabilité sur un petit montant.
+          marché — c&apos;est le prix de la rentabilité sur un petit montant.
         </p>
       </div>
 

@@ -52,7 +52,7 @@ export function Footer() {
         </nav>
       </div>
       <nav className="gaming-footer-resources" aria-label={ar ? "الموارد والمعلومات" : "Resources & information"}>
-        {[["/blog",ar ? "الأدلة" : "Guides"],["/compare",ar ? "المقارنات" : "Comparisons"],["/products",ar ? "منتجاتنا" : "Our products"],["/apps",ar ? "تطبيقاتنا" : "Our apps"],["/badge",ar ? "شارة العملاء" : "Client badge"],["/conditions",ar ? "الشروط" : "Terms"],["/remboursement",ar ? "الاسترداد" : "Refund policy"]].map(([href,label]) => <Link key={href} href={href}>{label}</Link>)}
+        {[["/blog",ar ? "الأدلة" : "Guides"],["/compare",ar ? "المقارنات" : "Comparisons"],["/products",ar ? "منتجاتنا" : "Our products"],["/apps",ar ? "تطبيقاتنا" : "Our apps"],["/badge",ar ? "شارة العملاء" : "Client badge"],["/conditions",ar ? "الشروط" : "Terms"],["/remboursement",ar ? "الاسترداد" : "Refund policy"],["/avis",ar ? "تقييمات العملاء" : "Customer reviews"],["/mentions-legales",ar ? "المعلومات القانونية" : "Legal notice"]].map(([href,label]) => <Link key={href} href={href}>{label}</Link>)}
       </nav>
       <div className="gaming-footer-bottom"><span>© {new Date().getFullYear()} {config.name}</span><span>{ar ? "مواقع · بطاقات · ألعاب" : "WEBSITES / CARDS / GAMING"}</span></div>
     </div>
