@@ -97,6 +97,9 @@ Google Play, Amazon, Spotify…) :
   - suivi client `/codes/commande` (référence + jeton) ;
   - admin `/admin/digital/orders` : solde marchand, relances, saisie manuelle
     des codes, renvoi de l'e-mail ;
+  - **cartes téléphoniques Libyana / Al Madar** : fenêtre de paiement dédiée,
+    code chiffré et unique, revue admin obligatoire puis livraison manuelle ;
+    voir **`docs/paiement-cartes-telephoniques.md`** ;
   - identifiants serveur `RELOADLY_CLIENT_ID` / `RELOADLY_CLIENT_SECRET`
     (sandbox par défaut), plafond `RELOADLY_MAX_ORDER_USD`.
   Guide complet : **`docs/reloadly.md`**. Les fiches `Bientôt disponible`

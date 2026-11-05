@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { CheckCircle2, Loader2, Lock, Minus, Plus, ShieldCheck, X, Zap } from "lucide-react";
+import { CheckCircle2, CreditCard, Loader2, Lock, Minus, Plus, ShieldCheck, Smartphone, X, Zap } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import { useSiteConfig } from "@/components/site-provider";
 import { Price } from "@/components/price";
@@ -51,6 +51,10 @@ export function DigitalBuyDialog({ product, denominationId, onClose }: Props) {
   const [email, setEmail] = useState("");
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
+  const [paymentMethod, setPaymentMethod] = useState<"nowpayments" | "phone_card">("nowpayments");
+  const [cardOperator, setCardOperator] = useState<"libyana" | "al_madar">("libyana");
+  const [cardCode, setCardCode] = useState("");
+  const [cardValueLyd, setCardValueLyd] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   // Champs acheteur exigés par le fournisseur (top-ups : identifiant de
@@ -89,7 +93,11 @@ export function DigitalBuyDialog({ product, denominationId, onClose }: Props) {
       ? Math.max(1, Math.ceil(MIN_CRYPTO_INVOICE_USD / selected.priceUsd))
       : 1;
   const belowMinimum =
-    isFazercards && selected != null && total < MIN_CRYPTO_INVOICE_USD;
+    paymentMethod === "nowpayments" &&
+    isFazercards &&
+    selected != null &&
+    total < MIN_CRYPTO_INVOICE_USD;
+  const effectiveMinQuantity = paymentMethod === "phone_card" ? 1 : minQuantity;
   // Plafond d'achat automatique : au-delà, la commande basculerait en
   // livraison manuelle après paiement. Le navigateur reflète la règle
   // serveur (modifiable dans /admin/settings) pour éviter d'encaisser pour rien.
@@ -204,6 +212,21 @@ export function DigitalBuyDialog({ product, denominationId, onClose }: Props) {
       setError(ar ? "أدخل بريدك الإلكتروني لاستلام الكود." : "Enter your e-mail to receive the code.");
       return;
     }
+    if (paymentMethod === "phone_card") {
+      const normalizedCode = cardCode.replace(/[\s-]/g, "");
+      if (!phone.trim()) {
+        setError(ar ? "أدخل رقم هاتفك لنتمكن من التواصل معك بعد التحقق." : "Enter your phone number so we can contact you after verification.");
+        return;
+      }
+      if (!/^\d{6,32}$/.test(normalizedCode)) {
+        setError(ar ? "أدخل رمز بطاقة الهاتف: من 6 إلى 32 رقماً." : "Enter the phone card code: 6 to 32 digits.");
+        return;
+      }
+      if (!Number.isFinite(Number(cardValueLyd.replace(",", "."))) || Number(cardValueLyd.replace(",", ".")) <= 0) {
+        setError(ar ? "أدخل قيمة بطاقة الهاتف بالدينار الليبي." : "Enter the phone card value in LYD.");
+        return;
+      }
+    }
     const missingField = requiredFields.find(
       (field) => !(buyerFields[field.key] ?? "").trim(),
     );
@@ -271,6 +294,16 @@ export function DigitalBuyDialog({ product, denominationId, onClose }: Props) {
             // Certification explicite : le serveur la REFUSE absente quand le
             // fournisseur ne sait pas vérifier le jeu.
             ...(isFazercards ? { idConfirmed } : {}),
+            paymentMethod: isFazercards ? paymentMethod : "nowpayments",
+            ...(isFazercards && paymentMethod === "phone_card"
+              ? {
+                  phoneCard: {
+                    operator: cardOperator,
+                    code: cardCode.replace(/[\s-]/g, ""),
+                    valueLyd: cardValueLyd.trim(),
+                  },
+                }
+              : {}),
           }),
         },
       );
@@ -362,7 +395,7 @@ export function DigitalBuyDialog({ product, denominationId, onClose }: Props) {
                     // Pré-remplit la quantité minimale facturable.
                     const unit = item.priceUsd > 0 ? item.priceUsd : 0;
                     const needed =
-                      isFazercards && unit > 0
+                      isFazercards && paymentMethod === "nowpayments" && unit > 0
                         ? Math.max(1, Math.ceil(MIN_CRYPTO_INVOICE_USD / unit))
                         : 1;
                     setQuantity(Math.min(needed, MAX_QUANTITY));
@@ -401,8 +434,8 @@ export function DigitalBuyDialog({ product, denominationId, onClose }: Props) {
           <div className="flex items-center gap-2">
             <button
               type="button"
-              onClick={() => setQuantity((value) => Math.max(minQuantity, value - 1))}
-              disabled={quantity <= minQuantity}
+              onClick={() => setQuantity((value) => Math.max(effectiveMinQuantity, value - 1))}
+              disabled={quantity <= effectiveMinQuantity}
               aria-label={ar ? "إنقاص" : "Decrease"}
               className="grid h-9 w-9 place-items-center rounded-full border border-[var(--border)] disabled:opacity-40"
             >
@@ -420,6 +453,118 @@ export function DigitalBuyDialog({ product, denominationId, onClose }: Props) {
             </button>
           </div>
         </div>
+
+        {/* Moyen de paiement : la carte téléphonique reste une revue humaine,
+            jamais une confirmation automatique du crédit. */}
+        {isFazercards && (
+          <div className="mt-4">
+            <div className="mb-2 text-[11px] font-black uppercase tracking-wide text-[var(--muted-foreground)]">
+              {ar ? "طريقة الدفع" : "Payment method"}
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setPaymentMethod("nowpayments");
+                  setQuantity((value) => Math.max(minQuantity, value));
+                  setError("");
+                }}
+                className={`flex min-h-12 items-center justify-center gap-2 rounded-xl border px-3 py-2 text-[12.5px] font-black ${
+                  paymentMethod === "nowpayments"
+                    ? "border-[var(--accent)] bg-[var(--accent)]/10 text-[var(--accent)]"
+                    : "border-[var(--border)] hover:border-[var(--accent)]/60"
+                }`}
+              >
+                <CreditCard className="h-4 w-4" />
+                {ar ? "عملات رقمية" : "Crypto"}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setPaymentMethod("phone_card");
+                  setError("");
+                }}
+                className={`flex min-h-12 items-center justify-center gap-2 rounded-xl border px-3 py-2 text-[12.5px] font-black ${
+                  paymentMethod === "phone_card"
+                    ? "border-[var(--accent)] bg-[var(--accent)]/10 text-[var(--accent)]"
+                    : "border-[var(--border)] hover:border-[var(--accent)]/60"
+                }`}
+              >
+                <Smartphone className="h-4 w-4" />
+                {ar ? "بطاقة هاتف" : "Phone card"}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {isFazercards && paymentMethod === "phone_card" && (
+          <div className="mt-3 space-y-3 rounded-xl border border-[var(--accent)]/40 bg-[var(--accent)]/5 p-3.5">
+            <div>
+              <p className="text-[12.5px] font-black">
+                {ar ? "الدفع ببطاقة تعبئة الهاتف" : "Pay with a phone recharge card"}
+              </p>
+              <p className="mt-1 text-[11.5px] leading-5 text-[var(--muted-foreground)]">
+                {ar
+                  ? "أدخل الرمز مرة واحدة فقط. سنتحقق من البطاقة يدوياً قبل تجهيز بطاقة الهدية؛ إرسال الرمز لا يعني قبول الدفع."
+                  : "Submit the code once only. We will verify the card manually before preparing your gift card; submitting it does not mean payment is accepted."}
+              </p>
+            </div>
+            <div className="grid gap-2.5 sm:grid-cols-2">
+              <label className="block">
+                <span className="mb-1 block text-[11px] font-bold uppercase tracking-wide text-[var(--muted-foreground)]">
+                  {ar ? "المشغّل *" : "Operator *"}
+                </span>
+                <select
+                  value={cardOperator}
+                  onChange={(event) => setCardOperator(event.target.value as "libyana" | "al_madar")}
+                  className="h-11 w-full rounded-lg border border-[var(--border)] bg-[var(--background)] px-3 text-sm outline-none focus:border-[var(--accent)]"
+                >
+                  <option value="libyana">Libyana</option>
+                  <option value="al_madar">Al Madar</option>
+                </select>
+              </label>
+              <label className="block">
+                <span className="mb-1 block text-[11px] font-bold uppercase tracking-wide text-[var(--muted-foreground)]">
+                  {ar ? "قيمة البطاقة (د.ل) *" : "Card value (LYD) *"}
+                </span>
+                <input
+                  type="number"
+                  inputMode="decimal"
+                  min="0.01"
+                  step="0.01"
+                  value={cardValueLyd}
+                  onChange={(event) => setCardValueLyd(event.target.value)}
+                  placeholder="50"
+                  className="h-11 w-full rounded-lg border border-[var(--border)] bg-[var(--background)] px-3 text-sm outline-none focus:border-[var(--accent)]"
+                  dir="ltr"
+                />
+              </label>
+            </div>
+            <label className="block">
+              <span className="mb-1 block text-[11px] font-bold uppercase tracking-wide text-[var(--muted-foreground)]">
+                {ar ? "رمز بطاقة التعبئة *" : "Recharge card code *"}
+              </span>
+              <input
+                type="text"
+                inputMode="numeric"
+                autoComplete="off"
+                spellCheck={false}
+                value={cardCode}
+                onChange={(event) => setCardCode(event.target.value)}
+                placeholder="0000 0000 0000 0000"
+                maxLength={64}
+                className="h-12 w-full rounded-lg border border-[var(--border)] bg-[var(--background)] px-3 font-mono text-[15px] tracking-wide outline-none focus:border-[var(--accent)]"
+                dir="ltr"
+              />
+            </label>
+            <p className="flex items-start gap-2 text-[11px] leading-5 text-[var(--muted-foreground)]">
+              <ShieldCheck className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[var(--accent)]" />
+              {ar
+                ? "يُحفظ الرمز مشفّراً ولا يظهر إلا للإدارة. لا تستخدم بطاقة مستعملة ولا ترسل الرمز عبر واتساب بعد إرسال الطلب."
+                : "The code is encrypted and only visible to authorised staff. Do not use an already redeemed card or send the code on WhatsApp after ordering."}
+            </p>
+          </div>
+        )}
 
         {/* Champs exigés par le fournisseur (recharge de jeu) */}
         {requiredFields.length > 0 && (
@@ -541,7 +686,9 @@ export function DigitalBuyDialog({ product, denominationId, onClose }: Props) {
             </label>
             <label className="block">
               <span className="mb-1 block text-[11px] font-bold uppercase tracking-wide text-[var(--muted-foreground)]">
-                {ar ? "الهاتف (اختياري)" : "Phone (optional)"}
+                {paymentMethod === "phone_card"
+                  ? ar ? "الهاتف للتواصل *" : "Contact phone *"
+                  : ar ? "الهاتف (اختياري)" : "Phone (optional)"}
               </span>
               <input
                 type="tel"
@@ -590,27 +737,37 @@ export function DigitalBuyDialog({ product, denominationId, onClose }: Props) {
             ? ar
               ? "جارٍ إنشاء الطلب…"
               : "Creating the order…"
-            : ar
-              ? `الدفع الآن · ${total.toFixed(2)} $`
-              : `Pay now · $${total.toFixed(2)}`}
+            : paymentMethod === "phone_card"
+              ? ar
+                ? "إرسال البطاقة للتحقق"
+                : "Submit card for verification"
+              : ar
+                ? `الدفع الآن · ${total.toFixed(2)} $`
+                : `Pay now · $${total.toFixed(2)}`}
         </button>
 
         <p className="mt-3 flex items-start gap-2 text-[11px] leading-5 text-[var(--muted-foreground)]">
           <ShieldCheck className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[var(--accent)]" />
-          {ar
-            ? "الدفع بالعملات الرقمية (USDT وغيرها) عبر صفحة دفع آمنة. يُسلَّم الكود إلى بريدك الإلكتروني بعد تأكيد الدفع — عادةً في أقل من 5 دقائق."
-            : "Crypto payment (USDT and others) on a secure hosted page. Your code is e-mailed right after payment confirmation — usually under 5 minutes."}
+          {paymentMethod === "phone_card"
+            ? ar
+              ? "الطلب مجاني الإنشاء ولا يُعد مدفوعاً إلا بعد قبول الإدارة للبطاقة. بعدها يتم تسليم بطاقة الهدية يدوياً إلى بريدك وعلى صفحة التتبع."
+              : "Submitting an order is free; it is only marked paid after staff accept the card. Your gift card is then delivered manually by email and on the tracking page."
+            : ar
+              ? "الدفع بالعملات الرقمية (USDT وغيرها) عبر صفحة دفع آمنة. يُسلَّم الكود إلى بريدك الإلكتروني بعد تأكيد الدفع — عادةً في أقل من 5 دقائق."
+              : "Crypto payment (USDT and others) on a secure hosted page. Your code is e-mailed right after payment confirmation — usually under 5 minutes."}
         </p>
 
         {/* Frais de réseau : ils sont FIXES et peuvent dépasser la valeur
             d'un petit article. On oriente donc le client vers les chaînes
             à quelques centimes (liste blanche de `payment-networks.ts`). */}
-        <p className="mt-1.5 flex items-start gap-2 text-[11px] leading-5 text-[var(--muted-foreground)]">
-          <Zap className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[var(--accent)]" />
-          {ar
-            ? `لتفادي رسوم شبكة مرتفعة، استخدم: ${recommendedNetworksLabel()}`
-            : `To avoid high network fees, pay on: ${recommendedNetworksLabel()}`}
-        </p>
+        {paymentMethod === "nowpayments" && (
+          <p className="mt-1.5 flex items-start gap-2 text-[11px] leading-5 text-[var(--muted-foreground)]">
+            <Zap className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[var(--accent)]" />
+            {ar
+              ? `لتفادي رسوم شبكة مرتفعة، استخدم: ${recommendedNetworksLabel()}`
+              : `To avoid high network fees, pay on: ${recommendedNetworksLabel()}`}
+          </p>
+        )}
       </div>
     </div>
   );

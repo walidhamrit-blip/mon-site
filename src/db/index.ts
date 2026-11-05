@@ -347,6 +347,31 @@ export function ensureSchema(): Promise<void> {
       await pool.query(
         "CREATE INDEX IF NOT EXISTS orders_digital_order_id_idx ON orders (digital_order_id)",
       );
+      await pool.query(
+        "ALTER TABLE orders ADD COLUMN IF NOT EXISTS payment_method text NOT NULL DEFAULT 'nowpayments'",
+      );
+
+      // Cartes de recharge téléphonique : code chiffré + empreinte HMAC
+      // unique contre la réutilisation. La validation reste humaine.
+      await pool.query(`
+        CREATE TABLE IF NOT EXISTS phone_card_payments (
+          id serial PRIMARY KEY,
+          created_at timestamptz NOT NULL DEFAULT now(),
+          updated_at timestamptz NOT NULL DEFAULT now(),
+          order_ref text NOT NULL UNIQUE REFERENCES orders(ref) ON DELETE CASCADE,
+          operator text NOT NULL,
+          card_value_lyd text NOT NULL,
+          code_cipher text NOT NULL,
+          code_fingerprint text NOT NULL UNIQUE,
+          code_hint text NOT NULL,
+          status text NOT NULL DEFAULT 'pending',
+          reviewed_at timestamptz,
+          review_note text
+        )
+      `);
+      await pool.query(
+        "CREATE INDEX IF NOT EXISTS phone_card_payments_status_idx ON phone_card_payments (status, created_at DESC)",
+      );
 
       // Livraison des projets web : récapitulatif remis au client + validation
       // de recette horodatée (page publique /livraison/<ref>?t=<jeton>).

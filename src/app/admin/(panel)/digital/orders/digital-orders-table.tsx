@@ -36,6 +36,8 @@ export interface AdminDigitalOrderRow {
   recipientName: string | null;
   recipientPhone: string | null;
   status: DigitalOrderStatus;
+  paymentMethod: "nowpayments" | "phone_card";
+  phoneCardStatus: "pending" | "approved" | "rejected" | null;
   /** Famille du produit : une recharge (`game_topup`) ne produit aucun code. */
   kind: string;
   /** Fournisseur qui livre la commande (déduit du préfixe de slug). */
@@ -258,7 +260,12 @@ export function DigitalOrdersTable({ rows }: { rows: AdminDigitalOrderRow[] }) {
         {rows.map((row) => {
           const open = openRef === row.ref;
           const status = row.status as DigitalOrderStatus;
-          const canRetry = row.supplier === "fazercards" && ["paid", "manual", "failed"].includes(status);
+          const canRetry =
+            row.paymentMethod !== "phone_card" &&
+            row.supplier === "fazercards" &&
+            ["paid", "manual", "failed"].includes(status);
+          const canDeliverManually =
+            row.paymentMethod !== "phone_card" || row.phoneCardStatus === "approved";
           const buyerFieldEntries = Object.entries(row.buyerFields ?? {});
           const isBusy = busy && pendingRef === row.ref;
 
@@ -491,7 +498,7 @@ export function DigitalOrdersTable({ rows }: { rows: AdminDigitalOrderRow[] }) {
                         Renvoyer l&apos;e-mail
                       </button>
                     )}
-                    {status !== "delivered" && (
+                    {status !== "delivered" && canDeliverManually && (
                       <button
                         type="button"
                         onClick={() => {
@@ -506,7 +513,9 @@ export function DigitalOrdersTable({ rows }: { rows: AdminDigitalOrderRow[] }) {
                   </div>
 
                   <p className="text-[11.5px] leading-5 text-stone-500">
-                    {status === "delivered"
+                    {row.paymentMethod === "phone_card" && !canDeliverManually
+                      ? "Paiement par carte téléphonique : utilisez la zone de vérification ci-dessus. La livraison reste verrouillée tant que la carte n’est pas acceptée."
+                      : status === "delivered"
                       ? row.kind === "game_topup"
                         ? "Recharge créditée sur le compte du joueur — rien d'autre à faire."
                         : "Code acheté et transmis — rien d'autre à faire."
@@ -515,7 +524,7 @@ export function DigitalOrdersTable({ rows }: { rows: AdminDigitalOrderRow[] }) {
                         : `Mode manuel : achetez ${row.kind === "game_topup" ? "la recharge" : "le code"} chez le fournisseur, puis saisissez-le ci-dessous — le client reçoit l'e-mail automatiquement. Si la fiche vient d'être passée en automatique, « Relancer la livraison » relit la fiche et achète sans nouveau paiement.`}
                   </p>
 
-                  {manualRef === row.ref && status !== "delivered" && (
+                  {manualRef === row.ref && status !== "delivered" && canDeliverManually && (
                     <div className="rounded-xl border border-stone-200 bg-white p-3">
                       <label className="block">
                         <span className="mb-1 block text-[11px] font-bold uppercase tracking-wide text-stone-500">

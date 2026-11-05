@@ -37,6 +37,8 @@ interface PublicDigitalOrder {
   deliveredAt: string | null;
   reloadlyStatus: string | null;
   codes: DigitalCode[];
+  paymentMethod: "nowpayments" | "phone_card";
+  phoneCardStatus: "pending" | "approved" | "rejected" | null;
   notice: string | null;
 }
 
@@ -163,7 +165,10 @@ export function DigitalOrderStatus({
           icon: XCircle,
           tone: "text-red-600",
           chip: "border-red-200 bg-red-50 text-red-800",
-          label: ar ? "تعذر الإصدار" : "Not issued",
+          label:
+            order?.paymentMethod === "phone_card"
+              ? ar ? "بطاقة الهاتف مرفوضة" : "Phone card rejected"
+              : ar ? "تعذر الإصدار" : "Not issued",
         };
       case "manual":
         return {
@@ -184,10 +189,13 @@ export function DigitalOrderStatus({
           icon: Clock,
           tone: "text-amber-600",
           chip: "border-amber-200 bg-amber-50 text-amber-800",
-          label: ar ? "بانتظار الدفع" : "Awaiting payment",
+          label:
+            order?.paymentMethod === "phone_card"
+              ? ar ? "التحقق من بطاقة الهاتف" : "Verifying phone card"
+              : ar ? "بانتظار الدفع" : "Awaiting payment",
         };
     }
-  }, [order?.status, ar]);
+  }, [order?.status, order?.paymentMethod, ar]);
 
   const StatusIcon = statusMeta.icon;
 
@@ -380,6 +388,17 @@ export function DigitalOrderStatus({
                       ? "هذا الرمز صالح فقط في المنطقة المذكورة — لا تستخدمه بحساب من منطقة أخرى."
                       : "This code only works in the region shown — do not use it on an account from another region."}
                 </p>
+              </div>
+            ) : order.status === "failed" ? (
+              <div className="flex items-center gap-2.5 rounded-lg border border-red-200 bg-red-50 px-3.5 py-3 text-[12.5px] text-red-800">
+                <XCircle className="h-4 w-4 shrink-0" />
+                {order.paymentMethod === "phone_card"
+                  ? ar
+                    ? "توقف الطلب بعد التحقق من بطاقة الهاتف. تواصل معنا مع ذكر مرجع الطلب؛ لا ترسل بطاقة أخرى قبل الاتفاق معنا."
+                    : "The order stopped after phone card verification. Contact us with your order reference; do not submit another card before speaking with us."
+                  : ar
+                    ? "تعذر إصدار الكود. تواصل معنا مع ذكر مرجع الطلب."
+                    : "The code could not be issued. Contact us with your order reference."}
               </div>
             ) : (
               <div className="flex items-center gap-2.5 rounded-lg border border-[var(--border)] bg-[var(--secondary)]/30 px-3.5 py-3 text-[12.5px] text-[var(--muted-foreground)]">

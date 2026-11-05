@@ -278,7 +278,9 @@ test("buildSystemPrompt : langue, règles et fiches pertinentes (requête + cont
   assert.match(prompt, /Track or cancel a subscription/);
   assert.match(prompt, /Subscriptions \(hosting & maintenance\)/);
   assert.match(prompt, /never invent numbers/);
-  assert.match(prompt, /crypto only/);
+  assert.match(prompt, /Website plans and subscriptions are paid in crypto/);
+  assert.match(prompt, /phone recharge cards/);
+  assert.match(prompt, /verify it manually/);
   assert.ok(prompt.length < 40_000, `prompt trop long : ${prompt.length}`);
   assert.doesNotMatch(prompt, /reloadly/i);
 });

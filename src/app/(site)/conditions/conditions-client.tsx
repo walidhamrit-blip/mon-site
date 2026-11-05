@@ -13,7 +13,7 @@ interface Section {
 const CONTENT: Record<"ar" | "en", { title: string; updated: string; intro: string; sections: Section[]; contactTitle: string; contactText: string }> = {
   ar: {
     title: "الشروط العامة للبيع والخدمة",
-    updated: "آخر تحديث: 26/10/2026",
+    updated: "آخر تحديث: 05/11/2026",
     intro:
       "تحدد هذه الشروط الأحكام التي تنظم العلاقة بين نخبة Nukhba Studio («نخبة») وكل عميل يطلب موقعاً إلكترونياً أو يشترك في إحدى باقاتنا عبر هذا الموقع.",
     sections: [
@@ -22,7 +22,8 @@ const CONTENT: Record<"ar" | "en", { title: string; updated: string; intro: stri
         items: [
           "الأسعار معروضة بالدولار الأمريكي (USD).",
           "يتم الدفع بالعملات الرقمية عبر بوابة NOWPayments، وتُحتسب المبالغ بالدولار وتُدفع بنفس القيمة بـ USDT (1 USD = 1 USDT) أو بعملات أخرى يدعمها البوابة.",
-          "يُعتبر الطلب مؤكداً بعد استلام الدفعة المطلوبة (العربون أو أول دفعة للاشتراك).",
+          "في متجر الأكواد فقط، يمكن اختيار بطاقة تعبئة Libyana أو Al Madar. إرسال رمز البطاقة لا يعني قبول الدفع: نتحقق منها يدوياً أولاً، ثم نقبلها أو نرفضها، ولا يتم تسليم الكود المطلوب إلا بعد القبول والتجهيز اليدوي.",
+          "يُعتبر الطلب مؤكداً بعد استلام الدفعة المطلوبة (العربون أو أول دفعة للاشتراك) أو بعد قبول بطاقة الهاتف من الإدارة.",
         ],
       },
       {
@@ -77,7 +78,7 @@ const CONTENT: Record<"ar" | "en", { title: string; updated: string; intro: stri
       {
         title: "9. البيانات الشخصية",
         paragraphs: [
-          "نستخدم بياناتك (الاسم والبريد الإلكتروني والهاتف) لتقديم الخدمة والتواصل معك بشأنها فقط، ولا نبيعها لأي طرف ثالث.",
+          "نستخدم بياناتك (الاسم والبريد الإلكتروني والهاتف) لتقديم الخدمة والتواصل معك بشأنها فقط، ولا نبيعها لأي طرف ثالث. عند اختيار الدفع ببطاقة هاتف، يُحفظ رمز التعبئة مشفّراً ويُستخدم حصرياً للتحقق من الدفع وإدارة الطلب، ولا يظهر في صفحة التتبع العامة.",
         ],
       },
       {
@@ -98,7 +99,7 @@ const CONTENT: Record<"ar" | "en", { title: string; updated: string; intro: stri
   },
   en: {
     title: "Terms & conditions of sale",
-    updated: "Last updated: October 26, 2026",
+    updated: "Last updated: November 5, 2026",
     intro:
       "These terms set out the rules that govern the relationship between Nukhba Studio (\"Nukhba\") and each client who orders a website or subscribes to one of our plans through this site.",
     sections: [
@@ -107,7 +108,8 @@ const CONTENT: Record<"ar" | "en", { title: string; updated: string; intro: stri
         items: [
           "Prices are shown in US dollars (USD).",
           "Payments are made in cryptocurrency through the NOWPayments gateway; amounts are priced in USD and paid at the same value in USDT (1 USD = 1 USDT) or another supported coin.",
-          "An order is confirmed once the required payment (deposit or first subscription payment) is received.",
+          "In the digital codes store only, you may choose a Libyana or Al Madar recharge card. Submitting a card code does not constitute accepted payment: we verify it manually before accepting or rejecting it, and the purchased code is delivered only after acceptance and manual preparation.",
+          "An order is confirmed once the required payment (deposit or first subscription payment) is received, or once a phone card is accepted by our team.",
         ],
       },
       {
@@ -162,7 +164,7 @@ const CONTENT: Record<"ar" | "en", { title: string; updated: string; intro: stri
       {
         title: "9. Personal data",
         paragraphs: [
-          "We use your data (name, e-mail and phone number) only to provide the service and to contact you about it. We do not sell it to any third party.",
+          "We use your data (name, e-mail and phone number) only to provide the service and to contact you about it. We do not sell it to any third party. When you choose phone card payment, the recharge code is stored encrypted and used exclusively to verify payment and administer your order; it is never displayed on the public tracking page.",
         ],
       },
       {

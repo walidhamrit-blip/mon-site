@@ -35,6 +35,12 @@ const checkoutSchema = z.object({
   // Certification explicite de l'identifiant : obligatoire quand le
   // fournisseur ne sait pas vérifier le jeu (voir `playerIdGate`).
   idConfirmed: z.boolean().optional(),
+  paymentMethod: z.enum(["nowpayments", "phone_card"]).default("nowpayments"),
+  phoneCard: z.object({
+    operator: z.enum(["libyana", "al_madar"]),
+    code: z.string().min(6).max(64),
+    valueLyd: z.union([z.string().max(20), z.number()]),
+  }).optional(),
 });
 
 const CHECKOUT_LIMIT = {
@@ -152,6 +158,8 @@ export async function POST(req: Request) {
         locale: parsed.data.locale,
         fields: parsed.data.fields,
         idConfirmed: parsed.data.idConfirmed,
+        paymentMethod: parsed.data.paymentMethod,
+        phoneCard: parsed.data.phoneCard,
       },
       productsAdapter,
       req,

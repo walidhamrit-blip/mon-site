@@ -202,6 +202,52 @@ export async function sendDigitalManualNotice(
   return { ok: result.ok, provider: result.provider, error: result.error };
 }
 
+/** Alerte interne : une carte téléphonique attend une vérification humaine. */
+export async function sendPhoneCardReviewNotice(
+  order: DigitalOrder,
+  operator: string,
+  cardValueLyd: string,
+  siteName: string,
+  siteUrl: string,
+  siteEmail?: string,
+): Promise<DigitalEmailResult> {
+  const to = adminRecipient(siteEmail);
+  if (!to) return { ok: false, provider: "none", error: "destinataire absent" };
+  const adminUrl = siteLink(siteUrl, "/admin/digital/orders");
+  const subject = `📱 Carte téléphonique à vérifier — ${order.ref}`;
+  const text = [
+    "Une nouvelle carte téléphonique attend votre vérification.",
+    "",
+    `Commande : ${order.ref}`,
+    `Produit : ${order.productTitle} — ${order.denominationLabel} × ${order.quantity}`,
+    `Client : ${order.recipientName || "—"} <${order.recipientEmail}>`,
+    `Téléphone : ${order.recipientPhone || "—"}`,
+    `Opérateur : ${operator}`,
+    `Valeur déclarée : ${cardValueLyd} LYD`,
+    "",
+    "Le code n'est volontairement pas inclus dans cet e-mail. Connectez-vous à l'admin pour le consulter.",
+    "Vérifiez que le crédit est réellement reçu avant d'accepter, puis livrez le code cadeau manuellement.",
+    `Vérifier : ${adminUrl}`,
+  ].join("\n");
+  const html = `
+    <div style="font-family:system-ui,Arial,sans-serif;max-width:560px;margin:0 auto;padding:24px;color:#1a1a1e">
+      <div style="font-size:13px;letter-spacing:.12em;color:#C6A664;font-weight:700">${escapeHtml(siteName.toUpperCase())} — VÉRIFICATION MANUELLE</div>
+      <h1 style="font-size:21px;font-weight:900">Carte téléphonique reçue 📱</h1>
+      <p style="color:#666;font-size:14px">Le crédit n'est pas encore accepté et aucune livraison n'a été déclenchée.</p>
+      <table style="width:100%;border-collapse:collapse;font-size:13px">
+        <tr><td style="padding:7px 11px;background:#f6f3ec;font-weight:700">Commande</td><td style="padding:7px 11px">${escapeHtml(order.ref)}</td></tr>
+        <tr><td style="padding:7px 11px;background:#f6f3ec;font-weight:700">Produit</td><td style="padding:7px 11px">${escapeHtml(order.productTitle)} — ${escapeHtml(order.denominationLabel)} × ${order.quantity}</td></tr>
+        <tr><td style="padding:7px 11px;background:#f6f3ec;font-weight:700">Client</td><td style="padding:7px 11px">${escapeHtml(order.recipientName || "—")} · ${escapeHtml(order.recipientEmail)}</td></tr>
+        <tr><td style="padding:7px 11px;background:#f6f3ec;font-weight:700">Téléphone</td><td style="padding:7px 11px">${escapeHtml(order.recipientPhone || "—")}</td></tr>
+        <tr><td style="padding:7px 11px;background:#f6f3ec;font-weight:700">Carte</td><td style="padding:7px 11px">${escapeHtml(operator)} · ${escapeHtml(cardValueLyd)} LYD</td></tr>
+      </table>
+      <p style="font-size:13px;color:#666">Pour des raisons de sécurité, le code n'est pas envoyé par e-mail. Consultez-le dans l'administration, vérifiez le crédit, puis acceptez ou refusez la carte.</p>
+      <p><a href="${escapeHtml(adminUrl)}" style="display:inline-block;background:#C6A664;color:#111;font-weight:700;padding:12px 22px;border-radius:999px;text-decoration:none">Vérifier la carte</a></p>
+    </div>`;
+  const result = await sendEmail({ to, subject, text, html });
+  return { ok: result.ok, provider: result.provider, error: result.error };
+}
+
 /**
  * E-mail au CLIENT : « paiement reçu, code en cours d'émission ».
  *

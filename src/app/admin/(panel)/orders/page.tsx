@@ -130,6 +130,7 @@ export default async function AdminOrdersPage({ searchParams }: Props) {
     payCurrency: o.payCurrency,
     payAmount: o.payAmount,
     paymentUrl: o.paymentUrl,
+    paymentMethod: o.paymentMethod === "phone_card" ? "phone_card" : "nowpayments",
     status: (ORDER_STATUSES as readonly string[]).includes(o.status)
       ? (o.status as OrderStatus)
       : "pending",

@@ -85,6 +85,10 @@ export function OrdersTable({ rows }: { rows: OrderRow[] }) {
                   <Detail label="Créée le" value={order.dateFr} />
                   <Detail label="Référence" value={order.ref} />
                   <Detail label="Type" value={ORDER_KIND_LABELS[order.kind]} />
+                  <Detail
+                    label="Canal de paiement"
+                    value={order.paymentMethod === "phone_card" ? "Carte téléphonique — vérification manuelle" : "Crypto — NOWPayments"}
+                  />
                   <Detail label="Formule" value={order.planName} />
                   {order.demoSlug && (
                     <Detail label="Projet réservé" value={order.demoSlug} />

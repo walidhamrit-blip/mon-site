@@ -521,6 +521,7 @@ export interface OrderRow {
   payCurrency: string | null;
   payAmount: string | null;
   paymentUrl: string | null;
+  paymentMethod: "nowpayments" | "phone_card";
   status: OrderStatus;
   ipnStatus: string | null;
   utm: string | null;
