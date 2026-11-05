@@ -143,11 +143,18 @@ test("reviewLinks : seuls les profils configurés sortent, dans un ordre stable"
     assert.ok(link.labelAr.length > 0 && link.labelEn.length > 0);
     assert.ok(link.url.startsWith("https://"));
   }
+  assert.equal(links[0].kind, "profile", "/review/ = fiche publique");
 });
 
 test("les demandes d'avis sont désactivées par défaut et exigent une cible", () => {
   const { reviewInvitesEnabled, reviewLinks } = trust;
-  const base = { trustpilotUrl: "", googleReviewUrl: "", scamadviserUrl: "", reviewInvites: false };
+  const base = {
+    trustpilotUrl: "",
+    trustpilotReviewUrl: "",
+    googleReviewUrl: "",
+    scamadviserUrl: "",
+    reviewInvites: false,
+  };
   assert.equal(reviewInvitesEnabled(base), false);
   assert.equal(reviewInvitesEnabled(undefined), false);
   // Activé mais aucun profil : rien à envoyer.
@@ -382,13 +389,60 @@ test("legalRows publie le registre et le responsable quand ils sont renseignés"
 /* 5. Configuration & compatibilité ascendante                         */
 /* ------------------------------------------------------------------ */
 
-test("les valeurs par défaut n'activent ni lien ni envoi d'avis", async () => {
+test("les valeurs par défaut exposent le profil revendiqué mais n'envoient rien", async () => {
   const { siteConfig } = configModule;
-  const { reviewLinks, reviewInvitesEnabled } = trust;
-  assert.deepEqual(reviewLinks(siteConfig.trust), []);
+  const { reviewLinks, reviewInviteLinks, reviewInvitesEnabled } = trust;
+
+  const links = reviewLinks(siteConfig.trust);
+  assert.deepEqual(
+    links.map((link) => [link.platform, link.url, link.kind]),
+    [["trustpilot", "https://www.trustpilot.com/review/nokhba.net.ly", "profile"]],
+  );
+  // Le profil est publié, mais aucun e-mail n'est envoyé tant que ce n'est
+  // pas activé dans l'admin, et l'identité légale n'est pas inventée.
   assert.equal(reviewInvitesEnabled(siteConfig.trust), false);
+  assert.equal(reviewInviteLinks(siteConfig.trust).length, 1);
   assert.equal(siteConfig.legal.registrationNumber, "");
   assert.equal(siteConfig.legal.hostName, "Vercel Inc.");
+});
+
+test("le lien direct d'avis est prioritaire et porte le bon libellé", () => {
+  const { reviewInviteLinks, reviewLinks } = trust;
+  const base = {
+    trustpilotUrl: "https://www.trustpilot.com/review/nokhba.net.ly",
+    trustpilotReviewUrl: "",
+    googleReviewUrl: "",
+    scamadviserUrl: "https://www.scamadviser.com/check-website/nokhba.net.ly",
+    reviewInvites: true,
+  };
+
+  // Sans lien direct : la fiche publique sert de cible (Trustpilot y affiche
+  // « Écrire un avis »).
+  assert.deepEqual(
+    reviewInviteLinks(base).map((link) => [link.platform, link.kind]),
+    [["trustpilot", "profile"]],
+  );
+
+  // Avec le formulaire direct : il passe devant, libellé « écrire ».
+  const direct = reviewInviteLinks({
+    ...base,
+    trustpilotReviewUrl: "https://www.trustpilot.com/evaluate/nokhba.net.ly",
+  });
+  assert.equal(direct.length, 1);
+  assert.equal(direct[0].url, "https://www.trustpilot.com/evaluate/nokhba.net.ly");
+  assert.equal(direct[0].kind, "write");
+  assert.match(direct[0].labelEn, /Write a Trustpilot review/);
+
+  // Scamadviser n'entre jamais dans une demande d'avis.
+  assert.ok(!reviewInviteLinks(base).some((link) => link.platform === "scamadviser"));
+  // …mais reste affiché sur /avis.
+  assert.ok(reviewLinks(base).some((link) => link.platform === "scamadviser"));
+
+  // Un lien direct invalide ne casse pas l'invitation : on retombe sur la fiche.
+  assert.equal(
+    reviewInviteLinks({ ...base, trustpilotReviewUrl: "https://evil.example/evaluate/x" })[0].url,
+    "https://www.trustpilot.com/review/nokhba.net.ly",
+  );
 });
 
 test("une configuration enregistrée avant les blocs trust/legal reste valide", () => {

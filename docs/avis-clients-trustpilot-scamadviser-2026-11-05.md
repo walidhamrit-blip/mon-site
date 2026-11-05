@@ -364,3 +364,66 @@ d'invitations** et des **widgets**, rien d'autre.
   NAP avec Scamadviser et Google vaut plus que le marketing.
 - **Répondre aux avis en français** alors que le client écrit en arabe : la
   réponse est publique, elle doit être dans la langue de l'avis (ou bilingue).
+
+---
+
+## 10. État réel du profil (vérifié le 06/11/2026)
+
+Relevé public de la fiche `nokhba.net.ly` sur Trustpilot — c'est le point de
+départ chiffré :
+
+| Élément | Valeur constatée |
+|---|---|
+| Statut | **Profil revendiqué** (« Claimed profile ») |
+| Avis | **0** (aucun avis sur 12 mois) |
+| TrustScore affiché | **0,0 / 5** |
+| Domaine rattaché | `nokhba.net.ly` ✅ (le bon) |
+| Logo | présent ✅ |
+| Pays du profil | ⚠️ **United States** — devrait être **Libya** |
+| Business unit id | `6aed0b0c0156593a344109f3` |
+
+### 10.1 Les deux URL à connaître (et à ne pas confondre)
+
+| Usage | URL | Où elle va |
+|---|---|---|
+| **Fiche publique** — à lire, à citer, à afficher sur `/avis` | `https://www.trustpilot.com/review/nokhba.net.ly` (ou `fr.trustpilot.com/...`) | Champ **« Profil Trustpilot »** de l'admin. Déjà prérempli dans `src/lib/config.ts`. |
+| **Formulaire d'avis direct** — à envoyer aux clients | `https://www.trustpilot.com/evaluate/nokhba.net.ly` | Champ **« Lien direct écrire un avis Trustpilot »**. Facultatif : sans lui, l'invitation renvoie vers la fiche, où Trustpilot affiche « Écrire un avis ». Avec lui, le client arrive directement sur le formulaire — un clic de moins, nettement plus d'avis au bout. |
+
+Le code déduit le type de l'URL (`/review/` = fiche, `/evaluate/` = formulaire)
+et adapte le libellé : « Lire et écrire un avis » ou « Écrire un avis ».
+
+### 10.2 À corriger dans le dashboard, tout de suite
+
+1. **Pays : United States → Libya.**
+   `Settings → Public profile settings → Profile page → Company details`.
+   Un profil qui se déclare américain alors que le site, l'adresse, le
+   téléphone et le WHOIS disent Tripoli, c'est exactement le genre
+   d'incohérence que Scamadviser croise — et qu'un client remarque.
+2. **Coordonnées complètes** : adresse `شارع الجمهورية، طرابلس`, téléphone
+   `+218 91 344 2640`, e-mail `contact@nokhba.net.ly`, catégorie, description
+   (§9.4).
+3. **Nom affiché** : garder `Nukhba` (pas de suffixe marketing).
+4. **Vérification des détails** (facultatif, plus tard) :
+   `Settings → Public profile settings → Verify company details` — domaine
+   enregistré (D-U-N-S), pièce d'identité, fiche Google. Cela affiche des
+   coches de vérification sur la fiche.
+
+### 10.3 Le problème du « 0,0 » — et comment le régler
+
+Un profil sans avis affiche **0,0 / 5**. Visuellement, c'est pire qu'une simple
+absence : un visiteur peut lire « 0 étoiles ». Trois conséquences pratiques :
+
+- **Ne pas encore mettre de widget** sur le site (le nôtre ne montre que le
+  lien vers `/avis`, pas de note — c'est volontaire et ça évite le problème).
+- **Obtenir 5 à 10 avis rapidement**, auprès de clients **réellement livrés
+  récemment** (codes et sites), en envoyant le lien direct d'évaluation.
+  À 5 avis positifs, le TrustScore remonte au-dessus de 4,0 et le « 0,0 »
+  disparaît de la fiche.
+- **Activer `reviewInvites` seulement maintenant**, une fois ces premières
+  demandes envoyées : le bloc dans les e-mails de livraison prendra le relais
+  pour toutes les commandes suivantes.
+
+Rappel des règles, valables dès le premier avis : on invite **tous** les
+clients livrés, sans tri, sans contrepartie, sans consigne de note — le
+contraire se voit dans l'historique du profil et se paie (avis retirés,
+profil signalé).

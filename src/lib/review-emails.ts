@@ -24,7 +24,7 @@
  */
 
 import { escapeHtml } from "@/lib/delivery-emails";
-import { reviewInvitesEnabled, reviewLinks, type ReviewLink } from "@/lib/trust";
+import { reviewInviteLinks, reviewInvitesEnabled, type ReviewLink } from "@/lib/trust";
 import type { SiteConfigData } from "@/lib/site-types";
 
 export type ReviewInviteKind = "digital" | "website" | "subscription";
@@ -218,7 +218,8 @@ export function reviewPromptForConfig(
     clientName: options.clientName ?? null,
     orderRef: options.orderRef ?? null,
     kind: options.kind,
-    links: reviewLinks(config.trust),
+    // Formulaire direct quand il est configuré, sinon fiche publique.
+    links: reviewInviteLinks(config.trust),
     supportEmail: config.email,
   });
 }

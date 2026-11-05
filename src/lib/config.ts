@@ -283,9 +283,22 @@ export const siteConfig = {
    * saisie manuelle, donc non sourcée.
    */
   trust: {
-    trustpilotUrl: "",
+    /**
+     * Profil Trustpilot du domaine, revendiqué le 06/11/2026 (fiche vérifiée :
+     * « Profil revendiqué », 0 avis au départ).
+     *
+     * L'URL est construite depuis `DEFAULT_SITE_DOMAIN` — jamais depuis un
+     * littéral : le domaine n'est écrit qu'à un seul endroit
+     * (`src/lib/site-identity.ts`, vérifié par `scripts/site-identity.test.mjs`).
+     * Surchargeable dans l'admin, notamment si le profil vit sur un autre
+     * domaine.
+     */
+    trustpilotUrl: `https://www.trustpilot.com/review/${DEFAULT_SITE_DOMAIN}`,
+    /** Formulaire d'avis direct : à coller depuis le dashboard Business. */
+    trustpilotReviewUrl: "",
     scamadviserUrl: "",
     googleReviewUrl: "",
+    /** Reste désactivé tant qu'il n'y a pas d'historique de livraisons. */
     reviewInvites: false,
   } as TrustConfigData,
 

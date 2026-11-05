@@ -26,6 +26,13 @@ export interface ReviewLink {
   platform: ReviewPlatform;
   /** URL validée (https, domaine de la plateforme). */
   url: string;
+  /**
+   * `profile` = fiche publique (le visiteur lit les avis existants),
+   * `write` = formulaire d'avis direct (`/evaluate/…`, lien Google « laisser
+   * un avis »). La distinction n'est pas cosmétique : elle décide du libellé
+   * et du lien envoyé dans les e-mails d'invitation.
+   */
+  kind: "profile" | "write";
   labelAr: string;
   labelEn: string;
 }
@@ -63,6 +70,32 @@ const LABELS: Record<ReviewPlatform, { ar: string; en: string }> = {
   },
 };
 
+/** Libellés des liens qui ouvrent directement le formulaire d'avis. */
+const WRITE_LABELS: Record<ReviewPlatform, { ar: string; en: string }> = {
+  trustpilot: {
+    ar: "اكتب تقييماً على Trustpilot",
+    en: "Write a Trustpilot review",
+  },
+  google: {
+    ar: "اكتب تقييماً على Google",
+    en: "Write a Google review",
+  },
+  scamadviser: {
+    ar: "اكتب تقييماً على Scamadviser",
+    en: "Write a Scamadviser review",
+  },
+};
+
+/**
+ * Un lien Trustpilot `/evaluate/<domaine>` est un formulaire d'avis direct ;
+ * `/review/<domaine>` est la fiche publique. On déduit le type de l'URL
+ * plutôt que de demander à l'administrateur de le déclarer deux fois.
+ */
+function linkKind(platform: ReviewPlatform, url: string): "profile" | "write" {
+  if (platform !== "trustpilot") return "write";
+  return /\/evaluate(\/|$)/.test(new URL(url).pathname) ? "write" : "profile";
+}
+
 /**
  * Normalise une URL de profil. Renvoie `""` si elle n'est pas exploitable :
  * vide, non absolue, non https, avec identifiants, ou sur un autre domaine
@@ -97,13 +130,59 @@ export function reviewLinks(trust: TrustConfigData | null | undefined): ReviewLi
   for (const platform of PLATFORM_ORDER) {
     const url = normalizeReviewUrl(platform, sources[platform]);
     if (!url) continue;
+    const kind = linkKind(platform, url);
+    const labels = kind === "write" ? WRITE_LABELS[platform] : LABELS[platform];
     links.push({
       platform,
       url,
-      labelAr: LABELS[platform].ar,
-      labelEn: LABELS[platform].en,
+      kind,
+      labelAr: labels.ar,
+      labelEn: labels.en,
     });
   }
+  return links;
+}
+
+/**
+ * Liens à mettre dans une **demande d'avis** — uniquement là où le client
+ * peut écrire tout de suite.
+ *
+ * Priorité au **formulaire direct** (`trustpilotReviewUrl` = `/evaluate/…`,
+ * lien Google « laisser un avis ») : un clic de moins entre la livraison et
+ * l'avis. À défaut, la fiche publique fait le travail (Trustpilot y affiche
+ * un bouton « Écrire un avis »). Scamadviser est exclu : on y va pour
+ * consulter une fiche, pas pour répondre à une invitation.
+ */
+export function reviewInviteLinks(trust: TrustConfigData | null | undefined): ReviewLink[] {
+  if (!trust) return [];
+  const links: ReviewLink[] = [];
+
+  const direct = normalizeReviewUrl("trustpilot", trust.trustpilotReviewUrl);
+  const profile = normalizeReviewUrl("trustpilot", trust.trustpilotUrl);
+  const trustpilotUrl = direct || profile;
+  if (trustpilotUrl) {
+    const kind = linkKind("trustpilot", trustpilotUrl);
+    const labels = kind === "write" ? WRITE_LABELS.trustpilot : LABELS.trustpilot;
+    links.push({
+      platform: "trustpilot",
+      url: trustpilotUrl,
+      kind,
+      labelAr: labels.ar,
+      labelEn: labels.en,
+    });
+  }
+
+  const google = normalizeReviewUrl("google", trust.googleReviewUrl);
+  if (google) {
+    links.push({
+      platform: "google",
+      url: google,
+      kind: "write",
+      labelAr: WRITE_LABELS.google.ar,
+      labelEn: WRITE_LABELS.google.en,
+    });
+  }
+
   return links;
 }
 
@@ -115,8 +194,7 @@ export function reviewLinks(trust: TrustConfigData | null | undefined): ReviewLi
  */
 export function reviewInvitesEnabled(trust: TrustConfigData | null | undefined): boolean {
   if (!trust || trust.reviewInvites !== true) return false;
-  const links = reviewLinks(trust);
-  return links.some((link) => link.platform === "trustpilot" || link.platform === "google");
+  return reviewInviteLinks(trust).length > 0;
 }
 
 /* ------------------------------------------------------------------ */

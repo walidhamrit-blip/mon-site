@@ -526,6 +526,23 @@ export function SettingsForm({ initial, initialTab }: Props) {
                   className={ADMIN_INPUT_CLS}
                 />
               </Field>
+              <Field label="Lien direct « écrire un avis » Trustpilot (facultatif, https://www.trustpilot.com/evaluate/votre-domaine)">
+                <input
+                  value={form.trust.trustpilotReviewUrl}
+                  onChange={(e) =>
+                    patch({
+                      trust: { ...form.trust, trustpilotReviewUrl: e.target.value },
+                    })
+                  }
+                  placeholder="https://www.trustpilot.com/evaluate/exemple.com"
+                  className={ADMIN_INPUT_CLS}
+                />
+                <span className="mt-1 block text-[11px] leading-4 text-stone-500">
+                  C’est ce lien qui part dans les e-mails de demande d’avis : il
+                  ouvre directement le formulaire, sans repasser par la fiche.
+                  Laissez vide pour envoyer la fiche publique.
+                </span>
+              </Field>
               <Field label="Lien « laisser un avis » Google (fiche Google Business)">
                 <input
                   value={form.trust.googleReviewUrl}

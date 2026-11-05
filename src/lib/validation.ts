@@ -384,6 +384,8 @@ const reviewProfileUrlSchema = z
 
 export const trustSchema = z.object({
   trustpilotUrl: reviewProfileUrlSchema.default(""),
+  /** Formulaire d'avis direct (`/evaluate/…`) — facultatif. */
+  trustpilotReviewUrl: reviewProfileUrlSchema.default(""),
   scamadviserUrl: reviewProfileUrlSchema.default(""),
   googleReviewUrl: reviewProfileUrlSchema.default(""),
   reviewInvites: z.boolean().default(false),
@@ -532,6 +534,7 @@ export const siteConfigSchema = z.object({
    */
   trust: trustSchema.default({
     trustpilotUrl: "",
+    trustpilotReviewUrl: "",
     scamadviserUrl: "",
     googleReviewUrl: "",
     reviewInvites: false,

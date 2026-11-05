@@ -541,11 +541,13 @@ Deux pages publiques et deux blocs de réglages, pensés pour les plateformes
 d'avis (Trustpilot, Scamadviser, Google) sans jamais publier de note non
 sourcée : voir [`docs/avis-clients-trustpilot-scamadviser-2026-11-05.md`](docs/avis-clients-trustpilot-scamadviser-2026-11-05.md).
 
-- **`/admin → Réglages → Avis & Mentions légales`** — trois URL de profils
-  (`trust.trustpilotUrl`, `trust.googleReviewUrl`, `trust.scamadviserUrl`),
+- **`/admin → Réglages → Avis & Mentions légales`** — les URL de profils
+  (`trust.trustpilotUrl`, `trust.trustpilotReviewUrl` pour le formulaire
+  d'avis direct, `trust.googleReviewUrl`, `trust.scamadviserUrl`),
   l'interrupteur `trust.reviewInvites`, et l'identité légale (`legal.*`).
-  Tous les champs sont **vides par défaut** : rien ne s'affiche et aucun
-  e-mail ne demande d'avis tant qu'ils ne sont pas renseignés.
+  Le profil Trustpilot revendiqué est prérempli dans `src/lib/config.ts` ;
+  tout le reste est **vide ou désactivé par défaut** : aucun e-mail ne demande
+  d'avis et aucune information légale n'est inventée.
 - **Validation** (`src/lib/trust.ts`) — seules les URL `https` sur les
   domaines réels des plateformes sont acceptées (`fr.trustpilot.com`,
   `g.page`, `www.scamadviser.com`…). Une faute de frappe ne peut donc pas

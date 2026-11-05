@@ -98,6 +98,12 @@ export interface PricingPlanData {
 export interface TrustConfigData {
   /** Profil Trustpilot (`https://fr.trustpilot.com/review/<domaine>`). */
   trustpilotUrl: string;
+  /**
+   * Lien direct « écrire un avis » (`https://www.trustpilot.com/evaluate/<domaine>`),
+   * facultatif. Utilisé en priorité dans les e-mails d'invitation : un clic de
+   * moins entre la livraison et l'avis.
+   */
+  trustpilotReviewUrl: string;
   /** Fiche Scamadviser (`https://www.scamadviser.com/check-website/<domaine>`). */
   scamadviserUrl: string;
   /** Lien « laisser un avis » du profil Google Business. */
