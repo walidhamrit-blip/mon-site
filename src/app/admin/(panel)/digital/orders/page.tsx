@@ -12,6 +12,11 @@ import {
   type AdminDigitalOrderRow,
 } from "./digital-orders-table";
 import { MailTestCard } from "./mail-test-card";
+import { PhoneCardPaymentsTable } from "./phone-card-payments-table";
+import {
+  listPhoneCardPayments,
+  type AdminPhoneCardPaymentRow,
+} from "@/lib/phone-card-payments";
 
 export const dynamic = "force-dynamic";
 
@@ -29,9 +34,11 @@ export const metadata = {
  */
 export default async function AdminDigitalOrdersPage() {
   let orders: AdminDigitalOrder[] = [];
+  let phoneCardPayments: AdminPhoneCardPaymentRow[] = [];
   let dbError: string | null = null;
   try {
     orders = await listDigitalOrders(200);
+    phoneCardPayments = await listPhoneCardPayments(200);
   } catch (error) {
     dbError = error instanceof Error ? error.message : String(error);
   }
@@ -68,6 +75,8 @@ export default async function AdminDigitalOrdersPage() {
         <Link href="/admin/digital" className="mt-3 inline-block font-bold underline">Catalogue & solde FazerCards</Link>
       </section>
 
+      <PhoneCardPaymentsTable rows={phoneCardPayments} />
+
       <MailTestCard
         provider={mail.provider}
         from={mail.from}
@@ -81,13 +90,20 @@ export default async function AdminDigitalOrdersPage() {
         </div>
       )}
 
-      <DigitalOrdersTable rows={orders.map(toRow)} />
+      <DigitalOrdersTable
+        rows={orders.map((order) =>
+          toRow(order, phoneCardPayments.find((payment) => payment.ref === order.ref)),
+        )}
+      />
     </div>
   );
 }
 
 /** Aplatit la ligne pour le composant client (dates sérialisées). */
-function toRow(order: AdminDigitalOrder): AdminDigitalOrderRow {
+function toRow(
+  order: AdminDigitalOrder,
+  phoneCard?: AdminPhoneCardPaymentRow,
+): AdminDigitalOrderRow {
   return {
     ref: order.ref,
     createdAt: order.createdAt.toISOString(),
@@ -102,6 +118,8 @@ function toRow(order: AdminDigitalOrder): AdminDigitalOrderRow {
     recipientName: order.recipientName,
     recipientPhone: order.recipientPhone,
     status: order.normalizedStatus,
+    paymentMethod: phoneCard ? "phone_card" : "nowpayments",
+    phoneCardStatus: phoneCard?.status ?? null,
     kind: order.kind,
     supplier: digitalOrderSupplier(order),
     // Identifiant réellement transmis au fournisseur (recharges : user_id…).

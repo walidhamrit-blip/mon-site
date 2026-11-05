@@ -50,6 +50,7 @@ import {
   sendDigitalCodesEmail,
   sendDigitalManualNotice,
   sendDigitalTopupDeliveredEmail,
+  sendPhoneCardReviewNotice,
 } from "@/lib/digital-emails";
 import { checkFazercardsPlayerId } from "@/lib/fazercards-player-id";
 import { playerIdGate } from "@/lib/fazercards-player-id-core";
@@ -61,6 +62,15 @@ import {
   extractFazercardsCodesFromOrder,
   redactFazercardsPayload,
 } from "@/lib/fazercards-extract";
+import {
+  insertPreparedPhoneCardPayment,
+  isPhoneCardDuplicateError,
+  PhoneCardPaymentError,
+  phoneCardDeliveryGate,
+  preparePhoneCardPayment,
+  type PreparedPhoneCardPayment,
+} from "@/lib/phone-card-payments";
+import type { PhoneCardInput } from "@/lib/phone-card-core";
 
 
 /* --------------------------------- Types -------------------------------- */
@@ -82,6 +92,9 @@ export interface CreateFazercardsCheckoutInput {
    * ouvrait auparavant la page de paiement sans le moindre garde-fou.
    */
   idConfirmed?: boolean;
+  /** Par défaut, la facture crypto historique ; sinon revue manuelle d'une recharge. */
+  paymentMethod?: "nowpayments" | "phone_card";
+  phoneCard?: PhoneCardInput;
 }
 
 export interface FazercardsCheckoutResult {
@@ -249,6 +262,27 @@ export async function createFazercardsCheckout(
   },
   req: Request,
 ): Promise<FazercardsCheckoutResult> {
+  const usesPhoneCard = input.paymentMethod === "phone_card";
+  let preparedPhoneCard: PreparedPhoneCardPayment | null = null;
+  if (usesPhoneCard) {
+    try {
+      preparedPhoneCard = preparePhoneCardPayment(input.phoneCard);
+    } catch (error) {
+      if (error instanceof PhoneCardPaymentError) {
+        throw new FazercardsOrderError(error.code, error.status, error.message);
+      }
+      throw error;
+    }
+  }
+
+  if (usesPhoneCard && !input.phone?.trim()) {
+    throw new FazercardsOrderError(
+      "phone_required",
+      400,
+      "Le numéro de téléphone est obligatoire pour une commande payée par carte téléphonique.",
+    );
+  }
+
   if (!fazercardsConfigured()) {
     throw new FazercardsOrderError(
       "supplier_not_configured",
@@ -308,7 +342,7 @@ export async function createFazercardsCheckout(
   // AVANT le paiement, avec l'action à faire (augmenter la quantité).
   const minOrderUsd = fazercardsMinOrderUsd();
   const minQuantity = Math.max(1, Math.ceil(minOrderUsd / unitPriceUsd));
-  if (totalUsd < minOrderUsd) {
+  if (!usesPhoneCard && totalUsd < minOrderUsd) {
     throw new FazercardsOrderError(
       "below_minimum",
       400,
@@ -355,7 +389,7 @@ export async function createFazercardsCheckout(
     balanceUsd: balanceStatus.assessment.balanceUsd,
     orderCostUsd,
   });
-  if (balanceDecision.decision === "block") {
+  if (!usesPhoneCard && balanceDecision.decision === "block") {
     // Le message client ne contient AUCUN montant interne (ni solde, ni coût).
     throw new FazercardsOrderError(
       "supplier_balance_insufficient",
@@ -472,7 +506,8 @@ export async function createFazercardsCheckout(
       recipientPhone: input.phone?.trim() || null,
       locale,
       status: "pending",
-      fulfillment: "auto",
+      // Une recharge téléphonique est toujours vérifiée puis livrée par un humain.
+      fulfillment: usesPhoneCard ? "manual" : "auto",
       reloadlyProductId: null,
       reloadlyUnitPrice: denomination.supplierCostUsd
         ? String(denomination.supplierCostUsd)
@@ -512,6 +547,7 @@ export async function createFazercardsCheckout(
       email: input.email,
       phone: input.phone?.trim() || null,
       locale,
+      paymentMethod: usesPhoneCard ? "phone_card" : "nowpayments",
       digitalOrderId: digitalOrderId ?? null,
     });
   } catch (error) {
@@ -519,10 +555,60 @@ export async function createFazercardsCheckout(
     throw error;
   }
 
-  // 3) Facture hébergée NOWPayments.
   const { config } = await getSiteData();
   const baseUrl = siteBaseUrl(req);
   const query = `ref=${encodeURIComponent(ref)}&t=${encodeURIComponent(tracking.token)}`;
+  const trackingUrl = `${baseUrl}${localizedPath(`/codes/commande?${query}`, input.locale === "en" ? "en" : "ar")}`;
+
+  // 3 bis) Carte téléphonique : aucune facture crypto et aucune livraison
+  // automatique. La référence mène directement au suivi « à vérifier ».
+  if (preparedPhoneCard) {
+    try {
+      await insertPreparedPhoneCardPayment(ref, preparedPhoneCard);
+    } catch (error) {
+      await db.delete(orders).where(eq(orders.ref, ref)).catch(() => null);
+      await db.delete(digitalOrders).where(eq(digitalOrders.ref, ref)).catch(() => null);
+      if (isPhoneCardDuplicateError(error)) {
+        throw new FazercardsOrderError(
+          "phone_card_already_used",
+          409,
+          "Cette carte a déjà été envoyée avec une commande. Ne la ressaisissez pas : contactez-nous avec votre référence.",
+        );
+      }
+      throw error;
+    }
+
+    // Notification interne sans le code secret : il reste exclusivement dans
+    // la zone admin. L'échec d'e-mail ne supprime jamais la commande reçue.
+    const created = await loadFazercardsOrder(ref);
+    if (created) {
+      await sendPhoneCardReviewNotice(
+        created,
+        preparedPhoneCard.operator,
+        preparedPhoneCard.cardValueLyd,
+        config.name,
+        config.url,
+        config.email,
+      ).catch((error: unknown) => {
+        console.warn(
+          "[phone-card] notification admin impossible :",
+          error instanceof Error ? error.message : error,
+        );
+      });
+    }
+
+    return {
+      orderRef: ref,
+      trackingToken: tracking.token,
+      paymentUrl: trackingUrl,
+      totalUsd,
+      productTitle: title,
+      denominationLabel: denomination.label,
+      quantity,
+    };
+  }
+
+  // 3) Facture hébergée NOWPayments pour le paiement crypto classique.
   let invoice: Awaited<ReturnType<typeof createInvoice>>;
   try {
     invoice = await createInvoice({
@@ -595,6 +681,23 @@ export async function deliverPaidFazercardsOrder(
 
   if (loaded.status === "delivered") {
     return { outcome: "already_delivered", ref: loaded.ref };
+  }
+
+  // Défense en profondeur : même un appel direct à ce module ne peut pas
+  // transformer une revue de carte téléphonique en achat fournisseur.
+  const phoneGate = await phoneCardDeliveryGate(loaded.ref);
+  if (phoneGate.isPhoneCard) {
+    return phoneGate.status === "approved"
+      ? {
+          outcome: "manual",
+          ref: loaded.ref,
+          message: "Carte téléphonique acceptée : livraison manuelle requise, aucun achat fournisseur déclenché.",
+        }
+      : {
+          outcome: "not_paid",
+          ref: loaded.ref,
+          message: "Carte téléphonique non vérifiée : aucun achat fournisseur déclenché.",
+        };
   }
 
   // Garde-fou absolu : jamais d'achat sans paiement confirmé.

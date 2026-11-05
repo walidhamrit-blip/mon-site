@@ -100,6 +100,8 @@ export const orders = pgTable("orders", {
   status: text("status").notNull().default("pending"),
   /** Statut brut renvoyé par NOWPayments (waiting, confirming, finished…). */
   ipnStatus: text("ipn_status"),
+  /** Canal d'encaissement : NOWPayments ou carte de recharge téléphonique à vérifier. */
+  paymentMethod: text("payment_method").notNull().default("nowpayments"),
   utm: text("utm"),
   locale: text("locale"),
   /** Abonné auquel appartient ce paiement (null = paiement ponctuel). */
@@ -114,6 +116,35 @@ export const orders = pgTable("orders", {
 
 export type Order = typeof orders.$inferSelect;
 export type NewOrder = typeof orders.$inferInsert;
+
+/**
+ * Paiement par carte de recharge téléphonique, vérifié manuellement.
+ *
+ * Le code est chiffré en AES-256-GCM et son empreinte HMAC, unique, empêche
+ * de le soumettre sur deux commandes. Aucun code n'apparaît dans les journaux,
+ * les e-mails ou les réponses publiques de suivi.
+ */
+export const phoneCardPayments = pgTable("phone_card_payments", {
+  id: serial("id").primaryKey(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  orderRef: text("order_ref")
+    .notNull()
+    .unique()
+    .references(() => orders.ref, { onDelete: "cascade" }),
+  operator: text("operator").notNull(),
+  cardValueLyd: text("card_value_lyd").notNull(),
+  codeCipher: text("code_cipher").notNull(),
+  codeFingerprint: text("code_fingerprint").notNull().unique(),
+  codeHint: text("code_hint").notNull(),
+  /** pending | approved | rejected — seul approved autorise la livraison. */
+  status: text("status").notNull().default("pending"),
+  reviewedAt: timestamp("reviewed_at", { withTimezone: true }),
+  reviewNote: text("review_note"),
+});
+
+export type PhoneCardPayment = typeof phoneCardPayments.$inferSelect;
+export type NewPhoneCardPayment = typeof phoneCardPayments.$inferInsert;
 
 // Plans d'abonnement (mensuel / annuel), synchronisés avec NOWPayments.
 export const subscriptionPlans = pgTable("subscription_plans", {

@@ -57,6 +57,7 @@ import {
 import { deliveryAcceptUrl } from "@/lib/delivery-kit";
 import { sendDeliveryLinkEmail } from "@/lib/delivery-notifications";
 import { resolveSiteOrigin } from "@/lib/site-identity";
+import { reviewPhoneCardPayment } from "@/lib/phone-card-payments";
 
 export interface ActionResult {
   ok: boolean;
@@ -919,6 +920,33 @@ export async function closeDigitalOrderWithoutCodeAction(
       message: result.error
         ? `Recharge clôturée. ${result.error}`
         : "Recharge clôturée et client prévenu par e-mail.",
+    };
+  } catch (error) {
+    return { ok: false, error: dbIssue(error) };
+  }
+}
+
+/** Accepte/refuse une recharge téléphonique, sans jamais livrer automatiquement. */
+export async function reviewPhoneCardPaymentAction(
+  ref: string,
+  decision: "approved" | "rejected",
+  note?: string,
+): Promise<ActionResult> {
+  await requireAdmin();
+  if (decision !== "approved" && decision !== "rejected") {
+    return { ok: false, error: "Décision de vérification invalide." };
+  }
+  try {
+    const result = await reviewPhoneCardPayment(ref, decision, note);
+    if (!result.ok) return { ok: false, error: result.error ?? "Vérification impossible." };
+    revalidatePath("/admin/digital/orders");
+    revalidatePath("/admin/orders");
+    return {
+      ok: true,
+      message:
+        decision === "approved"
+          ? "Carte acceptée. La commande est maintenant « à livrer manuellement » : saisissez le code cadeau ci-dessous."
+          : "Carte refusée et commande marquée comme non payée. Aucun code cadeau ne sera livré.",
     };
   } catch (error) {
     return { ok: false, error: dbIssue(error) };

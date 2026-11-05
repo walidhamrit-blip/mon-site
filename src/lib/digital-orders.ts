@@ -75,6 +75,8 @@ import { recordDigitalEmailOutcome } from "@/lib/digital-email-log";
 import { isFazercardsProductRef } from "@/lib/fazercards-catalog";
 import { deliverPaidFazercardsOrder } from "@/lib/fazercards-orders";
 import { sendPaymentConfirmedEmail } from "@/lib/order-emails";
+import { phoneCardDeliveryGate } from "@/lib/phone-card-payments";
+import { phoneCardPublicNotice } from "@/lib/phone-card-core";
 
 
 /* Ré-exports : les consommateurs serveur (admin, routes) importent tout
@@ -523,6 +525,23 @@ export async function deliverPaidDigitalOrder(
     return { outcome: "already_delivered", ref: loaded.ref };
   }
 
+  // Une recharge téléphonique ne suit JAMAIS le chemin d'achat fournisseur :
+  // seule la saisie manuelle des codes est autorisée après acceptation admin.
+  const phoneGate = await phoneCardDeliveryGate(loaded.ref);
+  if (phoneGate.isPhoneCard) {
+    return phoneGate.status === "approved"
+      ? {
+          outcome: "manual",
+          ref: loaded.ref,
+          message: "Carte téléphonique acceptée : saisissez manuellement le code cadeau à livrer.",
+        }
+      : {
+          outcome: "not_paid",
+          ref: loaded.ref,
+          message: "La carte téléphonique n’a pas encore été acceptée par un administrateur.",
+        };
+  }
+
   // Routage fournisseur : une commande créée depuis le catalogue FazerCards
   // est achetée chez FazerCards (Idempotency-Key = référence de commande).
   // Les archives de l’ancien fournisseur ne déclenchent plus aucun achat.
@@ -790,6 +809,8 @@ export interface PublicDigitalOrder {
   deliveredAt: string | null;
   reloadlyStatus: string | null;
   codes: PublicDigitalCode[];
+  paymentMethod: "nowpayments" | "phone_card";
+  phoneCardStatus: "pending" | "approved" | "rejected" | null;
   /** Message d'attente / d'action, sans détail technique. */
   notice: string | null;
 }
@@ -931,6 +952,8 @@ export async function getPublicDigitalOrder(
     status === "delivered"
       ? decryptDigitalCodes(order.codesCipher, digitalCodesKey())
       : [];
+  const phoneGate = await phoneCardDeliveryGate(order.ref);
+  const locale = order.locale === "en" ? "en" : "ar";
 
   return {
     ref: order.ref,
@@ -946,7 +969,14 @@ export async function getPublicDigitalOrder(
     deliveredAt: order.deliveredAt ? order.deliveredAt.toISOString() : null,
     reloadlyStatus: order.reloadlyStatus,
     codes,
-    notice: publicNotice(status),
+    paymentMethod: phoneGate.isPhoneCard ? "phone_card" : "nowpayments",
+    phoneCardStatus: phoneGate.isPhoneCard ? phoneGate.status : null,
+    notice:
+      phoneGate.isPhoneCard && status !== "delivered"
+        ? phoneCardPublicNotice(phoneGate.status, locale)
+        : phoneGate.isPhoneCard
+          ? null
+          : publicNotice(status),
   };
 }
 
@@ -1000,6 +1030,15 @@ export async function deliverDigitalOrderManually(
 ): Promise<{ ok: boolean; delivered: number; error?: string }> {
   const order = await loadDigitalOrder(ref);
   if (!order) return { ok: false, delivered: 0, error: "Commande introuvable." };
+
+  const phoneGate = await phoneCardDeliveryGate(ref);
+  if (phoneGate.isPhoneCard && phoneGate.status !== "approved") {
+    return {
+      ok: false,
+      delivered: 0,
+      error: "Livraison verrouillée : acceptez d’abord la carte téléphonique dans la zone de vérification.",
+    };
+  }
 
   // Clôture SANS code : réservée aux recharges de jeu, qui ne produisent
   // aucun code (le crédit part sur le compte du joueur). Sans cette

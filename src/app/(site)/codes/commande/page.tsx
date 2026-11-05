@@ -50,8 +50,8 @@ export default async function DigitalOrderPage({
         </h1>
         <p className="mt-2 text-[14px] leading-7 text-[var(--muted-foreground)]">
           {ar
-            ? "يظهر الكود هنا فور تأكيد الدفع من الشبكة — ويُرسل أيضاً إلى بريدك الإلكتروني."
-            : "Your code appears here as soon as the network confirms payment — and it is also sent by email."}
+            ? "يظهر الكود هنا بعد تأكيد الدفع واكتمال التسليم — ويُرسل أيضاً إلى بريدك الإلكتروني. الدفع ببطاقة الهاتف يخضع أولاً للتحقق اليدوي."
+            : "Your code appears here after payment confirmation and delivery — and it is also emailed to you. Phone card payments are verified manually first."}
         </p>
 
         <div className="mt-6">
