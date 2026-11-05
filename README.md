@@ -567,6 +567,13 @@ sourcée : voir [`docs/avis-clients-trustpilot-scamadviser-2026-11-05.md`](docs/
 - Les deux pages sont liées depuis le pied de page, `LegalLinks` et le
   sitemap ; `npm run test:seo` vérifie qu'aucun des nouveaux modules ne
   déclare `aggregateRating` / `ratingValue` / `reviewCount`.
+- **Vérification de domaine Trustpilot** : renseigner `TRUSTPILOT_VERIFICATION`
+  (Vercel → Environment Variables) et la balise
+  `trustpilot-one-time-domain-verification-id` est émise sur toutes les pages
+  (`trustpilotVerificationMeta()`), sans toucher au code. Utile quand l'e-mail
+  du compte Business n'est pas sur le domaine — le runbook complet, avec les
+  valeurs exactes à saisir et la description de profil prête à copier, est au
+  §9 du document ci-dessus.
 
 ## A personnaliser avant mise en ligne
 1. Prix réels dans config.ts

@@ -248,3 +248,119 @@ Tout ce qui suit est en place et couvert par `scripts/trust-reviews.test.mjs`
   de « +500 clients satisfaits ». C'est ce qui rend la page crédible — et
   c'est aussi ce que Scamadviser signale comme signal négatif quand un jeune
   domaine affiche soudainement des notes parfaites.
+
+---
+
+## 9. Créer le profil Trustpilot Business — pas à pas
+
+> « Trustpilot Business » = le **compte professionnel gratuit** (tableau de
+> bord) sur `business.trustpilot.com`. Il n'y a pas de bouton « revendiquer » :
+> **s'inscrire avec son domaine, c'est revendiquer le profil** de ce domaine,
+> avis déjà présents inclus.
+
+### 9.1 Avant de commencer — les trois choix qui décident de tout
+
+| Choix | Valeur à utiliser | Pourquoi c'est structurant |
+|---|---|---|
+| **Domaine revendiqué** | `nokhba.net.ly` (sans `www`) | Les avis se rattachent au **domaine**, pas à la marque. Changer de domaine plus tard = demande de fusion manuelle, plusieurs semaines. C'est aussi le domaine du `sitemap`, des canoniques et de `src/lib/site-identity.ts` : rester aligné. |
+| **E-mail de création** | `contact@nokhba.net.ly` (adresse **sur le domaine**) | Si l'e-mail est sur le domaine, la revendication est **immédiate**. Sinon Trustpilot passe en vérification de domaine (voir 9.3). |
+| **Nom affiché** | `Nukhba` (et `نخبة` dans la description) | Doit être identique au site, au pied de page, à Scamadviser et à la fiche Google. Une incohérence de nom est un signal négatif pour Scamadviser. |
+
+Trustpilot exige un **site actif** pour collecter des avis — c'est le cas.
+
+### 9.2 Étapes
+
+1. Aller sur `business.trustpilot.com` → **Create free account**.
+2. Renseigner : nom (`Nukhba`), **site web** `https://nokhba.net.ly`,
+   e-mail `contact@nokhba.net.ly`, pays, secteur.
+3. Ouvrir l'e-mail d'activation → **Activate account** → mot de passe → conditions.
+   (L'e-mail part parfois en spam : vérifier avant de relancer.)
+4. Compléter le profil public :
+   - **Catégorie** : services numériques / création de sites, plus une catégorie
+     secondaire pour la boutique de codes (n'en cocher qu'une ou deux : une
+     catégorie fausse attire les mauvais visiteurs et les avis hors sujet).
+   - **Logo** : le fichier déjà utilisé sur le site (carré, fond transparent).
+   - **Coordonnées** : `شارع الجمهورية، طرابلس` / `+218 91 344 2640` /
+     `contact@nokhba.net.ly` — **identiques** au site.
+   - **Description** : le texte ci-dessous (AR puis EN).
+5. **Une fois le profil en ligne**, copier son URL
+   (`https://fr.trustpilot.com/review/nokhba.net.ly`) et la coller dans
+   `/admin → Réglages → Avis & Mentions légales → Profil Trustpilot`, puis
+   activer « Demander un avis après livraison ».
+   Le site affichera alors le lien sur `/avis` et l'ajoutera aux e-mails de
+   livraison — **rien avant**, volontairement.
+
+### 9.3 Si la vérification de domaine est demandée
+
+Quatre méthodes, par ordre de simplicité pour ce site :
+
+| Méthode | Comment | Remarque |
+|---|---|---|
+| **Meta tag** | Renseigner `TRUSTPILOT_VERIFICATION` sur Vercel → la balise `trustpilot-one-time-domain-verification-id` est émise sur **toutes** les pages (implémenté, voir `.env.example`). | Aucun fichier à déposer, réversible en une variable d'environnement. |
+| **Google Search Console** | La propriété est déjà vérifiée (balise + fichier `public/googleaf….html`) → cliquer **Verify domain** côté Trustpilot. | Le plus rapide si l'option est proposée. |
+| **DNS TXT** | Enregistrement TXT chez le registrar de `net.ly`. | Propagation jusqu'à 72 h. |
+| **Fichier HTML** | Déposer le fichier fourni à la racine de `public/`, puis redéployer. | Fonctionne, mais alourdit le dépôt pour un jeton temporaire. |
+
+### 9.4 Description de profil — à copier
+
+**العربية**
+
+> نخبة (Nukhba) استوديو رقمي في طرابلس، ليبيا، متخصص في شيئين: تصميم وتطوير المواقع
+> الإلكترونية للشركات والمتاجر، وتشغيل متجر أكواد رقمية موثوق.
+>
+> في مجال المواقع، نبني مواقع سريعة بالعربية والإنجليزية مع لوحة تحكم سهلة، متوافقة
+> مع الهاتف، ومهيّأة لمحركات البحث، مع تسليم في موعد متفق عليه ودعم بعد التسليم.
+>
+> في المتجر الرقمي، نبيع أكواد الألعاب وبطاقات الهدايا وبطاقات تعبئة الرصيد. تسليم
+> الأكواد يتم عبر البريد الإلكتروني أو في صفحة متابعة الطلب، ونوضّح لكل منتج منطقه
+> (Global أو US أو EU) قبل الشراء. الدفع بالعملات الرقمية عبر بوابة NOWPayments.
+>
+> نعمل من السبت إلى الخميس من 9:00 إلى 23:00 بتوقيت طرابلس، ويمكن التواصل معنا
+> بالعربية أو الإنجليزية أو الفرنسية. نردّ على كل تقييم، ونعالج أي مشكلة بإصلاح أو
+> استرداد إن كان الخلل من عندنا.
+
+**English**
+
+> Nukhba is a digital studio based in Tripoli, Libya, focused on two things:
+> building websites for businesses and running a dependable digital-code store.
+>
+> On the web side we design and build fast, mobile-first sites in Arabic and
+> English, with a simple dashboard, search-engine-ready structure, an agreed
+> delivery date and support after handover.
+>
+> In the digital store we sell game codes, gift cards and phone top-ups. Codes
+> are delivered by e-mail and remain available from the order-tracking page, and
+> every product states its region (Global, US, EU…) before purchase. Payment is
+> in cryptocurrency through the NOWPayments gateway.
+>
+> We work Saturday to Thursday, 9:00–23:00 Tripoli time, and we answer in
+> Arabic, English and French. We reply to every review, and if something is
+> wrong on our side we fix it or refund it.
+
+### 9.5 Gratuit ou payant ?
+
+| | Plan gratuit | Plans payants (~100 à 900 $/mois, engagement annuel) |
+|---|---|---|
+| Profil revendiqué + badge « Claimed » | ✅ | ✅ |
+| Répondre à tous les avis | ✅ | ✅ |
+| Invitations d'avis | ~50/mois (import CSV) | 100 à 1000+/mois, envoi automatique, API |
+| Widget sur le site | 1 (basique) | plusieurs, personnalisables |
+| Google Seller Ratings (étoiles dans les annonces) | ❌ | ✅ (≥ 100 avis sur 24 mois et note ≥ 3,5) |
+
+**Recommandation** : rester sur le **gratuit** jusqu'à ~15–20 avis, puis
+arbitrer. Payer ne donne aucune étoile en plus : cela achète du **volume
+d'invitations** et des **widgets**, rien d'autre.
+
+### 9.6 Les erreurs qui coûtent cher
+
+- **Revendiquer un autre domaine** que `nokhba.net.ly` (ancien domaine, `www`,
+  sous-domaine) : les avis se retrouvent sur une fiche que personne ne consulte.
+- **Inviter avant d'avoir livré** quoi que ce soit : les premiers avis arrivent
+  sur une boutique vide, et un profil 5,0 avec trois avis est moins crédible
+  qu'un profil 4,5 avec vingt.
+- **Choisir une catégorie trop large** (« Shopping ») : les avis hors sujet
+  affluent et la moyenne baisse pour de mauvaises raisons.
+- **Personnaliser le nom affiché** (« Nukhba — Web & Codes ») : la cohérence
+  NAP avec Scamadviser et Google vaut plus que le marketing.
+- **Répondre aux avis en français** alors que le client écrit en arabe : la
+  réponse est publique, elle doit être dans la langue de l'avis (ou bilingue).

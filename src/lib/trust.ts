@@ -182,3 +182,35 @@ export function legalRows(source: LegalSource): LegalRow[] {
 
   return rows;
 }
+
+/* ------------------------------------------------------------------ */
+/* Vérification de domaine Trustpilot                                  */
+/* ------------------------------------------------------------------ */
+
+/** Nom de la balise meta attendue par Trustpilot (valeur exacte). */
+export const TRUSTPILOT_META_NAME = "trustpilot-one-time-domain-verification-id";
+
+/**
+ * Jeton de vérification de domaine Trustpilot, lu dans l'environnement.
+ *
+ * Pourquoi une balise meta plutôt qu'un enregistrement DNS ou un fichier ?
+ * Parce que la vérification de domaine est l'étape qui bloque quand l'e-mail
+ * de création de compte n'est pas sur le domaine — et que sur Vercel, changer
+ * une variable d'environnement est plus simple (et plus traçable) que
+ * déposer un fichier à la racine ou attendre une propagation DNS.
+ *
+ * Le jeton est validé avant émission : une valeur contenant des guillemets ou
+ * des chevrons casserait le HTML de toutes les pages du site.
+ */
+export function trustpilotVerificationToken(raw?: string | null): string {
+  const value = String(raw ?? process.env.TRUSTPILOT_VERIFICATION ?? "").trim();
+  if (value.length < 8 || value.length > 200) return "";
+  if (!/^[A-Za-z0-9._-]+$/.test(value)) return "";
+  return value;
+}
+
+/** Balise `verification.other` de Next, prête à fusionner dans les metadata. */
+export function trustpilotVerificationMeta(raw?: string | null): Record<string, string> {
+  const token = trustpilotVerificationToken(raw);
+  return token ? { [TRUSTPILOT_META_NAME]: token } : {};
+}

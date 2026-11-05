@@ -306,6 +306,29 @@ test("le reçu de recette intègre la demande d'avis quand elle est fournie", ()
 });
 
 /* ------------------------------------------------------------------ */
+/* 3 bis. Vérification de domaine Trustpilot                           */
+/* ------------------------------------------------------------------ */
+
+test("le jeton de vérification Trustpilot n'est émis que s'il est sain", () => {
+  const { trustpilotVerificationToken, trustpilotVerificationMeta, TRUSTPILOT_META_NAME } = trust;
+
+  assert.equal(TRUSTPILOT_META_NAME, "trustpilot-one-time-domain-verification-id");
+  assert.equal(trustpilotVerificationToken(""), "");
+  assert.equal(trustpilotVerificationToken(null), "");
+  assert.equal(trustpilotVerificationToken("abc"), "", "trop court");
+  assert.equal(
+    trustpilotVerificationToken('a1b2c3d4"><script>alert(1)</script>'),
+    "",
+    "caractères hors [A-Za-z0-9._-] refusés",
+  );
+  assert.equal(trustpilotVerificationToken("a1b2c3d4-e5f6_7890.abc"), "a1b2c3d4-e5f6_7890.abc");
+  assert.deepEqual(trustpilotVerificationMeta(""), {});
+  assert.deepEqual(trustpilotVerificationMeta("a1b2c3d4-e5f6"), {
+    "trustpilot-one-time-domain-verification-id": "a1b2c3d4-e5f6",
+  });
+});
+
+/* ------------------------------------------------------------------ */
 /* 4. Identité légale                                                  */
 /* ------------------------------------------------------------------ */
 
