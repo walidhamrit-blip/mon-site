@@ -1,13 +1,8 @@
 "use client";
 
 import { LocalizedLink as Link } from "@/components/localized-link";
-import { ArrowUpRight, Code2, Gamepad2, MessageCircle } from "lucide-react";
+import { ArrowUpRight, Code2, Gamepad2 } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
-import { useSiteConfig } from "@/components/site-provider";
-import { whatsappLink } from "@/lib/utils";
-
-/** Message pré-rempli du bouton WhatsApp (demande de site pour sa boutique). */
-export const WHATSAPP_SITE_MESSAGE = "Bonjour Nokhba, je veux un site pour ma boutique";
 
 /**
  * L'offre est expliquée AVANT la bannière visuelle : un GROS titre visible
@@ -16,7 +11,6 @@ export const WHATSAPP_SITE_MESSAGE = "Bonjour Nokhba, je veux un site pour ma bo
  */
 export function HomeIntro() {
   const { locale } = useI18n();
-  const config = useSiteConfig();
   const ar = locale === "ar";
   return (
     <section className="home-intro site-container px-4 pb-6 pt-8 sm:px-6 lg:px-8 lg:pb-10 lg:pt-14">
