@@ -300,6 +300,18 @@ export const siteConfig = {
     googleReviewUrl: "",
     /** Reste désactivé tant qu'il n'y a pas d'historique de livraisons. */
     reviewInvites: false,
+    /**
+     * Compte Trustpilot du profil revendiqué (business unit), lu sur la fiche
+     * publique le 06/11/2026. Le widget ne peut pas s'afficher sans lui.
+     */
+    businessUnitId: "6aed0b0c0156593a344109f3",
+    /** `micro-combo` : note + étoiles + nombre d'avis, sur une ligne. */
+    widgetTemplate: "micro-combo",
+    /**
+     * Pas de widget avant le premier avis : un profil vide affiche « 0,0 »,
+     * ce qui dégrade la confiance au lieu de la construire.
+     */
+    widgetMinReviews: 1,
   } as TrustConfigData,
 
   /**

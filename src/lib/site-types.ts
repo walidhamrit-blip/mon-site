@@ -110,6 +110,18 @@ export interface TrustConfigData {
   googleReviewUrl: string;
   /** Envoie la demande d'avis dans les e-mails de livraison. */
   reviewInvites: boolean;
+  /**
+   * Identifiant du compte Trustpilot (business unit) — indispensable au
+   * widget. Visible dans l'URL du logo de la fiche publique.
+   */
+  businessUnitId: string;
+  /** Gabarit du widget : nom lisible (`micro-combo`…) ou identifiant. */
+  widgetTemplate: string;
+  /**
+   * Nombre d'avis à partir duquel le widget s'affiche. `1` évite le
+   * « 0,0 / 5 » d'un profil vide ; `0` force l'affichage.
+   */
+  widgetMinReviews: number;
 }
 
 /**

@@ -427,3 +427,102 @@ Rappel des règles, valables dès le premier avis : on invite **tous** les
 clients livrés, sans tri, sans contrepartie, sans consigne de note — le
 contraire se voit dans l'historique du profil et se paie (avis retirés,
 profil signalé).
+
+---
+
+## 11. Widget Trustpilot + tout ce qui fait monter Scamadviser
+
+### 11.1 Le widget est installé — et pourquoi il est masqué aujourd'hui
+
+Le TrustBox est en place sur **trois pages** : l'accueil, `/codes` (la boutique)
+et `/avis`. Rendu par `TrustpilotBadge` (serveur) → `TrustpilotWidget` :
+
+| Réglage (admin) | Valeur par défaut | Effet |
+|---|---|---|
+| Identifiant du compte | `6aed0b0c0156593a344109f3` | Le compte du profil revendiqué. Vide = pas de widget. |
+| Gabarit | `micro-combo` | Note + étoiles + nombre d'avis sur une ligne. Autres : `micro-star`, `micro-review-count`, `micro-trustscore`, `mini`, `review-collector`, `starter`. |
+| Afficher à partir de | **1 avis** | Le widget n'apparaît qu'à partir du premier avis publié. |
+
+**Pourquoi le seuil de 1 avis ?** Parce que le profil a aujourd'hui zéro avis :
+un TrustBox sur un profil vide affiche « 0,0 / 5 », ce qui dégrade la confiance
+au lieu de la construire. Le widget s'affichera **tout seul** dès le premier
+avis publié, sans redéploiement. Pour le forcer tout de suite malgré cela :
+mettre `0` dans « Afficher à partir de ».
+
+Détails d'implémentation :
+- la note est lue côté serveur sur la fiche publique (`aggregateRating` du
+  JSON-LD), **mise en cache 1 h**, avec 4 s de délai maximum : jamais une page
+  qui attend Trustpilot ;
+- si la lecture échoue, on n'affiche rien (pas de faux chiffre) ;
+- le gabarit est validé dans le code : une valeur inconnue retombe sur
+  `micro-combo` au lieu d'un cadre vide ;
+- le `<a>` de repli reste cliquable si un bloqueur de publicité empêche le
+  script de tourner.
+
+### 11.2 Ce qui a été ajouté spécifiquement pour Scamadviser
+
+| Signal de l'algorithme | Ce qui est fait dans le code |
+|---|---|
+| Présence sur des plateformes d'avis tierces | Fiche Trustpilot **revendiquée**, lien sur chaque page (`/avis`, pied de page) et **widget** dès le premier avis. |
+| Recoupement d'entité entre sources | **`sameAs`** du JSON-LD enrichi : le profil Trustpilot et la fiche Scamadviser y sont déclarés à côté des réseaux sociaux (`organizationJsonLd`, `professionalServiceJsonLd`). |
+| Coordonnées vérifiables | Adresse, téléphone `+218 91 344 2640` et e-mail sur `/contact`, `/mentions-legales`, pied de page et JSON-LD — valeurs **identiques** partout. |
+| Identité juridique | `/mentions-legales` (éditeur, registre, responsable de publication, hébergeur). |
+| Transparence commerciale | `/conditions`, `/remboursement`, `/avis` (politique d'avis), délais et régions des produits, moyens de paiement annoncés. |
+| Signaux techniques | HTTPS/HSTS et en-têtes de sécurité vérifiés par `scripts/security-headers.test.mjs`, sitemap à jour, aucune page en erreur. |
+| Demande d'avis aux clients | Bloc bilingue dans les e-mails de livraison (à activer quand les premières invitations manuelles sont parties). |
+
+### 11.3 Ce qu'aucun code ne fera à votre place
+
+1. **Revendiquer la fiche Scamadviser** et envoyer le dossier de vérification
+   (gratuit) à `report@scamadviser.com` — modèle ci-dessous.
+2. **Passer le WHOIS en données d'entreprise publiques** : nom légal, adresse à
+   Tripoli, e-mail du domaine. C'est le facteur « opacité » le plus lourd.
+3. **Créer le profil Google Business** (cohérence NAP + avis locaux).
+4. **Faire vivre les réseaux sociaux** : un compte créé hier avec 0 abonné est
+   neutre au mieux, un compte actif depuis un an est un point positif.
+5. **Répondre aux avis sous 48 h** — c'est un travail humain, et c'est ce que
+   lisent les prospects méfiants.
+6. **Le temps** : l'âge du domaine ne se force pas. Les autres signaux, si.
+
+### 11.4 Modèle de dossier de vérification Scamadviser (à copier)
+
+> **Subject:** Website verification request — nokhba.net.ly (Nukhba, Tripoli, Libya)
+>
+> Hello ScamAdviser team,
+>
+> I am the owner of **nokhba.net.ly** (brand: Nukhba / نخبة), a web-design
+> studio and digital-code store based in Tripoli, Libya. Our Trust Score currently
+> reflects factors we can evidence, and I would like to request a manual review
+> of the listing.
+>
+> **Business details**
+> - Legal / trading name: *[raison sociale + nom commercial]*
+> - Commercial registration: *[numéro]* — *[autorité / ville]*
+> - Address: Al Jumhouriya Street, Tripoli, Libya
+> - Phone: +218 91 344 2640
+> - E-mail: contact@nokhba.net.ly
+> - Website: https://nokhba.net.ly
+> - Trustpilot (claimed profile): https://www.trustpilot.com/review/nokhba.net.ly
+> - Google Business Profile: *[lien]*
+>
+> **Attached**
+> 1. Commercial-register extract
+> 2. ID of the publication manager
+> 3. Domain registration receipt (registrar, registrant on the company)
+> 4. Two recent customer delivery receipts (codes + website handover), personal
+>    data redacted
+> 5. Screenshot of the order-tracking page and of our delivery e-mails
+>
+> **On our website** you will find the legal notice
+> (https://nokhba.net.ly/mentions-legales), our terms and refund policy, our
+> review policy (https://nokhba.net.ly/avis), and the same contact details on
+> every page. We do not offer incentives for reviews and we do not filter who we
+> ask.
+>
+> Thank you for your time,
+> *[nom, fonction]*
+
+**Deux précautions** : n'envoyez jamais de copies de pièces d'identité non
+filigranées (« usage vérification Scamadviser — date »), et gardez une trace de
+l'échange. Scamadviser ne facture pas cette vérification ; toute demande de
+paiement pour changer le score est une arnaque.

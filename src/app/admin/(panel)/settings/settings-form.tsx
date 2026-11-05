@@ -565,6 +565,72 @@ export function SettingsForm({ initial, initialTab }: Props) {
               </Field>
             </div>
 
+            <div className="rounded-xl border border-stone-200 bg-stone-50 p-3.5 space-y-3.5">
+              <div>
+                <p className="text-[12.5px] font-black text-stone-800">
+                  Widget Trustpilot (TrustBox)
+                </p>
+                <p className="text-[11.5px] leading-4 text-stone-500 mt-0.5">
+                  Le badge lit la note publique de la fiche. Il reste masqué
+                  tant qu’il n’y a pas assez d’avis : un profil vide afficherait
+                  « 0,0 / 5 », ce qui dégrade la confiance.
+                </p>
+              </div>
+              <div className="grid sm:grid-cols-3 gap-3">
+                <Field label="Identifiant du compte Trustpilot">
+                  <input
+                    value={form.trust.businessUnitId}
+                    onChange={(e) =>
+                      patch({
+                        trust: {
+                          ...form.trust,
+                          businessUnitId: e.target.value.trim(),
+                        },
+                      })
+                    }
+                    placeholder="6aed0b0c0156593a344109f3"
+                    className={ADMIN_INPUT_CLS}
+                  />
+                </Field>
+                <Field label="Gabarit du widget">
+                  <select
+                    value={form.trust.widgetTemplate}
+                    onChange={(e) =>
+                      patch({
+                        trust: { ...form.trust, widgetTemplate: e.target.value },
+                      })
+                    }
+                    className={ADMIN_INPUT_CLS}
+                  >
+                    <option value="micro-combo">Micro combo — note + étoiles + avis</option>
+                    <option value="micro-star">Micro étoiles — étoiles seules</option>
+                    <option value="micro-review-count">Micro compteur — nombre d’avis</option>
+                    <option value="micro-trustscore">Micro TrustScore — note seule</option>
+                    <option value="mini">Mini — encart complet</option>
+                    <option value="review-collector">Collecteur — appeler à écrire un avis</option>
+                    <option value="starter">Starter — liste d’avis</option>
+                  </select>
+                </Field>
+                <Field label="Afficher à partir de (nombre d’avis)">
+                  <input
+                    type="number"
+                    min={0}
+                    max={1000}
+                    value={form.trust.widgetMinReviews}
+                    onChange={(e) =>
+                      patch({
+                        trust: {
+                          ...form.trust,
+                          widgetMinReviews: Math.max(0, Number(e.target.value) || 0),
+                        },
+                      })
+                    }
+                    className={ADMIN_INPUT_CLS}
+                  />
+                </Field>
+              </div>
+            </div>
+
             <label className="flex items-start gap-2.5 rounded-xl border border-stone-200 bg-stone-50 p-3.5">
               <input
                 type="checkbox"

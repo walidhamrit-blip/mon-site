@@ -121,7 +121,12 @@ test("/api/health explique la panne au lieu de la cacher", () => {
 test("la boutique affiche un bandeau au lieu d'un faux catalogue", () => {
   const flat = code(codesPage);
   const view = code(codesView);
-  assert.match(flat, /<DigitalStoreView products=\{products\} degraded=\{degraded\} initialKind=\{initialKind\} \/>/);
+  // Les props attendues, quel que soit le formatage (le composant reçoit en
+  // plus un badge Trustpilot rendu côté serveur).
+  assert.match(
+    flat,
+    /<DigitalStoreView[\s\S]*?products=\{products\}[\s\S]*?degraded=\{degraded\}[\s\S]*?initialKind=\{initialKind\}/,
+  );
   assert.match(flat, /const status = digitalCatalogStatus\(\);/);
   assert.match(flat, /const degraded = status\.degraded;/);
   assert.match(view, /\{degraded && \( <StoreUnavailableNotice ar=\{ar\} phone=\{config\.phone\} \/> \)\}/);

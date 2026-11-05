@@ -569,6 +569,12 @@ sourcée : voir [`docs/avis-clients-trustpilot-scamadviser-2026-11-05.md`](docs/
 - Les deux pages sont liées depuis le pied de page, `LegalLinks` et le
   sitemap ; `npm run test:seo` vérifie qu'aucun des nouveaux modules ne
   déclare `aggregateRating` / `ratingValue` / `reviewCount`.
+- **Widget Trustpilot** : `TrustpilotBadge` (serveur) lit la note publique de la
+  fiche (JSON-LD, cache 1 h, 4 s de délai max) et n'affiche le TrustBox qu'à
+  partir du nombre d'avis configuré (`trust.widgetMinReviews`, 1 par défaut :
+  jamais de « 0,0/5 » public). Présent sur l'accueil, `/codes` et `/avis`.
+  Le profil Trustpilot et la fiche Scamadviser sont déclarés en `sameAs` du
+  JSON-LD (cohérence d'entité entre plateformes).
 - **Vérification de domaine Trustpilot** : renseigner `TRUSTPILOT_VERIFICATION`
   (Vercel → Environment Variables) et la balise
   `trustpilot-one-time-domain-verification-id` est émise sur toutes les pages

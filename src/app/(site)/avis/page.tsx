@@ -4,6 +4,7 @@ import type { LocalePageProps } from "@/lib/locale";
 import { getSiteDataCached } from "@/lib/store";
 import { pageMetadata } from "@/lib/seo";
 import { reviewInvitesEnabled, reviewLinks } from "@/lib/trust";
+import { TrustpilotBadge } from "@/components/trustpilot-badge";
 import { ReviewsClient } from "./reviews-client";
 
 export async function generateMetadata({ searchParams }: LocalePageProps): Promise<Metadata> {
@@ -24,12 +25,14 @@ export async function generateMetadata({ searchParams }: LocalePageProps): Promi
   });
 }
 
-export default async function ReviewsPage() {
+export default async function ReviewsPage({ searchParams }: LocalePageProps) {
   const { config, content } = await getSiteDataCached();
+  const locale = await pageLocale(config, searchParams);
   return (
     <div className="pt-6 min-h-[70vh]">
       <div className="mx-auto max-w-[860px] px-4 sm:px-6 lg:px-8 py-10">
         <ReviewsClient
+          trustbox={<TrustpilotBadge config={config} locale={locale} height="24px" />}
           links={reviewLinks(config.trust)}
           invitesEnabled={reviewInvitesEnabled(config.trust)}
           testimonials={content.testimonials.slice(0, 6).map((item) => ({

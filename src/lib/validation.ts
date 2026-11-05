@@ -389,6 +389,20 @@ export const trustSchema = z.object({
   scamadviserUrl: reviewProfileUrlSchema.default(""),
   googleReviewUrl: reviewProfileUrlSchema.default(""),
   reviewInvites: z.boolean().default(false),
+  /** Identifiant du compte Trustpilot (24 hex) — vide = pas de widget. */
+  businessUnitId: z
+    .string()
+    .trim()
+    .max(40)
+    .refine(
+      (value) => value === "" || /^[a-f0-9]{16,40}$/i.test(value),
+      "identifiant Trustpilot invalide (hexadécimal)",
+    )
+    .default(""),
+  /** Gabarit du widget (nom lisible ou identifiant). */
+  widgetTemplate: z.string().trim().max(40).default("micro-combo"),
+  /** Seuil d'affichage du widget, en nombre d'avis. */
+  widgetMinReviews: z.coerce.number().int().min(0).max(100_000).default(1),
 });
 
 export const legalSchema = z.object({
@@ -538,6 +552,9 @@ export const siteConfigSchema = z.object({
     scamadviserUrl: "",
     googleReviewUrl: "",
     reviewInvites: false,
+    businessUnitId: "",
+    widgetTemplate: "micro-combo",
+    widgetMinReviews: 1,
   }),
   /** Identité légale — champs vides omis de la page publique. */
   legal: legalSchema.default({

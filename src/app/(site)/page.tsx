@@ -15,6 +15,7 @@ import { DigitalShowcase } from "@/components/sections/digital-showcase";
 import { homeFaqs } from "@/lib/site-hierarchy";
 import { StoreUnavailableNotice } from "@/components/store-status-notice";
 import { productDisplayName } from "@/lib/digital-seo";
+import { TrustpilotBadge } from "@/components/trustpilot-badge";
 
 /**
  * Le bandeau boutique lit le catalogue vivant : rafraîchissement horaire,
@@ -84,7 +85,10 @@ export default async function HomePage({ searchParams }: LocalePageProps) {
   return (
     <>
       {schemas.length > 0 && <JsonLd data={schemas} />}
-      <HomeSections storeShowcase={degraded ? <StoreUnavailableNotice ar={ar} phone={config.whatsapp} /> : <DigitalShowcase locale={locale} products={showcase} total={catalog.length} />} />
+      <HomeSections
+        trustBadge={<TrustpilotBadge config={config} locale={locale} height="24px" />}
+        storeShowcase={degraded ? <StoreUnavailableNotice ar={ar} phone={config.whatsapp} /> : <DigitalShowcase locale={locale} products={showcase} total={catalog.length} />}
+      />
     </>
   );
 }

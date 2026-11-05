@@ -18,6 +18,7 @@ import { getSiteDataCached } from "@/lib/store";
 import { resolveMarket } from "@/lib/market";
 import { storeFaqs } from "@/lib/digital-seo";
 import { lowestPriceUsd } from "@/lib/digital-types";
+import { TrustpilotBadge } from "@/components/trustpilot-badge";
 
 export async function generateMetadata({ searchParams }: LocalePageProps): Promise<Metadata> {
   const { config } = await getSiteDataCached();
@@ -188,7 +189,12 @@ export default async function CodesPage({ searchParams }: { searchParams: Promis
         ]}
       />
 
-      <DigitalStoreView products={products} degraded={degraded} initialKind={initialKind} />
+      <DigitalStoreView
+        products={products}
+        degraded={degraded}
+        initialKind={initialKind}
+        trustBadge={<TrustpilotBadge config={config} locale={locale} height="24px" />}
+      />
     </>
   );
 }

@@ -292,3 +292,161 @@ export function trustpilotVerificationMeta(raw?: string | null): Record<string, 
   const token = trustpilotVerificationToken(raw);
   return token ? { [TRUSTPILOT_META_NAME]: token } : {};
 }
+
+/* ------------------------------------------------------------------ */
+/* Widget Trustpilot (TrustBox)                                        */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Identifiants de gabarits publiés par Trustpilot (TrustBox « v5 »).
+ *
+ * Ces identifiants sont **fixes et publics** : ils désignent un type de
+ * widget, pas un compte. Les recopier depuis le générateur du dashboard
+ * revient au même ; les coder ici évite une faute de frappe silencieuse qui
+ * donnerait un cadre vide sur la page.
+ */
+export const TRUSTPILOT_TEMPLATES = {
+  "micro-combo": "5419b6ffb0d04a076446a9af",
+  "micro-star": "5419b732fbfb950b10de65e5",
+  "micro-review-count": "5419b6a8b0d04a076446a9ad",
+  "micro-trustscore": "5419b637fa0340045cd0c936",
+  mini: "53aa8807dec7e10d38f59f32",
+  "review-collector": "56278e9abfbbba0bdcd568bc",
+  starter: "5613c9cde69ddc09340c6beb",
+} as const;
+
+export type TrustpilotTemplate = keyof typeof TRUSTPILOT_TEMPLATES;
+
+/** Gabarit retenu par défaut : note + étoiles + nombre d'avis, en une ligne. */
+export const DEFAULT_TRUSTPILOT_TEMPLATE: TrustpilotTemplate = "micro-combo";
+
+/** Résout un gabarit (nom lisible ou identifiant brut) vers son ID. */
+export function trustpilotTemplateId(raw: unknown): string {
+  const value = String(raw ?? "").trim();
+  if (!value) return TRUSTPILOT_TEMPLATES[DEFAULT_TRUSTPILOT_TEMPLATE];
+  if (value in TRUSTPILOT_TEMPLATES) {
+    return TRUSTPILOT_TEMPLATES[value as TrustpilotTemplate];
+  }
+  const known = Object.values(TRUSTPILOT_TEMPLATES) as string[];
+  return known.includes(value) ? value : TRUSTPILOT_TEMPLATES[DEFAULT_TRUSTPILOT_TEMPLATE];
+}
+
+/** Raison sociale Trustpilot (business unit) : 24 caractères hexadécimaux. */
+export function trustpilotBusinessUnitId(raw: unknown): string {
+  const value = String(raw ?? "").trim();
+  return /^[a-f0-9]{16,40}$/i.test(value) ? value.toLowerCase() : "";
+}
+
+/**
+ * URL de **fiche** d'un profil, même si l'admin a collé un lien `/evaluate/`.
+ * Un widget pointe toujours vers la fiche, jamais vers le formulaire.
+ */
+export function trustpilotProfileUrl(
+  trust: TrustConfigData | null | undefined,
+): string {
+  if (!trust) return "";
+  const direct = normalizeReviewUrl("trustpilot", trust.trustpilotReviewUrl);
+  const asProfile = direct.replace(/\/evaluate(\/|$)/, "/review$1");
+  return (
+    (asProfile && normalizeReviewUrl("trustpilot", asProfile)) ||
+    normalizeReviewUrl("trustpilot", trust.trustpilotUrl)
+  );
+}
+
+/**
+ * Profils publics à déclarer dans `sameAs` (JSON-LD).
+ *
+ * C'est un signal de **cohérence d'entité** : la même entreprise, avec les
+ * mêmes coordonnées, sur des sources indépendantes. Scamadviser croise
+ * précisément ce genre de recoupement entre plateformes.
+ */
+export function reviewProfileUrls(trust: TrustConfigData | null | undefined): string[] {
+  if (!trust) return [];
+  return [
+    trustpilotProfileUrl(trust),
+    normalizeReviewUrl("scamadviser", trust.scamadviserUrl),
+  ].filter((url): url is string => Boolean(url));
+}
+
+/* ------------------------------------------------------------------ */
+/* Note publique Trustpilot (lecture de la fiche)                      */
+/* ------------------------------------------------------------------ */
+
+export interface TrustpilotAggregate {
+  reviewCount: number;
+  ratingValue: number;
+}
+
+/**
+ * Extrait `aggregateRating` du JSON-LD de la fiche Trustpilot.
+ *
+ * Pourquoi parser plutôt que demander une API : la note publique est le seul
+ * chiffre que ce site accepte d'afficher (parce qu'il vient de la
+ * plateforme). Le parseur est **pur** — testable sans réseau — et toute
+ * anomalie renvoie `null` : mieux vaut ne rien afficher qu'un chiffre faux.
+ */
+export function parseTrustpilotAggregate(html: string): TrustpilotAggregate | null {
+  const source = String(html ?? "");
+  if (!source) return null;
+
+  const blocks = source.matchAll(
+    /<script[^>]+application\/ld\+json[^>]*>([\s\S]*?)<\/script>/gi,
+  );
+
+  const visit = (node: unknown): TrustpilotAggregate | null => {
+    if (!node || typeof node !== "object") return null;
+    if (Array.isArray(node)) {
+      for (const item of node) {
+        const found = visit(item);
+        if (found) return found;
+      }
+      return null;
+    }
+    const record = node as Record<string, unknown>;
+    const aggregate = record.aggregateRating;
+    if (aggregate && typeof aggregate === "object" && !Array.isArray(aggregate)) {
+      const rating = Number((aggregate as Record<string, unknown>).ratingValue);
+      const count = Number((aggregate as Record<string, unknown>).reviewCount);
+      if (Number.isFinite(rating) && Number.isFinite(count) && count >= 0) {
+        return { reviewCount: Math.round(count), ratingValue: rating };
+      }
+    }
+    for (const key of ["@graph", "mainEntity", "itemListElement", "itemReviewed"]) {
+      const found = visit(record[key]);
+      if (found) return found;
+    }
+    return null;
+  };
+
+  for (const block of blocks) {
+    const raw = block[1]?.trim();
+    if (!raw) continue;
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(raw);
+    } catch {
+      continue;
+    }
+    const found = visit(parsed);
+    if (found) return found;
+  }
+  return null;
+}
+
+/**
+ * Faut-il afficher le widget ?
+ *
+ * Le widget Trustpilot d'un profil sans avis affiche « 0,0 / 5 » — pire que
+ * rien pour un visiteur. On ne l'affiche donc qu'à partir du nombre d'avis
+ * minimal configuré (1 par défaut, 0 pour forcer), et seulement si le compte
+ * Trustpilot est renseigné.
+ */
+export function shouldShowReviewWidget(input: {
+  reviewCount: number;
+  businessUnitId: string;
+  minReviews: number;
+}): boolean {
+  if (!input.businessUnitId) return false;
+  const min = Number.isFinite(input.minReviews) ? Math.max(0, input.minReviews) : 1;
+  return input.reviewCount >= min;
+}

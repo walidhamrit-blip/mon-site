@@ -336,6 +336,111 @@ test("le jeton de vérification Trustpilot n'est émis que s'il est sain", () =>
 });
 
 /* ------------------------------------------------------------------ */
+/* 3 ter. Widget Trustpilot                                            */
+/* ------------------------------------------------------------------ */
+
+const TRUSTPILOT_PAGE = `<!doctype html><html><head>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"LocalBusiness","name":"Nokhba","aggregateRating":{"@type":"AggregateRating","ratingValue":"4.7","reviewCount":"23"}}</script>
+</head><body></body></html>`;
+
+test("parseTrustpilotAggregate lit aggregateRating, y compris dans @graph", () => {
+  const { parseTrustpilotAggregate } = trust;
+
+  assert.deepEqual(parseTrustpilotAggregate(TRUSTPILOT_PAGE), {
+    reviewCount: 23,
+    ratingValue: 4.7,
+  });
+
+  const graph = `<script type="application/ld+json">${JSON.stringify({
+    "@context": "https://schema.org",
+    "@graph": [{ "@type": "WebSite" }, { "@type": "Organization", aggregateRating: { ratingValue: 3.9, reviewCount: 7 } }],
+  })}</script>`;
+  assert.deepEqual(parseTrustpilotAggregate(graph), { reviewCount: 7, ratingValue: 3.9 });
+
+  // 0 avis est une information valide (ce n'est pas « inconnu »).
+  const zero = `<script type="application/ld+json">{"aggregateRating":{"ratingValue":0,"reviewCount":0}}</script>`;
+  assert.deepEqual(parseTrustpilotAggregate(zero), { reviewCount: 0, ratingValue: 0 });
+
+  // Rien d'exploitable → null (on n'affiche pas de note plutôt qu'une fausse).
+  assert.equal(parseTrustpilotAggregate(""), null);
+  assert.equal(parseTrustpilotAggregate("<html><body>pas de json-ld</body></html>"), null);
+  assert.equal(parseTrustpilotAggregate('<script type="application/ld+json">{oups</script>'), null);
+  assert.equal(
+    parseTrustpilotAggregate('<script type="application/ld+json">{"aggregateRating":{"ratingValue":"n/a"}}</script>'),
+    null,
+  );
+});
+
+test("compte Trustpilot et gabarit de widget sont validés", () => {
+  const { trustpilotBusinessUnitId, trustpilotTemplateId, TRUSTPILOT_TEMPLATES } = trust;
+
+  assert.equal(trustpilotBusinessUnitId("6aed0b0c0156593a344109f3"), "6aed0b0c0156593a344109f3");
+  assert.equal(trustpilotBusinessUnitId("6AED0B0C0156593A344109F3"), "6aed0b0c0156593a344109f3");
+  assert.equal(trustpilotBusinessUnitId(""), "");
+  assert.equal(trustpilotBusinessUnitId("pas-un-id"), "");
+  assert.equal(trustpilotBusinessUnitId('<script>'), "");
+
+  assert.equal(trustpilotTemplateId("micro-combo"), TRUSTPILOT_TEMPLATES["micro-combo"]);
+  assert.equal(trustpilotTemplateId("mini"), TRUSTPILOT_TEMPLATES.mini);
+  assert.equal(trustpilotTemplateId(""), TRUSTPILOT_TEMPLATES["micro-combo"]);
+  assert.equal(trustpilotTemplateId("gabarit-inconnu"), TRUSTPILOT_TEMPLATES["micro-combo"]);
+  // Un identifiant déjà résolu reste accepté.
+  assert.equal(trustpilotTemplateId(TRUSTPILOT_TEMPLATES.mini), TRUSTPILOT_TEMPLATES.mini);
+});
+
+test("le widget reste masqué sans avis (jamais de « 0,0 » public)", () => {
+  const { shouldShowReviewWidget } = trust;
+  const id = "6aed0b0c0156593a344109f3";
+
+  assert.equal(shouldShowReviewWidget({ reviewCount: 0, businessUnitId: id, minReviews: 1 }), false);
+  assert.equal(shouldShowReviewWidget({ reviewCount: 1, businessUnitId: id, minReviews: 1 }), true);
+  assert.equal(shouldShowReviewWidget({ reviewCount: 0, businessUnitId: id, minReviews: 0 }), true);
+  assert.equal(shouldShowReviewWidget({ reviewCount: 5, businessUnitId: "", minReviews: 0 }), false);
+  assert.equal(shouldShowReviewWidget({ reviewCount: 12, businessUnitId: id, minReviews: 10 }), true);
+  assert.equal(shouldShowReviewWidget({ reviewCount: 9, businessUnitId: id, minReviews: 10 }), false);
+});
+
+test("le widget pointe toujours vers la fiche, jamais vers le formulaire", () => {
+  const { trustpilotProfileUrl, reviewProfileUrls } = trust;
+
+  assert.equal(
+    trustpilotProfileUrl({ trustpilotUrl: "https://www.trustpilot.com/review/nokhba.net.ly", trustpilotReviewUrl: "" }),
+    "https://www.trustpilot.com/review/nokhba.net.ly",
+  );
+  assert.equal(
+    trustpilotProfileUrl({
+      trustpilotUrl: "",
+      trustpilotReviewUrl: "https://www.trustpilot.com/evaluate/nokhba.net.ly",
+    }),
+    "https://www.trustpilot.com/review/nokhba.net.ly",
+  );
+
+  const urls = reviewProfileUrls({
+    trustpilotUrl: "https://www.trustpilot.com/review/nokhba.net.ly",
+    trustpilotReviewUrl: "",
+    scamadviserUrl: "https://www.scamadviser.com/check-website/nokhba.net.ly",
+    googleReviewUrl: "https://g.page/r/abc/review",
+    reviewInvites: true,
+  });
+  assert.deepEqual(urls, [
+    "https://www.trustpilot.com/review/nokhba.net.ly",
+    "https://www.scamadviser.com/check-website/nokhba.net.ly",
+  ]);
+  // Une URL invalide ne pollue pas le JSON-LD.
+  assert.deepEqual(reviewProfileUrls({ trustpilotUrl: "https://evil.example/x", scamadviserUrl: "" }), []);
+});
+
+test("le badge est câblé sur l'accueil, /avis et la boutique", () => {
+  assert.match(read("src/app/(site)/page.tsx"), /<TrustpilotBadge config=\{config\}/);
+  assert.match(read("src/app/(site)/avis/page.tsx"), /<TrustpilotBadge config=\{config\}/);
+  assert.match(read("src/app/(site)/codes/page.tsx"), /<TrustpilotBadge config=\{config\}/);
+  assert.match(read("src/components/sections/home-sections.tsx"), /trustBadge/);
+  assert.match(read("src/components/digital-store-view.tsx"), /trustBadge/);
+  assert.match(read("src/components/trustpilot-widget.tsx"), /widget\.trustpilot\.com\/bootstrap\/v5/);
+  assert.match(read("src/lib/seo.ts"), /sameAs: sameAsLinks\(config\)/);
+});
+
+/* ------------------------------------------------------------------ */
 /* 4. Identité légale                                                  */
 /* ------------------------------------------------------------------ */
 
@@ -514,19 +619,51 @@ test("les pages /avis et /mentions-legales existent et sont liées", () => {
   assert.match(sitemap, /\/mentions-legales`/);
 });
 
-test("aucune note agrégée inventée dans les nouveaux modules", () => {
+/** Retire les commentaires pour ne pas confondre une règle et son explication. */
+const code = (path) =>
+  read(path)
+    .replace(/\/\*[\s\S]*?\*\//g, "")
+    .replace(/^\s*\/\/.*$/gm, "");
+
+test("aucune note agrégée inventée dans les pages et les e-mails", () => {
   for (const path of [
-    "src/lib/trust.ts",
     "src/lib/review-emails.ts",
-    "src/app/(site)/avis/page.tsx",
     "src/app/(site)/avis/reviews-client.tsx",
     "src/app/(site)/mentions-legales/page.tsx",
     "src/app/(site)/mentions-legales/legal-notice-client.tsx",
+    "src/components/trustpilot-widget.tsx",
   ]) {
-    const source = read(path);
+    const source = code(path);
     assert.doesNotMatch(source, /aggregateRating/, `${path} ne doit pas déclarer de note agrégée`);
     assert.doesNotMatch(source, /ratingValue|reviewCount/, `${path} ne doit pas publier de note maison`);
   }
+});
+
+test("le badge ne sert qu'à décider de l'affichage, sans publier de chiffre", () => {
+  const badge = code("src/components/trustpilot-badge.tsx");
+  assert.doesNotMatch(badge, /aggregateRating/);
+  // Le nombre d'avis ne sert qu'à la condition d'affichage ; il n'est jamais
+  // rendu dans le HTML (c'est le widget Trustpilot qui l'affiche, à la source).
+  assert.match(badge, /shouldShowReviewWidget\(\{[\s\S]*?reviewCount: stats\.reviewCount/);
+  // Deux occurrences, toutes deux dans l'appel de condition :
+  // `reviewCount: stats.reviewCount`.
+  assert.equal((badge.match(/reviewCount/g) ?? []).length, 2);
+  assert.doesNotMatch(badge, /ratingValue/);
+});
+
+test("le JSON-LD du site ne déclare jamais de note auto-attribuée", () => {
+  // `seo.ts` ne fait que LIRE des avis via une plateforme tierce : il ne doit
+  // jamais émettre `aggregateRating` (règle Google « self-serving reviews »).
+  const seo = code("src/lib/seo.ts");
+  assert.doesNotMatch(seo, /aggregateRating/);
+  assert.doesNotMatch(seo, /["']@type["']:\s*["']AggregateRating/);
+
+  // `trust.ts` est le seul module autorisé à manipuler ces champs : il les
+  // parse depuis la fiche publique, il ne les fabrique jamais.
+  const trustSource = code("src/lib/trust.ts");
+  assert.match(trustSource, /parseTrustpilotAggregate/);
+  assert.doesNotMatch(trustSource, /["']@type["']:\s*["']AggregateRating/);
+  assert.doesNotMatch(trustSource, /["']aggregateRating["']\s*:/);
 });
 
 test("les e-mails de livraison passent bien par reviewPromptForConfig", () => {

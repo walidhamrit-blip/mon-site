@@ -15,6 +15,8 @@ interface Quote {
 }
 
 interface Props {
+  /** Badge Trustpilot rendu côté serveur (null s'il n'y a pas encore d'avis). */
+  trustbox?: import("react").ReactNode;
   links: ReviewLink[];
   invitesEnabled: boolean;
   testimonials: Quote[];
@@ -31,7 +33,14 @@ interface Props {
  * traitement. C'est ce qui la rend crédible auprès d'un visiteur méfiant, et
  * c'est aussi la page que citent les e-mails de demande d'avis.
  */
-export function ReviewsClient({ links, invitesEnabled, testimonials, supportEmail, whatsapp }: Props) {
+export function ReviewsClient({
+  trustbox,
+  links,
+  invitesEnabled,
+  testimonials,
+  supportEmail,
+  whatsapp,
+}: Props) {
   const { locale } = useI18n();
   const ar = locale === "ar";
 
@@ -117,6 +126,7 @@ export function ReviewsClient({ links, invitesEnabled, testimonials, supportEmai
             ? "نُفضّل أن تحكم بنفسك: نُشير إلى ملفاتنا العامة على منصات التقييم، ونشرح بدقة كيف نتعامل مع كل تقييم — الإيجابي والسلبي."
             : "We would rather you judge for yourself: here are our public profiles on review platforms, and exactly how we handle every review — positive or negative."}
         </p>
+        {trustbox ? <div className="mt-5">{trustbox}</div> : null}
       </header>
 
       {links.length > 0 && (
