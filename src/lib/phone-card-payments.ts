@@ -18,6 +18,7 @@ import {
   type PhoneCardInput,
   type PhoneCardReviewStatus,
 } from "@/lib/phone-card-core";
+import type { PhoneCardLydQuote } from "@/lib/phone-card-pricing-core";
 
 export class PhoneCardPaymentError extends Error {
   constructor(
@@ -98,9 +99,20 @@ function decryptPhoneCardCode(payload: string): string | null {
 export async function insertPreparedPhoneCardPayment(
   orderRef: string,
   prepared: PreparedPhoneCardPayment,
+  quote: PhoneCardLydQuote,
 ): Promise<void> {
   await ensureSchema();
-  await db.insert(phoneCardPayments).values({ orderRef, ...prepared });
+  await db.insert(phoneCardPayments).values({
+    orderRef,
+    ...prepared,
+    quoteAmountUsdt: quote.amountUsdt.toFixed(2),
+    quoteRateLyd: quote.rateLyd.toFixed(4),
+    quoteTotalLyd: quote.totalLyd.toFixed(2),
+    quoteMarkupPercent: quote.markupPercent,
+    quoteSource: quote.source,
+    quoteRateUpdatedAt: quote.rateUpdatedAt ? new Date(quote.rateUpdatedAt) : null,
+    quoteFetchedAt: new Date(quote.fetchedAt),
+  });
 }
 
 export function isPhoneCardDuplicateError(error: unknown): boolean {
@@ -163,6 +175,15 @@ export interface AdminPhoneCardPaymentRow {
   recipientPhone: string | null;
   operator: string;
   cardValueLyd: string;
+  quote: {
+    amountUsdt: string;
+    rateLyd: string;
+    totalLyd: string;
+    markupPercent: number;
+    source: string;
+    rateUpdatedAt: string | null;
+    fetchedAt: string | null;
+  } | null;
   codeHint: string;
   /** Déchiffré seulement pour le rendu admin authentifié. */
   code: string | null;
@@ -197,6 +218,18 @@ export async function listPhoneCardPayments(limit = 100): Promise<AdminPhoneCard
     ...order,
     operator: payment.operator,
     cardValueLyd: payment.cardValueLyd,
+    quote:
+      payment.quoteAmountUsdt && payment.quoteRateLyd && payment.quoteTotalLyd
+        ? {
+            amountUsdt: payment.quoteAmountUsdt,
+            rateLyd: payment.quoteRateLyd,
+            totalLyd: payment.quoteTotalLyd,
+            markupPercent: payment.quoteMarkupPercent ?? 20,
+            source: payment.quoteSource ?? "manual",
+            rateUpdatedAt: payment.quoteRateUpdatedAt?.toISOString() ?? null,
+            fetchedAt: payment.quoteFetchedAt?.toISOString() ?? null,
+          }
+        : null,
     codeHint: payment.codeHint,
     code: decryptPhoneCardCode(payment.codeCipher),
     status: normalizePhoneCardReviewStatus(payment.status),

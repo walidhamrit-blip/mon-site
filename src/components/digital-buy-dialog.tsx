@@ -15,6 +15,7 @@ import { RegionalAlert } from "@/components/regional-alert";
 import { recommendedNetworksLabel } from "@/lib/payment-networks";
 import { MAX_DIGITAL_ORDER_USD } from "@/lib/digital-sales-policy";
 import { playerIdGate } from "@/lib/fazercards-player-id-core";
+import type { PhoneCardLydQuote } from "@/lib/phone-card-pricing-core";
 
 const MAX_QUANTITY = 10;
 /** Mémorise la dernière commande du visiteur pour préremplir le suivi. */
@@ -55,6 +56,13 @@ export function DigitalBuyDialog({ product, denominationId, onClose }: Props) {
   const [cardOperator, setCardOperator] = useState<"libyana" | "al_madar">("libyana");
   const [cardCode, setCardCode] = useState("");
   const [cardValueLyd, setCardValueLyd] = useState("");
+  const [phoneQuoteResult, setPhoneQuoteResult] = useState<{
+    amount: number;
+    quote?: PhoneCardLydQuote;
+    error?: "unavailable" | "network";
+  } | null>(null);
+  const [acceptedPhoneQuoteKey, setAcceptedPhoneQuoteKey] = useState("");
+  const [phoneQuoteRefresh, setPhoneQuoteRefresh] = useState(0);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   // Champs acheteur exigés par le fournisseur (top-ups : identifiant de
@@ -83,6 +91,22 @@ export function DigitalBuyDialog({ product, denominationId, onClose }: Props) {
 
   const selected = available.find((item) => item.id === selectedId) ?? available[0] ?? null;
   const total = (selected?.priceUsd ?? 0) * quantity;
+  const phoneQuoteAmount = Math.round(total * 100) / 100;
+  const currentPhoneQuoteResult = phoneQuoteResult?.amount === phoneQuoteAmount ? phoneQuoteResult : null;
+  const phoneQuote = currentPhoneQuoteResult?.quote ?? null;
+  const phoneQuoteError = currentPhoneQuoteResult?.error ?? null;
+  const phoneQuotePending =
+    paymentMethod === "phone_card" && !phoneQuote && !phoneQuoteError;
+  const phoneQuoteKey = phoneQuote
+    ? [
+        phoneQuote.amountUsdt.toFixed(2),
+        phoneQuote.rateLyd.toFixed(4),
+        phoneQuote.totalLyd.toFixed(2),
+        phoneQuote.source,
+        phoneQuote.rateUpdatedAt ?? "",
+      ].join(":")
+    : "";
+  const phoneQuoteAccepted = Boolean(phoneQuoteKey) && acceptedPhoneQuoteKey === phoneQuoteKey;
   const requiredFields = selected?.fields ?? [];
   const maxQuantity = Math.max(1, Math.min(MAX_QUANTITY, selected?.maxQuantity ?? MAX_QUANTITY));
   const isFazercards = product.supplier === "fazercards";
@@ -117,6 +141,37 @@ export function DigitalBuyDialog({ product, denominationId, onClose }: Props) {
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [onClose]);
+
+  // Le navigateur demande un devis indicatif ; le checkout le recalculera et
+  // vérifiera que le client a accepté exactement la même version du taux.
+  useEffect(() => {
+    if (!isFazercards || paymentMethod !== "phone_card" || phoneQuoteAmount <= 0) return;
+    let cancelled = false;
+    const timer = setTimeout(async () => {
+      try {
+        const response = await fetch(
+          `/api/fazercards/phone-card-quote?amount=${phoneQuoteAmount.toFixed(2)}`,
+          { cache: "no-store" },
+        );
+        const data = (await response.json().catch(() => ({}))) as {
+          ok?: boolean;
+          quote?: PhoneCardLydQuote;
+        };
+        if (cancelled) return;
+        if (!response.ok || !data.ok || !data.quote) {
+          setPhoneQuoteResult({ amount: phoneQuoteAmount, error: "unavailable" });
+        } else {
+          setPhoneQuoteResult({ amount: phoneQuoteAmount, quote: data.quote });
+        }
+      } catch {
+        if (!cancelled) setPhoneQuoteResult({ amount: phoneQuoteAmount, error: "network" });
+      }
+    }, 350);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [isFazercards, paymentMethod, phoneQuoteAmount, phoneQuoteRefresh]);
 
   const idFieldsKey = JSON.stringify(buyerFields);
   const allIdFieldsFilled =
@@ -226,6 +281,22 @@ export function DigitalBuyDialog({ product, denominationId, onClose }: Props) {
         setError(ar ? "أدخل قيمة بطاقة الهاتف بالدينار الليبي." : "Enter the phone card value in LYD.");
         return;
       }
+      if (!phoneQuote) {
+        setError(
+          ar
+            ? "تعذر الحصول على سعر السوق الموازي الحالي. أعد المحاولة أو اختر الدفع بالعملات الرقمية."
+            : "The current parallel-market rate is unavailable. Retry or choose crypto payment.",
+        );
+        return;
+      }
+      if (!phoneQuoteAccepted) {
+        setError(
+          ar
+            ? "اقرأ طريقة احتساب السعر بالدينار ثم أكّد موافقتك في المربع قبل إرسال البطاقة."
+            : "Read the LYD price calculation and tick the confirmation box before submitting your card.",
+        );
+        return;
+      }
     }
     const missingField = requiredFields.find(
       (field) => !(buyerFields[field.key] ?? "").trim(),
@@ -301,6 +372,8 @@ export function DigitalBuyDialog({ product, denominationId, onClose }: Props) {
                     operator: cardOperator,
                     code: cardCode.replace(/[\s-]/g, ""),
                     valueLyd: cardValueLyd.trim(),
+                    quoteAccepted: phoneQuoteAccepted,
+                    quote: phoneQuote,
                   },
                 }
               : {}),
@@ -313,11 +386,19 @@ export function DigitalBuyDialog({ product, denominationId, onClose }: Props) {
         orderRef?: string;
         trackingToken?: string;
         message?: string;
+        error?: string;
         totalUsd?: number;
       };
 
       if (!res.ok || !data.ok || !data.paymentUrl) {
         setError(data.message || (ar ? "تعذر إنشاء الطلب. حاول مرة أخرى." : "Could not create the order. Please retry."));
+        if (data.error === "phone_card_quote_changed" || data.error === "phone_card_rate_unavailable") {
+          // Ne laisse pas l'utilisateur renvoyer indéfiniment l'ancien devis :
+          // le nouveau taux est chargé et sa case d'accord est réinitialisée.
+          setPhoneQuoteResult(null);
+          setAcceptedPhoneQuoteKey("");
+          setPhoneQuoteRefresh((value) => value + 1);
+        }
         setBusy(false);
         return;
       }
@@ -509,6 +590,72 @@ export function DigitalBuyDialog({ product, denominationId, onClose }: Props) {
                   : "Submit the code once only. We will verify the card manually before preparing your gift card; submitting it does not mean payment is accepted."}
               </p>
             </div>
+
+            <div className="rounded-lg border border-[var(--border)] bg-[var(--background)] px-3 py-2.5">
+              <div className="text-[10.5px] font-black uppercase tracking-wide text-[var(--muted-foreground)]">
+                {ar ? "السعر التقديري بالدينار الليبي" : "Indicative price in LYD"}
+              </div>
+              {phoneQuotePending && (
+                <p className="mt-2 flex items-center gap-2 text-[11.5px] text-[var(--muted-foreground)]">
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  {ar ? "جارٍ جلب سعر السوق الموازي…" : "Fetching the parallel-market rate…"}
+                </p>
+              )}
+              {phoneQuoteError && (
+                <p className="mt-2 text-[11.5px] leading-5 text-amber-700">
+                  {phoneQuoteError === "network"
+                    ? ar
+                      ? "تعذر الاتصال بخدمة السعر. تحقق من الشبكة؛ لن نخترع سعراً بديلاً."
+                      : "Could not reach the rate service. Check your connection; we will not invent a fallback price."
+                    : ar
+                      ? "السعر غير متاح حالياً. أعد المحاولة لاحقاً أو اختر العملات الرقمية؛ لن يتم استخدام السعر الرسمي تلقائياً."
+                      : "The rate is currently unavailable. Retry later or choose crypto; the official bank rate is never substituted automatically."}
+                </p>
+              )}
+              {phoneQuote && (
+                <>
+                  <p className="mt-1.5 text-[14px] font-black text-[var(--foreground)]" dir="ltr">
+                    {phoneQuote.amountUsdt.toFixed(2)} USDT × {phoneQuote.rateLyd.toFixed(4)} LYD × 120% = {phoneQuote.totalLyd.toFixed(2)} LYD
+                  </p>
+                  <p className="mt-1 text-[11px] leading-5 text-[var(--muted-foreground)]">
+                    {ar
+                      ? "يشمل الحساب 20% لتعويض نقص قيمة بطاقات الهاتف عند إعادة بيعها. هذا تقدير للمعلومة وليس سعر صرف رسمياً."
+                      : "The calculation includes 20% to offset the loss of value when reselling phone cards. This is indicative information, not an official exchange rate."}
+                  </p>
+                  <p className="mt-1 text-[10.5px] leading-4 text-[var(--muted-foreground)]">
+                    {phoneQuote.source === "fulus"
+                      ? ar ? "المصدر: Fulus · السوق الموازي" : "Source: Fulus · parallel market"
+                      : ar ? "المصدر: سعر يدوي من الإدارة" : "Source: manual rate set by staff"}
+                    {" · "}
+                    {new Date(phoneQuote.rateUpdatedAt ?? phoneQuote.fetchedAt).toLocaleString(
+                      ar ? "ar-LY" : "en-GB",
+                      { dateStyle: "short", timeStyle: "short", timeZone: "Africa/Tripoli" },
+                    )}
+                  </p>
+                  {phoneQuote.stale && (
+                    <p className="mt-1.5 rounded-md bg-amber-500/10 px-2 py-1.5 text-[10.5px] leading-4 text-amber-700">
+                      {ar
+                        ? "تنبيه: هذا آخر سعر معروف لأن تحديث Fulus تعذر. أنت توافق على هذا السعر تحديداً."
+                        : "Warning: this is the last known rate because Fulus could not be refreshed. You are agreeing to this specific rate."}
+                    </p>
+                  )}
+                  <label className="mt-2 flex cursor-pointer items-start gap-2 border-t border-[var(--border)] pt-2 text-[11.5px] font-bold leading-5">
+                    <input
+                      type="checkbox"
+                      checked={phoneQuoteAccepted}
+                      onChange={(event) => setAcceptedPhoneQuoteKey(event.target.checked ? phoneQuoteKey : "")}
+                      className="mt-1 h-3.5 w-3.5 shrink-0 accent-[var(--accent)]"
+                    />
+                    <span>
+                      {ar
+                        ? `قرأت الحساب وأوافق على السعر التقديري ${phoneQuote.totalLyd.toFixed(2)} د.ل، مع بقاء قبول بطاقة الهاتف خاضعاً للتحقق اليدوي.`
+                        : `I have read the calculation and agree to the indicative ${phoneQuote.totalLyd.toFixed(2)} LYD price; my phone card remains subject to manual verification.`}
+                    </span>
+                  </label>
+                </>
+              )}
+            </div>
+
             <div className="grid gap-2.5 sm:grid-cols-2">
               <label className="block">
                 <span className="mb-1 block text-[11px] font-bold uppercase tracking-wide text-[var(--muted-foreground)]">
@@ -729,7 +876,7 @@ export function DigitalBuyDialog({ product, denominationId, onClose }: Props) {
         <button
           type="button"
           onClick={submit}
-          disabled={busy || !selected || belowMinimum || aboveLimit || idGate === "pending"}
+          disabled={busy || !selected || belowMinimum || aboveLimit || idGate === "pending" || (paymentMethod === "phone_card" && phoneQuotePending)}
           className="mt-4 inline-flex h-12 w-full items-center justify-center gap-2 rounded-full bg-[var(--accent)] text-sm font-black text-[var(--accent-foreground)] shadow-sm transition-colors hover:bg-[var(--accent-hover)] disabled:opacity-60"
         >
           {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Lock className="h-4 w-4" />}

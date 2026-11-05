@@ -492,8 +492,26 @@ export const siteConfigSchema = z.object({
         .number()
         .min(1.5, "La valeur maximale doit être d'au moins 1,50 $.")
         .max(10_000, "La valeur maximale ne peut pas dépasser 10 000 $."),
+      phoneCardRateMode: z.enum(["auto", "manual"]).default("auto"),
+      phoneCardManualRateLyd: z.coerce
+        .number()
+        .min(0.0001, "Le taux manuel doit être supérieur à zéro.")
+        .max(10_000, "Le taux manuel est invraisemblable.")
+        .nullable()
+        .default(null),
+      phoneCardManualRateUpdatedAt: z
+        .string()
+        .max(40)
+        .refine((value) => Number.isFinite(Date.parse(value)), "Date du taux manuel invalide.")
+        .nullable()
+        .default(null),
     })
-    .default({ maxOrderUsd: 25 }),
+    .default({
+      maxOrderUsd: 25,
+      phoneCardRateMode: "auto",
+      phoneCardManualRateLyd: null,
+      phoneCardManualRateUpdatedAt: null,
+    }),
 });
 
 /* ---------- Statut d'une demande ---------- */

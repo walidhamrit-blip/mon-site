@@ -220,6 +220,16 @@ export async function saveSiteConfig(input: unknown): Promise<ActionResult> {
     return { ok: false, error: `Configuration invalide — ${firstIssue(parsed.error)}` };
   }
   try {
+    // L'horodatage du taux manuel vient du serveur, pas de l'horloge du
+    // navigateur admin. Il ne change pas lors d'une sauvegarde sans rapport.
+    const { config: currentConfig } = await getSiteData();
+    const previousRate = Number(currentConfig.fazercards?.phoneCardManualRateLyd) || null;
+    const nextRate = Number(parsed.data.fazercards.phoneCardManualRateLyd) || null;
+    parsed.data.fazercards.phoneCardManualRateUpdatedAt = nextRate
+      ? previousRate === nextRate && currentConfig.fazercards?.phoneCardManualRateUpdatedAt
+        ? currentConfig.fazercards.phoneCardManualRateUpdatedAt
+        : new Date().toISOString()
+      : null;
     await upsertSetting(SETTINGS_KEYS.config, parsed.data);
     const { invalidateFazercardsBalanceCache } = await import("@/lib/fazercards-balance");
     invalidateFazercardsBalanceCache();

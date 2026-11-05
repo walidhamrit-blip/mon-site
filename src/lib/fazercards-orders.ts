@@ -71,6 +71,11 @@ import {
   type PreparedPhoneCardPayment,
 } from "@/lib/phone-card-payments";
 import type { PhoneCardInput } from "@/lib/phone-card-core";
+import { getPhoneCardLydQuote } from "@/lib/phone-card-rate";
+import {
+  phoneCardQuoteMatches,
+  type PhoneCardLydQuote,
+} from "@/lib/phone-card-pricing-core";
 
 
 /* --------------------------------- Types -------------------------------- */
@@ -94,7 +99,11 @@ export interface CreateFazercardsCheckoutInput {
   idConfirmed?: boolean;
   /** Par défaut, la facture crypto historique ; sinon revue manuelle d'une recharge. */
   paymentMethod?: "nowpayments" | "phone_card";
-  phoneCard?: PhoneCardInput;
+  phoneCard?: PhoneCardInput & {
+    /** Confirmation client obligatoire ; le devis est revérifié côté serveur. */
+    quoteAccepted?: boolean;
+    quote?: unknown;
+  };
 }
 
 export interface FazercardsCheckoutResult {
@@ -472,6 +481,34 @@ export async function createFazercardsCheckout(
     }
   }
 
+  // Le client accepte un devis précis. Le serveur recalcule tout depuis le
+  // total catalogue et refuse si le taux a changé entre l'affichage et l'envoi.
+  let acceptedPhoneCardQuote: PhoneCardLydQuote | null = null;
+  if (usesPhoneCard) {
+    if (input.phoneCard?.quoteAccepted !== true) {
+      throw new FazercardsOrderError(
+        "phone_card_quote_unconfirmed",
+        400,
+        "Confirmez avoir compris le calcul indicatif en LYD avant d'envoyer la carte.",
+      );
+    }
+    acceptedPhoneCardQuote = await getPhoneCardLydQuote(totalUsd);
+    if (!acceptedPhoneCardQuote) {
+      throw new FazercardsOrderError(
+        "phone_card_rate_unavailable",
+        503,
+        "Le taux du marché parallèle n'est pas disponible. Réessayez plus tard ou choisissez la crypto ; aucun prix ne sera inventé.",
+      );
+    }
+    if (!phoneCardQuoteMatches(input.phoneCard?.quote, acceptedPhoneCardQuote)) {
+      throw new FazercardsOrderError(
+        "phone_card_quote_changed",
+        409,
+        "Le taux ou le montant a changé. Vérifiez le nouveau calcul en LYD et confirmez-le avant de renvoyer la carte.",
+      );
+    }
+  }
+
   const ref = newOrderReference("DGC");
   const tracking = createTrackingToken();
   const locale = input.locale === "en" ? "en" : "ar";
@@ -564,7 +601,7 @@ export async function createFazercardsCheckout(
   // automatique. La référence mène directement au suivi « à vérifier ».
   if (preparedPhoneCard) {
     try {
-      await insertPreparedPhoneCardPayment(ref, preparedPhoneCard);
+      await insertPreparedPhoneCardPayment(ref, preparedPhoneCard, acceptedPhoneCardQuote!);
     } catch (error) {
       await db.delete(orders).where(eq(orders.ref, ref)).catch(() => null);
       await db.delete(digitalOrders).where(eq(digitalOrders.ref, ref)).catch(() => null);

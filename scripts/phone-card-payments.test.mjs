@@ -11,6 +11,11 @@ import {
   phoneCardPublicNotice,
   validatePhoneCardInput,
 } from "../src/lib/phone-card-core.ts";
+import {
+  calculatePhoneCardLydQuote,
+  parseFulusCurrentRate,
+  phoneCardQuoteMatches,
+} from "../src/lib/phone-card-pricing-core.ts";
 
 const root = fileURLToPath(new URL("..", import.meta.url));
 const read = (path) => readFileSync(new URL(path, `file://${root}`), "utf8");
@@ -127,4 +132,71 @@ test("l'action de revue exige une session admin et un motif de refus", () => {
   assert.match(action, /await requireAdmin\(\)/);
   const review = read("src/lib/phone-card-payments.ts");
   assert.match(review, /decision === "rejected" && !note/);
+});
+
+const quoteMetadata = {
+  source: "manual",
+  rateUpdatedAt: "2026-11-05T20:00:00.000Z",
+  fetchedAt: "2026-11-05T20:01:00.000Z",
+  stale: false,
+};
+
+test("la formule LYD applique le taux parallèle puis exactement 20 %", () => {
+  const five = calculatePhoneCardLydQuote(5, 9.84, quoteMetadata);
+  const ten = calculatePhoneCardLydQuote(10, 9.84, quoteMetadata);
+  assert.equal(five?.totalLyd, 59.04);
+  assert.equal(ten?.totalLyd, 118.08);
+  assert.equal(five?.markupPercent, 20);
+  assert.equal(five?.amountUsdt, 5);
+  assert.equal(five?.rateLyd, 9.84);
+  // La quantité est déjà comprise dans le total USDT recalculé par le serveur.
+  assert.equal(calculatePhoneCardLydQuote(15, 9.84, quoteMetadata)?.totalLyd, 177.12);
+});
+
+test("un montant ou un taux invalide ne produit jamais de devis", () => {
+  for (const [amount, rate] of [[0, 9.84], [-5, 9.84], [5, 0], [5, -9.84], [5, "nope"]]) {
+    assert.equal(calculatePhoneCardLydQuote(amount, rate, quoteMetadata), null);
+  }
+});
+
+test("la réponse documentée de Fulus est lue avec son horodatage", () => {
+  assert.deepEqual(
+    parseFulusCurrentRate({
+      data: { currency: "USD", rate: 9.84, timestamp: "2026-11-05T20:00:00Z" },
+    }),
+    { rateLyd: 9.84, rateUpdatedAt: "2026-11-05T20:00:00Z" },
+  );
+  assert.equal(parseFulusCurrentRate({ data: { currency: "EUR", rate: 11.2 } }), null);
+  assert.equal(parseFulusCurrentRate({ data: { currency: "USD", rate: -1 } }), null);
+});
+
+test("le checkout exige l'accord et refuse tout devis différent du calcul serveur", () => {
+  const expected = calculatePhoneCardLydQuote(5, 9.84, quoteMetadata);
+  assert.ok(expected);
+  assert.equal(phoneCardQuoteMatches({ ...expected, fetchedAt: "nouvelle-lecture" }, expected), true);
+  assert.equal(phoneCardQuoteMatches({ ...expected, rateLyd: 9.85 }, expected), false);
+  assert.equal(phoneCardQuoteMatches({ ...expected, totalLyd: 1 }, expected), false);
+  assert.equal(phoneCardQuoteMatches(null, expected), false);
+
+  const checkout = code(read("src/lib/fazercards-orders.ts"));
+  assert.match(checkout, /quoteAccepted !== true/);
+  assert.match(checkout, /getPhoneCardLydQuote\(totalUsd\)/);
+  assert.match(checkout, /phoneCardQuoteMatches\(input\.phoneCard\?\.quote, acceptedPhoneCardQuote\)/);
+  assert.match(checkout, /phone_card_quote_changed/);
+  const schema = read("src/db/schema.ts");
+  assert.match(schema, /quoteRateLyd: text\("quote_rate_lyd"\)/);
+  assert.match(schema, /quoteTotalLyd: text\("quote_total_lyd"\)/);
+});
+
+test("un taux modifié est rechargé et l'information client reste cohérente", () => {
+  const dialog = code(read("src/components/digital-buy-dialog.tsx"));
+  assert.match(dialog, /data\.error === "phone_card_quote_changed"/);
+  assert.match(dialog, /setAcceptedPhoneQuoteKey\(""\)/);
+  assert.match(dialog, /setPhoneQuoteRefresh/);
+  assert.match(dialog, /phoneQuote\.totalLyd\.toFixed\(2\)/);
+
+  const terms = read("src/app/(site)/conditions/conditions-client.tsx");
+  assert.match(terms, /parallel-market USD\/LYD rate × 120%/);
+  const assistant = read("src/lib/site-assistant.ts");
+  assert.match(assistant, /Never invent a live rate/);
 });

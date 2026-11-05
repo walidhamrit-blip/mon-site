@@ -374,10 +374,11 @@ test("la caisse refuse une facture sous le minimum crypto", () => {
   const dialogFlat = code(dialog);
   assert.match(dialogFlat, /MIN_CRYPTO_INVOICE_USD/);
   assert.match(dialogFlat, /belowMinimum/);
-  // Le bouton reste aussi bloqué tant que le contrôle d'identifiant tourne.
+  // Le bouton reste bloqué pendant le contrôle d'identifiant et, pour une
+  // carte téléphonique, tant que son devis LYD n'est pas disponible.
   assert.match(
     dialogFlat,
-    /disabled=\{busy \|\| !selected \|\| belowMinimum \|\| aboveLimit \|\| idGate === "pending"\}/,
+    /disabled=\{busy \|\| !selected \|\| belowMinimum \|\| aboveLimit \|\| idGate === "pending" \|\| \(paymentMethod === "phone_card" && phoneQuotePending\)\}/,
   );
 });
 

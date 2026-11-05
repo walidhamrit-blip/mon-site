@@ -40,6 +40,19 @@ const checkoutSchema = z.object({
     operator: z.enum(["libyana", "al_madar"]),
     code: z.string().min(6).max(64),
     valueLyd: z.union([z.string().max(20), z.number()]),
+    quoteAccepted: z.boolean().optional(),
+    // Indicatif seulement : ces montants sont comparés à un devis entièrement
+    // recalculé côté serveur, jamais utilisés pour valoriser la commande.
+    quote: z.object({
+      amountUsdt: z.number(),
+      rateLyd: z.number(),
+      totalLyd: z.number(),
+      markupPercent: z.number(),
+      source: z.enum(["fulus", "manual"]),
+      rateUpdatedAt: z.string().max(40).nullable(),
+      fetchedAt: z.string().max(40),
+      stale: z.boolean(),
+    }).optional(),
   }).optional(),
 });
 

@@ -146,6 +146,9 @@ export interface SiteConfigData {
   standaloneServices: StandaloneService[];
   fazercards: {
     maxOrderUsd: number;
+    phoneCardRateMode: "auto" | "manual";
+    phoneCardManualRateLyd: number | null;
+    phoneCardManualRateUpdatedAt: string | null;
   };
 }
 

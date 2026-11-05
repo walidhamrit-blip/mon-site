@@ -168,11 +168,28 @@ export function mergeConfig(override: unknown): typeof siteConfig {
       merged[key] = value;
     }
   }
-  const fzrRaw = merged.fazercards as { maxOrderUsd?: unknown } | undefined;
+  const fzrRaw = merged.fazercards as {
+    maxOrderUsd?: unknown;
+    phoneCardRateMode?: unknown;
+    phoneCardManualRateLyd?: unknown;
+    phoneCardManualRateUpdatedAt?: unknown;
+  } | undefined;
   const fzrMax = Number(fzrRaw?.maxOrderUsd);
+  const manualRate = Number(fzrRaw?.phoneCardManualRateLyd);
+  const manualRateDate = fzrRaw?.phoneCardManualRateUpdatedAt;
   merged.fazercards = {
+    ...fzrRaw,
     maxOrderUsd:
       Number.isFinite(fzrMax) && fzrMax > 0 ? Math.round(fzrMax * 100) / 100 : defaultMaxOrderUsd,
+    phoneCardRateMode: fzrRaw?.phoneCardRateMode === "manual" ? "manual" : "auto",
+    phoneCardManualRateLyd:
+      Number.isFinite(manualRate) && manualRate > 0 && manualRate <= 10_000
+        ? Math.round(manualRate * 10_000) / 10_000
+        : null,
+    phoneCardManualRateUpdatedAt:
+      typeof manualRateDate === "string" && Number.isFinite(Date.parse(manualRateDate))
+        ? manualRateDate
+        : null,
   };
   return merged as unknown as typeof siteConfig;
 }
