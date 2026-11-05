@@ -368,6 +368,7 @@ export function ensureSchema(): Promise<void> {
           quote_source text,
           quote_rate_updated_at timestamptz,
           quote_fetched_at timestamptz,
+          quote_references jsonb,
           code_cipher text NOT NULL,
           code_fingerprint text NOT NULL UNIQUE,
           code_hint text NOT NULL,
@@ -384,7 +385,8 @@ export function ensureSchema(): Promise<void> {
           ADD COLUMN IF NOT EXISTS quote_markup_percent integer,
           ADD COLUMN IF NOT EXISTS quote_source text,
           ADD COLUMN IF NOT EXISTS quote_rate_updated_at timestamptz,
-          ADD COLUMN IF NOT EXISTS quote_fetched_at timestamptz
+          ADD COLUMN IF NOT EXISTS quote_fetched_at timestamptz,
+          ADD COLUMN IF NOT EXISTS quote_references jsonb
       `);
       await pool.query(
         "CREATE INDEX IF NOT EXISTS phone_card_payments_status_idx ON phone_card_payments (status, created_at DESC)",

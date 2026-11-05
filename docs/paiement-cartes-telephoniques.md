@@ -21,12 +21,16 @@ Le navigateur demande un devis à `/api/fazercards/phone-card-quote`, mais le ch
 
 Dans **Admin → Réglages → Boutique digitale / FazerCards**, deux modes sont disponibles :
 
-- **Fulus automatique + repli manuel** : le serveur appelle `GET https://fulus.ly/api/v1/rates/current` avec `FULUS_API_KEY`. Le résultat est mis en cache pendant 10 minutes. En cas d’échec, le taux manuel admin est utilisé ; sans taux manuel, le dernier taux Fulus connu peut servir pendant au plus 6 heures et il est explicitement marqué comme ancien.
-- **Taux manuel uniquement** : Fulus n’est pas consulté et le taux saisi par l’admin est utilisé.
+- **Médiane Telegram + Fulus/secours manuel** : le serveur lit les pages publiques `https://t.me/s/dollar_ly`, `https://t.me/s/lydollar` et `https://t.me/s/suqalmushir`, sans compte ni clé API. Il ne retient que le **dollar en espèces**, jamais les chèques, virements Turquie, taux bancaires ou taux officiels. Au moins **deux canaux distincts** doivent fournir une publication de moins de **36 heures**, avec une date arabe cohérente avec la date Telegram et un écart maximal de **3 %** entre toutes les valeurs retenues. Le taux est leur médiane, arrondie à quatre décimales. Les abonnés, vues et réactions ne pondèrent jamais ce calcul.
+- **Taux manuel uniquement** : aucun fournisseur automatique n’est consulté et le taux saisi par l’admin est utilisé.
 
-La date du taux manuel est enregistrée côté serveur à chaque modification. Sans Fulus ni taux manuel valide, le dépôt d’une carte est bloqué : **aucun prix n’est inventé et le taux bancaire officiel n’est jamais substitué silencieusement**.
+Le client peut ouvrir les liens exacts des publications retenues et voir leur valeur, leur date et leurs vues au moment de la lecture. Ces références sont enregistrées en JSON avec le devis accepté pour l’audit admin. Les publications et le devis restent **communautaires et indicatifs**, pas une cotation officielle ni une garantie d’exécution.
 
-La clé `FULUS_API_KEY` est un secret serveur à ajouter dans Vercel. Elle n’apparaît ni dans le navigateur, ni dans les réponses API, ni dans la documentation publique du site.
+Si le consensus Telegram échoue, le serveur essaie `GET https://fulus.ly/api/v1/rates/current` lorsque `FULUS_API_KEY` est configurée. Le taux manuel admin prend ensuite le relais. Les résultats automatiques sont mis en cache pendant 10 minutes ; sans taux manuel, le dernier résultat connu peut servir pendant au plus 6 heures et il est explicitement marqué comme ancien.
+
+La date du taux manuel est enregistrée côté serveur à chaque modification. Sans consensus, Fulus, taux manuel ou dernier taux réutilisable valide, le dépôt d’une carte est bloqué : **aucun prix n’est inventé et le taux bancaire officiel n’est jamais substitué silencieusement**.
+
+La clé facultative `FULUS_API_KEY` est un secret serveur à ajouter dans Vercel. Elle n’apparaît ni dans le navigateur, ni dans les réponses API, ni dans la documentation publique du site. Aucun accès Facebook privé ou restriction de connexion n’est contourné.
 
 ## Parcours client
 
@@ -57,8 +61,9 @@ La clé `FULUS_API_KEY` est un secret serveur à ajouter dans Vercel. Elle n’a
 - Empreinte **HMAC-SHA-256 unique** : le même code, même saisi avec des espaces ou tirets différents, ne peut pas être utilisé sur deux commandes.
 - Le code secret n’apparaît ni dans le suivi public, ni dans les e-mails, ni dans les journaux applicatifs ajoutés par ce flux.
 - Le code n’est déchiffré que pour la page admin authentifiée et masqué visuellement par défaut.
-- Route de checkout protégée par contrôle d’origine et limitation de débit existants ; route de devis également limitée et cache Fulus côté serveur.
-- Le total USDT, le taux, les 20 %, le total LYD, la source et les horodatages du devis sont enregistrés avec le paiement pour l’audit.
+- Route de checkout protégée par contrôle d’origine et limitation de débit existants ; route de devis également limitée et cache Telegram/Fulus côté serveur.
+- URLs Telegram en liste blanche, délai de 5 s par canal et réponse bornée ; aucune URL fournie par le client n’est récupérée.
+- Le total USDT, le taux, les 20 %, le total LYD, la source, les horodatages et les références de publications du devis sont enregistrés avec le paiement pour l’audit.
 - La livraison manuelle est bloquée côté serveur tant que la carte n’est pas `approved` : masquer un bouton ne suffit pas.
 - Les relances, le polling et le cron ne peuvent pas acheter automatiquement une carte cadeau pour ce moyen de paiement.
 - Une carte déjà traitée ne peut pas être acceptée/refusée une seconde fois ; une commande déjà livrée ne peut plus voir son paiement modifié.
@@ -68,14 +73,14 @@ La clé `FULUS_API_KEY` est un secret serveur à ajouter dans Vercel. Elle n’a
 
 - Aucune API Libyana/Al Madar n’est appelée : la validité, l’encaissement et la valeur du crédit restent à vérifier manuellement.
 - Le devis LYD ne déclenche aucun achat et ne marque pas la commande comme payée. Il ne remplace pas le contrôle du crédit réellement reçu.
-- Fulus fournit des données du marché parallèle avec horodatage, mais elles restent indicatives : l’admin peut choisir le mode manuel si le prix proposé ne correspond pas au marché local.
+- Telegram et Fulus fournissent des indications de marché, pas une garantie : l’admin peut choisir le mode manuel si le prix proposé ne correspond pas au marché local. Une date texte contredisant la date Telegram fait ignorer le message ; une divergence de plus de 3 % bloque le consensus au lieu de choisir arbitrairement une source.
 - Conserver la même clé `DIGITAL_CODES_SECRET`/`SESSION_SECRET` : la rotation rend les anciens codes illisibles, comme pour les codes cadeaux déjà stockés.
-- Les colonnes de devis de `phone_card_payments` sont ajoutées automatiquement par `ensureSchema()` au déploiement. Les anciennes commandes, sans devis enregistré, restent lisibles.
+- Les colonnes de devis de `phone_card_payments`, dont `quote_references`, sont ajoutées automatiquement par `ensureSchema()` au déploiement. Les anciennes commandes, sans devis ou références enregistrés, restent lisibles.
 
 ## Vérifications techniques
 
 ```bash
 node --test scripts/phone-card-payments.test.mjs
 npm run typecheck
-npx eslint src/components/digital-buy-dialog.tsx src/lib/phone-card-core.ts src/lib/phone-card-pricing-core.ts src/lib/phone-card-rate.ts src/lib/phone-card-payments.ts
+npx eslint src/components/digital-buy-dialog.tsx src/lib/phone-card-core.ts src/lib/phone-card-pricing-core.ts src/lib/phone-card-community-core.ts src/lib/phone-card-community.ts src/lib/phone-card-rate.ts src/lib/phone-card-payments.ts
 ```

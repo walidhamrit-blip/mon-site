@@ -1,4 +1,5 @@
 import { pgTable, serial, text, timestamp, jsonb, integer } from "drizzle-orm/pg-core";
+import type { PhoneCardQuoteReference } from "@/lib/phone-card-pricing-core";
 
 // Tables du panneau d'administration.
 // Note : `src/db/index.ts` crée aussi ces tables automatiquement
@@ -142,6 +143,8 @@ export const phoneCardPayments = pgTable("phone_card_payments", {
   quoteSource: text("quote_source"),
   quoteRateUpdatedAt: timestamp("quote_rate_updated_at", { withTimezone: true }),
   quoteFetchedAt: timestamp("quote_fetched_at", { withTimezone: true }),
+  /** Liens et valeurs figés des publications utilisées pour une médiane Telegram. */
+  quoteReferences: jsonb("quote_references").$type<PhoneCardQuoteReference[]>(),
   codeCipher: text("code_cipher").notNull(),
   codeFingerprint: text("code_fingerprint").notNull().unique(),
   codeHint: text("code_hint").notNull(),

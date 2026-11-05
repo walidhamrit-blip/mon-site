@@ -18,7 +18,10 @@ import {
   type PhoneCardInput,
   type PhoneCardReviewStatus,
 } from "@/lib/phone-card-core";
-import type { PhoneCardLydQuote } from "@/lib/phone-card-pricing-core";
+import type {
+  PhoneCardLydQuote,
+  PhoneCardQuoteReference,
+} from "@/lib/phone-card-pricing-core";
 
 export class PhoneCardPaymentError extends Error {
   constructor(
@@ -112,6 +115,8 @@ export async function insertPreparedPhoneCardPayment(
     quoteSource: quote.source,
     quoteRateUpdatedAt: quote.rateUpdatedAt ? new Date(quote.rateUpdatedAt) : null,
     quoteFetchedAt: new Date(quote.fetchedAt),
+    // Toujours la liste calculée côté serveur, jamais celle envoyée par le client.
+    quoteReferences: quote.references ?? [],
   });
 }
 
@@ -183,6 +188,7 @@ export interface AdminPhoneCardPaymentRow {
     source: string;
     rateUpdatedAt: string | null;
     fetchedAt: string | null;
+    references: PhoneCardQuoteReference[];
   } | null;
   codeHint: string;
   /** Déchiffré seulement pour le rendu admin authentifié. */
@@ -228,6 +234,7 @@ export async function listPhoneCardPayments(limit = 100): Promise<AdminPhoneCard
             source: payment.quoteSource ?? "manual",
             rateUpdatedAt: payment.quoteRateUpdatedAt?.toISOString() ?? null,
             fetchedAt: payment.quoteFetchedAt?.toISOString() ?? null,
+            references: payment.quoteReferences ?? [],
           }
         : null,
     codeHint: payment.codeHint,

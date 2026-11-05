@@ -48,10 +48,17 @@ const checkoutSchema = z.object({
       rateLyd: z.number(),
       totalLyd: z.number(),
       markupPercent: z.number(),
-      source: z.enum(["fulus", "manual"]),
+      source: z.enum(["community", "fulus", "manual"]),
       rateUpdatedAt: z.string().max(40).nullable(),
       fetchedAt: z.string().max(40),
       stale: z.boolean(),
+      references: z.array(z.object({
+        label: z.string().max(100),
+        url: z.string().url().max(200),
+        rateLyd: z.number(),
+        rateUpdatedAt: z.string().max(40),
+        views: z.number().int().nonnegative().nullable(),
+      })).max(3).optional(),
     }).optional(),
   }).optional(),
 });

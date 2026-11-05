@@ -625,18 +625,56 @@ export function DigitalBuyDialog({ product, denominationId, onClose }: Props) {
                   <p className="mt-1 text-[10.5px] leading-4 text-[var(--muted-foreground)]">
                     {phoneQuote.source === "fulus"
                       ? ar ? "المصدر: Fulus · السوق الموازي" : "Source: Fulus · parallel market"
-                      : ar ? "المصدر: سعر يدوي من الإدارة" : "Source: manual rate set by staff"}
+                      : phoneQuote.source === "community"
+                        ? ar
+                          ? "المصدر: معدل وسيط من منشورات Telegram العامة · سعر نقدي تقريبي"
+                          : "Source: median of public Telegram posts · indicative cash rate"
+                        : ar ? "المصدر: سعر يدوي من الإدارة" : "Source: manual rate set by staff"}
                     {" · "}
                     {new Date(phoneQuote.rateUpdatedAt ?? phoneQuote.fetchedAt).toLocaleString(
                       ar ? "ar-LY" : "en-GB",
                       { dateStyle: "short", timeStyle: "short", timeZone: "Africa/Tripoli" },
                     )}
                   </p>
+                  {phoneQuote.source === "community" && (phoneQuote.references?.length ?? 0) > 0 && (
+                    <details className="mt-1.5 rounded-md border border-[var(--border)] px-2 py-1.5 text-[10.5px] leading-4">
+                      <summary className="cursor-pointer font-bold">
+                        {ar
+                          ? `المنشورات المستخدمة في المعدل الوسيط (${phoneQuote.references?.length ?? 0})`
+                          : `Posts used for the median (${phoneQuote.references?.length ?? 0})`}
+                      </summary>
+                      <ul className="mt-1.5 space-y-1 border-t border-[var(--border)] pt-1.5">
+                        {phoneQuote.references?.map((reference) => (
+                          <li key={reference.url} className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
+                            <a
+                              href={reference.url}
+                              target="_blank"
+                              rel="noreferrer noopener"
+                              className="font-bold underline underline-offset-2"
+                              dir="ltr"
+                            >
+                              {reference.label}
+                            </a>
+                            <span dir="ltr">{reference.rateLyd.toFixed(4)} LYD</span>
+                            <span className="text-[var(--muted-foreground)]">
+                              {new Date(reference.rateUpdatedAt).toLocaleString(
+                                ar ? "ar-LY" : "en-GB",
+                                { dateStyle: "short", timeStyle: "short", timeZone: "Africa/Tripoli" },
+                              )}
+                              {reference.views != null
+                                ? ` · ${new Intl.NumberFormat(ar ? "ar-LY" : "en-GB", { notation: "compact" }).format(reference.views)} ${ar ? "مشاهدة" : "views"}`
+                                : ""}
+                            </span>
+                          </li>
+                        ))}
+                      </ul>
+                    </details>
+                  )}
                   {phoneQuote.stale && (
                     <p className="mt-1.5 rounded-md bg-amber-500/10 px-2 py-1.5 text-[10.5px] leading-4 text-amber-700">
                       {ar
-                        ? "تنبيه: هذا آخر سعر معروف لأن تحديث Fulus تعذر. أنت توافق على هذا السعر تحديداً."
-                        : "Warning: this is the last known rate because Fulus could not be refreshed. You are agreeing to this specific rate."}
+                        ? "تنبيه: هذا آخر سعر تلقائي معروف لأن التحديث تعذر. أنت توافق على هذا السعر تحديداً."
+                        : "Warning: this is the last known automatic rate because refreshing failed. You are agreeing to this specific rate."}
                     </p>
                   )}
                   <label className="mt-2 flex cursor-pointer items-start gap-2 border-t border-[var(--border)] pt-2 text-[11.5px] font-bold leading-5">

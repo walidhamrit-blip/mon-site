@@ -2,6 +2,7 @@
 // La clé Fulus ne quitte jamais ce module et n'est jamais renvoyée au client.
 
 import { getSiteData } from "@/lib/store";
+import { fetchPhoneCardCommunitySnapshot } from "@/lib/phone-card-community";
 import {
   calculatePhoneCardLydQuote,
   normalizePhoneCardRate,
@@ -12,16 +13,18 @@ import {
 
 const FULUS_ENDPOINT = "https://fulus.ly/api/v1/rates/current";
 const FULUS_TIMEOUT_MS = 7_000;
-const FULUS_CACHE_MS = 10 * 60 * 1000;
-const FULUS_MAX_STALE_MS = 6 * 60 * 60 * 1000;
+const RATE_CACHE_MS = 10 * 60 * 1000;
+const RATE_MAX_STALE_MS = 6 * 60 * 60 * 1000;
 const PROVIDER_MAX_RATE_AGE_MS = 48 * 60 * 60 * 1000;
 
-interface FulusCacheEntry {
+interface RateCacheEntry {
   snapshot: PhoneCardRateSnapshot;
   storedAt: number;
 }
 
-let fulusCache: FulusCacheEntry | null = null;
+let communityCache: RateCacheEntry | null = null;
+let communityRefresh: Promise<PhoneCardRateSnapshot> | null = null;
+let fulusCache: RateCacheEntry | null = null;
 let fulusRefresh: Promise<PhoneCardRateSnapshot> | null = null;
 
 function manualSnapshot(config: Awaited<ReturnType<typeof getSiteData>>["config"]): PhoneCardRateSnapshot | null {
@@ -36,7 +39,22 @@ function manualSnapshot(config: Awaited<ReturnType<typeof getSiteData>>["config"
       typeof rawDate === "string" && Number.isFinite(Date.parse(rawDate)) ? rawDate : null,
     fetchedAt: new Date().toISOString(),
     stale: false,
+    references: [],
   };
+}
+
+async function refreshCommunity(): Promise<PhoneCardRateSnapshot> {
+  if (!communityRefresh) {
+    communityRefresh = fetchPhoneCardCommunitySnapshot()
+      .then((snapshot) => {
+        communityCache = { snapshot, storedAt: Date.now() };
+        return snapshot;
+      })
+      .finally(() => {
+        communityRefresh = null;
+      });
+  }
+  return communityRefresh;
 }
 
 async function fetchFulusSnapshot(token: string): Promise<PhoneCardRateSnapshot> {
@@ -68,6 +86,7 @@ async function fetchFulusSnapshot(token: string): Promise<PhoneCardRateSnapshot>
     rateUpdatedAt: parsed.rateUpdatedAt ?? fetchedAt,
     fetchedAt,
     stale: false,
+    references: [],
   };
 }
 
@@ -85,9 +104,15 @@ async function refreshFulus(token: string): Promise<PhoneCardRateSnapshot> {
   return fulusRefresh;
 }
 
+function freshCache(cache: RateCacheEntry | null, now: number): PhoneCardRateSnapshot | null {
+  return cache && now - cache.storedAt <= RATE_CACHE_MS ? cache.snapshot : null;
+}
+
 /**
- * Mode automatique : Fulus frais, puis taux manuel admin, puis dernier Fulus
- * connu pendant six heures. Mode manuel : uniquement le taux de l'admin.
+ * Mode automatique : médiane de deux ou trois canaux Telegram publics, puis
+ * Fulus si une clé est configurée, puis taux manuel admin. Sans taux manuel,
+ * le dernier résultat automatique connu peut servir six heures, marqué ancien.
+ * Mode manuel : uniquement le taux de l'admin.
  */
 export async function getPhoneCardRateSnapshot(): Promise<PhoneCardRateSnapshot | null> {
   const { config } = await getSiteData();
@@ -95,10 +120,19 @@ export async function getPhoneCardRateSnapshot(): Promise<PhoneCardRateSnapshot 
   if (config.fazercards?.phoneCardRateMode === "manual") return manual;
 
   const now = Date.now();
-  if (fulusCache && now - fulusCache.storedAt <= FULUS_CACHE_MS) {
-    return fulusCache.snapshot;
+  const freshCommunity = freshCache(communityCache, now);
+  if (freshCommunity) return freshCommunity;
+  try {
+    return await refreshCommunity();
+  } catch (error) {
+    console.warn(
+      "[phone-card-rate] consensus Telegram impossible :",
+      error instanceof Error ? error.message : error,
+    );
   }
 
+  const freshFulus = freshCache(fulusCache, now);
+  if (freshFulus) return freshFulus;
   const token = process.env.FULUS_API_KEY?.trim();
   if (token) {
     try {
@@ -112,10 +146,14 @@ export async function getPhoneCardRateSnapshot(): Promise<PhoneCardRateSnapshot 
   }
 
   if (manual) return manual;
-  if (fulusCache && now - fulusCache.storedAt <= FULUS_MAX_STALE_MS) {
-    return { ...fulusCache.snapshot, stale: true };
-  }
-  return null;
+  const staleCandidates = [communityCache, fulusCache]
+    .filter((cache): cache is RateCacheEntry =>
+      Boolean(cache && now - cache.storedAt <= RATE_MAX_STALE_MS),
+    )
+    .sort((left, right) => right.storedAt - left.storedAt);
+  return staleCandidates[0]
+    ? { ...staleCandidates[0].snapshot, stale: true }
+    : null;
 }
 
 /** Recalcule le devis à partir du total catalogue fourni par le serveur. */

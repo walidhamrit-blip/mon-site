@@ -4,7 +4,18 @@
 export const PHONE_CARD_MARKUP_PERCENT = 20;
 export const PHONE_CARD_RATE_FACTOR = 1 + PHONE_CARD_MARKUP_PERCENT / 100;
 
-export type PhoneCardQuoteSource = "fulus" | "manual";
+export type PhoneCardQuoteSource = "community" | "fulus" | "manual";
+
+export interface PhoneCardQuoteReference {
+  /** Identifiant public stable du canal, par exemple @dollar_ly. */
+  label: string;
+  /** Lien exact de la publication Telegram, jamais une URL envoyée par le client. */
+  url: string;
+  rateLyd: number;
+  rateUpdatedAt: string;
+  /** Vues publiques au moment de la lecture ; métrique informative, sans pondération. */
+  views: number | null;
+}
 
 export interface PhoneCardRateSnapshot {
   rateLyd: number;
@@ -13,8 +24,10 @@ export interface PhoneCardRateSnapshot {
   rateUpdatedAt: string | null;
   /** Date de récupération du taux par le serveur Nukhba. */
   fetchedAt: string;
-  /** true = dernier taux Fulus connu, servi après un échec de rafraîchissement. */
+  /** true = dernier taux automatique connu après un échec de rafraîchissement. */
   stale: boolean;
+  /** Publications ayant servi à la médiane communautaire ; vide pour les autres sources. */
+  references?: PhoneCardQuoteReference[];
 }
 
 export interface PhoneCardLydQuote extends PhoneCardRateSnapshot {

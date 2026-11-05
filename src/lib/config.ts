@@ -267,7 +267,7 @@ export const siteConfig = {
   fazercards: {
     /** Valeur maximale d'une commande automatique chez FazerCards (en USD). */
     maxOrderUsd: 25,
-    /** Taux carte téléphonique : Fulus avec repli manuel, ou manuel forcé. */
+    /** Taux carte téléphonique : médiane Telegram, Fulus puis repli manuel, ou manuel forcé. */
     phoneCardRateMode: "auto" as "auto" | "manual",
     /** 1 USD/USDT = X LYD ; null = aucun repli tant que l'admin n'en saisit pas. */
     phoneCardManualRateLyd: null as number | null,

@@ -146,7 +146,11 @@ export function PhoneCardPaymentsTable({ rows }: { rows: AdminPhoneCardPaymentRo
                       {row.quote.amountUsdt} USDT × {row.quote.rateLyd} LYD × {100 + row.quote.markupPercent}% = {row.quote.totalLyd} LYD
                     </div>
                     <p className="mt-0.5">
-                      Devis accepté par le client · source {row.quote.source === "fulus" ? "Fulus" : "manuelle admin"}
+                      Devis accepté par le client · source {row.quote.source === "fulus"
+                        ? "Fulus"
+                        : row.quote.source === "community"
+                          ? "médiane de publications Telegram"
+                          : "manuelle admin"}
                       {row.quote.rateUpdatedAt ? ` · taux du ${adminDate(row.quote.rateUpdatedAt)}` : ""}.
                       {quoteDelta != null && (
                         <strong className={quoteDelta < 0 ? "ml-1 text-red-700" : "ml-1 text-emerald-700"}>
@@ -154,6 +158,25 @@ export function PhoneCardPaymentsTable({ rows }: { rows: AdminPhoneCardPaymentRo
                         </strong>
                       )}
                     </p>
+                    {row.quote.references.length > 0 && (
+                      <ul className="mt-1.5 space-y-0.5 border-t border-[#C6A664]/25 pt-1.5">
+                        {row.quote.references.map((reference) => (
+                          <li key={reference.url} className="flex flex-wrap gap-x-2">
+                            <a
+                              href={reference.url}
+                              target="_blank"
+                              rel="noreferrer noopener"
+                              className="font-bold text-[#8A6D2F] underline underline-offset-2"
+                              dir="ltr"
+                            >
+                              {reference.label}
+                            </a>
+                            <span dir="ltr">{reference.rateLyd.toFixed(4)} LYD</span>
+                            <span>publié le {adminDate(reference.rateUpdatedAt)}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
                   </div>
                 )}
 

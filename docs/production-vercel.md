@@ -124,13 +124,15 @@ fonctionne normalement.
 
 | Variable | Valeur | Remarques |
 |---|---|---|
-| `FULUS_API_KEY` | clé Bearer créée sur `https://fulus.ly` | 🔐 **Secret serveur**, facultatif si un taux manuel est saisi dans **Admin → Réglages → FazerCards**. Ne jamais utiliser de préfixe `NEXT_PUBLIC_` |
+| `FULUS_API_KEY` | clé Bearer créée sur `https://fulus.ly` | 🔐 **Secret serveur facultatif**, utilisé seulement si le consensus Telegram échoue. Ne jamais utiliser de préfixe `NEXT_PUBLIC_` |
 
-Le devis téléphonique est `total USDT × taux parallèle × 1,20`. Sans Fulus ni
-taux manuel valide, le dépôt d'une carte est bloqué plutôt que d'utiliser un
-prix inventé ou le taux bancaire officiel. Voir
-`docs/paiement-cartes-telephoniques.md` pour les modes automatique/manuel et
-les exemples à 9,84 LYD.
+Le devis téléphonique est `total USDT × taux parallèle × 1,20`. La source
+principale est la médiane d’au moins deux publications Telegram publiques
+récentes et concordantes, sans clé à configurer. Fulus puis le taux manuel
+admin servent de secours. Sans taux réutilisable valide, le dépôt d’une carte
+est bloqué plutôt que d’utiliser un prix inventé ou le taux bancaire officiel.
+Voir `docs/paiement-cartes-telephoniques.md` pour les règles de fraîcheur, les
+références enregistrées et les exemples à 9,84 LYD.
 
 La caisse digitale refuse les nouvelles commandes de plus de **50 USD** (prix de
 vente total, assimilé ici à 50 USDT). Une valeur Vercel plus basse reste

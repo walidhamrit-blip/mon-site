@@ -1397,7 +1397,7 @@ export function SettingsForm({ initial, initialTab }: Props) {
                   }
                   className={ADMIN_INPUT_CLS}
                 >
-                  <option value="auto">Fulus automatique + repli manuel</option>
+                  <option value="auto">Médiane Telegram + Fulus/secours manuel</option>
                   <option value="manual">Taux manuel uniquement</option>
                 </select>
               </Field>
@@ -1446,9 +1446,13 @@ export function SettingsForm({ initial, initialTab }: Props) {
                 <p>Saisissez un taux manuel pour afficher les exemples de 5 et 10 USDT.</p>
               )}
               <p className="mt-2">
-                En mode automatique, ajoutez <code>FULUS_API_KEY</code> dans Vercel. Si Fulus est
-                absent ou indisponible, le taux manuel ci-dessus prend le relais. Sans aucun taux
-                disponible, le dépôt d’une carte est bloqué plutôt que d’inventer un prix.
+                En mode automatique, le serveur calcule la médiane des dollars en espèces publiés par
+                <code> @dollar_ly</code>, <code>@lydollar</code> et <code>@suqalmushir</code>.
+                Au moins deux publications de moins de 36 heures, cohérentes entre elles à 3 %,
+                sont exigées. Les dates incohérentes, chèques et taux bancaires sont ignorés.
+                <code> FULUS_API_KEY</code> est un secours facultatif ; le taux manuel ci-dessus
+                prend ensuite le relais. Sans aucun taux disponible, le dépôt est bloqué plutôt que
+                d’inventer un prix.
               </p>
             </div>
           </div>
