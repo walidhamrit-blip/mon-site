@@ -246,13 +246,30 @@ if (!fazercardsKey) {
   }
 }
 
+/*
+ * La clé qui chiffre les codes doit être distincte de la clé de session :
+ * sinon renouveler SESSION_SECRET (geste d'incident courant) rend illisibles
+ * tous les codes déjà stockés — sans erreur visible, le déchiffrement renvoie
+ * simplement une liste vide. Voir docs/chiffrement-codes.md.
+ */
 if (!process.env.DIGITAL_CODES_SECRET?.trim() && !sessionSecret) {
   warn(
     "DIGITAL_CODES_SECRET absent",
     "Définissez DIGITAL_CODES_SECRET (ou SESSION_SECRET) pour chiffrer les codes livrés en base.",
   );
+} else if (!process.env.DIGITAL_CODES_SECRET?.trim()) {
+  warn(
+    "Repli sur SESSION_SECRET",
+    "Les codes livrés sont chiffrés par la clé de session : renouveler SESSION_SECRET les rendrait illisibles. Définissez DIGITAL_CODES_SECRET (openssl rand -hex 32), puis lancez `npm run codes:rotate`.",
+  );
 } else {
-  ok("Chiffrement des codes", process.env.DIGITAL_CODES_SECRET?.trim() ? "DIGITAL_CODES_SECRET" : "repli sur SESSION_SECRET");
+  ok("Chiffrement des codes", "DIGITAL_CODES_SECRET");
+  if (process.env.DIGITAL_CODES_DROP_LEGACY_FALLBACK?.trim() !== "true") {
+    warn(
+      "Repli de session encore actif",
+      "DIGITAL_CODES_SECRET est défini, mais les codes stockés avant la séparation restent chiffrés par SESSION_SECRET. Lancez `npm run codes:rotate` (simulation puis --apply), vérifiez « 0 ligne à migrer », puis DIGITAL_CODES_DROP_LEGACY_FALLBACK=true.",
+    );
+  }
 }
 
 /* ─────────────────────────────── 5. E-mails ────────────────────────────── */

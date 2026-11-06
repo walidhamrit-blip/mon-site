@@ -41,6 +41,7 @@ import {
 import {
   decryptDigitalCodes,
   digitalCodesKey,
+  digitalCodesKeyRing,
   encryptDigitalCodes,
 } from "@/lib/digital-codes";
 import {
@@ -93,7 +94,12 @@ export {
   quoteDigitalOrder,
 } from "@/lib/digital-order-core";
 export type { DigitalOrderStatus, DigitalQuote } from "@/lib/digital-order-core";
-export { digitalCodesKey, encryptDigitalCodes, decryptDigitalCodes } from "@/lib/digital-codes";
+export {
+  digitalCodesKey,
+  digitalCodesKeyRing,
+  encryptDigitalCodes,
+  decryptDigitalCodes,
+} from "@/lib/digital-codes";
 
 /* ------------------------ Valeur faciale vs Reloadly ---------------------- */
 
@@ -952,7 +958,7 @@ export async function getPublicDigitalOrder(
   const status = normalizeDigitalStatus(order.status);
   const codes =
     status === "delivered"
-      ? decryptDigitalCodes(order.codesCipher, digitalCodesKey())
+      ? decryptDigitalCodes(order.codesCipher, digitalCodesKeyRing())
       : [];
   const phoneGate = await phoneCardDeliveryGate(order.ref);
   const locale = order.locale === "en" ? "en" : "ar";
@@ -1000,11 +1006,11 @@ export async function listDigitalOrders(limit = 100): Promise<AdminDigitalOrder[
     .orderBy(desc(digitalOrders.createdAt))
     .limit(Math.min(300, Math.max(1, limit)));
 
-  const key = digitalCodesKey();
+  const keys = digitalCodesKeyRing();
   return rows.map((row) => ({
     ...row,
     normalizedStatus: normalizeDigitalStatus(row.status),
-    codes: decryptDigitalCodes(row.codesCipher, key),
+    codes: decryptDigitalCodes(row.codesCipher, keys),
   }));
 }
 
@@ -1015,7 +1021,7 @@ export async function getAdminDigitalOrder(ref: string): Promise<AdminDigitalOrd
   return {
     ...order,
     normalizedStatus: normalizeDigitalStatus(order.status),
-    codes: decryptDigitalCodes(order.codesCipher, digitalCodesKey()),
+    codes: decryptDigitalCodes(order.codesCipher, digitalCodesKeyRing()),
   };
 }
 
@@ -1143,7 +1149,7 @@ export async function deliverDigitalOrderManually(
 export async function resendDigitalCodesEmail(ref: string): Promise<{ ok: boolean; error?: string }> {
   const order = await loadDigitalOrder(ref);
   if (!order) return { ok: false, error: "Commande introuvable." };
-  const codes = decryptDigitalCodes(order.codesCipher, digitalCodesKey());
+  const codes = decryptDigitalCodes(order.codesCipher, digitalCodesKeyRing());
   if (codes.length === 0) return { ok: false, error: "Aucun code enregistré pour cette commande." };
 
   const { config } = await getSiteData();
