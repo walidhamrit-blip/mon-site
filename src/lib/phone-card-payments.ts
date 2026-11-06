@@ -1,8 +1,7 @@
 // Stockage et revue admin des cartes de recharge téléphonique.
 // Serveur uniquement : le code ne quitte ce module déchiffré que pour l'admin.
 
-import { createCipheriv, createDecipheriv, createHmac, randomBytes } from "node:crypto";
-import { Buffer } from "node:buffer";
+import { createHmac } from "node:crypto";
 import { and, desc, eq, ne } from "drizzle-orm";
 import { db, ensureSchema } from "@/db";
 import {
@@ -11,7 +10,12 @@ import {
   phoneCardPayments,
   type PhoneCardPayment,
 } from "@/db/schema";
-import { digitalCodesKey } from "@/lib/digital-codes";
+import {
+  decryptEnvelopeWithKey,
+  digitalCodesKey,
+  digitalCodesKeyRing,
+  encryptEnvelope,
+} from "@/lib/digital-codes";
 import {
   normalizePhoneCardReviewStatus,
   validatePhoneCardInput,
@@ -59,16 +63,7 @@ export function preparePhoneCardPayment(
     );
   }
 
-  const iv = randomBytes(12);
-  const cipher = createCipheriv("aes-256-gcm", key, iv);
-  const encrypted = Buffer.concat([
-    cipher.update(validated.value.code, "utf8"),
-    cipher.final(),
-  ]);
-  const tag = cipher.getAuthTag();
-  const codeCipher = [iv, tag, encrypted]
-    .map((part) => part.toString("base64url"))
-    .join(".");
+  const codeCipher = encryptEnvelope(validated.value.code, key);
   // HMAC plutôt qu'un hash simple : l'empreinte unique ne permet pas de
   // tester hors ligne des numéros de recharge plausibles.
   const codeFingerprint = createHmac("sha256", key)
@@ -84,19 +79,14 @@ export function preparePhoneCardPayment(
   };
 }
 
+// Déchiffrement par trousseau : un code saisi avant la rotation de clé reste
+// lisible après (voir le commentaire d'en-tête de src/lib/digital-codes.ts).
 function decryptPhoneCardCode(payload: string): string | null {
-  const key = digitalCodesKey();
-  if (!key) return null;
-  const parts = payload.split(".");
-  if (parts.length !== 3) return null;
-  try {
-    const [iv, tag, data] = parts.map((part) => Buffer.from(part, "base64url"));
-    const decipher = createDecipheriv("aes-256-gcm", key, iv);
-    decipher.setAuthTag(tag);
-    return Buffer.concat([decipher.update(data), decipher.final()]).toString("utf8");
-  } catch {
-    return null;
+  for (const key of digitalCodesKeyRing()) {
+    const code = decryptEnvelopeWithKey(payload, key);
+    if (code) return code;
   }
+  return null;
 }
 
 export async function insertPreparedPhoneCardPayment(

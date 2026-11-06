@@ -94,7 +94,14 @@ test("le code est chiffré, empreinté et unique dans la base", () => {
   assert.match(schema, /codeCipher: text\("code_cipher"\)\.notNull\(\)/);
   assert.match(schema, /codeFingerprint: text\("code_fingerprint"\)\.notNull\(\)\.unique\(\)/);
   const storage = read("src/lib/phone-card-payments.ts");
-  assert.match(storage, /createCipheriv\("aes-256-gcm"/);
+  // Chiffrement : enveloppe AES-256-GCM partagée (src/lib/digital-codes.ts),
+  // pour que les recharges et les codes cadeaux utilisent exactement le même
+  // format et le même trousseau de clés.
+  assert.match(storage, /encryptEnvelope\(validated\.value\.code, key\)/);
+  assert.match(storage, /decryptEnvelopeWithKey\(payload, key\)/);
+  const envelope = read("src/lib/digital-codes.ts");
+  assert.match(envelope, /createCipheriv\("aes-256-gcm", key, iv\)/);
+  assert.match(envelope, /createDecipheriv\("aes-256-gcm", key, iv\)/);
   assert.match(storage, /createHmac\("sha256"/);
   assert.match(storage, /eq\(phoneCardPayments\.status, "pending"\)/);
   assert.match(storage, /status: "manual"/);

@@ -14,6 +14,7 @@ import {
 import { fazercardsCatalogStatusLive } from "@/lib/fazercards-catalog";
 import { databaseConfigured } from "@/lib/digital-store";
 import { resolveFazercardsMaxOrderUsd } from "@/lib/store";
+import { digitalCodesKeySource } from "@/lib/digital-codes";
 import { healthAccess } from "@/lib/health-access";
 import { checkRateLimit } from "@/lib/rate-limit";
 import {
@@ -320,6 +321,19 @@ export async function GET(req: Request) {
     );
   }
 
+  /*
+   * Séparation des clés : tant que les codes livrés (cartes cadeaux, recharges
+   * téléphoniques, jetons de livraison) sont chiffrés par la clé de session, le
+   * geste d'incident « renouveler SESSION_SECRET » les rend illisibles — et
+   * silencieusement, puisque le déchiffrement échoue en renvoyant `[]`.
+   */
+  const codesKeySource = digitalCodesKeySource();
+  if (codesKeySource === "session") {
+    warnings.push(
+      "Les codes livrés (cartes cadeaux, recharges) sont encore chiffrés par la clé de session : renouveler SESSION_SECRET les rendrait illisibles. Définir DIGITAL_CODES_SECRET, lancer `npm run codes:rotate`, puis retirer l'ancienne clé.",
+    );
+  }
+
   // `ok` n'est vrai que si un paiement peut réellement être créé :
   // base connectée ET clé acceptée (pas seulement présente/joignable).
   const ok = database.connected && nowpayments.apiKeyValid === true;
@@ -342,6 +356,12 @@ export async function GET(req: Request) {
       },
       database,
       nowpayments,
+      // Origine de la clé de chiffrement des codes livrés : `session` = données
+      // encore lisibles uniquement par la clé de session (rotation à faire).
+      codes: {
+        keySource: codesKeySource,
+        rotationPending: codesKeySource === "session",
+      },
       fazercards,
       /** Panne du catalogue public (bandeau de maintenance affiché). */
       catalog,

@@ -100,6 +100,10 @@ Google Play, Amazon, Spotify…) :
   - **cartes téléphoniques Libyana / Al Madar** : fenêtre de paiement dédiée,
     code chiffré et unique, revue admin obligatoire puis livraison manuelle ;
     voir **`docs/paiement-cartes-telephoniques.md`** ;
+  - **chiffrement des codes** : clé dédiée `DIGITAL_CODES_SECRET` (distincte de
+    `SESSION_SECRET`, sinon renouveler la session rend les codes illisibles) et
+    rotation sans coupure `npm run codes:rotate` ; procédure complète :
+    **`docs/chiffrement-codes.md`** ;
   - identifiants serveur `RELOADLY_CLIENT_ID` / `RELOADLY_CLIENT_SECRET`
     (sandbox par défaut), plafond `RELOADLY_MAX_ORDER_USD`.
   Guide complet : **`docs/reloadly.md`**. Les fiches `Bientôt disponible`
