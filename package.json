@@ -1,15 +1,20 @@
 {
   "name": "nextjs-postgresql-template",
   "private": true,
+  "engines": {
+    "node": ">=22"
+  },
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
-    "test:seo": "node --test scripts/digital-categories.test.mjs scripts/seo-generator.test.mjs scripts/service-pages.test.mjs scripts/comparison-pages.test.mjs scripts/blog.test.mjs scripts/bilingual-pages.test.mjs scripts/demo-previews.test.mjs scripts/badge-audit.test.mjs scripts/google-indexing.test.mjs scripts/geo-citations.test.mjs scripts/opening-hours.test.mjs scripts/security-headers.test.mjs scripts/pricing-breakdown.test.mjs scripts/competitor-pricing.test.mjs scripts/global-catalog.test.mjs scripts/site-identity.test.mjs scripts/site-hierarchy.test.mjs scripts/vivid-design.test.mjs scripts/lead-form-accessibility.test.mjs scripts/navigation-comfort.test.mjs scripts/store-category-state.test.mjs scripts/visual-calm.test.mjs scripts/home-clarity.test.mjs scripts/touch-targets.test.mjs scripts/store-locale.test.mjs scripts/delivery-handover.test.mjs scripts/process-migration.test.mjs scripts/admin-structure.test.mjs scripts/trust-reviews.test.mjs",
+    "test": "node --test",
+    "test:seo": "node --test scripts/digital-categories.test.mjs scripts/seo-generator.test.mjs scripts/service-pages.test.mjs scripts/comparison-pages.test.mjs scripts/blog.test.mjs scripts/bilingual-pages.test.mjs scripts/demo-previews.test.mjs scripts/badge-audit.test.mjs scripts/google-indexing.test.mjs scripts/geo-citations.test.mjs scripts/opening-hours.test.mjs scripts/security-headers.test.mjs scripts/pricing-breakdown.test.mjs scripts/competitor-pricing.test.mjs scripts/global-catalog.test.mjs scripts/site-identity.test.mjs scripts/site-hierarchy.test.mjs scripts/vivid-design.test.mjs scripts/lead-form-accessibility.test.mjs scripts/navigation-comfort.test.mjs scripts/store-category-state.test.mjs scripts/visual-calm.test.mjs scripts/home-clarity.test.mjs scripts/touch-targets.test.mjs scripts/store-locale.test.mjs scripts/delivery-handover.test.mjs scripts/process-migration.test.mjs scripts/admin-structure.test.mjs scripts/trust-reviews.test.mjs scripts/compliance.test.mjs",
     "test:admin": "node --test scripts/admin-structure.test.mjs scripts/admin-visuals.test.mjs scripts/admin-boutique-customization.test.mjs",
-    "test:assistant": "node --test scripts/site-assistant.test.mjs",
+    "test:assistant": "node --test scripts/site-assistant.test.mjs scripts/whatsapp-enquiry.test.mjs",
+    "test:plumbing": "node --test scripts/ci-plumbing.test.mjs",
     "test:deliveries": "node --test scripts/delivery-handover.test.mjs",
     "test:subscriptions": "node --test scripts/subscription-plans.test.mjs",
     "doctor": "node scripts/check-setup.mjs",
