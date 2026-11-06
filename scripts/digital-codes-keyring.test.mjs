@@ -318,12 +318,72 @@ test("le script refuse de tourner sans database ni secret", () => {
 
 const readSource = (relative) => readFileSync(join(root, relative), "utf8");
 
-test("la sonde de santé signale une clé de session encore utilisée", () => {
+test("la sonde de santé expose l'état complet du trousseau", () => {
   const health = readSource("src/app/api/health/route.ts");
-  assert.match(health, /import \{ digitalCodesKeySource \} from "@\/lib\/digital-codes"/);
-  assert.match(health, /codesKeySource === "session"/);
+  assert.match(health, /import \{ digitalCodesKeyStatus \} from "@\/lib\/digital-codes"/);
+  assert.match(health, /codesKey\.source === "session"/);
   assert.match(health, /npm run codes:rotate/);
-  assert.match(health, /rotationPending/);
+  for (const field of ["keySource", "keyCount", "rotationPending", "legacyFallbackActive"]) {
+    assert.ok(health.includes(field), `champ absent du diagnostic : ${field}`);
+  }
+});
+
+test("une clé dédiée déjà présente n'empêche pas d'exiger une vérification", () => {
+  // Cas réel : DIGITAL_CODES_SECRET existe depuis un moment, mais des ventes
+  // ont eu lieu AVANT son ajout. `rotationPending` doit rester vrai tant que
+  // le repli de session est actif — sinon la sonde dirait « tout va bien »
+  // alors que des lignes dépendent encore de l'ancienne clé.
+  env({ DIGITAL_CODES_SECRET: "dedicated-B", SESSION_SECRET: "session-A" });
+  const pending = codes.digitalCodesKeyStatus();
+  assert.equal(pending.source, "dedicated");
+  assert.equal(pending.keyCount, 2);
+  assert.equal(pending.legacyFallbackActive, true);
+  assert.equal(pending.rotationPending, true);
+
+  env({
+    DIGITAL_CODES_SECRET: "dedicated-B",
+    SESSION_SECRET: "session-A",
+    DIGITAL_CODES_DROP_LEGACY_FALLBACK: "true",
+  });
+  const done = codes.digitalCodesKeyStatus();
+  assert.equal(done.legacyFallbackActive, false);
+  assert.equal(done.rotationPending, false);
+
+  // Une ancienne clé déclarée pour une rotation : la dette réapparaît.
+  env({
+    DIGITAL_CODES_SECRET: "dedicated-C",
+    DIGITAL_CODES_SECRET_PREVIOUS: "dedicated-B",
+    DIGITAL_CODES_DROP_LEGACY_FALLBACK: "true",
+    SESSION_SECRET: "session-A",
+  });
+  assert.equal(codes.digitalCodesKeyStatus().rotationPending, true);
+});
+
+test("l'état du trousseau est explicite dans les trois configurations", () => {
+  env({});
+  assert.deepEqual(codes.digitalCodesKeyStatus(), {
+    source: "none",
+    keyCount: 0,
+    rotationPending: false,
+    legacyFallbackActive: false,
+  });
+
+  env({ SESSION_SECRET: "session-A" });
+  assert.deepEqual(codes.digitalCodesKeyStatus(), {
+    source: "session",
+    keyCount: 1,
+    rotationPending: true,
+    legacyFallbackActive: true,
+  });
+
+  // Clé dédiée seule (aucune session déclarée) : plus rien à migrer.
+  env({ DIGITAL_CODES_SECRET: "dedicated-B" });
+  assert.deepEqual(codes.digitalCodesKeyStatus(), {
+    source: "dedicated",
+    keyCount: 1,
+    rotationPending: false,
+    legacyFallbackActive: false,
+  });
 });
 
 test("le doctor explique quoi faire (et renvoie vers codes:rotate)", () => {

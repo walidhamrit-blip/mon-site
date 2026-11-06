@@ -103,9 +103,20 @@ npm run codes:rotate            # → 0 ligne à migrer
 
 ## Diagnostics
 
-- `GET /api/health` (avec `?key=$CRON_SECRET`) expose `codes.keySource`
-  (`dedicated` | `session` | `none`) et `codes.rotationPending`, et ajoute un
-  avertissement lisible tant que la clé de session est encore utilisée.
+- `GET /api/health` (avec `?key=$CRON_SECRET`) expose un bloc `codes` :
+
+  | Champ | Lecture |
+  | --- | --- |
+  | `keySource` | `dedicated` (clé dédiée), `session` (repli historique) ou `none` |
+  | `keyCount` | clés acceptées en lecture (courante + anciennes + repli) |
+  | `rotationPending` | **il peut rester des lignes hors clé courante** |
+  | `legacyFallbackActive` | le repli de session est encore autorisé |
+
+  `rotationPending` est le **seul signal fiable** : la simple présence de
+  `DIGITAL_CODES_SECRET` ne prouve pas que la migration est faite (la variable
+  a pu être ajoutée après des ventes). L'état idéal est
+  `keySource: "dedicated"`, `keyCount: 1`, `rotationPending: false`.
+  La route ajoute aussi un avertissement lisible dans les deux cas de dette.
 - `npm run doctor` signale le repli de session actif et renvoie vers
   `npm run codes:rotate`.
 - `npm run test:crypto` vérifie que les charges chiffrées **avant** la

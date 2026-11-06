@@ -14,7 +14,7 @@ import {
 import { fazercardsCatalogStatusLive } from "@/lib/fazercards-catalog";
 import { databaseConfigured } from "@/lib/digital-store";
 import { resolveFazercardsMaxOrderUsd } from "@/lib/store";
-import { digitalCodesKeySource } from "@/lib/digital-codes";
+import { digitalCodesKeyStatus } from "@/lib/digital-codes";
 import { healthAccess } from "@/lib/health-access";
 import { checkRateLimit } from "@/lib/rate-limit";
 import {
@@ -327,10 +327,20 @@ export async function GET(req: Request) {
    * geste d'incident « renouveler SESSION_SECRET » les rend illisibles — et
    * silencieusement, puisque le déchiffrement échoue en renvoyant `[]`.
    */
-  const codesKeySource = digitalCodesKeySource();
-  if (codesKeySource === "session") {
+  const codesKey = digitalCodesKeyStatus();
+  if (codesKey.source === "session") {
     warnings.push(
       "Les codes livrés (cartes cadeaux, recharges) sont encore chiffrés par la clé de session : renouveler SESSION_SECRET les rendrait illisibles. Définir DIGITAL_CODES_SECRET, lancer `npm run codes:rotate`, puis retirer l'ancienne clé.",
+    );
+  } else if (codesKey.source === "dedicated" && codesKey.rotationPending) {
+    /*
+     * Cas fréquent : la variable existe déjà — mais elle a pu être ajoutée
+     * APRÈS des ventes. Les lignes antérieures restent alors chiffrées par
+     * l'ancienne clé (lisibles, mais pas protégées d'une rotation de session).
+     * Seule la migration permet de trancher : on demande la vérification.
+     */
+    warnings.push(
+      "La clé dédiée des codes est active, mais une ancienne clé reste acceptée en lecture : vérifier qu'il ne reste aucune ligne à migrer avec `npm run codes:rotate` (simulation). Quand il annonce 0 ligne à migrer, définir DIGITAL_CODES_DROP_LEGACY_FALLBACK=true et redéployer.",
     );
   }
 
@@ -356,11 +366,19 @@ export async function GET(req: Request) {
       },
       database,
       nowpayments,
-      // Origine de la clé de chiffrement des codes livrés : `session` = données
-      // encore lisibles uniquement par la clé de session (rotation à faire).
+      /*
+       * État du trousseau qui chiffre les codes livrés :
+       *   keySource           « dedicated » | « session » | « none »
+       *   rotationPending     il peut rester des lignes hors clé courante
+       *   legacyFallbackActive le repli de session est encore autorisé
+       * La présence de DIGITAL_CODES_SECRET ne prouve pas que la migration
+       * est faite : `rotationPending` est le seul signal fiable.
+       */
       codes: {
-        keySource: codesKeySource,
-        rotationPending: codesKeySource === "session",
+        keySource: codesKey.source,
+        keyCount: codesKey.keyCount,
+        rotationPending: codesKey.rotationPending,
+        legacyFallbackActive: codesKey.legacyFallbackActive,
       },
       fazercards,
       /** Panne du catalogue public (bandeau de maintenance affiché). */
