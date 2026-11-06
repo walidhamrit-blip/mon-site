@@ -100,6 +100,45 @@ export function digitalCodesKeySource(): "dedicated" | "session" | "none" {
 }
 
 /**
+ * État lisible du trousseau, pour les diagnostics (santé, `npm run doctor`).
+ *
+ * `rotationPending` répond à une seule question : **des données déjà stockées
+ * peuvent-elles encore dépendre d'une clé qui n'est pas la clé courante ?**
+ * Il est vrai si le repli de session est actif, si des anciennes clés sont
+ * déclarées, ou si la clé courante est encore la clé de session.
+ *
+ * La présence de DIGITAL_CODES_SECRET ne suffit donc pas à conclure : la
+ * variable peut avoir été ajoutée après des ventes, auquel cas les lignes
+ * antérieures restent sous l'ancienne clé (lecture seule) jusqu'à migration.
+ */
+export interface DigitalCodesKeyStatus {
+  /** Origine de la clé de chiffrement courante. */
+  source: "dedicated" | "session" | "none";
+  /** Nombre de clés acceptées en lecture (courante + anciennes + repli). */
+  keyCount: number;
+  /** Vrai s'il peut rester des lignes chiffrées hors de la clé courante. */
+  rotationPending: boolean;
+  /** Vrai si le repli de session reste autorisé en lecture. */
+  legacyFallbackActive: boolean;
+}
+
+export function digitalCodesKeyStatus(): DigitalCodesKeyStatus {
+  const source = digitalCodesKeySource();
+  const keyRing = digitalCodesKeyRing();
+  const legacyFallbackActive =
+    process.env.DIGITAL_CODES_DROP_LEGACY_FALLBACK?.trim() !== "true" &&
+    Boolean(process.env.SESSION_SECRET?.trim());
+
+  return {
+    source,
+    keyCount: keyRing.length,
+    rotationPending:
+      source === "session" || (source === "dedicated" && keyRing.length > 1),
+    legacyFallbackActive,
+  };
+}
+
+/**
  * Enveloppe commune `iv.tag.chiffré` (base64url) — format historique conservé
  * à l'identique : les charges déjà en base restent lisibles.
  */
