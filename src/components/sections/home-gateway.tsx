@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import { imageOptimizationProps } from "@/lib/image-source";
 import { LocalizedLink as Link } from "@/components/localized-link";
 import { ArrowUpRight, Code2, Gift, Gamepad2 } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
@@ -21,7 +22,7 @@ export function HomeGateway() {
         {items.map(({ icon: Icon, ...item }, i) => (
           <Link key={item.href} href={item.href} data-category={i} className="gateway-card group flex flex-col rounded-[var(--radius-lg)] border border-[var(--border)] bg-[var(--card)] p-5 sm:p-6">
             <div className="gateway-art">
-              <Image src={item.visual.src} alt={ar ? item.visual.altAr || item.title : item.visual.altEn || item.title} fill sizes="(max-width: 768px) 85vw, 380px" className="object-cover object-top" />
+              <Image src={item.visual.src} alt={ar ? item.visual.altAr || item.title : item.visual.altEn || item.title} fill sizes="(max-width: 768px) 85vw, 380px" className="object-cover object-top" {...imageOptimizationProps(item.visual.src)} />
               <span className="gateway-art-icon"><Icon className="h-5 w-5" /></span>
             </div>
             <p className="gaming-card-index" aria-hidden="true">0{i + 1} / {ar ? "اختر مسارك" : "CHOOSE YOUR PATH"}</p>

@@ -2,6 +2,7 @@
 
 import { LocalizedLink as Link } from "@/components/localized-link";
 import Image from "next/image";
+import { imageOptimizationProps } from "@/lib/image-source";
 import { Check } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import { Price } from "@/components/price";
@@ -154,6 +155,7 @@ export function SectorDetailView({
                     <div className="relative aspect-[16/11] overflow-hidden">
                       <Image
                         src={demo.image}
+                        {...imageOptimizationProps(demo.image)}
                         alt={main(demo.imageAltAr || demo.title, demo.imageAltEn || demo.titleEn)}
                         fill
                         sizes="(max-width: 640px) 100vw, 33vw"

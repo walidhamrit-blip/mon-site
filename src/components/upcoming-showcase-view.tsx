@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import Image from "next/image";
+import { imageOptimizationProps } from "@/lib/image-source";
 import { LocalizedLink as Link } from "@/components/localized-link";
 import { motion } from "framer-motion";
 import {
@@ -483,6 +484,7 @@ function ShowcaseImage({
     <>
       <Image
         src={src}
+        {...imageOptimizationProps(src)}
         alt={alt}
         fill
         sizes="(max-width: 768px) 100vw, 50vw"

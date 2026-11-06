@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Image from "next/image";
+import { imageOptimizationProps } from "@/lib/image-source";
 import { Globe } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import { getProjectPreview } from "@/lib/project-previews";
@@ -89,11 +90,10 @@ export function ProjectPreview({
           fill
           sizes={sizes}
           quality={90}
-          // Captures locales (`/previews/*.webp`, désormais 1440×900 / 780×1386
-          // q90) : optimisées par Next (srcset net sur retina). Les images
-          // distantes restent servies telles quelles, sans dépendre d'un
-          // proxy d'images qu'un hébergeur tiers pourrait bloquer.
-          unoptimized={!src.startsWith("/")}
+          // Captures locales : optimisées par Next (srcset net sur retina).
+          // Images distantes : servies telles quelles — voir
+          // src/lib/image-source.ts (liste fermée des hôtes optimisables).
+          {...imageOptimizationProps(src)}
           loading={priority ? "eager" : "lazy"}
           fetchPriority={priority ? "high" : "auto"}
           decoding="async"

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Image from "next/image";
+import { imageOptimizationProps } from "@/lib/image-source";
 import { LocalizedLink as Link } from "@/components/localized-link";
 import type { Demo } from "@/lib/site-types";
 import { useI18n } from "@/lib/i18n";
@@ -106,6 +107,7 @@ export function DemoViewer({ demo, allDemos }: { demo: Demo; allDemos: Demo[] })
               >
                 <Image
                   src={demo.image}
+                  {...imageOptimizationProps(demo.image)}
                   alt={demoImageAlt(demo, locale)}
                   fill
                   sizes="(max-width: 1024px) 100vw, 60vw"
@@ -223,6 +225,7 @@ export function DemoViewer({ demo, allDemos }: { demo: Demo; allDemos: Demo[] })
                           loading="lazy"
                           decoding="async"
                           src={item.image}
+                          {...imageOptimizationProps(item.image)}
                           alt={demoImageAlt(item, locale)}
                           width={64}
                           height={48}

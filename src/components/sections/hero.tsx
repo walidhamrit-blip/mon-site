@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import { imageOptimizationProps } from "@/lib/image-source";
 import { useI18n } from "@/lib/i18n";
 import { useSiteContent } from "@/components/site-provider";
 
@@ -33,6 +34,7 @@ export function Hero() {
                 <li key={`${visual.src}-${index}`} className="hero-marquee-item">
                   <Image
                     src={visual.src}
+                    {...imageOptimizationProps(visual.src)}
                     alt={ar ? visual.altAr : visual.altEn}
                     width={1920}
                     height={720}
