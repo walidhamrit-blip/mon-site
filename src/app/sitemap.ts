@@ -56,8 +56,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${base}/abonnements`, changeFrequency: "monthly", priority: 0.7 },
     { url: `${base}/contact`, changeFrequency: "monthly", priority: 0.7 },
     { url: `${base}/badge`, changeFrequency: "monthly", priority: 0.6 },
+    { url: `${base}/avis`, changeFrequency: "monthly", priority: 0.5 },
     { url: `${base}/remboursement`, changeFrequency: "yearly", priority: 0.3 },
     { url: `${base}/conditions`, changeFrequency: "yearly", priority: 0.3 },
+    { url: `${base}/mentions-legales`, changeFrequency: "yearly", priority: 0.3 },
   ];
 
   const { sectorIds } = await import("@/lib/sectors");

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, type ReactNode } from "react";
 import { LocalizedLink as Link } from "@/components/localized-link";
 import { useI18n } from "@/lib/i18n";
 import { useSiteConfig } from "./site-provider";
@@ -12,10 +12,12 @@ import { storeFaqs } from "@/lib/digital-seo";
 import { lowestPriceUsd, type DigitalKind, type DigitalProduct } from "@/lib/digital-types";
 
 /** All visible shop copy follows the live locale, including maintenance. */
-export function DigitalStoreView({ products, degraded, initialKind }: {
+export function DigitalStoreView({ products, degraded, initialKind, trustBadge }: {
   products: DigitalProduct[];
   degraded: boolean;
   initialKind: DigitalKind | "all";
+  /** Badge Trustpilot rendu côté serveur (absent tant qu'il n'y a pas d'avis). */
+  trustBadge?: ReactNode;
 }) {
   const config = useSiteConfig();
   const { locale } = useI18n();
@@ -93,6 +95,7 @@ export function DigitalStoreView({ products, degraded, initialKind }: {
                     ? `${products.length} منتجاً`
                     : `${products.length} products`}
               </span>
+              {trustBadge}
               <span className="chip">
                 {ar ? "تسليم رقمي فوري" : "Digital delivery"}
               </span>

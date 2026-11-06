@@ -1,4 +1,5 @@
 import { DEFAULT_SITE_DOMAIN, DEFAULT_SITE_ORIGIN } from "@/lib/site-identity";
+import type { LegalConfigData, TrustConfigData } from "@/lib/site-types";
 
 export const siteConfig = {
   name: "Nukhba",
@@ -274,6 +275,67 @@ export const siteConfig = {
     /** Horodaté côté serveur à chaque modification du taux manuel. */
     phoneCardManualRateUpdatedAt: null as string | null,
   },
+
+  /**
+   * Avis clients — profils publics et demandes d'avis.
+   *
+   * Les URL sont **vides par défaut** : tant qu'elles ne sont pas renseignées
+   * dans `/admin → Réglages → Avis & mentions`, le site n'affiche aucun lien
+   * d'avis et les e-mails de livraison ne demandent rien. C'est volontaire :
+   * un lien mort vers un profil inexistant dégrade la confiance au lieu de
+   * la construire. Voir `docs/avis-clients-trustpilot-scamadviser-2026-11-05.md`.
+   *
+   * Aucune note moyenne n'est stockée ici — elle viendrait forcément d'une
+   * saisie manuelle, donc non sourcée.
+   */
+  trust: {
+    /**
+     * Profil Trustpilot du domaine, revendiqué le 06/11/2026 (fiche vérifiée :
+     * « Profil revendiqué », 0 avis au départ).
+     *
+     * L'URL est construite depuis `DEFAULT_SITE_DOMAIN` — jamais depuis un
+     * littéral : le domaine n'est écrit qu'à un seul endroit
+     * (`src/lib/site-identity.ts`, vérifié par `scripts/site-identity.test.mjs`).
+     * Surchargeable dans l'admin, notamment si le profil vit sur un autre
+     * domaine.
+     */
+    trustpilotUrl: `https://www.trustpilot.com/review/${DEFAULT_SITE_DOMAIN}`,
+    /** Formulaire d'avis direct : à coller depuis le dashboard Business. */
+    trustpilotReviewUrl: "",
+    scamadviserUrl: "",
+    googleReviewUrl: "",
+    /** Reste désactivé tant qu'il n'y a pas d'historique de livraisons. */
+    reviewInvites: false,
+    /**
+     * Compte Trustpilot du profil revendiqué (business unit), lu sur la fiche
+     * publique le 06/11/2026. Le widget ne peut pas s'afficher sans lui.
+     */
+    businessUnitId: "6aed0b0c0156593a344109f3",
+    /** `micro-combo` : note + étoiles + nombre d'avis, sur une ligne. */
+    widgetTemplate: "micro-combo",
+    /**
+     * Pas de widget avant le premier avis : un profil vide affiche « 0,0 »,
+     * ce qui dégrade la confiance au lieu de la construire.
+     */
+    widgetMinReviews: 1,
+  } as TrustConfigData,
+
+  /**
+   * Identité légale (page `/mentions-legales`).
+   *
+   * À compléter depuis `/admin → Réglages → Avis & mentions` avec les
+   * informations réelles du registre de commerce : chaque champ vide est
+   * omis de la page plutôt que rempli par une valeur inventée. L'hébergeur
+   * (Vercel) est le seul champ prérempli, parce qu'il est vérifiable.
+   */
+  legal: {
+    companyName: "",
+    registrationNumber: "",
+    registrationAuthority: "",
+    publisherName: "",
+    hostName: "Vercel Inc.",
+    hostWebsite: "https://vercel.com",
+  } as LegalConfigData,
 
   /**
    * Alignement des prix de la boutique sur le marché (voir

@@ -7,7 +7,7 @@ import { CTAForm } from "@/components/sections/cta-form";
 import { useSiteConfig } from "@/components/site-provider";
 import { marketLabels, resolveMarket } from "@/lib/market";
 import { ArrowUpRight, Clock, Mail, MapPin, MessageCircle, Phone } from "lucide-react";
-import { whatsappLink } from "@/lib/utils";
+import { WhatsAppEnquiry } from "@/components/whatsapp-enquiry";
 
 /**
  * Carte de localisation dessinée localement.
@@ -127,18 +127,12 @@ export function ContactClient() {
               </div>
 
               <div className="mt-6 flex flex-wrap items-center gap-2.5">
-                <a
-                  href={whatsappLink(
-                    siteConfig.whatsapp,
-                    ar ? "مرحبا نخبة 👋 أريد استشارة" : "Hello Nukhba 👋 I'd like a consult",
-                  )}
-                  target="_blank"
-                  rel="noopener noreferrer"
+                <WhatsAppEnquiry
                   className="inline-flex h-11 items-center gap-2 rounded-full bg-[#0B6B3A] px-5 text-[13.5px] font-bold text-white transition-opacity hover:opacity-95"
                 >
                   <MessageCircle className="h-4 w-4" />
                   {ar ? "واتساب مباشر" : "WhatsApp"}
-                </a>
+                </WhatsAppEnquiry>
                 <a
                   href={`tel:${siteConfig.phone.replace(/\s/g, "")}`}
                   className="inline-flex h-11 items-center gap-2 rounded-full border border-[var(--border)] bg-[var(--card)] px-5 text-[13.5px] font-semibold transition-colors hover:border-[var(--accent)]"

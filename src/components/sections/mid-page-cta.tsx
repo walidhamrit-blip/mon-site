@@ -2,8 +2,7 @@
 
 import { ArrowUpRight, MessageCircle, Sparkles } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
-import { useSiteConfig } from "@/components/site-provider";
-import { whatsappLink } from "@/lib/utils";
+import { WhatsAppEnquiry } from "@/components/whatsapp-enquiry";
 
 /**
  * Bandeau d'appel à l'action au milieu de la page d'accueil.
@@ -15,7 +14,6 @@ import { whatsappLink } from "@/lib/utils";
  */
 export function MidPageCta() {
   const { locale } = useI18n();
-  const siteConfig = useSiteConfig();
   const ar = locale === "ar";
 
   const goToForm = () => {
@@ -68,20 +66,12 @@ export function MidPageCta() {
                 {ar ? "اطلب عرض سعر مجاني" : "Get a free quote"}
                 <ArrowUpRight className="h-4 w-4" />
               </button>
-              <a
-                href={whatsappLink(
-                  siteConfig.whatsapp,
-                  ar
-                    ? "مرحبا نخبة 👋 أريد عرض سعر لموقع نشاطي."
-                    : "Hello Nukhba 👋 I'd like a quote for my business website.",
-                )}
-                target="_blank"
-                rel="noopener noreferrer"
+              <WhatsAppEnquiry
                 className="inline-flex h-12 items-center justify-center gap-2 rounded-full border border-white/20 px-6 text-[14px] font-semibold transition-colors hover:bg-white/10"
               >
                 <MessageCircle className="h-4 w-4" />
                 WhatsApp
-              </a>
+              </WhatsAppEnquiry>
             </div>
           </div>
         </div>

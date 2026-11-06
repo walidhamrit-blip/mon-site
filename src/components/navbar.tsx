@@ -12,7 +12,7 @@ import { CurrencySwitcher } from "./currency-switcher";
 import { useSiteConfig } from "@/components/site-provider";
 import { marketLabels, resolveMarket } from "@/lib/market";
 import { primaryNavigation } from "@/lib/site-hierarchy";
-import { whatsappLink } from "@/lib/utils";
+import { WhatsAppEnquiry } from "@/components/whatsapp-enquiry";
 import { localizedPath } from "@/lib/locale";
 
 /**
@@ -122,9 +122,6 @@ export function Navbar() {
   const isActive = (href: string) =>
     href === "/" ? pathname === "/" : pathname === href || pathname.startsWith(`${href}/`);
 
-  const whatsappMsg = ar
-    ? `مرحبا نخبة 👋 أريد موقع لنشاطي. هل يمكننا التحدث؟`
-    : `Hello Nukhba 👋 I want a website for my business. Can we talk?`;
 
   const quote = () => {
     setOpen(false);
@@ -195,14 +192,11 @@ export function Navbar() {
               <div className="hidden lg:block">
                 <ThemeSwitcher />
               </div>
-              <a
-                href={whatsappLink(siteConfig.whatsapp, whatsappMsg)}
-                target="_blank"
-                rel="noopener noreferrer"
+              <WhatsAppEnquiry
                 className="hidden h-11 items-center gap-1.5 rounded-full bg-[var(--secondary)] px-4 text-[12.5px] font-semibold text-[var(--foreground)] transition-colors hover:bg-[var(--muted)] 2xl:inline-flex"
               >
                 WhatsApp
-              </a>
+              </WhatsAppEnquiry>
               <button
                 onClick={quote}
                 className="hidden h-11 cursor-pointer items-center gap-1.5 rounded-full bg-[var(--primary)] px-4 text-[12.5px] font-bold text-[var(--primary-foreground)] transition-opacity hover:opacity-90 sm:inline-flex"
@@ -283,14 +277,11 @@ export function Navbar() {
                     {ar ? "طلب عرض" : "Get quote"}
                     <ArrowUpRight className="h-4 w-4 rtl:rotate-180" />
                   </button>
-                  <a
-                    href={whatsappLink(siteConfig.whatsapp, whatsappMsg)}
-                    target="_blank"
-                    rel="noopener noreferrer"
+                  <WhatsAppEnquiry
                     className="inline-flex min-h-11 w-full items-center justify-center rounded-full bg-[#0B6B3A] px-4 text-[14px] font-bold text-white"
                   >
                     WhatsApp
-                  </a>
+                  </WhatsAppEnquiry>
                 </div>
 
                 <details className="group mt-5 border-t border-[var(--border)] pt-5">

@@ -21,6 +21,7 @@ import {
   siteLocale,
   websiteJsonLd,
 } from "@/lib/seo";
+import { trustpilotVerificationMeta } from "@/lib/trust";
 import { marketLabels, resolveMarket } from "@/lib/market";
 import { languageAlternates, localizedAbsoluteUrl } from "@/lib/locale";
 import { requestLocale } from "@/lib/locale-server";
@@ -139,7 +140,15 @@ export async function generateMetadata(): Promise<Metadata> {
     // pour : dès que le domaine change, il faut en demander un nouveau
     // (GOOGLE_SITE_VERIFICATION). La vérification fichier historique
     // (public/googleaf….html) reste active en complément.
-    verification: { google: googleSiteVerification(config.domain) },
+    verification: {
+      google: googleSiteVerification(config.domain),
+      // Vérification de domaine Trustpilot (méta-tag) : indispensable quand
+      // l'e-mail du compte Business n'est pas sur le domaine. Silencieux
+      // quand TRUSTPILOT_VERIFICATION n'est pas renseignée.
+      ...(Object.keys(trustpilotVerificationMeta()).length > 0
+        ? { other: trustpilotVerificationMeta() }
+        : {}),
+    },
   };
 }
 

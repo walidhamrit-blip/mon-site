@@ -39,7 +39,8 @@ type SettingsTab =
   | "market"
   | "pricing"
   | "flex"
-  | "fazercards";
+  | "fazercards"
+  | "trust";
 
 interface Props {
   initial: SiteConfigData;
@@ -56,6 +57,9 @@ export function SettingsForm({ initial, initialTab }: Props) {
     if (raw === "flex" || raw === "services") return "flex";
     if (raw === "fazercards" || raw === "boutique" || raw === "digital") {
       return "fazercards";
+    }
+    if (raw === "trust" || raw === "avis" || raw === "reviews" || raw === "legal") {
+      return "trust";
     }
     return "appearance";
   };
@@ -153,6 +157,7 @@ export function SettingsForm({ initial, initialTab }: Props) {
     { id: "pricing", label: "Formules & Réservation 1 $" },
     { id: "flex", label: "Paiement libre & Services à la carte" },
     { id: "fazercards", label: "Boutique & FazerCards" },
+    { id: "trust", label: "Avis & Mentions légales" },
   ];
 
   return (
@@ -497,6 +502,235 @@ export function SettingsForm({ initial, initialTab }: Props) {
                 className={ADMIN_INPUT_CLS}
               />
             </Field>
+          </div>
+        </div>
+      )}
+
+      {/* --- ONGLET : AVIS & MENTIONS LÉGALES --- */}
+      {tab === "trust" && (
+        <div className="space-y-5">
+          <div className="rounded-2xl border border-stone-200 bg-white p-5 sm:p-6 space-y-5 shadow-2xs">
+            <div>
+              <h2 className="text-sm font-black text-stone-900">
+                Profils d’avis (Trustpilot, Google, Scamadviser)
+              </h2>
+              <p className="text-xs text-stone-500 mt-1 leading-5">
+                Collez ici l’adresse <strong>publique</strong> de vos profils, une fois
+                créés. Tant qu’un champ est vide, aucun lien n’est affiché sur le site
+                et aucun avis n’est demandé par e-mail : un lien vers un profil qui
+                n’existe pas encore dégrade la confiance au lieu de la construire.
+                <br />
+                Aucune note n’est saisie à la main : la moyenne affichée doit venir
+                de la plateforme elle-même.
+              </p>
+            </div>
+
+            <div className="grid gap-3.5">
+              <Field label="Profil Trustpilot (https://fr.trustpilot.com/review/votre-domaine)">
+                <input
+                  value={form.trust.trustpilotUrl}
+                  onChange={(e) =>
+                    patch({ trust: { ...form.trust, trustpilotUrl: e.target.value } })
+                  }
+                  placeholder="https://fr.trustpilot.com/review/exemple.com"
+                  className={ADMIN_INPUT_CLS}
+                />
+              </Field>
+              <Field label="Lien direct « écrire un avis » Trustpilot (facultatif, https://www.trustpilot.com/evaluate/votre-domaine)">
+                <input
+                  value={form.trust.trustpilotReviewUrl}
+                  onChange={(e) =>
+                    patch({
+                      trust: { ...form.trust, trustpilotReviewUrl: e.target.value },
+                    })
+                  }
+                  placeholder="https://www.trustpilot.com/evaluate/exemple.com"
+                  className={ADMIN_INPUT_CLS}
+                />
+                <span className="mt-1 block text-[11px] leading-4 text-stone-500">
+                  C’est ce lien qui part dans les e-mails de demande d’avis : il
+                  ouvre directement le formulaire, sans repasser par la fiche.
+                  Laissez vide pour envoyer la fiche publique.
+                </span>
+              </Field>
+              <Field label="Lien « laisser un avis » Google (fiche Google Business)">
+                <input
+                  value={form.trust.googleReviewUrl}
+                  onChange={(e) =>
+                    patch({ trust: { ...form.trust, googleReviewUrl: e.target.value } })
+                  }
+                  placeholder="https://g.page/r/…/review"
+                  className={ADMIN_INPUT_CLS}
+                />
+              </Field>
+              <Field label="Fiche Scamadviser (https://www.scamadviser.com/check-website/votre-domaine)">
+                <input
+                  value={form.trust.scamadviserUrl}
+                  onChange={(e) =>
+                    patch({ trust: { ...form.trust, scamadviserUrl: e.target.value } })
+                  }
+                  placeholder="https://www.scamadviser.com/check-website/exemple.com"
+                  className={ADMIN_INPUT_CLS}
+                />
+              </Field>
+            </div>
+
+            <div className="rounded-xl border border-stone-200 bg-stone-50 p-3.5 space-y-3.5">
+              <div>
+                <p className="text-[12.5px] font-black text-stone-800">
+                  Widget Trustpilot (TrustBox)
+                </p>
+                <p className="text-[11.5px] leading-4 text-stone-500 mt-0.5">
+                  Le badge lit la note publique de la fiche. Il reste masqué
+                  tant qu’il n’y a pas assez d’avis : un profil vide afficherait
+                  « 0,0 / 5 », ce qui dégrade la confiance.
+                </p>
+              </div>
+              <div className="grid sm:grid-cols-3 gap-3">
+                <Field label="Identifiant du compte Trustpilot">
+                  <input
+                    value={form.trust.businessUnitId}
+                    onChange={(e) =>
+                      patch({
+                        trust: {
+                          ...form.trust,
+                          businessUnitId: e.target.value.trim(),
+                        },
+                      })
+                    }
+                    placeholder="6aed0b0c0156593a344109f3"
+                    className={ADMIN_INPUT_CLS}
+                  />
+                </Field>
+                <Field label="Gabarit du widget">
+                  <select
+                    value={form.trust.widgetTemplate}
+                    onChange={(e) =>
+                      patch({
+                        trust: { ...form.trust, widgetTemplate: e.target.value },
+                      })
+                    }
+                    className={ADMIN_INPUT_CLS}
+                  >
+                    <option value="micro-combo">Micro combo — note + étoiles + avis</option>
+                    <option value="micro-star">Micro étoiles — étoiles seules</option>
+                    <option value="micro-review-count">Micro compteur — nombre d’avis</option>
+                    <option value="micro-trustscore">Micro TrustScore — note seule</option>
+                    <option value="mini">Mini — encart complet</option>
+                    <option value="review-collector">Collecteur — appeler à écrire un avis</option>
+                    <option value="starter">Starter — liste d’avis</option>
+                  </select>
+                </Field>
+                <Field label="Afficher à partir de (nombre d’avis)">
+                  <input
+                    type="number"
+                    min={0}
+                    max={1000}
+                    value={form.trust.widgetMinReviews}
+                    onChange={(e) =>
+                      patch({
+                        trust: {
+                          ...form.trust,
+                          widgetMinReviews: Math.max(0, Number(e.target.value) || 0),
+                        },
+                      })
+                    }
+                    className={ADMIN_INPUT_CLS}
+                  />
+                </Field>
+              </div>
+            </div>
+
+            <label className="flex items-start gap-2.5 rounded-xl border border-stone-200 bg-stone-50 p-3.5">
+              <input
+                type="checkbox"
+                checked={form.trust.reviewInvites}
+                onChange={(e) =>
+                  patch({ trust: { ...form.trust, reviewInvites: e.target.checked } })
+                }
+                className="mt-0.5 h-4 w-4 accent-[#B8923F]"
+              />
+              <span className="text-[12.5px] leading-5 text-stone-700">
+                <strong className="font-black">Demander un avis après livraison</strong>
+                <br />
+                Ajoute un bloc bilingue « comment était votre expérience ? » dans
+                l’e-mail des codes et dans le reçu de recette d’un site. La demande
+                s’adresse à <strong>tous</strong> les clients livrés (jamais aux seuls
+                clients satisfaits), sans contrepartie et sans consigne de note.
+                Nécessite au moins un profil Trustpilot ou Google ci-dessus.
+              </span>
+            </label>
+          </div>
+
+          <div className="rounded-2xl border border-stone-200 bg-white p-5 sm:p-6 space-y-5 shadow-2xs">
+            <div>
+              <h2 className="text-sm font-black text-stone-900">
+                Identité légale — page /mentions-legales
+              </h2>
+              <p className="text-xs text-stone-500 mt-1 leading-5">
+                Ces informations sont ce que vérifient un client méfiant… et les
+                algorithmes de réputation. Un champ laissé vide est
+                <strong> omis</strong> de la page : rien n’est inventé.
+              </p>
+            </div>
+
+            <div className="grid sm:grid-cols-2 gap-3.5">
+              <Field label="Raison sociale (si différente de la marque)">
+                <input
+                  value={form.legal.companyName}
+                  onChange={(e) =>
+                    patch({ legal: { ...form.legal, companyName: e.target.value } })
+                  }
+                  className={ADMIN_INPUT_CLS}
+                />
+              </Field>
+              <Field label="Responsable de la publication">
+                <input
+                  value={form.legal.publisherName}
+                  onChange={(e) =>
+                    patch({ legal: { ...form.legal, publisherName: e.target.value } })
+                  }
+                  className={ADMIN_INPUT_CLS}
+                />
+              </Field>
+              <Field label="Numéro de registre de commerce">
+                <input
+                  value={form.legal.registrationNumber}
+                  onChange={(e) =>
+                    patch({ legal: { ...form.legal, registrationNumber: e.target.value } })
+                  }
+                  className={ADMIN_INPUT_CLS}
+                />
+              </Field>
+              <Field label="Autorité / ville d’immatriculation">
+                <input
+                  value={form.legal.registrationAuthority}
+                  onChange={(e) =>
+                    patch({ legal: { ...form.legal, registrationAuthority: e.target.value } })
+                  }
+                  placeholder="مصلحة السجل التجاري — طرابلس"
+                  className={ADMIN_INPUT_CLS}
+                />
+              </Field>
+              <Field label="Hébergeur">
+                <input
+                  value={form.legal.hostName}
+                  onChange={(e) =>
+                    patch({ legal: { ...form.legal, hostName: e.target.value } })
+                  }
+                  className={ADMIN_INPUT_CLS}
+                />
+              </Field>
+              <Field label="Site de l’hébergeur (https://…)">
+                <input
+                  value={form.legal.hostWebsite}
+                  onChange={(e) =>
+                    patch({ legal: { ...form.legal, hostWebsite: e.target.value } })
+                  }
+                  className={ADMIN_INPUT_CLS}
+                />
+              </Field>
+            </div>
           </div>
         </div>
       )}

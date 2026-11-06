@@ -42,6 +42,7 @@ import {
 } from "@/lib/digital-codes";
 import { createInvoice } from "@/lib/nowpayments";
 import { recordDigitalEmailOutcome } from "@/lib/digital-email-log";
+import { reviewPromptForConfig } from "@/lib/review-emails";
 import { createTrackingToken, newOrderReference } from "@/lib/order-tracking";
 import { siteBaseUrl } from "@/lib/site-url";
 import { getSiteData, resolveFazercardsMaxOrderUsd } from "@/lib/store";
@@ -966,6 +967,7 @@ export async function deliverPaidFazercardsOrder(
           config.name,
           config.url,
           config.email,
+          reviewPromptForConfig(config, { kind: "digital", orderRef: deliveredTopup.ref }),
         );
         await recordDigitalEmailOutcome(loaded.id, email);
       } catch (error) {
@@ -1001,6 +1003,7 @@ export async function deliverPaidFazercardsOrder(
         config.name,
         config.url,
         config.email,
+        reviewPromptForConfig(config, { kind: "digital", orderRef: delivered.ref }),
       );
       await recordDigitalEmailOutcome(loaded.id, email);
     } catch (error) {

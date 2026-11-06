@@ -14,7 +14,14 @@ import { homeFaqs, storeCategories } from "@/lib/site-hierarchy";
 import { marketLabels, resolveMarket } from "@/lib/market";
 
 /** Short orientation page. Detailed web sections are on /creation-sites. */
-export function HomeSections({ storeShowcase }: { storeShowcase?: ReactNode }) {
+export function HomeSections({
+  storeShowcase,
+  trustBadge,
+}: {
+  storeShowcase?: ReactNode;
+  /** Badge Trustpilot rendu côté serveur (absent tant qu'il n'y a pas d'avis). */
+  trustBadge?: ReactNode;
+}) {
   const { locale } = useI18n();
   const config = useSiteConfig();
   const ar = locale === "ar";
@@ -56,6 +63,7 @@ export function HomeSections({ storeShowcase }: { storeShowcase?: ReactNode }) {
       <section className="gaming-support-section border-t border-[var(--border)] bg-[var(--secondary)]/30">
         <div className="site-container px-4 py-14 sm:px-6 lg:px-8">
           <h2 className="text-2xl font-black">{ar ? "كيف نساعدك؟" : "How can we help?"}</h2>
+          {trustBadge ? <div className="mt-4">{trustBadge}</div> : null}
           <div className="mt-6 grid gap-4 sm:grid-cols-3">
             {[
               [ar ? "مساران واضحان" : "Two clear paths", ar ? "شراء منتج رقمي أو بدء مشروع موقع — لكل طلب خطواته الخاصة." : "Buy a digital product or start a website project, each with its own clear steps."],

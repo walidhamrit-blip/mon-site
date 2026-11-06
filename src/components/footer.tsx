@@ -5,8 +5,7 @@ import { ArrowUpRight, Code2, Gamepad2, Mail, MapPin, MessageCircle, Phone } fro
 import { useI18n } from "@/lib/i18n";
 import { useSiteConfig } from "./site-provider";
 import { marketLabels, resolveMarket } from "@/lib/market";
-import { whatsappLink } from "@/lib/utils";
-import { WHATSAPP_SITE_MESSAGE } from "./sections/home-intro";
+import { WhatsAppEnquiry } from "@/components/whatsapp-enquiry";
 
 export function Footer() {
   const config = useSiteConfig();
@@ -46,14 +45,14 @@ export function Footer() {
           <h3>{ar ? "لنتواصل" : "Let’s talk"}</h3>
           <ul>
             <li><Link href="/contact">{ar ? "مساعدة وتواصل" : "Help & contact"}</Link></li>
-            <li><a href={whatsappLink(config.whatsapp)} target="_blank" rel="noopener noreferrer">WhatsApp ↗</a></li>
+            <li><WhatsAppEnquiry className="cursor-pointer">WhatsApp ↗</WhatsAppEnquiry></li>
             <li><a href={`mailto:${config.email}`} className="flex items-center gap-2"><Mail className="h-3.5 w-3.5" /><span dir="ltr">{config.email}</span></a></li>
             <li><a href={`tel:${config.phone.replace(/\s/g, "")}`} className="flex items-center gap-2"><Phone className="h-3.5 w-3.5" /><span dir="ltr">{config.phone}</span></a></li>
           </ul>
         </nav>
       </div>
       <nav className="gaming-footer-resources" aria-label={ar ? "الموارد والمعلومات" : "Resources & information"}>
-        {[["/blog",ar ? "الأدلة" : "Guides"],["/compare",ar ? "المقارنات" : "Comparisons"],["/products",ar ? "منتجاتنا" : "Our products"],["/apps",ar ? "تطبيقاتنا" : "Our apps"],["/badge",ar ? "شارة العملاء" : "Client badge"],["/conditions",ar ? "الشروط" : "Terms"],["/remboursement",ar ? "الاسترداد" : "Refund policy"]].map(([href,label]) => <Link key={href} href={href}>{label}</Link>)}
+        {[["/blog",ar ? "الأدلة" : "Guides"],["/compare",ar ? "المقارنات" : "Comparisons"],["/products",ar ? "منتجاتنا" : "Our products"],["/apps",ar ? "تطبيقاتنا" : "Our apps"],["/badge",ar ? "شارة العملاء" : "Client badge"],["/conditions",ar ? "الشروط" : "Terms"],["/remboursement",ar ? "الاسترداد" : "Refund policy"],["/avis",ar ? "تقييمات العملاء" : "Customer reviews"],["/mentions-legales",ar ? "المعلومات القانونية" : "Legal notice"]].map(([href,label]) => <Link key={href} href={href}>{label}</Link>)}
       </nav>
       <div className="gaming-footer-bottom"><span>© {new Date().getFullYear()} {config.name}</span><span>{ar ? "مواقع · بطاقات · ألعاب" : "WEBSITES / CARDS / GAMING"}</span></div>
     </div>
