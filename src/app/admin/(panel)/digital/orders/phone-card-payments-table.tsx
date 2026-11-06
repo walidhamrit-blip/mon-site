@@ -115,6 +115,7 @@ export function PhoneCardPaymentsTable({ rows }: { rows: AdminPhoneCardPaymentRo
             const revealed = revealedRef === row.ref;
             const isBusy = busy && pendingRef === row.ref;
             const operator = PHONE_CARD_OPERATOR_LABELS[row.operator as PhoneCardOperator] ?? row.operator;
+            const quoteDelta = row.quote ? Number(row.cardValueLyd) - Number(row.quote.totalLyd) : null;
             return (
               <article key={row.ref} className="rounded-xl border border-stone-200 bg-white p-4 shadow-2xs">
                 <div className="flex flex-wrap items-start justify-between gap-3">
@@ -138,6 +139,46 @@ export function PhoneCardPaymentsTable({ rows }: { rows: AdminPhoneCardPaymentRo
                     <div className="mt-0.5 text-stone-500">Commande : {row.totalUsd} $</div>
                   </div>
                 </div>
+
+                {row.quote && (
+                  <div className="mt-3 rounded-lg border border-[#C6A664]/40 bg-[#C6A664]/10 px-3 py-2.5 text-[11.5px] leading-5 text-stone-700">
+                    <div className="font-black text-stone-900" dir="ltr">
+                      {row.quote.amountUsdt} USDT × {row.quote.rateLyd} LYD × {100 + row.quote.markupPercent}% = {row.quote.totalLyd} LYD
+                    </div>
+                    <p className="mt-0.5">
+                      Devis accepté par le client · source {row.quote.source === "fulus"
+                        ? "Fulus"
+                        : row.quote.source === "community"
+                          ? "médiane de publications Telegram"
+                          : "manuelle admin"}
+                      {row.quote.rateUpdatedAt ? ` · taux du ${adminDate(row.quote.rateUpdatedAt)}` : ""}.
+                      {quoteDelta != null && (
+                        <strong className={quoteDelta < 0 ? "ml-1 text-red-700" : "ml-1 text-emerald-700"}>
+                          {quoteDelta >= 0 ? "+" : ""}{quoteDelta.toFixed(2)} LYD par rapport à la carte déclarée.
+                        </strong>
+                      )}
+                    </p>
+                    {row.quote.references.length > 0 && (
+                      <ul className="mt-1.5 space-y-0.5 border-t border-[#C6A664]/25 pt-1.5">
+                        {row.quote.references.map((reference) => (
+                          <li key={reference.url} className="flex flex-wrap gap-x-2">
+                            <a
+                              href={reference.url}
+                              target="_blank"
+                              rel="noreferrer noopener"
+                              className="font-bold text-[#8A6D2F] underline underline-offset-2"
+                              dir="ltr"
+                            >
+                              {reference.label}
+                            </a>
+                            <span dir="ltr">{reference.rateLyd.toFixed(4)} LYD</span>
+                            <span>publié le {adminDate(reference.rateUpdatedAt)}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+                )}
 
                 <div className="mt-3 rounded-lg border border-stone-200 bg-stone-50 px-3 py-2.5">
                   <div className="text-[10.5px] font-bold uppercase tracking-wide text-stone-500">

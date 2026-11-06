@@ -73,6 +73,16 @@ export function SettingsForm({ initial, initialTab }: Props) {
         Number(initial.fazercards?.maxOrderUsd) > 0
           ? Number(initial.fazercards.maxOrderUsd)
           : 25,
+      phoneCardRateMode: initial.fazercards?.phoneCardRateMode === "manual" ? "manual" : "auto",
+      phoneCardManualRateLyd:
+        Number.isFinite(Number(initial.fazercards?.phoneCardManualRateLyd)) &&
+        Number(initial.fazercards?.phoneCardManualRateLyd) > 0
+          ? Number(initial.fazercards.phoneCardManualRateLyd)
+          : null,
+      phoneCardManualRateUpdatedAt:
+        typeof initial.fazercards?.phoneCardManualRateUpdatedAt === "string"
+          ? initial.fazercards.phoneCardManualRateUpdatedAt
+          : null,
     },
   });
   const [dirty, setDirty] = useState(false);
@@ -1588,6 +1598,96 @@ export function SettingsForm({ initial, initialTab }: Props) {
               >
                 Modifier les cartes cadeaux & produits (SEO/GEO) →
               </Link>
+            </div>
+          </div>
+
+          <div className="rounded-2xl border border-stone-200 bg-white p-5 sm:p-6 shadow-xs space-y-5">
+            <div>
+              <span className="text-[11px] font-bold uppercase tracking-wider text-[#8A6D2F]">
+                Cartes téléphoniques · Prix en LYD
+              </span>
+              <h2 className="mt-1 text-lg font-extrabold text-stone-900">
+                Taux du marché parallèle et majoration de 20 %
+              </h2>
+              <p className="mt-1 max-w-3xl text-xs sm:text-sm text-stone-500 leading-relaxed">
+                Le client voit et accepte un devis indicatif calculé ainsi :{" "}
+                <strong className="text-stone-800">total USDT × taux LYD × 120 %</strong>.
+                Les 20 % compensent la détérioration de valeur à la revente des cartes. Ce devis
+                ne remplace pas la vérification manuelle du crédit.
+              </p>
+            </div>
+
+            <div className="grid gap-4 sm:grid-cols-2">
+              <Field label="Source du taux">
+                <select
+                  value={form.fazercards?.phoneCardRateMode ?? "auto"}
+                  onChange={(e) =>
+                    patch({
+                      fazercards: {
+                        ...form.fazercards,
+                        phoneCardRateMode: e.target.value === "manual" ? "manual" : "auto",
+                      },
+                    })
+                  }
+                  className={ADMIN_INPUT_CLS}
+                >
+                  <option value="auto">Médiane Telegram + Fulus/secours manuel</option>
+                  <option value="manual">Taux manuel uniquement</option>
+                </select>
+              </Field>
+              <Field label="Taux manuel : 1 USD / USDT = … LYD">
+                <input
+                  type="number"
+                  min={0.0001}
+                  max={10000}
+                  step="0.0001"
+                  dir="ltr"
+                  value={form.fazercards?.phoneCardManualRateLyd ?? ""}
+                  onChange={(e) => {
+                    const value = e.target.value === "" ? null : e.target.valueAsNumber;
+                    patch({
+                      fazercards: {
+                        ...form.fazercards,
+                        phoneCardManualRateLyd:
+                          value == null || !Number.isFinite(value) ? null : value,
+                      },
+                    });
+                  }}
+                  placeholder="Ex. 9.84"
+                  className={`${ADMIN_INPUT_CLS} font-mono text-base font-bold`}
+                />
+              </Field>
+            </div>
+
+            {form.fazercards?.phoneCardManualRateUpdatedAt && (
+              <p className="text-xs text-stone-500">
+                Dernière modification du taux manuel :{" "}
+                {new Date(form.fazercards.phoneCardManualRateUpdatedAt).toLocaleString("fr-FR", {
+                  timeZone: "Africa/Tripoli",
+                })}
+                {" "}(heure de Tripoli).
+              </p>
+            )}
+
+            <div className="rounded-xl border border-[#C6A664]/40 bg-[#C6A664]/10 px-4 py-3 text-xs leading-relaxed text-stone-700">
+              {Number(form.fazercards?.phoneCardManualRateLyd) > 0 ? (
+                <p dir="ltr" className="font-mono font-bold text-stone-900">
+                  5 USDT → {(5 * Number(form.fazercards.phoneCardManualRateLyd) * 1.2).toFixed(2)} LYD
+                  {" · "}
+                  10 USDT → {(10 * Number(form.fazercards.phoneCardManualRateLyd) * 1.2).toFixed(2)} LYD
+                </p>
+              ) : (
+                <p>Saisissez un taux manuel pour afficher les exemples de 5 et 10 USDT.</p>
+              )}
+              <p className="mt-2">
+                En mode automatique, le serveur calcule la médiane des dollars en espèces publiés par
+                <code> @dollar_ly</code>, <code>@lydollar</code> et <code>@suqalmushir</code>.
+                Au moins deux publications de moins de 36 heures, cohérentes entre elles à 3 %,
+                sont exigées. Les dates incohérentes, chèques et taux bancaires sont ignorés.
+                <code> FULUS_API_KEY</code> est un secours facultatif ; le taux manuel ci-dessus
+                prend ensuite le relais. Sans aucun taux disponible, le dépôt est bloqué plutôt que
+                d’inventer un prix.
+              </p>
             </div>
           </div>
         </div>

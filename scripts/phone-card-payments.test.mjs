@@ -11,6 +11,16 @@ import {
   phoneCardPublicNotice,
   validatePhoneCardInput,
 } from "../src/lib/phone-card-core.ts";
+import {
+  calculatePhoneCardLydQuote,
+  parseFulusCurrentRate,
+  phoneCardQuoteMatches,
+} from "../src/lib/phone-card-pricing-core.ts";
+import {
+  buildPhoneCardCommunityConsensus,
+  parseArabicCashDollarRate,
+  parseTelegramCommunityObservations,
+} from "../src/lib/phone-card-community-core.ts";
 
 const root = fileURLToPath(new URL("..", import.meta.url));
 const read = (path) => readFileSync(new URL(path, `file://${root}`), "utf8");
@@ -127,4 +137,195 @@ test("l'action de revue exige une session admin et un motif de refus", () => {
   assert.match(action, /await requireAdmin\(\)/);
   const review = read("src/lib/phone-card-payments.ts");
   assert.match(review, /decision === "rejected" && !note/);
+});
+
+const quoteMetadata = {
+  source: "manual",
+  rateUpdatedAt: "2026-11-05T20:00:00.000Z",
+  fetchedAt: "2026-11-05T20:01:00.000Z",
+  stale: false,
+};
+
+test("la formule LYD applique le taux parallèle puis exactement 20 %", () => {
+  const five = calculatePhoneCardLydQuote(5, 9.84, quoteMetadata);
+  const ten = calculatePhoneCardLydQuote(10, 9.84, quoteMetadata);
+  assert.equal(five?.totalLyd, 59.04);
+  assert.equal(ten?.totalLyd, 118.08);
+  assert.equal(five?.markupPercent, 20);
+  assert.equal(five?.amountUsdt, 5);
+  assert.equal(five?.rateLyd, 9.84);
+  // La quantité est déjà comprise dans le total USDT recalculé par le serveur.
+  assert.equal(calculatePhoneCardLydQuote(15, 9.84, quoteMetadata)?.totalLyd, 177.12);
+});
+
+test("un montant ou un taux invalide ne produit jamais de devis", () => {
+  for (const [amount, rate] of [[0, 9.84], [-5, 9.84], [5, 0], [5, -9.84], [5, "nope"]]) {
+    assert.equal(calculatePhoneCardLydQuote(amount, rate, quoteMetadata), null);
+  }
+});
+
+test("la réponse documentée de Fulus est lue avec son horodatage", () => {
+  assert.deepEqual(
+    parseFulusCurrentRate({
+      data: { currency: "USD", rate: 9.84, timestamp: "2026-11-05T20:00:00Z" },
+    }),
+    { rateLyd: 9.84, rateUpdatedAt: "2026-11-05T20:00:00Z" },
+  );
+  assert.equal(parseFulusCurrentRate({ data: { currency: "EUR", rate: 11.2 } }), null);
+  assert.equal(parseFulusCurrentRate({ data: { currency: "USD", rate: -1 } }), null);
+});
+
+function telegramPost(channel, id, publishedAt, text, views = "3.2K") {
+  return `<div class="tgme_widget_message js-widget_message" data-post="${channel}/${id}">
+    <div class="tgme_widget_message_text js-message_text" dir="auto">${text}</div>
+    <span class="tgme_widget_message_views">${views}</span>
+    <a href="https://t.me/${channel}/${id}"><time datetime="${publishedAt}">12:00</time></a>
+  </div>`;
+}
+
+const COMMUNITY_NOW = Date.parse("2026-11-05T20:00:00.000Z");
+
+function communityFixtures() {
+  return [
+    ...parseTelegramCommunityObservations(
+      telegramPost(
+        "dollar_ly",
+        1523,
+        "2026-11-05T11:21:04+00:00",
+        "إغلاق يوم الخميس - 2026/11/05 || 6:20<br>دولار 💵 = 9.920 دينار<br>يورو 💶 = 11.10 دينار",
+        "2.43K",
+      ),
+      "dollar_ly",
+      COMMUNITY_NOW,
+    ),
+    ...parseTelegramCommunityObservations(
+      telegramPost(
+        "lydollar",
+        21456,
+        "2026-11-05T05:25:00+00:00",
+        "(اليوم الخميس)2026/11/05{اخر تحديث}<br>💵 الدولار=9.86دينار<br>💳 الصك=10.07 دينار",
+        "3.67K",
+      ),
+      "lydollar",
+      COMMUNITY_NOW,
+    ),
+    ...parseTelegramCommunityObservations(
+      telegramPost(
+        "suqalmushir",
+        1557,
+        "2026-11-04T15:47:00+00:00",
+        "{اليوم الاربعاء}2026/11/4(اخر تحديث)<br>دولار =9.88<br>دولار بشيك =10.04<br>دولار بشيك حوالة تركيا =10.18",
+        "2.17K",
+      ),
+      "suqalmushir",
+      COMMUNITY_NOW,
+    ),
+  ];
+}
+
+test("Telegram lit le dollar en espèces, les chiffres arabes et les vues sans retenir les chèques", () => {
+  const fixtures = communityFixtures();
+  assert.equal(fixtures.length, 3);
+  assert.deepEqual(fixtures.map((item) => item.rateLyd).sort(), [9.86, 9.88, 9.92]);
+  assert.equal(fixtures.find((item) => item.channel === "dollar_ly")?.views, 2430);
+  assert.equal(fixtures.find((item) => item.channel === "dollar_ly")?.url, "https://t.me/dollar_ly/1523");
+  assert.equal(parseArabicCashDollarRate("💵 الدولار=٩٫٩٢ دينار"), 9.92);
+  assert.equal(parseArabicCashDollarRate("دولار =9.88<br>دولار بشيك =10.04"), 9.88);
+  assert.equal(parseArabicCashDollarRate("دولار بشيك =10.04"), null);
+});
+
+test("Telegram exclut la Banque centrale et les dates arabes contradictoires", () => {
+  const official = telegramPost(
+    "lydollar",
+    21454,
+    "2026-11-05T04:27:00+00:00",
+    "اليوم الخميس 05 - 11 - 2026<br>سعر الدولار بمصرف ليبيا المركزي لهذا اليوم:<br>سعر البيع: 6.418 دينار",
+  );
+  assert.equal(parseTelegramCommunityObservations(official, "lydollar", COMMUNITY_NOW).length, 0);
+
+  const valid = telegramPost(
+    "lydollar",
+    21456,
+    "2026-11-05T05:25:00+00:00",
+    "(اليوم الخميس)2026/11/05<br>💵 الدولار=9.86دينار",
+  );
+  const wrongDate = telegramPost(
+    "lydollar",
+    21460,
+    "2026-11-05T12:06:00+00:00",
+    "(اليوم الخميس)2026/11/04<br>💵 الدولار=9.92دينار",
+  );
+  const parsed = parseTelegramCommunityObservations(valid + wrongDate, "lydollar", COMMUNITY_NOW);
+  assert.equal(parsed.length, 1);
+  assert.equal(parsed[0].url, "https://t.me/lydollar/21456");
+  assert.equal(parsed[0].rateLyd, 9.86);
+});
+
+test("Telegram refuse les publications trop anciennes ou futures", () => {
+  const html = telegramPost(
+    "dollar_ly",
+    1523,
+    "2026-11-05T11:21:04+00:00",
+    "2026/11/05<br>دولار = 9.92 دينار",
+  );
+  assert.equal(parseTelegramCommunityObservations(html, "dollar_ly", COMMUNITY_NOW).length, 1);
+  assert.equal(
+    parseTelegramCommunityObservations(html, "dollar_ly", Date.parse("2026-11-08T00:00:00Z")).length,
+    0,
+  );
+  assert.equal(
+    parseTelegramCommunityObservations(html, "dollar_ly", Date.parse("2026-11-04T00:00:00Z")).length,
+    0,
+  );
+});
+
+test("la médiane communautaire exige deux canaux proches et fige leurs liens", () => {
+  const fixtures = communityFixtures();
+  const consensus = buildPhoneCardCommunityConsensus(fixtures);
+  assert.ok(consensus);
+  assert.equal(consensus.rateLyd, 9.88);
+  assert.equal(consensus.references.length, 3);
+  assert.equal(consensus.rateUpdatedAt, "2026-11-05T11:21:04.000Z");
+  assert.equal(consensus.references[0].url, "https://t.me/dollar_ly/1523");
+
+  const two = buildPhoneCardCommunityConsensus(fixtures.filter((item) => item.channel !== "suqalmushir"));
+  assert.equal(two?.rateLyd, 9.89);
+  assert.equal(buildPhoneCardCommunityConsensus(fixtures.slice(0, 1)), null);
+
+  const outlier = fixtures.map((item) => item.channel === "suqalmushir" ? { ...item, rateLyd: 10.4 } : item);
+  assert.equal(buildPhoneCardCommunityConsensus(outlier), null);
+});
+
+test("le checkout exige l'accord et refuse tout devis différent du calcul serveur", () => {
+  const expected = calculatePhoneCardLydQuote(5, 9.84, quoteMetadata);
+  assert.ok(expected);
+  assert.equal(phoneCardQuoteMatches({ ...expected, fetchedAt: "nouvelle-lecture" }, expected), true);
+  assert.equal(phoneCardQuoteMatches({ ...expected, rateLyd: 9.85 }, expected), false);
+  assert.equal(phoneCardQuoteMatches({ ...expected, totalLyd: 1 }, expected), false);
+  assert.equal(phoneCardQuoteMatches(null, expected), false);
+
+  const checkout = code(read("src/lib/fazercards-orders.ts"));
+  assert.match(checkout, /quoteAccepted !== true/);
+  assert.match(checkout, /getPhoneCardLydQuote\(totalUsd\)/);
+  assert.match(checkout, /phoneCardQuoteMatches\(input\.phoneCard\?\.quote, acceptedPhoneCardQuote\)/);
+  assert.match(checkout, /phone_card_quote_changed/);
+  const schema = read("src/db/schema.ts");
+  assert.match(schema, /quoteRateLyd: text\("quote_rate_lyd"\)/);
+  assert.match(schema, /quoteTotalLyd: text\("quote_total_lyd"\)/);
+  assert.match(schema, /quoteReferences: jsonb\("quote_references"\)/);
+  const checkoutRoute = read("src/app/api/fazercards/checkout/route.ts");
+  assert.match(checkoutRoute, /z\.enum\(\["community", "fulus", "manual"\]\)/);
+});
+
+test("un taux modifié est rechargé et l'information client reste cohérente", () => {
+  const dialog = code(read("src/components/digital-buy-dialog.tsx"));
+  assert.match(dialog, /data\.error === "phone_card_quote_changed"/);
+  assert.match(dialog, /setAcceptedPhoneQuoteKey\(""\)/);
+  assert.match(dialog, /setPhoneQuoteRefresh/);
+  assert.match(dialog, /phoneQuote\.totalLyd\.toFixed\(2\)/);
+
+  const terms = read("src/app/(site)/conditions/conditions-client.tsx");
+  assert.match(terms, /parallel-market USD\/LYD rate × 120%/);
+  const assistant = read("src/lib/site-assistant.ts");
+  assert.match(assistant, /Never invent a live rate/);
 });
