@@ -216,7 +216,9 @@ SESSION_SECRET=$(openssl rand -hex 32)   # recommandé (sinon signé avec ADMIN_
 
 ```bash
 npm run doctor                 # tout doit être ✓ (les ! sont facultatifs)
-curl -s localhost:3000/api/health   # ok:true, database.connected:true, nowpayments.apiKeyValid:true
+# Diagnostic complet : `ok:true` + `nowpayments.apiKeyValid:true`.
+# Sans CRON_SECRET, la route ne renvoie qu'une sonde minimale (ok + base).
+curl -s -H "Authorization: Bearer $CRON_SECRET" localhost:3000/api/health
 ```
 
 Sur Vercel, **après avoir ajouté ou modifié une variable, redéployez** :
@@ -317,7 +319,8 @@ Le dialogue de paiement propose trois modes, reflétés dans le prix affiché :
   Le `payment_id` est enregistré sur la commande dès le premier IPN, qui
   retrouve la commande par son `order_id` (référence `NKH-…`).
 - Si le dialogue affiche « échec de création du paiement » à la validation :
-  ouvrez `/api/health` — `nowpayments.apiKeyValid` teste la clé en réel
+  ouvrez `/api/health` **avec le secret** (`?key=$CRON_SECRET`) — sans lui la
+  route ne renvoie que la sonde minimale. `nowpayments.apiKeyValid` teste la clé en réel
   (`GET /currencies`, sans créer de facture). `apiKeyValid:false` +
   `apiKeyError` donne le refus exact : vérifiez que la clé vient de
   Settings → API keys (et non du secret IPN) et qu'elle correspond à

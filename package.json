@@ -16,6 +16,7 @@
     "test:assistant": "node --test scripts/site-assistant.test.mjs scripts/whatsapp-enquiry.test.mjs",
     "test:plumbing": "node --test scripts/ci-plumbing.test.mjs",
     "test:core": "node --test scripts/payments-core.test.mjs scripts/access-tokens.test.mjs",
+    "test:health": "node --test scripts/health-access.test.mjs",
     "test:deliveries": "node --test scripts/delivery-handover.test.mjs",
     "test:subscriptions": "node --test scripts/subscription-plans.test.mjs",
     "doctor": "node scripts/check-setup.mjs",
