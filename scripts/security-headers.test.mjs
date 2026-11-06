@@ -7,10 +7,19 @@ import { fileURLToPath } from "node:url";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const rootDir = path.resolve(__dirname, "..");
 
+/** Retire commentaires et espaces : on ne teste que le code exécuté. */
+const code = (source) =>
+  source
+    .replace(/\/\*[\s\S]*?\*\//g, " ")
+    .replace(/^[ \t]*\/\/.*$/gm, " ")
+    .replace(/\s+/g, " ");
 const nextConfigSrc = fs.readFileSync(path.join(rootDir, "next.config.ts"), "utf8");
 const proxySrc = fs.readFileSync(path.join(rootDir, "src/proxy.ts"), "utf8");
 const contentSrc = fs.readFileSync(path.join(rootDir, "src/lib/content.ts"), "utf8");
 const csrfSrc = fs.readFileSync(path.join(rootDir, "src/lib/csrf.ts"), "utf8");
+const { OPTIMIZED_IMAGE_HOSTS, isOptimizableImageSource, imageOptimizationProps } = await import(
+  "../src/lib/image-source.ts"
+);
 
 test("CSP frame-src autorise 'self' et tous les sites clients HTTPS en iframe", () => {
   assert.match(
@@ -43,7 +52,21 @@ test("Permissions-Policy autorise le plein écran (fullscreen=*) sans avertissem
   assert.match(proxySrc, /fullscreen=\*/);
 });
 
-test("Toutes les images distantes de démos dans content.ts sont couvertes par next.config.ts", () => {
+test("aucun joker global dans images.remotePatterns (proxy d'images fermé)", () => {
+  // Avec `hostname: "**"`, /_next/image accepte n'importe quelle URL HTTPS :
+  // le déploiement télécharge et transcode des images pour le compte de
+  // tiers, et l'assertion « chaque hôte est déclaré » ci-dessous devenait
+  // vraie par construction — un garde-fou incapable d'échouer.
+  const nextConfigCode = code(nextConfigSrc);
+  assert.doesNotMatch(
+    nextConfigCode,
+    /hostname: "\*\*"/,
+    "/_next/image deviendrait un proxy ouvert pour n'importe quel hôte",
+  );
+  assert.doesNotMatch(nextConfigCode, /hostname: "\*\.\*"/);
+});
+
+test("les hôtes d'images du contenu éditorial sont tous optimisables", () => {
   const imageHosts = [
     ...new Set(
       [...contentSrc.matchAll(/image:\s*"https:\/\/([^/"]+)\//g)].map((m) => m[1]),
@@ -52,10 +75,23 @@ test("Toutes les images distantes de démos dans content.ts sont couvertes par n
   assert.ok(imageHosts.length >= 8, "Au moins 8 hôtes d'images distants attendus");
   for (const host of imageHosts) {
     assert.ok(
-      nextConfigSrc.includes(`"${host}"`),
-      `L'hôte d'image ${host} (ex. demo-cabinet-medecin.vercel.app) doit être explicitement déclaré dans images.remotePatterns`,
+      OPTIMIZED_IMAGE_HOSTS.includes(host),
+      `L'hôte d'image ${host} doit figurer dans OPTIMIZED_IMAGE_HOSTS (src/lib/image-source.ts)`,
     );
   }
+});
+
+test("une source inconnue n'est jamais optimisée", () => {
+  assert.equal(isOptimizableImageSource("/previews/al-bay-family-restaurant-desktop.webp"), true);
+  assert.equal(isOptimizableImageSource("/api/media/abc"), true);
+  assert.equal(isOptimizableImageSource("https://images.unsplash.com/photo-1?w=1200"), true);
+  assert.equal(isOptimizableImageSource("https://images.unsplash.com.evil.example/x.jpg"), false);
+  assert.equal(isOptimizableImageSource("https://attaquant.example/x.jpg"), false);
+  assert.equal(isOptimizableImageSource("http://images.unsplash.com/x.jpg"), false);
+  assert.equal(isOptimizableImageSource("//evil.example/x.jpg"), false);
+  assert.equal(isOptimizableImageSource(""), false);
+  assert.deepEqual(imageOptimizationProps("https://images.unsplash.com/x.jpg"), {});
+  assert.deepEqual(imageOptimizationProps("https://attaquant.example/x.jpg"), { unoptimized: true });
 });
 
 test("CSRF accepte l'hôte réel de la requête (Host / X-Forwarded-Host / VERCEL_URL)", () => {

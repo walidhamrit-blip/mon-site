@@ -348,6 +348,10 @@ export function verifyIpnSignature(
 ): boolean {
   const secret = nowPaymentsIpnSecret();
   if (!secret || !signature) return false;
+  // Un corps vide n'a pas de sens à signer : sans cette garde, le HMAC d'une
+  // chaîne vide est une signature valide, et la seule protection restante
+  // serait l'ordre des contrôles dans la route (JSON.parse avant la lecture).
+  if (!rawBody.trim()) return false;
 
   const candidates: string[] = [rawBody];
   try {

@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+import { OPTIMIZED_IMAGE_HOSTS } from "./src/lib/image-source";
 
 const isVercelProduction = process.env.VERCEL_ENV === "production";
 
@@ -112,25 +113,13 @@ const nextConfig: NextConfig = {
   allowedDevOrigins: ["*.e2b.app", "localhost", "127.0.0.1", "*.localhost"],
   poweredByHeader: false,
   images: {
-    remotePatterns: [
-      { protocol: "https", hostname: "images.unsplash.com" },
-      { protocol: "https", hostname: "images.pexels.com" },
-      { protocol: "https", hostname: "i.pravatar.cc" },
-      { protocol: "https", hostname: "demo-cabinet-medecin.vercel.app" },
-      { protocol: "https", hostname: "al-manhaj-company.vercel.app" },
-      { protocol: "https", hostname: "m-et-outillage-modele-3.vercel.app" },
-      { protocol: "https", hostname: "tulin-magazin.vercel.app" },
-      { protocol: "https", hostname: "pizzeria-demo1.vercel.app" },
-      { protocol: "https", hostname: "demo-meubles.vercel.app" },
-      { protocol: "https", hostname: "hala-dun.vercel.app" },
-      { protocol: "https", hostname: "demo-jouets.vercel.app" },
-      { protocol: "https", hostname: "al-massa.vercel.app" },
-      { protocol: "https", hostname: "al-bay.vercel.app" },
-      { protocol: "https", hostname: "alssadaka-sanitary.vercel.app" },
-      { protocol: "https", hostname: "smartphine-demo.vercel.app" },
-      { protocol: "https", hostname: "**.vercel.app" },
-      { protocol: "https", hostname: "**" },
-    ],
+    // Liste fermée : voir src/lib/image-source.ts. Aucun joker global — avec
+    // `hostname: "**"`, /_next/image devient un proxy d'images ouvert qui
+    // travaille pour le compte de n'importe qui, aux frais du déploiement.
+    remotePatterns: OPTIMIZED_IMAGE_HOSTS.map((hostname) => ({
+      protocol: "https" as const,
+      hostname,
+    })),
     // Captures locales servies avec un hash anti-cache (`?v=…`) : autorise
     // l'optimisation Next (srcset retina) malgré la query string.
     localPatterns: [

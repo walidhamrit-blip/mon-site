@@ -1,0 +1,55 @@
+name: Qualité (lint, types, tests)
+
+# Job séparé du workflow « SEO & Lighthouse » : ces trois contrôles prennent
+# environ une minute et doivent donner leur verdict AVANT le build + Lighthouse
+# (plusieurs minutes). Un test rouge ne doit pas attendre un audit de
+# performance pour apparaître dans la pull request.
+
+on:
+  push:
+    branches:
+      - main
+      - "arena/**"
+  pull_request:
+
+# Un nouveau push sur la même branche annule le run précédent.
+concurrency:
+  group: quality-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  quality:
+    name: lint · typecheck · tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Récupération du code
+        uses: actions/checkout@v5
+
+      - name: Installation Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Installation des dépendances
+        run: npm ci
+
+      - name: Lint (ESLint 9, flat config)
+        run: npm run lint
+
+      - name: Vérification TypeScript
+        run: npm run typecheck
+
+      # Découverte automatique : tout nouveau scripts/*.test.mjs entre dans la
+      # CI sans qu'on pense à l'ajouter à une liste codée en dur.
+      - name: Tests (node:test)
+        run: npm test
+        env:
+          # Aucune base en CI : les modules retombent sur les valeurs par
+          # défaut, comme dans le build du workflow SEO.
+          DATABASE_URL: ""

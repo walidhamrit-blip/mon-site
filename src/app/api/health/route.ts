@@ -14,6 +14,8 @@ import {
 import { fazercardsCatalogStatusLive } from "@/lib/fazercards-catalog";
 import { databaseConfigured } from "@/lib/digital-store";
 import { resolveFazercardsMaxOrderUsd } from "@/lib/store";
+import { healthAccess } from "@/lib/health-access";
+import { checkRateLimit } from "@/lib/rate-limit";
 import {
   checkNowPaymentsApiKey,
   nowPaymentsApiBase,
@@ -108,8 +110,58 @@ function databaseHint(message: string): string {
  *    tronquée/régénérée. `apiKeyValid:true` = paiements réellement possibles ;
  *  - `vercel.env` / `vercel.commit` → quel déploiement sert la réponse.
  */
-export async function GET() {
+/** Limite le mode public : la sonde reste ouverte, mais pas martelable. */
+const PUBLIC_LIMIT = {
+  windowMs: 60_000,
+  max: 30,
+  prefix: "health-public",
+} as const;
+
+export async function GET(req: Request) {
   const startedAt = Date.now();
+  const access = await healthAccess(req);
+
+  // ── Mode public : un `select 1`, rien d'autre ──
+  // Aucun appel NOWPayments / FazerCards (coût et quota fournisseur), aucun
+  // nom de variable d'environnement, aucune erreur brute. C'est la réponse
+  // reçue par un visiteur qui suit le lien de secours du dialogue de
+  // paiement, et par un moniteur de disponibilité (200 / 503).
+  if (access === "public") {
+    const decision = checkRateLimit(PUBLIC_LIMIT, req);
+    if (!decision.allow) {
+      return Response.json(
+        { ok: false, error: "rate_limited" },
+        {
+          status: 429,
+          headers: { "Retry-After": String(Math.max(1, decision.retryAfterSec)) },
+        },
+      );
+    }
+
+    let connected = false;
+    try {
+      await db.execute(sql`select 1`);
+      connected = true;
+    } catch {
+      connected = false;
+    }
+
+    return Response.json(
+      {
+        ok: connected,
+        mode: "public",
+        time: new Date().toISOString(),
+        database: { connected },
+        catalog: { degraded: databaseConfigured() && !connected },
+        message: connected
+          ? null
+          : "Service momentanément indisponible. Merci de réessayer dans quelques minutes.",
+      },
+      { status: connected ? 200 : 503 },
+    );
+  }
+
+  // ── Mode complet : diagnostic détaillé (admin ou CRON_SECRET) ──
 
   // ── Base de données ──
   const urlConfigured = databaseConfigured();
