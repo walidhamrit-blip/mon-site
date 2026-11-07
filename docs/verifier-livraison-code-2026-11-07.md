@@ -168,7 +168,7 @@ Ce qui n'est **pas** fait, et qu'il ne faut pas attendre :
 ## 5. Niveau 4 — SQL direct (admin indisponible, audit, incident)
 
 ```sql
--- 1. Fiche complète d'une commande
+-- 1. Fiche complète d'une commande (carte téléphonique incluse)
 select o.ref, o.status, o.fulfillment, o.kind,
        o.product_title, o.denomination_label, o.quantity, o.total_usd,
        o.created_at, o.delivered_at,
@@ -176,9 +176,13 @@ select o.ref, o.status, o.fulfillment, o.kind,
        o.email_sent_at, o.email_provider_id, o.email_last_error,
        o.attempts, o.last_error,
        o.reloadly_status, o.reloadly_transaction_id,
-       p.ref as payment_ref, p.status as payment_status, p.payment_method
+       p.ref as payment_ref, p.status as payment_status, p.payment_method,
+       pc.status      as carte_statut,     -- pending | approved | rejected
+       pc.reviewed_at as carte_verifiee_le,
+       pc.review_note as carte_note
   from digital_orders o
   left join orders p on p.digital_order_id = o.id
+  left join phone_card_payments pc on pc.order_ref = o.ref
  where upper(o.ref) = upper('DGC-XXXXXXXXXXXX');
 
 -- 2. Payées non livrées depuis plus de 30 minutes (à traiter aujourd'hui)
