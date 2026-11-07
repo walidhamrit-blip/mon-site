@@ -71,7 +71,7 @@ import {
   preparePhoneCardPayment,
   type PreparedPhoneCardPayment,
 } from "@/lib/phone-card-payments";
-import type { PhoneCardInput } from "@/lib/phone-card-core";
+import { phoneCardDeliveryRoute, type PhoneCardInput } from "@/lib/phone-card-core";
 import { getPhoneCardLydQuote } from "@/lib/phone-card-rate";
 import {
   phoneCardQuoteMatches,
@@ -712,7 +712,7 @@ function sleep(ms: number): Promise<void> {
  */
 export async function deliverPaidFazercardsOrder(
   idOrRef: number | string,
-  options: { force?: boolean } = {},
+  options: { force?: boolean; phoneCardApproved?: boolean } = {},
 ): Promise<FazercardsDeliveryResult> {
   const loaded = await loadFazercardsOrder(idOrRef);
   if (!loaded) return { outcome: "not_found", ref: String(idOrRef) };
@@ -722,20 +722,28 @@ export async function deliverPaidFazercardsOrder(
   }
 
   // Défense en profondeur : même un appel direct à ce module ne peut pas
-  // transformer une revue de carte téléphonique en achat fournisseur.
+  // transformer une revue de carte téléphonique en achat fournisseur. Seule
+  // une demande explicite d'un administrateur (`phoneCardApproved`), carte
+  // déjà acceptée, ouvre le chemin d'achat.
   const phoneGate = await phoneCardDeliveryGate(loaded.ref);
-  if (phoneGate.isPhoneCard) {
-    return phoneGate.status === "approved"
-      ? {
-          outcome: "manual",
-          ref: loaded.ref,
-          message: "Carte téléphonique acceptée : livraison manuelle requise, aucun achat fournisseur déclenché.",
-        }
-      : {
-          outcome: "not_paid",
-          ref: loaded.ref,
-          message: "Carte téléphonique non vérifiée : aucun achat fournisseur déclenché.",
-        };
+  const phoneRoute = phoneCardDeliveryRoute({
+    isPhoneCard: phoneGate.isPhoneCard,
+    status: phoneGate.status,
+    autoDeliver: options.phoneCardApproved === true,
+  });
+  if (phoneRoute === "blocked") {
+    return {
+      outcome: "not_paid",
+      ref: loaded.ref,
+      message: "Carte téléphonique non vérifiée : aucun achat fournisseur déclenché.",
+    };
+  }
+  if (phoneRoute === "manual") {
+    return {
+      outcome: "manual",
+      ref: loaded.ref,
+      message: "Carte téléphonique acceptée : livraison manuelle requise, aucun achat fournisseur déclenché.",
+    };
   }
 
   // Garde-fou absolu : jamais d'achat sans paiement confirmé.

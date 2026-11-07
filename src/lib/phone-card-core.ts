@@ -65,6 +65,75 @@ export function phoneCardDeliveryAllowed(status: unknown): boolean {
   return normalizePhoneCardReviewStatus(status) === "approved";
 }
 
+/**
+ * Décide ce que la livraison doit faire d'une commande payée par carte
+ * téléphonique — la règle est ici, pure, pour que les deux chemins qui
+ * peuvent acheter un code (Reloadly historique et FazerCards) appliquent
+ * exactement la même garde.
+ *
+ * - `"supplier"` : achat fournisseur autorisé (carte acceptée **et** demande
+ *   explicite d'un administrateur, ou commande qui n'est pas payée par carte) ;
+ * - `"manual"` : carte acceptée, mais seule la saisie humaine est autorisée ;
+ * - `"blocked"` : carte non vérifiée → aucun achat, jamais.
+ *
+ * `autoDeliver` ne doit venir **que** d'une action admin authentifiée : ni le
+ * cron de reprise, ni l'IPN, ni le suivi client ne peuvent acheter un code.
+ */
+export function phoneCardDeliveryRoute(input: {
+  isPhoneCard: boolean;
+  status: unknown;
+  autoDeliver?: boolean;
+}): "supplier" | "manual" | "blocked" {
+  if (!input.isPhoneCard) return "supplier";
+  if (!phoneCardDeliveryAllowed(input.status)) return "blocked";
+  return input.autoDeliver === true ? "supplier" : "manual";
+}
+
+export type PhoneCardAutoDeliveryOutcome =
+  | "delivered"
+  | "already_delivered"
+  | "awaiting_codes"
+  | "manual"
+  | "failed"
+  | "not_paid"
+  | "not_found";
+
+/**
+ * Message admin après une acceptation qui tente la livraison automatique.
+ * Toujours actionnable : si le site n'a pas pu acheter le code, le gérant
+ * lit quoi faire (saisir le code, relancer, client prévenu).
+ */
+export function phoneCardAutoDeliveryMessage(
+  outcome: PhoneCardAutoDeliveryOutcome,
+  ref: string,
+  detail?: string,
+): string {
+  const motif = (detail ?? "").trim();
+  switch (outcome) {
+    case "delivered":
+      return `Carte acceptée et code livré automatiquement : le client a reçu son code par e-mail (commande ${ref}).`;
+    case "already_delivered":
+      return `Carte acceptée. La commande ${ref} était déjà livrée : aucun second achat effectué.`;
+    case "awaiting_codes":
+      return `Carte acceptée. Le fournisseur prépare le code : le client est prévenu par e-mail, relancez la livraison dans quelques minutes.${
+        motif ? ` (${motif})` : ""
+      }`;
+    case "failed":
+      return `Carte acceptée, mais le fournisseur a refusé l’achat : ${motif || "motif inconnu"}. Livrez le code à la main ou remboursez.`;
+    case "not_paid":
+      return `Carte acceptée, mais la livraison automatique a été bloquée : ${
+        motif || "paiement non confirmé"
+      }.`;
+    case "not_found":
+      return `Aucune commande trouvée pour ${ref}.`;
+    case "manual":
+    default:
+      return `Carte acceptée, mais livraison manuelle requise : ${
+        motif || "aucun achat fournisseur n’a été déclenché"
+      } Saisissez le code cadeau ci-dessous.`;
+  }
+}
+
 /** Texte du suivi public : ne contient jamais le code de recharge. */
 export function phoneCardPublicNotice(
   status: PhoneCardReviewStatus,
@@ -72,9 +141,11 @@ export function phoneCardPublicNotice(
 ): string {
   const ar = locale === "ar";
   if (status === "approved") {
+    // Depuis l'automatisation : le code peut être acheté et envoyé sans autre
+    // geste. Le texte ne promet donc plus une préparation « manuelle ».
     return ar
-      ? "تم قبول بطاقة الهاتف بعد التحقق. طلبك الآن قيد التحضير اليدوي، وستصلك بطاقة الهدية بالبريد الإلكتروني وعلى هذه الصفحة."
-      : "Your phone card has been verified and accepted. Your gift card is now being prepared manually and will appear here and be emailed to you.";
+      ? "تم قبول بطاقة الهاتف بعد التحقق. بطاقة الهدية في طريقها إليك، وستصلك بالبريد الإلكتروني وعلى هذه الصفحة."
+      : "Your phone card has been verified and accepted. Your gift card is on its way and will appear here and be emailed to you.";
   }
   if (status === "rejected") {
     return ar

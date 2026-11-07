@@ -40,8 +40,8 @@ La clé facultative `FULUS_API_KEY` est un secret serveur à ajouter dans Vercel
 4. Il renseigne l’opérateur, la valeur de la recharge en LYD et son code, ainsi qu’un téléphone de contact.
 5. Le site crée la commande sans facture NOWPayments et ouvre `/codes/commande` avec la référence et le jeton de suivi.
 6. Le suivi indique **carte reçue, à vérifier**. Le client ne doit pas renvoyer le code.
-7. Après acceptation admin, le suivi indique **préparation manuelle**. Après refus, il indique que la carte n’a pas été acceptée et invite le client à contacter l’équipe.
-8. Le code cadeau n’apparaît sur le suivi et dans l’e-mail client qu’après sa saisie manuelle par l’admin.
+7. Après acceptation admin, le suivi indique que la carte est acceptée et que le code cadeau arrive. Après refus, il indique que la carte n’a pas été acceptée et invite le client à contacter l’équipe.
+8. Le code cadeau n’apparaît sur le suivi et dans l’e-mail client qu’une fois réellement émis (achat automatique chez le fournisseur) ou saisi par l’admin.
 
 ## Parcours admin
 
@@ -50,10 +50,21 @@ La clé facultative `FULUS_API_KEY` est un secret serveur à ajouter dans Vercel
 3. Comparer la valeur de la carte au **devis effectivement accepté par le client** : montant USDT, taux, 20 %, total LYD, source et écart avec la carte déclarée.
 4. Afficher puis copier le code de recharge. Vérifier/recharger le crédit par le canal habituel de l’opérateur.
 5. **N’accepter qu’après avoir réellement reçu le crédit et vérifié qu’il couvre la vente.**
-   - **Crédit vérifié — accepter** : la ligne de paiement passe à `paid`, la commande digitale à `manual`. Aucun achat fournisseur n’est déclenché.
+   - **Crédit vérifié — accepter et livrer** : la ligne de paiement passe à `paid`, la commande digitale à `manual`, puis le site **achète le code chez le fournisseur (FazerCards) et l’envoie au client** dans la même action. Le message indique le résultat : code livré, code en préparation, ou motif du blocage.
+   - **Accepter sans livrer** : la carte est acceptée, mais aucun achat n’est déclenché ; le code est saisi à la main (commande déjà livrée par WhatsApp, fournisseur indisponible, client à recontacter).
    - **Refuser la carte** : saisir un motif interne ; le paiement passe à `failed`, la commande digitale à `failed`, et la livraison reste verrouillée.
-6. Après acceptation, ouvrir la commande dans la liste inférieure et cliquer **Saisir les codes manuellement**.
-7. Saisir une carte cadeau par ligne : `NUMÉRO | PIN | URL_D_ACTIVATION` (PIN et URL facultatifs), puis **Enregistrer et envoyer au client**.
+6. Si la livraison automatique a été bloquée (plafond, fournisseur en panne, code pas encore émis), la carte affiche **Livrer le code automatiquement** pour relancer sans second débit dès que le code est disponible.
+7. Sinon, ouvrir la commande dans la liste inférieure et cliquer **Saisir les codes manuellement**, puis saisir une carte cadeau par ligne : `NUMÉRO | PIN | URL_D_ACTIVATION` (PIN et URL facultatifs), puis **Enregistrer et envoyer au client**.
+
+### Livraison automatique après acceptation
+
+L’acceptation de la carte est le **contrôle humain** : elle confirme que le crédit a réellement été reçu. C’est seulement après ce geste que le code peut être acheté et envoyé sans autre intervention.
+
+- La décision est centralisée dans `phoneCardDeliveryRoute()` (`src/lib/phone-card-core.ts`) et appliquée aux deux chemins d’achat (FazerCards et Reloadly historique) : carte non acceptée → **aucun achat possible**.
+- L’achat exige le drapeau `phoneCardApproved`, transmis **uniquement** par une action admin authentifiée (`reviewPhoneCardPaymentAction`, `retryDigitalDeliveryAction`). Ni le cron de reprise, ni l’IPN, ni le suivi client ne le passent : aucun robot ne peut dépenser d’argent.
+- L’opération est **idempotente** : une commande déjà livrée n’est jamais rachetée, et une transaction fournisseur existante sert à récupérer les codes au lieu de repasser commande.
+- Les plafonds existants (plafond FazerCards, contrôle d’identifiant joueur, plafond Reloadly) restent appliqués : au-delà, la commande repasse en livraison manuelle avec un motif lisible.
+- Si la carte est acceptée mais que le code n’arrive pas, **Livrer le code automatiquement** relance la récupération chez le fournisseur — jamais un second débit.
 
 ## Protections mises en place
 
@@ -65,7 +76,7 @@ La clé facultative `FULUS_API_KEY` est un secret serveur à ajouter dans Vercel
 - URLs Telegram en liste blanche, délai de 5 s par canal et réponse bornée ; aucune URL fournie par le client n’est récupérée.
 - Le total USDT, le taux, les 20 %, le total LYD, la source, les horodatages et les références de publications du devis sont enregistrés avec le paiement pour l’audit.
 - La livraison manuelle est bloquée côté serveur tant que la carte n’est pas `approved` : masquer un bouton ne suffit pas.
-- Les relances, le polling et le cron ne peuvent pas acheter automatiquement une carte cadeau pour ce moyen de paiement.
+- Le cron de reprise, l’IPN et le polling client ne peuvent **jamais** acheter de code pour ce moyen de paiement : seul un administrateur authentifié, après acceptation de la carte, déclenche l’achat (`phoneCardApproved`).
 - Une carte déjà traitée ne peut pas être acceptée/refusée une seconde fois ; une commande déjà livrée ne peut plus voir son paiement modifié.
 - L’e-mail de notification admin contient la référence, le produit et la valeur déclarée, **jamais le code de recharge**.
 

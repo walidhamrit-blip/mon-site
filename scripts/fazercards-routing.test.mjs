@@ -103,7 +103,12 @@ test("les préfixes de slug identifient le fournisseur", () => {
 test("la livraison route les commandes fzr-… vers FazerCards", () => {
   const body = bodyOf(digitalOrders, "deliverPaidDigitalOrder");
   assert.match(body, /digitalOrderSupplier\(loaded\) === "fazercards"/);
-  assert.match(body, /deliverPaidFazercardsOrder\(loaded\.id\)/);
+  // Le drapeau `phoneCardApproved` (action admin) doit être transmis tel quel :
+  // c'est lui, et lui seul, qui autorise un achat pour une carte téléphonique.
+  assert.match(
+    body,
+    /deliverPaidFazercardsOrder\(\s*loaded\.id,\s*\{\s*phoneCardApproved:\s*options\.phoneCardApproved === true,?\s*\}/,
+  );
   // Le routage doit précéder les contrôles Reloadly (config, produit relié).
   assert.ok(
     body.indexOf("deliverPaidFazercardsOrder") < body.indexOf("reloadlyConfigured"),
