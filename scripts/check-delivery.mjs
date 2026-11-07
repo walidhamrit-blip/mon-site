@@ -7,6 +7,7 @@
  *   npm run delivery:check -- --audit --days=30
  *   npm run delivery:check -- DGC-… --json         # sortie machine
  *
+ * Dépendance unique : `pg` (pas besoin d'installer Next.js ni dotenv).
  * Lit `DATABASE_URL` dans l'environnement, sinon `.env.local` puis `.env`.
  * ⚠️  Le script interroge la base pointée par cette variable : vérifiez la
  * ligne « Base » affichée (prod ou preview) avant de conclure quoi que ce soit.
@@ -18,14 +19,36 @@
  * chaîne de connexion (seulement l'hôte).
  */
 
-import { existsSync } from "node:fs";
-import dotenv from "dotenv";
+import { existsSync, readFileSync } from "node:fs";
 import pg from "pg";
 import { deliveryVerdict, maskEmail } from "./delivery-check-core.mjs";
 
-for (const file of [".env.local", ".env"]) {
-  if (existsSync(file)) dotenv.config({ path: file, quiet: true });
+/**
+ * Lecture minimale de `.env.local` / `.env` — sans dépendance `dotenv`, pour
+ * que le script tourne avec `pg` seul (`npm i --no-save pg`), sans installer
+ * Next.js. Les variables déjà présentes dans le shell restent prioritaires.
+ */
+function loadEnvFile(file) {
+  if (!existsSync(file)) return;
+  for (const rawLine of readFileSync(file, "utf8").split(/\r?\n/)) {
+    const line = rawLine.trim();
+    if (!line || line.startsWith("#")) continue;
+    const eq = line.indexOf("=");
+    if (eq <= 0) continue;
+    const key = line.slice(0, eq).trim();
+    if (!key || process.env[key] !== undefined) continue;
+    let value = line.slice(eq + 1).trim();
+    if (
+      (value.startsWith('"') && value.endsWith('"')) ||
+      (value.startsWith("'") && value.endsWith("'"))
+    ) {
+      value = value.slice(1, -1);
+    }
+    process.env[key] = value;
+  }
 }
+
+for (const file of [".env.local", ".env"]) loadEnvFile(file);
 
 const args = process.argv.slice(2);
 const json = args.includes("--json");
@@ -78,8 +101,26 @@ try {
   fail("DATABASE_URL illisible (ce n'est pas une URL postgresql://…).");
 }
 
+/**
+ * `pg` 8.20 avertit bruyamment que `sslmode=require` sera plus strict en v9.
+ * On demande donc explicitement `verify-full` — c'est le comportement actuel,
+ * et cela évite un « SECURITY WARNING » alarmant pour un non-technicien.
+ */
+function connectionStringForClient(url) {
+  try {
+    const parsed = new URL(url);
+    const mode = parsed.searchParams.get("sslmode");
+    if (mode && ["require", "prefer", "verify-ca"].includes(mode)) {
+      parsed.searchParams.set("sslmode", "verify-full");
+    }
+    return parsed.toString();
+  } catch {
+    return url;
+  }
+}
+
 const client = new pg.Client({
-  connectionString: databaseUrl,
+  connectionString: connectionStringForClient(databaseUrl),
   connectionTimeoutMillis: 10_000,
   ssl: /sslmode=disable/i.test(databaseUrl) ? false : undefined,
 });

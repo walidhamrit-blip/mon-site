@@ -79,6 +79,77 @@ Fichiers : [`scripts/check-delivery.mjs`](../scripts/check-delivery.mjs) (CLI),
 
 ---
 
+## 3 bis. Où lancer la commande (dépôt sur GitHub, pas de terminal familier)
+
+Le dépôt est public : `https://github.com/walidhamrit-blip/mon-site`, branche
+`arena/97cdd8ce-mon-site` (le script n'est pas encore sur `main`).
+
+### A. Aucun terminal — éditeur SQL de Neon (2 minutes)
+
+1. `console.neon.tech` → le projet de production → **SQL Editor**.
+2. Coller la requête n°1 du §5 ci-dessous, en remplaçant la référence.
+3. Lire la ligne : `carte_statut = approved`, `payment_status = paid`,
+   `status = manual`, `delivered_at` vide ⇒ **payé, non livré** (normal).
+
+C'est le chemin le plus court quand on veut juste une réponse.
+
+### B. Terminal minimal — sans cloner le projet (5 minutes)
+
+Prérequis : **Node.js ≥ 22** (nodejs.org). Vérifier : `node --version`.
+
+```bash
+mkdir verif-livraison && cd verif-livraison
+curl -fsSLO https://raw.githubusercontent.com/walidhamrit-blip/mon-site/arena/97cdd8ce-mon-site/scripts/check-delivery.mjs
+curl -fsSLO https://raw.githubusercontent.com/walidhamrit-blip/mon-site/arena/97cdd8ce-mon-site/scripts/delivery-check-core.mjs
+npm install --no-save --package-lock=false pg      # seule dépendance : pg
+echo 'DATABASE_URL="postgresql://…?sslmode=require"' > .env.local
+node check-delivery.mjs DGC-XXXXXXXXXXXX
+```
+
+Aucun `npm ci`, aucun Next.js : le script ne dépend que de `pg` (le chargement
+de `.env.local` est intégré).
+
+Sous **Windows PowerShell** (pas `cmd`) :
+
+```powershell
+New-Item -ItemType Directory verif-livraison; Set-Location verif-livraison
+Invoke-WebRequest -Uri "https://raw.githubusercontent.com/walidhamrit-blip/mon-site/arena/97cdd8ce-mon-site/scripts/check-delivery.mjs" -OutFile check-delivery.mjs
+Invoke-WebRequest -Uri "https://raw.githubusercontent.com/walidhamrit-blip/mon-site/arena/97cdd8ce-mon-site/scripts/delivery-check-core.mjs" -OutFile delivery-check-core.mjs
+npm install --no-save --package-lock=false pg
+Set-Content .env.local 'DATABASE_URL="postgresql://…?sslmode=require"'
+node check-delivery.mjs DGC-XXXXXXXXXXXX
+```
+
+### C. Clone complet (si tu travailles déjà sur le dépôt)
+
+```bash
+git clone https://github.com/walidhamrit-blip/mon-site.git
+cd mon-site
+git switch arena/97cdd8ce-mon-site     # le script n'existe pas encore sur main
+npm ci                                 # installation complète (~1 min)
+echo 'DATABASE_URL="postgresql://…?sslmode=require"' >> .env.local
+npm run delivery:check -- DGC-XXXXXXXXXXXX
+```
+
+### D. Depuis un navigateur ou une tablette
+
+GitHub → onglet **Code** → **Codespaces** → *New codespace* sur la branche
+`arena/97cdd8ce-mon-site`, puis dans le terminal du Codespace : `npm ci`,
+`.env.local`, `npm run delivery:check -- …`. Neon est joignable depuis un
+Codespace (contrairement à l'agent Arena, dont la sortie réseau est limitée).
+
+### Règles à respecter
+
+- **La chaîne `DATABASE_URL` est un secret** (elle contient le mot de passe de la
+  base). Elle va dans `.env.local`, fichier **déjà ignoré par Git** — jamais dans
+  un commit, une capture d'écran partagée ou une conversation.
+- Lancer la commande à la racine du dossier qui contient `.env.local`.
+- Le script est **en lecture seule** (uniquement des `SELECT`) : il ne peut rien
+  modifier dans la base.
+- Il n'affiche ni code cadeau, ni adresse e-mail complète, ni mot de passe.
+
+---
+
 ## 4. Niveau 3 — côté client (le seul test qui compte vraiment)
 
 Demander au client d'ouvrir le lien reçu après paiement :
