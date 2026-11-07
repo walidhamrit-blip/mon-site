@@ -44,6 +44,30 @@ au client pouvait être oublié ou contesté.
 - Chaque geste **exige une note** ; un débit peut aussi pointer la commande
   concernée. Le solde ne change **jamais sans mouvement enregistré**.
 
+## Le client peut demander à utiliser son solde (option B)
+
+Rien n'est automatique : le client **demande**, vous **validez**.
+
+1. Le client ouvre le suivi de sa commande (`/codes/commande`, lien privé reçu par e-mail).
+2. Il voit **« Votre solde chez nous : 12,04 LYD disponible »** et peut cliquer
+   **« Utiliser mon solde (12,04 LYD) »** (message facultatif).
+3. La demande arrive dans **Admin → Soldes clients → « Demandes des clients »**
+   (et par e-mail si le service d'e-mail est configuré). **Aucun montant n'est débité à ce stade.**
+4. Vous cliquez **« Valider l'utilisation »** → le solde est débité par un mouvement
+   « Utilisé sur une commande » portant la référence de la commande.
+   **« Refuser »** ne touche à rien : le solde reste dû au client.
+5. Le client voit immédiatement le statut sur son suivi : *en attente*, *validé*, *refusé*.
+
+### Ce que le site ne fait pas (volontairement)
+
+- Il ne **réduit pas** automatiquement le prix de la commande : c'est vous qui
+  confirmez le montant restant à payer au client (le site n'a pas de compte client,
+  donc aucune preuve d'identité suffisante pour débiter sans vous).
+- Il n'accepte **aucun montant** venant du navigateur : la demande porte sur le
+  solde réel enregistré en base, et la validation applique exactement ce montant.
+- Une seule demande en attente par commande (index unique `order_ref, status`), et
+  jamais deux débits sur la même commande (index unique du journal des mouvements).
+
 ## Règles de sécurité
 
 - Un débit **supérieur au solde est refusé** (message clair, rien n'est écrit).
@@ -67,4 +91,7 @@ npm run lint
 
 Tests couverts : trop-perçu 30 / 17,96 = 12,04 ; carte 15 / 17,96 = 0 ;
 valeur illisible = pas de crédit ; débit supérieur au solde refusé ; ajustement
-négatif ; identité client (e-mail prioritaire, sinon téléphone).
+négatif ; identité client (e-mail prioritaire, sinon téléphone) ;
+`scripts/client-credit-requests.test.mjs` : la demande du client ne débite rien,
+le montant ne vient jamais du navigateur, jeton de suivi obligatoire, validation
+réservée à l'admin, table créée sans migration manuelle.

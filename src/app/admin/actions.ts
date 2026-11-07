@@ -47,6 +47,7 @@ import {
 } from "@/lib/digital-orders";
 import { sendPhoneCardApprovedEmail } from "@/lib/digital-emails";
 import { addCreditMovement, recordPhoneCardOverpayment } from "@/lib/client-credits";
+import { approveCreditRequest, rejectCreditRequest } from "@/lib/client-credit-requests";
 import { denominationUnitPrice, type DigitalProduct } from "@/lib/digital-types";
 import { computeSalePrice } from "@/lib/digital-order-core";
 import { getGiftCardProduct, reloadlyConfigured } from "@/lib/reloadly";
@@ -1112,6 +1113,47 @@ export async function addCreditMovementAction(input: {
       orderRef: input.orderRef,
     });
     revalidatePath("/admin/soldes");
+    if (!result.ok) return { ok: false, error: result.error };
+    return { ok: true, message: result.message };
+  } catch (error) {
+    return { ok: false, error: dbIssue(error) };
+  }
+}
+
+/**
+ * Valide la demande d'utilisation d'un solde envoyée par un client.
+ *
+ * Le débit passe par `addCreditMovement` (mouvement « use ») : le solde ne
+ * peut pas devenir négatif et la même commande ne peut pas être débitée deux
+ * fois. Aucun montant n'est accepté depuis le navigateur — seulement l'id de
+ * la demande.
+ */
+export async function approveCreditRequestAction(
+  requestId: number,
+  note?: string,
+): Promise<ActionResult> {
+  await requireAdmin();
+  try {
+    const result = await approveCreditRequest(Number(requestId), note);
+    revalidatePath("/admin/soldes");
+    revalidatePath("/codes/commande");
+    if (!result.ok) return { ok: false, error: result.error };
+    return { ok: true, message: result.message };
+  } catch (error) {
+    return { ok: false, error: dbIssue(error) };
+  }
+}
+
+/** Refuse une demande : aucun mouvement, le solde reste dû au client. */
+export async function rejectCreditRequestAction(
+  requestId: number,
+  note?: string,
+): Promise<ActionResult> {
+  await requireAdmin();
+  try {
+    const result = await rejectCreditRequest(Number(requestId), note);
+    revalidatePath("/admin/soldes");
+    revalidatePath("/codes/commande");
     if (!result.ok) return { ok: false, error: result.error };
     return { ok: true, message: result.message };
   } catch (error) {
