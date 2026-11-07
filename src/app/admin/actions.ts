@@ -38,6 +38,7 @@ import {
   upsertDigitalProductOverridesBatch,
 } from "@/lib/digital-overrides";
 import {
+  deliverApprovedPhoneCardOrder,
   deliverDigitalOrderManually,
   deliverPaidDigitalOrder,
   getAdminDigitalOrder,
@@ -62,6 +63,7 @@ import { deliveryAcceptUrl } from "@/lib/delivery-kit";
 import { sendDeliveryLinkEmail } from "@/lib/delivery-notifications";
 import { resolveSiteOrigin } from "@/lib/site-identity";
 import { reviewPhoneCardPayment } from "@/lib/phone-card-payments";
+import { phoneCardAutoDeliveryMessage } from "@/lib/phone-card-core";
 
 export interface ActionResult {
   ok: boolean;
@@ -864,7 +866,13 @@ export async function retryDigitalDeliveryAction(ref: string): Promise<ActionRes
   if (!orderRef) return { ok: false, error: "Référence manquante." };
 
   try {
-    const result = await deliverPaidDigitalOrder(orderRef, { force: true });
+    // `phoneCardApproved` : cette relance vient d'un administrateur
+    // authentifié. Pour une carte téléphonique, l'achat reste conditionné à
+    // l'acceptation de la carte (vérifiée dans le module de livraison).
+    const result = await deliverPaidDigitalOrder(orderRef, {
+      force: true,
+      phoneCardApproved: true,
+    });
     revalidatePath("/admin/digital/orders");
     switch (result.outcome) {
       case "delivered":
@@ -976,16 +984,27 @@ export async function markDeliveredOffPlatformAction(
   }
 }
 
-/** Accepte/refuse une recharge téléphonique, sans jamais livrer automatiquement. */
+/**
+ * Accepte/refuse une recharge téléphonique.
+ *
+ * L'acceptation reste un geste **humain** : c'est lui qui confirme que le
+ * crédit a réellement été reçu. Ensuite, deux choix :
+ *  - `autoDeliver` → le site achète le code au fournisseur et l'envoie au
+ *    client dans la même action (message détaillé en cas d'échec) ;
+ *  - sans `autoDeliver` → livraison manuelle, le gérant saisit le code.
+ * Un refus ne livre jamais rien.
+ */
 export async function reviewPhoneCardPaymentAction(
   ref: string,
   decision: "approved" | "rejected",
   note?: string,
+  options: { autoDeliver?: boolean } = {},
 ): Promise<ActionResult> {
   await requireAdmin();
   if (decision !== "approved" && decision !== "rejected") {
     return { ok: false, error: "Décision de vérification invalide." };
   }
+  const autoDeliver = options?.autoDeliver === true;
   try {
     const result = await reviewPhoneCardPayment(ref, decision, note);
     if (!result.ok) return { ok: false, error: result.error ?? "Vérification impossible." };
@@ -1008,6 +1027,21 @@ export async function reviewPhoneCardPaymentAction(
         mailWarning = ` E-mail non envoyé : ${dbIssue(error)}`;
       }
     }
+    // Livraison automatique demandée par l'admin : la carte vient d'être
+    // acceptée, donc l'achat fournisseur est autorisé. Un échec ne remet
+    // jamais en cause l'acceptation : le message explique quoi faire.
+    let deliveryMessage = "";
+    if (decision === "approved" && autoDeliver) {
+      try {
+        const delivery = await deliverApprovedPhoneCardOrder(ref);
+        deliveryMessage = ` ${phoneCardAutoDeliveryMessage(delivery.outcome, ref, delivery.message)}`;
+      } catch (error) {
+        deliveryMessage = ` Livraison automatique impossible : ${dbIssue(error)} Saisissez le code manuellement.`;
+      }
+      revalidatePath("/admin/digital/orders");
+      revalidatePath("/codes/commande");
+    }
+
     // Trop-perçu : le client a payé une carte de valeur supérieure au devis.
     // L'écart lui reste dû — on l'enregistre comme solde, jamais on ne l'oublie.
     let creditMessage = "";
@@ -1026,7 +1060,9 @@ export async function reviewPhoneCardPaymentAction(
       ok: true,
       message:
         decision === "approved"
-          ? `Carte acceptée. La commande est maintenant « à livrer manuellement » : saisissez le code cadeau ci-dessous.${creditMessage}${mailWarning}`
+          ? autoDeliver
+            ? `${deliveryMessage.trim()}${creditMessage}${mailWarning}`
+            : `Carte acceptée. La commande est maintenant « à livrer manuellement » : saisissez le code cadeau ci-dessous.${creditMessage}${mailWarning}`
           : "Carte refusée et commande marquée comme non payée. Aucun code cadeau ne sera livré.",
     };
   } catch (error) {

@@ -83,7 +83,11 @@ import { isFazercardsProductRef } from "@/lib/fazercards-catalog";
 import { deliverPaidFazercardsOrder } from "@/lib/fazercards-orders";
 import { sendPaymentConfirmedEmail } from "@/lib/order-emails";
 import { phoneCardDeliveryGate } from "@/lib/phone-card-payments";
-import { phoneCardPublicNotice } from "@/lib/phone-card-core";
+import {
+  phoneCardAutoDeliveryMessage,
+  phoneCardDeliveryRoute,
+  phoneCardPublicNotice,
+} from "@/lib/phone-card-core";
 
 
 /* Ré-exports : les consommateurs serveur (admin, routes) importent tout
@@ -526,9 +530,41 @@ async function resyncFulfillmentConfig(order: DigitalOrder): Promise<DigitalOrde
  * transaction Reloadly existe déjà mais que les codes manquent, on
  * récupère les codes au lieu de repasser commande (aucun double débit).
  */
+/**
+ * Livre une commande payée par carte téléphonique **après** acceptation de
+ * la carte par un administrateur.
+ *
+ * C'est le seul point d'entrée autorisé à acheter un code pour ce moyen de
+ * paiement : il vérifie d'abord que la carte est bien acceptée, puis délègue
+ * la livraison (achat fournisseur + e-mail client) au chemin habituel.
+ * Idempotent : une commande déjà livrée n'est jamais rachetée.
+ */
+export async function deliverApprovedPhoneCardOrder(
+  ref: string,
+): Promise<DigitalDeliveryResult> {
+  const orderRef = String(ref ?? "").trim().toUpperCase();
+  if (!orderRef) return { outcome: "not_found", ref: orderRef, message: "Référence manquante." };
+  const gate = await phoneCardDeliveryGate(orderRef);
+  if (!gate.isPhoneCard) {
+    return {
+      outcome: "not_found",
+      ref: orderRef,
+      message: "Aucune carte téléphonique enregistrée pour cette référence.",
+    };
+  }
+  if (gate.status !== "approved") {
+    return {
+      outcome: "not_paid",
+      ref: orderRef,
+      message: "La carte téléphonique n’est pas acceptée : aucun achat déclenché.",
+    };
+  }
+  return deliverPaidDigitalOrder(orderRef, { phoneCardApproved: true });
+}
+
 export async function deliverPaidDigitalOrder(
   idOrRef: number | string,
-  options: { force?: boolean } = {},
+  options: { force?: boolean; phoneCardApproved?: boolean } = {},
 ): Promise<DigitalDeliveryResult> {
   const loaded = await loadDigitalOrder(idOrRef);
   if (!loaded) return { outcome: "not_found", ref: String(idOrRef) };
@@ -537,28 +573,39 @@ export async function deliverPaidDigitalOrder(
     return { outcome: "already_delivered", ref: loaded.ref };
   }
 
-  // Une recharge téléphonique ne suit JAMAIS le chemin d'achat fournisseur :
-  // seule la saisie manuelle des codes est autorisée après acceptation admin.
+  // Une recharge téléphonique n'achète un code QUE si l'administrateur l'a
+  // explicitement demandé (`phoneCardApproved`) — c'est-à-dire au moment où il
+  // accepte la carte, après avoir vérifié le crédit reçu. Sans ce drapeau
+  // (cron de reprise, IPN, suivi client), la livraison reste manuelle : aucun
+  // achat ne peut être déclenché par un robot.
   const phoneGate = await phoneCardDeliveryGate(loaded.ref);
-  if (phoneGate.isPhoneCard) {
-    return phoneGate.status === "approved"
-      ? {
-          outcome: "manual",
-          ref: loaded.ref,
-          message: "Carte téléphonique acceptée : saisissez manuellement le code cadeau à livrer.",
-        }
-      : {
-          outcome: "not_paid",
-          ref: loaded.ref,
-          message: "La carte téléphonique n’a pas encore été acceptée par un administrateur.",
-        };
+  const phoneRoute = phoneCardDeliveryRoute({
+    isPhoneCard: phoneGate.isPhoneCard,
+    status: phoneGate.status,
+    autoDeliver: options.phoneCardApproved === true,
+  });
+  if (phoneRoute === "blocked") {
+    return {
+      outcome: "not_paid",
+      ref: loaded.ref,
+      message: "La carte téléphonique n’a pas encore été acceptée par un administrateur.",
+    };
+  }
+  if (phoneRoute === "manual") {
+    return {
+      outcome: "manual",
+      ref: loaded.ref,
+      message: "Carte téléphonique acceptée : saisissez manuellement le code cadeau à livrer.",
+    };
   }
 
   // Routage fournisseur : une commande créée depuis le catalogue FazerCards
   // est achetée chez FazerCards (Idempotency-Key = référence de commande).
   // Les archives de l’ancien fournisseur ne déclenchent plus aucun achat.
   if (digitalOrderSupplier(loaded) === "fazercards") {
-    const routed = await deliverPaidFazercardsOrder(loaded.id);
+    const routed = await deliverPaidFazercardsOrder(loaded.id, {
+      phoneCardApproved: options.phoneCardApproved === true,
+    });
     return {
       outcome: routed.outcome,
       ref: routed.ref,

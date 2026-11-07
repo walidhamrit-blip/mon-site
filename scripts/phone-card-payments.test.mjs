@@ -7,7 +7,9 @@ import { fileURLToPath } from "node:url";
 import {
   normalizePhoneCardCode,
   normalizePhoneCardReviewStatus,
+  phoneCardAutoDeliveryMessage,
   phoneCardDeliveryAllowed,
+  phoneCardDeliveryRoute,
   phoneCardPublicNotice,
   validatePhoneCardInput,
 } from "../src/lib/phone-card-core.ts";
@@ -67,7 +69,12 @@ test("seule une revue approved déverrouille la livraison", () => {
 test("les messages publics expliquent la revue sans contenir de secret", () => {
   for (const locale of ["ar", "en"]) {
     assert.match(phoneCardPublicNotice("pending", locale), locale === "ar" ? /التحقق|نتحقق/ : /verify/i);
-    assert.match(phoneCardPublicNotice("approved", locale), locale === "ar" ? /يدوي/ : /manually/i);
+    // Après acceptation, le client lit que le code arrive — plus de promesse
+    // de « préparation manuelle » depuis l'automatisation.
+    assert.match(
+      phoneCardPublicNotice("approved", locale),
+      locale === "ar" ? /بالبريد الإلكتروني/ : /emailed to you/i,
+    );
     assert.match(phoneCardPublicNotice("rejected", locale), locale === "ar" ? /تواصل/ : /Contact/i);
   }
 });
@@ -108,19 +115,85 @@ test("le code est chiffré, empreinté et unique dans la base", () => {
   assert.match(storage, /fulfillment: "manual"/);
 });
 
-test("aucune livraison automatique ou manuelle n'est possible avant acceptation", () => {
+test("aucune livraison automatique n'est possible avant acceptation", () => {
   const delivery = code(read("src/lib/digital-orders.ts"));
   const automatic = delivery.slice(delivery.indexOf("export async function deliverPaidDigitalOrder"));
+  // La garde est lue AVANT tout choix de fournisseur : on ne peut pas router
+  // une carte non vérifiée vers un chemin d'achat.
   assert.ok(automatic.indexOf("phoneCardDeliveryGate") < automatic.indexOf("digitalOrderSupplier"));
-  assert.match(automatic, /phoneGate\.status === "approved"/);
+  assert.match(automatic, /phoneCardDeliveryRoute\(\{/);
+  assert.match(automatic, /autoDeliver: options\.phoneCardApproved === true/);
+  assert.match(automatic, /if \(phoneRoute === "manual"\)/);
   assert.match(automatic, /outcome: "manual"/);
+
   const manual = delivery.slice(delivery.indexOf("export async function deliverDigitalOrderManually"));
   assert.match(manual, /phoneGate\.isPhoneCard && phoneGate\.status !== "approved"/);
   assert.match(manual, /Livraison verrouillée/);
+
   const supplier = code(read("src/lib/fazercards-orders.ts"));
   const direct = supplier.slice(supplier.indexOf("export async function deliverPaidFazercardsOrder"));
   assert.ok(direct.indexOf("phoneCardDeliveryGate") < direct.indexOf("placeFazercardsOrder"));
+  assert.match(direct, /phoneCardDeliveryRoute\(\{/);
   assert.match(direct, /aucun achat fournisseur déclenché/);
+});
+
+test("l'achat automatique après acceptation reste réservé à l'admin", () => {
+  // Le seul point d'entrée autorisé à acheter pour une carte téléphonique
+  // vérifie l'acceptation puis passe le drapeau explicitement.
+  const delivery = code(read("src/lib/digital-orders.ts"));
+  const entry = delivery.slice(delivery.indexOf("export async function deliverApprovedPhoneCardOrder"));
+  assert.match(entry, /gate\.status !== "approved"/);
+  assert.match(entry, /deliverPaidDigitalOrder\(orderRef, \{ phoneCardApproved: true \}\)/);
+
+  // Ni la reprise automatique (cron), ni l'IPN, ni le polling client ne
+  // doivent pouvoir déclencher un achat : aucun de ces fichiers ne passe le
+  // drapeau.
+  for (const path of [
+    "src/lib/digital-resume.ts",
+    "src/app/api/payments/ipn/route.ts",
+    "src/app/api/payments/order/[ref]/route.ts",
+  ]) {
+    const source = code(read(path));
+    assert.doesNotMatch(source, /phoneCardApproved/, `${path} ne doit jamais acheter pour une carte`);
+  }
+
+  // L'action admin, elle, le passe — et seulement après `requireAdmin()`.
+  const actions = read("src/app/admin/actions.ts");
+  const review = actions.slice(actions.indexOf("export async function reviewPhoneCardPaymentAction"));
+  assert.match(review, /await requireAdmin\(\)/);
+  assert.ok(
+    review.indexOf("await requireAdmin()") < review.indexOf("deliverApprovedPhoneCardOrder"),
+    "la livraison automatique vient après le contrôle de session",
+  );
+  assert.match(review, /autoDeliver/);
+});
+
+test("route de livraison : la carte non acceptée ne déclenche jamais d'achat", () => {
+  assert.equal(phoneCardDeliveryRoute({ isPhoneCard: true, status: "pending" }), "blocked");
+  assert.equal(phoneCardDeliveryRoute({ isPhoneCard: true, status: "rejected" }), "blocked");
+  assert.equal(phoneCardDeliveryRoute({ isPhoneCard: true, status: "approved" }), "manual");
+  assert.equal(
+    phoneCardDeliveryRoute({ isPhoneCard: true, status: "approved", autoDeliver: true }),
+    "supplier",
+  );
+  // Un drapeau d'achat sur une carte non acceptée ne change rien.
+  assert.equal(
+    phoneCardDeliveryRoute({ isPhoneCard: true, status: "pending", autoDeliver: true }),
+    "blocked",
+  );
+  assert.equal(phoneCardDeliveryRoute({ isPhoneCard: false, status: "pending" }), "supplier");
+});
+
+test("message après acceptation : toujours actionnable, jamais muet", () => {
+  const ref = "DGC-TEST";
+  assert.match(phoneCardAutoDeliveryMessage("delivered", ref), /livré automatiquement/);
+  assert.match(phoneCardAutoDeliveryMessage("already_delivered", ref), /aucun second achat/);
+  assert.match(phoneCardAutoDeliveryMessage("awaiting_codes", ref), /relancez la livraison/);
+  const manual = phoneCardAutoDeliveryMessage("manual", ref, "Fiche en livraison manuelle.");
+  assert.match(manual, /Saisissez le code cadeau/);
+  assert.match(manual, /Fiche en livraison manuelle/);
+  assert.match(phoneCardAutoDeliveryMessage("failed", ref, "refusé"), /Livrez le code à la main/);
+  assert.match(phoneCardAutoDeliveryMessage("not_found", ref), /Aucune commande/);
 });
 
 test("le code secret reste dans l'admin et jamais dans le suivi ou les e-mails", () => {

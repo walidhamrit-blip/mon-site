@@ -13,7 +13,11 @@ import {
   Smartphone,
   XCircle,
 } from "lucide-react";
-import { recordOverpaymentAction, reviewPhoneCardPaymentAction } from "@/app/admin/actions";
+import {
+  recordOverpaymentAction,
+  retryDigitalDeliveryAction,
+  reviewPhoneCardPaymentAction,
+} from "@/app/admin/actions";
 import { PHONE_CARD_OPERATOR_LABELS, type PhoneCardOperator } from "@/lib/phone-card-core";
 import type { AdminPhoneCardPaymentRow } from "@/lib/phone-card-payments";
 import {
@@ -57,25 +61,47 @@ export function PhoneCardPaymentsTable({ rows }: { rows: AdminPhoneCardPaymentRo
   const [notes, setNotes] = useState<Record<string, string>>({});
   const [toast, setToast] = useState<{ ok: boolean; text: string } | null>(null);
 
-  const review = (ref: string, decision: "approved" | "rejected") => {
+  const review = (ref: string, decision: "approved" | "rejected", autoDeliver = false) => {
     if (
       decision === "approved" &&
       !window.confirm(
-        `Confirmez-vous avoir vérifié la carte de ${ref} et avoir réellement reçu le crédit ? Cette action débloque la livraison manuelle.`,
+        autoDeliver
+          ? `Confirmez-vous avoir vérifié la carte de ${ref} et avoir réellement reçu le crédit ? Le site achètera ensuite le code chez le fournisseur et l’enverra au client.`
+          : `Confirmez-vous avoir vérifié la carte de ${ref} et avoir réellement reçu le crédit ? Vous devrez saisir le code cadeau vous-même.`,
       )
     ) {
       return;
     }
     setPendingRef(ref);
     startTransition(async () => {
-      const result = await reviewPhoneCardPaymentAction(ref, decision, notes[ref] ?? "");
+      const result = await reviewPhoneCardPaymentAction(ref, decision, notes[ref] ?? "", {
+        autoDeliver: decision === "approved" && autoDeliver,
+      });
       setToast({
         ok: result.ok,
         text: result.message ?? result.error ?? "Vérification terminée.",
       });
       setPendingRef(null);
       if (result.ok) router.refresh();
-      setTimeout(() => setToast(null), 7000);
+      setTimeout(() => setToast(null), 9000);
+    });
+  };
+
+  /**
+   * Relance la livraison automatique d'une carte déjà acceptée (fournisseur
+   * lent, panne réseau, ou acceptation faite avant l'automatisation).
+   */
+  const autoDeliverNow = (ref: string) => {
+    setPendingRef(ref);
+    startTransition(async () => {
+      const result = await retryDigitalDeliveryAction(ref);
+      setToast({
+        ok: result.ok,
+        text: result.message ?? result.error ?? "Livraison terminée.",
+      });
+      setPendingRef(null);
+      if (result.ok) router.refresh();
+      setTimeout(() => setToast(null), 9000);
     });
   };
 
@@ -133,8 +159,9 @@ export function PhoneCardPaymentsTable({ rows }: { rows: AdminPhoneCardPaymentRo
             Cartes téléphoniques à vérifier
           </h2>
           <p className="mt-1 max-w-3xl text-[12px] leading-5 text-stone-600">
-            Vérifiez le crédit auprès de l’opérateur avant d’accepter. L’acceptation ne livre
-            rien automatiquement : elle débloque seulement la saisie manuelle du code cadeau.
+            Vérifiez le crédit auprès de l’opérateur avant d’accepter. Après votre
+            acceptation, le site peut acheter le code chez le fournisseur et l’envoyer au
+            client automatiquement — ou vous laisser saisir le code vous-même.
           </p>
         </div>
         <span className="rounded-full border border-amber-200 bg-white px-3 py-1 text-[11px] font-bold text-amber-800">
@@ -283,11 +310,20 @@ export function PhoneCardPaymentsTable({ rows }: { rows: AdminPhoneCardPaymentRo
                       <button
                         type="button"
                         disabled={isBusy || !row.code}
-                        onClick={() => review(row.ref, "approved")}
+                        onClick={() => review(row.ref, "approved", true)}
                         className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-emerald-700 px-3 text-[12px] font-bold text-white hover:bg-emerald-800 disabled:opacity-50"
                       >
                         {isBusy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <CheckCircle2 className="h-3.5 w-3.5" />}
-                        Crédit vérifié — accepter
+                        Crédit vérifié — accepter et livrer
+                      </button>
+                      <button
+                        type="button"
+                        disabled={isBusy || !row.code}
+                        onClick={() => review(row.ref, "approved", false)}
+                        className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-emerald-300 bg-white px-3 text-[12px] font-bold text-emerald-800 hover:bg-emerald-50 disabled:opacity-50"
+                      >
+                        <Check className="h-3.5 w-3.5" />
+                        Accepter sans livrer
                       </button>
                       <button
                         type="button"
@@ -336,6 +372,19 @@ export function PhoneCardPaymentsTable({ rows }: { rows: AdminPhoneCardPaymentRo
                     )}
                     {row.status === "approved" && row.deliveryStatus !== "delivered" && (
                       <div className="flex flex-wrap gap-2">
+                        <button
+                          type="button"
+                          disabled={isBusy}
+                          onClick={() => autoDeliverNow(row.ref)}
+                          className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-emerald-700 px-3 text-[12px] font-bold text-white hover:bg-emerald-800 disabled:opacity-50"
+                        >
+                          {isBusy ? (
+                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                          ) : (
+                            <CheckCircle2 className="h-3.5 w-3.5" />
+                          )}
+                          Livrer le code automatiquement
+                        </button>
                         <button
                           type="button"
                           onClick={() => openOrder(row.ref)}
