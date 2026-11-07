@@ -13,7 +13,7 @@ import {
   Smartphone,
   XCircle,
 } from "lucide-react";
-import { reviewPhoneCardPaymentAction } from "@/app/admin/actions";
+import { recordOverpaymentAction, reviewPhoneCardPaymentAction } from "@/app/admin/actions";
 import { PHONE_CARD_OPERATOR_LABELS, type PhoneCardOperator } from "@/lib/phone-card-core";
 import type { AdminPhoneCardPaymentRow } from "@/lib/phone-card-payments";
 import {
@@ -22,6 +22,7 @@ import {
   orderHash,
   type OrderLinkTarget,
 } from "@/lib/admin-order-link";
+import { displayLyd, overpaymentLyd } from "@/lib/client-credits-core";
 
 const STATUS_LABELS = {
   pending: "À vérifier",
@@ -96,6 +97,21 @@ export function PhoneCardPaymentsTable({ rows }: { rows: AdminPhoneCardPaymentRo
         .getElementById(orderAnchor(ref))
         ?.scrollIntoView({ block: "center", behavior: "smooth" });
     }
+  };
+
+  /**
+   * Enregistre le trop-perçu (carte > devis dû) comme solde au nom du client.
+   * Idempotent : un second clic répond « déjà enregistré » sans recréditer.
+   */
+  const saveCredit = (ref: string) => {
+    setPendingRef(ref);
+    startTransition(async () => {
+      const result = await recordOverpaymentAction(ref);
+      setToast({ ok: result.ok, text: result.message ?? result.error ?? "Terminé." });
+      setPendingRef(null);
+      if (result.ok) router.refresh();
+      setTimeout(() => setToast(null), 7000);
+    });
   };
 
   const copy = async (ref: string, code: string) => {
@@ -184,6 +200,17 @@ export function PhoneCardPaymentsTable({ rows }: { rows: AdminPhoneCardPaymentRo
                           {quoteDelta >= 0 ? "+" : ""}{quoteDelta.toFixed(2)} LYD par rapport à la carte déclarée.
                         </strong>
                       )}
+                      {(() => {
+                        const surplus = overpaymentLyd(row.cardValueLyd, row.quote?.totalLyd);
+                        if (!surplus) return null;
+                        return (
+                          <span className="mt-1 block rounded-md border border-emerald-200 bg-emerald-50 px-2 py-1 font-bold text-emerald-900">
+                            Reste dû au client : {displayLyd(surplus)} (carte{" "}
+                            {displayLyd(row.cardValueLyd)} − devis {displayLyd(row.quote?.totalLyd)})
+                            {row.status === "approved" ? " — à enregistrer comme solde." : " — à enregistrer après acceptation."}
+                          </span>
+                        );
+                      })()}
                     </p>
                     {row.quote.references.length > 0 && (
                       <ul className="mt-1.5 space-y-0.5 border-t border-[#C6A664]/25 pt-1.5">
@@ -284,6 +311,29 @@ export function PhoneCardPaymentsTable({ rows }: { rows: AdminPhoneCardPaymentRo
                           : "Il reste à livrer : ouvrez la commande puis saisissez le code, ou marquez-la livrée si le code est déjà parti (WhatsApp)."
                         : "Aucune livraison n’est autorisée."}
                     </p>
+                    {row.status === "approved" && (
+                      <div className="flex flex-wrap items-center gap-2">
+                        {(() => {
+                          const surplus = overpaymentLyd(row.cardValueLyd, row.quote?.totalLyd);
+                          if (!surplus) return null;
+                          return (
+                            <button
+                              type="button"
+                              disabled={isBusy}
+                              onClick={() => saveCredit(row.ref)}
+                              className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-emerald-300 bg-white px-3 text-[12px] font-bold text-emerald-800 hover:bg-emerald-50 disabled:opacity-50"
+                            >
+                              {isBusy ? (
+                                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                              ) : (
+                                <Check className="h-3.5 w-3.5" />
+                              )}
+                              Enregistrer le solde dû ({displayLyd(surplus)})
+                            </button>
+                          );
+                        })()}
+                      </div>
+                    )}
                     {row.status === "approved" && row.deliveryStatus !== "delivered" && (
                       <div className="flex flex-wrap gap-2">
                         <button

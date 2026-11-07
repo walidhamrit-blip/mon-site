@@ -56,6 +56,7 @@ export function AdminNav({ newLeads, paidOrders }: Props) {
       { href: "/admin/digital", label: "Catalogue & fournisseurs", sublabel: "FazerCards, solde & disponibilité", icon: Gift },
       { href: "/admin/digital/products", label: "Modifier les produits", sublabel: "Cartes cadeaux, prix & SEO/GEO", icon: Sparkles },
       { href: "/admin/digital/orders", label: "Commandes digitales", sublabel: "Paiements, livraison & relances", icon: ShoppingBag },
+      { href: "/admin/soldes", label: "Soldes clients", sublabel: "Trop-perçus, utilisations & remboursements", icon: Wallet },
     ] },
     { title: "Création de sites & Contact", items: [
       { href: "/admin/leads", label: "Demandes & devis", sublabel: "Projets web & messages clients", icon: Inbox, badge: newLeads, badgeTone: "amber" },
