@@ -508,3 +508,35 @@ export const clientCreditMovements = pgTable("client_credit_movements", {
 
 export type ClientCreditMovement = typeof clientCreditMovements.$inferSelect;
 export type NewClientCreditMovement = typeof clientCreditMovements.$inferInsert;
+
+/**
+ * Demande d'utilisation d'un solde par le CLIENT lui-même.
+ *
+ * Le client voit son solde sur le suivi de sa commande (lien privé) et
+ * demande à l'utiliser. **L'argent ne bouge pas à ce moment-là** : la
+ * demande attend la validation de l'admin (`approved` → mouvement `use`).
+ * C'est la protection contre l'usurpation : il n'y a pas de compte client,
+ * donc seule l'équipe décide du débit.
+ *
+ * L'index unique `(order_ref, status)` empêche deux demandes en attente sur
+ * la même commande (et une double validation).
+ */
+export const clientCreditRequests = pgTable("client_credit_requests", {
+  id: serial("id").primaryKey(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  creditId: integer("credit_id")
+    .notNull()
+    .references(() => clientCredits.id, { onDelete: "cascade" }),
+  orderRef: text("order_ref").notNull(),
+  /** Montant demandé (le solde disponible au moment de la demande). */
+  amountLyd: text("amount_lyd").notNull(),
+  /** pending | approved | rejected */
+  status: text("status").notNull().default("pending"),
+  clientNote: text("client_note"),
+  adminNote: text("admin_note"),
+  reviewedAt: timestamp("reviewed_at", { withTimezone: true }),
+});
+
+export type ClientCreditRequest = typeof clientCreditRequests.$inferSelect;
+export type NewClientCreditRequest = typeof clientCreditRequests.$inferInsert;

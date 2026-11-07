@@ -2,8 +2,12 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Coins, Loader2, Plus, Undo2, Wallet } from "lucide-react";
-import { addCreditMovementAction } from "@/app/admin/actions";
+import { CheckCircle2, Coins, Loader2, Plus, Undo2, Wallet, XCircle } from "lucide-react";
+import {
+  addCreditMovementAction,
+  approveCreditRequestAction,
+  rejectCreditRequestAction,
+} from "@/app/admin/actions";
 import {
   CREDIT_MOVEMENT_LABELS,
   CREDIT_MOVEMENT_SIGNS,
@@ -12,6 +16,7 @@ import {
   type CreditMovementKind,
 } from "@/lib/client-credits-core";
 import type { AdminClientCredit, AdminCreditMovement } from "@/lib/client-credits";
+import type { AdminCreditRequest } from "@/lib/client-credit-requests";
 
 const MANUAL_KINDS: CreditMovementKind[] = ["use", "refund", "adjustment"];
 
@@ -48,9 +53,11 @@ function clientLabel(credit: {
 export function ClientCreditsManager({
   credits,
   movements,
+  requests = [],
 }: {
   credits: AdminClientCredit[];
   movements: AdminCreditMovement[];
+  requests?: AdminCreditRequest[];
 }) {
   const router = useRouter();
   const [busy, startTransition] = useTransition();
@@ -64,6 +71,28 @@ export function ClientCreditsManager({
   const flash = (k: "ok" | "err", text: string) => {
     setToast({ kind: k, text });
     setTimeout(() => setToast(null), 7000);
+  };
+
+  const pendingRequests = requests.filter((request) => request.status === "pending");
+  const handledRequests = requests.filter((request) => request.status !== "pending").slice(0, 5);
+
+  const decide = (requestId: number, decision: "approve" | "reject", orderRef: string) => {
+    if (
+      decision === "approve" &&
+      !window.confirm(
+        `Débiter le solde du client pour la commande ${orderRef} ? Le mouvement sera enregistré au nom de cette commande.`,
+      )
+    ) {
+      return;
+    }
+    startTransition(async () => {
+      const result =
+        decision === "approve"
+          ? await approveCreditRequestAction(requestId)
+          : await rejectCreditRequestAction(requestId);
+      flash(result.ok ? "ok" : "err", result.message ?? result.error ?? "Terminé.");
+      if (result.ok) router.refresh();
+    });
   };
 
   const submit = (creditId: number) => {
@@ -93,6 +122,91 @@ export function ClientCreditsManager({
           {toast.text}
         </div>
       )}
+
+      <section className="overflow-hidden rounded-2xl border border-amber-200 bg-amber-50/40 shadow-2xs">
+        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-amber-200/70 bg-white/60 px-4 py-3">
+          <span className="text-[12px] font-bold uppercase tracking-wide text-amber-900">
+            Demandes des clients
+          </span>
+          <span className="rounded-full border border-amber-300 bg-white px-2.5 py-0.5 text-[11px] font-bold text-amber-800">
+            {pendingRequests.length} en attente
+          </span>
+        </div>
+        {pendingRequests.length === 0 ? (
+          <p className="px-4 py-6 text-center text-sm text-stone-500">
+            Aucune demande en attente. Un client peut demander à utiliser son solde depuis le
+            suivi de sa commande ; rien n&rsquo;est débité avant votre validation.
+          </p>
+        ) : (
+          <ul className="divide-y divide-amber-200/60">
+            {pendingRequests.map((request) => (
+              <li key={request.id} className="px-4 py-3">
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <code className="font-mono text-[12px] font-bold text-stone-900">
+                        {request.orderRef}
+                      </code>
+                      <span className="rounded-full border border-amber-300 bg-white px-2 py-0.5 text-[10.5px] font-bold text-amber-800">
+                        {balanceLabel(request.amountLyd)} demandés
+                      </span>
+                    </div>
+                    <p className="mt-1 break-words text-[11.5px] text-stone-600">
+                      {request.clientName || "Client"} · {request.clientEmail || request.clientPhone || "—"}
+                      {request.productTitle ? ` · ${request.productTitle}` : ""} ·{" "}
+                      {frDate(request.createdAt)}
+                    </p>
+                    <p className="mt-0.5 text-[11.5px] text-stone-500">
+                      Solde actuel : <strong>{balanceLabel(request.balanceLyd)}</strong>
+                      {request.clientNote ? ` · Message : ${request.clientNote}` : ""}
+                    </p>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      disabled={busy}
+                      onClick={() => decide(request.id, "approve", request.orderRef)}
+                      className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-emerald-700 px-3 text-[12px] font-bold text-white hover:bg-emerald-800 disabled:opacity-50"
+                    >
+                      {busy ? (
+                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                      ) : (
+                        <CheckCircle2 className="h-3.5 w-3.5" />
+                      )}
+                      Valider l&rsquo;utilisation
+                    </button>
+                    <button
+                      type="button"
+                      disabled={busy}
+                      onClick={() => decide(request.id, "reject", request.orderRef)}
+                      className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-red-300 bg-white px-3 text-[12px] font-bold text-red-700 hover:bg-red-50 disabled:opacity-50"
+                    >
+                      <XCircle className="h-3.5 w-3.5" />
+                      Refuser
+                    </button>
+                  </div>
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+        {handledRequests.length > 0 && (
+          <div className="border-t border-amber-200/60 bg-white/50 px-4 py-2.5">
+            <div className="text-[10.5px] font-bold uppercase tracking-wide text-stone-500">
+              Dernières demandes traitées
+            </div>
+            <ul className="mt-1 space-y-0.5 text-[11.5px] text-stone-600">
+              {handledRequests.map((request) => (
+                <li key={request.id}>
+                  {request.orderRef} · {balanceLabel(request.amountLyd)} ·{" "}
+                  {request.status === "approved" ? "validée" : "refusée"} ·{" "}
+                  {request.reviewedAt ? frDate(request.reviewedAt) : "—"}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+      </section>
 
       <section className="overflow-hidden rounded-2xl border border-stone-200/90 bg-white shadow-2xs">
         <div className="border-b border-stone-100 px-4 py-3 text-[12px] font-bold uppercase tracking-wide text-stone-500">

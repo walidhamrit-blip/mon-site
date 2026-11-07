@@ -383,6 +383,30 @@ export function ensureSchema(): Promise<void> {
         "CREATE UNIQUE INDEX IF NOT EXISTS client_credit_movements_order_kind_idx ON client_credit_movements (order_ref, kind)",
       );
 
+      // Demandes d'utilisation d'un solde par le client : l'argent ne bouge
+      // qu'après validation admin. Unique (order_ref, status) : pas deux
+      // demandes en attente sur la même commande, pas de double validation.
+      await pool.query(`
+        CREATE TABLE IF NOT EXISTS client_credit_requests (
+          id serial PRIMARY KEY,
+          created_at timestamptz NOT NULL DEFAULT now(),
+          updated_at timestamptz NOT NULL DEFAULT now(),
+          credit_id integer NOT NULL REFERENCES client_credits (id) ON DELETE CASCADE,
+          order_ref text NOT NULL,
+          amount_lyd text NOT NULL,
+          status text NOT NULL DEFAULT 'pending',
+          client_note text,
+          admin_note text,
+          reviewed_at timestamptz
+        )
+      `);
+      await pool.query(
+        "CREATE INDEX IF NOT EXISTS client_credit_requests_status_idx ON client_credit_requests (status, created_at DESC)",
+      );
+      await pool.query(
+        "CREATE UNIQUE INDEX IF NOT EXISTS client_credit_requests_order_status_idx ON client_credit_requests (order_ref, status)",
+      );
+
       // Livraison hors système (WhatsApp, téléphone…) : le code n'est pas
       // stocké, il faut donc savoir par quel canal il a été remis.
       await pool.query(

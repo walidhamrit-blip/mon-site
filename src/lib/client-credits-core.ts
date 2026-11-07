@@ -56,6 +56,64 @@ export function displayLyd(value: number | string | null | undefined): string {
   return `${formatLyd(value).replace(".", ",")} LYD`;
 }
 
+/* ----------------------- Demandes du client (option B) -------------------- */
+
+/**
+ * Le client voit son solde sur le suivi de sa commande et **demande** à
+ * l'utiliser. Rien n'est débité à ce stade : l'admin valide. Ce module ne
+ * contient que les règles pures (statuts, blocages, libellés).
+ */
+export const CREDIT_REQUEST_STATUSES = ["pending", "approved", "rejected"] as const;
+export type CreditRequestStatus = (typeof CREDIT_REQUEST_STATUSES)[number];
+
+export function normalizeCreditRequestStatus(value: unknown): CreditRequestStatus {
+  const status = String(value ?? "").trim().toLowerCase();
+  return (CREDIT_REQUEST_STATUSES as readonly string[]).includes(status)
+    ? (status as CreditRequestStatus)
+    : "pending";
+}
+
+export const CREDIT_REQUEST_LABELS: Record<CreditRequestStatus, string> = {
+  pending: "En attente de validation",
+  approved: "Solde utilisé",
+  rejected: "Demande refusée",
+};
+
+/** Raison pour laquelle le bouton « Utiliser mon solde » est indisponible. */
+export type CreditRequestBlock =
+  | "none"
+  | "no_balance"
+  | "already_pending"
+  | "already_used"
+  | "order_closed"
+  | "no_identity";
+
+/**
+ * Peut-on proposer au client d'utiliser son solde sur cette commande ?
+ *
+ * - solde nul → rien à proposer ;
+ * - demande déjà en attente → on ne double pas ;
+ * - solde déjà utilisé sur cette commande → c'est réglé ;
+ * - commande livrée ou échouée → l'argent est déjà compté, l'admin tranche ;
+ * - client non identifiable → impossible de rattacher le solde.
+ */
+export function creditRequestBlock(input: {
+  balanceLyd: unknown;
+  orderStatus?: unknown;
+  hasPendingRequest?: boolean;
+  alreadyUsed?: boolean;
+  hasIdentity?: boolean;
+}): CreditRequestBlock {
+  if (input.hasIdentity === false) return "no_identity";
+  const balance = parseLyd(input.balanceLyd) ?? 0;
+  if (balance <= 0) return "no_balance";
+  if (input.hasPendingRequest === true) return "already_pending";
+  if (input.alreadyUsed === true) return "already_used";
+  const status = String(input.orderStatus ?? "").trim().toLowerCase();
+  if (status === "delivered" || status === "failed") return "order_closed";
+  return "none";
+}
+
 /** Valeur réellement absente (`null`, `undefined`, chaîne vide ou espaces). */
 function isBlankAmount(value: unknown): boolean {
   if (value === null || value === undefined) return true;
