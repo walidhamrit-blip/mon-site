@@ -456,3 +456,55 @@ export const siteDeliveries = pgTable("site_deliveries", {
 
 export type SiteDelivery = typeof siteDeliveries.$inferSelect;
 export type NewSiteDelivery = typeof siteDeliveries.$inferInsert;
+
+/**
+ * Solde dû à un client (trop-perçu d'une carte de recharge, geste commercial…).
+ *
+ * Un client règle 30,00 LYD avec une carte alors que le devis accepté est de
+ * 17,96 LYD : les 12,04 LYD restants lui appartiennent. On garde donc un
+ * **solde** par personne, alimenté par des mouvements (trop-perçu, utilisation,
+ * remboursement, ajustement) — jamais un simple champ « note ».
+ *
+ * `clientKey` = `email:…` ou `phone:…` (voir `normalizeClientKey`), pour
+ * rapprocher les commandes successives d'un même client.
+ */
+export const clientCredits = pgTable("client_credits", {
+  id: serial("id").primaryKey(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  clientKey: text("client_key").notNull().unique(),
+  clientName: text("client_name"),
+  clientEmail: text("client_email"),
+  clientPhone: text("client_phone"),
+  /** Solde courant en LYD (texte : pas d'arrondi flottant sur de l'argent). */
+  balanceLyd: text("balance_lyd").notNull().default("0.00"),
+  note: text("note"),
+});
+
+export type ClientCredit = typeof clientCredits.$inferSelect;
+export type NewClientCredit = typeof clientCredits.$inferInsert;
+
+/**
+ * Mouvement de solde — la seule source de vérité. `balance_lyd` n'en est que
+ * la somme, recalculée à chaque écriture.
+ *
+ * `amount_lyd` est signé : + pour un trop-perçu ou un ajustement positif,
+ * − pour une utilisation ou un remboursement.
+ */
+export const clientCreditMovements = pgTable("client_credit_movements", {
+  id: serial("id").primaryKey(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  creditId: integer("credit_id")
+    .notNull()
+    .references(() => clientCredits.id, { onDelete: "cascade" }),
+  /** overpayment | use | refund | adjustment */
+  kind: text("kind").notNull(),
+  amountLyd: text("amount_lyd").notNull(),
+  /** Commande concernée (trop-perçu ou utilisation), si applicable. */
+  orderRef: text("order_ref"),
+  balanceAfterLyd: text("balance_after_lyd").notNull().default("0.00"),
+  note: text("note"),
+});
+
+export type ClientCreditMovement = typeof clientCreditMovements.$inferSelect;
+export type NewClientCreditMovement = typeof clientCreditMovements.$inferInsert;

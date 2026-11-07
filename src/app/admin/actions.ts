@@ -45,6 +45,7 @@ import {
   resendDigitalCodesEmail,
 } from "@/lib/digital-orders";
 import { sendPhoneCardApprovedEmail } from "@/lib/digital-emails";
+import { addCreditMovement, recordPhoneCardOverpayment } from "@/lib/client-credits";
 import { denominationUnitPrice, type DigitalProduct } from "@/lib/digital-types";
 import { computeSalePrice } from "@/lib/digital-order-core";
 import { getGiftCardProduct, reloadlyConfigured } from "@/lib/reloadly";
@@ -1007,13 +1008,76 @@ export async function reviewPhoneCardPaymentAction(
         mailWarning = ` E-mail non envoyé : ${dbIssue(error)}`;
       }
     }
+    // Trop-perçu : le client a payé une carte de valeur supérieure au devis.
+    // L'écart lui reste dû — on l'enregistre comme solde, jamais on ne l'oublie.
+    let creditMessage = "";
+    if (decision === "approved") {
+      try {
+        const credit = await recordPhoneCardOverpayment(ref);
+        if (credit.ok && credit.message) creditMessage = ` ${credit.message}`;
+        else if (credit.ok && credit.skipped && credit.creditId) creditMessage = ` ${credit.skipped}`;
+        revalidatePath("/admin/soldes");
+      } catch (error) {
+        creditMessage = ` Solde client non enregistré : ${dbIssue(error)}`;
+      }
+    }
+
     return {
       ok: true,
       message:
         decision === "approved"
-          ? `Carte acceptée. La commande est maintenant « à livrer manuellement » : saisissez le code cadeau ci-dessous.${mailWarning}`
+          ? `Carte acceptée. La commande est maintenant « à livrer manuellement » : saisissez le code cadeau ci-dessous.${creditMessage}${mailWarning}`
           : "Carte refusée et commande marquée comme non payée. Aucun code cadeau ne sera livré.",
     };
+  } catch (error) {
+    return { ok: false, error: dbIssue(error) };
+  }
+}
+
+/**
+ * Enregistre (ou rappelle) le solde dû à partir d'une carte acceptée.
+ * Utile pour rattraper une carte acceptée avant l'arrivée du suivi des soldes :
+ * l'opération est idempotente, un second clic ne crédite pas deux fois.
+ */
+export async function recordOverpaymentAction(ref: string): Promise<ActionResult> {
+  await requireAdmin();
+  const orderRef = String(ref ?? "").trim().toUpperCase();
+  if (!orderRef) return { ok: false, error: "Référence manquante." };
+  try {
+    const result = await recordPhoneCardOverpayment(orderRef);
+    revalidatePath("/admin/soldes");
+    revalidatePath("/admin/digital/orders");
+    if (!result.ok) return { ok: false, error: result.error ?? "Enregistrement impossible." };
+    return { ok: true, message: result.message ?? result.skipped ?? "Rien à enregistrer." };
+  } catch (error) {
+    return { ok: false, error: dbIssue(error) };
+  }
+}
+
+/** Utilisation, remboursement ou ajustement d'un solde client. */
+export async function addCreditMovementAction(input: {
+  creditId: number;
+  kind: string;
+  amountLyd: string;
+  note?: string;
+  orderRef?: string;
+}): Promise<ActionResult> {
+  await requireAdmin();
+  const creditId = Number(input?.creditId);
+  if (!Number.isInteger(creditId) || creditId <= 0) {
+    return { ok: false, error: "Solde client invalide." };
+  }
+  try {
+    const result = await addCreditMovement({
+      creditId,
+      kind: input.kind,
+      amountLyd: input.amountLyd,
+      note: input.note,
+      orderRef: input.orderRef,
+    });
+    revalidatePath("/admin/soldes");
+    if (!result.ok) return { ok: false, error: result.error };
+    return { ok: true, message: result.message };
   } catch (error) {
     return { ok: false, error: dbIssue(error) };
   }

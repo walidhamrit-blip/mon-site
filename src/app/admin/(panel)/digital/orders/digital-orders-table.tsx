@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import {
   Check,
   ChevronDown,
@@ -24,6 +24,12 @@ import {
   OFF_PLATFORM_NOTE_MAX,
   type OffPlatformChannel,
 } from "@/lib/digital-offplatform-core";
+import {
+  OPEN_ORDER_EVENT,
+  orderAnchor,
+  parseOrderHash,
+  type OrderLinkTarget,
+} from "@/lib/admin-order-link";
 import {
   DIGITAL_ORDER_STATUS_LABELS,
   DIGITAL_ORDER_STATUS_TONES,
@@ -176,6 +182,11 @@ function playerIdCheckLabel(row: AdminDigitalOrderRow): React.ReactNode {
   );
 }
 
+/** Livraison manuelle autorisée : carte téléphonique acceptée, ou autre moyen. */
+function rowAllowsManualDelivery(row: AdminDigitalOrderRow): boolean {
+  return row.paymentMethod !== "phone_card" || row.phoneCardStatus === "approved";
+}
+
 /**
  * Tableau des commandes de codes (admin) : détail dépliable, codes
  * livrés, motif d'échec et relance de la livraison.
@@ -191,6 +202,50 @@ export function DigitalOrdersTable({ rows }: { rows: AdminDigitalOrderRow[] }) {
   const [offPlatformRef, setOffPlatformRef] = useState<string | null>(null);
   const [offPlatformChannel, setOffPlatformChannel] = useState<OffPlatformChannel>("whatsapp");
   const [offPlatformNote, setOffPlatformNote] = useState("");
+
+  // Ouverture depuis la zone « Cartes téléphoniques à vérifier » : fragment
+  // d'URL (#commande-…), ou événement si le fragment est déjà le bon.
+  useEffect(() => {
+    const apply = (target: OrderLinkTarget) => {
+      const row = rows.find((item) => item.ref === target.ref);
+      if (!row) return;
+      setOpenRef(target.ref);
+      setManualRef(null);
+      setManualCodes("");
+      if (
+        target.offPlatform &&
+        row.status !== "delivered" &&
+        row.codes.length === 0 &&
+        rowAllowsManualDelivery(row)
+      ) {
+        setOffPlatformRef(target.ref);
+      } else {
+        setOffPlatformRef(null);
+      }
+      window.requestAnimationFrame(() => {
+        document
+          .getElementById(orderAnchor(target.ref))
+          ?.scrollIntoView({ block: "center", behavior: "smooth" });
+      });
+    };
+
+    const fromHash = () => {
+      const parsed = parseOrderHash(window.location.hash);
+      if (parsed) apply(parsed);
+    };
+    const fromEvent = (event: Event) => {
+      const detail = (event as CustomEvent<OrderLinkTarget>).detail;
+      if (detail?.ref) apply(detail);
+    };
+
+    fromHash();
+    window.addEventListener("hashchange", fromHash);
+    window.addEventListener(OPEN_ORDER_EVENT, fromEvent);
+    return () => {
+      window.removeEventListener("hashchange", fromHash);
+      window.removeEventListener(OPEN_ORDER_EVENT, fromEvent);
+    };
+  }, [rows]);
 
   const flash = (msg: string, kind: "ok" | "err") => {
     setToast({ msg, kind });
@@ -291,39 +346,44 @@ export function DigitalOrdersTable({ rows }: { rows: AdminDigitalOrderRow[] }) {
             row.paymentMethod !== "phone_card" &&
             row.supplier === "fazercards" &&
             ["paid", "manual", "failed"].includes(status);
-          const canDeliverManually =
-            row.paymentMethod !== "phone_card" || row.phoneCardStatus === "approved";
+          const canDeliverManually = rowAllowsManualDelivery(row);
           const buyerFieldEntries = Object.entries(row.buyerFields ?? {});
           const isBusy = busy && pendingRef === row.ref;
 
           return (
-            <div key={row.ref} className={open ? "bg-[#FAF9F6]" : "bg-white"}>
-              <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3.5 sm:px-5">
-                <button
-                  type="button"
-                  onClick={() => setOpenRef(open ? null : row.ref)}
-                  className="flex min-w-0 flex-1 cursor-pointer items-center gap-3 text-left"
-                >
+            <div
+              key={row.ref}
+              id={orderAnchor(row.ref)}
+              className={`scroll-mt-24 ${open ? "bg-[#FAF9F6]" : "bg-white"}`}
+            >
+              <button
+                type="button"
+                onClick={() => setOpenRef(open ? null : row.ref)}
+                aria-expanded={open}
+                aria-controls={`detail-${orderAnchor(row.ref)}`}
+                className="flex w-full cursor-pointer flex-wrap items-center justify-between gap-3 px-4 py-3.5 text-left transition-colors hover:bg-stone-50/70 sm:px-5"
+              >
+                <span className="flex min-w-0 flex-1 items-center gap-3">
                   <ChevronDown
                     className={`h-4 w-4 shrink-0 text-stone-400 transition-transform ${
                       open ? "rotate-180 text-stone-800" : ""
                     }`}
                   />
-                  <div className="min-w-0">
-                    <div className="truncate text-sm font-bold text-stone-900">
+                  <span className="block min-w-0">
+                    <span className="block truncate text-sm font-bold text-stone-900">
                       {row.productTitle}
                       <span className="ml-2 font-normal text-stone-500">
                         — {row.denominationLabel} × {row.quantity}
                       </span>
-                    </div>
-                    <div className="mt-0.5 truncate text-xs text-stone-500">
+                    </span>
+                    <span className="mt-0.5 block truncate text-xs text-stone-500">
                       {row.ref} · {row.totalUsd} $ · {row.recipientEmail}
                       {row.platform ? ` · ${row.platform}` : ""}
-                    </div>
-                  </div>
-                </button>
+                    </span>
+                  </span>
+                </span>
 
-                <div className="flex shrink-0 items-center gap-2">
+                <span className="flex shrink-0 items-center gap-2">
                   <span className="hidden text-xs tabular-nums text-stone-400 sm:inline">
                     {frDate(row.createdAt)}
                   </span>
@@ -332,11 +392,14 @@ export function DigitalOrdersTable({ rows }: { rows: AdminDigitalOrderRow[] }) {
                   >
                     {DIGITAL_ORDER_STATUS_LABELS[status]}
                   </span>
-                </div>
-              </div>
+                </span>
+              </button>
 
               {open && (
-                <div className="space-y-4 border-t border-stone-200 px-4 py-4 sm:px-5">
+                <div
+                  id={`detail-${orderAnchor(row.ref)}`}
+                  className="space-y-4 border-t border-stone-200 px-4 py-4 sm:px-5"
+                >
                   {status !== "delivered" && (
                     <div className="rounded-xl border border-amber-200 bg-amber-50/70 p-3">
                       <div className="text-[11px] font-bold uppercase tracking-wide text-amber-800">

@@ -344,6 +344,45 @@ export function ensureSchema(): Promise<void> {
       await pool.query(
         "ALTER TABLE digital_orders ADD COLUMN IF NOT EXISTS email_last_error text",
       );
+      // Soldes dus aux clients (trop-perçu d'une carte de recharge).
+      // Le solde est dérivé des mouvements ; l'index unique (order_ref, kind)
+      // rend le crédit d'un trop-perçu idempotent : réaccepter une carte ne
+      // crédite jamais deux fois le même client.
+      await pool.query(`
+        CREATE TABLE IF NOT EXISTS client_credits (
+          id serial PRIMARY KEY,
+          created_at timestamptz NOT NULL DEFAULT now(),
+          updated_at timestamptz NOT NULL DEFAULT now(),
+          client_key text NOT NULL UNIQUE,
+          client_name text,
+          client_email text,
+          client_phone text,
+          balance_lyd text NOT NULL DEFAULT '0.00',
+          note text
+        )
+      `);
+      await pool.query(`
+        CREATE TABLE IF NOT EXISTS client_credit_movements (
+          id serial PRIMARY KEY,
+          created_at timestamptz NOT NULL DEFAULT now(),
+          credit_id integer NOT NULL REFERENCES client_credits (id) ON DELETE CASCADE,
+          kind text NOT NULL,
+          amount_lyd text NOT NULL,
+          order_ref text,
+          balance_after_lyd text NOT NULL DEFAULT '0.00',
+          note text
+        )
+      `);
+      await pool.query(
+        "CREATE INDEX IF NOT EXISTS client_credit_movements_credit_idx ON client_credit_movements (credit_id, created_at DESC)",
+      );
+      // Index UNIQUE simple : en Postgres, plusieurs NULL sont autorisés, donc
+      // les ajustements manuels (sans commande) restent possibles alors qu'un
+      // même trop-perçu ne peut être crédité qu'une fois par commande.
+      await pool.query(
+        "CREATE UNIQUE INDEX IF NOT EXISTS client_credit_movements_order_kind_idx ON client_credit_movements (order_ref, kind)",
+      );
+
       // Livraison hors système (WhatsApp, téléphone…) : le code n'est pas
       // stocké, il faut donc savoir par quel canal il a été remis.
       await pool.query(

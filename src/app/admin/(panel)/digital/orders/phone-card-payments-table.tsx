@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import {
+  ArrowDownToLine,
   Check,
   CheckCircle2,
   Copy,
@@ -12,9 +13,16 @@ import {
   Smartphone,
   XCircle,
 } from "lucide-react";
-import { reviewPhoneCardPaymentAction } from "@/app/admin/actions";
+import { recordOverpaymentAction, reviewPhoneCardPaymentAction } from "@/app/admin/actions";
 import { PHONE_CARD_OPERATOR_LABELS, type PhoneCardOperator } from "@/lib/phone-card-core";
 import type { AdminPhoneCardPaymentRow } from "@/lib/phone-card-payments";
+import {
+  OPEN_ORDER_EVENT,
+  orderAnchor,
+  orderHash,
+  type OrderLinkTarget,
+} from "@/lib/admin-order-link";
+import { displayLyd, overpaymentLyd } from "@/lib/client-credits-core";
 
 const STATUS_LABELS = {
   pending: "À vérifier",
@@ -65,6 +73,41 @@ export function PhoneCardPaymentsTable({ rows }: { rows: AdminPhoneCardPaymentRo
         ok: result.ok,
         text: result.message ?? result.error ?? "Vérification terminée.",
       });
+      setPendingRef(null);
+      if (result.ok) router.refresh();
+      setTimeout(() => setToast(null), 7000);
+    });
+  };
+
+  /**
+   * Ouvre la commande correspondante dans le tableau plus bas.
+   *
+   * Ce bloc est un récapitulatif statique : cliquer la carte ne dépliait rien,
+   * d'où l'impression que « la ligne ne s'ouvre pas ». On émet donc un
+   * événement (immédiat) + un fragment d'URL (partageable, survit au
+   * rechargement).
+   */
+  const openOrder = (ref: string, options: { offPlatform?: boolean } = {}) => {
+    const detail: OrderLinkTarget = { ref, offPlatform: options.offPlatform === true };
+    window.dispatchEvent(new CustomEvent(OPEN_ORDER_EVENT, { detail }));
+    if (window.location.hash !== orderHash(ref, detail)) {
+      window.location.hash = orderHash(ref, detail);
+    } else {
+      document
+        .getElementById(orderAnchor(ref))
+        ?.scrollIntoView({ block: "center", behavior: "smooth" });
+    }
+  };
+
+  /**
+   * Enregistre le trop-perçu (carte > devis dû) comme solde au nom du client.
+   * Idempotent : un second clic répond « déjà enregistré » sans recréditer.
+   */
+  const saveCredit = (ref: string) => {
+    setPendingRef(ref);
+    startTransition(async () => {
+      const result = await recordOverpaymentAction(ref);
+      setToast({ ok: result.ok, text: result.message ?? result.error ?? "Terminé." });
       setPendingRef(null);
       if (result.ok) router.refresh();
       setTimeout(() => setToast(null), 7000);
@@ -157,6 +200,17 @@ export function PhoneCardPaymentsTable({ rows }: { rows: AdminPhoneCardPaymentRo
                           {quoteDelta >= 0 ? "+" : ""}{quoteDelta.toFixed(2)} LYD par rapport à la carte déclarée.
                         </strong>
                       )}
+                      {(() => {
+                        const surplus = overpaymentLyd(row.cardValueLyd, row.quote?.totalLyd);
+                        if (!surplus) return null;
+                        return (
+                          <span className="mt-1 block rounded-md border border-emerald-200 bg-emerald-50 px-2 py-1 font-bold text-emerald-900">
+                            Reste dû au client : {displayLyd(surplus)} (carte{" "}
+                            {displayLyd(row.cardValueLyd)} − devis {displayLyd(row.quote?.totalLyd)})
+                            {row.status === "approved" ? " — à enregistrer comme solde." : " — à enregistrer après acceptation."}
+                          </span>
+                        );
+                      })()}
                     </p>
                     {row.quote.references.length > 0 && (
                       <ul className="mt-1.5 space-y-0.5 border-t border-[#C6A664]/25 pt-1.5">
@@ -247,11 +301,60 @@ export function PhoneCardPaymentsTable({ rows }: { rows: AdminPhoneCardPaymentRo
                     </div>
                   </div>
                 ) : (
-                  <p className="mt-3 text-[11.5px] leading-5 text-stone-500">
-                    {row.reviewedAt ? `Traitée le ${adminDate(row.reviewedAt)}. ` : ""}
-                    {row.reviewNote ? `Note : ${row.reviewNote}. ` : ""}
-                    {row.status === "approved" ? "Vous pouvez maintenant saisir le code cadeau dans la commande ci-dessous." : "Aucune livraison n’est autorisée."}
-                  </p>
+                  <div className="mt-3 space-y-2">
+                    <p className="text-[11.5px] leading-5 text-stone-500">
+                      {row.reviewedAt ? `Traitée le ${adminDate(row.reviewedAt)}. ` : ""}
+                      {row.reviewNote ? `Note : ${row.reviewNote}. ` : ""}
+                      {row.status === "approved"
+                        ? row.deliveryStatus === "delivered"
+                          ? "Commande déjà livrée — rien d’autre à faire."
+                          : "Il reste à livrer : ouvrez la commande puis saisissez le code, ou marquez-la livrée si le code est déjà parti (WhatsApp)."
+                        : "Aucune livraison n’est autorisée."}
+                    </p>
+                    {row.status === "approved" && (
+                      <div className="flex flex-wrap items-center gap-2">
+                        {(() => {
+                          const surplus = overpaymentLyd(row.cardValueLyd, row.quote?.totalLyd);
+                          if (!surplus) return null;
+                          return (
+                            <button
+                              type="button"
+                              disabled={isBusy}
+                              onClick={() => saveCredit(row.ref)}
+                              className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-emerald-300 bg-white px-3 text-[12px] font-bold text-emerald-800 hover:bg-emerald-50 disabled:opacity-50"
+                            >
+                              {isBusy ? (
+                                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                              ) : (
+                                <Check className="h-3.5 w-3.5" />
+                              )}
+                              Enregistrer le solde dû ({displayLyd(surplus)})
+                            </button>
+                          );
+                        })()}
+                      </div>
+                    )}
+                    {row.status === "approved" && row.deliveryStatus !== "delivered" && (
+                      <div className="flex flex-wrap gap-2">
+                        <button
+                          type="button"
+                          onClick={() => openOrder(row.ref)}
+                          className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-stone-300 bg-white px-3 text-[12px] font-bold text-stone-700 hover:bg-stone-50"
+                        >
+                          <ArrowDownToLine className="h-3.5 w-3.5" />
+                          Ouvrir la commande
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => openOrder(row.ref, { offPlatform: true })}
+                          className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-emerald-700 px-3 text-[12px] font-bold text-white hover:bg-emerald-800"
+                        >
+                          <CheckCircle2 className="h-3.5 w-3.5" />
+                          Code déjà envoyé (WhatsApp…)
+                        </button>
+                      </div>
+                    )}
+                  </div>
                 )}
               </article>
             );
