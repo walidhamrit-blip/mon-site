@@ -108,7 +108,10 @@ const ORDER_QUERY = `
     p.ref           as payment_ref,
     p.status        as payment_status,
     p.payment_method,
-    p.created_at    as payment_created_at
+    p.created_at    as payment_created_at,
+    pc.status       as phone_card_status,
+    pc.reviewed_at  as phone_card_reviewed_at,
+    pc.review_note  as phone_card_note
   from digital_orders d
   left join lateral (
     select ref, status, payment_method, created_at
@@ -117,6 +120,7 @@ const ORDER_QUERY = `
     order by created_at desc
     limit 1
   ) p on true
+  left join phone_card_payments pc on pc.order_ref = d.ref
   where upper(d.ref) = $1
   limit 1
 `;
@@ -130,6 +134,8 @@ function rowToOrder(row) {
     deliveredAt: row.delivered_at,
     emailSentAt: row.email_sent_at,
     emailLastError: row.email_last_error,
+    paymentMethod: row.payment_method,
+    phoneCardStatus: row.phone_card_status,
   };
 }
 
@@ -213,6 +219,9 @@ async function checkOne(ref) {
             paymentRef: row.payment_ref,
             paymentStatus: row.payment_status,
             paymentMethod: row.payment_method,
+            phoneCardStatus: row.phone_card_status,
+            phoneCardReviewedAt: frDate(row.phone_card_reviewed_at),
+            phoneCardNote: row.phone_card_note,
           },
           databaseHost: host,
         },
@@ -236,6 +245,18 @@ async function checkOne(ref) {
       ? `${row.payment_ref} · ${row.payment_status ?? "?"} · ${row.payment_method ?? "?"}`
       : "aucune ligne « orders » liée",
   );
+  if (row.payment_method === "phone_card") {
+    const reviewLabel =
+      {
+        pending: "à vérifier (livraison verrouillée)",
+        approved: "acceptée par l'admin",
+        rejected: "refusée",
+      }[row.phone_card_status] ?? "aucune ligne de vérification";
+    line(
+      "Carte tél.",
+      `${reviewLabel}${row.phone_card_reviewed_at ? ` le ${frDate(row.phone_card_reviewed_at)}` : ""}`,
+    );
+  }
   line("Commande", `${row.status} · ${row.fulfillment}`);
   line("Codes en base", row.codes_stored ? "oui (chiffrés)" : "non");
   line("Livrée le", frDate(row.delivered_at));
@@ -267,11 +288,19 @@ async function checkOne(ref) {
 
 async function runAudit() {
   const { rows } = await client.query(
-    `select ref, status, kind, product_title, total_usd, created_at,
-            delivered_at, email_sent_at, email_last_error, attempts, codes_cipher is not null as codes_stored
-       from digital_orders
-      where created_at > now() - make_interval(days => $1)
-      order by created_at desc
+    `select d.ref, d.status, d.kind, d.product_title, d.total_usd, d.created_at,
+            d.delivered_at, d.email_sent_at, d.email_last_error, d.attempts,
+            d.quantity, d.codes_cipher is not null as codes_stored,
+            p.payment_method, pc.status as phone_card_status
+       from digital_orders d
+       left join lateral (
+         select payment_method from orders
+          where digital_order_id = d.id
+          order by created_at desc limit 1
+       ) p on true
+       left join phone_card_payments pc on pc.order_ref = d.ref
+      where d.created_at > now() - make_interval(days => $1)
+      order by d.created_at desc
       limit 1000`,
     [days],
   );

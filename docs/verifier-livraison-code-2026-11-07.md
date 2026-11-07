@@ -105,6 +105,66 @@ déjà utilisé.
 
 ---
 
+## 4 bis. Cas particulier — carte téléphonique **acceptée** : le code n'est pas livré
+
+C'est le piège le plus fréquent, et il est **volontaire** dans le code : accepter une
+carte de recharge ne déclenche aucun achat. L'approbation fait exactement trois choses
+(`reviewPhoneCardPayment`, `src/lib/phone-card-payments.ts`) :
+
+| Effet de l'approbation | Valeur |
+|---|---|
+| Vérification de la carte | `phone_card_payments.status = approved`, `reviewed_at`, note |
+| Paiement de la commande | `orders.status = paid`, `ipn_status = phone_card_approved` |
+| Commande digitale | `digital_orders.status = manual`, `fulfillment = manual` |
+
+Ce qui n'est **pas** fait, et qu'il ne faut pas attendre :
+
+- ❌ **aucun achat** chez le fournisseur — le statut est `manual` justement pour que le
+  cron de reprise (`RESUME_STATUSES = pending, paid`) ne l'achète jamais tout seul ;
+- ❌ **aucun e-mail avec code** — le client n'a reçu que « ⏳ Paiement reçu », il attend ;
+- ❌ **pas de bouton « Relancer la livraison »** sur une commande carte téléphonique
+  (il est masqué pour ce moyen de paiement) : la seule voie est la saisie manuelle.
+
+### Les 5 gestes, dans cet ordre
+
+1. **Acheter le code** chez le fournisseur (FazerCards), au montant, à la région et à la
+   devise de la commande — solde marchand suffisant, montant sous le plafond.
+2. **Saisir le code** : `/admin/digital/orders` → la ligne de la commande (badge
+   **« À livrer manuellement »**) → **« Saisir les codes manuellement »**.
+   Format : un code par ligne, `numéro | PIN | URL d'activation` (comme livré par le
+   fournisseur), autant de lignes que la quantité commandée.
+3. **« Enregistrer et envoyer au client »** → le code est chiffré, la commande passe
+   `delivered`, `delivered_at` est posé, l'e-mail part et son verdict est journalisé.
+4. **Contrôler la ligne** : badge **Livré**, « Codes livrés (n) », « E-mail codes » avec
+   une date et un `message : re_…`. Un bandeau rouge « E-mail non envoyé » ⇒
+   **Renvoyer l'e-mail**.
+5. **Confirmer** : `npm run delivery:check -- <REF>` doit répondre **✅ LIVRÉ**, et le
+   client doit voir son code sur `/codes/commande` (ou dans l'e-mail).
+
+### Variantes
+
+- **Recharge de jeu (`game_topup`)** : aucun code n'existe. Créditer le **Player ID**
+  affiché dans la fiche, puis **« Clôturer sans code »** — le client reçoit « recharge
+  créditée ».
+- **Carte refusée** : la commande passe `failed`, aucun code ne doit être acheté ;
+  prévenir le client avec le motif.
+- **Code refusé par le fournisseur** (déjà utilisé, mauvaise région) : réacheter et
+  **relivrer** ; le client garde l'ancien e-mail, l'envoyer explicitement en précisant
+  le remplacement.
+- **Annulation** : impossible une fois `delivered` — la vérification refuse de modifier
+  le paiement d'une commande livrée.
+
+### Ce que dit désormais le script
+
+| Situation | Verdict |
+|---|---|
+| carte en attente de vérification | ⚠️ `phone_card_unverified` — livraison verrouillée |
+| carte acceptée, aucun code saisi | ❌ `phone_card_approved_not_delivered` — acheter puis saisir |
+| carte refusée | ❌ `phone_card_rejected` — ne rien livrer |
+| carte acceptée **et** code livré | ✅ `delivered` |
+
+---
+
 ## 5. Niveau 4 — SQL direct (admin indisponible, audit, incident)
 
 ```sql
@@ -176,6 +236,7 @@ illisibles — d'où le `npm run codes:rotate` après tout changement de secret.
 | `failed` | échec fournisseur | livrer à la main ou rembourser |
 | `game_topup` + `delivered` | livré (sans code) | confirmer le crédit côté fournisseur |
 | carte téléphonique non `approved` | en attente | accepter/refuser la carte dans l'admin |
+| carte `approved` + commande `manual` sans code | **non livré** | acheter le code puis le saisir (§4 bis) |
 
 ---
 

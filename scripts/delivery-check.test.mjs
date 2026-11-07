@@ -87,3 +87,67 @@ test("codes attendus : quantité, sauf recharge de jeu", () => {
   assert.equal(expectedCodes({ kind: "game_topup", quantity: 3 }), 0);
   assert.equal(expectedCodes({ kind: "gift_card", quantity: 0 }), 1);
 });
+
+test("carte téléphonique non vérifiée → livraison verrouillée (warn)", () => {
+  const verdict = deliveryVerdict({
+    ...base,
+    status: "pending",
+    paymentMethod: "phone_card",
+    phoneCardStatus: "pending",
+    hasCodesCipher: false,
+    deliveredAt: null,
+    emailSentAt: null,
+  });
+  assert.equal(verdict.level, "warn");
+  assert.equal(verdict.code, "phone_card_unverified");
+});
+
+test("carte acceptée mais code non saisi → fail explicite", () => {
+  const verdict = deliveryVerdict({
+    ...base,
+    status: "manual",
+    paymentMethod: "phone_card",
+    phoneCardStatus: "approved",
+    hasCodesCipher: false,
+    deliveredAt: null,
+    emailSentAt: null,
+  });
+  assert.equal(verdict.level, "fail");
+  assert.equal(verdict.code, "phone_card_approved_not_delivered");
+  assert.ok(verdict.actions.some((action) => /Saisir les codes/i.test(action)));
+});
+
+test("carte refusée → fail, aucune livraison", () => {
+  const verdict = deliveryVerdict({
+    ...base,
+    status: "failed",
+    paymentMethod: "phone_card",
+    phoneCardStatus: "rejected",
+    hasCodesCipher: false,
+    deliveredAt: null,
+    emailSentAt: null,
+  });
+  assert.equal(verdict.level, "fail");
+  assert.equal(verdict.code, "phone_card_rejected");
+});
+
+test("carte acceptée puis code livré → ok (pas de régression)", () => {
+  const verdict = deliveryVerdict({
+    ...base,
+    paymentMethod: "phone_card",
+    phoneCardStatus: "approved",
+  });
+  assert.equal(verdict.level, "ok");
+  assert.equal(verdict.code, "delivered");
+});
+
+test("statut de carte inconnu ou absent → traité comme non vérifié", () => {
+  assert.equal(
+    deliveryVerdict({ ...base, status: "pending", paymentMethod: "phone_card", phoneCardStatus: null }).code,
+    "phone_card_unverified",
+  );
+  assert.equal(
+    deliveryVerdict({ ...base, status: "pending", paymentMethod: "phone_card", phoneCardStatus: "bizarre" }).code,
+    "phone_card_unverified",
+  );
+});

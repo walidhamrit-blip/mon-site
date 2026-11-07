@@ -25,6 +25,17 @@ export function normalizeStatus(value) {
   return DELIVERY_STATUSES.includes(status) ? status : "pending";
 }
 
+export const PHONE_CARD_STATUSES = ["pending", "approved", "rejected"];
+
+/**
+ * Statut de vérification d'une carte téléphonique.
+ * `null` = commande qui n'est pas payée par carte téléphonique.
+ */
+export function normalizePhoneCardStatus(value) {
+  const status = String(value ?? "").trim().toLowerCase();
+  return PHONE_CARD_STATUSES.includes(status) ? status : null;
+}
+
 /** Masque une adresse e-mail : `w•••@gmail.com` (jamais d'adresse en clair). */
 export function maskEmail(value) {
   const email = String(value ?? "").trim();
@@ -53,6 +64,8 @@ export function expectedCodes(order = {}) {
  * @param {string} [order.deliveredAt] date ISO de livraison
  * @param {string} [order.emailSentAt] date ISO d'envoi accepté des codes
  * @param {string} [order.emailLastError] dernier échec d'envoi
+ * @param {string} [order.paymentMethod] nowpayments | phone_card
+ * @param {string} [order.phoneCardStatus] pending | approved | rejected
  * @returns {{ level: "ok"|"warn"|"fail", code: string, headline: string, detail: string, actions: string[] }}
  */
 export function deliveryVerdict(order = {}) {
@@ -63,6 +76,62 @@ export function deliveryVerdict(order = {}) {
   const emailLastError = order.emailLastError ?? null;
   const deliveredAt = order.deliveredAt ?? null;
   const isTopup = kind === "game_topup";
+  const paymentMethod = String(order.paymentMethod ?? "").trim().toLowerCase();
+  const phoneCardStatus = normalizePhoneCardStatus(order.phoneCardStatus);
+
+  // Carte téléphonique : l'acceptation de la carte n'achète RIEN. Elle débloque
+  // seulement la livraison manuelle (`digital_orders.status = manual`), et le
+  // cron de reprise ne touche jamais une commande `manual`. Sans cette branche,
+  // une carte acceptée serait classée « payée non livrée » — donc laissée à
+  // l'abandon en croyant que le système allait livrer.
+  if (paymentMethod === "phone_card" && status !== "delivered") {
+    if (phoneCardStatus === "rejected") {
+      return {
+        level: "fail",
+        code: "phone_card_rejected",
+        headline: "CARTE REFUSÉE — aucune livraison",
+        detail:
+          "La carte téléphonique a été refusée : la commande est marquée comme " +
+          "non payée. Aucun code ne doit être acheté ni envoyé.",
+        actions: [
+          "Prévenir le client avec le motif du refus (note de vérification).",
+          "Ne rien livrer ; proposer un autre moyen de paiement.",
+        ],
+      };
+    }
+
+    if (phoneCardStatus === "approved") {
+      return {
+        level: "fail",
+        code: "phone_card_approved_not_delivered",
+        headline: "CARTE ACCEPTÉE — code PAS encore livré",
+        detail:
+          "La carte est vérifiée et le paiement est encaissé, mais aucun code " +
+          "n'a été acheté ni saisi : rien ne part automatiquement. Aucun e-mail " +
+          "avec code n'a été envoyé au client.",
+        actions: [
+          "Acheter le code chez le fournisseur (FazerCards), au montant et à la région de la commande.",
+          "Admin → la ligne de la commande → « Saisir les codes manuellement » → « Enregistrer et envoyer au client ».",
+          "Pour une recharge de jeu (game_topup) : créditer le Player ID puis « Clôturer sans code ».",
+          "Vérifier ensuite : badge « Livré », « E-mail codes » daté, puis npm run delivery:check -- <REF>.",
+        ],
+      };
+    }
+
+    return {
+      level: "warn",
+      code: "phone_card_unverified",
+      headline: "CARTE TÉLÉPHONIQUE À VÉRIFIER — livraison verrouillée",
+      detail:
+        "Le client a soumis une carte de recharge : elle doit être contrôlée à la " +
+        "main (crédit réellement reçu) avant toute livraison. Tant que la carte " +
+        "n'est pas acceptée, la saisie des codes est verrouillée.",
+      actions: [
+        "Vérifier la carte, puis l'accepter ou la refuser dans la zone « Cartes téléphoniques à vérifier ».",
+        "L'acceptation n'achète rien : il faudra ensuite saisir le code à la main.",
+      ],
+    };
+  }
 
   if (status === "failed") {
     return {
