@@ -238,6 +238,13 @@ Ce qui n'est **pas** fait, et qu'il ne faut pas attendre :
 
 ## 5. Niveau 4 — SQL direct (admin indisponible, audit, incident)
 
+> **Copier-coller :** dans certains éditeurs (Notion, Slack, messageries), `o.codes_cipher`
+> devient un lien cliquable — `o.codes` est un vrai domaine — et la requête ne passe plus.
+> Utiliser [`docs/sql/verifier-une-livraison.sql`](./sql/verifier-une-livraison.sql)
+> (alias en majuscules, une requête par étape) ou coller en texte brut
+> (`Ctrl+Shift+V`). Vider l'éditeur SQL avant de coller ne supprime **aucune donnée** :
+> ces requêtes sont en lecture seule.
+
 ```sql
 -- 1. Fiche complète d'une commande (carte téléphonique incluse)
 select o.ref, o.status, o.fulfillment, o.kind,
