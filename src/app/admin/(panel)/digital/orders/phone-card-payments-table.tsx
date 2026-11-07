@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import {
+  ArrowDownToLine,
   Check,
   CheckCircle2,
   Copy,
@@ -15,6 +16,12 @@ import {
 import { reviewPhoneCardPaymentAction } from "@/app/admin/actions";
 import { PHONE_CARD_OPERATOR_LABELS, type PhoneCardOperator } from "@/lib/phone-card-core";
 import type { AdminPhoneCardPaymentRow } from "@/lib/phone-card-payments";
+import {
+  OPEN_ORDER_EVENT,
+  orderAnchor,
+  orderHash,
+  type OrderLinkTarget,
+} from "@/lib/admin-order-link";
 
 const STATUS_LABELS = {
   pending: "À vérifier",
@@ -69,6 +76,26 @@ export function PhoneCardPaymentsTable({ rows }: { rows: AdminPhoneCardPaymentRo
       if (result.ok) router.refresh();
       setTimeout(() => setToast(null), 7000);
     });
+  };
+
+  /**
+   * Ouvre la commande correspondante dans le tableau plus bas.
+   *
+   * Ce bloc est un récapitulatif statique : cliquer la carte ne dépliait rien,
+   * d'où l'impression que « la ligne ne s'ouvre pas ». On émet donc un
+   * événement (immédiat) + un fragment d'URL (partageable, survit au
+   * rechargement).
+   */
+  const openOrder = (ref: string, options: { offPlatform?: boolean } = {}) => {
+    const detail: OrderLinkTarget = { ref, offPlatform: options.offPlatform === true };
+    window.dispatchEvent(new CustomEvent(OPEN_ORDER_EVENT, { detail }));
+    if (window.location.hash !== orderHash(ref, detail)) {
+      window.location.hash = orderHash(ref, detail);
+    } else {
+      document
+        .getElementById(orderAnchor(ref))
+        ?.scrollIntoView({ block: "center", behavior: "smooth" });
+    }
   };
 
   const copy = async (ref: string, code: string) => {
@@ -247,11 +274,37 @@ export function PhoneCardPaymentsTable({ rows }: { rows: AdminPhoneCardPaymentRo
                     </div>
                   </div>
                 ) : (
-                  <p className="mt-3 text-[11.5px] leading-5 text-stone-500">
-                    {row.reviewedAt ? `Traitée le ${adminDate(row.reviewedAt)}. ` : ""}
-                    {row.reviewNote ? `Note : ${row.reviewNote}. ` : ""}
-                    {row.status === "approved" ? "Vous pouvez maintenant saisir le code cadeau dans la commande ci-dessous." : "Aucune livraison n’est autorisée."}
-                  </p>
+                  <div className="mt-3 space-y-2">
+                    <p className="text-[11.5px] leading-5 text-stone-500">
+                      {row.reviewedAt ? `Traitée le ${adminDate(row.reviewedAt)}. ` : ""}
+                      {row.reviewNote ? `Note : ${row.reviewNote}. ` : ""}
+                      {row.status === "approved"
+                        ? row.deliveryStatus === "delivered"
+                          ? "Commande déjà livrée — rien d’autre à faire."
+                          : "Il reste à livrer : ouvrez la commande puis saisissez le code, ou marquez-la livrée si le code est déjà parti (WhatsApp)."
+                        : "Aucune livraison n’est autorisée."}
+                    </p>
+                    {row.status === "approved" && row.deliveryStatus !== "delivered" && (
+                      <div className="flex flex-wrap gap-2">
+                        <button
+                          type="button"
+                          onClick={() => openOrder(row.ref)}
+                          className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-stone-300 bg-white px-3 text-[12px] font-bold text-stone-700 hover:bg-stone-50"
+                        >
+                          <ArrowDownToLine className="h-3.5 w-3.5" />
+                          Ouvrir la commande
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => openOrder(row.ref, { offPlatform: true })}
+                          className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-emerald-700 px-3 text-[12px] font-bold text-white hover:bg-emerald-800"
+                        >
+                          <CheckCircle2 className="h-3.5 w-3.5" />
+                          Code déjà envoyé (WhatsApp…)
+                        </button>
+                      </div>
+                    )}
+                  </div>
                 )}
               </article>
             );

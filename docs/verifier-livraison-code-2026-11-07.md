@@ -274,6 +274,13 @@ Le code n'est **jamais** stocké par ce chemin.
 > marquage « hors système » sert quand le code n'est plus disponible ou ne doit pas être
 > dupliqué.
 
+**Raccourcis depuis la zone « Cartes téléphoniques à vérifier »** (haut de page) : une
+carte acceptée affiche deux boutons — **« Ouvrir la commande »** (déplie la bonne ligne
+plus bas) et **« Code déjà envoyé (WhatsApp…) »** (ouvre directement le formulaire). La
+ligne du tableau des commandes est elle-même entièrement cliquable ; le lien est aussi
+partageable sous la forme `…/admin/digital/orders#commande-DGC-…` (ajouter `?hors=1`
+pour ouvrir le formulaire).
+
 ---
 
 ## 5. Niveau 4 — SQL direct (admin indisponible, audit, incident)
