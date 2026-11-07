@@ -135,6 +135,8 @@ function toRow(
     emailSentAt: order.emailSentAt ? order.emailSentAt.toISOString() : null,
     emailProviderId: order.emailProviderId,
     emailLastError: order.emailLastError,
+    deliveryChannel: order.deliveryChannel ?? null,
+    deliveryNote: order.deliveryNote ?? null,
     attempts: order.attempts,
     lastError: order.lastError,
     codes: order.codes,

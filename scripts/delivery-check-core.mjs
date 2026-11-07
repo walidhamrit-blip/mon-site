@@ -28,6 +28,25 @@ export function normalizeStatus(value) {
 export const PHONE_CARD_STATUSES = ["pending", "approved", "rejected"];
 
 /**
+ * Canaux de livraison hors système. Copie volontaire de
+ * `OFF_PLATFORM_CHANNEL_LABELS` (src/lib/digital-offplatform-core.ts) pour que
+ * ce script reste exécutable sans compilation ; un test vérifie l'alignement
+ * des deux tables (`scripts/digital-offplatform.test.mjs`).
+ */
+export const OFF_PLATFORM_LABELS = {
+  whatsapp: "WhatsApp",
+  phone: "Appel téléphonique",
+  email: "E-mail direct",
+  other: "Autre canal",
+};
+
+/** Libellé d'un canal de livraison hors système (valeur inconnue → brut). */
+export function offPlatformLabel(value) {
+  const channel = String(value ?? "").trim().toLowerCase();
+  return OFF_PLATFORM_LABELS[channel] ?? (channel || "—");
+}
+
+/**
  * Statut de vérification d'une carte téléphonique.
  * `null` = commande qui n'est pas payée par carte téléphonique.
  */
@@ -180,7 +199,41 @@ export function deliveryVerdict(order = {}) {
       };
     }
 
+    const offPlatform = String(order.deliveryChannel ?? "").trim().toLowerCase();
+
     if (!hasCodesCipher) {
+      if (offPlatform) {
+        const label = offPlatformLabel(offPlatform);
+        if (!emailSentAt) {
+          return {
+            level: "warn",
+            code: "off_platform_no_email",
+            headline: `LIVRÉ hors système (${label}) — client NON prévenu`,
+            detail:
+              "Le code a été transmis hors du site et la commande est marquée livrée, " +
+              "mais aucun e-mail de confirmation n'est parti : le client n'a aucune trace " +
+              "écrite." +
+              (emailLastError ? ` Dernière erreur : ${emailLastError}` : ""),
+            actions: [
+              "Vérifier que le client a bien reçu le code par ce canal.",
+              "Faire partir la confirmation (Resend/SMTP) pour garder une preuve écrite.",
+            ],
+          };
+        }
+        return {
+          level: "ok",
+          code: "off_platform_delivered",
+          headline: `LIVRÉ hors système — ${label}`,
+          detail:
+            `Le code n'est pas stocké sur le site : il a été transmis par ${label}. ` +
+            "La commande est clôturée et le client a reçu un e-mail de confirmation " +
+            "sans le code (trace + lien de suivi).",
+          actions: [
+            "Conserver la conversation/preuve du canal utilisé.",
+            "Vérifier que le client a bien utilisé le code (preuve finale).",
+          ],
+        };
+      }
       return {
         level: "fail",
         code: "delivered_without_codes",

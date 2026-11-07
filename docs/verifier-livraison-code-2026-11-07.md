@@ -233,6 +233,46 @@ Ce qui n'est **pas** fait, et qu'il ne faut pas attendre :
 | carte acceptée, aucun code saisi | ❌ `phone_card_approved_not_delivered` — acheter puis saisir |
 | carte refusée | ❌ `phone_card_rejected` — ne rien livrer |
 | carte acceptée **et** code livré | ✅ `delivered` |
+| livré hors système (WhatsApp…) | ✅ `off_platform_delivered` |
+| livré hors système mais e-mail non parti | ⚠️ `off_platform_no_email` |
+
+---
+
+## 4 ter. Cas particulier — code transmis **hors du site** (WhatsApp)
+
+Beaucoup de ventes se concluent sur WhatsApp : on achète la carte chez le fournisseur et
+on l'envoie directement. Jusqu'ici la commande restait « À livrer manuellement » à vie,
+la page de suivi affichait « code en cours de préparation » et le client ne recevait
+aucune preuve écrite.
+
+Nouveau geste dans `/admin/digital/orders` : **« Livré hors système (WhatsApp…) »**,
+disponible dès que la commande n'a **aucun code enregistré** (et que la carte
+téléphonique, s'il y en a une, est acceptée). Il demande :
+
+| Champ | Rôle |
+|---|---|
+| **Canal utilisé** | WhatsApp, appel téléphonique, e-mail direct, autre — obligatoire |
+| **Note interne** (facultatif, 300 car.) | justificatif : « envoyé au 091… à 21:40 ». **Jamais envoyée au client** |
+
+Ce que l'action fait, dans l'ordre :
+
+1. passe la commande en **Livré** (`delivered`, `delivered_at`) et mémorise
+   `delivery_channel` + `delivery_note` ;
+2. **régénère le jeton de suivi** — l'ancien lien cesse de fonctionner, le nouveau part
+   dans l'e-mail ;
+3. envoie au client un e-mail **« Commande livrée »** : produit, date, canal, lien de
+   suivi — **sans le code** (il l'a déjà reçu) ;
+4. la page `/codes/commande` affiche désormais « Commande livrée via WhatsApp… » au lieu
+   d'une page « Livré » vide.
+
+Garde-fous : refus si la commande est déjà livrée, si elle contient déjà des codes
+(utiliser « Renvoyer l'e-mail »), ou si une carte téléphonique n'est pas encore acceptée.
+Le code n'est **jamais** stocké par ce chemin.
+
+> Pourquoi ne pas saisir le code reçu par WhatsApp ? C'est possible et préférable quand
+> on l'a encore : le client garde alors un code consultable sur `/codes/commande`. Le
+> marquage « hors système » sert quand le code n'est plus disponible ou ne doit pas être
+> dupliqué.
 
 ---
 
@@ -252,6 +292,7 @@ select o.ref, o.status, o.fulfillment, o.kind,
        o.created_at, o.delivered_at,
        (o.codes_cipher is not null) as codes_stockes,
        o.email_sent_at, o.email_provider_id, o.email_last_error,
+       o.delivery_channel, o.delivery_note,
        o.attempts, o.last_error,
        o.reloadly_status, o.reloadly_transaction_id,
        p.ref as payment_ref, p.status as payment_status, p.payment_method,
@@ -324,7 +365,9 @@ illisibles — d'où le `npm run codes:rotate` après tout changement de secret.
 
 ## 8. Les pièges classiques
 
-1. **Statut forcé** : `delivered` sans code enregistré → le client ne voit rien.
+1. **Statut forcé** : `delivered` sans code enregistré **et sans canal** → le client ne
+   voit rien. (Avec `delivery_channel` renseigné, c'est une livraison hors système
+   assumée, pas une anomalie.)
 2. **« Envoyé » ≠ « reçu »** : `email_sent_at` signifie *accepté par Resend/SMTP*.
    Domaine non vérifié, SPF/DKIM absents ou spam : l'e-mail est perdu après acceptation.
 3. **Identifiant de message absent** : anciens envois SMTP sans accusé ; ce n'est pas

@@ -21,7 +21,7 @@
 
 import { existsSync, readFileSync } from "node:fs";
 import pg from "pg";
-import { deliveryVerdict, maskEmail } from "./delivery-check-core.mjs";
+import { deliveryVerdict, maskEmail, offPlatformLabel } from "./delivery-check-core.mjs";
 
 /**
  * Lecture minimale de `.env.local` / `.env` — sans dépendance `dotenv`, pour
@@ -141,6 +141,8 @@ const ORDER_QUERY = `
     d.email_sent_at,
     d.email_provider_id,
     d.email_last_error,
+    d.delivery_channel,
+    d.delivery_note,
     d.attempts,
     d.last_error,
     d.reloadly_transaction_id,
@@ -175,6 +177,7 @@ function rowToOrder(row) {
     deliveredAt: row.delivered_at,
     emailSentAt: row.email_sent_at,
     emailLastError: row.email_last_error,
+    deliveryChannel: row.delivery_channel,
     paymentMethod: row.payment_method,
     phoneCardStatus: row.phone_card_status,
   };
@@ -252,6 +255,8 @@ async function checkOne(ref) {
             emailSentAt: frDate(row.email_sent_at),
             emailProviderId: row.email_provider_id,
             emailLastError: row.email_last_error,
+            deliveryChannel: row.delivery_channel,
+            deliveryNote: row.delivery_note,
             attempts: row.attempts,
             lastError: row.last_error,
             codesStored: row.codes_stored,
@@ -300,6 +305,14 @@ async function checkOne(ref) {
   }
   line("Commande", `${row.status} · ${row.fulfillment}`);
   line("Codes en base", row.codes_stored ? "oui (chiffrés)" : "non");
+  if (row.delivery_channel) {
+    line(
+      "Livraison",
+      `hors système — ${offPlatformLabel(row.delivery_channel)}${
+        row.delivery_note ? ` · ${row.delivery_note}` : ""
+      }`,
+    );
+  }
   line("Livrée le", frDate(row.delivered_at));
   line(
     "E-mail",
@@ -331,7 +344,7 @@ async function runAudit() {
   const { rows } = await client.query(
     `select d.ref, d.status, d.kind, d.product_title, d.total_usd, d.created_at,
             d.delivered_at, d.email_sent_at, d.email_last_error, d.attempts,
-            d.quantity, d.codes_cipher is not null as codes_stored,
+            d.quantity, d.codes_cipher is not null as codes_stored, d.delivery_channel,
             p.payment_method, pc.status as phone_card_status
        from digital_orders d
        left join lateral (

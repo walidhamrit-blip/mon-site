@@ -26,6 +26,8 @@ SELECT O.ref,
        O.email_sent_at,
        O.email_provider_id,
        O.email_last_error,
+       O.delivery_channel,
+       O.delivery_note,
        O.attempts,
        O.last_error
   FROM digital_orders O
@@ -66,3 +68,9 @@ SELECT O.ref,
 --   carte_statut = approved + paiement_statut = paid
 --   + commande_statut = manual + delivered_at vide + codes_stockes = false
 --   ⇒ payé, NON livré : acheter le code puis le saisir dans /admin/digital/orders.
+--
+--   commande_statut = delivered + codes_stockes = true
+--   ⇒ livré par le site (code stocké chiffré, e-mail des codes journalisé).
+--
+--   commande_statut = delivered + codes_stockes = false + delivery_channel rempli
+--   ⇒ livré HORS système (WhatsApp…), code non stocké : voir delivery_note.

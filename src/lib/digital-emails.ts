@@ -12,6 +12,11 @@
 import { sendEmail } from "@/lib/mailer";
 import { escapeHtml } from "@/lib/emails";
 import type { DigitalOrder } from "@/db/schema";
+import {
+  OFF_PLATFORM_CHANNEL_LABELS,
+  offPlatformEmailContent,
+  type OffPlatformChannel,
+} from "@/lib/digital-offplatform-core";
 import type { GiftCardCode } from "@/lib/reloadly";
 
 export interface DigitalEmailResult {
@@ -426,4 +431,112 @@ function readBuyerFields(order: DigitalOrder): [string, string][] {
   return Object.entries(fields as Record<string, unknown>)
     .filter(([, value]) => value != null && String(value).trim() !== "")
     .map(([key, value]) => [key, String(value)]);
+}
+
+
+/**
+ * Confirme au client une commande livrée HORS du système (WhatsApp…).
+ *
+ * Le code n'est volontairement pas répété : il a déjà été transmis par un
+ * autre canal. L'e-mail sert de trace écrite, donne la date et le lien de
+ * suivi — sans lui, le client n'avait aucune preuve et la page de suivi
+ * restait bloquée sur « code en cours de préparation ».
+ */
+export async function sendDigitalDeliveredOffPlatformEmail(
+  order: DigitalOrder,
+  input: {
+    trackingUrl: string;
+    channel: OffPlatformChannel;
+    note?: string | null;
+    siteName: string;
+    siteUrl: string;
+    siteEmail?: string;
+    deliveredAtLabel?: string | null;
+  },
+): Promise<DigitalEmailResult> {
+  const to = emailAddressFrom(order.recipientEmail);
+  if (!to) return { ok: false, provider: "none", error: "destinataire absent" };
+
+  const support = emailAddressFrom(input.siteEmail) || emailAddressFrom(process.env.EMAIL_FROM);
+  const content = offPlatformEmailContent({
+    ref: order.ref,
+    productTitle: order.productTitle,
+    denominationLabel: order.denominationLabel,
+    channel: input.channel,
+    // La note est INTERNE : elle ne part jamais au client.
+    note: null,
+    trackingUrl: input.trackingUrl,
+    siteName: input.siteName,
+    siteUrl: input.siteUrl,
+    supportEmail: support || null,
+    deliveredAtLabel: input.deliveredAtLabel ?? null,
+  });
+
+  const result = await sendEmail({ to, subject: content.subject, text: content.text, html: content.html });
+  return { ok: result.ok, provider: result.provider, error: result.error };
+}
+
+/**
+ * Prévient le CLIENT qu'une carte de recharge a été vérifiée.
+ *
+ * Sans cet e-mail, il n'a que « paiement reçu » puis le silence : entre
+ * l'acceptation de la carte et la remise du code, il croit que sa commande
+ * est bloquée — c'est exactement la question qui revient le plus souvent.
+ */
+export async function sendPhoneCardApprovedEmail(
+  order: DigitalOrder,
+  siteName: string,
+  siteUrl: string,
+  siteEmail?: string,
+): Promise<DigitalEmailResult> {
+  const to = emailAddressFrom(order.recipientEmail);
+  if (!to) return { ok: false, provider: "none", error: "destinataire absent" };
+
+  const support = emailAddressFrom(siteEmail) || emailAddressFrom(process.env.EMAIL_FROM);
+  const subject = `✅ Carte vérifiée — commande ${order.ref} en préparation`;
+
+  const text = [
+    `Bonjour,`,
+    ``,
+    `Votre paiement par carte de recharge a été vérifié et accepté.`,
+    ``,
+    `Produit : ${order.productTitle} — ${order.denominationLabel}`,
+    `Commande : ${order.ref}`,
+    `Montant : ${decimal(order.totalUsd)} USD`,
+    ``,
+    `Notre équipe prépare votre ${order.kind === "game_topup" ? "recharge" : "code"}. Vous recevrez un e-mail dès qu'il sera disponible — aucune action n'est nécessaire de votre côté.`,
+    ``,
+    `Délai habituel : quelques minutes pendant les heures d'ouverture.`,
+    support ? `Une question ? Écrivez à ${support}.` : "",
+    `${siteName} — ${siteUrl}`,
+  ]
+    .filter((line) => line !== "")
+    .join("\n");
+
+  const html = `
+    <div style="font-family:system-ui,Arial,sans-serif;max-width:560px;margin:0 auto;padding:24px;color:#1a1a1e">
+      <div style="font-size:13px;letter-spacing:.12em;color:#C6A664;font-weight:700">${escapeHtml(siteName.toUpperCase())} — BOUTIQUE DIGITALE</div>
+      <h1 style="font-size:22px;font-weight:900;margin:8px 0 4px">Carte vérifiée — merci ✅</h1>
+      <p style="color:#666;font-size:14px;margin:0 0 18px">
+        ${escapeHtml(order.productTitle)} — ${escapeHtml(order.denominationLabel)}${order.quantity > 1 ? ` × ${order.quantity}` : ""}
+      </p>
+      <div style="border:1px solid #e7e1d3;border-radius:14px;background:#faf8f3;padding:14px 16px;margin:10px 0;font-size:14px">
+        Votre paiement par carte de recharge a été <strong>vérifié et accepté</strong>.
+        Nous préparons votre ${order.kind === "game_topup" ? "recharge" : "code"} : vous recevrez un e-mail dès qu'il sera prêt.
+        Aucune action n'est nécessaire de votre côté.
+      </div>
+      <table style="width:100%;border-collapse:collapse;font-size:13px;margin-top:16px">
+        <tr><td style="padding:6px 10px;background:#f6f3ec;font-weight:700;width:150px">Commande</td><td style="padding:6px 10px">${escapeHtml(order.ref)}</td></tr>
+        <tr><td style="padding:6px 10px;background:#f6f3ec;font-weight:700">Montant</td><td style="padding:6px 10px">${escapeHtml(decimal(order.totalUsd))} USD</td></tr>
+        <tr><td style="padding:6px 10px;background:#f6f3ec;font-weight:700">Délai habituel</td><td style="padding:6px 10px">quelques minutes pendant les heures d'ouverture</td></tr>
+      </table>
+      <p style="color:#666;font-size:13px;margin-top:16px">
+        Suivi : <a href="${escapeHtml(siteLink(siteUrl, "/codes/commande"))}" style="color:#8A6D2F;font-weight:700">votre commande</a>.
+      </p>
+      ${support ? `<p style="color:#666;font-size:13px">Une question ? Écrivez à <a href="mailto:${escapeHtml(support)}" style="color:#8A6D2F">${escapeHtml(support)}</a>.</p>` : ""}
+      <p style="color:#999;font-size:12px;margin-top:24px">${escapeHtml(siteName)} — ${escapeHtml(siteUrl)}</p>
+    </div>`;
+
+  const result = await sendEmail({ to, subject, text, html });
+  return { ok: result.ok, provider: result.provider, error: result.error };
 }

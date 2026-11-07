@@ -344,6 +344,14 @@ export function ensureSchema(): Promise<void> {
       await pool.query(
         "ALTER TABLE digital_orders ADD COLUMN IF NOT EXISTS email_last_error text",
       );
+      // Livraison hors système (WhatsApp, téléphone…) : le code n'est pas
+      // stocké, il faut donc savoir par quel canal il a été remis.
+      await pool.query(
+        "ALTER TABLE digital_orders ADD COLUMN IF NOT EXISTS delivery_channel text",
+      );
+      await pool.query(
+        "ALTER TABLE digital_orders ADD COLUMN IF NOT EXISTS delivery_note text",
+      );
       await pool.query(
         "CREATE INDEX IF NOT EXISTS orders_digital_order_id_idx ON orders (digital_order_id)",
       );

@@ -40,8 +40,11 @@ import {
 import {
   deliverDigitalOrderManually,
   deliverPaidDigitalOrder,
+  getAdminDigitalOrder,
+  markDigitalOrderDeliveredOffPlatform,
   resendDigitalCodesEmail,
 } from "@/lib/digital-orders";
+import { sendPhoneCardApprovedEmail } from "@/lib/digital-emails";
 import { denominationUnitPrice, type DigitalProduct } from "@/lib/digital-types";
 import { computeSalePrice } from "@/lib/digital-order-core";
 import { getGiftCardProduct, reloadlyConfigured } from "@/lib/reloadly";
@@ -936,6 +939,42 @@ export async function closeDigitalOrderWithoutCodeAction(
   }
 }
 
+/**
+ * Marque une commande livrée alors que le code a été remis HORS du système
+ * (WhatsApp, téléphone, e-mail direct).
+ *
+ * Cas réel : achat manuel envoyé au client par WhatsApp, sans passer par la
+ * saisie des codes. Sans cette action, la commande restait `manual` pour
+ * toujours, la page de suivi affichait « en cours de préparation » et le
+ * client ne recevait aucune preuve écrite.
+ *
+ * Le code n'est ni demandé ni stocké ; l'e-mail envoyé au client ne le
+ * contient pas, mais donne la date, le canal et le lien de suivi.
+ */
+export async function markDeliveredOffPlatformAction(
+  ref: string,
+  channel: string,
+  note?: string,
+): Promise<ActionResult> {
+  await requireAdmin();
+  const orderRef = String(ref ?? "").trim().toUpperCase();
+  if (!orderRef) return { ok: false, error: "Référence manquante." };
+  try {
+    const result = await markDigitalOrderDeliveredOffPlatform(orderRef, { channel, note });
+    revalidatePath("/admin/digital/orders");
+    revalidatePath("/codes/commande");
+    if (!result.ok) return { ok: false, error: result.error ?? "Marquage impossible." };
+    return {
+      ok: true,
+      message: result.warning
+        ? `Commande marquée livrée (code transmis hors système). E-mail non envoyé : ${result.warning}`
+        : `Commande marquée livrée et client prévenu par e-mail (${orderRef}).`,
+    };
+  } catch (error) {
+    return { ok: false, error: dbIssue(error) };
+  }
+}
+
 /** Accepte/refuse une recharge téléphonique, sans jamais livrer automatiquement. */
 export async function reviewPhoneCardPaymentAction(
   ref: string,
@@ -951,11 +990,28 @@ export async function reviewPhoneCardPaymentAction(
     if (!result.ok) return { ok: false, error: result.error ?? "Vérification impossible." };
     revalidatePath("/admin/digital/orders");
     revalidatePath("/admin/orders");
+
+    // Carte acceptée : le client n'a reçu que « paiement reçu ». Sans ce
+    // message, il croit sa commande bloquée pendant toute la préparation.
+    // Un échec d'e-mail ne doit jamais annuler l'acceptation.
+    let mailWarning = "";
+    if (decision === "approved") {
+      try {
+        const order = await getAdminDigitalOrder(ref);
+        if (order) {
+          const { config } = await getSiteData();
+          const email = await sendPhoneCardApprovedEmail(order, config.name, config.url, config.email);
+          if (!email.ok) mailWarning = ` E-mail non envoyé : ${email.error ?? "échec inconnu"}`;
+        }
+      } catch (error) {
+        mailWarning = ` E-mail non envoyé : ${dbIssue(error)}`;
+      }
+    }
     return {
       ok: true,
       message:
         decision === "approved"
-          ? "Carte acceptée. La commande est maintenant « à livrer manuellement » : saisissez le code cadeau ci-dessous."
+          ? `Carte acceptée. La commande est maintenant « à livrer manuellement » : saisissez le code cadeau ci-dessous.${mailWarning}`
           : "Carte refusée et commande marquée comme non payée. Aucun code cadeau ne sera livré.",
     };
   } catch (error) {

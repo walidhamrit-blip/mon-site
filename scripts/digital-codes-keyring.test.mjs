@@ -400,11 +400,12 @@ test("les points d'écriture et de lecture passent par le trousseau", () => {
   assert.match(phoneCards, /for \(const key of digitalCodesKeyRing\(\)\)/);
 
   const digitalOrders = readSource("src/lib/digital-orders.ts");
-  // 4 lectures de codes : 3 appellent le trousseau sur place, la 4e (liste
-  // admin) le calcule une fois pour toutes les lignes.
+  // 5 lectures de codes : 4 appellent le trousseau sur place (dont la garde de
+  // la livraison hors système, qui refuse une commande déjà livrée avec codes),
+  // la 5e (liste admin) le calcule une fois pour toutes les lignes.
   const ringCalls =
     digitalOrders.match(/decryptDigitalCodes\([^)]*digitalCodesKeyRing\(\)\)/g) ?? [];
-  assert.equal(ringCalls.length, 3, "chaque lecture de codes doit essayer tout le trousseau");
+  assert.equal(ringCalls.length, 4, "chaque lecture de codes doit essayer tout le trousseau");
   assert.match(digitalOrders, /const keys = digitalCodesKeyRing\(\);/);
   assert.match(digitalOrders, /decryptDigitalCodes\(row\.codesCipher, keys\)/);
   // Aucune lecture ne doit se contenter de la clé courante.
