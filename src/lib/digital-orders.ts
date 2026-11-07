@@ -69,9 +69,14 @@ import { siteBaseUrl } from "@/lib/site-url";
 import { getSiteData } from "@/lib/store";
 import {
   sendDigitalCodesEmail,
+  sendDigitalDeliveredOffPlatformEmail,
   sendDigitalManualNotice,
   sendDigitalTopupDeliveredEmail,
 } from "@/lib/digital-emails";
+import {
+  offPlatformNotice,
+  validateOffPlatformDelivery,
+} from "@/lib/digital-offplatform-core";
 import { recordDigitalEmailOutcome } from "@/lib/digital-email-log";
 import { reviewPromptForConfig } from "@/lib/review-emails";
 import { isFazercardsProductRef } from "@/lib/fazercards-catalog";
@@ -962,6 +967,12 @@ export async function getPublicDigitalOrder(
       : [];
   const phoneGate = await phoneCardDeliveryGate(order.ref);
   const locale = order.locale === "en" ? "en" : "ar";
+  // Livrée hors système (WhatsApp…) : aucun code en base, mais le client doit
+  // lire où il l'a reçu au lieu d'une page « Livré » vide.
+  const externalNotice =
+    status === "delivered" && codes.length === 0
+      ? offPlatformNotice(order.deliveryChannel, order.deliveredAt, locale)
+      : null;
 
   return {
     ref: order.ref,
@@ -983,8 +994,8 @@ export async function getPublicDigitalOrder(
       phoneGate.isPhoneCard && status !== "delivered"
         ? phoneCardPublicNotice(phoneGate.status, locale)
         : phoneGate.isPhoneCard
-          ? null
-          : publicNotice(status),
+          ? externalNotice
+          : (externalNotice ?? publicNotice(status)),
   };
 }
 
@@ -1156,4 +1167,116 @@ export async function resendDigitalCodesEmail(ref: string): Promise<{ ok: boolea
   const result = await sendDigitalCodesEmail(order, codes, config.name, config.url, config.email);
   await recordDigitalEmailOutcome(order.id, result);
   return { ok: result.ok, error: result.error };
+}
+
+export interface OffPlatformDeliveryResult {
+  ok: boolean;
+  error?: string;
+  /** E-mail de confirmation non parti : la livraison reste enregistrée. */
+  warning?: string;
+  trackingUrl?: string;
+}
+
+/**
+ * Marque une commande livrée alors que le code a été transmis HORS du
+ * système (WhatsApp, téléphone, e-mail direct).
+ *
+ * Pourquoi : un achat manuel envoyé par WhatsApp restait bloqué en `manual`,
+ * le client lisait « code en cours de préparation » sur `/codes/commande` et
+ * ne recevait jamais d'e-mail. Sans code en base, « livrer manuellement » est
+ * inutilisable, et « clôturer sans code » est réservé aux recharges de jeu.
+ *
+ * Ce que fait cette fonction, dans l'ordre :
+ *  1. refuse une commande déjà livrée, verrouillée par une carte téléphonique
+ *     non acceptée, ou qui contient déjà des codes (→ « Renvoyer l'e-mail ») ;
+ *  2. passe la commande en `delivered` et mémorise le canal + la note interne ;
+ *  3. régénère le jeton de suivi (l'ancien lien cesse de fonctionner) ;
+ *  4. envoie au client un e-mail de livraison SANS le code, avec le lien.
+ *
+ * Le code lui-même n'est jamais stocké : c'est une décision assumée, la note
+ * interne sert de justificatif.
+ */
+export async function markDigitalOrderDeliveredOffPlatform(
+  ref: string,
+  input: { channel?: unknown; note?: unknown },
+): Promise<OffPlatformDeliveryResult> {
+  const orderRef = String(ref ?? "").trim().toUpperCase();
+  if (!orderRef) return { ok: false, error: "Référence manquante." };
+
+  const order = await loadDigitalOrder(orderRef);
+  if (!order) return { ok: false, error: "Commande introuvable." };
+
+  if (normalizeDigitalStatus(order.status) === "delivered") {
+    return { ok: false, error: "Cette commande est déjà livrée." };
+  }
+
+  const phoneGate = await phoneCardDeliveryGate(order.ref);
+  if (phoneGate.isPhoneCard && phoneGate.status !== "approved") {
+    return {
+      ok: false,
+      error:
+        "Livraison verrouillée : acceptez d’abord la carte téléphonique dans la zone de vérification.",
+    };
+  }
+
+  const storedCodes = decryptDigitalCodes(order.codesCipher, digitalCodesKeyRing());
+  if (storedCodes.length > 0) {
+    return {
+      ok: false,
+      error:
+        "Des codes sont déjà enregistrés pour cette commande : utilisez « Renvoyer l’e-mail », la livraison est déjà faite.",
+    };
+  }
+
+  const validation = validateOffPlatformDelivery(input);
+  if (!validation.ok) return { ok: false, error: validation.error };
+
+  const now = new Date();
+  const tracking = createTrackingToken();
+  const updatedRows = await db
+    .update(digitalOrders)
+    .set({
+      status: "delivered",
+      fulfillment: "manual",
+      deliveredAt: now,
+      trackingTokenHash: tracking.hash,
+      deliveryChannel: validation.channel,
+      deliveryNote: validation.note,
+      lastError: null,
+      updatedAt: now,
+    })
+    .where(eq(digitalOrders.id, order.id))
+    .returning();
+  const delivered = updatedRows[0] ?? order;
+
+  const locale = order.locale === "en" ? "en" : "ar";
+  const query = `ref=${encodeURIComponent(order.ref)}&t=${encodeURIComponent(tracking.token)}`;
+  const trackingUrl = `${siteBaseUrl()}${localizedPath(`/codes/commande?${query}`, locale)}`;
+
+  let warning: string | undefined;
+  try {
+    const { config } = await getSiteData();
+    const email = await sendDigitalDeliveredOffPlatformEmail(delivered, {
+      trackingUrl,
+      channel: validation.channel,
+      note: validation.note,
+      siteName: config.name,
+      siteUrl: config.url,
+      siteEmail: config.email,
+      deliveredAtLabel: now.toLocaleString("fr-FR", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+        timeZone: "Africa/Tripoli",
+      }),
+    });
+    await recordDigitalEmailOutcome(order.id, email);
+    if (!email.ok) warning = email.error ?? "e-mail non envoyé";
+  } catch (error) {
+    warning = error instanceof Error ? error.message : String(error);
+  }
+
+  return { ok: true, trackingUrl, ...(warning ? { warning } : {}) };
 }

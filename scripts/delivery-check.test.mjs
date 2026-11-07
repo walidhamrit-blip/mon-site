@@ -5,6 +5,7 @@ import {
   expectedCodes,
   maskEmail,
   normalizeStatus,
+  offPlatformLabel,
 } from "./delivery-check-core.mjs";
 
 const base = {
@@ -150,4 +151,40 @@ test("statut de carte inconnu ou absent → traité comme non vérifié", () => 
     deliveryVerdict({ ...base, status: "pending", paymentMethod: "phone_card", phoneCardStatus: "bizarre" }).code,
     "phone_card_unverified",
   );
+});
+
+test("livrée hors système (WhatsApp) sans code → ok, pas une incohérence", () => {
+  const verdict = deliveryVerdict({
+    ...base,
+    hasCodesCipher: false,
+    deliveryChannel: "whatsapp",
+  });
+  assert.equal(verdict.level, "ok");
+  assert.equal(verdict.code, "off_platform_delivered");
+  assert.match(verdict.headline, /WhatsApp/);
+});
+
+test("livrée hors système mais client non prévenu → warn", () => {
+  const verdict = deliveryVerdict({
+    ...base,
+    hasCodesCipher: false,
+    deliveryChannel: "phone",
+    emailSentAt: null,
+    emailLastError: "resend : 403",
+  });
+  assert.equal(verdict.level, "warn");
+  assert.equal(verdict.code, "off_platform_no_email");
+  assert.match(verdict.detail, /403/);
+});
+
+test("« Livré » sans code ET sans canal reste une incohérence", () => {
+  const verdict = deliveryVerdict({ ...base, hasCodesCipher: false, deliveryChannel: null });
+  assert.equal(verdict.level, "fail");
+  assert.equal(verdict.code, "delivered_without_codes");
+});
+
+test("libellé de canal : inconnu ou absent ne casse pas l'affichage", () => {
+  assert.equal(offPlatformLabel("WhatsApp"), "WhatsApp");
+  assert.equal(offPlatformLabel("telegram"), "telegram");
+  assert.equal(offPlatformLabel(null), "—");
 });

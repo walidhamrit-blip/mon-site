@@ -388,6 +388,13 @@ export const digitalOrders = pgTable("digital_orders", {
   emailProviderId: text("email_provider_id"),
   /** Motif du dernier échec d'envoi des codes (diagnostic admin). */
   emailLastError: text("email_last_error"),
+  /**
+   * Livraison effectuée HORS du système (WhatsApp, téléphone, e-mail direct) :
+   * canal utilisé + note libre. Non nul = la commande a été livrée sans que le
+   * code soit stocké ici ; l'admin doit alors savoir où le code a été remis.
+   */
+  deliveryChannel: text("delivery_channel"),
+  deliveryNote: text("delivery_note"),
 
   attempts: integer("attempts").notNull().default(0),
   lastError: text("last_error"),

@@ -8,14 +8,22 @@ import {
   ExternalLink,
   Loader2,
   Mail,
+  MessageCircle,
   RefreshCw,
 } from "lucide-react";
 import {
   closeDigitalOrderWithoutCodeAction,
   manualDigitalDeliveryAction,
+  markDeliveredOffPlatformAction,
   resendDigitalEmailAction,
   retryDigitalDeliveryAction,
 } from "@/app/admin/actions";
+import {
+  OFF_PLATFORM_CHANNELS,
+  OFF_PLATFORM_CHANNEL_LABELS,
+  OFF_PLATFORM_NOTE_MAX,
+  type OffPlatformChannel,
+} from "@/lib/digital-offplatform-core";
 import {
   DIGITAL_ORDER_STATUS_LABELS,
   DIGITAL_ORDER_STATUS_TONES,
@@ -69,6 +77,9 @@ export interface AdminDigitalOrderRow {
   emailSentAt: string | null;
   emailProviderId: string | null;
   emailLastError: string | null;
+  /** Livraison hors système (WhatsApp…) : canal + note interne. */
+  deliveryChannel: string | null;
+  deliveryNote: string | null;
   attempts: number;
   lastError: string | null;
   codes: { cardNumber: string; pinCode: string | null; redemptionUrl: string | null }[];
@@ -177,6 +188,9 @@ export function DigitalOrdersTable({ rows }: { rows: AdminDigitalOrderRow[] }) {
   const [copied, setCopied] = useState<string | null>(null);
   const [manualRef, setManualRef] = useState<string | null>(null);
   const [manualCodes, setManualCodes] = useState("");
+  const [offPlatformRef, setOffPlatformRef] = useState<string | null>(null);
+  const [offPlatformChannel, setOffPlatformChannel] = useState<OffPlatformChannel>("whatsapp");
+  const [offPlatformNote, setOffPlatformNote] = useState("");
 
   const flash = (msg: string, kind: "ok" | "err") => {
     setToast({ msg, kind });
@@ -218,6 +232,19 @@ export function DigitalOrdersTable({ rows }: { rows: AdminDigitalOrderRow[] }) {
       if (result.ok) {
         setManualRef(null);
         setManualCodes("");
+      }
+      setPendingRef(null);
+    });
+  };
+
+  const saveOffPlatform = (ref: string) => {
+    setPendingRef(ref);
+    startTransition(async () => {
+      const result = await markDeliveredOffPlatformAction(ref, offPlatformChannel, offPlatformNote);
+      flash(result.message ?? result.error ?? "Terminé.", result.ok ? "ok" : "err");
+      if (result.ok) {
+        setOffPlatformRef(null);
+        setOffPlatformNote("");
       }
       setPendingRef(null);
     });
@@ -310,6 +337,30 @@ export function DigitalOrdersTable({ rows }: { rows: AdminDigitalOrderRow[] }) {
 
               {open && (
                 <div className="space-y-4 border-t border-stone-200 px-4 py-4 sm:px-5">
+                  {status !== "delivered" && (
+                    <div className="rounded-xl border border-amber-200 bg-amber-50/70 p-3">
+                      <div className="text-[11px] font-bold uppercase tracking-wide text-amber-800">
+                        À acheter chez {supplierLabel(row.supplier)}
+                      </div>
+                      <p className="mt-1 text-[14px] font-bold text-stone-900">{row.productTitle}</p>
+                      <p className="mt-0.5 text-[12.5px] text-stone-700">
+                        {[
+                          row.platform,
+                          row.denominationLabel,
+                          `région ${(row.region || "global").toUpperCase()}`,
+                          `quantité ${row.quantity}`,
+                        ]
+                          .filter(Boolean)
+                          .join(" · ")}
+                      </p>
+                      <p className="mt-1 text-[11.5px] leading-5 text-amber-900/80">
+                        {row.kind === "game_topup"
+                          ? "Recharge : créditer l'identifiant joueur — aucun code à saisir, puis « Clôturer sans code »."
+                          : "Vérifiez plateforme, valeur et région avant l'achat : un code hors région est refusé par le client."}
+                      </p>
+                    </div>
+                  )}
+
                   <dl className="grid gap-2 text-[12.5px] sm:grid-cols-2">
                     <div className="flex gap-2">
                       <dt className="w-32 shrink-0 font-bold text-stone-500">Client</dt>
@@ -395,6 +446,21 @@ export function DigitalOrdersTable({ rows }: { rows: AdminDigitalOrderRow[] }) {
                       <dt className="w-32 shrink-0 font-bold text-stone-500">Livrée le</dt>
                       <dd>{frDate(row.deliveredAt)}</dd>
                     </div>
+                    {row.deliveryChannel && (
+                      <div className="flex gap-2 sm:col-span-2">
+                        <dt className="w-32 shrink-0 font-bold text-stone-500">Livraison</dt>
+                        <dd className="min-w-0 break-words">
+                          Hors système —{" "}
+                          {OFF_PLATFORM_CHANNEL_LABELS[
+                            row.deliveryChannel as OffPlatformChannel
+                          ] ?? row.deliveryChannel}
+                          {row.deliveryNote ? ` · ${row.deliveryNote}` : ""}
+                          <span className="mt-0.5 block text-[11px] text-stone-500">
+                            Le code n&apos;est pas stocké ici : il a été transmis au client par ce canal.
+                          </span>
+                        </dd>
+                      </div>
+                    )}
                     <div className="flex gap-2">
                       <dt className="w-32 shrink-0 font-bold text-stone-500">E-mail codes</dt>
                       <dd>
@@ -504,10 +570,25 @@ export function DigitalOrdersTable({ rows }: { rows: AdminDigitalOrderRow[] }) {
                         onClick={() => {
                           setManualRef(manualRef === row.ref ? null : row.ref);
                           setManualCodes("");
+                          setOffPlatformRef(null);
                         }}
                         className="inline-flex items-center gap-1.5 rounded-lg border border-stone-300 bg-white px-3 py-2 text-[12px] font-bold text-stone-700 hover:bg-stone-50"
                       >
                         Saisir les codes manuellement
+                      </button>
+                    )}
+                    {status !== "delivered" && canDeliverManually && row.codes.length === 0 && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setOffPlatformRef(offPlatformRef === row.ref ? null : row.ref);
+                          setManualRef(null);
+                          setManualCodes("");
+                        }}
+                        className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-300 bg-emerald-50 px-3 py-2 text-[12px] font-bold text-emerald-800 hover:bg-emerald-100"
+                      >
+                        <MessageCircle className="h-3.5 w-3.5" />
+                        Livré hors système (WhatsApp…)
                       </button>
                     )}
                   </div>
@@ -518,11 +599,72 @@ export function DigitalOrdersTable({ rows }: { rows: AdminDigitalOrderRow[] }) {
                       : status === "delivered"
                       ? row.kind === "game_topup"
                         ? "Recharge créditée sur le compte du joueur — rien d'autre à faire."
-                        : "Code acheté et transmis — rien d'autre à faire."
+                        : row.deliveryChannel
+                          ? "Code transmis hors système (voir « Livraison ») — rien d'autre à faire."
+                          : "Code acheté et transmis — rien d'autre à faire."
                       : row.fulfillment === "auto"
                         ? `La relance achète ${row.kind === "game_topup" ? "la recharge" : "le code"} chez ${supplierLabel(row.supplier)} (débit du solde marchand). Aucun second achat si une transaction existe déjà.`
                         : `Mode manuel : achetez ${row.kind === "game_topup" ? "la recharge" : "le code"} chez le fournisseur, puis saisissez-le ci-dessous — le client reçoit l'e-mail automatiquement. Si la fiche vient d'être passée en automatique, « Relancer la livraison » relit la fiche et achète sans nouveau paiement.`}
                   </p>
+
+                  {offPlatformRef === row.ref && status !== "delivered" && canDeliverManually && (
+                    <div className="rounded-xl border border-emerald-200 bg-emerald-50/50 p-3">
+                      <p className="text-[11.5px] leading-5 text-stone-700">
+                        À utiliser si le code a <strong>déjà été transmis au client</strong> (WhatsApp,
+                        téléphone, e-mail direct). La commande passera en « Livré », le client recevra un
+                        e-mail de confirmation <strong>sans le code</strong>, et un nouveau lien de suivi
+                        sera créé — l&apos;ancien cessera de fonctionner.
+                      </p>
+                      <div className="mt-2 grid gap-2 sm:grid-cols-2">
+                        <label className="block">
+                          <span className="mb-1 block text-[11px] font-bold uppercase tracking-wide text-stone-500">
+                            Canal utilisé
+                          </span>
+                          <select
+                            value={offPlatformChannel}
+                            onChange={(event) =>
+                              setOffPlatformChannel(event.target.value as OffPlatformChannel)
+                            }
+                            className="w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-[12.5px] outline-none focus:border-[#B8923F]"
+                          >
+                            {OFF_PLATFORM_CHANNELS.map((channel) => (
+                              <option key={channel} value={channel}>
+                                {OFF_PLATFORM_CHANNEL_LABELS[channel]}
+                              </option>
+                            ))}
+                          </select>
+                        </label>
+                        <label className="block">
+                          <span className="mb-1 block text-[11px] font-bold uppercase tracking-wide text-stone-500">
+                            Note interne (facultatif)
+                          </span>
+                          <input
+                            value={offPlatformNote}
+                            maxLength={OFF_PLATFORM_NOTE_MAX}
+                            onChange={(event) => setOffPlatformNote(event.target.value)}
+                            placeholder="Ex. envoyé par WhatsApp au 091… à 21:40"
+                            className="w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-[12.5px] outline-none focus:border-[#B8923F]"
+                          />
+                        </label>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => saveOffPlatform(row.ref)}
+                        disabled={isBusy}
+                        className="mt-2 inline-flex items-center gap-1.5 rounded-lg bg-emerald-700 px-3 py-2 text-[12px] font-bold text-white hover:bg-emerald-800 disabled:opacity-60"
+                      >
+                        {isBusy ? (
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                        ) : (
+                          <Check className="h-3.5 w-3.5" />
+                        )}
+                        Marquer livré et prévenir le client
+                      </button>
+                      <p className="mt-1 text-[11px] text-stone-500">
+                        La note reste interne : elle n&apos;est jamais envoyée au client.
+                      </p>
+                    </div>
+                  )}
 
                   {manualRef === row.ref && status !== "delivered" && canDeliverManually && (
                     <div className="rounded-xl border border-stone-200 bg-white p-3">
