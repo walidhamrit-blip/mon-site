@@ -16,6 +16,7 @@ import { recommendedNetworksLabel } from "@/lib/payment-networks";
 import { MAX_DIGITAL_ORDER_USD } from "@/lib/digital-sales-policy";
 import { playerIdGate } from "@/lib/fazercards-player-id-core";
 import type { PhoneCardLydQuote } from "@/lib/phone-card-pricing-core";
+import { PHONE_CARD_DISABLED_ERROR, phoneCardUnavailableNotice } from "@/lib/phone-card-core";
 
 const MAX_QUANTITY = 10;
 /** Mémorise la dernière commande du visiteur pour préremplir le suivi. */
@@ -52,7 +53,12 @@ export function DigitalBuyDialog({ product, denominationId, onClose }: Props) {
   const [email, setEmail] = useState("");
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
-  const [paymentMethod, setPaymentMethod] = useState<"nowpayments" | "phone_card">("nowpayments");
+  const [phoneCardDisabled, setPhoneCardDisabled] = useState(false);
+  const phoneCardEnabled = siteConfig.fazercards?.phoneCardPaymentsEnabled !== false && !phoneCardDisabled;
+  const [selectedPaymentMethod, setPaymentMethod] = useState<"nowpayments" | "phone_card">("nowpayments");
+  // Si l'admin coupe le flux pendant qu'un dialogue est ouvert, la sélection
+  // retombe sur crypto sans conserver un formulaire de carte actif.
+  const paymentMethod = phoneCardEnabled ? selectedPaymentMethod : "nowpayments";
   const [cardOperator, setCardOperator] = useState<"libyana" | "al_madar">("libyana");
   const [cardCode, setCardCode] = useState("");
   const [cardValueLyd, setCardValueLyd] = useState("");
@@ -156,8 +162,10 @@ export function DigitalBuyDialog({ product, denominationId, onClose }: Props) {
         const data = (await response.json().catch(() => ({}))) as {
           ok?: boolean;
           quote?: PhoneCardLydQuote;
+          error?: string;
         };
         if (cancelled) return;
+        if (data.error === PHONE_CARD_DISABLED_ERROR) setPhoneCardDisabled(true);
         if (!response.ok || !data.ok || !data.quote) {
           setPhoneQuoteResult({ amount: phoneQuoteAmount, error: "unavailable" });
         } else {
@@ -391,7 +399,15 @@ export function DigitalBuyDialog({ product, denominationId, onClose }: Props) {
       };
 
       if (!res.ok || !data.ok || !data.paymentUrl) {
-        setError(data.message || (ar ? "تعذر إنشاء الطلب. حاول مرة أخرى." : "Could not create the order. Please retry."));
+        if (data.error === PHONE_CARD_DISABLED_ERROR) {
+          setPhoneCardDisabled(true);
+          setCardCode("");
+          setAcceptedPhoneQuoteKey("");
+          setPhoneQuoteResult(null);
+        }
+        setError(data.error === PHONE_CARD_DISABLED_ERROR
+          ? phoneCardUnavailableNotice(ar ? "ar" : "en")
+          : data.message || (ar ? "تعذر إنشاء الطلب. حاول مرة أخرى." : "Could not create the order. Please retry."));
         if (data.error === "phone_card_quote_changed" || data.error === "phone_card_rate_unavailable") {
           // Ne laisse pas l'utilisateur renvoyer indéfiniment l'ancien devis :
           // le nouveau taux est chargé et sa case d'accord est réinitialisée.
@@ -561,20 +577,28 @@ export function DigitalBuyDialog({ product, denominationId, onClose }: Props) {
               </button>
               <button
                 type="button"
+                disabled={!phoneCardEnabled}
+                aria-describedby={!phoneCardEnabled ? "phone-card-paused-notice" : undefined}
                 onClick={() => {
                   setPaymentMethod("phone_card");
                   setError("");
                 }}
-                className={`flex min-h-12 items-center justify-center gap-2 rounded-xl border px-3 py-2 text-[12.5px] font-black ${
+                className={`flex min-h-12 items-center justify-center gap-2 rounded-xl border px-3 py-2 text-[12.5px] font-black disabled:cursor-not-allowed disabled:opacity-50 ${
                   paymentMethod === "phone_card"
                     ? "border-[var(--accent)] bg-[var(--accent)]/10 text-[var(--accent)]"
                     : "border-[var(--border)] hover:border-[var(--accent)]/60"
                 }`}
               >
                 <Smartphone className="h-4 w-4" />
-                {ar ? "بطاقة هاتف" : "Phone card"}
+                {ar ? "بطاقة / رصيد هاتف" : "Phone card / balance"}
               </button>
             </div>
+            {!phoneCardEnabled && (
+              <p id="phone-card-paused-notice" role="status" className="mt-2 rounded-xl border border-amber-300/60 bg-amber-500/10 px-3 py-2.5 text-[12px] leading-5 text-[var(--foreground)]">
+                <strong className="block">{ar ? "الدفع اليدوي متوقف مؤقتاً" : "Manual payments temporarily paused"}</strong>
+                {phoneCardUnavailableNotice(ar ? "ar" : "en")}
+              </p>
+            )}
           </div>
         )}
 

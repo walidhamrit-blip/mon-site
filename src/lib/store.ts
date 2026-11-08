@@ -3,6 +3,7 @@ import { eq } from "drizzle-orm";
 import { db, ensureSchema } from "@/db";
 import { settings } from "@/db/schema";
 import { siteConfig } from "@/lib/config";
+import { normalizePhoneCardPaymentsEnabled } from "@/lib/phone-card-core";
 import { fazercardsMaxOrderUsd } from "@/lib/fazercards";
 import { ensureDemoSeoFields } from "@/lib/ai/seo-generator";
 import {
@@ -54,6 +55,9 @@ import {
 // valeurs par défaut codées dans src/lib/config.ts et src/lib/content.ts.
 
 const KEY_CONFIG = "site_config";
+// Clé séparée : un formulaire de réglages ouvert avant le changement ne peut
+// pas réactiver accidentellement le paiement manuel en enregistrant ses autres champs.
+const KEY_PHONE_CARD_PAYMENTS_ENABLED = "phone_card_payments_enabled";
 const KEY_DEMOS = "content_demos";
 const KEY_FAQS = "content_faqs";
 const KEY_TESTIMONIALS = "content_testimonials";
@@ -80,7 +84,7 @@ export interface SiteData {
 export const getAllKnownDemos = collectAllDemos;
 
 /** Fusionne une configuration enregistrée par-dessus les valeurs par défaut. */
-export function mergeConfig(override: unknown): typeof siteConfig {
+export function mergeConfig(override: unknown, phoneCardPaymentsEnabled?: unknown): typeof siteConfig {
   const defaultMaxOrderUsd = fazercardsMaxOrderUsd();
   const baseWithEnv = {
     ...siteConfig,
@@ -181,6 +185,8 @@ export function mergeConfig(override: unknown): typeof siteConfig {
     ...fzrRaw,
     maxOrderUsd:
       Number.isFinite(fzrMax) && fzrMax > 0 ? Math.round(fzrMax * 100) / 100 : defaultMaxOrderUsd,
+    // Source unique : clé opérationnelle dédiée, jamais le formulaire global.
+    phoneCardPaymentsEnabled: normalizePhoneCardPaymentsEnabled(phoneCardPaymentsEnabled),
     phoneCardRateMode: fzrRaw?.phoneCardRateMode === "manual" ? "manual" : "auto",
     phoneCardManualRateLyd:
       Number.isFinite(manualRate) && manualRate > 0 && manualRate <= 10_000
@@ -482,7 +488,7 @@ export async function getSiteData(): Promise<SiteData> {
       });
     }
     return {
-      config: mergeConfig(map.get(KEY_CONFIG)),
+      config: mergeConfig(map.get(KEY_CONFIG), map.get(KEY_PHONE_CARD_PAYMENTS_ENABLED)),
       content: {
         demos: resolveDemos(map, defaultDemos),
         faqs: resolveStoredList<Faq>(map, KEY_FAQS, defaultFaqs),
@@ -556,6 +562,7 @@ export async function deleteSetting(key: string): Promise<void> {
 
 export const SETTINGS_KEYS = {
   config: KEY_CONFIG,
+  phoneCardPaymentsEnabled: KEY_PHONE_CARD_PAYMENTS_ENABLED,
   demos: KEY_DEMOS,
   faqs: KEY_FAQS,
   testimonials: KEY_TESTIMONIALS,

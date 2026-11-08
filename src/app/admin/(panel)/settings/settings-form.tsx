@@ -32,6 +32,7 @@ import type {
   StandaloneService,
 } from "@/lib/site-types";
 import { ADMIN_INPUT_CLS, ADMIN_TEXTAREA_CLS } from "../site-item-editor";
+import { PhoneCardPaymentsToggle } from "../phone-card-payments-toggle";
 
 type SettingsTab =
   | "appearance"
@@ -73,6 +74,7 @@ export function SettingsForm({ initial, initialTab }: Props) {
         Number(initial.fazercards?.maxOrderUsd) > 0
           ? Number(initial.fazercards.maxOrderUsd)
           : 25,
+      phoneCardPaymentsEnabled: initial.fazercards?.phoneCardPaymentsEnabled !== false,
       phoneCardRateMode: initial.fazercards?.phoneCardRateMode === "manual" ? "manual" : "auto",
       phoneCardManualRateLyd:
         Number.isFinite(Number(initial.fazercards?.phoneCardManualRateLyd)) &&
@@ -1600,6 +1602,8 @@ export function SettingsForm({ initial, initialTab }: Props) {
               </Link>
             </div>
           </div>
+
+          <PhoneCardPaymentsToggle enabled={initial.fazercards?.phoneCardPaymentsEnabled !== false} />
 
           <div className="rounded-2xl border border-stone-200 bg-white p-5 sm:p-6 shadow-xs space-y-5">
             <div>

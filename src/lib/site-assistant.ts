@@ -78,6 +78,7 @@ export interface SiteKnowledge {
   degraded: boolean;
   whatsappHref: string;
   productCount: number;
+  phoneCardPaymentsEnabled: boolean;
 }
 
 export interface AssistantAction {
@@ -327,7 +328,24 @@ function planDocs(config: AssistantConfig): KnowledgeDoc[] {
 function paymentDocs(config: AssistantConfig): KnowledgeDoc[] {
   const deposit = config.reservation?.depositUsd ?? 1;
   const flex = config.flexiblePayment;
+  const phoneCardEnabled = config.fazercards?.phoneCardPaymentsEnabled !== false;
   return [
+    {
+      id: "phone-card-payment",
+      section: "payment",
+      path: "/codes",
+      title: { ar: "الدفع ببطاقة / رصيد الهاتف", en: "Phone card / mobile balance payment" },
+      body: {
+        ar: phoneCardEnabled
+          ? "الدفع ببطاقات تعبئة ليبيانا أو المدار متاح في المتجر الرقمي ويخضع لتحقق يدوي. السعر التقديري بالدينار = إجمالي USDT × سعر السوق الموازي × 1.20. راجع السعر في صفحة الشراء وأكّده قبل إرسال الرمز مرة واحدة. القبول والتسليم ليسا فوريين."
+          : "الدفع ببطاقة أو رصيد الهاتف متوقف مؤقتاً لأن التحقق اليدوي غير متاح. لا ترسل رمز تعبئة. الدفع بالعملات الرقمية يبقى متاحاً، والطلبات السابقة تبقى قابلة للمعالجة. لا يوجد موعد عودة معلن؛ راجع صفحة الشراء لاحقاً.",
+        en: phoneCardEnabled
+          ? "Libyana / Al Madar recharge cards are accepted in the digital store after manual verification. Indicative LYD price = order total USDT × parallel-market rate × 1.20. Check and accept the quote at checkout before submitting the code once. Acceptance and delivery are not instant."
+          : "Phone card / mobile balance payments are temporarily paused because manual verification is unavailable. Do not submit a recharge code. Crypto remains available and existing orders can still be processed. No return date is announced; check checkout later.",
+      },
+      keywords: kw("phone", "card", "balance", "recharge", "libyana", "madar", "carte", "solde", "téléphonique", "بطاقة", "رصيد", "هاتف", "ليبيانا", "المدار", "تعبئة", "paused", "disabled", "متوقف"),
+      weight: 1.4,
+    },
     {
       id: "payment",
       section: "payment",
@@ -798,7 +816,7 @@ function buildCore(input: KnowledgeInput, docs: KnowledgeDoc[], productCount: nu
     `WEBSITE PLANS (USD, 1 USD = 1 USDT; /pricing, /creation-sites): ${plans.join(" | ")}. Includes 1st-year Vercel hosting + domain connection (domain ~$12/yr bought by the client). Delivery: Vitrine ~7 days, Vitrine+ ~10, Boutique 14–21. 2 revision rounds. Free support 30–90 days by plan. Reservation deposit ${fmtUsd(config.reservation?.depositUsd ?? 1)} deducted from the price (pick a model on /demos). Flexible payment ${fmtUsd(config.flexiblePayment.minUsd)}–${fmtUsd(config.flexiblePayment.maxUsd)}. Installments: 1, 2 or 3. Payment only in crypto via NOWPayments (USDT or 300+ coins) — no cards/PayPal/cash. Photo guide: ${CRYPTO_GUIDE_PATH}.`,
     `SUBSCRIPTIONS (/abonnements, optional renewal of hosting/maintenance): ${subs.join(" | ")}. Monthly = 30 days, annual = 365 days; renewal link by email, reminder 3 days before; grace period max ${SUBSCRIPTION_GRACE_DAYS} days; cancel anytime on /abonnements/suivi (link with ref + t); current period non-refundable.`,
     `OPEN SERVICES (/services/<id>): ${config.standaloneServices.map((s) => `${s.titleEn} [${s.id}] from ${fmtUsd(s.priceFromUsd)}`).join("; ")}.`,
-    `DIGITAL CODES STORE (/codes, /codes/<slug>, /codes/category/<kind>, tracking /codes/commande): ${degraded ? "TEMPORARILY UNAVAILABLE — catalog unreachable; do NOT quote product prices or stock; offer WhatsApp." : `${productCount} products live`}. Kinds: gift_card, game_topup (credited directly to the game via Player ID — no code emailed), software_key, subscription_code (code shown on /codes/commande and emailed after payment confirmation and delivery). Payment: crypto via NOWPayments, or Libyana/Al Madar phone recharge card with mandatory manual verification and manual delivery — never instant acceptance. Max ${fmtUsd(MAX_DIGITAL_ORDER_USD)} per order, gift cards ≤ ${fmtUsd(MAX_GIFT_CARD_PRICE_USD)}. Region-locked; non-refundable once delivered; invalid code → replacement within 48h with screenshot. Codes come from the official distributor on demand. Never ask for passwords/seed phrases.`,
+    `DIGITAL CODES STORE (/codes, /codes/<slug>, /codes/category/<kind>, tracking /codes/commande): ${degraded ? "TEMPORARILY UNAVAILABLE — catalog unreachable; do NOT quote product prices or stock; offer WhatsApp." : `${productCount} products live`}. Kinds: gift_card, game_topup (credited directly to the game via Player ID — no code emailed), software_key, subscription_code (code shown on /codes/commande and emailed after payment confirmation and delivery). Payment: crypto via NOWPayments; Libyana/Al Madar phone recharge card / mobile balance is ${config.fazercards?.phoneCardPaymentsEnabled !== false ? "ENABLED, with mandatory manual verification — never instant acceptance" : "TEMPORARILY PAUSED — do not ask for recharge codes; crypto remains available and existing orders remain processable; no return date announced"}. Max ${fmtUsd(MAX_DIGITAL_ORDER_USD)} per order, gift cards ≤ ${fmtUsd(MAX_GIFT_CARD_PRICE_USD)}. Region-locked; non-refundable once delivered; invalid code → replacement within 48h with screenshot. Codes come from the official distributor on demand. Never ask for passwords/seed phrases.`,
     `PORTFOLIO (/demos/<slug>): ${demos.length} live demos — ${demos.map((d) => `${d.titleEn} (${d.slug}, ${d.sectorEn})`).join("; ")}.`,
     `SECTORS (/sectors/<id>): ${Object.values(sectorSeo).map((s) => `${s.labelEn} [${s.id}]`).join(", ")}. COMPARISONS (/compare/<id>): ${Object.values(comparisons).map((c) => `${c.competitorEn} [${c.id}]`).join(", ")}. BLOG (/blog/<slug>): ${blogArticles.map((a) => `${a.h1En} [${a.slug}]`).join("; ")}.`,
     `UPCOMING APPS (/apps): ${content.appsPage.items.map((i) => `${i.titleEn} (${i.badgeEn})`).join("; ")}. UPCOMING SOFTWARE (/products): ${content.productsPage.items.map((i) => `${i.titleEn} (${i.badgeEn})`).join("; ")}. No prices announced yet.`,
@@ -833,6 +851,7 @@ export function buildSiteKnowledge(input: KnowledgeInput): SiteKnowledge {
     degraded,
     whatsappHref: whatsappLink(input.config.whatsapp),
     productCount,
+    phoneCardPaymentsEnabled: input.config.fazercards?.phoneCardPaymentsEnabled !== false,
   };
 }
 
@@ -1045,7 +1064,9 @@ export function buildSystemPrompt(
     `- Answer in ${LANG_NAME[lang]} (the visitor's language). Be concise, warm and precise; use short paragraphs or bullets. Plain text only (no Markdown headings, no tables).`,
     "- Use ONLY the facts below. Quote exact prices, delays, limits and policies from them. If something is not covered, say you don't have that information on the site and suggest WhatsApp or the Contact page — never invent numbers, statistics, client counts, ratings, '24/7 support' or new offers.",
     "- Website plans and subscriptions are paid in crypto (USDT = USD) via NOWPayments; never suggest bank cards, PayPal or cash for them.",
-    "- Digital codes also accept Libyana/Al Madar phone recharge cards through the checkout's Phone card option. The indicative LYD quote is order total USDT × current parallel-market USD/LYD rate × 1.20, with rate source/time displayed and explicit customer agreement. Never invent a live rate: refer the visitor to the checkout. The customer submits the recharge code once, staff verify it manually, then staff deliver the gift code manually. Never claim the phone card is automatically validated or instantly accepted.",
+    knowledge.phoneCardPaymentsEnabled
+      ? "- Digital codes also accept Libyana/Al Madar phone recharge cards through checkout. The indicative LYD quote is order total USDT × current parallel-market USD/LYD rate × 1.20, with source/time displayed and explicit customer agreement. Never invent a live rate. The customer submits the code once; staff verify it manually before delivery. Never claim instant acceptance."
+      : "- Phone card / mobile balance payments are TEMPORARILY PAUSED. Tell visitors not to submit recharge codes; crypto remains available and existing orders can still be processed. Do not invent a return date or bypass the pause.",
     "- Game top-ups are credited via Player ID (no emailed code); other digital items are emailed and shown on /codes/commande.",
     "- If the codes store is marked unavailable, do not quote product prices or stock.",
     "- Never ask for passwords, private keys or wallet seed phrases; remind visitors not to share them.",

@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { getPhoneCardLydQuote } from "@/lib/phone-card-rate";
+import { readPhoneCardAvailability } from "@/lib/phone-card-availability";
+import { PHONE_CARD_DISABLED_ERROR } from "@/lib/phone-card-core";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -18,6 +20,20 @@ export async function GET(req: Request) {
     return NextResponse.json(
       { ok: false, error: "rate_limited", retryAfterSec: decision.retryAfterSec },
       { status: 429, headers: { "Retry-After": String(decision.retryAfterSec) } },
+    );
+  }
+
+  const availability = await readPhoneCardAvailability();
+  if (availability !== "enabled") {
+    return NextResponse.json(
+      {
+        ok: false,
+        error: availability === "disabled" ? PHONE_CARD_DISABLED_ERROR : "phone_card_availability_unavailable",
+        message: availability === "disabled"
+          ? "Le paiement manuel par carte / solde téléphonique est temporairement désactivé. Le paiement crypto reste disponible."
+          : "Disponibilité du paiement manuel invérifiable. Réessayez plus tard ou choisissez la crypto.",
+      },
+      { status: 503, headers: { "Cache-Control": "no-store" } },
     );
   }
 

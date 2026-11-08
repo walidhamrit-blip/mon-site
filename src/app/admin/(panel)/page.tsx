@@ -30,6 +30,7 @@ import {
 import { ADMIN_PUBLIC_LINKS } from "@/lib/admin-navigation";
 import { SystemHealth } from "./system-health";
 import { StatusBadge } from "./status-badge";
+import { PhoneCardPaymentsToggle } from "./phone-card-payments-toggle";
 
 export const dynamic = "force-dynamic";
 
@@ -62,7 +63,7 @@ export default async function AdminDashboardPage() {
   let daily: { day: string; count: number }[] = [];
   let recent: (typeof leads.$inferSelect)[] = [];
 
-  const { content } = await getSiteData();
+  const { config, content } = await getSiteData();
 
   try {
     await ensureSchema();
@@ -261,6 +262,8 @@ export default async function AdminDashboardPage() {
           </div>
         </div>
       )}
+
+      <PhoneCardPaymentsToggle enabled={config.fazercards.phoneCardPaymentsEnabled !== false} />
 
       <nav aria-label="Parcours du site public" className="flex flex-wrap gap-2">
         {ADMIN_PUBLIC_LINKS.map((item) => <Link key={item.href} href={item.href} target="_blank" rel="noopener noreferrer" className="rounded-xl border border-stone-200 bg-white px-4 py-2 text-sm font-semibold">{item.label} ↗</Link>)}

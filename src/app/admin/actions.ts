@@ -269,6 +269,31 @@ export async function resetSiteConfig(): Promise<ActionResult> {
   }
 }
 
+/**
+ * Interrupteur opérationnel immédiat : aucune sauvegarde globale nécessaire.
+ * La clé séparée protège ce choix des formulaires de réglages déjà ouverts.
+ */
+export async function setPhoneCardPaymentsEnabled(enabled: unknown): Promise<ActionResult> {
+  await requireAdmin();
+  if (typeof enabled !== "boolean") {
+    return { ok: false, error: "Valeur invalide : true ou false attendu." };
+  }
+  try {
+    await upsertSetting(SETTINGS_KEYS.phoneCardPaymentsEnabled, enabled);
+    revalidatePath("/", "layout");
+    revalidatePath("/codes", "layout");
+    revalidatePath("/admin", "layout");
+    return {
+      ok: true,
+      message: enabled
+        ? "Paiement manuel activé : les clients peuvent de nouveau envoyer une carte Libyana / Al Madar."
+        : "Paiement manuel désactivé : les nouvelles cartes sont refusées. La crypto reste disponible et les cartes déjà reçues restent traitables.",
+    };
+  } catch (error) {
+    return { ok: false, error: dbIssue(error) };
+  }
+}
+
 /* ---------------- Contenu éditable ---------------- */
 
 const CONTENT_KEYS: Record<ContentSection, string> = {
