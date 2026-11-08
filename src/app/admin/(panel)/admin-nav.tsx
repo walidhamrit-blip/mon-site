@@ -18,6 +18,7 @@ import {
   Sparkles,
   ClipboardCheck,
   Settings,
+  Send,
   ExternalLink,
   LogOut,
   Menu,
@@ -69,6 +70,7 @@ export function AdminNav({ newLeads, paidOrders }: Props) {
       { href: "/admin/content", label: "Textes, FAQ & Avis", sublabel: "Contenus partagés arabe / anglais", icon: FileText },
       { href: "/admin/media", label: "Bannières & images", sublabel: "Accueil, boutique & sections", icon: Camera },
       { href: "/admin/settings", label: "Identité, thèmes & tarifs", sublabel: "Contacts, FazerCards & offres web", icon: Settings },
+      { href: "/admin/telegram", label: "Bot Telegram", sublabel: "Alertes ventes, suivi & campagnes", icon: Send },
     ] },
     { title: "Pages secondaires & Héritage", items: [
       { href: "/admin/sections", label: "Ancien constructeur", sublabel: "Données conservées, accueil fixe", icon: Blocks },

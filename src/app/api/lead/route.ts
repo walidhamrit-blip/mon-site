@@ -5,6 +5,8 @@ import { leads } from "@/db/schema";
 import { leadInputSchema } from "@/lib/validation";
 import { getSiteData } from "@/lib/store";
 import { leadEmailContext, sendLeadEmails } from "@/lib/lead-emails";
+import { notifyTelegramLead } from "@/lib/telegram";
+import { siteBaseUrl } from "@/lib/site-url";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { enforceSameOrigin } from "@/lib/csrf";
 import { isValidWebhookUrl } from "@/lib/webhook-validate";
@@ -159,6 +161,28 @@ export async function POST(req: Request) {
         outcome.receipt.error,
       );
     }
+
+    /*
+     * Telegram — canal d'alerte supplémentaire pour l'équipe. Volontairement
+     * APRÈS les e-mails et avec un délai court : si Telegram est lent ou
+     * absent, le visiteur reçoit quand même sa confirmation sans attendre.
+     */
+    await notifyTelegramLead(
+      {
+        name: data.name,
+        business: data.business,
+        phone: data.phone,
+        email: data.email || null,
+        need: data.need,
+        budget: data.budget,
+        deadline: data.deadline,
+        message: data.message || null,
+        locale: data.locale || null,
+        utm: data.utm || null,
+      },
+      config.name,
+      siteBaseUrl(req),
+    );
   } catch (error) {
     console.warn(
       "[lead] e-mails impossibles :",

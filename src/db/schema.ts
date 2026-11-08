@@ -1,4 +1,4 @@
-import { pgTable, serial, text, timestamp, jsonb, integer } from "drizzle-orm/pg-core";
+import { boolean, pgTable, serial, text, timestamp, jsonb, integer } from "drizzle-orm/pg-core";
 import type { PhoneCardQuoteReference } from "@/lib/phone-card-pricing-core";
 
 // Tables du panneau d'administration.
@@ -540,3 +540,54 @@ export const clientCreditRequests = pgTable("client_credit_requests", {
 
 export type ClientCreditRequest = typeof clientCreditRequests.$inferSelect;
 export type NewClientCreditRequest = typeof clientCreditRequests.$inferInsert;
+
+/**
+ * Abonnés du bot Telegram.
+ *
+ * Une ligne = un chat privé qui a démarré le bot (`/start`). Le consentement
+ * marketing est explicite (`marketing_opt_in`) : démarrer le bot n'abonne à
+ * aucune campagne. `status = "blocked"` est posé automatiquement quand
+ * Telegram répond « bot was blocked by the user » — on cesse alors de lui
+ * écrire, sans supprimer la ligne (historique conservé).
+ */
+export const telegramSubscribers = pgTable("telegram_subscribers", {
+  id: serial("id").primaryKey(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  lastSeenAt: timestamp("last_seen_at", { withTimezone: true }).notNull().defaultNow(),
+  /** Identifiant du chat privé (toujours positif pour un utilisateur). */
+  chatId: text("chat_id").notNull().unique(),
+  username: text("username"),
+  firstName: text("first_name"),
+  /** ar | en | fr — langue choisie dans le bot. */
+  language: text("language").notNull().default("ar"),
+  /** Origine du premier /start (paramètre du lien t.me/…?start=…). */
+  source: text("source"),
+  /** active | blocked */
+  status: text("status").notNull().default("active"),
+  /** Consentement explicite aux offres marketing. */
+  marketingOptIn: boolean("marketing_opt_in").notNull().default(false),
+  optedInAt: timestamp("opted_in_at", { withTimezone: true }),
+  /** Dernier message reçu du client (support), pour l'admin. */
+  lastMessage: text("last_message"),
+});
+
+export type TelegramSubscriber = typeof telegramSubscribers.$inferSelect;
+export type NewTelegramSubscriber = typeof telegramSubscribers.$inferInsert;
+
+/** Journal des campagnes marketing envoyées depuis /admin/telegram. */
+export const telegramCampaigns = pgTable("telegram_campaigns", {
+  id: serial("id").primaryKey(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  title: text("title").notNull(),
+  body: text("body").notNull(),
+  /** Nombre de destinataires ciblés / servis / refusés. */
+  audience: integer("audience").notNull().default(0),
+  sent: integer("sent").notNull().default(0),
+  failed: integer("failed").notNull().default(0),
+  blocked: integer("blocked").notNull().default(0),
+  /** sent | partial | failed */
+  status: text("status").notNull().default("sent"),
+});
+
+export type TelegramCampaign = typeof telegramCampaigns.$inferSelect;

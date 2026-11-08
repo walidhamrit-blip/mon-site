@@ -7,6 +7,18 @@ import { useSiteConfig } from "./site-provider";
 import { marketLabels, resolveMarket } from "@/lib/market";
 import { WhatsAppEnquiry } from "@/components/whatsapp-enquiry";
 
+/**
+ * Lien vers le bot Telegram public. Piloté par l'environnement : sans
+ * `NEXT_PUBLIC_TELEGRAM_BOT_USERNAME`, aucun lien n'est affiché (jamais de
+ * `https://t.me/` cassé dans le pied de page).
+ */
+const TELEGRAM_BOT_USERNAME = (process.env.NEXT_PUBLIC_TELEGRAM_BOT_USERNAME ?? "")
+  .trim()
+  .replace(/^@/, "");
+const TELEGRAM_URL = /^[A-Za-z0-9_]{4,32}$/.test(TELEGRAM_BOT_USERNAME)
+  ? `https://t.me/${TELEGRAM_BOT_USERNAME}`
+  : "";
+
 export function Footer() {
   const config = useSiteConfig();
   const { locale } = useI18n();
@@ -46,6 +58,7 @@ export function Footer() {
           <ul>
             <li><Link href="/contact">{ar ? "مساعدة وتواصل" : "Help & contact"}</Link></li>
             <li><WhatsAppEnquiry className="cursor-pointer">WhatsApp ↗</WhatsAppEnquiry></li>
+            {TELEGRAM_URL ? <li><a href={TELEGRAM_URL} target="_blank" rel="noopener">Telegram ↗</a></li> : null}
             <li><a href={`mailto:${config.email}`} className="flex items-center gap-2"><Mail className="h-3.5 w-3.5" /><span dir="ltr">{config.email}</span></a></li>
             <li><a href={`tel:${config.phone.replace(/\s/g, "")}`} className="flex items-center gap-2"><Phone className="h-3.5 w-3.5" /><span dir="ltr">{config.phone}</span></a></li>
           </ul>

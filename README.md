@@ -610,6 +610,25 @@ sourcée : voir [`docs/avis-clients-trustpilot-scamadviser-2026-11-05.md`](docs/
 ## RTL parfait
 - dir dynamique, icônes directionnelles, animations inversées via `dir` context
 
+## Bot Telegram (alertes, suivi de commande, marketing)
+- **Activation** : `TELEGRAM_BOT_TOKEN` (BotFather) + `TELEGRAM_ADMIN_CHAT_ID`
+  (chat/groupe qui reçoit les alertes) → redéployer → `/admin/telegram` →
+  **Installer le webhook**. Aucune autre configuration : le webhook est
+  déclaré chez Telegram, le secret est généré et stocké en base.
+- **Commandes (clients)** : `/start`, `/codes`, `/commande DGC-…`, `/offres`,
+  `/stop`, `/langue` — bot trilingue **ar / fr / en**, statut de commande sans
+  jamais divulguer de code livré, messages transférés à l'équipe.
+- **Alertes (équipe)** : nouvelle demande de devis et paiement confirmé
+  (projets web, abonnements, commandes digitales) arrivent sur Telegram avec
+  un bouton vers `/admin/orders` ou `/admin/leads`. Envoi « au mieux » :
+  jamais bloquant pour le site.
+- **Marketing** : campagnes depuis `/admin/telegram` vers les seuls abonnés
+  **opt-in** (double confirmation avant envoi), lien UTM automatique, journal
+  des envois, blocages détectés et exclus.
+- **Diagnostic** : `npm run telegram:check` (bot, chat id détecté, webhook)
+  et `GET /api/telegram/webhook`. Guide complet :
+  [`docs/telegram-bot.md`](docs/telegram-bot.md). Tests : `npm run test:telegram`.
+
 ## Panneau d'administration
 - **URL** : `/admin` (connexion) — interface en français, accès protégé par session signée (7 jours)
 - **Variable obligatoire** : `ADMIN_PASSWORD` (Settings → Environment Variables sur Vercel). Optionnel : `SESSION_SECRET` (sinon la session est signée avec ADMIN_PASSWORD)
