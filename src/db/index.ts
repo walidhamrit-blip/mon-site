@@ -495,6 +495,41 @@ export function ensureSchema(): Promise<void> {
       await pool.query(
         "ALTER TABLE site_deliveries ADD COLUMN IF NOT EXISTS tracking_token_cipher text",
       );
+
+      // Bot Telegram : abonnés (marketing) + journal des campagnes.
+      await pool.query(`
+        CREATE TABLE IF NOT EXISTS telegram_subscribers (
+          id serial PRIMARY KEY,
+          created_at timestamptz NOT NULL DEFAULT now(),
+          updated_at timestamptz NOT NULL DEFAULT now(),
+          last_seen_at timestamptz NOT NULL DEFAULT now(),
+          chat_id text NOT NULL UNIQUE,
+          username text,
+          first_name text,
+          language text NOT NULL DEFAULT 'ar',
+          source text,
+          status text NOT NULL DEFAULT 'active',
+          marketing_opt_in boolean NOT NULL DEFAULT false,
+          opted_in_at timestamptz,
+          last_message text
+        )
+      `);
+      await pool.query(
+        "CREATE INDEX IF NOT EXISTS telegram_subscribers_optin_idx \n          ON telegram_subscribers (marketing_opt_in, status)",
+      );
+      await pool.query(`
+        CREATE TABLE IF NOT EXISTS telegram_campaigns (
+          id serial PRIMARY KEY,
+          created_at timestamptz NOT NULL DEFAULT now(),
+          title text NOT NULL,
+          body text NOT NULL,
+          audience integer NOT NULL DEFAULT 0,
+          sent integer NOT NULL DEFAULT 0,
+          failed integer NOT NULL DEFAULT 0,
+          blocked integer NOT NULL DEFAULT 0,
+          status text NOT NULL DEFAULT 'sent'
+        )
+      `);
     })().catch((error) => {
       schemaReady = null; // permet de réessayer au prochain accès
       throw error;

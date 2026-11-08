@@ -17,7 +17,9 @@ export default function SiteLayout({ children }: { children: ReactNode }) {
       <main className="site-main min-h-screen">
         {children}
       </main>
-      <Footer />
+      {/* @username du bot Telegram, lu côté serveur : aucun préfixe
+          NEXT_PUBLIC_ n'est nécessaire (et un jeton ne doit jamais y être). */}
+      <Footer telegramBot={process.env.TELEGRAM_BOT_USERNAME} />
       </div>
       <FloatingWidgets />
       <Analytics />

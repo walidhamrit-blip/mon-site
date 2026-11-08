@@ -8,6 +8,7 @@ import { escapeHtml } from "@/lib/emails";
 import { ORDER_STATUS_LABELS } from "@/lib/nowpayments";
 import { ORDER_KIND_LABELS } from "@/lib/site-types";
 import type { Order } from "@/db/schema";
+import { notifyTelegramPayment } from "@/lib/telegram";
 
 function frDate(value: Date | string): string {
   const d = typeof value === "string" ? new Date(value) : value;
@@ -58,6 +59,33 @@ export async function sendPaymentConfirmedEmail(
   siteUrl: string,
   siteEmail?: string,
 ): Promise<PaymentEmailResult> {
+  /*
+   * Alerte Telegram AVANT le test du destinataire e-mail : même sans
+   * `LEAD_NOTIFICATION_EMAIL`, l'équipe est prévenue sur son téléphone.
+   * Un échec Telegram ne change rien au résultat ci-dessous (e-mail).
+   */
+  await notifyTelegramPayment(
+    {
+      ref: order.ref,
+      kind: order.kind,
+      planName: order.planName,
+      amountUsd: order.amountUsd,
+      clientName: order.clientName,
+      email: order.email,
+      phone: order.phone,
+      payCurrency: order.payCurrency,
+      payAmount: order.payAmount,
+      installments: order.installments,
+      installmentIndex: order.installmentIndex,
+      groupRef: order.groupRef,
+      locale: order.locale,
+      utm: order.utm,
+    },
+    siteName,
+    siteUrl,
+    "paid",
+  );
+
   const to = paymentNotificationRecipient(siteEmail);
   if (!to) {
     return { ok: false, provider: "none", error: "destinataire absent" };

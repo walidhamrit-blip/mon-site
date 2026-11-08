@@ -7,7 +7,23 @@ import { useSiteConfig } from "./site-provider";
 import { marketLabels, resolveMarket } from "@/lib/market";
 import { WhatsAppEnquiry } from "@/components/whatsapp-enquiry";
 
-export function Footer() {
+/**
+ * Lien vers le bot Telegram public.
+ *
+ * L'identifiant est fourni par le layout serveur depuis
+ * `TELEGRAM_BOT_USERNAME` — surtout PAS via une variable `NEXT_PUBLIC_*`
+ * (Vercel affiche un avertissement « Keep This Value Private » pour tout
+ * préfixe public, et un futur jeton collé dans une telle variable fuiterait
+ * dans le bundle navigateur). Un @username Telegram est public, mais on ne
+ * laisse au navigateur que ce strict nécessaire, validé au passage.
+ */
+function telegramUrlFrom(handle: string | undefined): string {
+  const clean = (handle ?? "").trim().replace(/^@/, "");
+  return /^[A-Za-z0-9_]{4,32}$/.test(clean) ? `https://t.me/${clean}` : "";
+}
+
+export function Footer({ telegramBot }: { telegramBot?: string }) {
+  const telegramUrl = telegramUrlFrom(telegramBot);
   const config = useSiteConfig();
   const { locale } = useI18n();
   const ar = locale === "ar";
@@ -46,6 +62,7 @@ export function Footer() {
           <ul>
             <li><Link href="/contact">{ar ? "مساعدة وتواصل" : "Help & contact"}</Link></li>
             <li><WhatsAppEnquiry className="cursor-pointer">WhatsApp ↗</WhatsAppEnquiry></li>
+            {telegramUrl ? <li><a href={telegramUrl} target="_blank" rel="noopener">Telegram ↗</a></li> : null}
             <li><a href={`mailto:${config.email}`} className="flex items-center gap-2"><Mail className="h-3.5 w-3.5" /><span dir="ltr">{config.email}</span></a></li>
             <li><a href={`tel:${config.phone.replace(/\s/g, "")}`} className="flex items-center gap-2"><Phone className="h-3.5 w-3.5" /><span dir="ltr">{config.phone}</span></a></li>
           </ul>
