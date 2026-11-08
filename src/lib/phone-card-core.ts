@@ -2,6 +2,19 @@
 // Aucune base, aucun secret et aucun code chiffré dans ce module.
 
 export const PHONE_CARD_OPERATORS = ["libyana", "al_madar"] as const;
+export const PHONE_CARD_DISABLED_ERROR = "phone_card_disabled";
+
+/** Absent = activé (anciennes configurations) ; une valeur corrompue ferme le flux. */
+export function normalizePhoneCardPaymentsEnabled(value: unknown): boolean {
+  return value === undefined ? true : value === true;
+}
+
+/** Message client commun à la caisse et au suivi d'une demande refusée. */
+export function phoneCardUnavailableNotice(locale: "ar" | "en"): string {
+  return locale === "ar"
+    ? "الدفع ببطاقة أو رصيد الهاتف متوقف مؤقتاً لأن التحقق اليدوي غير متاح. لا ترسل رمز البطاقة؛ يمكنك اختيار الدفع بالعملات الرقمية. الطلبات السابقة تبقى قابلة للمعالجة."
+    : "Phone card / mobile balance payments are temporarily paused because manual verification is unavailable. Do not submit a recharge code; crypto payment remains available. Existing orders can still be processed.";
+}
 export type PhoneCardOperator = (typeof PHONE_CARD_OPERATORS)[number];
 export const PHONE_CARD_REVIEW_STATUSES = ["pending", "approved", "rejected"] as const;
 export type PhoneCardReviewStatus = (typeof PHONE_CARD_REVIEW_STATUSES)[number];

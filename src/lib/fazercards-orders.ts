@@ -71,7 +71,13 @@ import {
   preparePhoneCardPayment,
   type PreparedPhoneCardPayment,
 } from "@/lib/phone-card-payments";
-import { phoneCardDeliveryRoute, type PhoneCardInput } from "@/lib/phone-card-core";
+import {
+  PHONE_CARD_DISABLED_ERROR,
+  phoneCardDeliveryRoute,
+  phoneCardUnavailableNotice,
+  type PhoneCardInput,
+} from "@/lib/phone-card-core";
+import { readPhoneCardAvailability } from "@/lib/phone-card-availability";
 import { getPhoneCardLydQuote } from "@/lib/phone-card-rate";
 import {
   phoneCardQuoteMatches,
@@ -273,6 +279,29 @@ export async function createFazercardsCheckout(
   req: Request,
 ): Promise<FazercardsCheckoutResult> {
   const usesPhoneCard = input.paymentMethod === "phone_card";
+  const locale = input.locale === "en" ? "en" : "ar";
+  // Garde serveur avant chiffrement, appel fournisseur ou création de commande.
+  // Une page ouverte avant la désactivation ne peut donc pas contourner le bouton.
+  const assertPhoneCardAvailable = async () => {
+    const availability = await readPhoneCardAvailability();
+    if (availability === "disabled") {
+      throw new FazercardsOrderError(
+        PHONE_CARD_DISABLED_ERROR,
+        503,
+        phoneCardUnavailableNotice(locale),
+      );
+    }
+    if (availability === "unavailable") {
+      throw new FazercardsOrderError(
+        "phone_card_availability_unavailable",
+        503,
+        locale === "ar"
+          ? "تعذر التحقق من توفر الدفع اليدوي. لم يُحفظ رمز البطاقة ولم يُنشأ طلب. حاول لاحقاً أو اختر العملات الرقمية."
+          : "Manual payment availability could not be verified. No card code was saved and no order was created. Retry later or choose crypto.",
+      );
+    }
+  };
+  if (usesPhoneCard) await assertPhoneCardAvailable();
   let preparedPhoneCard: PreparedPhoneCardPayment | null = null;
   if (usesPhoneCard) {
     try {
@@ -510,9 +539,11 @@ export async function createFazercardsCheckout(
     }
   }
 
+  // Relu après les contrôles fournisseur potentiellement lents, juste avant
+  // d'enregistrer la carte : une désactivation pendant l'attente est respectée.
+  if (usesPhoneCard) await assertPhoneCardAvailable();
   const ref = newOrderReference("DGC");
   const tracking = createTrackingToken();
-  const locale = input.locale === "en" ? "en" : "ar";
   const title = `FazerCards — ${denomination.label}`;
   const label = `${title}${quantity > 1 ? ` ×${quantity}` : ""}`;
 

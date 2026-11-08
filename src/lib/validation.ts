@@ -539,6 +539,8 @@ export const siteConfigSchema = z.object({
         .number()
         .min(1.5, "La valeur maximale doit être d'au moins 1,50 $.")
         .max(10_000, "La valeur maximale ne peut pas dépasser 10 000 $."),
+      // phoneCardPaymentsEnabled est piloté par son action dédiée et stocké
+      // dans une clé séparée : ce formulaire ne peut pas écraser sa valeur.
       phoneCardRateMode: z.enum(["auto", "manual"]).default("auto"),
       phoneCardManualRateLyd: z.coerce
         .number()

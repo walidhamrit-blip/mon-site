@@ -2,6 +2,16 @@
 
 Cette option permet au client d’acheter un code ou une carte cadeau du catalogue FazerCards avec une carte de recharge **Libyana** ou **Al Madar**. Le site ne prétend pas vérifier le solde auprès de l’opérateur : la vérification et la livraison sont humaines.
 
+## Activer / désactiver pendant une indisponibilité
+
+Le bouton **Paiement manuel · carte / solde téléphonique** est disponible dans **Admin → Vue d’ensemble**, **Admin → Commandes de codes & cartes cadeaux** et **Admin → Réglages → Boutique & FazerCards**.
+
+- **Désactiver** coupe immédiatement les nouvelles demandes Libyana / Al Madar. Le client voit une explication en arabe et en anglais et peut toujours choisir la crypto. Une page déjà ouverte ou une requête envoyée directement à l’API ne contourne pas cette règle : le serveur contrôle la disponibilité avant d’enregistrer une carte, puis la relit juste avant l’insertion.
+- **Activer** rétablit ce moyen de paiement. Le choix est enregistré dans la clé PostgreSQL `settings.phone_card_payments_enabled`, séparée des autres réglages : enregistrer ou réinitialiser la configuration globale ne le modifie pas. Il survit aux redéploiements et ne se réactive pas automatiquement à une date supposée.
+- Les cartes **déjà reçues** restent visibles et peuvent être acceptées, refusées et livrées même pendant la pause. Le bouton ne remplace pas leur vérification humaine et ne déclenche aucun remboursement.
+- Si la disponibilité ne peut pas être lue en base, de nouvelles demandes manuelles sont refusées par sécurité (`phone_card_availability_unavailable`), sans inventer un état « activé ».
+- L’assistant du site lit aussi cet interrupteur : pendant la pause, il n’invite pas le visiteur à envoyer un code et n’annonce aucun délai de retour non configuré.
+
 ## Formule du prix indicatif en LYD
 
 Le devis affiché au client utilise le **total USDT de la commande, quantité comprise** :
@@ -91,7 +101,7 @@ L’acceptation de la carte est le **contrôle humain** : elle confirme que le c
 ## Vérifications techniques
 
 ```bash
-node --test scripts/phone-card-payments.test.mjs
+node --test scripts/phone-card-payments.test.mjs scripts/phone-card-availability.test.mjs
 npm run typecheck
 npx eslint src/components/digital-buy-dialog.tsx src/lib/phone-card-core.ts src/lib/phone-card-pricing-core.ts src/lib/phone-card-community-core.ts src/lib/phone-card-community.ts src/lib/phone-card-rate.ts src/lib/phone-card-payments.ts
 ```

@@ -13,6 +13,8 @@ import {
 } from "./digital-orders-table";
 import { MailTestCard } from "./mail-test-card";
 import { PhoneCardPaymentsTable } from "./phone-card-payments-table";
+import { PhoneCardPaymentsToggle } from "../../phone-card-payments-toggle";
+import { getSiteData } from "@/lib/store";
 import {
   listPhoneCardPayments,
   type AdminPhoneCardPaymentRow,
@@ -43,6 +45,7 @@ export default async function AdminDigitalOrdersPage() {
     dbError = error instanceof Error ? error.message : String(error);
   }
 
+  const { config } = await getSiteData();
   const mail = mailDiagnostics();
 
   const toDeliver = orders.filter((order) =>
@@ -74,6 +77,8 @@ export default async function AdminDigitalOrdersPage() {
         <p className="mt-2 text-stone-600">Le fournisseur actif est FazerCards. Les commandes historiques sont conservées sans achat automatique chez leur ancien fournisseur. Consultez le solde et les disponibilités dans le catalogue avant toute relance.</p>
         <Link href="/admin/digital" className="mt-3 inline-block font-bold underline">Catalogue & solde FazerCards</Link>
       </section>
+
+      <PhoneCardPaymentsToggle enabled={config.fazercards.phoneCardPaymentsEnabled !== false} />
 
       <PhoneCardPaymentsTable rows={phoneCardPayments} />
 

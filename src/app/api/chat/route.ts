@@ -98,16 +98,19 @@ let knowledgeCache: { at: number; value: SiteKnowledge } | null = null;
 
 async function loadKnowledge(): Promise<SiteKnowledge> {
   const now = Date.now();
+  // Lecture par requête : l'interrupteur admin doit aussi invalider le résumé
+  // de l'assistant, sans attendre l'expiration du cache de deux minutes.
+  const site = await getSiteDataCached();
   // Une panne de catalogue signalée entre-temps (par /codes, le cron…)
   // invalide le mémo : l'assistant ne doit plus citer de prix produit.
   if (
     knowledgeCache &&
     now - knowledgeCache.at < KNOWLEDGE_TTL_MS &&
-    !digitalCatalogStatus().degraded
+    !digitalCatalogStatus().degraded &&
+    knowledgeCache.value.phoneCardPaymentsEnabled === (site.config.fazercards?.phoneCardPaymentsEnabled !== false)
   ) {
     return knowledgeCache.value;
   }
-  const site = await getSiteDataCached();
   let products: Awaited<ReturnType<typeof getDigitalCatalog>> = [];
   try {
     products = await getDigitalCatalog({ publicOnly: true });

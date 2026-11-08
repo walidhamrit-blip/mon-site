@@ -203,6 +203,8 @@ export interface SiteConfigData {
   standaloneServices: StandaloneService[];
   fazercards: {
     maxOrderUsd: number;
+    /** Interrupteur opérationnel persistant, indépendant des autres réglages. */
+    phoneCardPaymentsEnabled: boolean;
     phoneCardRateMode: "auto" | "manual";
     phoneCardManualRateLyd: number | null;
     phoneCardManualRateUpdatedAt: string | null;
