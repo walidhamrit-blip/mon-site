@@ -262,6 +262,67 @@ export async function sendPhoneCardReviewNotice(
 }
 
 /**
+ * E-mail à l'ADMIN : un client demande à utiliser son solde sur une commande.
+ *
+ * L'argent ne bouge pas tant que l'admin n'a pas validé — cet e-mail existe
+ * pour que la demande ne reste pas invisible dans l'écran des soldes.
+ */
+export async function sendCreditUseRequestNotice(input: {
+  orderRef: string;
+  amountLyd: string;
+  balanceLyd: string;
+  clientName?: string | null;
+  clientEmail?: string | null;
+  clientPhone?: string | null;
+  productTitle?: string | null;
+  clientNote?: string | null;
+  siteName: string;
+  siteUrl: string;
+  siteEmail?: string;
+}): Promise<DigitalEmailResult> {
+  const to = adminRecipient(input.siteEmail);
+  if (!to) return { ok: false, provider: "none", error: "destinataire absent" };
+  const adminUrl = siteLink(input.siteUrl, "/admin/soldes");
+  const subject = `💳 Demande d’utilisation de solde — ${input.orderRef}`;
+  const text = [
+    "Un client demande à utiliser son solde sur une commande.",
+    "",
+    `Commande : ${input.orderRef}`,
+    `Produit : ${input.productTitle ?? "—"}`,
+    `Client : ${input.clientName || "—"} <${input.clientEmail || "—"}>`,
+    `Téléphone : ${input.clientPhone || "—"}`,
+    `Montant demandé : ${input.amountLyd} LYD`,
+    `Solde actuel : ${input.balanceLyd} LYD`,
+    input.clientNote ? `Message du client : ${input.clientNote}` : "",
+    "",
+    "Rien n'a été débité. Validez ou refusez la demande dans l'administration.",
+    `Traiter la demande : ${adminUrl}`,
+  ]
+    .filter(Boolean)
+    .join("\n");
+  const html = `
+    <div style="font-family:system-ui,Arial,sans-serif;max-width:560px;margin:0 auto;padding:24px;color:#1a1a1e">
+      <div style="font-size:13px;letter-spacing:.12em;color:#C6A664;font-weight:700">${escapeHtml(input.siteName.toUpperCase())} — SOLDE CLIENT</div>
+      <h1 style="font-size:21px;font-weight:900">Demande d’utilisation de solde 💳</h1>
+      <p style="color:#666;font-size:14px">Aucun montant n'a été débité : la demande attend votre validation.</p>
+      <table style="width:100%;border-collapse:collapse;font-size:13px">
+        <tr><td style="padding:7px 11px;background:#f6f3ec;font-weight:700">Commande</td><td style="padding:7px 11px">${escapeHtml(input.orderRef)}</td></tr>
+        <tr><td style="padding:7px 11px;background:#f6f3ec;font-weight:700">Produit</td><td style="padding:7px 11px">${escapeHtml(input.productTitle ?? "—")}</td></tr>
+        <tr><td style="padding:7px 11px;background:#f6f3ec;font-weight:700">Client</td><td style="padding:7px 11px">${escapeHtml(input.clientName || "—")} · ${escapeHtml(input.clientEmail || "—")}</td></tr>
+        <tr><td style="padding:7px 11px;background:#f6f3ec;font-weight:700">Montant demandé</td><td style="padding:7px 11px"><strong>${escapeHtml(input.amountLyd)} LYD</strong> (solde : ${escapeHtml(input.balanceLyd)} LYD)</td></tr>
+        ${
+          input.clientNote
+            ? `<tr><td style="padding:7px 11px;background:#f6f3ec;font-weight:700">Message</td><td style="padding:7px 11px">${escapeHtml(input.clientNote)}</td></tr>`
+            : ""
+        }
+      </table>
+      <p><a href="${escapeHtml(adminUrl)}" style="display:inline-block;background:#C6A664;color:#111;font-weight:700;padding:12px 22px;border-radius:999px;text-decoration:none">Traiter la demande</a></p>
+    </div>`;
+  const result = await sendEmail({ to, subject, text, html });
+  return { ok: result.ok, provider: result.provider, error: result.error };
+}
+
+/**
  * E-mail au CLIENT : « paiement reçu, code en cours d'émission ».
  *
  * ⚠️ Pourquoi cet e-mail existe. Un achat chez le fournisseur peut rester

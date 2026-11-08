@@ -5,6 +5,7 @@ import {
   totalOutstandingLyd,
 } from "@/lib/client-credits";
 import { displayLyd } from "@/lib/client-credits-core";
+import { listCreditRequests, type AdminCreditRequest } from "@/lib/client-credit-requests";
 import { ClientCreditsManager } from "./client-credits-manager";
 
 export const dynamic = "force-dynamic";
@@ -24,14 +25,16 @@ export const metadata = {
 export default async function AdminClientCreditsPage() {
   let credits: Awaited<ReturnType<typeof listClientCredits>> = [];
   let movements: Awaited<ReturnType<typeof listCreditMovements>> = [];
+  let requests: AdminCreditRequest[] = [];
   let total = "0.00";
   let dbError: string | null = null;
 
   try {
-    [credits, movements, total] = await Promise.all([
+    [credits, movements, total, requests] = await Promise.all([
       listClientCredits(200),
       listCreditMovements(100),
       totalOutstandingLyd(),
+      listCreditRequests(40),
     ]);
   } catch (error) {
     dbError = error instanceof Error ? error.message.slice(0, 240) : String(error);
@@ -62,7 +65,7 @@ export default async function AdminClientCreditsPage() {
           <p className="mt-1 text-xs text-red-700">{dbError}</p>
         </div>
       ) : (
-        <ClientCreditsManager credits={credits} movements={movements} />
+        <ClientCreditsManager credits={credits} movements={movements} requests={requests} />
       )}
     </div>
   );
