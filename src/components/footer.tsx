@@ -8,18 +8,22 @@ import { marketLabels, resolveMarket } from "@/lib/market";
 import { WhatsAppEnquiry } from "@/components/whatsapp-enquiry";
 
 /**
- * Lien vers le bot Telegram public. Piloté par l'environnement : sans
- * `NEXT_PUBLIC_TELEGRAM_BOT_USERNAME`, aucun lien n'est affiché (jamais de
- * `https://t.me/` cassé dans le pied de page).
+ * Lien vers le bot Telegram public.
+ *
+ * L'identifiant est fourni par le layout serveur depuis
+ * `TELEGRAM_BOT_USERNAME` — surtout PAS via une variable `NEXT_PUBLIC_*`
+ * (Vercel affiche un avertissement « Keep This Value Private » pour tout
+ * préfixe public, et un futur jeton collé dans une telle variable fuiterait
+ * dans le bundle navigateur). Un @username Telegram est public, mais on ne
+ * laisse au navigateur que ce strict nécessaire, validé au passage.
  */
-const TELEGRAM_BOT_USERNAME = (process.env.NEXT_PUBLIC_TELEGRAM_BOT_USERNAME ?? "")
-  .trim()
-  .replace(/^@/, "");
-const TELEGRAM_URL = /^[A-Za-z0-9_]{4,32}$/.test(TELEGRAM_BOT_USERNAME)
-  ? `https://t.me/${TELEGRAM_BOT_USERNAME}`
-  : "";
+function telegramUrlFrom(handle: string | undefined): string {
+  const clean = (handle ?? "").trim().replace(/^@/, "");
+  return /^[A-Za-z0-9_]{4,32}$/.test(clean) ? `https://t.me/${clean}` : "";
+}
 
-export function Footer() {
+export function Footer({ telegramBot }: { telegramBot?: string }) {
+  const telegramUrl = telegramUrlFrom(telegramBot);
   const config = useSiteConfig();
   const { locale } = useI18n();
   const ar = locale === "ar";
@@ -58,7 +62,7 @@ export function Footer() {
           <ul>
             <li><Link href="/contact">{ar ? "مساعدة وتواصل" : "Help & contact"}</Link></li>
             <li><WhatsAppEnquiry className="cursor-pointer">WhatsApp ↗</WhatsAppEnquiry></li>
-            {TELEGRAM_URL ? <li><a href={TELEGRAM_URL} target="_blank" rel="noopener">Telegram ↗</a></li> : null}
+            {telegramUrl ? <li><a href={telegramUrl} target="_blank" rel="noopener">Telegram ↗</a></li> : null}
             <li><a href={`mailto:${config.email}`} className="flex items-center gap-2"><Mail className="h-3.5 w-3.5" /><span dir="ltr">{config.email}</span></a></li>
             <li><a href={`tel:${config.phone.replace(/\s/g, "")}`} className="flex items-center gap-2"><Phone className="h-3.5 w-3.5" /><span dir="ltr">{config.phone}</span></a></li>
           </ul>

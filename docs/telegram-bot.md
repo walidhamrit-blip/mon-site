@@ -44,8 +44,7 @@ Bot Telegram*).
    ```
    TELEGRAM_BOT_TOKEN       = 123456789:AA...
    TELEGRAM_ADMIN_CHAT_ID   = (voir 2.3)
-   TELEGRAM_BOT_USERNAME    = nukhba_shop_bot
-   NEXT_PUBLIC_TELEGRAM_BOT_USERNAME = nukhba_shop_bot
+   TELEGRAM_BOT_USERNAME    = nukhba_shop_bot   # jamais de préfixe NEXT_PUBLIC_
    ```
 
 3. **Redeploy** (les variables ne sont lues qu'au démarrage d'une fonction).
@@ -126,7 +125,9 @@ Garde-fous :
 Le paramètre `start` est enregistré comme **source d'acquisition** :
 `site`, `instagram-bio`, `carte-visite`… vous saurez d'où viennent les
 abonnés. Le pied de page du site affiche automatiquement « Telegram ↗ » dès
-que `NEXT_PUBLIC_TELEGRAM_BOT_USERNAME` est défini.
+que `TELEGRAM_BOT_USERNAME` est défini (lu côté serveur, sans préfixe
+`NEXT_PUBLIC_` : Vercel avertit — à raison — dès qu'une variable publique
+pourrait exposer un secret).
 
 ---
 
@@ -191,8 +192,7 @@ Détails techniques :
 | `TELEGRAM_BOT_TOKEN` | Jeton BotFather. **Obligatoire** pour activer le bot. |
 | `TELEGRAM_ADMIN_CHAT_ID` | Chat/groupe des alertes internes. |
 | `TELEGRAM_WEBHOOK_SECRET` | Secret du webhook. Vide = généré et stocké en base. |
-| `TELEGRAM_BOT_USERNAME` | @username, pour afficher le lien dans l'admin sans appel réseau. |
-| `NEXT_PUBLIC_TELEGRAM_BOT_USERNAME` | Affiche « Telegram ↗ » dans le pied de page. |
+| `TELEGRAM_BOT_USERNAME` | @username du bot : lien dans l'admin (sans appel réseau) **et** « Telegram ↗ » dans le pied de page. Lu côté serveur. |
 
 Sans `TELEGRAM_BOT_TOKEN`, **rien** n'est envoyé et rien n'est cassé : le
 site se comporte comme avant.

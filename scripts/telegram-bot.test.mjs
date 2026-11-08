@@ -301,7 +301,6 @@ test("le jeton reste une variable d'environnement documentée", () => {
     "TELEGRAM_ADMIN_CHAT_ID",
     "TELEGRAM_WEBHOOK_SECRET",
     "TELEGRAM_BOT_USERNAME",
-    "NEXT_PUBLIC_TELEGRAM_BOT_USERNAME",
   ]) {
     assert.match(env, new RegExp(`^${key}=`, "m"), key);
   }
@@ -343,8 +342,13 @@ test("l'admin expose le panneau et le lien public est piloté par l'env", () => 
   assert.match(actions, /requireAdmin\(\)/);
   assert.match(actions, /broadcastAction/);
 
-  const footer = read("src/components/footer.tsx");
-  assert.match(footer, /NEXT_PUBLIC_TELEGRAM_BOT_USERNAME/);
+  const footer = code(read("src/components/footer.tsx"));
+  // Le @username vient du serveur (prop du layout), pas d'une variable
+  // NEXT_PUBLIC_ : Vercel avertit sur ce préfixe, et un jour un jeton
+  // pourrait s'y retrouver et fuiter dans le bundle navigateur.
+  assert.match(footer, /telegramBot\?: string/);
+  assert.doesNotMatch(footer, /NEXT_PUBLIC_/);
+  assert.match(read("src/app/(site)/layout.tsx"), /process\.env\.TELEGRAM_BOT_USERNAME/);
   // Le lien n'est rendu que si le username correspond au format Telegram.
   assert.match(footer, /\^\[A-Za-z0-9_\]\{4,32\}\$/);
 });

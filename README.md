@@ -626,7 +626,9 @@ sourcée : voir [`docs/avis-clients-trustpilot-scamadviser-2026-11-05.md`](docs/
   **opt-in** (double confirmation avant envoi), lien UTM automatique, journal
   des envois, blocages détectés et exclus.
 - **Diagnostic** : `npm run telegram:check` (bot, chat id détecté, webhook)
-  et `GET /api/telegram/webhook`. Guide complet :
+  et `GET /api/telegram/webhook`. Le pied de page affiche « Telegram ↗ » dès
+  que `TELEGRAM_BOT_USERNAME` est défini (variable serveur, jamais
+  `NEXT_PUBLIC_`). Guide complet :
   [`docs/telegram-bot.md`](docs/telegram-bot.md). Tests : `npm run test:telegram`.
 
 ## Panneau d'administration
