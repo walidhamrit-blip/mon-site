@@ -12,11 +12,17 @@ import {
   mainMenuKeyboard,
   botCopy,
   offersKeyboard,
+  orderRefFromStartPayload,
   orderRefFromText,
   parseTelegramCommand,
   sanitizeStartPayload,
   type TelegramLocale,
 } from "@/lib/telegram-core";
+import {
+  formatWatchConfirmation,
+  watchOrderFromTelegram,
+} from "@/lib/telegram-delivery";
+
 import {
   findOrderForBot,
   getTelegramSubscriber,
@@ -179,12 +185,28 @@ async function handleMessage(message: TelegramMessage): Promise<void> {
   });
 
   switch (command) {
-    case "start":
+    case "start": {
+      // `/start order-dgc-…` : le client arrive depuis la page de suivi
+      // d'une commande. On l'abonne immédiatement (consentement explicite :
+      // il a cliqué un bouton « recevoir sur Telegram ») et on lui répond
+      // avec le statut plutôt qu'avec le menu générique.
+      const watchedRef = orderRefFromStartPayload(args);
+      if (watchedRef) {
+        await watchFromMessage(chatId, watchedRef, language, ctx);
+        return;
+      }
       await reply(
         chatId,
         fillTemplate(botCopy(language).welcome, { site: ctx.siteName }),
         { keyboard: mainMenuKeyboard(language, links(ctx)) },
       );
+      return;
+    }
+    case "prevenir":
+    case "notify":
+    case "notifications":
+      // `/prevenir DGC-…` : même consentement, saisi à la main dans le chat.
+      await watchFromMessage(chatId, args, language, ctx);
       return;
     case "aide":
     case "help":
@@ -364,6 +386,52 @@ async function sendOrderStatus(
       ],
     },
   );
+}
+
+/**
+ * Abonne le chat à la livraison d'une commande, puis répond avec le statut.
+ *
+ * Le message de confirmation dit explicitement que le CODE ne transite pas
+ * par Telegram : le client ne doit pas attendre un code dans le chat.
+ */
+async function watchFromMessage(
+  chatId: string,
+  rawRef: string,
+  language: TelegramLocale,
+  ctx: BotContext,
+): Promise<void> {
+  const copy = botCopy(language);
+  const ref = orderRefFromText(rawRef) ?? orderRefFromStartPayload(rawRef);
+  if (!ref) {
+    await reply(chatId, copy.watchPrompt, {
+      keyboard: mainMenuKeyboard(language, links(ctx)),
+    });
+    return;
+  }
+
+  const result = await watchOrderFromTelegram(chatId, ref, language);
+  if (!result.ok) {
+    const message =
+      result.error === "bot_unavailable"
+        ? copy.botUnavailable
+        : result.error === "not_digital"
+          ? copy.watchNotDigital
+          : copy.orderNotFound;
+    await reply(chatId, message, { keyboard: mainMenuKeyboard(language, links(ctx)) });
+    return;
+  }
+
+  await reply(chatId, formatWatchConfirmation(result.ref, language, ctx.siteName), {
+    keyboard: [
+      [
+        {
+          text: copy.ordersButton,
+          url: `${ctx.siteUrl}/codes/commande?ref=${encodeURIComponent(result.ref)}`,
+        },
+      ],
+      [{ text: copy.buttons.menu, callback_data: "menu:home" }],
+    ],
+  });
 }
 
 async function askOffers(

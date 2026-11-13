@@ -46,6 +46,8 @@ import { recordDigitalEmailOutcome } from "@/lib/digital-email-log";
 import { reviewPromptForConfig } from "@/lib/review-emails";
 import { createTrackingToken, newOrderReference } from "@/lib/order-tracking";
 import { siteBaseUrl } from "@/lib/site-url";
+import { telegramOrderUrlFromEnv } from "@/lib/telegram-core";
+import { notifyTelegramOrderDelivered } from "@/lib/telegram-delivery";
 import { getSiteData, resolveFazercardsMaxOrderUsd } from "@/lib/store";
 import {
   sendDigitalCodePendingEmail,
@@ -969,6 +971,7 @@ export async function deliverPaidFazercardsOrder(
             config.name,
             config.url,
             config.email,
+            telegramOrderUrlFromEnv(loaded.ref),
           );
           await recordDigitalEmailOutcome(loaded.id, email);
         } catch (error) {
@@ -1041,8 +1044,12 @@ export async function deliverPaidFazercardsOrder(
     const delivered = updated[0] ?? { ...loaded, status: "delivered" };
 
     // Envoie l'e-mail au client.
+    let siteName = "Nokhba";
+    let siteUrl = siteBaseUrl();
     try {
       const { config } = await getSiteData();
+      siteName = config.name;
+      siteUrl = config.url;
       const email = await sendDigitalCodesEmail(
         delivered,
         codes,
@@ -1050,11 +1057,16 @@ export async function deliverPaidFazercardsOrder(
         config.url,
         config.email,
         reviewPromptForConfig(config, { kind: "digital", orderRef: delivered.ref }),
+        telegramOrderUrlFromEnv(delivered.ref),
       );
       await recordDigitalEmailOutcome(loaded.id, email);
     } catch (error) {
       console.warn("[fazercards] e-mail codes non envoyé :", error);
     }
+
+    // Canal additionnel (FazerCards emprunte le même chemin de livraison que
+    // Reloadly) : le client abonné reçoit ses codes dans le chat.
+    await notifyTelegramOrderDelivered(delivered.ref, siteUrl, siteName);
 
     return { outcome: "delivered", ref: loaded.ref };
   } catch (error) {

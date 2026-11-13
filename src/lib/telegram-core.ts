@@ -126,6 +126,12 @@ export interface TelegramCopy {
   ordersButton: string;
   orderNotFound: string;
   orderHeader: string;
+  /** Invite à saisir une référence pour activer les notifications. */
+  watchPrompt: string;
+  /** La commande existe mais n'est pas une commande numérique. */
+  watchNotDigital: string;
+  /** Bot désactivé côté serveur (pas de jeton). */
+  botUnavailable: string;
   offersAsk: string;
   offersOn: string;
   offersAlready: string;
@@ -166,6 +172,12 @@ const COPY: Record<TelegramLocale, TelegramCopy> = {
     orderNotFound:
       "Je ne trouve aucune commande avec cette référence. Vérifiez la saisie (elle figure dans l'e-mail de confirmation), ou écrivez-nous.",
     orderHeader: "Commande <b>{ref}</b>",
+    watchPrompt:
+      "Indiquez la référence de votre commande (ex. <code>DGC-1A2B3C4D5E6F</code>) : je vous enverrai le code ici même dès qu'il sera prêt.",
+    watchNotDigital:
+      "Cette référence correspond à une autre prestation. Écrivez-nous directement, nous vous répondons ici.",
+    botUnavailable:
+      "Les notifications Telegram sont momentanément indisponibles. Vous recevrez le code par e-mail ; la page de suivi reste accessible à tout moment.",
     offersAsk:
       "Voulez-vous recevoir les offres et nouveautés de {site} sur Telegram ?\n\nVous pourrez vous désabonner à tout moment avec /stop.",
     offersOn: "C'est noté ✅ Vous recevrez nos offres. /stop pour vous désabonner.",
@@ -176,7 +188,7 @@ const COPY: Record<TelegramLocale, TelegramCopy> = {
       "Un humain peut vous répondre :\n\n💬 WhatsApp : {whatsapp}\n✉️ {email}\n\nVotre message vient d'être transmis à l'équipe.",
     forwarded: "Message transmis à l'équipe ✅ Nous revenons vers vous rapidement.",
     help:
-      "Voici ce que je sais faire :\n\n/start — menu principal\n/codes — catalogue et boutique\n/commande RÉFÉRENCE — statut d'une commande\n/offres — recevoir nos offres\n/stop — ne plus recevoir les offres\n/aide — cette aide\n\nUne question ? Écrivez-la simplement ici.",
+      "Voici ce que je sais faire :\n\n/start — menu principal\n/codes — catalogue et boutique\n/commande RÉFÉRENCE — statut d'une commande\n/prevenir RÉFÉRENCE — recevoir le code ici\n/offres — recevoir nos offres\n/stop — ne plus recevoir les offres\n/aide — cette aide\n\nUne question ? Écrivez-la simplement ici.",
     unsubscribed: "Vous ne recevrez plus d'offres. Tapez /start pour rouvrir le menu.",
     fallback:
       "Je n'ai pas compris cette demande. Choisissez une option ci-dessous, ou écrivez « humain » pour joindre l'équipe.",
@@ -218,6 +230,12 @@ const COPY: Record<TelegramLocale, TelegramCopy> = {
     orderNotFound:
       "لم أجد أي طلب بهذا الرقم. تأكد من الكتابة (الرقم موجود في بريد التأكيد) أو راسلنا.",
     orderHeader: "الطلب <b>{ref}</b>",
+    watchPrompt:
+      "أرسل مرجع طلبك (مثال <code>DGC-1A2B3C4D5E6F</code>) وسأرسل لك الكود هنا بمجرد أن يصبح جاهزاً.",
+    watchNotDigital:
+      "هذا المرجع يخص خدمة أخرى. اكتب لنا مباشرة وسنرد عليك هنا.",
+    botUnavailable:
+      "إشعارات تيليجرام غير متوفرة حالياً. سيصلك الكود بالبريد الإلكتروني، وصفحة المتابعة متاحة دائماً.",
     offersAsk:
       "هل تريد استلام عروض وجديد {site} على تيليجرام؟\n\nيمكنك إلغاء الاشتراك في أي وقت بالأمر /stop.",
     offersOn: "تم ✅ ستستلم عروضنا. /stop لإلغاء الاشتراك.",
@@ -228,7 +246,7 @@ const COPY: Record<TelegramLocale, TelegramCopy> = {
       "يمكن لأحد أعضاء الفريق الرد عليك:\n\n💬 واتساب: {whatsapp}\n✉️ {email}\n\nتم تحويل رسالتك إلى الفريق.",
     forwarded: "تم تحويل رسالتك إلى الفريق ✅ سنعود إليك قريباً.",
     help:
-      "هذه هي أوامري:\n\n/start — القائمة الرئيسية\n/codes — الكتالوج والمتجر\n/commande رقم الطلب — حالة الطلب\n/offres — استلام العروض\n/stop — إلغاء اشتراك العروض\n/aide — المساعدة\n\nلديك سؤال؟ اكتبه هنا مباشرة.",
+      "هذه هي أوامري:\n\n/start — القائمة الرئيسية\n/codes — الكتالوج والمتجر\n/commande رقم الطلب — حالة الطلب\n/prevenir رقم الطلب — استلام الكود هنا\n/offres — استلام العروض\n/stop — إلغاء اشتراك العروض\n/aide — المساعدة\n\nلديك سؤال؟ اكتبه هنا مباشرة.",
     unsubscribed: "لن تستلم عروضاً بعد الآن. اكتب /start لإعادة فتح القائمة.",
     fallback:
       "لم أفهم هذا الطلب. اختر أحد الخيارات أدناه، أو اكتب «humain» للتواصل مع الفريق.",
@@ -270,6 +288,12 @@ const COPY: Record<TelegramLocale, TelegramCopy> = {
     orderNotFound:
       "I can't find an order with that reference. Double-check it (it's in your confirmation email) or contact us.",
     orderHeader: "Order <b>{ref}</b>",
+    watchPrompt:
+      "Send your order reference (e.g. <code>DGC-1A2B3C4D5E6F</code>) and I'll send the code right here as soon as it is ready.",
+    watchNotDigital:
+      "That reference belongs to another service. Message us directly and we'll reply here.",
+    botUnavailable:
+      "Telegram notifications are temporarily unavailable. You will receive the code by email; the tracking page stays available at any time.",
     offersAsk:
       "Would you like to receive {site} offers and news on Telegram?\n\nYou can unsubscribe anytime with /stop.",
     offersOn: "Done ✅ You'll receive our offers. /stop to unsubscribe.",
@@ -280,7 +304,7 @@ const COPY: Record<TelegramLocale, TelegramCopy> = {
       "A human can reply:\n\n💬 WhatsApp: {whatsapp}\n✉️ {email}\n\nYour message has been forwarded to the team.",
     forwarded: "Message forwarded to the team ✅ We'll get back to you shortly.",
     help:
-      "Here's what I can do:\n\n/start — main menu\n/codes — catalogue & store\n/commande REFERENCE — order status\n/offres — get our offers\n/stop — stop offers\n/aide — this help\n\nAny question? Just type it here.",
+      "Here's what I can do:\n\n/start — main menu\n/codes — catalogue & store\n/commande REFERENCE — order status\n/prevenir REFERENCE — get the code here\n/offres — get our offers\n/stop — stop offers\n/aide — this help\n\nAny question? Just type it here.",
     unsubscribed: "You won't receive offers anymore. Type /start to reopen the menu.",
     fallback:
       "I didn't get that. Pick an option below, or type “human” to reach the team.",
@@ -386,6 +410,10 @@ export function botCommandList(): { command: string; description: string }[] {
     { command: "start", description: "Menu principal / Main menu / القائمة" },
     { command: "codes", description: "Catalogue & boutique / الكتالوج" },
     { command: "commande", description: "Statut d'une commande (ex. /commande DGC-…)" },
+    {
+      command: "prevenir",
+      description: "Recevoir le code ici (ex. /prevenir DGC-…) / استلام الكود",
+    },
     { command: "offres", description: "Recevoir les offres / استلام العروض" },
     { command: "stop", description: "Ne plus recevoir les offres" },
     { command: "aide", description: "Aide / Help / مساعدة" },
@@ -662,4 +690,78 @@ export function formatCustomerRelay(input: {
     "",
     escapeTelegramHtml(clip(input.text, 1500)),
   ].join("\n");
+}
+
+/* ------------------- Lien profond bot ↔ commande (pur) ------------------- */
+
+/**
+ * Préfixe du payload `/start` qui transporte une référence de commande.
+ * Un client qui arrive depuis la page de suivi clique un lien
+ * `t.me/<bot>?start=order-dgc-…` : le bot reconnaît la commande sans que le
+ * client ait à la recopier, et le consentement est explicite (il a cliqué).
+ */
+export const ORDER_START_PREFIX = "order-";
+
+/**
+ * Payload `/start` d'une commande : `DGC-1A2B3C4D5E6F` → `order-dgc-1a2b3c4d5e6f`.
+ *
+ * `sanitizeStartPayload` applique minuscules + `[a-z0-9_-]` : la référence
+ * traverse sans altération, et un identifiant exotique est neutralisé.
+ */
+export function orderStartPayload(ref: string): string {
+  const clean = (ref ?? "").trim().toLowerCase();
+  if (!clean) return "";
+  return sanitizeStartPayload(`${ORDER_START_PREFIX}${clean}`);
+}
+
+/**
+ * Extrait la référence d'un payload `/start`.
+ *
+ * Accepte `order-dgc-abc123` et `dgc-abc123` (référence tapée à la main).
+ * Renvoie la référence en MAJUSCULES, telle qu'elle est stockée — ou `null`
+ * si ce n'est pas une référence plausible.
+ */
+export function orderRefFromStartPayload(payload: string | null | undefined): string | null {
+  const raw = sanitizeStartPayload(payload);
+  if (!raw) return null;
+  const withoutPrefix = raw.startsWith(ORDER_START_PREFIX)
+    ? raw.slice(ORDER_START_PREFIX.length)
+    : raw;
+  return orderRefFromText(withoutPrefix);
+}
+
+/**
+ * URL `t.me` qui ouvre le bot **et** transmet la commande.
+ * Vide si le nom du bot est inconnu : mieux vaut aucun bouton qu'un lien mort.
+ */
+export function telegramOrderUrl(username: string | null | undefined, ref: string): string {
+  const handle = (username ?? "").trim().replace(/^@/, "");
+  const payload = orderStartPayload(ref);
+  if (!handle || !payload) return "";
+  return telegramDeepLink(handle, payload);
+}
+
+/**
+ * Lien Telegram d'une commande, à partir de la configuration serveur
+ * (`TELEGRAM_BOT_USERNAME`). `null` si le bot n'est pas configuré : les
+ * appelants n'affichent alors AUCUN bouton plutôt qu'un lien mort.
+ *
+ * Volontairement hors de tout composant client : le nom du bot n'est pas
+ * `NEXT_PUBLIC_*`, il ne doit jamais être lu dans le navigateur.
+ */
+export function telegramOrderUrlFromEnv(ref: string): string | null {
+  const handle = (process.env.TELEGRAM_BOT_USERNAME ?? "").trim();
+  if (!handle) return null;
+  return telegramOrderUrl(handle, ref) || null;
+}
+
+/**
+ * Lien vers la page de SUIVI du site. Jamais de jeton : le client
+ * authentifie avec celui qu'il a reçu par e-mail.
+ */
+export function trackingUrlFor(siteUrl: string, ref: string): string {
+  const base = (siteUrl ?? "").trim().replace(/\/+$/, "");
+  const clean = (ref ?? "").trim().toUpperCase();
+  if (!base || !clean) return "";
+  return `${base}/codes/commande?ref=${encodeURIComponent(clean)}`;
 }

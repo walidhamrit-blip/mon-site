@@ -517,6 +517,22 @@ export function ensureSchema(): Promise<void> {
       await pool.query(
         "CREATE INDEX IF NOT EXISTS telegram_subscribers_optin_idx \n          ON telegram_subscribers (marketing_opt_in, status)",
       );
+      // Suivi de commande depuis le chat Telegram (consentement explicite,
+      // notification de livraison idempotente). Voir src/lib/telegram-delivery.ts.
+      await pool.query(`
+        CREATE TABLE IF NOT EXISTS telegram_order_watches (
+          id serial PRIMARY KEY,
+          created_at timestamptz NOT NULL DEFAULT now(),
+          order_ref text NOT NULL,
+          chat_id text NOT NULL,
+          language text NOT NULL DEFAULT 'ar',
+          notified_at timestamptz,
+          UNIQUE (order_ref, chat_id)
+        )
+      `);
+      await pool.query(
+        "CREATE INDEX IF NOT EXISTS telegram_order_watches_pending_idx \n          ON telegram_order_watches (notified_at, order_ref)",
+      );
       await pool.query(`
         CREATE TABLE IF NOT EXISTS telegram_campaigns (
           id serial PRIMARY KEY,

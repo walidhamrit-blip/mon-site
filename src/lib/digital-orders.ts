@@ -87,6 +87,9 @@ import {
 import { recordDigitalEmailOutcome } from "@/lib/digital-email-log";
 import { reviewPromptForConfig } from "@/lib/review-emails";
 import { isFazercardsProductRef } from "@/lib/fazercards-catalog";
+import { notifyTelegramOrderDelivered } from "@/lib/telegram-delivery";
+import { telegramOrderUrlFromEnv } from "@/lib/telegram-core";
+
 import { deliverPaidFazercardsOrder } from "@/lib/fazercards-orders";
 import { sendPaymentConfirmedEmail } from "@/lib/order-emails";
 import { phoneCardDeliveryGate } from "@/lib/phone-card-payments";
@@ -839,6 +842,7 @@ export async function deliverPaidDigitalOrder(
         config.url,
         config.email,
         reviewPromptForConfig(config, { kind: "digital", orderRef: delivered.ref }),
+        telegramOrderUrlFromEnv(delivered.ref),
       );
       await recordDigitalEmailOutcome(order.id, email);
     } catch (error) {
@@ -847,6 +851,11 @@ export async function deliverPaidDigitalOrder(
         error instanceof Error ? error.message : error,
       );
     }
+
+    // Canal additionnel : les clients qui suivent la commande depuis
+    // Telegram sont prévenus dans le chat. Idempotent (notified_at) et
+    // silencieux en cas d'échec — l'e-mail reste la source de vérité.
+    await notifyTelegramOrderDelivered(delivered.ref, config.url, config.name);
 
     return { outcome: "delivered", ref: order.ref };
   } catch (error) {
@@ -924,6 +933,25 @@ export interface PublicDigitalOrder {
   phoneCardStatus: "pending" | "approved" | "rejected" | null;
   /** Message d'attente / d'action, sans détail technique. */
   notice: string | null;
+  /**
+   * Statut brut NOWPayments (`waiting`, `confirming`, `confirmed`,
+   * `sending`, `finished`). Sert à la barre de progression : c'est lui qui
+   * distingue « fonds pas encore reçus » de « réseau en cours de
+   * confirmation ». Aucune donnée sensible (ni adresse, ni montant payé).
+   */
+  ipnStatus: string | null;
+  /**
+   * Cryptomonnaie utilisée (`usdttrc20`, `btc`…) — sert uniquement à
+   * estimer un délai de confirmation usuel. Optionnel : les commandes
+   * antérieures n'ont pas toujours la valeur.
+   */
+  payCurrency: string | null;
+  /**
+   * Lien Telegram du bot (`https://t.me/NokhbaGamebot?start=…`) : le client
+   * peut suivre la livraison et être prévenu dans le chat. `null` quand le
+   * bot n'est pas configuré — l'interface n'affiche alors rien.
+   */
+  telegramUrl: string | null;
 }
 
 function publicNotice(status: DigitalOrderStatus): string | null {
@@ -1070,6 +1098,20 @@ export async function getPublicDigitalOrder(
       : [];
   const phoneGate = await phoneCardDeliveryGate(order.ref);
   const locale = order.locale === "en" ? "en" : "ar";
+
+  // État brut du paiement (sans quoi la barre de progression ne peut pas
+  // distinguer « rien reçu » de « réseau en cours »). Une seule requête,
+  // colonnes minimales, et jamais renvoyée telle quelle au navigateur.
+  const [payment] = await db
+    .select({
+      ipnStatus: orders.ipnStatus,
+      payCurrency: orders.payCurrency,
+      status: orders.status,
+    })
+    .from(orders)
+    .where(eq(orders.ref, order.ref))
+    .limit(1);
+
   // Livrée hors système (WhatsApp…) : aucun code en base, mais le client doit
   // lire où il l'a reçu au lieu d'une page « Livré » vide.
   const externalNotice =
@@ -1096,6 +1138,9 @@ export async function getPublicDigitalOrder(
     codes,
     paymentMethod: phoneGate.isPhoneCard ? "phone_card" : "nowpayments",
     phoneCardStatus: phoneGate.isPhoneCard ? phoneGate.status : null,
+    ipnStatus: order.status === "delivered" ? "finished" : (payment?.ipnStatus ?? null),
+    payCurrency: payment?.payCurrency ?? null,
+    telegramUrl: telegramOrderUrlFromEnv(order.ref),
     notice:
       phoneGate.isPhoneCard && status !== "delivered"
         ? phoneCardPublicNotice(phoneGate.status, locale)
@@ -1243,8 +1288,12 @@ export async function deliverDigitalOrderManually(
 
   const delivered = updated[0] ?? order;
   let emailError: string | undefined;
+  let siteName = "Nokhba";
+  let siteUrl = "";
   try {
     const { config } = await getSiteData();
+    siteName = config.name;
+    siteUrl = config.url;
     const email = await sendDigitalCodesEmail(
       delivered,
       codes,
@@ -1252,12 +1301,17 @@ export async function deliverDigitalOrderManually(
       config.url,
       config.email,
       reviewPromptForConfig(config, { kind: "digital", orderRef: delivered.ref }),
+      telegramOrderUrlFromEnv(delivered.ref),
     );
     await recordDigitalEmailOutcome(order.id, email);
     if (!email.ok) emailError = email.error ?? "e-mail non envoyé";
   } catch (error) {
     emailError = error instanceof Error ? error.message : String(error);
   }
+
+  // Le client qui suit la commande depuis Telegram est prévenu, même si
+  // l'e-mail vient d'échouer (c'est justement le cas où ça compte).
+  await notifyTelegramOrderDelivered(delivered.ref, siteUrl, siteName);
 
   return {
     ok: true,
@@ -1274,7 +1328,15 @@ export async function resendDigitalCodesEmail(ref: string): Promise<{ ok: boolea
   if (codes.length === 0) return { ok: false, error: "Aucun code enregistré pour cette commande." };
 
   const { config } = await getSiteData();
-  const result = await sendDigitalCodesEmail(order, codes, config.name, config.url, config.email);
+  const result = await sendDigitalCodesEmail(
+    order,
+    codes,
+    config.name,
+    config.url,
+    config.email,
+    null,
+    telegramOrderUrlFromEnv(order.ref),
+  );
   await recordDigitalEmailOutcome(order.id, result);
   return { ok: result.ok, error: result.error };
 }

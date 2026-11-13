@@ -1,4 +1,13 @@
-import { boolean, pgTable, serial, text, timestamp, jsonb, integer } from "drizzle-orm/pg-core";
+import {
+  boolean,
+  integer,
+  jsonb,
+  pgTable,
+  serial,
+  text,
+  timestamp,
+  uniqueIndex,
+} from "drizzle-orm/pg-core";
 import type { PhoneCardQuoteReference } from "@/lib/phone-card-pricing-core";
 
 // Tables du panneau d'administration.
@@ -602,6 +611,40 @@ export const telegramSubscribers = pgTable("telegram_subscribers", {
 
 export type TelegramSubscriber = typeof telegramSubscribers.$inferSelect;
 export type NewTelegramSubscriber = typeof telegramSubscribers.$inferInsert;
+
+/**
+ * Commandes qu'un client suit depuis son chat Telegram.
+ *
+ * Une ligne = « ce chat veut être prévenu quand CETTE commande est livrée ».
+ * Le consentement est EXPLICITE et par commande (bouton « recevoir sur
+ * Telegram » depuis la page de suivi, ou `/prevenir DGC-…` dans le chat) :
+ * démarrer le bot ne suffit pas.
+ *
+ * `notified_at` rend l'envoi idempotent : une relance de livraison, un
+ * second IPN ou un redémarrage ne renvoient jamais deux fois le message.
+ */
+export const telegramOrderWatches = pgTable(
+  "telegram_order_watches",
+  {
+    id: serial("id").primaryKey(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    /** Référence publique de la commande (DGC-…). */
+    orderRef: text("order_ref").notNull(),
+    /** Chat privé qui a demandé à être prévenu. */
+    chatId: text("chat_id").notNull(),
+    /** Langue au moment de l'abonnement (message de livraison). */
+    language: text("language").notNull().default("ar"),
+    /** Renseigné dès qu'une notification de livraison est partie. */
+    notifiedAt: timestamp("notified_at", { withTimezone: true }),
+  },
+  (table) => [
+    // Un chat ne s'abonne qu'une fois à une commande ; l'insertion utilise
+    // ON CONFLICT DO NOTHING.
+    uniqueIndex("telegram_order_watches_ref_chat_idx").on(table.orderRef, table.chatId),
+  ],
+);
+
+export type TelegramOrderWatch = typeof telegramOrderWatches.$inferSelect;
 
 /** Journal des campagnes marketing envoyées depuis /admin/telegram. */
 export const telegramCampaigns = pgTable("telegram_campaigns", {
