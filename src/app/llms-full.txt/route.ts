@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { getSiteDataCached } from "@/lib/store";
+import { getSiteDataCachedShared as getSiteDataCached } from "@/lib/catalog-cache";
 import { getDigitalCatalog } from "@/lib/digital-store";
 import { buildLlmsFullTxt } from "@/lib/llms-txt";
 

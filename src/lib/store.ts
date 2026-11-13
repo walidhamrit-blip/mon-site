@@ -462,11 +462,14 @@ function persistProcessStep06(payload: {
   return processStep06Migration;
 }
 
-/** Lit configuration + contenu depuis la base (avec repli sur les défauts). */
-export async function getSiteData(): Promise<SiteData> {
-  try {
-    await ensureSchema();
-    const rows = await db.select().from(settings);
+/**
+ * Construit `SiteData` à partir des lignes `settings` déjà lues.
+ *
+ * Fonction PURE (aucune base, aucun réseau) : c'est elle qui est mémoïsée
+ * par `getSiteDataCached()`, ce qui permet de mettre en cache
+ * l'assemblage sans mettre en cache la fonction qui touche à la base.
+ */
+function buildSiteData(rows: { key: string; value: unknown }[]): SiteData {
     const map = new Map<string, unknown>(
       rows.map((r) => [r.key, r.value] as [string, unknown]),
     );
@@ -508,6 +511,18 @@ export async function getSiteData(): Promise<SiteData> {
         visuals: resolveVisuals(map.get(KEY_VISUALS)),
       },
     };
+}
+
+/**
+ * Lit configuration + contenu depuis la base (avec repli sur les défauts).
+ * Non mise en cache : appelée par le wrapper `getSiteDataCached` et par les
+ * chemins qui ont besoin de la valeur FRAÎCHE (après une écriture admin).
+ */
+export async function getSiteData(): Promise<SiteData> {
+  try {
+    await ensureSchema();
+    const rows = await db.select().from(settings);
+    return buildSiteData(rows);
   } catch (error) {
     console.error(
       "[store] lecture des réglages impossible :",
@@ -553,11 +568,17 @@ export async function upsertSetting(key: string, value: unknown): Promise<void> 
       target: settings.key,
       set: { value, updatedAt: new Date() },
     });
+  // Cache partagé (réglages + catalogue) et HTML public : une écriture admin
+  // ne doit jamais attendre 5 minutes pour devenir visible.
+  const { invalidateSiteCaches } = await import("@/lib/cache-invalidate");
+  invalidateSiteCaches();
 }
 
 export async function deleteSetting(key: string): Promise<void> {
   await ensureSchema();
   await db.delete(settings).where(eq(settings.key, key));
+  const { invalidateSiteCaches } = await import("@/lib/cache-invalidate");
+  invalidateSiteCaches();
 }
 
 export const SETTINGS_KEYS = {

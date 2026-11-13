@@ -728,6 +728,17 @@ nom de la catégorie : Mobile, PC, PlayStation… sinon nom du jeu) et
 l'**identifiant demandé** (`Player ID`, `account_id`…), pour qu'aucun client
 ne confonde deux jeux.
 
+## Cache de rendu et quota Neon
+
+Le catalogue n'est plus relu en base à chaque visite : `unstable_cache`
+(cache de données Next, partagé entre instances) sert `/codes`,
+`/codes/category/[kind]`, `/codes/[slug]` et l'accueil, avec les tags
+`digital-catalog` (TTL 60 s) et `site-data` (TTL 300 s). Toute écriture
+(admin, synchro fournisseur, cron) purge les tags **et** le HTML
+(`revalidatePath`). Le panier, lui, revérifie disponibilité, prix et solde
+fournisseur en base à chaque commande. Détail, diagnostic et mesures :
+`docs/performance-rendu-cache.md`.
+
 ## Reprise automatique des commandes bloquées
 
 `GET /api/cron/digital-orders` (planifié par `vercel.json`, protégé par

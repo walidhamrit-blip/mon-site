@@ -2,13 +2,16 @@ import type { Metadata } from "next";
 import { pageLocale } from "@/lib/locale-server";
 import type { LocalePageProps } from "@/lib/locale";
 import { HomeSections } from "@/components/sections/home-sections";
-import { getSiteDataCached } from "@/lib/store";
+import {
+  getPublicCatalogCached,
+  getSiteDataCachedShared as getSiteDataCached,
+} from "@/lib/catalog-cache";
 import {
   pageMetadata,
   siteLocale,
 } from "@/lib/seo";
 import { JsonLd } from "@/components/json-ld";
-import { digitalCatalogStatus, getDigitalCatalog } from "@/lib/digital-store";
+import { digitalCatalogStatus } from "@/lib/digital-store";
 import { sortByDemand } from "@/lib/digital-priority";
 import { lowestPriceUsd } from "@/lib/digital-types";
 import { DigitalShowcase } from "@/components/sections/digital-showcase";
@@ -63,7 +66,11 @@ export default async function HomePage({ searchParams }: LocalePageProps) {
   // Vitrine de la boutique : les six produits les plus demandés, ordonnés
   // côté serveur. Le maillage vers /codes et les fiches est ainsi présent
   // dans le HTML initial de la page d'accueil.
-  const catalog = sortByDemand(await getDigitalCatalog({ publicOnly: true }));
+  // Même cache de données partagé que /codes : la page d'accueil ne paie
+  // plus une lecture Neon complète à chaque visite (ISR horaire sinon).
+  const { products: catalogProducts, degraded: catalogDegraded } =
+    await getPublicCatalogCached();
+  const catalog = sortByDemand(catalogProducts);
   const showcase = catalog.slice(0, 6).map((product) => ({
     slug: product.slug,
     image: product.image || undefined,
@@ -73,7 +80,7 @@ export default async function HomePage({ searchParams }: LocalePageProps) {
     kind: product.kind,
     fromUsd: lowestPriceUsd(product),
   }));
-  const degraded = digitalCatalogStatus().degraded;
+  const degraded = catalogDegraded || digitalCatalogStatus().degraded;
   const ar = locale === "ar";
   const schemas = [{
     "@context": "https://schema.org",

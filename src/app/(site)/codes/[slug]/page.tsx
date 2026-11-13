@@ -5,11 +5,7 @@ import { pageLocale } from "@/lib/locale-server";
 import type { LocalePageProps } from "@/lib/locale";
 import { localizedAbsoluteUrl } from "@/lib/locale";
 import { notFound } from "next/navigation";
-import {
-  digitalCatalogStatus,
-  getDigitalCatalog,
-  getDigitalProductBySlug,
-} from "@/lib/digital-store";
+import { digitalCatalogStatus } from "@/lib/digital-store";
 import { productPageFallback } from "@/lib/digital-fallback";
 import {
   absoluteUrl,
@@ -21,7 +17,10 @@ import {
 import { JsonLd } from "@/components/json-ld";
 import { StoreUnavailableProduct } from "@/components/store-status-notice";
 import { DigitalProductDetails } from "./digital-product-details";
-import { getSiteDataCached } from "@/lib/store";
+import {
+  getPublicCatalogCached,
+  getSiteDataCachedShared as getSiteDataCached,
+} from "@/lib/catalog-cache";
 import { resolveMarket } from "@/lib/market";
 import { lowestPriceUsd } from "@/lib/digital-types";
 import {
@@ -42,6 +41,19 @@ export const dynamic = "force-dynamic";
 /** Même raison que la liste : aucune synchronisation pendant le rendu. */
 export const maxDuration = 60;
 
+/**
+ * Fiche produit lue dans le catalogue PARTAGÉ (cache de données Next).
+ *
+ * `getDigitalProductBySlug` interroge le catalogue complet : le faire sur une
+ * instance froide relisait Neon et reconstruisait toutes les fiches pour
+ * afficher UN produit. Ici la lecture passe par le même cache que la liste —
+ * un seul remplissage sert la vitrine, les rayons et les fiches.
+ */
+async function productFromSharedCatalog(slug: string) {
+  const { products } = await getPublicCatalogCached();
+  return products.find((product) => product.slug === slug) ?? null;
+}
+
 export async function generateMetadata({
   params,
   searchParams,
@@ -54,7 +66,7 @@ export async function generateMetadata({
   // une fiche produit ne doit pas s'annoncer en arabe dans la version
   // anglaise (elle est indexée sur le mot-clé de la plateforme).
   const locale = await pageLocale(config, searchParams);
-  const product = await getDigitalProductBySlug(slug);
+  const product = await productFromSharedCatalog(slug);
   if (!product) {
     return pageMetadata(config, {
     locale,
@@ -89,7 +101,7 @@ export default async function DigitalProductPage({
 } & LocalePageProps) {
   const { slug } = await params;
   const { config } = await getSiteDataCached();
-  const product = await getDigitalProductBySlug(slug);
+  const product = await productFromSharedCatalog(slug);
   if (!product) {
     // A05 : panne déclarée (base + fournisseur down) → JAMAIS de 404, qui
     // ferait désindexer une fiche encore existante. On rend une page
@@ -120,7 +132,7 @@ export default async function DigitalProductPage({
 
   // Fiches proches : même nature ou même plateforme. Elles créent un
   // maillage interne crawlable (le client, lui, reste sur son univers).
-  const catalog = await getDigitalCatalog({ publicOnly: true });
+  const { products: catalog } = await getPublicCatalogCached();
   const related = catalog
     .filter(
       (candidate) =>

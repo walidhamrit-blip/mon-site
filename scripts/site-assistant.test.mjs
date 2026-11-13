@@ -48,6 +48,9 @@ const stubsPlugin = {
   setup(builder) {
     builder.onResolve({ filter: /^@\/lib\/store$/ }, () => ({ path: "store", namespace: "stub" }));
     builder.onResolve({ filter: /^@\/lib\/digital-store$/ }, () => ({ path: "digital", namespace: "stub" }));
+    // Le cache partagé (`unstable_cache`) n'existe pas hors serveur Next : on
+    // le remplace par une lecture directe du même état simulé.
+    builder.onResolve({ filter: /^@\/lib\/catalog-cache$/ }, () => ({ path: "cache", namespace: "stub" }));
     builder.onResolve({ filter: /^@\/db$/ }, () => ({ path: "db", namespace: "stub" }));
     builder.onLoad({ filter: /^store$/, namespace: "stub" }, () => ({
       loader: "js",
@@ -58,6 +61,15 @@ const stubsPlugin = {
       contents: `
         export async function getDigitalCatalog() { return globalThis.__assistantProducts ?? []; }
         export function digitalCatalogStatus() { return { degraded: Boolean(globalThis.__assistantDegraded), reason: null, message: null, since: null }; }
+      `,
+    }));
+    builder.onLoad({ filter: /^cache$/, namespace: "stub" }, () => ({
+      loader: "js",
+      contents: `
+        export async function getPublicCatalogCached() {
+          return { products: globalThis.__assistantProducts ?? [], degraded: Boolean(globalThis.__assistantDegraded) };
+        }
+        export async function getSiteDataCachedShared() { return globalThis.__assistantSite; }
       `,
     }));
     builder.onLoad({ filter: /^db$/, namespace: "stub" }, () => ({ loader: "js", contents: "export const db = {}; export async function ensureSchema() {}" }));

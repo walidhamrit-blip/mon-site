@@ -3,7 +3,7 @@ import { generateText } from "ai";
 import { z } from "zod";
 import { enforceSameOrigin } from "@/lib/csrf";
 import { checkRateLimit } from "@/lib/rate-limit";
-import { getSiteDataCached } from "@/lib/store";
+import { getSiteDataCachedShared as getSiteDataCached } from "@/lib/catalog-cache";
 import { digitalCatalogStatus, getDigitalCatalog } from "@/lib/digital-store";
 import {
   actionsFromText,

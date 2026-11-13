@@ -7,11 +7,14 @@ import { JsonLd } from "@/components/json-ld";
 import { StoreUnavailableNotice } from "@/components/store-status-notice";
 import { categoryHref, categoryProducts, CATEGORY_PAGE_SIZE, getDigitalCategory, parseCategoryPage } from "@/lib/digital-categories";
 import { productSeoName } from "@/lib/digital-seo";
-import { digitalCatalogStatus, getDigitalCatalog } from "@/lib/digital-store";
+import { digitalCatalogStatus } from "@/lib/digital-store";
 import { lowestPriceUsd } from "@/lib/digital-types";
 import { breadcrumbJsonLd, pageMetadata, siteLocale } from "@/lib/seo";
 import { localizedAbsoluteUrl, localeFromSearchParams, type LocalePageProps, type RouteSearchParams } from "@/lib/locale";
-import { getSiteDataCached } from "@/lib/store";
+import {
+  getPublicCatalogCached,
+  getSiteDataCachedShared as getSiteDataCached,
+} from "@/lib/catalog-cache";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -27,8 +30,12 @@ const loadCategory = cache(async (kind: string, params: RouteSearchParams) => {
   const page = parseCategoryPage(params.page);
   if (!category || page === null) notFound();
   const { config } = await getSiteDataCached();
-  const catalog = await getDigitalCatalog({ publicOnly: true });
-  const degraded = digitalCatalogStatus().degraded;
+  // Catalogue partagé (cache de données Next, tag `digital-catalog`) : le
+  // rayon ne relit pas Neon à chaque visite. L'état de panne voyage avec la
+  // donnée pour ne jamais présenter un repli comme le catalogue.
+  const snapshot = await getPublicCatalogCached();
+  const catalog = snapshot.products;
+  const degraded = snapshot.degraded || digitalCatalogStatus().degraded;
   const listing = categoryProducts(degraded ? [] : catalog, category.kind, page);
   // A database outage must not turn previously valid paginated URLs into 404s.
   if (!degraded && page > listing.pageCount) notFound();

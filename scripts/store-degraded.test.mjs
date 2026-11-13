@@ -128,7 +128,8 @@ test("la boutique affiche un bandeau au lieu d'un faux catalogue", () => {
     /<DigitalStoreView[\s\S]*?products=\{products\}[\s\S]*?degraded=\{degraded\}[\s\S]*?initialKind=\{initialKind\}/,
   );
   assert.match(flat, /const status = digitalCatalogStatus\(\);/);
-  assert.match(flat, /const degraded = status\.degraded;/);
+  // L'état de panne vient du snapshot mis en cache ET de l'état courant.
+  assert.match(flat, /const degraded = snapshot\.degraded \|\| status\.degraded;/);
   assert.match(view, /\{degraded && \( <StoreUnavailableNotice ar=\{ar\} phone=\{config\.phone\} \/> \)\}/);
   // La grille n'est pas rendue : elle contiendrait les fiches de démonstration.
   assert.match(view, /\{!degraded && <DigitalCatalog products=\{products\} kind=\{kind\} onKindChange=\{selectKind\} \/>\}/);

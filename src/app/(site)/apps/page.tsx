@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { pageLocale } from "@/lib/locale-server";
 import type { LocalePageProps } from "@/lib/locale";
 import { localizedAbsoluteUrl } from "@/lib/locale";
-import { getSiteDataCached } from "@/lib/store";
+import { getSiteDataCachedShared as getSiteDataCached } from "@/lib/catalog-cache";
 import { absoluteUrl, breadcrumbJsonLd, pageMetadata, siteLocale } from "@/lib/seo";
 import { JsonLd } from "@/components/json-ld";
 import { UpcomingShowcaseView } from "@/components/upcoming-showcase-view";

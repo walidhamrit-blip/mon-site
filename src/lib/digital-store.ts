@@ -110,10 +110,34 @@ export function digitalCatalogStatus(): DigitalCatalogStatus {
 const PUBLIC_CATALOG_TTL_MS = 120_000;
 let publicCatalogCache: { products: DigitalProduct[]; at: number } | null = null;
 
-/** À appeler après toute écriture du catalogue (admin, cron, seed). */
+/**
+ * À appeler après toute écriture du catalogue (admin, cron, seed).
+ *
+ * Trois niveaux sont purgés ensemble :
+ *  1. le mémo mémoire de cette instance (ci-dessous) ;
+ *  2. le cache de données PARTAGÉ entre instances (`unstable_cache`, tag
+ *     `digital-catalog`) — sans lui, une écriture admin restait invisible
+ *     jusqu'à la fin du TTL sur les autres instances Vercel ;
+ *  3. le HTML des pages catalogue (`revalidatePath`).
+ *
+ * Les imports sont paresseux : `next/cache` n'est pas disponible hors
+ * contexte Next (scripts, tests, cron de maintenance), et ce module est
+ * chargé par beaucoup de chemins.
+ */
 export function clearPublicCatalogCache(): void {
   publicCatalogCache = null;
   invalidateDigitalOverridesCache();
+  void (async () => {
+    try {
+      const { invalidateCatalogCaches } = await import("@/lib/cache-invalidate");
+      invalidateCatalogCaches();
+    } catch (error) {
+      console.warn(
+        "[digital] invalidation du cache partagé impossible :",
+        error instanceof Error ? error.message : error,
+      );
+    }
+  })();
 }
 
 /**
