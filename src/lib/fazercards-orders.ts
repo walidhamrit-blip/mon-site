@@ -22,6 +22,7 @@ import { desc, eq } from "drizzle-orm";
 import { localizedPath } from "@/lib/locale";
 import { db, ensureSchema } from "@/db";
 import { digitalOrders, orders, type DigitalOrder } from "@/db/schema";
+import { classifyDeliveryError, type DeliveryErrorClass } from "@/lib/delivery-queue-core";
 import {
   fazercardsConfigured,
   fazercardsErrorMessage,
@@ -45,6 +46,8 @@ import { recordDigitalEmailOutcome } from "@/lib/digital-email-log";
 import { reviewPromptForConfig } from "@/lib/review-emails";
 import { createTrackingToken, newOrderReference } from "@/lib/order-tracking";
 import { siteBaseUrl } from "@/lib/site-url";
+import { telegramOrderUrlFromEnv } from "@/lib/telegram-core";
+import { notifyTelegramOrderDelivered } from "@/lib/telegram-delivery";
 import { getSiteData, resolveFazercardsMaxOrderUsd } from "@/lib/store";
 import {
   sendDigitalCodePendingEmail,
@@ -136,6 +139,8 @@ export interface FazercardsDeliveryResult {
   outcome: FazercardsDeliveryOutcome;
   ref: string;
   message?: string;
+  /** Classe de l'échec (file de livraison : retry vs revue manuelle). */
+  errorClass?: DeliveryErrorClass;
 }
 
 /* --------------------------------- Erreurs ------------------------------ */
@@ -966,6 +971,7 @@ export async function deliverPaidFazercardsOrder(
             config.name,
             config.url,
             config.email,
+            telegramOrderUrlFromEnv(loaded.ref),
           );
           await recordDigitalEmailOutcome(loaded.id, email);
         } catch (error) {
@@ -990,6 +996,8 @@ export async function deliverPaidFazercardsOrder(
         .update(digitalOrders)
         .set({
           status: "delivered",
+          fulfillmentStatus: "delivered",
+          nextRetryAt: null,
           reloadlyStatus: supplierStatus || "completed",
           deliveredAt: now,
           lastError: null,
@@ -1023,6 +1031,8 @@ export async function deliverPaidFazercardsOrder(
       .update(digitalOrders)
       .set({
         status: "delivered",
+        fulfillmentStatus: "delivered",
+        nextRetryAt: null,
         codesCipher: encrypted,
         reloadlyStatus: supplierStatus || "completed",
         deliveredAt: now,
@@ -1034,8 +1044,12 @@ export async function deliverPaidFazercardsOrder(
     const delivered = updated[0] ?? { ...loaded, status: "delivered" };
 
     // Envoie l'e-mail au client.
+    let siteName = "Nokhba";
+    let siteUrl = siteBaseUrl();
     try {
       const { config } = await getSiteData();
+      siteName = config.name;
+      siteUrl = config.url;
       const email = await sendDigitalCodesEmail(
         delivered,
         codes,
@@ -1043,11 +1057,16 @@ export async function deliverPaidFazercardsOrder(
         config.url,
         config.email,
         reviewPromptForConfig(config, { kind: "digital", orderRef: delivered.ref }),
+        telegramOrderUrlFromEnv(delivered.ref),
       );
       await recordDigitalEmailOutcome(loaded.id, email);
     } catch (error) {
       console.warn("[fazercards] e-mail codes non envoyé :", error);
     }
+
+    // Canal additionnel (FazerCards emprunte le même chemin de livraison que
+    // Reloadly) : le client abonné reçoit ses codes dans le chat.
+    await notifyTelegramOrderDelivered(delivered.ref, siteUrl, siteName);
 
     return { outcome: "delivered", ref: loaded.ref };
   } catch (error) {
@@ -1056,9 +1075,17 @@ export async function deliverPaidFazercardsOrder(
       : error instanceof Error
         ? error.message
         : "Échec fournisseur FazerCards.";
+    // Un timeout, un 429 ou un 5xx se retente ; un refus métier (produit
+    // inconnu, prix refusé, solde insuffisant) exige un humain.
+    const errorClass = classifyDeliveryError({
+      status: isFazercardsError(error) ? error.status : null,
+      code: isFazercardsError(error) ? error.code : null,
+      message: reason,
+    });
     return flagManual(
       loaded,
       `Achat FazerCards échoué : ${reason}`.slice(0, 800),
+      errorClass === "transient" ? "transient" : "permanent",
     );
   }
 }
@@ -1142,12 +1169,17 @@ async function getFazercardsOrderDetail(
 async function flagManual(
   order: DigitalOrder,
   reason: string,
+  errorClass: DeliveryErrorClass = "permanent",
 ): Promise<FazercardsDeliveryResult> {
   const alreadyManual = order.status === "manual";
   await db
     .update(digitalOrders)
     .set({
       status: "manual",
+      // Revue humaine explicite : la file de livraison ne réessaiera pas
+      // indéfiniment, et l'admin voit la nuance dans son tableau.
+      fulfillmentStatus: "manual_review",
+      nextRetryAt: null,
       lastError: reason.slice(0, 800),
       updatedAt: new Date(),
     })
@@ -1168,5 +1200,5 @@ async function flagManual(
     }
   }
 
-  return { outcome: "manual", ref: order.ref, message: reason };
+  return { outcome: "manual", ref: order.ref, message: reason, errorClass };
 }

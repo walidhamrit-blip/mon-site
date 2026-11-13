@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { pageLocale } from "@/lib/locale-server";
 import type { LocalePageProps } from "@/lib/locale";
-import { getSiteDataCached } from "@/lib/store";
+import { getSiteDataCachedShared as getSiteDataCached } from "@/lib/catalog-cache";
 import { pageMetadata } from "@/lib/seo";
 import { reviewInvitesEnabled, reviewLinks } from "@/lib/trust";
 import { TrustpilotBadge } from "@/components/trustpilot-badge";

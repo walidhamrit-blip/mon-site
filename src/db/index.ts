@@ -136,6 +136,13 @@ export function ensureSchema(): Promise<void> {
       await pool.query(
         "ALTER TABLE orders ADD COLUMN IF NOT EXISTS tracking_token_hash text",
       );
+      // Throttle durable des interrogations sortantes vers NOWPayments depuis
+      // les pages de suivi (voir provider-budget-core.ts) : la mémoire d'une
+      // instance Vercel ne survit pas entre deux requêtes, un compteur en
+      // mémoire ne suffit donc pas à protéger un quota partagé.
+      await pool.query(
+        "ALTER TABLE orders ADD COLUMN IF NOT EXISTS last_provider_sync_at timestamptz",
+      );
       // Abonnements (mensuel / annuel) : plans synchronisés avec NOWPayments
       // et abonnés. Un paiement d'abonnement reste une ligne `orders`,
       // rattachée à son abonné par `subscription_id`.
@@ -517,6 +524,22 @@ export function ensureSchema(): Promise<void> {
       await pool.query(
         "CREATE INDEX IF NOT EXISTS telegram_subscribers_optin_idx \n          ON telegram_subscribers (marketing_opt_in, status)",
       );
+      // Suivi de commande depuis le chat Telegram (consentement explicite,
+      // notification de livraison idempotente). Voir src/lib/telegram-delivery.ts.
+      await pool.query(`
+        CREATE TABLE IF NOT EXISTS telegram_order_watches (
+          id serial PRIMARY KEY,
+          created_at timestamptz NOT NULL DEFAULT now(),
+          order_ref text NOT NULL,
+          chat_id text NOT NULL,
+          language text NOT NULL DEFAULT 'ar',
+          notified_at timestamptz,
+          UNIQUE (order_ref, chat_id)
+        )
+      `);
+      await pool.query(
+        "CREATE INDEX IF NOT EXISTS telegram_order_watches_pending_idx \n          ON telegram_order_watches (notified_at, order_ref)",
+      );
       await pool.query(`
         CREATE TABLE IF NOT EXISTS telegram_campaigns (
           id serial PRIMARY KEY,
@@ -530,6 +553,75 @@ export function ensureSchema(): Promise<void> {
           status text NOT NULL DEFAULT 'sent'
         )
       `);
+
+      // File de livraison (webhooks NOWPayments → fournisseurs) : statuts
+      // granulaires, retries programmés, idempotence stricte. Voir
+      // src/lib/delivery-queue-core.ts et docs/webhooks-resilience.md.
+      await pool.query(
+        "ALTER TABLE digital_orders ADD COLUMN IF NOT EXISTS fulfillment_status text NOT NULL DEFAULT 'pending_payment'",
+      );
+      await pool.query(
+        "ALTER TABLE digital_orders ADD COLUMN IF NOT EXISTS supplier text NOT NULL DEFAULT 'fazercards'",
+      );
+      await pool.query(
+        "ALTER TABLE digital_orders ADD COLUMN IF NOT EXISTS idempotency_key text",
+      );
+      await pool.query(
+        "ALTER TABLE digital_orders ADD COLUMN IF NOT EXISTS next_retry_at timestamptz",
+      );
+      await pool.query(
+        "ALTER TABLE digital_orders ADD COLUMN IF NOT EXISTS telegram_alerted_at timestamptz",
+      );
+      await pool.query(
+        "CREATE UNIQUE INDEX IF NOT EXISTS digital_orders_idempotency_key_idx ON digital_orders (idempotency_key)",
+      );
+      await pool.query(
+        "CREATE INDEX IF NOT EXISTS digital_orders_fulfillment_idx ON digital_orders (fulfillment_status, next_retry_at)",
+      );
+      // Rétro-remplissage des commandes existantes (idempotent).
+      await pool.query(
+        "UPDATE digital_orders SET idempotency_key = ref WHERE idempotency_key IS NULL",
+      );
+      await pool.query(
+        "UPDATE digital_orders SET fulfillment_status = CASE status WHEN 'pending' THEN 'pending_payment' WHEN 'paid' THEN 'paid_fulfilling' WHEN 'delivered' THEN 'delivered' WHEN 'manual' THEN 'manual_review' WHEN 'failed' THEN 'manual_review' ELSE 'pending_payment' END WHERE fulfillment_status = 'pending_payment' AND status <> 'pending'",
+      );
+      await pool.query(`
+        CREATE TABLE IF NOT EXISTS delivery_jobs (
+          id serial PRIMARY KEY,
+          created_at timestamptz NOT NULL DEFAULT now(),
+          updated_at timestamptz NOT NULL DEFAULT now(),
+          order_ref text NOT NULL UNIQUE,
+          digital_order_id integer,
+          supplier text NOT NULL DEFAULT 'fazercards',
+          idempotency_key text NOT NULL UNIQUE,
+          status text NOT NULL DEFAULT 'queued',
+          attempts integer NOT NULL DEFAULT 0,
+          max_attempts integer NOT NULL DEFAULT 6,
+          next_retry_at timestamptz,
+          last_error text,
+          claimed_at timestamptz,
+          claim_token text,
+          completed_at timestamptz
+        )
+      `);
+      await pool.query(
+        "CREATE INDEX IF NOT EXISTS delivery_jobs_due_idx ON delivery_jobs (status, next_retry_at, created_at)",
+      );
+      await pool.query(`
+        CREATE TABLE IF NOT EXISTS webhook_events (
+          id serial PRIMARY KEY,
+          created_at timestamptz NOT NULL DEFAULT now(),
+          provider text NOT NULL,
+          event_key text NOT NULL UNIQUE,
+          payload_hash text,
+          event_status text,
+          outcome text NOT NULL DEFAULT 'received',
+          processed_at timestamptz
+        )
+      `);
+      await pool.query(
+        "CREATE INDEX IF NOT EXISTS webhook_events_created_idx ON webhook_events (created_at DESC)",
+      );
     })().catch((error) => {
       schemaReady = null; // permet de réessayer au prochain accès
       throw error;

@@ -1,6 +1,6 @@
 import { LocalizedLink as Link } from "@/components/localized-link";
 import { digitalCatalogStatus } from "@/lib/digital-store";
-import { getSiteDataCached } from "@/lib/store";
+import { getSiteDataCachedShared as getSiteDataCached } from "@/lib/catalog-cache";
 import { siteLocale } from "@/lib/seo";
 import { StoreUnavailableProduct } from "@/components/store-status-notice";
 

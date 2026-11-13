@@ -35,6 +35,12 @@ import {
   DIGITAL_ORDER_STATUS_TONES,
   type DigitalOrderStatus,
 } from "@/lib/digital-order-core";
+import {
+  FULFILLMENT_STATUS_LABELS,
+  FULFILLMENT_STATUS_TONES,
+  DELIVERY_MAX_ATTEMPTS,
+  type FulfillmentStatus,
+} from "@/lib/delivery-queue-core";
 /** Ligne aplatie reçue du serveur (dates ISO, codes déchiffrés). */
 export interface AdminDigitalOrderRow {
   ref: string;
@@ -88,6 +94,10 @@ export interface AdminDigitalOrderRow {
   deliveryNote: string | null;
   attempts: number;
   lastError: string | null;
+  /** Statut granulaire de la file de livraison. */
+  fulfillmentStatus: FulfillmentStatus;
+  /** Prochaine tentative automatique programmée. */
+  nextRetryAt: string | null;
   codes: { cardNumber: string; pinCode: string | null; redemptionUrl: string | null }[];
 }
 
@@ -387,11 +397,32 @@ export function DigitalOrdersTable({ rows }: { rows: AdminDigitalOrderRow[] }) {
                   <span className="hidden text-xs tabular-nums text-stone-400 sm:inline">
                     {frDate(row.createdAt)}
                   </span>
+                  {/*
+                    Statut GRANULAIRE quand il précise la colonne historique :
+                    « Payé — livraison en cours » (paid), « Payé — retry
+                    programmé » (paid + nextRetryAt) et « Revue manuelle
+                    requise » (manual) sont trois situations distinctes que
+                    l'ancien badge unique confondait.
+                  */}
                   <span
-                    className={`inline-flex items-center rounded-md border px-2 py-0.5 text-[11px] font-semibold ${DIGITAL_ORDER_STATUS_TONES[status]}`}
+                    className={`inline-flex items-center rounded-md border px-2 py-0.5 text-[11px] font-semibold ${
+                      row.fulfillmentStatus === "manual_review"
+                        ? FULFILLMENT_STATUS_TONES.manual_review
+                        : DIGITAL_ORDER_STATUS_TONES[status]
+                    }`}
+                    title={FULFILLMENT_STATUS_LABELS[row.fulfillmentStatus]}
                   >
-                    {DIGITAL_ORDER_STATUS_LABELS[status]}
+                    {row.fulfillmentStatus === "manual_review"
+                      ? "Revue manuelle"
+                      : row.fulfillmentStatus === "delivered"
+                        ? "Livré"
+                        : DIGITAL_ORDER_STATUS_LABELS[status]}
                   </span>
+                  {row.nextRetryAt && row.fulfillmentStatus === "paid_fulfilling" && (
+                    <span className="inline-flex items-center rounded-md border border-sky-200 bg-sky-50 px-2 py-0.5 text-[11px] font-semibold text-sky-800">
+                      Auto · {row.attempts}/{DELIVERY_MAX_ATTEMPTS}
+                    </span>
+                  )}
                 </span>
               </button>
 
@@ -551,6 +582,20 @@ export function DigitalOrdersTable({ rows }: { rows: AdminDigitalOrderRow[] }) {
                   {row.lastError && (
                     <p className="rounded-lg border border-orange-200 bg-orange-50 px-3 py-2 text-[12px] leading-5 text-orange-900">
                       <strong>Motif :</strong> {row.lastError}
+                    </p>
+                  )}
+
+                  {row.fulfillmentStatus === "paid_fulfilling" && (
+                    <p className="rounded-lg border border-sky-200 bg-sky-50 px-3 py-2 text-[12px] leading-5 text-sky-900">
+                      <strong>File de livraison :</strong> {row.attempts}/
+                      {DELIVERY_MAX_ATTEMPTS} tentative(s)
+                      {row.nextRetryAt
+                        ? ` · prochaine tentative automatique le ${frDate(row.nextRetryAt)}`
+                        : " · tentative en cours"}
+                      <span className="mt-1 block text-[11px] text-sky-800/80">
+                        À chaque échec, l&apos;équipe reçoit une alerte Telegram ; après{" "}
+                        {DELIVERY_MAX_ATTEMPTS} échecs la commande passe en revue manuelle.
+                      </span>
                     </p>
                   )}
 

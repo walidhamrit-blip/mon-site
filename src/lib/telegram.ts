@@ -21,12 +21,14 @@ import { db, ensureSchema } from "@/db";
 import { orders, digitalOrders, settings, telegramCampaigns, telegramSubscribers } from "@/db/schema";
 import {
   composeBroadcast,
+  formatDeliveryFailureAlert,
   formatLeadAlert,
   formatPaymentAlert,
   isTelegramBotToken,
   isTelegramLocale,
   telegramClamp,
   type BotOrderSummary,
+  type DeliveryAlertInput,
   type LeadAlertInput,
   type PaymentAlertInput,
   type TelegramButton,
@@ -196,6 +198,36 @@ export async function notifyTelegramPayment(
       timeoutMs: 4_000,
       keyboard: [
         [{ text: "🧾 Voir la commande", url: `${base}/admin/orders` }],
+      ],
+    },
+  ).catch(() => undefined);
+}
+
+/**
+ * Échec de livraison fournisseur (FazerCards / Reloadly).
+ *
+ * Appelée par la file de livraison (`delivery-queue.ts`) quand un achat
+ * échoue : alerte instantanée dans le chat admin, avec un bouton qui ouvre
+ * la commande. Comme les autres notifications, elle ne lève JAMAIS : une
+ * panne Telegram ne doit pas empêcher un retry de livraison.
+ */
+export async function notifyTelegramDeliveryFailure(
+  alert: DeliveryAlertInput,
+  siteName: string,
+  siteUrl: string,
+): Promise<void> {
+  if (!telegramConfigured()) return;
+  const { adminChatId } = telegramConfig();
+  if (!adminChatId) return;
+  const base = siteUrl.replace(/\/+$/, "");
+  await sendTelegramMessage(
+    adminChatId,
+    formatDeliveryFailureAlert(alert, siteName, siteUrl),
+    {
+      parseMode: "HTML",
+      timeoutMs: 4_000,
+      keyboard: [
+        [{ text: "📦 Traiter la commande", url: `${base}/admin/digital/orders` }],
       ],
     },
   ).catch(() => undefined);

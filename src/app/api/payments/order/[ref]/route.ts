@@ -14,6 +14,11 @@ import { sendPaymentConfirmedEmail } from "@/lib/order-emails";
 import { deliverPaidDigitalOrder } from "@/lib/digital-orders";
 import { baseRefOf } from "@/lib/installments";
 import {
+  claimProviderBudget,
+  claimProviderSync,
+  releaseProviderSync,
+} from "@/lib/provider-budget";
+import {
   maskEmail,
   trackingAccess,
   trackingTokenFromRequest,
@@ -69,7 +74,27 @@ export async function GET(
     const canUsePaymentLinks = access === "granted";
 
     if (order.status === "pending" && order.paymentId && nowPaymentsConfigured()) {
-      const remote = await getPayment(order.paymentId);
+      // Même garde-fou que le suivi des codes : cette route est publique (tout
+      // porteur du jeton de suivi, ou d'une ancienne référence) et interrogeait
+      // NOWPayments à chaque requête tant que le paiement restait `pending`.
+      // Un onglet laissé ouvert suffisait à consommer le quota facturé, partagé
+      // par tout le site. Refus = on sert l'état en base, sans erreur.
+      const claimed = await claimProviderSync(order.ref, {
+        lastSyncAt: order.lastProviderSyncAt ?? null,
+        since: order.createdAt ?? null,
+      });
+      const budget = claimed.sync ? claimProviderBudget() : { allow: false };
+
+      // Pas de créneau ou budget épuisé : on répond avec l'état en base, et
+      // la route reste utilisable (aucune erreur visible par le client).
+      let remote: Awaited<ReturnType<typeof getPayment>> = null;
+      if (claimed.sync && budget.allow) {
+        try {
+          remote = await getPayment(order.paymentId);
+        } finally {
+          releaseProviderSync(order.ref);
+        }
+      }
       if (remote && remote.payment_status) {
         const remoteStatus = remote.payment_status;
         const incomingStatus = orderStatusFromIpn(remoteStatus);

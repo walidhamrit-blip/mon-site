@@ -11,6 +11,7 @@ import {
   fillTemplate,
   formatBotOrderSummary,
   formatCustomerRelay,
+  formatDeliveryFailureAlert,
   formatLeadAlert,
   formatPaymentAlert,
   isTelegramBotToken,
@@ -159,6 +160,69 @@ test("le HTML dynamique est échappé, jamais interprété", () => {
     ),
     /Paiement échoué/,
   );
+});
+
+test("l'alerte d'échec de livraison dit quoi faire et où cliquer", () => {
+  const transient = formatDeliveryFailureAlert(
+    {
+      ref: "DGC-9F8E7D6C5B4A",
+      productTitle: "PlayStation Store 50 USD <test>",
+      supplier: "fazercards",
+      totalUsd: "52.00",
+      recipientEmail: "client@example.com",
+      attempts: 2,
+      maxAttempts: 6,
+      reason: "ETIMEDOUT après 20 s",
+      kind: "transient",
+    },
+    "Nukhba",
+    "https://nokhba.net.ly",
+  );
+  assert.match(transient, /retry programmé/i);
+  assert.match(transient, /DGC-9F8E7D6C5B4A/);
+  assert.match(transient, /2\/6/);
+  assert.match(transient, /52\.00 USD/);
+  assert.match(transient, /https:\/\/nokhba\.net\.ly\/admin\/digital\/orders/);
+  // Le HTML du produit est échappé, jamais interprété par Telegram.
+  assert.doesNotMatch(transient, /<test>/);
+  assert.match(transient, /&lt;test&gt;/);
+
+  const escalated = formatDeliveryFailureAlert(
+    {
+      ref: "DGC-9F8E7D6C5B4A",
+      productTitle: "PlayStation Store 50 USD",
+      supplier: "fazercards",
+      totalUsd: "52.00",
+      recipientEmail: "client@example.com",
+      attempts: 6,
+      maxAttempts: 6,
+      reason: "Achat refusé : out of stock",
+      kind: "exhausted",
+    },
+    "Nukhba",
+    "https://nokhba.net.ly",
+  );
+  assert.match(escalated, /à traiter à la main/i);
+  assert.match(escalated, /tentatives épuisées/i);
+  assert.match(escalated, /Acheter le code/);
+
+  // Le motif est borné : un message fournisseur de 2 000 caractères ne
+  // produit pas une alerte illisible.
+  const long = formatDeliveryFailureAlert(
+    {
+      ref: "DGC-1",
+      productTitle: "X",
+      supplier: "reloadly",
+      totalUsd: "5",
+      attempts: 1,
+      maxAttempts: 6,
+      reason: "z".repeat(2000),
+      kind: "permanent",
+    },
+    "Nukhba",
+    "https://nokhba.net.ly",
+  );
+  assert.ok(long.length < 1200);
 });
 
 test("la fiche de suivi ne divulgue ni code ni donnée personnelle", () => {

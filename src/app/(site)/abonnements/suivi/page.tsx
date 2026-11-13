@@ -3,7 +3,7 @@ import { pageLocale } from "@/lib/locale-server";
 import type { LocalePageProps } from "@/lib/locale";
 import { LocalizedLink as Link } from "@/components/localized-link";
 import { findSubscriptionForTracking } from "@/lib/subscriptions";
-import { getSiteDataCached } from "@/lib/store";
+import { getSiteDataCachedShared as getSiteDataCached } from "@/lib/catalog-cache";
 import { resolveMarket } from "@/lib/market";
 import { SUBSCRIPTION_GRACE_DAYS } from "@/lib/subscription-plans";
 import { CancelRenewal } from "./cancel-renewal";

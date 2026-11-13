@@ -64,10 +64,28 @@ export async function sendDigitalCodesEmail(
    * est alors identique à ce qu'il était.
    */
   review?: { html: string; text: string[] } | null,
+  /**
+   * Lien « suivre sur Telegram » (canal ADDITIONNEL, jamais un
+   * remplacement de l'e-mail). Construit par l'appelant via
+   * `telegramOrderUrl()` ; `null` = bot non configuré → aucun bloc ajouté,
+   * l'e-mail reste strictement identique à avant.
+   */
+  telegramUrl?: string | null,
 ): Promise<DigitalEmailResult> {
   const to = emailAddressFrom(order.recipientEmail);
   if (!to) return { ok: false, provider: "none", error: "destinataire absent" };
   if (codes.length === 0) return { ok: false, provider: "none", error: "aucun code" };
+
+  // Bloc Telegram : un tap pour démarrer le bot avec la référence, donc
+  // une notification dans le chat pour les prochaines commandes.
+  const telegram = (telegramUrl ?? "").trim();
+  const telegramText = telegram
+    ? [
+        ``,
+        `Recevez aussi vos prochains codes sur Telegram, en plus de cet e-mail :`,
+        telegram,
+      ]
+    : [];
 
   const support = emailAddressFrom(siteEmail) || emailAddressFrom(process.env.EMAIL_FROM);
   const subject = `🎁 Vos codes ${order.productTitle} — ${order.ref}`;
@@ -98,6 +116,8 @@ export async function sendDigitalCodesEmail(
     order.region.toLowerCase() === "global"
       ? `Ce code est valable partout dans le monde.`
       : `N'essayez pas de l'activer avec un compte d'une autre région : le code serait refusé.`,
+    ``,
+    ...telegramText,
     ``,
     support ? `Une question ? Répondez à cet e-mail ou écrivez à ${support}.` : "",
     ...(review ? review.text : []),
@@ -146,7 +166,19 @@ export async function sendDigitalCodesEmail(
         Vous pouvez aussi le retrouver ici : <a href="${escapeHtml(siteLink(siteUrl, "/codes/commande"))}" style="color:#8A6D2F;font-weight:700">suivi de commande</a>
         (référence + lien reçus sur la page de paiement).
       </p>
-      ${support ? `<p style="color:#666;font-size:13px">Une question ? Écrivez à <a href="mailto:${escapeHtml(support)}" style="color:#8A6D2F">${escapeHtml(support)}</a>.</p>` : ""}
+      ${
+        telegram
+          ? `<div style="border:1px solid #e7e1d3;border-radius:14px;padding:14px 16px;margin:18px 0 0;background:#fffdf8">
+        <div style="font-size:13px;font-weight:700;color:#1a1a1e">Recevez aussi vos codes sur Telegram</div>
+        <p style="color:#666;font-size:12px;margin:6px 0 10px">
+          Un bouton pour démarrer le bot : vos prochains codes arrivent dans le chat,
+          en plus de l'e-mail. Vous pouvez vous désabonner à tout moment avec /stop.
+        </p>
+        <a href="${escapeHtml(telegram)}" style="display:inline-block;background:#8A6D2F;color:#fff;text-decoration:none;font-weight:700;font-size:13px;padding:9px 16px;border-radius:10px">Suivre sur Telegram</a>
+      </div>`
+          : ""
+      }
+      ${support ? `<p style="color:#666;font-size:13px;margin-top:16px">Une question ? Écrivez à <a href="mailto:${escapeHtml(support)}" style="color:#8A6D2F">${escapeHtml(support)}</a>.</p>` : ""}
       ${review ? review.html : ""}
       <p style="color:#999;font-size:12px;margin-top:24px">${escapeHtml(siteName)} — ${escapeHtml(siteUrl)}</p>
     </div>`;
@@ -338,6 +370,11 @@ export async function sendDigitalCodePendingEmail(
   siteName: string,
   siteUrl: string,
   siteEmail?: string,
+  /**
+   * Lien « recevoir aussi le code sur Telegram » (canal additionnel).
+   * Optionnel et en dernier : les appelants existants sont inchangés.
+   */
+  telegramUrl?: string | null,
 ): Promise<DigitalEmailResult> {
   const to = emailAddressFrom(order.recipientEmail);
   if (!to) return { ok: false, provider: "none", error: "destinataire absent" };
@@ -357,6 +394,14 @@ export async function sendDigitalCodePendingEmail(
     ``,
     `Dès que le code est disponible, vous recevez un second e-mail qui le contient.`,
     `Aucune action n'est nécessaire de votre part.`,
+    ``,
+    ...((telegramUrl ?? "").trim()
+      ? [
+          ``,
+          `En plus de l'e-mail, vous pouvez recevoir le code sur Telegram :`,
+          (telegramUrl ?? "").trim(),
+        ]
+      : []),
     ``,
     support ? `Une question ? Écrivez à ${support} en citant la référence ${order.ref}.` : "",
     `Suivi de commande : ${siteLink(siteUrl, "/codes/commande")}`,
@@ -382,6 +427,17 @@ export async function sendDigitalCodePendingEmail(
       <p style="color:#666;font-size:13px;margin-top:16px">
         Aucune action n'est nécessaire. Suivi : <a href="${escapeHtml(siteLink(siteUrl, "/codes/commande"))}" style="color:#8A6D2F;font-weight:700">votre commande</a>.
       </p>
+      ${
+        (telegramUrl ?? "").trim()
+          ? `<div style="border:1px solid #e7e1d3;border-radius:14px;padding:14px 16px;margin:16px 0 0;background:#fffdf8">
+        <div style="font-size:13px;font-weight:700">Pas envie d'attendre l'e-mail ?</div>
+        <p style="color:#666;font-size:12px;margin:6px 0 10px">
+          Recevez le code directement sur Telegram dès qu'il est prêt — l'e-mail part aussi.
+        </p>
+        <a href="${escapeHtml((telegramUrl ?? "").trim())}" style="display:inline-block;background:#8A6D2F;color:#fff;text-decoration:none;font-weight:700;font-size:13px;padding:9px 16px;border-radius:10px">Recevoir sur Telegram</a>
+      </div>`
+          : ""
+      }
       ${support ? `<p style="color:#666;font-size:13px">Une question ? Écrivez à <a href="mailto:${escapeHtml(support)}" style="color:#8A6D2F">${escapeHtml(support)}</a> en citant ${escapeHtml(order.ref)}.</p>` : ""}
       <p style="color:#999;font-size:12px;margin-top:24px">${escapeHtml(siteName)} — ${escapeHtml(siteUrl)}</p>
     </div>`;

@@ -21,6 +21,13 @@ import { and, desc, eq, ne } from "drizzle-orm";
 import { localizedPath } from "@/lib/locale";
 import { db, ensureSchema } from "@/db";
 import { digitalOrders, orders, type DigitalOrder } from "@/db/schema";
+import {
+  classifyDeliveryError,
+  fulfillmentStatusFromLegacy,
+  normalizeFulfillmentStatus,
+  type DeliveryErrorClass,
+  type FulfillmentStatus,
+} from "@/lib/delivery-queue-core";
 import { getDigitalProductBySlug } from "@/lib/digital-store";
 import {
   denominationUnitPrice,
@@ -80,6 +87,15 @@ import {
 import { recordDigitalEmailOutcome } from "@/lib/digital-email-log";
 import { reviewPromptForConfig } from "@/lib/review-emails";
 import { isFazercardsProductRef } from "@/lib/fazercards-catalog";
+import { notifyTelegramOrderDelivered } from "@/lib/telegram-delivery";
+import {
+  claimProviderBudget,
+  claimProviderSync,
+  clearProviderSyncGate,
+  releaseProviderSync,
+} from "@/lib/provider-budget";
+import { telegramOrderUrlFromEnv } from "@/lib/telegram-core";
+
 import { deliverPaidFazercardsOrder } from "@/lib/fazercards-orders";
 import { sendPaymentConfirmedEmail } from "@/lib/order-emails";
 import { phoneCardDeliveryGate } from "@/lib/phone-card-payments";
@@ -353,6 +369,13 @@ export interface DigitalDeliveryResult {
   outcome: DigitalDeliveryOutcome;
   ref: string;
   message?: string;
+  /**
+   * Classe de l'échec, quand il y en a un — renseignée par les chemins
+   * FazerCards / Reloadly pour que la file de livraison distingue un
+   * incident réseau (`transient`, on réessaie) d'un refus métier
+   * (`permanent`, revue manuelle immédiate).
+   */
+  errorClass?: DeliveryErrorClass;
 }
 
 /** Fournisseur qui doit livrer une commande digitale (défini par le domaine). */
@@ -414,11 +437,21 @@ async function loadDigitalOrder(idOrRef: number | string): Promise<DigitalOrder 
 async function flagManual(
   order: DigitalOrder,
   reason: string,
+  errorClass: DeliveryErrorClass = "permanent",
 ): Promise<DigitalDeliveryResult> {
   const alreadyManual = order.status === "manual";
+  // Statut granulaire `manual_review` : la commande est PAYÉE, l'argent est
+  // encaissé, et un humain doit acheter le code ou rembourser. C'est
+  // distinct d'un simple « en cours de livraison ».
   await db
     .update(digitalOrders)
-    .set({ status: "manual", lastError: reason.slice(0, 800), updatedAt: new Date() })
+    .set({
+      status: "manual",
+      fulfillmentStatus: "manual_review",
+      nextRetryAt: null,
+      lastError: reason.slice(0, 800),
+      updatedAt: new Date(),
+    })
     .where(eq(digitalOrders.id, order.id));
 
   // Une commande déjà signalée ne renvoie pas d'alerte à chaque relance :
@@ -443,7 +476,7 @@ async function flagManual(
     );
   }
 
-  return { outcome: "manual", ref: order.ref, message: reason };
+  return { outcome: "manual", ref: order.ref, message: reason, errorClass };
 }
 
 /** Clé de comparaison d'un prix (« 5 », « 5.00 », null → ""). */
@@ -610,6 +643,7 @@ export async function deliverPaidDigitalOrder(
       outcome: routed.outcome,
       ref: routed.ref,
       ...(routed.message ? { message: routed.message } : {}),
+      ...(routed.errorClass ? { errorClass: routed.errorClass } : {}),
     };
   }
 
@@ -637,6 +671,7 @@ export async function deliverPaidDigitalOrder(
     return flagManual(
       order,
       "DIGITAL_CODES_SECRET (ou SESSION_SECRET) absent : impossible de chiffrer et relire les codes en sécurité. Aucun achat n'a été effectué.",
+      "permanent",
     );
   }
 
@@ -646,6 +681,7 @@ export async function deliverPaidDigitalOrder(
     return flagManual(
       order,
       "Reloadly est en mode SANDBOX alors que les paiements sont réels : aucun code de test n'a été acheté. Configurez RELOADLY_SANDBOX=false avec des identifiants LIVE, puis relancez la livraison.",
+      "permanent",
     );
   }
   if (!requiresAuto || !reloadlyConfigured()) {
@@ -654,6 +690,7 @@ export async function deliverPaidDigitalOrder(
       requiresAuto
         ? "Reloadly n'est pas configuré sur ce serveur : livraison manuelle requise."
         : "Fiche en livraison manuelle : achetez le code dans le tableau Reloadly puis transmettez-le au client.",
+      "permanent",
     );
   }
 
@@ -666,16 +703,21 @@ export async function deliverPaidDigitalOrder(
     return flagManual(
       order,
       `Montant ${totalUsd.toFixed(2)} $ au-delà du plafond d'achat automatique (${cap} $). Livraison manuelle requise.`,
+      "permanent",
     );
   }
 
   const productId = Number(order.reloadlyProductId);
   const unitPrice = Number(order.reloadlyUnitPrice);
   if (!Number.isInteger(productId) || productId <= 0) {
-    return flagManual(order, "Aucun produit Reloadly relié à cette fiche (admin → Codes & Cartes).");
+    return flagManual(
+      order,
+      "Aucun produit Reloadly relié à cette fiche (admin → Codes & Cartes).",
+      "permanent",
+    );
   }
   if (!Number.isFinite(unitPrice) || unitPrice <= 0) {
-    return flagManual(order, "Valeur faciale Reloadly absente pour ce montant.");
+    return flagManual(order, "Valeur faciale Reloadly absente pour ce montant.", "permanent");
   }
 
   await db
@@ -693,7 +735,7 @@ export async function deliverPaidDigitalOrder(
   try {
     if (!transactionId) {
       const priceIssue = await supplierPriceIssue(productId, unitPrice);
-      if (priceIssue) return flagManual(order, priceIssue);
+      if (priceIssue) return flagManual(order, priceIssue, "permanent");
 
       const purchase = await createGiftCardOrder({
         productId,
@@ -720,6 +762,7 @@ export async function deliverPaidDigitalOrder(
           .update(digitalOrders)
           .set({
             status: "failed",
+            fulfillmentStatus: "manual_review",
             lastError: `Reloadly a refusé l'achat (${purchase.status}).`,
             updatedAt: new Date(),
           })
@@ -775,6 +818,8 @@ export async function deliverPaidDigitalOrder(
       .update(digitalOrders)
       .set({
         status: "delivered",
+        fulfillmentStatus: "delivered",
+        nextRetryAt: null,
         codesCipher: cipher,
         reloadlyStatus: "SUCCESSFUL",
         deliveredAt: now,
@@ -803,6 +848,7 @@ export async function deliverPaidDigitalOrder(
         config.url,
         config.email,
         reviewPromptForConfig(config, { kind: "digital", orderRef: delivered.ref }),
+        telegramOrderUrlFromEnv(delivered.ref),
       );
       await recordDigitalEmailOutcome(order.id, email);
     } catch (error) {
@@ -812,6 +858,11 @@ export async function deliverPaidDigitalOrder(
       );
     }
 
+    // Canal additionnel : les clients qui suivent la commande depuis
+    // Telegram sont prévenus dans le chat. Idempotent (notified_at) et
+    // silencieux en cas d'échec — l'e-mail reste la source de vérité.
+    await notifyTelegramOrderDelivered(delivered.ref, config.url, config.name);
+
     return { outcome: "delivered", ref: order.ref };
   } catch (error) {
     const message = reloadlyErrorMessage(error);
@@ -820,8 +871,14 @@ export async function deliverPaidDigitalOrder(
     // 4xx (hors 401) = refus métier : inutile de rejouer en boucle, mais
     // la commande reste payable → livraison manuelle. Erreur réseau/5xx :
     // l'achat a peut-être abouti → on conserve la transaction si connue.
-    const reloadlyStatus = isReloadlyError(error) ? error.status : null;
-    const soldOut = reloadlyStatus === 400 || reloadlyStatus === 404 || reloadlyStatus === 409;
+    const httpStatus = isReloadlyError(error) ? error.status : null;
+    const soldOut = httpStatus === 400 || httpStatus === 404 || httpStatus === 409;
+    // Classe de l'échec pour la file : un refus métier (400/404/409) ne se
+    // répare pas en réessayant ; un timeout ou un 5xx, si.
+    const errorClass: DeliveryErrorClass =
+      soldOut || httpStatus === 422
+        ? "permanent"
+        : classifyDeliveryError({ status: httpStatus, message });
 
     const current = await loadDigitalOrder(order.id);
     const recordedTransaction = current?.reloadlyTransactionId ?? transactionId;
@@ -830,6 +887,8 @@ export async function deliverPaidDigitalOrder(
       .update(digitalOrders)
       .set({
         status: "manual",
+        fulfillmentStatus: "manual_review",
+        nextRetryAt: null,
         reloadlyTransactionId: recordedTransaction || null,
         lastError: `Reloadly : ${message}`.slice(0, 800),
         updatedAt: new Date(),
@@ -837,12 +896,13 @@ export async function deliverPaidDigitalOrder(
       .where(eq(digitalOrders.id, order.id));
 
     if (soldOut || !recordedTransaction) {
-      return flagManual(order, `Reloadly : ${message}`);
+      return flagManual(order, `Reloadly : ${message}`, errorClass);
     }
     return {
       outcome: "manual",
       ref: order.ref,
       message: `Vérification requise chez Reloadly (transaction ${recordedTransaction}) : ${message}`,
+      errorClass,
     };
   }
 }
@@ -858,6 +918,12 @@ export interface PublicDigitalCode {
 export interface PublicDigitalOrder {
   ref: string;
   status: DigitalOrderStatus;
+  /**
+   * Statut granulaire de livraison (`pending_payment`, `paid_fulfilling`,
+   * `delivered`, `manual_review`). `status` reste exposé pour compatibilité
+   * (clients mis en cache, anciens onglets ouverts).
+   */
+  fulfillmentStatus: FulfillmentStatus;
   productTitle: string;
   platform: string;
   denominationLabel: string;
@@ -873,6 +939,25 @@ export interface PublicDigitalOrder {
   phoneCardStatus: "pending" | "approved" | "rejected" | null;
   /** Message d'attente / d'action, sans détail technique. */
   notice: string | null;
+  /**
+   * Statut brut NOWPayments (`waiting`, `confirming`, `confirmed`,
+   * `sending`, `finished`). Sert à la barre de progression : c'est lui qui
+   * distingue « fonds pas encore reçus » de « réseau en cours de
+   * confirmation ». Aucune donnée sensible (ni adresse, ni montant payé).
+   */
+  ipnStatus: string | null;
+  /**
+   * Cryptomonnaie utilisée (`usdttrc20`, `btc`…) — sert uniquement à
+   * estimer un délai de confirmation usuel. Optionnel : les commandes
+   * antérieures n'ont pas toujours la valeur.
+   */
+  payCurrency: string | null;
+  /**
+   * Lien Telegram du bot (`https://t.me/NokhbaGamebot?start=…`) : le client
+   * peut suivre la livraison et être prévenu dans le chat. `null` quand le
+   * bot n'est pas configuré — l'interface n'affiche alors rien.
+   */
+  telegramUrl: string | null;
 }
 
 function publicNotice(status: DigitalOrderStatus): string | null {
@@ -913,7 +998,28 @@ async function reconcileDigitalOrderOnPoll(order: DigitalOrder): Promise<Digital
     if (!payment) return order;
 
     if (payment.status === "pending" && payment.paymentId && nowPaymentsConfigured()) {
-      const remote = await getPayment(payment.paymentId);
+      // ── Deux garde-fous AVANT tout appel sortant ────────────────────────
+      // Chaque GET de la page de suivi arrivait ici tant que la commande
+      // restait `pending` : un onglet laissé ouvert = 4 appels facturés par
+      // minute, et le quota NOWPayments est partagé par tout le site.
+      //   1. créneau durable par commande (colonne, résiste aux instances) ;
+      //   2. plafond global d'instance, pour les pics.
+      // Refus = on sert l'état en base, la page reste utile.
+      const claimed = await claimProviderSync(payment.ref ?? order.ref, {
+        lastSyncAt: payment.lastProviderSyncAt ?? null,
+        since: payment.createdAt ?? order.createdAt ?? null,
+      });
+      const budget = claimed.sync ? claimProviderBudget() : { allow: false };
+      if (!claimed.sync || !budget.allow) {
+        return order;
+      }
+
+      let remote: Awaited<ReturnType<typeof getPayment>> = null;
+      try {
+        remote = await getPayment(payment.paymentId);
+      } finally {
+        releaseProviderSync(payment.ref ?? order.ref);
+      }
       if (remote && remote.payment_status) {
         const remoteStatus = remote.payment_status;
         const incomingStatus = orderStatusFromIpn(remoteStatus);
@@ -980,7 +1086,12 @@ async function reconcileDigitalOrderOnPoll(order: DigitalOrder): Promise<Digital
         updatedAt: order.updatedAt,
       })
     ) {
-      await deliverPaidDigitalOrder(order.id);
+      // La file fait foi : elle relit le job (retry programmé, bail expiré,
+      // job déjà terminé) au lieu de relancer un achat direct. Le sondage
+      // client devient ainsi un worker de secours — utile sur Vercel Hobby
+      // où le cron est quotidien.
+      const { runDeliveryQueue } = await import("@/lib/delivery-queue");
+      await runDeliveryQueue({ limit: 1 });
       return (await loadDigitalOrder(order.id)) ?? order;
     }
   } catch (error) {
@@ -1014,6 +1125,20 @@ export async function getPublicDigitalOrder(
       : [];
   const phoneGate = await phoneCardDeliveryGate(order.ref);
   const locale = order.locale === "en" ? "en" : "ar";
+
+  // État brut du paiement (sans quoi la barre de progression ne peut pas
+  // distinguer « rien reçu » de « réseau en cours »). Une seule requête,
+  // colonnes minimales, et jamais renvoyée telle quelle au navigateur.
+  const [payment] = await db
+    .select({
+      ipnStatus: orders.ipnStatus,
+      payCurrency: orders.payCurrency,
+      status: orders.status,
+    })
+    .from(orders)
+    .where(eq(orders.ref, order.ref))
+    .limit(1);
+
   // Livrée hors système (WhatsApp…) : aucun code en base, mais le client doit
   // lire où il l'a reçu au lieu d'une page « Livré » vide.
   const externalNotice =
@@ -1024,6 +1149,9 @@ export async function getPublicDigitalOrder(
   return {
     ref: order.ref,
     status,
+    fulfillmentStatus: normalizeFulfillmentStatus(
+      order.fulfillmentStatus ?? fulfillmentStatusFromLegacy(order.status),
+    ),
     productTitle: order.productTitle,
     platform: order.platform,
     denominationLabel: order.denominationLabel,
@@ -1037,6 +1165,9 @@ export async function getPublicDigitalOrder(
     codes,
     paymentMethod: phoneGate.isPhoneCard ? "phone_card" : "nowpayments",
     phoneCardStatus: phoneGate.isPhoneCard ? phoneGate.status : null,
+    ipnStatus: order.status === "delivered" ? "finished" : (payment?.ipnStatus ?? null),
+    payCurrency: payment?.payCurrency ?? null,
+    telegramUrl: telegramOrderUrlFromEnv(order.ref),
     notice:
       phoneGate.isPhoneCard && status !== "delivered"
         ? phoneCardPublicNotice(phoneGate.status, locale)
@@ -1125,6 +1256,8 @@ export async function deliverDigitalOrderManually(
       .update(digitalOrders)
       .set({
         status: "delivered",
+        fulfillmentStatus: "delivered",
+        nextRetryAt: null,
         deliveredAt: now,
         lastError: null,
         updatedAt: now,
@@ -1170,6 +1303,8 @@ export async function deliverDigitalOrderManually(
     .update(digitalOrders)
     .set({
       status: "delivered",
+      fulfillmentStatus: "delivered",
+      nextRetryAt: null,
       codesCipher: encryptDigitalCodes(codes, key),
       deliveredAt: now,
       lastError: null,
@@ -1180,8 +1315,12 @@ export async function deliverDigitalOrderManually(
 
   const delivered = updated[0] ?? order;
   let emailError: string | undefined;
+  let siteName = "Nokhba";
+  let siteUrl = "";
   try {
     const { config } = await getSiteData();
+    siteName = config.name;
+    siteUrl = config.url;
     const email = await sendDigitalCodesEmail(
       delivered,
       codes,
@@ -1189,12 +1328,17 @@ export async function deliverDigitalOrderManually(
       config.url,
       config.email,
       reviewPromptForConfig(config, { kind: "digital", orderRef: delivered.ref }),
+      telegramOrderUrlFromEnv(delivered.ref),
     );
     await recordDigitalEmailOutcome(order.id, email);
     if (!email.ok) emailError = email.error ?? "e-mail non envoyé";
   } catch (error) {
     emailError = error instanceof Error ? error.message : String(error);
   }
+
+  // Le client qui suit la commande depuis Telegram est prévenu, même si
+  // l'e-mail vient d'échouer (c'est justement le cas où ça compte).
+  await notifyTelegramOrderDelivered(delivered.ref, siteUrl, siteName);
 
   return {
     ok: true,
@@ -1205,13 +1349,24 @@ export async function deliverDigitalOrderManually(
 
 /** Renvoie l'e-mail des codes d'une commande livrée. */
 export async function resendDigitalCodesEmail(ref: string): Promise<{ ok: boolean; error?: string }> {
+  // Action admin : elle ne doit pas être ralentie par un créneau de synchro
+  // déjà consommé par la page du client (throttle fournisseur).
+  await clearProviderSyncGate(ref);
   const order = await loadDigitalOrder(ref);
   if (!order) return { ok: false, error: "Commande introuvable." };
   const codes = decryptDigitalCodes(order.codesCipher, digitalCodesKeyRing());
   if (codes.length === 0) return { ok: false, error: "Aucun code enregistré pour cette commande." };
 
   const { config } = await getSiteData();
-  const result = await sendDigitalCodesEmail(order, codes, config.name, config.url, config.email);
+  const result = await sendDigitalCodesEmail(
+    order,
+    codes,
+    config.name,
+    config.url,
+    config.email,
+    null,
+    telegramOrderUrlFromEnv(order.ref),
+  );
   await recordDigitalEmailOutcome(order.id, result);
   return { ok: result.ok, error: result.error };
 }
@@ -1284,6 +1439,8 @@ export async function markDigitalOrderDeliveredOffPlatform(
     .update(digitalOrders)
     .set({
       status: "delivered",
+      fulfillmentStatus: "delivered",
+      nextRetryAt: null,
       fulfillment: "manual",
       deliveredAt: now,
       trackingTokenHash: tracking.hash,

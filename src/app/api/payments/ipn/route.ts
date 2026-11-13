@@ -1,8 +1,8 @@
-import { NextResponse } from "next/server";
+import { NextResponse, after } from "next/server";
 import { isHighCostNetwork } from "@/lib/payment-networks";
 import { and, eq, inArray } from "drizzle-orm";
 import { db, ensureSchema } from "@/db";
-import { orders, type Order } from "@/db/schema";
+import { orders, webhookEvents, type Order } from "@/db/schema";
 import { getSiteData } from "@/lib/store";
 import {
   isPaidStatus,
@@ -19,7 +19,12 @@ import {
   reconcileSubscriptionInvoice,
 } from "@/lib/subscriptions";
 import { subscriptionIdFromPayload } from "@/lib/subscription-lifecycle";
-import { deliverPaidDigitalOrder } from "@/lib/digital-orders";
+import {
+  enqueueDelivery,
+  reserveWebhookEvent,
+  runDeliveryQueue,
+  settleWebhookEvent,
+} from "@/lib/delivery-queue";
 
 /**
  * Webhook IPN NOWPayments.
@@ -59,6 +64,35 @@ export async function POST(req: Request) {
 
   if (!paymentId || !ipnStatus) {
     return NextResponse.json({ ok: false, error: "missing_fields" }, { status: 400 });
+  }
+
+  // ── Idempotence stricte ────────────────────────────────────────────────
+  // NOWPayments rejoue un même événement (retry réseau, `finished` répété).
+  // `webhook_events.event_key` est UNIQUE : la première requête réserve la
+  // clé et traite ; les suivantes répondent 200 sans rien refaire (ni
+  // second e-mail, ni second achat). Un échec de traitement libère la clé
+  // pour que le rejeu du fournisseur puisse aboutir.
+  let webhookKey = "";
+  try {
+    const reservation = await reserveWebhookEvent({
+      provider: "nowpayments",
+      eventId: paymentId,
+      status: ipnStatus,
+      rawBody,
+    });
+    if (!reservation.fresh) {
+      console.info(`[ipn] doublon ignoré : ${paymentId} (${ipnStatus})`);
+      return NextResponse.json({ ok: true, duplicate: true });
+    }
+    webhookKey = reservation.key;
+  } catch (error) {
+    // Le journal d'idempotence ne doit jamais bloquer un paiement : on
+    // continue (les garde-fous de la commande restent en place) mais on
+    // trace l'incident.
+    console.warn(
+      "[ipn] journal d'idempotence indisponible :",
+      error instanceof Error ? error.message : error,
+    );
   }
 
   // Paiement d'abonnement (mensuel / annuel) : traité à part, il ne passe
@@ -328,36 +362,66 @@ export async function POST(req: Request) {
       }
     }
 
-    // Commande de code / carte cadeau : l'achat se fait MAINTENANT, avec le
-    // solde du compte marchand du fournisseur. `deliverPaidDigitalOrder`
-    // route selon l'origine de la commande — FazerCards pour le catalogue
-    // `fzr-…`, Reloadly pour les fiches historiques. Idempotent : une
-    // commande déjà livrée n'est jamais rachetée, et chaque achat FazerCards
-    // porte un Idempotency-Key égal à la référence de la commande.
+    // Commande de code / carte cadeau : le paiement est confirmé, la
+    // livraison passe par la FILE (Neon) au lieu d'être tentée en série
+    // dans cette requête.
+    //
+    // Pourquoi : un appel fournisseur peut dépasser la limite de temps
+    // serverless. Avant, la commande restait alors « payée » sans achat,
+    // jusqu'au cron du lendemain. Désormais :
+    //   1. la commande passe en `paid_fulfilling` et un job de livraison
+    //      UNIQUE est créé (idempotence stricte : `order_ref` +
+    //      `idempotency_key` uniques) ;
+    //   2. le job est traité juste après la réponse HTTP (`after()`, Next
+    //      16) — le webhook répond vite, NOWPayments ne rejoue pas ;
+    //   3. en cas d'échec : retry programmé (backoff) + alerte Telegram
+    //      instantanée, puis revue manuelle après épuisement.
     let digital: string | null = null;
     if (order.digitalOrderId) {
       try {
-        const delivery = await deliverPaidDigitalOrder(order.digitalOrderId);
-        digital = delivery.outcome;
-        console.info(
-          `[ipn][digital] ${order.ref} → ${delivery.outcome}${
-            delivery.message ? ` (${delivery.message})` : ""
-          }`,
-        );
+        const queued = await enqueueDelivery({
+          id: order.digitalOrderId,
+          ref: order.ref,
+        });
+        digital = queued.created ? "queued" : "already_queued";
+
+        after(async () => {
+          try {
+            const report = await runDeliveryQueue({ limit: 3 });
+            console.info(`[ipn][file] ${order.ref} : ${JSON.stringify(report.results)}`);
+          } catch (error) {
+            // Le job reste en base : le cron et le suivi client le reprendront.
+            console.error(
+              "[ipn][file] traitement différé impossible :",
+              error instanceof Error ? error.message : error,
+            );
+          }
+        });
       } catch (error) {
-        // La commande reste payée ; l'admin peut relancer la livraison.
-        digital = "error";
+        // La commande reste `paid_fulfilling` : reprise par le cron/suivi.
+        digital = "queue_error";
         console.error(
-          "[ipn][digital] livraison impossible :",
+          "[ipn][file] mise en file impossible :",
           error instanceof Error ? error.message : error,
         );
       }
     }
 
     console.info(`[ipn] commande ${order.ref} → ${ipnStatus}`);
+    await settleWebhookEvent(webhookKey, "processed");
     return NextResponse.json({ ok: true, ...(digital ? { digital } : {}) });
   } catch (error) {
     console.error("[ipn] traitement impossible :", error instanceof Error ? error.message : error);
+    // La clé d'idempotence est libérée : le rejeu de NOWPayments doit
+    // pouvoir retenter un traitement qui a échoué (sinon la commande
+    // resterait bloquée derrière un événement marqué « reçu »).
+    if (webhookKey) {
+      try {
+        await db.delete(webhookEvents).where(eq(webhookEvents.eventKey, webhookKey));
+      } catch {
+        // sans effet : le pire cas est un doublon ignoré, jamais un double achat
+      }
+    }
     // 500 → NOWPayments réessaiera plus tard.
     return NextResponse.json({ ok: false, error: "processing_failed" }, { status: 500 });
   }

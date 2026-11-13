@@ -8,6 +8,10 @@ import {
 import { mailDiagnostics } from "@/lib/mailer";
 import { storedBuyerFields, storedPlayerIdCheck } from "@/lib/fazercards-orders";
 import {
+  fulfillmentStatusFromLegacy,
+  normalizeFulfillmentStatus,
+} from "@/lib/delivery-queue-core";
+import {
   DigitalOrdersTable,
   type AdminDigitalOrderRow,
 } from "./digital-orders-table";
@@ -51,6 +55,13 @@ export default async function AdminDigitalOrdersPage() {
   const toDeliver = orders.filter((order) =>
     ["paid", "manual"].includes(order.normalizedStatus),
   ).length;
+  // Revue manuelle = commande payée qu'aucune machine ne débloquera : c'est
+  // la file d'attente HUMAINE, distincte des livraisons en cours.
+  const manualReview = orders.filter(
+    (order) =>
+      order.status !== "delivered" &&
+      (order.fulfillmentStatus ?? "").trim() === "manual_review",
+  ).length;
 
   return (
     <div className="space-y-5">
@@ -74,6 +85,11 @@ export default async function AdminDigitalOrdersPage() {
 
       <section className="rounded-2xl border border-stone-200 bg-white p-5 text-sm">
         <p><strong>À traiter : {dbError ? "indisponible" : toDeliver}</strong> commande(s) payée(s) ou manuelle(s).</p>
+        <p className="mt-1">
+          <strong>Revue manuelle : {dbError ? "indisponible" : manualReview}</strong>{" "}
+          commande(s) où la livraison automatique s&apos;est arrêtée (fournisseur en échec
+          répété) — une alerte Telegram a été envoyée pour chacune.
+        </p>
         <p className="mt-2 text-stone-600">Le fournisseur actif est FazerCards. Les commandes historiques sont conservées sans achat automatique chez leur ancien fournisseur. Consultez le solde et les disponibilités dans le catalogue avant toute relance.</p>
         <Link href="/admin/digital" className="mt-3 inline-block font-bold underline">Catalogue & solde FazerCards</Link>
       </section>
@@ -144,6 +160,10 @@ function toRow(
     deliveryNote: order.deliveryNote ?? null,
     attempts: order.attempts,
     lastError: order.lastError,
+    fulfillmentStatus: normalizeFulfillmentStatus(
+      order.fulfillmentStatus ?? fulfillmentStatusFromLegacy(order.status),
+    ),
+    nextRetryAt: order.nextRetryAt ? order.nextRetryAt.toISOString() : null,
     codes: order.codes,
   };
 }

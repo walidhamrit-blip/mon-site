@@ -18,7 +18,7 @@ await build({
   },
   outfile, bundle: true, platform: "node", format: "cjs", jsx: "automatic",
   plugins: [{ name: "category-fixtures", setup(builder) {
-    builder.onResolve({ filter: /^(next\/link|next\/navigation|@\/lib\/store|@\/lib\/digital-store|@\/components\/store-status-notice|@\/components\/localized-link)$/ }, (args) => ({ path: args.path, namespace: "fixtures" }));
+    builder.onResolve({ filter: /^(next\/link|next\/navigation|@\/lib\/store|@\/lib\/digital-store|@\/lib\/catalog-cache|@\/components\/store-status-notice|@\/components\/localized-link)$/ }, (args) => ({ path: args.path, namespace: "fixtures" }));
     builder.onLoad({ filter: /.*/, namespace: "fixtures" }, ({ path }) => {
       const fixtures = {
         "next/link": `import {createElement} from 'react'; export default function Link({children,...props}) { return createElement('a',props,children); }`,
@@ -26,6 +26,9 @@ await build({
         "next/navigation": `export function notFound() { throw new Error('NOT_FOUND'); }`,
         "@/lib/store": `export async function getSiteDataCached() { return {config: {url:'https://store.example',market:null,appearance:{primaryLocale:globalThis.__categoryLocale || 'en'},phone:''}}; }`,
         "@/lib/digital-store": `export async function getDigitalCatalog() { return globalThis.__categoryProducts; } export function digitalCatalogStatus() { return {degraded:!!globalThis.__categoryDegraded}; }`,
+        // Cache de données partagé (Next `unstable_cache`) : le test rend la
+        // page sans serveur Next, on sert donc le même snapshot que la base.
+        "@/lib/catalog-cache": `export async function getPublicCatalogCached() { return { products: globalThis.__categoryProducts, degraded: !!globalThis.__categoryDegraded }; } export async function getSiteDataCachedShared() { return { config: { url: "https://store.example", market: null, appearance: { primaryLocale: globalThis.__categoryLocale || "en" }, phone: "" } }; }`,
         "@/components/store-status-notice": `import {createElement} from 'react'; export function StoreUnavailableNotice() {return createElement('p',null,'Maintenance');}`,
       };
       return { contents: fixtures[path], loader: "js", resolveDir: process.cwd() };

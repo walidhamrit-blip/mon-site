@@ -277,7 +277,8 @@ test("la vitrine s'ouvre sur l'ordre « les plus demandés »", () => {
   );
   assert.doesNotMatch(catalogComponent, /value="featured"/, "ancien tri sans effet");
   // Le serveur envoie déjà la liste triée : le HTML et le JSON-LD suivent.
-  assert.match(page, /sortByDemand\(await getDigitalCatalog/);
+  // La liste vient du cache de DONNÉES partagé (point 2 : TTFB / Neon).
+  assert.match(page, /sortByDemand\(snapshot\.products\)/);
 });
 
 test("les familles sont présentées dans l'ordre de la demande", () => {

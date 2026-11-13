@@ -14,7 +14,10 @@ import {
 } from "@/lib/seo";
 import { JsonLd } from "@/components/json-ld";
 import { sortByDemand } from "@/lib/digital-priority";
-import { getSiteDataCached } from "@/lib/store";
+import {
+  getPublicCatalogCached,
+  getSiteDataCachedShared as getSiteDataCached,
+} from "@/lib/catalog-cache";
 import { resolveMarket } from "@/lib/market";
 import { storeFaqs } from "@/lib/digital-seo";
 import { lowestPriceUsd } from "@/lib/digital-types";
@@ -86,14 +89,29 @@ export default async function CodesPage({ searchParams }: { searchParams: Promis
    * JSON-LD. Le composant client recalcule le même ordre (module partagé) quand
    * le visiteur change de tri.
    */
-  const products = sortByDemand(await getDigitalCatalog({ publicOnly: true }));
+  /**
+   * Catalogue lu depuis le cache de DONNÉES partagé (`unstable_cache`, tag
+   * `digital-catalog`, TTL 60 s) : une instance froide ne relit plus Neon ni
+   * ne reconstruit les ~280 fiches à chaque visite — c'est le TTFB qui
+   * baisse, et le quota de calcul Neon avec lui.
+   *
+   * La fraîcheur du STOCK, elle, n'est pas déléguée au cache : elle est
+   * vérifiée en base au moment du panier (`createDigitalCheckout` →
+   * `checkSupplierUnitPrice`), et le prix est recalculé côté serveur.
+   */
+  const snapshot = await getPublicCatalogCached();
+  const products = sortByDemand(snapshot.products);
   /**
    * Panne de la base : le catalogue affiché n'est plus le vrai (repli sur les
    * fiches de démonstration) et aucune commande ne pourrait être enregistrée.
    * On le DIT au visiteur, et on ne présente pas le repli comme le catalogue.
+   *
+   * L'état est relevé AU MOMENT de la lecture et voyage avec les données :
+   * `digitalCatalogStatus()` garde aussi la valeur observée ici, pour que le
+   * reste de la page (JSON-LD) juge sur le même instant.
    */
   const status = digitalCatalogStatus();
-  const degraded = status.degraded;
+  const degraded = snapshot.degraded || status.degraded;
   const market = resolveMarket(config.market);
   const locale = await pageLocale(config, searchParams);
   const ar = locale === "ar";

@@ -1,7 +1,10 @@
-import { getDigitalCatalog, getDigitalPlatforms, getDigitalRegions } from "@/lib/digital-store";
+import { getDigitalPlatforms, getDigitalRegions } from "@/lib/digital-store";
 import { lowestPriceUsd } from "@/lib/digital-types";
 import { absoluteUrl } from "@/lib/seo";
-import { getSiteDataCached } from "@/lib/store";
+import {
+  getPublicCatalogCached,
+  getSiteDataCachedShared as getSiteDataCached,
+} from "@/lib/catalog-cache";
 
 /**
  * API publique du catalogue digital (codes logiciels & cartes cadeaux).
@@ -11,15 +14,19 @@ import { getSiteDataCached } from "@/lib/store";
  * — la devise de facturation — pour que le client puisse les convertir
  * avec les mêmes taux que l'interface.
  *
- * Réponse cacheable : le catalogue bouge peu.
+ * Réponse cacheable : le catalogue bouge peu. La lecture passe par le cache
+ * de données partagé (`tag digital-catalog`), purgé à chaque écriture du
+ * catalogue ; les en-têtes CDN (`s-maxage`) laissent en plus Vercel servir
+ * la réponse sans exécuter la fonction.
  */
 export async function GET() {
-  const [{ config }, catalog, platforms, regions] = await Promise.all([
+  const [{ config }, snapshot, platforms, regions] = await Promise.all([
     getSiteDataCached(),
-    getDigitalCatalog({ publicOnly: true }),
+    getPublicCatalogCached(),
     getDigitalPlatforms(true),
     getDigitalRegions(true),
   ]);
+  const catalog = snapshot.products;
 
   const products = catalog.map((product) => ({
     id: product.id,
@@ -65,7 +72,11 @@ export async function GET() {
     },
     {
       headers: {
+        // `s-maxage` : 5 min au CDN, puis 1 h de service périmé pendant la
+        // revalidation en arrière-plan. Une commande ne dépend JAMAIS de
+        // cette réponse : le serveur recalcule prix et disponibilité.
         "Cache-Control": "public, s-maxage=300, stale-while-revalidate=3600",
+        "Vary": "Accept-Encoding",
       },
     },
   );

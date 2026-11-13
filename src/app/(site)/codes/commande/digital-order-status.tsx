@@ -10,12 +10,21 @@ import {
   ExternalLink,
   Loader2,
   Search,
+  Send,
   ShieldCheck,
   TriangleAlert,
   Wallet,
   XCircle,
 } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
+import {
+  deliveryProgress,
+  deliveryProgressMessage,
+  deliveryStepHint,
+  deliveryStepLabel,
+  type DeliveryLocale,
+  type StepState,
+} from "@/lib/delivery-progress-core";
 import { regionLabel } from "@/lib/digital-types";
 
 interface DigitalCode {
@@ -27,6 +36,17 @@ interface DigitalCode {
 interface PublicDigitalOrder {
   ref: string;
   status: "pending" | "paid" | "manual" | "delivered" | "failed";
+  /**
+   * Statut granulaire de livraison. `paid_fulfilling` = l'achat fournisseur
+   * est en cours (y compris retries programmés) ; `manual_review` = notre
+   * équipe prend le relais. Optionnel : un onglet ouvert avant le
+   * déploiement continue de fonctionner avec `status` seul.
+   */
+  fulfillmentStatus?:
+    | "pending_payment"
+    | "paid_fulfilling"
+    | "delivered"
+    | "manual_review";
   productTitle: string;
   platform: string;
   denominationLabel: string;
@@ -41,6 +61,16 @@ interface PublicDigitalOrder {
   paymentMethod: "nowpayments" | "phone_card";
   phoneCardStatus: "pending" | "approved" | "rejected" | null;
   notice: string | null;
+  /**
+   * Statut brut NOWPayments : c'est lui qui distingue « rien reçu » de
+   * « réseau en train de confirmer ». Optionnel : une page ouverte avant le
+   * déploiement continue de fonctionner sans (progression plus grossière).
+   */
+  ipnStatus?: string | null;
+  /** Crypto utilisée, pour annoncer un délai de confirmation usuel. */
+  payCurrency?: string | null;
+  /** Lien `t.me` pour recevoir aussi le code sur Telegram (null = absent). */
+  telegramUrl?: string | null;
 }
 
 /** Solde dû au client, tel que son propre suivi peut le voir. */
@@ -63,6 +93,124 @@ const LAST_ORDER_KEY = "nukhba:digital-order";
 function lydLabel(value: string): string {
   const amount = Number(value);
   return `${(Number.isFinite(amount) ? amount : 0).toFixed(2).replace(".", ",")} LYD`;
+}
+
+/** Couleurs par état d'étape — un seul endroit à changer. */
+const STEP_STYLES: Record<StepState, string> = {
+  done: "border-emerald-500 bg-emerald-500 text-white",
+  current: "border-[var(--accent)] bg-[var(--accent)] text-[var(--accent-foreground)]",
+  todo: "border-[var(--border)] bg-[var(--background)] text-[var(--muted-foreground)]",
+  alert: "border-orange-500 bg-orange-500 text-white",
+};
+
+const TONE_BAR: Record<string, string> = {
+  waiting: "bg-[var(--muted-foreground)]/40",
+  active: "bg-[var(--accent)]",
+  done: "bg-emerald-500",
+  alert: "bg-orange-500",
+  failed: "bg-red-500",
+};
+
+/**
+ * Barre de progression en 3 étapes.
+ *
+ * Choix d'affichage :
+ *  - la barre elle-même porte l'avancement (`role="progressbar"` avec
+ *    `aria-valuenow`) : un lecteur d'écran annonce la progression sans lire
+ *    les trois libellés un par un ;
+ *  - l'étape courante est la seule à porter l'animation — trois points qui
+ *    clignotent en même temps donnent l'impression d'un chargement bloqué ;
+ *  - en cas d'alerte ou d'échec, on n'affiche PAS l'aide « c'est en cours »
+ *    (ce serait mensonger) : le message de `deliveryProgressMessage` prend
+ *    le relais avec la marche à suivre.
+ */
+function DeliveryProgressBar({
+  steps,
+  percent,
+  tone,
+  message,
+  variant,
+  locale,
+  hintOn,
+}: {
+  steps: { id: "confirmation" | "issuing" | "delivered"; state: StepState }[];
+  percent: number;
+  tone: "waiting" | "active" | "done" | "alert" | "failed";
+  message: string;
+  variant: "nowpayments" | "phone_card";
+  locale: DeliveryLocale;
+  hintOn: "confirmation" | "issuing" | "delivered" | null;
+}) {
+  const hint = hintOn ? deliveryStepHint(hintOn, locale) : null;
+
+  return (
+    <div className="rounded-xl border border-[var(--border)] bg-[var(--secondary)]/25 p-3.5">
+      <div
+        className="h-1.5 w-full overflow-hidden rounded-full bg-[var(--border)]"
+        role="progressbar"
+        aria-valuenow={percent}
+        aria-valuemin={0}
+        aria-valuemax={100}
+        aria-label={
+          locale === "ar"
+            ? "تقدّم الطلب"
+            : locale === "fr"
+              ? "Progression de la commande"
+              : "Order progress"
+        }
+        aria-valuetext={`${percent}%`}
+      >
+        <div
+          className={`h-full rounded-full transition-[width] duration-700 ease-out ${TONE_BAR[tone] ?? TONE_BAR.waiting}`}
+          style={{ width: `${Math.max(4, Math.min(100, percent))}%` }}
+        />
+      </div>
+
+      <ol className="mt-3 grid grid-cols-3 gap-1.5">
+        {steps.map((step, index) => (
+          <li key={step.id} className="flex flex-col items-center gap-1.5 text-center">
+            <span
+              className={`grid h-6 w-6 place-items-center rounded-full border-2 text-[11px] font-black ${STEP_STYLES[step.state]}`}
+            >
+              {step.state === "done" ? (
+                <Check className="h-3.5 w-3.5" />
+              ) : step.state === "alert" ? (
+                <TriangleAlert className="h-3.5 w-3.5" />
+              ) : step.state === "current" ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                index + 1
+              )}
+            </span>
+            <span
+              className={`text-[10.5px] font-bold leading-4 ${
+                step.state === "current"
+                  ? "text-[var(--foreground)]"
+                  : "text-[var(--muted-foreground)]"
+              }`}
+            >
+              {deliveryStepLabel(step.id, locale, variant)}
+            </span>
+          </li>
+        ))}
+      </ol>
+
+      <p
+        className={`mt-2.5 text-[12px] leading-6 ${
+          tone === "failed"
+            ? "text-red-800"
+            : tone === "alert"
+              ? "text-orange-900"
+              : "text-[var(--foreground)]"
+        }`}
+      >
+        {message}
+      </p>
+      {hint && (
+        <p className="mt-1 text-[11px] leading-5 text-[var(--muted-foreground)]">{hint}</p>
+      )}
+    </div>
+  );
 }
 
 /**
@@ -274,12 +422,25 @@ export function DigitalOrderStatus({
           label: ar ? "قيد التحضير" : "Being prepared",
         };
       case "paid":
-        return {
-          icon: Loader2,
-          tone: "text-sky-600",
-          chip: "border-sky-200 bg-sky-50 text-sky-800",
-          label: ar ? "تم الدفع — جارٍ الإصدار" : "Paid — issuing",
-        };
+        // Deux nuances utiles côté client : « en cours d'émission » (achat
+        // fournisseur en route, retries automatiques) et « pris en charge
+        // par l'équipe » (revue manuelle) — l'attente n'a pas la même
+        // durée, et le client ne doit pas croire à une panne.
+        return order?.fulfillmentStatus === "manual_review"
+          ? {
+              icon: TriangleAlert,
+              tone: "text-orange-600",
+              chip: "border-orange-200 bg-orange-50 text-orange-800",
+              label: ar
+                ? "تم الدفع — فريقنا يتولى الأمر"
+                : "Paid — our team is handling it",
+            }
+          : {
+              icon: Loader2,
+              tone: "text-sky-600",
+              chip: "border-sky-200 bg-sky-50 text-sky-800",
+              label: ar ? "تم الدفع — جارٍ الإصدار" : "Paid — issuing",
+            };
       default:
         return {
           icon: Clock,
@@ -291,9 +452,40 @@ export function DigitalOrderStatus({
               : ar ? "بانتظار الدفع" : "Awaiting payment",
         };
     }
-  }, [order?.status, order?.paymentMethod, ar]);
+  }, [order?.status, order?.fulfillmentStatus, order?.paymentMethod, ar]);
 
   const StatusIcon = statusMeta.icon;
+
+  /**
+   * Progression en 3 étapes (attente réseau → génération → livraison),
+   * dérivée de l'état serveur. Calculée ici, pas dans le rendu : le
+   * composant se re-rend toutes les 15 s pendant le sondage.
+   */
+  const progress = useMemo(() => {
+    if (!order) return null;
+    return deliveryProgress({
+      status: order.status,
+      fulfillmentStatus: order.fulfillmentStatus ?? null,
+      paymentMethod: order.paymentMethod,
+      phoneCardStatus: order.phoneCardStatus,
+      ipnStatus: order.ipnStatus ?? null,
+      payCurrency: order.payCurrency ?? null,
+    });
+  }, [order]);
+
+  const progressMessage = useMemo(() => {
+    if (!progress || !order) return "";
+    // Le nom du bot est extrait de l'URL `t.me/…` fournie par le serveur :
+    // pas de variable d'environnement côté client.
+    const bot = order.telegramUrl
+      ? (/t\.me\/([A-Za-z0-9_]+)/.exec(order.telegramUrl)?.[1] ?? null)
+      : null;
+    return deliveryProgressMessage(progress, locale as DeliveryLocale, {
+      botUsername: bot,
+    });
+  }, [progress, order, locale]);
+
+  const stepVariant = order?.paymentMethod === "phone_card" ? "phone_card" : "nowpayments";
 
   return (
     <div className="space-y-5">
@@ -380,6 +572,18 @@ export function DigitalOrderStatus({
           </div>
 
           <div className="space-y-4 p-5">
+            {progress && (
+              <DeliveryProgressBar
+                steps={progress.steps}
+                percent={progress.percent}
+                tone={progress.tone}
+                message={progressMessage}
+                variant={stepVariant}
+                locale={locale as DeliveryLocale}
+                hintOn={progress.tone === "alert" || progress.tone === "failed" ? null : progress.steps.find((step) => step.state === "current")?.id ?? null}
+              />
+            )}
+
             {order.notice && (
               <p className="rounded-lg border border-[var(--border)] bg-[var(--secondary)]/40 px-3.5 py-3 text-[12.5px] leading-6 text-[var(--muted-foreground)]">
                 {order.notice}
@@ -591,12 +795,44 @@ export function DigitalOrderStatus({
                     : "The code could not be issued. Contact us with your order reference."}
               </div>
             ) : (
-              <div className="flex items-center gap-2.5 rounded-lg border border-[var(--border)] bg-[var(--secondary)]/30 px-3.5 py-3 text-[12.5px] text-[var(--muted-foreground)]">
-                <Loader2 className="h-4 w-4 animate-spin text-[var(--accent)]" />
+              // La barre de progression ci-dessus dit déjà OÙ en est la
+              // commande et POURQUOI. Cette ligne ne répète pas le statut :
+              // elle dit au client qu'il peut fermer l'onglet sans perdre
+              // sa commande (c'est la vraie question qui le retient ici).
+              <p className="flex items-start gap-2 text-[11.5px] leading-6 text-[var(--muted-foreground)]">
+                <Clock className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[var(--accent)]" />
                 {ar
-                  ? "يتم تحديث الحالة تلقائياً كل 15 ثانية. يمكنك ترك الصفحة — سيصلك الرمز بالبريد الإلكتروني."
-                  : "Status refreshes automatically every 15 s. You can leave this page — the code will be e-mailed to you."}
-              </div>
+                  ? "تُحدَّث هذه الصفحة تلقائياً. يمكنك إغلاقها: سيصلك الكود بالبريد الإلكتروني وعلى تيليجرام إن فعّلت الإشعارات."
+                  : "This page refreshes automatically. You can close it: the code is emailed to you and, if enabled, sent on Telegram."}
+              </p>
+            )}
+
+            {/*
+              Canal ADDITIONNEL, jamais un remplacement : l'e-mail part dans
+              tous les cas. Affiché tant que la commande n'est pas livrée —
+              après livraison il n'a plus d'objet (le code est déjà là).
+            */}
+            {order.telegramUrl && order.status !== "delivered" && (
+              <a
+                href={order.telegramUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-start gap-3 rounded-xl border border-[var(--accent)]/40 bg-[var(--accent)]/5 p-3.5 transition hover:border-[var(--accent)]"
+              >
+                <Send className="mt-0.5 h-4 w-4 shrink-0 text-[var(--accent)]" />
+                <span className="min-w-0">
+                  <span className="block text-[12.5px] font-black">
+                    {ar
+                      ? "استلم الكود أيضاً على تيليجرام"
+                      : "Recevez aussi le code sur Telegram"}
+                  </span>
+                  <span className="mt-0.5 block text-[11.5px] leading-5 text-[var(--muted-foreground)]">
+                    {ar
+                      ? "اضغط مرة واحدة: يفتح البوت هذه الطلب ويرسل لك الكود هنا بمجرد أن يصبح جاهزاً — بالإضافة إلى البريد الإلكتروني."
+                      : "Un seul appui : le bot suit cette commande et vous envoie le code ici dès qu'il est prêt — en plus de l'e-mail."}
+                  </span>
+                </span>
+              </a>
             )}
           </div>
         </section>

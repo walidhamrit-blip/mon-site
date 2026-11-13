@@ -728,6 +728,17 @@ nom de la catégorie : Mobile, PC, PlayStation… sinon nom du jeu) et
 l'**identifiant demandé** (`Player ID`, `account_id`…), pour qu'aucun client
 ne confonde deux jeux.
 
+## Cache de rendu et quota Neon
+
+Le catalogue n'est plus relu en base à chaque visite : `unstable_cache`
+(cache de données Next, partagé entre instances) sert `/codes`,
+`/codes/category/[kind]`, `/codes/[slug]` et l'accueil, avec les tags
+`digital-catalog` (TTL 60 s) et `site-data` (TTL 300 s). Toute écriture
+(admin, synchro fournisseur, cron) purge les tags **et** le HTML
+(`revalidatePath`). Le panier, lui, revérifie disponibilité, prix et solde
+fournisseur en base à chaque commande. Détail, diagnostic et mesures :
+`docs/performance-rendu-cache.md`.
+
 ## Reprise automatique des commandes bloquées
 
 `GET /api/cron/digital-orders` (planifié par `vercel.json`, protégé par
@@ -741,8 +752,16 @@ d'achat silencieux, jamais de double débit (Idempotency-Key par commande).
 
 Diagnostic sans achat : `GET /api/cron/digital-orders?dry=1` avec
 `Authorization: Bearer $CRON_SECRET`. Sur un plan Vercel Hobby, le cron est
-quotidien (`20 4 * * *`) ; sur Pro, resserrez à `*/15 * * * *` pour une
-reprise toutes les 15 minutes.
+quotidien (`20 4 * * *`) ; sur Pro, resserrez à `*/5 * * * *` pour une
+reprise en minutes.
+
+Cette route est aussi le **travailleur de la file de livraison**
+(`delivery_jobs`) : statuts granulaires (`pending_payment`,
+`paid_fulfilling`, `delivered`, `manual_review`), retries avec backoff
+60 s → 30 min, idempotence stricte des webhooks et alerte Telegram en cas
+d'échec fournisseur. Dépendance indispensable : `CRON_SECRET` **et**
+`TELEGRAM_BOT_TOKEN` + `TELEGRAM_ADMIN_CHAT_ID` pour les alertes. Détail
+complet : `docs/webhooks-resilience.md`.
 
 ### Surveillance de recharge FazerCards
 

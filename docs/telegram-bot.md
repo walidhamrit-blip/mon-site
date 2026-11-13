@@ -103,6 +103,7 @@ vous préférez gérer le secret par variable d'environnement.)
 | `/start` | Message de bienvenue + menu (trilingue **ar / fr / en**) |
 | Appuie sur **Catalogue** | Lien vers `/codes` |
 | `/commande DGC-…` (ou colle la référence seule) | Statut, produit, montant, date, lien de suivi |
+| `/prevenir DGC-…` (ou bouton « recevoir aussi le code sur Telegram ») | Consentement à recevoir **ce code** dans le chat ; envoi automatique à la livraison |
 | Appuie sur **Offres** → *Oui* | Consentement marketing enregistré |
 | `/stop` | Retrait du consentement (immédiat) |
 | `/langue` | Change la langue du bot |
@@ -111,8 +112,11 @@ vous préférez gérer le secret par variable d'environnement.)
 
 Garde-fous :
 
-- les **codes livrés ne passent jamais par Telegram** (ils restent dans
-  l'e-mail et la page de suivi protégée par jeton) ;
+- les codes ne partent dans le chat **que si le client l'a demandé** pour
+  cette commande précise (`/prevenir` ou bouton de la page de suivi). L'e-mail
+  part dans tous les cas : Telegram est un canal de plus, jamais un
+  remplacement. Un message contenant des codes est envoyé en texte brut
+  (sans `parse_mode`), donc jamais altéré par le balisage ;
 - le bot ne renvoie que le statut public : jamais d'e-mail complet, de
   téléphone ni d'adresse crypto ;
 - il ne répond que dans les **conversations privées** ; les groupes servent
@@ -238,8 +242,10 @@ Journal serveur : filtre `[telegram]` dans les logs Vercel.
   en boucle et les messages doublés.
 - **Jeton serveur uniquement** : `src/lib/telegram.ts` n'est jamais importé
   par un composant client (`npm run test:telegram` le vérifie).
-- **Données minimisées** : pas de codes, pas d'e-mail complet, pas d'adresse
-  crypto dans les réponses du bot.
+- **Données minimisées** : pas d'e-mail complet, pas de téléphone, pas
+  d'adresse crypto dans les réponses du bot. Les codes ne sont envoyés qu'aux
+  chats ayant consenti pour la commande concernée, une seule fois
+  (`telegram_order_watches.notified_at`), en texte brut.
 - **Pas d'HTML injecté** : tout texte dynamique est échappé ; les campagnes
   partent en texte brut.
 
@@ -251,6 +257,7 @@ Journal serveur : filtre `[telegram]` dans les logs Vercel.
 |---|---|
 | `src/lib/telegram-core.ts` | Fonctions pures : textes ar/en/fr, claviers, références, composition des campagnes |
 | `src/lib/telegram.ts` | API Bot, abonnés, campagnes, webhook, alertes |
+| `src/lib/telegram-delivery.ts` | Suivi de commande depuis le chat : consentement, envoi des codes, idempotence |
 | `src/app/api/telegram/webhook/route.ts` | Réception des mises à jour Telegram |
 | `src/app/api/telegram/webhook/route.ts` (GET) | Diagnostic `{configured, alerts}` |
 | `src/app/admin/(panel)/telegram/` | Panneau d'administration + actions serveur |

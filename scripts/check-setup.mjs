@@ -74,6 +74,37 @@ if (!databaseUrl) {
         "Elles sont créées automatiquement au premier chargement du site (ensureSchema). Ouvrez /admin une fois, puis relancez ce diagnostic.",
       );
     }
+
+    // File de livraison : une commande payée qui attend un retry ou une
+    // revue manuelle doit être VISIBLE avant de déployer. Aucune requête
+    // n'achète quoi que ce soit ici (lecture seule).
+    const { rows: queueRows } = await client.query(
+      `select status, count(*)::int as count
+         from delivery_jobs
+        group by status`,
+    ).catch(() => ({ rows: [] }));
+    if (queueRows.length === 0) {
+      warn(
+        "File de livraison vide ou absente",
+        "Normale sur une base neuve : les tables sont créées au premier chargement (ensureSchema).",
+      );
+    } else {
+      const counts = Object.fromEntries(
+        queueRows.map((row) => [row.status, Number(row.count)]),
+      );
+      const stalled = (counts.dead_letter ?? 0) + (counts.queued ?? 0);
+      if (stalled > 0) {
+        warn(
+          `File de livraison : ${stalled} job(s) à traiter`,
+          `queued=${counts.queued ?? 0}, processing=${counts.processing ?? 0}, dead_letter=${counts.dead_letter ?? 0}. Voir /admin/digital/orders et les alertes Telegram.`,
+        );
+      } else {
+        ok(
+          "File de livraison saine",
+          `done=${counts.done ?? 0}, failed=${counts.failed ?? 0}`,
+        );
+      }
+    }
   } catch (error) {
     fail(
       "Base injoignable",

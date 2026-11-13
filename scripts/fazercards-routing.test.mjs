@@ -124,10 +124,17 @@ test("le fournisseur par défaut reste Reloadly (commandes historiques)", () => 
   );
 });
 
-test("l'IPN NOWPayments déclenche la livraison quel que soit le fournisseur", () => {
+test("l'IPN NOWPayments met la livraison en file, quel que soit le fournisseur", () => {
   const flat = code(ipn);
+  // La commande digitale n'est plus livrée en série dans le webhook : elle
+  // entre dans la file (idempotence stricte) et le job est traité APRÈS la
+  // réponse HTTP, pour que NOWPayments ne rejoue pas un webhook trop lent.
   assert.match(flat, /if \(order\.digitalOrderId\) \{/);
-  assert.match(flat, /deliverPaidDigitalOrder\(order\.digitalOrderId\)/);
+  assert.match(flat, /enqueueDelivery\(\{/);
+  assert.match(flat, /after\(async \(\) => \{/);
+  assert.match(flat, /runDeliveryQueue\(\{ limit: 3 \}\)/);
+  // Le routage fournisseur reste dans le module de livraison (file → routage).
+  assert.match(flat, /reserveWebhookEvent\(\{/);
 });
 
 /* ----------------------------- Caisse FazerCards ------------------------- */
