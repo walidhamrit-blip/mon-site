@@ -27,6 +27,17 @@ interface DigitalCode {
 interface PublicDigitalOrder {
   ref: string;
   status: "pending" | "paid" | "manual" | "delivered" | "failed";
+  /**
+   * Statut granulaire de livraison. `paid_fulfilling` = l'achat fournisseur
+   * est en cours (y compris retries programmés) ; `manual_review` = notre
+   * équipe prend le relais. Optionnel : un onglet ouvert avant le
+   * déploiement continue de fonctionner avec `status` seul.
+   */
+  fulfillmentStatus?:
+    | "pending_payment"
+    | "paid_fulfilling"
+    | "delivered"
+    | "manual_review";
   productTitle: string;
   platform: string;
   denominationLabel: string;
@@ -274,12 +285,25 @@ export function DigitalOrderStatus({
           label: ar ? "قيد التحضير" : "Being prepared",
         };
       case "paid":
-        return {
-          icon: Loader2,
-          tone: "text-sky-600",
-          chip: "border-sky-200 bg-sky-50 text-sky-800",
-          label: ar ? "تم الدفع — جارٍ الإصدار" : "Paid — issuing",
-        };
+        // Deux nuances utiles côté client : « en cours d'émission » (achat
+        // fournisseur en route, retries automatiques) et « pris en charge
+        // par l'équipe » (revue manuelle) — l'attente n'a pas la même
+        // durée, et le client ne doit pas croire à une panne.
+        return order?.fulfillmentStatus === "manual_review"
+          ? {
+              icon: TriangleAlert,
+              tone: "text-orange-600",
+              chip: "border-orange-200 bg-orange-50 text-orange-800",
+              label: ar
+                ? "تم الدفع — فريقنا يتولى الأمر"
+                : "Paid — our team is handling it",
+            }
+          : {
+              icon: Loader2,
+              tone: "text-sky-600",
+              chip: "border-sky-200 bg-sky-50 text-sky-800",
+              label: ar ? "تم الدفع — جارٍ الإصدار" : "Paid — issuing",
+            };
       default:
         return {
           icon: Clock,
@@ -291,7 +315,7 @@ export function DigitalOrderStatus({
               : ar ? "بانتظار الدفع" : "Awaiting payment",
         };
     }
-  }, [order?.status, order?.paymentMethod, ar]);
+  }, [order?.status, order?.fulfillmentStatus, order?.paymentMethod, ar]);
 
   const StatusIcon = statusMeta.icon;
 

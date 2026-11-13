@@ -398,6 +398,34 @@ export const digitalOrders = pgTable("digital_orders", {
 
   attempts: integer("attempts").notNull().default(0),
   lastError: text("last_error"),
+
+  /**
+   * Statut granulaire de fulfillment (file de livraison) :
+   * `pending_payment` | `paid_fulfilling` | `delivered` | `manual_review`.
+   *
+   * Vue granulaire de `status` (voir `fulfillmentStatusFromLegacy` dans
+   * `delivery-queue-core.ts`) : les deux colonnes sont écrites ensemble.
+   * `paid_fulfilling` couvre l'achat fournisseur ET les retries programmés ;
+   * `manual_review` = retries épuisés ou échec permanent (humain requis).
+   */
+  fulfillmentStatus: text("fulfillment_status")
+    .notNull()
+    .default("pending_payment"),
+  /** Fournisseur qui livre (`fazercards` | `reloadly`) — dénormalisé pour la file. */
+  supplier: text("supplier").notNull().default("fazercards"),
+  /**
+   * Clé d'idempotence stricte de la commande (= `ref`, ex. `DGC-…`).
+   * UNIQUE : un double IPN / cron / clic admin ne peut jamais produire
+   * deux achats chez le fournisseur.
+   */
+  idempotencyKey: text("idempotency_key"),
+  /** Prochaine tentative automatique (file de livraison). */
+  nextRetryAt: timestamp("next_retry_at", { withTimezone: true }),
+  /**
+   * Dernière alerte Telegram d'échec de livraison envoyée (anti-spam :
+   * la même erreur répétée ne renvoie pas d'alerte).
+   */
+  telegramAlertedAt: timestamp("telegram_alerted_at", { withTimezone: true }),
 });
 
 export type DigitalOrder = typeof digitalOrders.$inferSelect;
@@ -591,3 +619,73 @@ export const telegramCampaigns = pgTable("telegram_campaigns", {
 });
 
 export type TelegramCampaign = typeof telegramCampaigns.$inferSelect;
+
+/* ----------------- File de livraison & idempotence webhooks ----------------- */
+
+/**
+ * File de livraison (file d'attente en base, sans service externe).
+ *
+ * Une ligne = une commande payée dont l'achat fournisseur doit être tenté.
+ * Le worker (`delivery-queue.ts`, déclenché par l'IPN, le suivi client et
+ * le cron) réclame les jobs dus avec un bail (`claimed_at` + `claim_token`),
+ * puis appelle la livraison habituelle. En cas d'échec transitoire, le job
+ * est reprogrammé (`next_retry_at` + backoff) ; après `max_attempts`
+ * échecs ou un échec permanent, il passe en `dead_letter` et la commande
+ * en `manual_review` (alerte Telegram immédiate).
+ *
+ * `order_ref` et `idempotency_key` sont UNIQUES : mettre la commande en
+ * file deux fois (double IPN, double cron) ne crée jamais deux jobs.
+ */
+export const deliveryJobs = pgTable("delivery_jobs", {
+  id: serial("id").primaryKey(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  /** Référence publique de la commande (`DGC-…`). */
+  orderRef: text("order_ref").notNull().unique(),
+  digitalOrderId: integer("digital_order_id"),
+  /** fazercards | reloadly */
+  supplier: text("supplier").notNull().default("fazercards"),
+  /** Clé d'idempotence stricte (= `order_ref`), UNIQUE. */
+  idempotencyKey: text("idempotency_key").notNull().unique(),
+  /** queued | processing | done | failed | dead_letter */
+  status: text("status").notNull().default("queued"),
+  attempts: integer("attempts").notNull().default(0),
+  maxAttempts: integer("max_attempts").notNull().default(6),
+  nextRetryAt: timestamp("next_retry_at", { withTimezone: true }),
+  lastError: text("last_error"),
+  claimedAt: timestamp("claimed_at", { withTimezone: true }),
+  claimToken: text("claim_token"),
+  completedAt: timestamp("completed_at", { withTimezone: true }),
+});
+
+export type DeliveryJob = typeof deliveryJobs.$inferSelect;
+export type NewDeliveryJob = typeof deliveryJobs.$inferInsert;
+
+/**
+ * Journal d'idempotence des webhooks entrants.
+ *
+ * Une ligne = un événement déjà reçu (`event_key` UNIQUE, ex.
+ * `nowpayments:pay_123:finished`). L'IPN insère la ligne AVANT de traiter :
+ * si l'insertion échoue en conflit, l'événement est un doublon et la
+ * route répond `200` sans rien retraiter (pas de double achat, pas de
+ * double e-mail). `payload_hash` (SHA-256) permet de détecter un même
+ * identifiant avec un corps différent (anomalie à investiguer).
+ */
+export const webhookEvents = pgTable("webhook_events", {
+  id: serial("id").primaryKey(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  /** nowpayments | fazercards | reloadly … */
+  provider: text("provider").notNull(),
+  /** Clé d'idempotence de l'événement, UNIQUE. */
+  eventKey: text("event_key").notNull().unique(),
+  /** SHA-256 du corps brut reçu (jamais le corps lui-même). */
+  payloadHash: text("payload_hash"),
+  /** Statut brut porté par l'événement (finished, waiting…). */
+  eventStatus: text("event_status"),
+  /** received | processed | ignored | failed */
+  outcome: text("outcome").notNull().default("received"),
+  processedAt: timestamp("processed_at", { withTimezone: true }),
+});
+
+export type WebhookEvent = typeof webhookEvents.$inferSelect;
+export type NewWebhookEvent = typeof webhookEvents.$inferInsert;

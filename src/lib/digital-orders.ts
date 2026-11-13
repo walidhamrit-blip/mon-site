@@ -21,6 +21,13 @@ import { and, desc, eq, ne } from "drizzle-orm";
 import { localizedPath } from "@/lib/locale";
 import { db, ensureSchema } from "@/db";
 import { digitalOrders, orders, type DigitalOrder } from "@/db/schema";
+import {
+  classifyDeliveryError,
+  fulfillmentStatusFromLegacy,
+  normalizeFulfillmentStatus,
+  type DeliveryErrorClass,
+  type FulfillmentStatus,
+} from "@/lib/delivery-queue-core";
 import { getDigitalProductBySlug } from "@/lib/digital-store";
 import {
   denominationUnitPrice,
@@ -353,6 +360,13 @@ export interface DigitalDeliveryResult {
   outcome: DigitalDeliveryOutcome;
   ref: string;
   message?: string;
+  /**
+   * Classe de l'échec, quand il y en a un — renseignée par les chemins
+   * FazerCards / Reloadly pour que la file de livraison distingue un
+   * incident réseau (`transient`, on réessaie) d'un refus métier
+   * (`permanent`, revue manuelle immédiate).
+   */
+  errorClass?: DeliveryErrorClass;
 }
 
 /** Fournisseur qui doit livrer une commande digitale (défini par le domaine). */
@@ -414,11 +428,21 @@ async function loadDigitalOrder(idOrRef: number | string): Promise<DigitalOrder 
 async function flagManual(
   order: DigitalOrder,
   reason: string,
+  errorClass: DeliveryErrorClass = "permanent",
 ): Promise<DigitalDeliveryResult> {
   const alreadyManual = order.status === "manual";
+  // Statut granulaire `manual_review` : la commande est PAYÉE, l'argent est
+  // encaissé, et un humain doit acheter le code ou rembourser. C'est
+  // distinct d'un simple « en cours de livraison ».
   await db
     .update(digitalOrders)
-    .set({ status: "manual", lastError: reason.slice(0, 800), updatedAt: new Date() })
+    .set({
+      status: "manual",
+      fulfillmentStatus: "manual_review",
+      nextRetryAt: null,
+      lastError: reason.slice(0, 800),
+      updatedAt: new Date(),
+    })
     .where(eq(digitalOrders.id, order.id));
 
   // Une commande déjà signalée ne renvoie pas d'alerte à chaque relance :
@@ -443,7 +467,7 @@ async function flagManual(
     );
   }
 
-  return { outcome: "manual", ref: order.ref, message: reason };
+  return { outcome: "manual", ref: order.ref, message: reason, errorClass };
 }
 
 /** Clé de comparaison d'un prix (« 5 », « 5.00 », null → ""). */
@@ -610,6 +634,7 @@ export async function deliverPaidDigitalOrder(
       outcome: routed.outcome,
       ref: routed.ref,
       ...(routed.message ? { message: routed.message } : {}),
+      ...(routed.errorClass ? { errorClass: routed.errorClass } : {}),
     };
   }
 
@@ -637,6 +662,7 @@ export async function deliverPaidDigitalOrder(
     return flagManual(
       order,
       "DIGITAL_CODES_SECRET (ou SESSION_SECRET) absent : impossible de chiffrer et relire les codes en sécurité. Aucun achat n'a été effectué.",
+      "permanent",
     );
   }
 
@@ -646,6 +672,7 @@ export async function deliverPaidDigitalOrder(
     return flagManual(
       order,
       "Reloadly est en mode SANDBOX alors que les paiements sont réels : aucun code de test n'a été acheté. Configurez RELOADLY_SANDBOX=false avec des identifiants LIVE, puis relancez la livraison.",
+      "permanent",
     );
   }
   if (!requiresAuto || !reloadlyConfigured()) {
@@ -654,6 +681,7 @@ export async function deliverPaidDigitalOrder(
       requiresAuto
         ? "Reloadly n'est pas configuré sur ce serveur : livraison manuelle requise."
         : "Fiche en livraison manuelle : achetez le code dans le tableau Reloadly puis transmettez-le au client.",
+      "permanent",
     );
   }
 
@@ -666,16 +694,21 @@ export async function deliverPaidDigitalOrder(
     return flagManual(
       order,
       `Montant ${totalUsd.toFixed(2)} $ au-delà du plafond d'achat automatique (${cap} $). Livraison manuelle requise.`,
+      "permanent",
     );
   }
 
   const productId = Number(order.reloadlyProductId);
   const unitPrice = Number(order.reloadlyUnitPrice);
   if (!Number.isInteger(productId) || productId <= 0) {
-    return flagManual(order, "Aucun produit Reloadly relié à cette fiche (admin → Codes & Cartes).");
+    return flagManual(
+      order,
+      "Aucun produit Reloadly relié à cette fiche (admin → Codes & Cartes).",
+      "permanent",
+    );
   }
   if (!Number.isFinite(unitPrice) || unitPrice <= 0) {
-    return flagManual(order, "Valeur faciale Reloadly absente pour ce montant.");
+    return flagManual(order, "Valeur faciale Reloadly absente pour ce montant.", "permanent");
   }
 
   await db
@@ -693,7 +726,7 @@ export async function deliverPaidDigitalOrder(
   try {
     if (!transactionId) {
       const priceIssue = await supplierPriceIssue(productId, unitPrice);
-      if (priceIssue) return flagManual(order, priceIssue);
+      if (priceIssue) return flagManual(order, priceIssue, "permanent");
 
       const purchase = await createGiftCardOrder({
         productId,
@@ -720,6 +753,7 @@ export async function deliverPaidDigitalOrder(
           .update(digitalOrders)
           .set({
             status: "failed",
+            fulfillmentStatus: "manual_review",
             lastError: `Reloadly a refusé l'achat (${purchase.status}).`,
             updatedAt: new Date(),
           })
@@ -775,6 +809,8 @@ export async function deliverPaidDigitalOrder(
       .update(digitalOrders)
       .set({
         status: "delivered",
+        fulfillmentStatus: "delivered",
+        nextRetryAt: null,
         codesCipher: cipher,
         reloadlyStatus: "SUCCESSFUL",
         deliveredAt: now,
@@ -820,8 +856,14 @@ export async function deliverPaidDigitalOrder(
     // 4xx (hors 401) = refus métier : inutile de rejouer en boucle, mais
     // la commande reste payable → livraison manuelle. Erreur réseau/5xx :
     // l'achat a peut-être abouti → on conserve la transaction si connue.
-    const reloadlyStatus = isReloadlyError(error) ? error.status : null;
-    const soldOut = reloadlyStatus === 400 || reloadlyStatus === 404 || reloadlyStatus === 409;
+    const httpStatus = isReloadlyError(error) ? error.status : null;
+    const soldOut = httpStatus === 400 || httpStatus === 404 || httpStatus === 409;
+    // Classe de l'échec pour la file : un refus métier (400/404/409) ne se
+    // répare pas en réessayant ; un timeout ou un 5xx, si.
+    const errorClass: DeliveryErrorClass =
+      soldOut || httpStatus === 422
+        ? "permanent"
+        : classifyDeliveryError({ status: httpStatus, message });
 
     const current = await loadDigitalOrder(order.id);
     const recordedTransaction = current?.reloadlyTransactionId ?? transactionId;
@@ -830,6 +872,8 @@ export async function deliverPaidDigitalOrder(
       .update(digitalOrders)
       .set({
         status: "manual",
+        fulfillmentStatus: "manual_review",
+        nextRetryAt: null,
         reloadlyTransactionId: recordedTransaction || null,
         lastError: `Reloadly : ${message}`.slice(0, 800),
         updatedAt: new Date(),
@@ -837,12 +881,13 @@ export async function deliverPaidDigitalOrder(
       .where(eq(digitalOrders.id, order.id));
 
     if (soldOut || !recordedTransaction) {
-      return flagManual(order, `Reloadly : ${message}`);
+      return flagManual(order, `Reloadly : ${message}`, errorClass);
     }
     return {
       outcome: "manual",
       ref: order.ref,
       message: `Vérification requise chez Reloadly (transaction ${recordedTransaction}) : ${message}`,
+      errorClass,
     };
   }
 }
@@ -858,6 +903,12 @@ export interface PublicDigitalCode {
 export interface PublicDigitalOrder {
   ref: string;
   status: DigitalOrderStatus;
+  /**
+   * Statut granulaire de livraison (`pending_payment`, `paid_fulfilling`,
+   * `delivered`, `manual_review`). `status` reste exposé pour compatibilité
+   * (clients mis en cache, anciens onglets ouverts).
+   */
+  fulfillmentStatus: FulfillmentStatus;
   productTitle: string;
   platform: string;
   denominationLabel: string;
@@ -980,7 +1031,12 @@ async function reconcileDigitalOrderOnPoll(order: DigitalOrder): Promise<Digital
         updatedAt: order.updatedAt,
       })
     ) {
-      await deliverPaidDigitalOrder(order.id);
+      // La file fait foi : elle relit le job (retry programmé, bail expiré,
+      // job déjà terminé) au lieu de relancer un achat direct. Le sondage
+      // client devient ainsi un worker de secours — utile sur Vercel Hobby
+      // où le cron est quotidien.
+      const { runDeliveryQueue } = await import("@/lib/delivery-queue");
+      await runDeliveryQueue({ limit: 1 });
       return (await loadDigitalOrder(order.id)) ?? order;
     }
   } catch (error) {
@@ -1024,6 +1080,9 @@ export async function getPublicDigitalOrder(
   return {
     ref: order.ref,
     status,
+    fulfillmentStatus: normalizeFulfillmentStatus(
+      order.fulfillmentStatus ?? fulfillmentStatusFromLegacy(order.status),
+    ),
     productTitle: order.productTitle,
     platform: order.platform,
     denominationLabel: order.denominationLabel,
@@ -1125,6 +1184,8 @@ export async function deliverDigitalOrderManually(
       .update(digitalOrders)
       .set({
         status: "delivered",
+        fulfillmentStatus: "delivered",
+        nextRetryAt: null,
         deliveredAt: now,
         lastError: null,
         updatedAt: now,
@@ -1170,6 +1231,8 @@ export async function deliverDigitalOrderManually(
     .update(digitalOrders)
     .set({
       status: "delivered",
+      fulfillmentStatus: "delivered",
+      nextRetryAt: null,
       codesCipher: encryptDigitalCodes(codes, key),
       deliveredAt: now,
       lastError: null,
@@ -1284,6 +1347,8 @@ export async function markDigitalOrderDeliveredOffPlatform(
     .update(digitalOrders)
     .set({
       status: "delivered",
+      fulfillmentStatus: "delivered",
+      nextRetryAt: null,
       fulfillment: "manual",
       deliveredAt: now,
       trackingTokenHash: tracking.hash,

@@ -741,8 +741,16 @@ d'achat silencieux, jamais de double débit (Idempotency-Key par commande).
 
 Diagnostic sans achat : `GET /api/cron/digital-orders?dry=1` avec
 `Authorization: Bearer $CRON_SECRET`. Sur un plan Vercel Hobby, le cron est
-quotidien (`20 4 * * *`) ; sur Pro, resserrez à `*/15 * * * *` pour une
-reprise toutes les 15 minutes.
+quotidien (`20 4 * * *`) ; sur Pro, resserrez à `*/5 * * * *` pour une
+reprise en minutes.
+
+Cette route est aussi le **travailleur de la file de livraison**
+(`delivery_jobs`) : statuts granulaires (`pending_payment`,
+`paid_fulfilling`, `delivered`, `manual_review`), retries avec backoff
+60 s → 30 min, idempotence stricte des webhooks et alerte Telegram en cas
+d'échec fournisseur. Dépendance indispensable : `CRON_SECRET` **et**
+`TELEGRAM_BOT_TOKEN` + `TELEGRAM_ADMIN_CHAT_ID` pour les alertes. Détail
+complet : `docs/webhooks-resilience.md`.
 
 ### Surveillance de recharge FazerCards
 

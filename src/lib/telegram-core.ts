@@ -537,6 +537,76 @@ export function formatPaymentAlert(
     .join("\n");
 }
 
+/* ------------------- Alerte échec de livraison fournisseur ------------------ */
+
+export interface DeliveryAlertInput {
+  ref: string;
+  /** Nom du produit vendu (ex. « PlayStation Store 50 USD »). */
+  productTitle: string;
+  /** Fournisseur visé (fazercards / reloadly). */
+  supplier: string;
+  /** Montant payé par le client, en USD (texte tel que stocké). */
+  totalUsd: string;
+  /** E-mail du destinataire des codes. */
+  recipientEmail?: string | null;
+  /** Nombre de tentatives déjà consommées. */
+  attempts: number;
+  /** Tentatives maximales avant revue manuelle. */
+  maxAttempts: number;
+  /** Motif lisible du dernier échec (message fournisseur expurgé). */
+  reason: string;
+  /** `transient` = retry programmé ; `permanent` = revue manuelle immédiate. */
+  kind: "transient" | "permanent" | "exhausted";
+}
+
+/**
+ * Alerte Telegram « livraison fournisseur en échec ».
+ *
+ * Deux cas, deux tons :
+ *  - retry programmé (`transient` avant épuisement) : information, rien à
+ *    faire, on prévient juste l'équipe que la commande est payée et que
+ *    l'achat sera retenté ;
+ *  - revue manuelle (`permanent` ou `exhausted`) : action requise, le
+ *    message dit explicitement ce qu'il faut faire (acheter le code à la
+ *    main ou rembourser).
+ *
+ * Le motif est expurgé en amont (jamais de code, jamais de secret) et
+ * tronqué ici : un message Telegram illisible ne sert à personne.
+ */
+export function formatDeliveryFailureAlert(
+  input: DeliveryAlertInput,
+  siteName: string,
+  siteUrl: string,
+): string {
+  const base = siteUrl.replace(/\/+$/, "");
+  const actionRequired = input.kind !== "transient";
+  const header = actionRequired
+    ? "🚨 <b>Livraison à traiter à la main</b>"
+    : "⚠️ <b>Livraison fournisseur en échec — retry programmé</b>";
+  const attemptLine =
+    input.kind === "transient"
+      ? `🔁 Tentative ${input.attempts}/${input.maxAttempts} — nouvel essai automatique`
+      : input.kind === "exhausted"
+        ? `🔁 ${input.attempts}/${input.maxAttempts} tentatives épuisées`
+        : `🛑 Échec définitif après ${input.attempts} tentative(s)`;
+
+  return [
+    `${header} — ${escapeTelegramHtml(siteName)}`,
+    "",
+    `🧾 <b>${escapeTelegramHtml(input.ref)}</b> · ${escapeTelegramHtml(clip(input.productTitle, 80))}`,
+    `💵 <b>${escapeTelegramHtml(input.totalUsd)} USD</b> déjà encaissés · fournisseur ${escapeTelegramHtml(input.supplier)}`,
+    input.recipientEmail ? `✉️ ${escapeTelegramHtml(input.recipientEmail)}` : null,
+    attemptLine,
+    `❗ ${escapeTelegramHtml(clip(input.reason, 400))}`,
+    actionRequired
+      ? "\n👉 Acheter le code chez le fournisseur et le transmettre depuis l'admin, ou rembourser le client."
+      : null,
+    `\n🛠️ ${escapeTelegramHtml(`${base}/admin/digital/orders`)}`,
+  ]
+    .filter((row): row is string => row !== null)
+    .join("\n");
+}
+
 function clip(value: string, max: number): string {
   const clean = value.trim();
   return clean.length <= max ? clean : `${clean.slice(0, max - 1)}…`;

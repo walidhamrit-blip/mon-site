@@ -138,10 +138,25 @@ export async function resumeStaleDigitalOrders(
           .update(digitalOrders)
           .set({
             status: "manual",
+            // Statut granulaire : c'est bien une revue HUMAINE, pas une
+            // livraison en cours. L'admin la voit dans son propre filtre.
+            fulfillmentStatus: "manual_review",
+            nextRetryAt: null,
             lastError: decision.reason.slice(0, 800),
             updatedAt: new Date(),
           })
           .where(eq(digitalOrders.id, order.id));
+        // Alerte Telegram immédiate : abandonner une commande payée en
+        // silence n'est pas une option.
+        try {
+          const { escalateOrderToManualReview } = await import("@/lib/delivery-queue");
+          await escalateOrderToManualReview(order.ref, decision.reason);
+        } catch (error) {
+          console.warn(
+            "[digital][reprise] alerte d'abandon non envoyée :",
+            error instanceof Error ? error.message : error,
+          );
+        }
       }
       report.results.push({
         ref: order.ref,
