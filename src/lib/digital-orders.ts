@@ -88,6 +88,12 @@ import { recordDigitalEmailOutcome } from "@/lib/digital-email-log";
 import { reviewPromptForConfig } from "@/lib/review-emails";
 import { isFazercardsProductRef } from "@/lib/fazercards-catalog";
 import { notifyTelegramOrderDelivered } from "@/lib/telegram-delivery";
+import {
+  claimProviderBudget,
+  claimProviderSync,
+  clearProviderSyncGate,
+  releaseProviderSync,
+} from "@/lib/provider-budget";
 import { telegramOrderUrlFromEnv } from "@/lib/telegram-core";
 
 import { deliverPaidFazercardsOrder } from "@/lib/fazercards-orders";
@@ -992,7 +998,28 @@ async function reconcileDigitalOrderOnPoll(order: DigitalOrder): Promise<Digital
     if (!payment) return order;
 
     if (payment.status === "pending" && payment.paymentId && nowPaymentsConfigured()) {
-      const remote = await getPayment(payment.paymentId);
+      // ── Deux garde-fous AVANT tout appel sortant ────────────────────────
+      // Chaque GET de la page de suivi arrivait ici tant que la commande
+      // restait `pending` : un onglet laissé ouvert = 4 appels facturés par
+      // minute, et le quota NOWPayments est partagé par tout le site.
+      //   1. créneau durable par commande (colonne, résiste aux instances) ;
+      //   2. plafond global d'instance, pour les pics.
+      // Refus = on sert l'état en base, la page reste utile.
+      const claimed = await claimProviderSync(payment.ref ?? order.ref, {
+        lastSyncAt: payment.lastProviderSyncAt ?? null,
+        since: payment.createdAt ?? order.createdAt ?? null,
+      });
+      const budget = claimed.sync ? claimProviderBudget() : { allow: false };
+      if (!claimed.sync || !budget.allow) {
+        return order;
+      }
+
+      let remote: Awaited<ReturnType<typeof getPayment>> = null;
+      try {
+        remote = await getPayment(payment.paymentId);
+      } finally {
+        releaseProviderSync(payment.ref ?? order.ref);
+      }
       if (remote && remote.payment_status) {
         const remoteStatus = remote.payment_status;
         const incomingStatus = orderStatusFromIpn(remoteStatus);
@@ -1322,6 +1349,9 @@ export async function deliverDigitalOrderManually(
 
 /** Renvoie l'e-mail des codes d'une commande livrée. */
 export async function resendDigitalCodesEmail(ref: string): Promise<{ ok: boolean; error?: string }> {
+  // Action admin : elle ne doit pas être ralentie par un créneau de synchro
+  // déjà consommé par la page du client (throttle fournisseur).
+  await clearProviderSyncGate(ref);
   const order = await loadDigitalOrder(ref);
   if (!order) return { ok: false, error: "Commande introuvable." };
   const codes = decryptDigitalCodes(order.codesCipher, digitalCodesKeyRing());

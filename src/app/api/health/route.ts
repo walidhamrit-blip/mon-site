@@ -16,6 +16,13 @@ import { databaseConfigured } from "@/lib/digital-store";
 import { resolveFazercardsMaxOrderUsd } from "@/lib/store";
 import { digitalCodesKeyStatus } from "@/lib/digital-codes";
 import { healthAccess } from "@/lib/health-access";
+import {
+  PROVIDER_BUDGET_DEFAULTS,
+} from "@/lib/provider-budget-core";
+import {
+  providerBudgetStatus,
+  providerThrottleReady,
+} from "@/lib/provider-budget";
 import { checkRateLimit } from "@/lib/rate-limit";
 import {
   checkNowPaymentsApiKey,
@@ -344,6 +351,24 @@ export async function GET(req: Request) {
     );
   }
 
+  // ── Garde-fous des appels sortants ──
+  // Depuis le durcissement, les routes de suivi n'interrogent plus NOWPayments
+  // qu'à intervalle croissant, avec un plafond global d'instance. On expose
+  // l'état pour que l'admin puisse distinguer « plus personne ne suit » de
+  // « le plafond est atteint et le suivi est servi depuis la base ».
+  const throttleReady = database.connected ? await providerThrottleReady() : false;
+  const providerBudget = providerBudgetStatus();
+  if (database.connected && !throttleReady) {
+    warnings.push(
+      "La colonne de throttle (orders.last_provider_sync_at) est absente : les pages de suivi peuvent appeler NOWPayments à chaque requête. Redémarrer l'application pour appliquer la migration automatique.",
+    );
+  }
+  if (providerBudget.used >= PROVIDER_BUDGET_DEFAULTS.limit) {
+    warnings.push(
+      `Plafond d'appels NOWPayments atteint sur cette instance (${providerBudget.used}/${PROVIDER_BUDGET_DEFAULTS.limit} sur ${Math.round(PROVIDER_BUDGET_DEFAULTS.windowMs / 60000)} min) : le suivi est servi depuis la base jusqu'à la prochaine fenêtre. Vérifier s'il s'agit d'un pic légitime ou d'un lien de suivi martelé.`,
+    );
+  }
+
   // `ok` n'est vrai que si un paiement peut réellement être créé :
   // base connectée ET clé acceptée (pas seulement présente/joignable).
   const ok = database.connected && nowpayments.apiKeyValid === true;
@@ -381,6 +406,15 @@ export async function GET(req: Request) {
         legacyFallbackActive: codesKey.legacyFallbackActive,
       },
       fazercards,
+      /**
+       * Garde-fous des appels sortants vers le fournisseur de paiement :
+       * throttle durable actif (colonne présente) et consommation du plafond
+       * d'instance sur la fenêtre courante.
+       */
+      providerCalls: {
+        throttleReady,
+        budget: providerBudget,
+      },
       /** Panne du catalogue public (bandeau de maintenance affiché). */
       catalog,
       // Diagnostic d'envoi : savoir par quel canal et depuis quelle adresse

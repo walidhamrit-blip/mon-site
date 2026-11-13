@@ -16,7 +16,7 @@
     "test:assistant": "node --test scripts/site-assistant.test.mjs scripts/whatsapp-enquiry.test.mjs",
     "test:telegram": "node --test scripts/telegram-bot.test.mjs scripts/delivery-progress.test.mjs",
     "test:plumbing": "node --test scripts/ci-plumbing.test.mjs",
-    "test:core": "node --test scripts/payments-core.test.mjs scripts/access-tokens.test.mjs scripts/delivery-queue.test.mjs",
+    "test:core": "node --test scripts/payments-core.test.mjs scripts/access-tokens.test.mjs scripts/delivery-queue.test.mjs scripts/provider-budget.test.mjs",
     "test:crypto": "node --test scripts/digital-codes-keyring.test.mjs",
     "test:health": "node --test scripts/health-access.test.mjs",
     "test:deliveries": "node --test scripts/delivery-handover.test.mjs scripts/delivery-check.test.mjs",

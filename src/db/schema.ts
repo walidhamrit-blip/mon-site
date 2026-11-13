@@ -67,6 +67,16 @@ export type MediaAsset = typeof mediaAssets.$inferSelect;
 // Commandes payées en crypto via NOWPayments.
 export const orders = pgTable("orders", {
   id: serial("id").primaryKey(),
+  /**
+   * Dernière interrogation SORTANTE du fournisseur de paiement (NOWPayments)
+   * pour cette commande, depuis une route de suivi.
+   *
+   * Throttle DURABLE : la mémoire d'une instance serverless disparaît entre
+   * deux requêtes, un compteur en mémoire ne peut donc pas empêcher un onglet
+   * laissé ouvert (ou un lien de suivi rejoué) de marteler l'API facturée, dont
+   * le quota est partagé par tout le site. Voir `decideReconcileThrottle`.
+   */
+  lastProviderSyncAt: timestamp("last_provider_sync_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),

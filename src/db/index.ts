@@ -136,6 +136,13 @@ export function ensureSchema(): Promise<void> {
       await pool.query(
         "ALTER TABLE orders ADD COLUMN IF NOT EXISTS tracking_token_hash text",
       );
+      // Throttle durable des interrogations sortantes vers NOWPayments depuis
+      // les pages de suivi (voir provider-budget-core.ts) : la mémoire d'une
+      // instance Vercel ne survit pas entre deux requêtes, un compteur en
+      // mémoire ne suffit donc pas à protéger un quota partagé.
+      await pool.query(
+        "ALTER TABLE orders ADD COLUMN IF NOT EXISTS last_provider_sync_at timestamptz",
+      );
       // Abonnements (mensuel / annuel) : plans synchronisés avec NOWPayments
       // et abonnés. Un paiement d'abonnement reste une ligne `orders`,
       // rattachée à son abonné par `subscription_id`.
