@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { resetSiteConfig, saveSiteConfig } from "@/app/admin/actions";
 import { useTheme } from "@/components/theme-provider";
+import { DecimalInput } from "@/components/decimal-input";
 import { THEMES, resolveThemeId } from "@/lib/themes";
 import { MARKET_PRESETS } from "@/lib/market";
 import { CURRENCY_CATALOG, DEFAULT_RATES } from "@/lib/currency";
@@ -984,23 +985,23 @@ export function SettingsForm({ initial, initialTab }: Props) {
             <div className="grid gap-3.5 sm:grid-cols-2 lg:grid-cols-3">
               {form.currency.enabled.map((code) => (
                 <Field key={code} label={`Taux — 1 USD = ? ${code}`}>
-                  <input
-                    type="number"
-                    step="0.0001"
-                    min="0"
+                  <DecimalInput
                     value={form.currency.rates[code] ?? 1}
-                    onChange={(e) =>
+                    onChange={(rate) =>
                       patch({
                         currency: {
                           ...form.currency,
                           rates: {
                             ...form.currency.rates,
-                            [code]: Number(e.target.value) || 1,
+                            [code]: rate && rate > 0 ? rate : 1,
                           },
                         },
                       })
                     }
+                    decimals={4}
+                    placeholder="Ex. 3.75"
                     className={ADMIN_INPUT_CLS}
+                    ariaLabel={`Taux de conversion pour ${code}`}
                   />
                 </Field>
               ))}
@@ -1686,25 +1687,20 @@ export function SettingsForm({ initial, initialTab }: Props) {
                 </select>
               </Field>
               <Field label="Taux manuel : 1 USD / USDT = … LYD">
-                <input
-                  type="number"
-                  min={0.0001}
-                  max={10000}
-                  step="0.0001"
-                  dir="ltr"
-                  value={form.fazercards?.phoneCardManualRateLyd ?? ""}
-                  onChange={(e) => {
-                    const value = e.target.value === "" ? null : e.target.valueAsNumber;
+                <DecimalInput
+                  value={form.fazercards?.phoneCardManualRateLyd ?? null}
+                  onChange={(value) => {
                     patch({
                       fazercards: {
                         ...form.fazercards,
-                        phoneCardManualRateLyd:
-                          value == null || !Number.isFinite(value) ? null : value,
+                        phoneCardManualRateLyd: value,
                       },
                     });
                   }}
+                  decimals={2}
                   placeholder="Ex. 9.84"
                   className={`${ADMIN_INPUT_CLS} font-mono text-base font-bold`}
+                  ariaLabel="Taux manuel 1 USD ou USDT en dinars libyens"
                 />
               </Field>
             </div>
