@@ -660,7 +660,7 @@ export async function sendPhoneCardApprovedEmail(
 }
 
 /* ---------------------------- Paiements manuels --------------------------- */
-// Skrill / Neteller / Airtm / D17 : le client a envoyé l'argent lui-même puis
+// Skrill / Neteller / Airtm / D17 / Volet / WebMoney / Kashy : le client a envoyé l'argent lui-même puis
 // déclaré sa preuve. Ces deux e-mails ne contiennent AUCUN secret (pas de
 // code cadeau) — seulement ce qu'il faut pour vérifier la réception.
 
@@ -669,7 +669,7 @@ export async function sendPhoneCardApprovedEmail(
  *
  * Le corps contient la preuve déclarée (titulaire, compte expéditeur,
  * identifiant de transaction) pour que l'administrateur puisse la confronter
- * à son relevé Skrill / Neteller / Airtm / D17 sans ouvrir l'admin.
+ * à son relevé Skrill / Neteller / Airtm / D17 / Volet / WebMoney / Kashy sans ouvrir l'admin.
  */
 /** Champs minimaux : une commande de projet web n'a pas de fiche digitale. */
 export interface ManualPaymentNoticeOrder {

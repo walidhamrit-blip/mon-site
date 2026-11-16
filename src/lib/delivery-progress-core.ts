@@ -20,6 +20,8 @@
  * Telegram et les tests peuvent l'utiliser directement.
  */
 
+import { isManualPaymentMethod } from "./manual-payment-core.ts";
+
 /* --------------------------------- Étapes --------------------------------- */
 
 export const DELIVERY_STEPS = [
@@ -73,8 +75,8 @@ const PHONE_CARD_LABELS: Record<DeliveryLocale, string> = {
 
 /**
  * Étape « confirmation » pour un paiement manuel (Skrill, Neteller, Airtm,
- * D17) : le client a envoyé l'argent lui-même, l'étape est la vérification
- * humaine de la réception — pas une blockchain.
+ * D17, Volet, WebMoney ou Kashy) : le client a envoyé l'argent lui-même,
+ * l'étape est la vérification humaine de la réception — pas une blockchain.
  */
 const MANUAL_PAYMENT_LABELS: Record<DeliveryLocale, string> = {
   fr: "Vérification du paiement",
@@ -88,7 +90,7 @@ export type DeliveryVariant = "nowpayments" | "phone_card" | "manual_payment";
 export function deliveryVariantFor(paymentMethod: string | null | undefined): DeliveryVariant {
   const value = (paymentMethod ?? "").trim().toLowerCase();
   if (value === "phone_card") return "phone_card";
-  if (value === "manual" || value === "skrill" || value === "neteller" || value === "airtm" || value === "d17") {
+  if (value === "manual" || isManualPaymentMethod(value)) {
     return "manual_payment";
   }
   return "nowpayments";
@@ -142,7 +144,7 @@ export interface DeliveryProgressInput {
   paymentMethod?: string | null;
   /** pending | approved | rejected (cartes téléphoniques). */
   phoneCardStatus?: string | null;
-  /** pending | approved | rejected (paiements manuels Skrill/Neteller/Airtm/D17). */
+  /** pending | approved | rejected (paiements manuels Skrill/Neteller/Airtm/D17/Volet/WebMoney/Kashy). */
   manualPaymentStatus?: string | null;
   /** Statut brut NOWPayments : waiting, confirming, confirmed, sending, finished… */
   ipnStatus?: string | null;

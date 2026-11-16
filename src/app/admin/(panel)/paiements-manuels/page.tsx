@@ -11,8 +11,8 @@ export const metadata: Metadata = {
 export const dynamic = "force-dynamic";
 
 /**
- * File de vérification des virements manuels (Skrill / Neteller / Airtm /
- * D17), tous tunnels confondus : codes digitaux, projets web, abonnements.
+ * File de vérification des virements manuels (Skrill / Neteller / Airtm / D17 / Volet / WebMoney / Kashy), tous tunnels confondus :
+ * codes digitaux, projets web, abonnements.
  */
 export default async function AdminManualPaymentsPage() {
   let rows: Awaited<ReturnType<typeof listManualPayments>> = [];
@@ -29,7 +29,7 @@ export default async function AdminManualPaymentsPage() {
         <div>
           <h1 className="text-[20px] font-black text-stone-900">Paiements manuels</h1>
           <p className="mt-1 max-w-3xl text-[12.5px] leading-6 text-stone-600">
-            Virements reçus hors passerelle (Skrill, Neteller, Airtm, D17). Rien
+            Virements reçus hors passerelle (Skrill, Neteller, Airtm, D17, Volet, WebMoney et Kashy). Rien
             n’est livré et aucun achat fournisseur n’est déclenché avant votre
             acceptation.
           </p>

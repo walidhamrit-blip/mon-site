@@ -1,5 +1,5 @@
 // Passerelle entre la configuration vivante (serveur) et l'interface client
-// des paiements manuels (Skrill / Neteller / Airtm / D17).
+// des paiements manuels (Skrill / Neteller / Airtm / D17 / Volet / WebMoney / Kashy).
 //
 // Le navigateur n'a PAS besoin de la configuration entière : juste de quoi
 // afficher la méthode, le compte à créditer, le taux et la majoration. On ne

@@ -470,7 +470,7 @@ export function ensureSchema(): Promise<void> {
         "CREATE INDEX IF NOT EXISTS phone_card_payments_status_idx ON phone_card_payments (status, created_at DESC)",
       );
 
-      // Paiements manuels sans passerelle (Skrill / Neteller / Airtm / D17).
+      // Paiements manuels sans passerelle (Skrill / Neteller / Airtm / D17 / Volet / WebMoney / Kashy).
       // Même logique de revue que les cartes téléphoniques, sans secret à
       // chiffrer : on ne stocke qu'une preuve de transfert déclarée.
       await pool.query(`

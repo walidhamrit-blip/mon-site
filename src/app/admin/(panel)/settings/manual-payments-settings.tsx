@@ -3,7 +3,8 @@
 import { DecimalInput } from "@/components/decimal-input";
 import type { ManualPaymentsConfigData, ManualPaymentMethodConfigData } from "@/lib/site-types";
 import {
-  MANUAL_PAYMENT_CURRENCIES,
+  MANUAL_PAYMENT_METHOD_CURRENCIES,
+  MANUAL_PAYMENT_METHOD_DEFAULT_CURRENCY,
   MANUAL_PAYMENT_METHOD_LABELS,
   MANUAL_PAYMENT_METHODS,
   manualPaymentMethodReady,
@@ -16,6 +17,9 @@ const METHOD_HINTS: Record<ManualPaymentMethod, string> = {
   neteller: "E-mail / identifiant du compte Neteller qui reçoit les fonds.",
   airtm: "E-mail du compte Airtm (adresse d’envoi des fonds).",
   d17: "Numéro D17 / e-Dinar de la Poste Tunisienne qui reçoit l’argent.",
+  advcash: "Identifiant Volet / AdvCash qui reçoit les fonds (USD uniquement).",
+  webmoney: "Identifiant WebMoney qui reçoit les fonds.",
+  kashy: "Numéro de téléphone / identifiant Kashy qui reçoit les fonds (TND uniquement).",
 };
 
 /**
@@ -35,18 +39,19 @@ export function ManualPaymentsSettings({
 }) {
   const current = value ?? ({} as ManualPaymentsConfigData);
 
+  const defaultSettings = (method: ManualPaymentMethod): ManualPaymentMethodConfigData => ({
+    enabled: false,
+    account: "",
+    beneficiary: "",
+    currency: MANUAL_PAYMENT_METHOD_DEFAULT_CURRENCY[method],
+    rate: null,
+    feePercent: 0,
+    instructions: "",
+  });
+
   const update = (method: ManualPaymentMethod, patch: Partial<ManualPaymentMethodConfigData>) => {
     const previous: ManualPaymentMethodConfigData =
-      current[method] ??
-      ({
-        enabled: false,
-        account: "",
-        beneficiary: "",
-        currency: "USD",
-        rate: null,
-        feePercent: 0,
-        instructions: "",
-      } as ManualPaymentMethodConfigData);
+      current[method] ?? defaultSettings(method);
     onChange({ ...current, [method]: { ...previous, ...patch } });
   };
 
@@ -57,7 +62,7 @@ export function ManualPaymentsSettings({
           Paiements manuels · sans passerelle
         </span>
         <h2 className="mt-1 text-lg font-extrabold text-stone-900">
-          Skrill, Neteller, Airtm, D17
+          Skrill, Neteller, Airtm, D17, Volet, WebMoney et Kashy
         </h2>
         <p className="mt-1 max-w-3xl text-xs leading-relaxed text-stone-500 sm:text-sm">
           Le client transfère lui-même l’argent sur le compte indiqué, puis
@@ -75,16 +80,7 @@ export function ManualPaymentsSettings({
       <div className="grid gap-4">
         {MANUAL_PAYMENT_METHODS.map((method) => {
           const settings: ManualPaymentMethodConfigData =
-            current[method] ??
-            ({
-              enabled: false,
-              account: "",
-              beneficiary: "",
-              currency: "USD",
-              rate: null,
-              feePercent: 0,
-              instructions: "",
-            } as ManualPaymentMethodConfigData);
+            current[method] ?? defaultSettings(method);
           const complete = manualPaymentMethodReady(settings);
           const ready = settings.enabled === true && complete;
 
@@ -122,7 +118,7 @@ export function ManualPaymentsSettings({
               <div className="mt-3 grid gap-3 sm:grid-cols-2">
                 <label className="block sm:col-span-2">
                   <span className="mb-1 block text-[11px] font-bold text-stone-500">
-                    Compte à créditer (obligatoire)
+                    Compte / identifiant à créditer (obligatoire)
                   </span>
                   <input
                     value={settings.account}
@@ -161,7 +157,7 @@ export function ManualPaymentsSettings({
                     }
                     className="h-10 w-full rounded-lg border border-stone-300 bg-white px-3 text-[12.5px] outline-none focus:border-[#8A6D2F]"
                   >
-                    {MANUAL_PAYMENT_CURRENCIES.map((currency) => (
+                    {MANUAL_PAYMENT_METHOD_CURRENCIES[method].map((currency) => (
                       <option key={currency} value={currency}>
                         {currency}
                       </option>

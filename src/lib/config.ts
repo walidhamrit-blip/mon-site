@@ -279,7 +279,7 @@ export const siteConfig = {
   },
 
   /**
-   * Paiements manuels sans passerelle : Skrill, Neteller, Airtm, D17.
+   * Paiements manuels sans passerelle : Skrill, Neteller, Airtm, D17, Volet (AdvCash), WebMoney et Kashy (TND).
    *
    * TOUT est fermé et vide par défaut, volontairement : aucune méthode n'est
    * proposée au client avant que l'administrateur n'ait saisi le compte à
@@ -322,6 +322,33 @@ export const siteConfig = {
       account: "",
       beneficiary: "",
       currency: "USD" as "USD" | "LYD" | "EUR" | "TND",
+      rate: null as number | null,
+      feePercent: 0,
+      instructions: "",
+    },
+    advcash: {
+      enabled: false as boolean,
+      account: "",
+      beneficiary: "",
+      currency: "USD" as "USD" | "LYD" | "EUR" | "TND",
+      rate: null as number | null,
+      feePercent: 0,
+      instructions: "",
+    },
+    webmoney: {
+      enabled: false as boolean,
+      account: "",
+      beneficiary: "",
+      currency: "USD" as "USD" | "LYD" | "EUR" | "TND",
+      rate: null as number | null,
+      feePercent: 0,
+      instructions: "",
+    },
+    kashy: {
+      enabled: false as boolean,
+      account: "",
+      beneficiary: "",
+      currency: "TND" as "USD" | "LYD" | "EUR" | "TND",
       rate: null as number | null,
       feePercent: 0,
       instructions: "",

@@ -183,7 +183,7 @@ export type PhoneCardPayment = typeof phoneCardPayments.$inferSelect;
 export type NewPhoneCardPayment = typeof phoneCardPayments.$inferInsert;
 
 /**
- * Paiement manuel sans passerelle : Skrill, Neteller, Airtm, D17.
+ * Paiement manuel sans passerelle : Skrill, Neteller, Airtm, D17, Volet, WebMoney et Kashy.
  *
  * Le client transfère LUI-MÊME le montant sur le compte de l'agence, puis
  * déclare sa preuve (titulaire, compte expéditeur, identifiant de
@@ -202,7 +202,7 @@ export const manualPayments = pgTable("manual_payments", {
     .notNull()
     .unique()
     .references(() => orders.ref, { onDelete: "cascade" }),
-  /** skrill | neteller | airtm | d17 */
+  /** skrill | neteller | airtm | d17 | advcash | webmoney | kashy */
   method: text("method").notNull(),
   /** Compte de l'agence à créditer, tel qu'affiché au client. */
   targetAccount: text("target_account").notNull(),

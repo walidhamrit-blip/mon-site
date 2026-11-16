@@ -1,5 +1,5 @@
 // Stockage et revue admin des paiements manuels sans passerelle
-// (Skrill, Neteller, Airtm, D17).
+// (Skrill, Neteller, Airtm, D17, Volet, WebMoney et Kashy).
 //
 // Serveur uniquement. Contrairement aux cartes téléphoniques, il n'y a ici
 // aucun secret à chiffrer : on conserve seulement une PREUVE DÉCLARÉE

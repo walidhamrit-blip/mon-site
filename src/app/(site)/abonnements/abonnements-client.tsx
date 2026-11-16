@@ -78,7 +78,7 @@ export function AbonnementsClient({
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<SubscribeSuccess | null>(null);
-  /** Virement manuel (Skrill / Neteller / Airtm / D17) au lieu de la crypto. */
+  /** Virement manuel (Skrill / Neteller / Airtm / D17 / Volet / WebMoney / Kashy) au lieu de la crypto. */
   const [manualOptions, setManualOptions] = useState<PublicManualPaymentOption[]>([]);
   const [manualDraft, setManualDraft] = useState<ManualPaymentDraft>(EMPTY_MANUAL_PAYMENT_DRAFT);
   const [manualAccepted, setManualAccepted] = useState(false);

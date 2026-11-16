@@ -92,7 +92,7 @@ const reserveSchema = z.object({
   locale: z.enum(["ar", "en"]).optional(),
   utm: z.string().max(500).optional(),
   /**
-   * Acompte réglé par virement manuel (Skrill / Neteller / Airtm / D17).
+   * Acompte réglé par virement manuel (Skrill / Neteller / Airtm / D17 / Volet / WebMoney / Kashy).
    * Aucune facture crypto n'est alors créée et la réservation n'est
    * confirmée qu'après vérification humaine de la réception.
    */

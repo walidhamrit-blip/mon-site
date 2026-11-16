@@ -37,7 +37,7 @@ const subscribeSchema = z.object({
   acceptGraceRule: z.literal(true),
   locale: z.enum(["ar", "en"]).optional(),
   /**
-   * Virement manuel (Skrill / Neteller / Airtm / D17) au lieu d'un
+   * Virement manuel (Skrill / Neteller / Airtm / D17 / Volet / WebMoney / Kashy) au lieu d'un
    * abonnement NOWPayments : aucune facture récurrente, l'accès n'est ouvert
    * qu'après vérification humaine du versement.
    */

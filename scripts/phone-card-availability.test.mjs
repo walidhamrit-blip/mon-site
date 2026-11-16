@@ -196,7 +196,7 @@ test("caisse publique : option désactivée et explication AR/EN, crypto conserv
   }
   const dialog = code(read("src/components/digital-buy-dialog.tsx"));
   // La crypto reste le repli par défaut ; la carte n'est retenue que si elle
-  // est ouverte, et un moyen manuel (Skrill/Neteller/Airtm/D17) choisi
+  // est ouverte, et un moyen manuel (Skrill/Neteller/Airtm/D17/Volet/WebMoney/Kashy) choisi
   // explicitement reste prioritaire.
   assert.match(dialog, /const paymentMethod = manualSelected/);
   assert.match(dialog, /\? "manual"/);

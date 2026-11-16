@@ -145,7 +145,7 @@ export interface LegalConfigData {
 }
 
 /**
- * Réglages d'un moyen de paiement manuel (Skrill, Neteller, Airtm, D17).
+ * Réglages d'un moyen de paiement manuel (Skrill, Neteller, Airtm, D17, Volet (AdvCash), WebMoney et Kashy).
  *
  * Le montant à envoyer est calculé côté serveur :
  *   montant envoyé = total USD × taux de la devise × (1 + majoration).
@@ -155,7 +155,7 @@ export interface LegalConfigData {
 export interface ManualPaymentMethodConfigData {
   /** Activer cette méthode dans les tunnels de paiement. */
   enabled: boolean;
-  /** Compte à créditer tel qu'affiché au client (e-mail, wallet, n° D17…). */
+  /** Compte ou identifiant à créditer tel qu'affiché au client. */
   account: string;
   /** Titulaire du compte (affiché au client pour éviter les erreurs). */
   beneficiary: string;
@@ -174,6 +174,9 @@ export type ManualPaymentsConfigData = {
   neteller: ManualPaymentMethodConfigData;
   airtm: ManualPaymentMethodConfigData;
   d17: ManualPaymentMethodConfigData;
+  advcash: ManualPaymentMethodConfigData;
+  webmoney: ManualPaymentMethodConfigData;
+  kashy: ManualPaymentMethodConfigData;
 };
 
 export interface SiteConfigData {
@@ -241,7 +244,7 @@ export interface SiteConfigData {
     phoneCardManualRateUpdatedAt: string | null;
   };
   /**
-   * Paiements manuels sans passerelle (Skrill, Neteller, Airtm, D17).
+   * Paiements manuels sans passerelle (Skrill, Neteller, Airtm, D17, Volet (AdvCash), WebMoney et Kashy).
    *
    * Chaque méthode a son interrupteur : activer Skrill n'active rien d'autre.
    * Le compte à créditer n'est JAMAIS écrit en dur dans le code — il est

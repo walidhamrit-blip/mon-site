@@ -6,10 +6,12 @@ import {
   MANUAL_PAYMENT_CURRENCIES,
   MANUAL_PAYMENT_LIMITS,
   MANUAL_PAYMENT_METHODS,
+  MANUAL_PAYMENT_METHOD_CURRENCIES,
+  MANUAL_PAYMENT_METHOD_DEFAULT_CURRENCY,
   type ManualPaymentMethodSettings,
 } from "@/lib/manual-payment-core";
 
-/* ---------- Paiements manuels sans passerelle (Skrill / Neteller / Airtm / D17) ---------- */
+/* ---------- Paiements manuels sans passerelle (Skrill / Neteller / Airtm / D17 / Volet / WebMoney / Kashy) ---------- */
 
 /**
  * Une méthode de paiement manuel, telle que saisie dans /admin → Réglages.
@@ -19,7 +21,7 @@ import {
  * méthode si le compte est vide : aucun client ne doit pouvoir choisir une
  * option sans destination.
  */
-export const manualPaymentMethodSchema = z.object({
+const manualPaymentMethodBaseSchema = z.object({
   enabled: z.boolean().default(false),
   account: z.string().trim().max(MANUAL_PAYMENT_LIMITS.account).default(""),
   beneficiary: z.string().trim().max(MANUAL_PAYMENT_LIMITS.beneficiary).default(""),
@@ -38,18 +40,34 @@ export const manualPaymentMethodSchema = z.object({
   instructions: z.string().trim().max(MANUAL_PAYMENT_LIMITS.note).default(""),
 });
 
+export const manualPaymentMethodSchema = manualPaymentMethodBaseSchema;
+
+const methodSchema = (method: (typeof MANUAL_PAYMENT_METHODS)[number]) =>
+  manualPaymentMethodBaseSchema.superRefine((value, ctx) => {
+    const allowed = MANUAL_PAYMENT_METHOD_CURRENCIES[method];
+    if (!allowed.includes(value.currency)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["currency"],
+        message: `${method} accepte uniquement : ${allowed.join(", ")}.`,
+      });
+    }
+  });
+
 export const manualPaymentsConfigSchema = z.object(
   Object.fromEntries(
-    MANUAL_PAYMENT_METHODS.map((method) => [method, manualPaymentMethodSchema]),
-  ) as Record<(typeof MANUAL_PAYMENT_METHODS)[number], typeof manualPaymentMethodSchema>,
+    MANUAL_PAYMENT_METHODS.map((method) => [method, methodSchema(method)]),
+  ) as Record<(typeof MANUAL_PAYMENT_METHODS)[number], ReturnType<typeof methodSchema>>,
 );
 
-export function defaultManualPaymentConfig(): ManualPaymentMethodSettings {
+export function defaultManualPaymentConfig(
+  currency: ManualPaymentMethodSettings["currency"] = "USD",
+): ManualPaymentMethodSettings {
   return {
     enabled: false,
     account: "",
     beneficiary: "",
-    currency: "USD",
+    currency,
     rate: null,
     feePercent: 0,
     instructions: "",
@@ -615,19 +633,19 @@ export const siteConfigSchema = z.object({
       phoneCardManualRateUpdatedAt: null,
     }),
   /**
-   * Paiements manuels sans passerelle (Skrill, Neteller, Airtm, D17).
+   * Paiements manuels sans passerelle (Skrill, Neteller, Airtm, D17, Volet (AdvCash), WebMoney et Kashy).
    *
    * `.default()` obligatoire : les configurations déjà enregistrées en base
    * n'ont pas ce bloc, et un enregistrement depuis l'admin ne doit pas
    * échouer pour autant. Les règles métier (compte obligatoire pour activer,
    * taux requis hors USD) sont appliquées par `normalizeManualPaymentsConfig`.
    */
-  manualPayments: manualPaymentsConfigSchema.default({
-    skrill: defaultManualPaymentConfig(),
-    neteller: defaultManualPaymentConfig(),
-    airtm: defaultManualPaymentConfig(),
-    d17: defaultManualPaymentConfig(),
-  }),
+  manualPayments: manualPaymentsConfigSchema.default(Object.fromEntries(
+    MANUAL_PAYMENT_METHODS.map((method) => [
+      method,
+      defaultManualPaymentConfig(MANUAL_PAYMENT_METHOD_DEFAULT_CURRENCY[method]),
+    ]),
+  ) as Record<(typeof MANUAL_PAYMENT_METHODS)[number], ManualPaymentMethodSettings>),
   /**
    * Profils d'avis + demandes d'avis. `.default()` est indispensable : les
    * configurations déjà enregistrées en base n'ont pas ce bloc, et un
