@@ -21,29 +21,34 @@ import {
  * méthode si le compte est vide : aucun client ne doit pouvoir choisir une
  * option sans destination.
  */
-const manualPaymentMethodBaseSchema = z.object({
-  enabled: z.boolean().default(false),
-  account: z.string().trim().max(MANUAL_PAYMENT_LIMITS.account).default(""),
-  beneficiary: z.string().trim().max(MANUAL_PAYMENT_LIMITS.beneficiary).default(""),
-  currency: z.enum(MANUAL_PAYMENT_CURRENCIES).default("USD"),
-  rate: z.coerce
-    .number()
-    .min(0.000001, "Le taux doit être supérieur à zéro.")
-    .max(100_000, "Le taux est invraisemblable.")
-    .nullable()
-    .default(null),
-  feePercent: z.coerce
-    .number()
-    .min(0, "La majoration ne peut pas être négative.")
-    .max(100, "La majoration ne peut pas dépasser 100 %.")
-    .default(0),
-  instructions: z.string().trim().max(MANUAL_PAYMENT_LIMITS.note).default(""),
-});
+const manualPaymentMethodBaseSchema = (
+  method: (typeof MANUAL_PAYMENT_METHODS)[number],
+) =>
+  z.object({
+    enabled: z.boolean().default(false),
+    account: z.string().trim().max(MANUAL_PAYMENT_LIMITS.account).default(""),
+    beneficiary: z.string().trim().max(MANUAL_PAYMENT_LIMITS.beneficiary).default(""),
+    currency: z.enum(MANUAL_PAYMENT_CURRENCIES).default(
+      MANUAL_PAYMENT_METHOD_DEFAULT_CURRENCY[method],
+    ),
+    rate: z.coerce
+      .number()
+      .min(0.000001, "Le taux doit être supérieur à zéro.")
+      .max(100_000, "Le taux est invraisemblable.")
+      .nullable()
+      .default(null),
+    feePercent: z.coerce
+      .number()
+      .min(0, "La majoration ne peut pas être négative.")
+      .max(100, "La majoration ne peut pas dépasser 100 %.")
+      .default(0),
+    instructions: z.string().trim().max(MANUAL_PAYMENT_LIMITS.note).default(""),
+  });
 
 export const manualPaymentMethodSchema = manualPaymentMethodBaseSchema;
 
 const methodSchema = (method: (typeof MANUAL_PAYMENT_METHODS)[number]) =>
-  manualPaymentMethodBaseSchema.superRefine((value, ctx) => {
+  manualPaymentMethodBaseSchema(method).superRefine((value, ctx) => {
     const allowed = MANUAL_PAYMENT_METHOD_CURRENCIES[method];
     if (!allowed.includes(value.currency)) {
       ctx.addIssue({

@@ -288,13 +288,14 @@ export const siteConfig = {
    *
    * Le montant envoyé = total USD × taux × (1 + majoration). Avec la devise
    * USD et 0 % de majoration, le client envoie exactement le total affiché.
+   * WebMoney utilise WMZ (pas l’USD) : son taux doit être renseigné.
    */
   manualPayments: {
     skrill: {
       enabled: false as boolean,
       account: "",
       beneficiary: "",
-      currency: "USD" as "USD" | "LYD" | "EUR" | "TND",
+      currency: "USD" as "USD" | "LYD" | "EUR" | "TND" | "WMZ",
       rate: null as number | null,
       feePercent: 0,
       instructions: "",
@@ -303,7 +304,7 @@ export const siteConfig = {
       enabled: false as boolean,
       account: "",
       beneficiary: "",
-      currency: "USD" as "USD" | "LYD" | "EUR" | "TND",
+      currency: "USD" as "USD" | "LYD" | "EUR" | "TND" | "WMZ",
       rate: null as number | null,
       feePercent: 0,
       instructions: "",
@@ -312,7 +313,7 @@ export const siteConfig = {
       enabled: false as boolean,
       account: "",
       beneficiary: "",
-      currency: "USD" as "USD" | "LYD" | "EUR" | "TND",
+      currency: "USD" as "USD" | "LYD" | "EUR" | "TND" | "WMZ",
       rate: null as number | null,
       feePercent: 0,
       instructions: "",
@@ -321,7 +322,7 @@ export const siteConfig = {
       enabled: false as boolean,
       account: "",
       beneficiary: "",
-      currency: "USD" as "USD" | "LYD" | "EUR" | "TND",
+      currency: "USD" as "USD" | "LYD" | "EUR" | "TND" | "WMZ",
       rate: null as number | null,
       feePercent: 0,
       instructions: "",
@@ -330,7 +331,7 @@ export const siteConfig = {
       enabled: false as boolean,
       account: "",
       beneficiary: "",
-      currency: "USD" as "USD" | "LYD" | "EUR" | "TND",
+      currency: "USD" as "USD" | "LYD" | "EUR" | "TND" | "WMZ",
       rate: null as number | null,
       feePercent: 0,
       instructions: "",
@@ -339,7 +340,7 @@ export const siteConfig = {
       enabled: false as boolean,
       account: "",
       beneficiary: "",
-      currency: "USD" as "USD" | "LYD" | "EUR" | "TND",
+      currency: "WMZ" as "USD" | "LYD" | "EUR" | "TND" | "WMZ",
       rate: null as number | null,
       feePercent: 0,
       instructions: "",
@@ -348,7 +349,7 @@ export const siteConfig = {
       enabled: false as boolean,
       account: "",
       beneficiary: "",
-      currency: "TND" as "USD" | "LYD" | "EUR" | "TND",
+      currency: "TND" as "USD" | "LYD" | "EUR" | "TND" | "WMZ",
       rate: null as number | null,
       feePercent: 0,
       instructions: "",

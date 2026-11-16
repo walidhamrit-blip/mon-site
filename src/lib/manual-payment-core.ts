@@ -22,8 +22,9 @@ export const MANUAL_PAYMENT_METHODS = [
 ] as const;
 export type ManualPaymentMethod = (typeof MANUAL_PAYMENT_METHODS)[number];
 
+const FIAT_MANUAL_PAYMENT_CURRENCIES = ["USD", "LYD", "EUR", "TND"] as const;
 /** Devises dans lesquelles le client peut régler, selon le réglage admin. */
-export const MANUAL_PAYMENT_CURRENCIES = ["USD", "LYD", "EUR", "TND"] as const;
+export const MANUAL_PAYMENT_CURRENCIES = [...FIAT_MANUAL_PAYMENT_CURRENCIES, "WMZ"] as const;
 export type ManualPaymentCurrency = (typeof MANUAL_PAYMENT_CURRENCIES)[number];
 
 /** Devises réellement autorisées pour chaque moyen (configuration manuelle). */
@@ -31,12 +32,14 @@ export const MANUAL_PAYMENT_METHOD_CURRENCIES: Record<
   ManualPaymentMethod,
   readonly ManualPaymentCurrency[]
 > = {
-  skrill: MANUAL_PAYMENT_CURRENCIES,
-  neteller: MANUAL_PAYMENT_CURRENCIES,
-  airtm: MANUAL_PAYMENT_CURRENCIES,
-  d17: MANUAL_PAYMENT_CURRENCIES,
+  skrill: FIAT_MANUAL_PAYMENT_CURRENCIES,
+  neteller: FIAT_MANUAL_PAYMENT_CURRENCIES,
+  airtm: FIAT_MANUAL_PAYMENT_CURRENCIES,
+  d17: FIAT_MANUAL_PAYMENT_CURRENCIES,
   advcash: ["USD"],
-  webmoney: MANUAL_PAYMENT_CURRENCIES,
+  // WebMoney use “WMZ”, which tracks the US dollar in practice but is not
+  // the same currency. The rate is therefore always required.
+  webmoney: ["WMZ", "LYD", "EUR", "TND"],
   kashy: ["TND"],
 };
 
@@ -46,7 +49,7 @@ export const MANUAL_PAYMENT_METHOD_DEFAULT_CURRENCY: Record<ManualPaymentMethod,
   airtm: "USD",
   d17: "USD",
   advcash: "USD",
-  webmoney: "USD",
+  webmoney: "WMZ",
   kashy: "TND",
 };
 
@@ -69,7 +72,7 @@ export const MANUAL_PAYMENT_METHOD_LABELS: Record<ManualPaymentMethod, string> =
   airtm: "Airtm",
   d17: "D17 — Poste Tunisienne",
   advcash: "Volet (AdvCash)",
-  webmoney: "WebMoney",
+  webmoney: "WebMoney (WMZ)",
   kashy: "Kashy (TND)",
 };
 
@@ -96,6 +99,7 @@ export const MANUAL_PAYMENT_CURRENCY_LABELS: Record<ManualPaymentCurrency, strin
   LYD: "LYD د.ل",
   EUR: "EUR €",
   TND: "TND د.ت",
+  WMZ: "WMZ — WebMoney",
 };
 
 export interface ManualPaymentMethodSettings {

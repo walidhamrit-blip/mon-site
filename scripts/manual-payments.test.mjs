@@ -81,10 +81,11 @@ test("les sept moyens demandés existent, avec leurs devises", () => {
     ["skrill", "neteller", "airtm", "d17", "advcash", "webmoney", "kashy"],
   );
   assert.deepEqual([...MANUAL_PAYMENT_METHOD_CURRENCIES.advcash], ["USD"]);
-  assert.deepEqual([...MANUAL_PAYMENT_METHOD_CURRENCIES.webmoney], ["USD", "LYD", "EUR", "TND"]);
+  assert.deepEqual([...MANUAL_PAYMENT_METHOD_CURRENCIES.webmoney], ["WMZ", "LYD", "EUR", "TND"]);
   assert.deepEqual([...MANUAL_PAYMENT_METHOD_CURRENCIES.kashy], ["TND"]);
+  assert.equal(MANUAL_PAYMENT_METHOD_DEFAULT_CURRENCY.webmoney, "WMZ");
   assert.equal(MANUAL_PAYMENT_METHOD_DEFAULT_CURRENCY.kashy, "TND");
-  assert.deepEqual([...MANUAL_PAYMENT_CURRENCIES].sort(), ["EUR", "LYD", "TND", "USD"]);
+  assert.deepEqual([...MANUAL_PAYMENT_CURRENCIES].sort(), ["EUR", "LYD", "TND", "USD", "WMZ"]);
   assert.equal(normalizeManualPaymentMethod(" Skrill "), "skrill");
   assert.equal(normalizeManualPaymentMethod("D17"), "d17");
   assert.equal(normalizeManualPaymentMethod("paypal"), null);
@@ -118,7 +119,8 @@ test("un moyen n'est utilisable que s'il est activé ET configuré", () => {
 test("les nouveaux moyens sont normalisés et configurés séparément", () => {
   const defaults = normalizeManualPaymentsConfig(undefined);
   assert.equal(defaults.advcash.currency, "USD");
-  assert.equal(defaults.webmoney.currency, "USD");
+  assert.equal(defaults.webmoney.currency, "WMZ");
+  assert.equal(defaults.webmoney.enabled, false);
   assert.equal(defaults.kashy.currency, "TND");
   assert.equal(defaults.kashy.enabled, false);
 
@@ -139,6 +141,21 @@ test("les nouveaux moyens sont normalisés et configurés séparément", () => {
     kashy: { ...SKRILL, currency: "TND", rate: null, enabled: true },
   });
   assert.equal(incomplete.kashy.enabled, false);
+
+  // WMZ n’est pas l’USD : le moyen reste fermé tant que le taux n’est pas saisi.
+  const legacyUsd = normalizeManualPaymentsConfig({
+    webmoney: { ...SKRILL, currency: "USD", rate: null, enabled: true },
+  });
+  assert.equal(legacyUsd.webmoney.currency, "WMZ");
+  assert.equal(legacyUsd.webmoney.enabled, false);
+  assert.equal(
+    manualPaymentMethodReady({ ...SKRILL, currency: "WMZ", rate: null }),
+    false,
+  );
+  assert.equal(
+    manualPaymentMethodReady({ ...SKRILL, currency: "WMZ", rate: 0.995 }),
+    true,
+  );
 });
 
 test("le montant à envoyer est calculé depuis le réglage, jamais codé en dur", () => {
