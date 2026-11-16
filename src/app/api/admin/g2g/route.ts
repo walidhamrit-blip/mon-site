@@ -3,11 +3,15 @@ import { desc, eq } from "drizzle-orm";
 import { db, ensureSchema } from "@/db";
 import { g2gOfferMappings, type G2gOfferMapping } from "@/db/schema";
 import { isAdminAuthenticated } from "@/lib/auth";
+import { g2gErrorHint, type G2gErrorHint } from "@/lib/g2g-core";
 import {
   g2gConfigStatus,
   g2gConfigured,
   g2gErrorMessage,
   g2gGetStore,
+  g2gProbeStore,
+  isG2gError,
+  type G2gProbeResult,
 } from "@/lib/g2g";
 
 export const dynamic = "force-dynamic";
@@ -70,6 +74,7 @@ export async function GET(req: Request) {
     sellingCurrencies: string[];
   } | null = null;
   let storeError: string | null = null;
+  let storeHint: G2gErrorHint = null;
   if (g2gConfigured()) {
     try {
       const response = await g2gGetStore();
@@ -94,9 +99,26 @@ export async function GET(req: Request) {
       };
     } catch (error) {
       storeError = g2gErrorMessage(error);
+      storeHint = isG2gError(error)
+        ? g2gErrorHint({ status: error.status, code: error.code, message: error.message })
+        : "network";
     }
   } else {
     storeError = "Clé API, Secret Key ou User ID absent : aucun appel G2G effectué.";
+    storeHint = "signature";
+  }
+
+  // `?probe=1` : sonde GET /v2/store avec plusieurs jeux d'en-têtes.
+  // Lecture seule — aucune offre n'est touchée. Sert à identifier quel
+  // en-tête G2G refuse quand la documentation et les implémentations
+  // publiques divergent.
+  let probe: G2gProbeResult[] | null = null;
+  if (new URL(req.url).searchParams.get("probe") === "1" && g2gConfigured()) {
+    try {
+      probe = await g2gProbeStore();
+    } catch (error) {
+      storeError = g2gErrorMessage(error);
+    }
   }
 
   let mappings: ReturnType<typeof publicMapping>[] = [];
@@ -117,9 +139,20 @@ export async function GET(req: Request) {
     config,
     store,
     storeError,
+    storeHint,
+    probe,
     mappings,
     dbError,
     suggestedWebhookUrl,
+    /**
+     * Quel code tourne réellement en production — indispensable pour savoir
+     * si un correctif est déployé avant de conclure qu'il ne fonctionne pas.
+     */
+    deploy: {
+      sha: (process.env.VERCEL_GIT_COMMIT_SHA ?? process.env.GIT_COMMIT_SHA ?? "").slice(0, 7),
+      env: process.env.VERCEL_ENV ?? "",
+      region: process.env.VERCEL_REGION ?? "",
+    },
     /** Tant que cette phase n'est pas terminée, aucun achat n'est câblé. */
     autoDeliveryEnabled: false,
   });

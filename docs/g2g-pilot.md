@@ -93,6 +93,17 @@ Ou directement dans **`/admin/digital` → panneau « G2G — pilote OpenAPI v2 
 bouton *Tester la connexion* : il affiche le `user_id`, `account_status`,
 `seller_status` et les devises de vente autorisées.
 
+**Si la réponse est `400` avec `Invalid Header 'Content-Type'`**, l'en-tête
+`Content-Type: application/json` manque (ou n'est envoyé que sur les requêtes
+avec corps). Voir l'encadré ci-dessous.
+
+> Le panneau affiche automatiquement la **famille** de l'erreur sous le
+> message G2G (en-têtes, paire de clés, permissions, plafond, serveur…).
+> Ne régénérez jamais des clés sur un `400` d'en-tête : ce n'est pas un
+> problème de clé. À l'inverse, un `401` — ou un `400` contenant
+> « invalid api key » / « signature » — pointe toujours vers la paire
+> `G2G_API_KEY` / `G2G_SECRET_KEY`.
+
 **Si la réponse est `401` / signature invalide**, vérifier dans l'ordre :
 
 1. `G2G_SECRET_KEY` (régénérer la paire si elle a été perdue) ;
@@ -116,6 +127,63 @@ g2g-signature   = HMAC_SHA256(secretKey, canonicalString).hexdigest()
 
 où `canonicalPath` est **uniquement le chemin** (`/v2/store`), sans l'hôte.
 En-têtes : `g2g-api-key`, `g2g-userid`, `g2g-timestamp`, `g2g-signature`.
+
+### ⚠️ `Content-Type` est obligatoire, **même sur un `GET` sans corps**
+
+C'est le piège n°1 du branchement, et il ne ressemble pas à un problème de
+clé : la signature est pourtant correcte, tous les voyants de secrets sont
+verts, et G2G répond quand même
+
+> The request was unacceptable, often due to missing a required parameter.
+> Invalid Header 'Content-Type'.
+
+L'API exige `Content-Type: application/json` sur **chaque** requête, y
+compris un `GET` vide. Tous les exemples `curl` de la documentation
+officielle le portent, quelle que soit la méthode.
+
+Côté code, l'en-tête est donc posé **inconditionnellement** par
+`g2gRequestHeaders()` (`src/lib/g2g-core.ts`), jamais conditionné à la
+présence d'un corps :
+
+```ts
+// ✅ correct — Content-Type part même sans corps
+const headers = g2gRequestHeaders({ apiKey, secretKey, userId, canonicalPath, timestamp });
+
+// ❌ casse tous les GET, dont GET /v2/store
+if (options.body !== undefined) headers["Content-Type"] = "application/json";
+```
+
+Ne pas « nettoyer » cet en-tête sur les requêtes sans corps sous prétexte
+qu'il est inutile en HTTP : G2G le refuse.
+
+### Sonde d'en-têtes : quand la doc et la vraie API divergent
+
+La documentation officielle et les implémentations publiques ne sont pas
+d'accord entre elles (certaines envoient `Content-Type` sur un `GET` nu,
+d'autres non ; le nom de l'en-tête utilisateur apparaît aussi bien comme
+`g2g-userid` que `g2g-user-id`). Plutôt que de deviner depuis un
+environnement qui n'a pas accès à l'API, le panneau admin sait trancher :
+
+**`/admin/digital` → panneau G2G → « Diagnostiquer les en-têtes »**
+
+Il rejoue `GET /v2/store` (**lecture seule**, aucune offre touchée) avec
+plusieurs jeux d'en-têtes et affiche, pour chacun, le statut HTTP, le `code`
+G2G, le `request_id` et le message exact :
+
+| Variante | En-têtes |
+| --- | --- |
+| `baseline` | `Content-Type` + `Accept` + `g2g-userid` (configuration actuelle) |
+| `no_content_type` | `GET` nu, sans `Content-Type` |
+| `no_accept` | `Content-Type` sans `Accept` |
+| `charset_utf8` | `Content-Type: application/json; charset=utf-8` |
+| `user_id_hyphen` | `g2g-user-id` au lieu de `g2g-userid` |
+
+La ligne surlignée en vert est celle que G2G accepte : il suffit ensuite
+d'aligner `g2gRequestHeaders()` (`src/lib/g2g-core.ts`) dessus.
+
+Le panneau affiche aussi le **SHA du commit déployé** (`VERCEL_GIT_COMMIT_SHA`).
+S'il ne correspond pas au dernier commit de la branche, le correctif n'est pas
+encore en production : **redéployez avant de conclure que ça ne marche pas**.
 
 ---
 

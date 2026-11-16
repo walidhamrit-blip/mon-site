@@ -17,6 +17,8 @@ import {
   evaluateG2gMargin,
   g2gApiSignature,
   g2gCanonicalPath,
+  g2gErrorHint,
+  g2gRequestHeaders,
   g2gSignaturesEqual,
   g2gWebhookSignature,
   isG2gTimestampFresh,
@@ -241,9 +243,107 @@ test("le client G2G signe chaque requête et ne journalise jamais le corps", () 
   for (const header of ["g2g-api-key", "g2g-userid", "g2g-timestamp", "g2g-signature"]) {
     assert.ok(client.includes(header), `en-tête manquant : ${header}`);
   }
-  assert.match(client, /g2gApiSignature/);
+  assert.match(client, /g2gRequestHeaders/);
   assert.match(client, /\/v2\/store/);
   assert.doesNotMatch(client, /console\.log\(.*raw/);
+});
+
+/* ------------------------------------------------------------------ *
+ * Régression : `Content-Type` doit être envoyé sur CHAQUE requête.
+ *
+ * Sans lui, G2G répond « The request was unacceptable, often due to
+ * missing a required parameter. Invalid Header 'Content-Type' » dès le
+ * premier `GET /v2/store`, alors que la signature est pourtant correcte.
+ * ------------------------------------------------------------------ */
+
+test("chaque requête G2G porte Content-Type: application/json, corps ou non", () => {
+  const headers = g2gRequestHeaders({
+    ...API_VECTOR,
+    timestamp: "1653278884000",
+  });
+  assert.equal(headers["Content-Type"], "application/json");
+  // Le test porte sur l'absence de corps : c'est le cas `GET /v2/store`.
+  assert.equal(headers.Accept, "application/json");
+  for (const header of ["g2g-api-key", "g2g-userid", "g2g-timestamp", "g2g-signature"]) {
+    assert.ok(headers[header], `en-tête manquant : ${header}`);
+  }
+  // La signature reste celle du vecteur officiel (le refactoring ne l'a pas
+  // altérée) et n'inclut ni Content-Type ni Accept.
+  assert.equal(
+    headers["g2g-signature"],
+    createHmac("sha256", API_VECTOR.secretKey)
+      .update(
+        API_VECTOR.canonicalPath +
+          API_VECTOR.apiKey +
+          API_VECTOR.userId +
+          API_VECTOR.timestamp,
+        "utf8",
+      )
+      .digest("hex"),
+  );
+  assert.equal(headers["g2g-timestamp"], API_VECTOR.timestamp);
+});
+
+test("le client n'envoie plus Content-Type uniquement quand il y a un corps", () => {
+  const client = read("src/lib/g2g.ts");
+  // L'ancien code conditionnait l'en-tête à `options.body !== undefined`,
+  // ce qui privait tous les GET (dont /v2/store) de Content-Type.
+  assert.doesNotMatch(client, /options\.body !== undefined \? .*Content-Type/);
+  assert.doesNotMatch(client, /if \(options\.body[^)]*\) headers\["Content-Type"\]/);
+});
+
+test("le script de vérification locale envoie aussi Content-Type sur le GET", () => {
+  const script = read("scripts/g2g-check.mjs");
+  // Le bloc d'appel réel : on extrait les en-têtes pour vérifier le GET nu.
+  const call = script.slice(script.indexOf("await fetch(`${base}${path}`"));
+  assert.match(call, /Accept: "application\/json"/);
+  assert.match(call, /"Content-Type": "application\/json"/);
+});
+
+test("le diagnostic d'en-têtes reste en lecture seule et couvre les 2 hypothèses", () => {
+  const client = read("src/lib/g2g.ts");
+  const start = client.indexOf("/* ---------------- Diagnostic d'en-têtes");
+  const end = client.indexOf("export async function g2gGetOffer");
+  assert.ok(start > 0 && end > start, "bloc de diagnostic introuvable");
+  const block = client.slice(start, end);
+  // Strictement lecture seule : un GET /v2/store, aucune écriture.
+  assert.match(block, /method: "GET"/);
+  assert.doesNotMatch(block, /"POST"|"PATCH"|"DELETE"|g2gPatchOffer|g2gDeliverCodes/);
+  assert.match(block, /\/v2\/store/);
+  // Les deux hypothèses qui s'opposent (doc vs implémentations publiques).
+  assert.match(block, /baseline/);
+  assert.match(block, /no_content_type/);
+  // Côté route, la session admin est vérifiée avant de lancer la sonde.
+  // `lastIndexOf` cible l'appel dans le handler, pas l'import en tête de fichier.
+  const route = read("src/app/api/admin/g2g/route.ts");
+  assert.ok(route.indexOf("isAdminAuthenticated()") < route.lastIndexOf("g2gProbeStore"));
+});
+
+test("une panne de clés et une panne d'en-têtes ne sont jamais confondues", () => {
+  // 400 + en-tête refusé => défaut de CODE, les clés n'y sont pour rien.
+  assert.equal(
+    g2gErrorHint({
+      status: 400,
+      message:
+        "The request was unacceptable, often due to missing a required parameter. Invalid Header 'Content-Type'.",
+    }),
+    "headers",
+  );
+  // 401 => paire de clés désynchronisée (régénérer les DEUX ensemble).
+  assert.equal(g2gErrorHint({ status: 401, message: "invalid signature" }), "signature");
+  assert.equal(g2gErrorHint({ status: 401, message: "" }), "signature");
+  // Une clé refusée signalée en 400 ne doit pas être rangée dans « headers ».
+  assert.equal(g2gErrorHint({ status: 400, message: "Invalid api key" }), "signature");
+  assert.equal(g2gErrorHint({ status: 403, message: "" }), "permissions");
+  assert.equal(g2gErrorHint({ status: 429, message: "" }), "rate_limit");
+  assert.equal(g2gErrorHint({ status: 503, message: "" }), "upstream");
+  // Pas de statut = on n'a jamais joint G2G.
+  assert.equal(g2gErrorHint({ status: null, message: "G2G injoignable" }), "network");
+});
+
+test("la route renvoie le SHA déployé pour distinguer « pas déployé » de « ne marche pas »", () => {
+  const route = read("src/app/api/admin/g2g/route.ts");
+  assert.match(route, /VERCEL_GIT_COMMIT_SHA/);
 });
 
 test("schéma et DDL créent la table de mapping désactivée par défaut", () => {
