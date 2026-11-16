@@ -99,6 +99,11 @@ import { telegramOrderUrlFromEnv } from "@/lib/telegram-core";
 import { deliverPaidFazercardsOrder } from "@/lib/fazercards-orders";
 import { sendPaymentConfirmedEmail } from "@/lib/order-emails";
 import { phoneCardDeliveryGate } from "@/lib/phone-card-payments";
+import { manualPaymentDeliveryGate } from "@/lib/manual-payments";
+import {
+  manualPaymentDeliveryRoute,
+  manualPaymentPublicNotice,
+} from "@/lib/manual-payment-core";
 import {
   phoneCardAutoDeliveryMessage,
   phoneCardDeliveryRoute,
@@ -597,7 +602,11 @@ export async function deliverApprovedPhoneCardOrder(
 
 export async function deliverPaidDigitalOrder(
   idOrRef: number | string,
-  options: { force?: boolean; phoneCardApproved?: boolean } = {},
+  options: {
+    force?: boolean;
+    phoneCardApproved?: boolean;
+    manualPaymentApproved?: boolean;
+  } = {},
 ): Promise<DigitalDeliveryResult> {
   const loaded = await loadDigitalOrder(idOrRef);
   if (!loaded) return { outcome: "not_found", ref: String(idOrRef) };
@@ -629,6 +638,30 @@ export async function deliverPaidDigitalOrder(
       outcome: "manual",
       ref: loaded.ref,
       message: "Carte téléphonique acceptée : saisissez manuellement le code cadeau à livrer.",
+    };
+  }
+
+  // Même garde pour les paiements manuels (Skrill / Neteller / Airtm / D17) :
+  // aucun achat fournisseur avant que l'administrateur n'ait constaté la
+  // réception de l'argent.
+  const manualGate = await manualPaymentDeliveryGate(loaded.ref);
+  const manualRoute = manualPaymentDeliveryRoute({
+    isManual: manualGate.isManual,
+    status: manualGate.status,
+    autoDeliver: options.phoneCardApproved === true || options.manualPaymentApproved === true,
+  });
+  if (manualRoute === "blocked") {
+    return {
+      outcome: "not_paid",
+      ref: loaded.ref,
+      message: "Paiement manuel non vérifié : aucun achat fournisseur déclenché.",
+    };
+  }
+  if (manualRoute === "manual") {
+    return {
+      outcome: "manual",
+      ref: loaded.ref,
+      message: "Paiement manuel accepté : saisissez manuellement le code cadeau à livrer.",
     };
   }
 
@@ -935,8 +968,11 @@ export interface PublicDigitalOrder {
   deliveredAt: string | null;
   reloadlyStatus: string | null;
   codes: PublicDigitalCode[];
-  paymentMethod: "nowpayments" | "phone_card";
+  paymentMethod: "nowpayments" | "phone_card" | "manual";
   phoneCardStatus: "pending" | "approved" | "rejected" | null;
+  /** Moyen manuel utilisé (skrill | neteller | airtm | d17), si applicable. */
+  manualPaymentMethod: string | null;
+  manualPaymentStatus: "pending" | "approved" | "rejected" | null;
   /** Message d'attente / d'action, sans détail technique. */
   notice: string | null;
   /**
@@ -1124,6 +1160,7 @@ export async function getPublicDigitalOrder(
       ? decryptDigitalCodes(order.codesCipher, digitalCodesKeyRing())
       : [];
   const phoneGate = await phoneCardDeliveryGate(order.ref);
+  const manualGate = await manualPaymentDeliveryGate(order.ref);
   const locale = order.locale === "en" ? "en" : "ar";
 
   // État brut du paiement (sans quoi la barre de progression ne peut pas
@@ -1163,17 +1200,25 @@ export async function getPublicDigitalOrder(
     deliveredAt: order.deliveredAt ? order.deliveredAt.toISOString() : null,
     reloadlyStatus: order.reloadlyStatus,
     codes,
-    paymentMethod: phoneGate.isPhoneCard ? "phone_card" : "nowpayments",
+    paymentMethod: phoneGate.isPhoneCard
+      ? "phone_card"
+      : manualGate.isManual
+        ? "manual"
+        : "nowpayments",
     phoneCardStatus: phoneGate.isPhoneCard ? phoneGate.status : null,
+    manualPaymentMethod: manualGate.isManual ? manualGate.method : null,
+    manualPaymentStatus: manualGate.isManual ? manualGate.status : null,
     ipnStatus: order.status === "delivered" ? "finished" : (payment?.ipnStatus ?? null),
     payCurrency: payment?.payCurrency ?? null,
     telegramUrl: telegramOrderUrlFromEnv(order.ref),
     notice:
       phoneGate.isPhoneCard && status !== "delivered"
         ? phoneCardPublicNotice(phoneGate.status, locale)
-        : phoneGate.isPhoneCard
-          ? externalNotice
-          : (externalNotice ?? publicNotice(status)),
+        : manualGate.isManual && status !== "delivered"
+          ? manualPaymentPublicNotice(manualGate.status, locale)
+          : phoneGate.isPhoneCard || manualGate.isManual
+            ? externalNotice
+            : (externalNotice ?? publicNotice(status)),
   };
 }
 
@@ -1234,6 +1279,16 @@ export async function deliverDigitalOrderManually(
       ok: false,
       delivered: 0,
       error: "Livraison verrouillée : acceptez d’abord la carte téléphonique dans la zone de vérification.",
+    };
+  }
+
+  const manualGate = await manualPaymentDeliveryGate(ref);
+  if (manualGate.isManual && manualGate.status !== "approved") {
+    return {
+      ok: false,
+      delivered: 0,
+      error:
+        "Livraison verrouillée : acceptez d’abord le paiement manuel (Skrill / Neteller / Airtm / D17) dans la file de vérification.",
     };
   }
 
@@ -1418,6 +1473,15 @@ export async function markDigitalOrderDeliveredOffPlatform(
       ok: false,
       error:
         "Livraison verrouillée : acceptez d’abord la carte téléphonique dans la zone de vérification.",
+    };
+  }
+
+  const manualGate = await manualPaymentDeliveryGate(order.ref);
+  if (manualGate.isManual && manualGate.status !== "approved") {
+    return {
+      ok: false,
+      error:
+        "Livraison verrouillée : acceptez d’abord le paiement manuel dans la file de vérification.",
     };
   }
 

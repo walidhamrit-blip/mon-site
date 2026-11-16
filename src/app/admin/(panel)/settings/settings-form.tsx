@@ -33,6 +33,7 @@ import type {
 } from "@/lib/site-types";
 import { ADMIN_INPUT_CLS, ADMIN_TEXTAREA_CLS } from "../site-item-editor";
 import { PhoneCardPaymentsToggle } from "../phone-card-payments-toggle";
+import { ManualPaymentsSettings } from "./manual-payments-settings";
 
 type SettingsTab =
   | "appearance"
@@ -1604,6 +1605,14 @@ export function SettingsForm({ initial, initialTab }: Props) {
           </div>
 
           <PhoneCardPaymentsToggle enabled={initial.fazercards?.phoneCardPaymentsEnabled !== false} />
+
+          {/* Moyens de paiement manuels : comptes, devises et taux pilotés ici. */}
+          <div className="rounded-2xl border border-stone-200 bg-white p-5 shadow-xs sm:p-6">
+            <ManualPaymentsSettings
+              value={form.manualPayments}
+              onChange={(next) => patch({ manualPayments: next })}
+            />
+          </div>
 
           <div className="rounded-2xl border border-stone-200 bg-white p-5 sm:p-6 shadow-xs space-y-5">
             <div>

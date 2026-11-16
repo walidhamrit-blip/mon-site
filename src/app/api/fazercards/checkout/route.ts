@@ -7,6 +7,11 @@ import {
 import { getFazercardsCatalog } from "@/lib/fazercards-catalog";
 import { readDigitalOverrides } from "@/lib/digital-overrides";
 import { resolveFazercardsCheckoutProduct } from "@/lib/digital-overrides-core";
+import {
+  MANUAL_PAYMENT_CURRENCIES,
+  MANUAL_PAYMENT_LIMITS,
+  MANUAL_PAYMENT_METHODS,
+} from "@/lib/manual-payment-core";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { enforceSameOrigin } from "@/lib/csrf";
 
@@ -35,7 +40,28 @@ const checkoutSchema = z.object({
   // Certification explicite de l'identifiant : obligatoire quand le
   // fournisseur ne sait pas vérifier le jeu (voir `playerIdGate`).
   idConfirmed: z.boolean().optional(),
-  paymentMethod: z.enum(["nowpayments", "phone_card"]).default("nowpayments"),
+  paymentMethod: z.enum(["nowpayments", "phone_card", "manual"]).default("nowpayments"),
+  // Paiement manuel sans passerelle : le client envoie l'argent lui-même sur
+  // le compte de l'agence puis déclare sa preuve. Aucune passerelle n'est
+  // appelée, et rien n'est débloqué sans un geste admin.
+  manualPayment: z.object({
+    method: z.enum(MANUAL_PAYMENT_METHODS),
+    senderName: z.string().trim().min(2).max(MANUAL_PAYMENT_LIMITS.senderName),
+    senderAccount: z.string().trim().min(3).max(MANUAL_PAYMENT_LIMITS.senderAccount),
+    transactionRef: z.string().trim().min(3).max(MANUAL_PAYMENT_LIMITS.transactionRef),
+    note: z.string().trim().max(MANUAL_PAYMENT_LIMITS.note).optional(),
+    quoteAccepted: z.boolean().optional(),
+    // Indicatif seulement : le serveur recalcule le devis et refuse tout écart
+    // (taux modifié entre l'affichage et l'envoi).
+    quote: z.object({
+      method: z.enum(MANUAL_PAYMENT_METHODS),
+      amountUsd: z.number(),
+      payCurrency: z.enum(MANUAL_PAYMENT_CURRENCIES),
+      payRate: z.number(),
+      feePercent: z.number(),
+      payAmount: z.number(),
+    }).optional(),
+  }).optional(),
   phoneCard: z.object({
     operator: z.enum(["libyana", "al_madar"]),
     code: z.string().min(6).max(64),
@@ -180,6 +206,7 @@ export async function POST(req: Request) {
         idConfirmed: parsed.data.idConfirmed,
         paymentMethod: parsed.data.paymentMethod,
         phoneCard: parsed.data.phoneCard,
+        manualPayment: parsed.data.manualPayment,
       },
       productsAdapter,
       req,

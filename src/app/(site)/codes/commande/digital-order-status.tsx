@@ -22,7 +22,9 @@ import {
   deliveryProgressMessage,
   deliveryStepHint,
   deliveryStepLabel,
+  deliveryVariantFor,
   type DeliveryLocale,
+  type DeliveryVariant,
   type StepState,
 } from "@/lib/delivery-progress-core";
 import { regionLabel } from "@/lib/digital-types";
@@ -58,8 +60,10 @@ interface PublicDigitalOrder {
   deliveredAt: string | null;
   reloadlyStatus: string | null;
   codes: DigitalCode[];
-  paymentMethod: "nowpayments" | "phone_card";
+  paymentMethod: "nowpayments" | "phone_card" | "manual";
   phoneCardStatus: "pending" | "approved" | "rejected" | null;
+  manualPaymentMethod?: string | null;
+  manualPaymentStatus?: "pending" | "approved" | "rejected" | null;
   notice: string | null;
   /**
    * Statut brut NOWPayments : c'est lui qui distingue « rien reçu » de
@@ -137,7 +141,7 @@ function DeliveryProgressBar({
   percent: number;
   tone: "waiting" | "active" | "done" | "alert" | "failed";
   message: string;
-  variant: "nowpayments" | "phone_card";
+  variant: DeliveryVariant;
   locale: DeliveryLocale;
   hintOn: "confirmation" | "issuing" | "delivered" | null;
 }) {
@@ -412,7 +416,9 @@ export function DigitalOrderStatus({
           label:
             order?.paymentMethod === "phone_card"
               ? ar ? "بطاقة الهاتف مرفوضة" : "Phone card rejected"
-              : ar ? "تعذر الإصدار" : "Not issued",
+              : order?.paymentMethod === "manual"
+                ? ar ? "الدفع اليدوي مرفوض" : "Manual payment rejected"
+                : ar ? "تعذر الإصدار" : "Not issued",
         };
       case "manual":
         return {
@@ -449,7 +455,9 @@ export function DigitalOrderStatus({
           label:
             order?.paymentMethod === "phone_card"
               ? ar ? "التحقق من بطاقة الهاتف" : "Verifying phone card"
-              : ar ? "بانتظار الدفع" : "Awaiting payment",
+              : order?.paymentMethod === "manual"
+                ? ar ? "التحقق من الدفع اليدوي" : "Verifying manual payment"
+                : ar ? "بانتظار الدفع" : "Awaiting payment",
         };
     }
   }, [order?.status, order?.fulfillmentStatus, order?.paymentMethod, ar]);
@@ -468,6 +476,7 @@ export function DigitalOrderStatus({
       fulfillmentStatus: order.fulfillmentStatus ?? null,
       paymentMethod: order.paymentMethod,
       phoneCardStatus: order.phoneCardStatus,
+      manualPaymentStatus: order.manualPaymentStatus ?? null,
       ipnStatus: order.ipnStatus ?? null,
       payCurrency: order.payCurrency ?? null,
     });
@@ -485,7 +494,7 @@ export function DigitalOrderStatus({
     });
   }, [progress, order, locale]);
 
-  const stepVariant = order?.paymentMethod === "phone_card" ? "phone_card" : "nowpayments";
+  const stepVariant = deliveryVariantFor(order?.paymentMethod);
 
   return (
     <div className="space-y-5">
@@ -790,6 +799,10 @@ export function DigitalOrderStatus({
                   ? ar
                     ? "توقف الطلب بعد التحقق من بطاقة الهاتف. تواصل معنا مع ذكر مرجع الطلب؛ لا ترسل بطاقة أخرى قبل الاتفاق معنا."
                     : "The order stopped after phone card verification. Contact us with your order reference; do not submit another card before speaking with us."
+                  : order.paymentMethod === "manual"
+                    ? ar
+                      ? "لم يتم قبول الدفع اليدوي بعد التحقق: لم يصل المبلغ أو أن المرجع غير مطابق. تواصل معنا مع ذكر مرجع الطلب؛ لا تُعد التحويل قبل الاتفاق معنا."
+                      : "The manual payment was not accepted after verification: the money was not received, or the reference does not match. Contact us with your order reference; do not send another transfer before speaking with us."
                   : ar
                     ? "تعذر إصدار الكود. تواصل معنا مع ذكر مرجع الطلب."
                     : "The code could not be issued. Contact us with your order reference."}

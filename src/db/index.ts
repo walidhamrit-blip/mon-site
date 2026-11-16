@@ -470,6 +470,39 @@ export function ensureSchema(): Promise<void> {
         "CREATE INDEX IF NOT EXISTS phone_card_payments_status_idx ON phone_card_payments (status, created_at DESC)",
       );
 
+      // Paiements manuels sans passerelle (Skrill / Neteller / Airtm / D17).
+      // Même logique de revue que les cartes téléphoniques, sans secret à
+      // chiffrer : on ne stocke qu'une preuve de transfert déclarée.
+      await pool.query(`
+        CREATE TABLE IF NOT EXISTS manual_payments (
+          id serial PRIMARY KEY,
+          created_at timestamptz NOT NULL DEFAULT now(),
+          updated_at timestamptz NOT NULL DEFAULT now(),
+          order_ref text NOT NULL UNIQUE REFERENCES orders(ref) ON DELETE CASCADE,
+          method text NOT NULL,
+          target_account text NOT NULL,
+          target_beneficiary text,
+          amount_usd text NOT NULL,
+          pay_currency text NOT NULL,
+          pay_rate text NOT NULL,
+          fee_percent text NOT NULL,
+          pay_amount text NOT NULL,
+          sender_name text NOT NULL,
+          sender_account text NOT NULL,
+          transaction_ref text NOT NULL,
+          note text,
+          status text NOT NULL DEFAULT 'pending',
+          reviewed_at timestamptz,
+          review_note text
+        )
+      `);
+      await pool.query(
+        "ALTER TABLE manual_payments ADD COLUMN IF NOT EXISTS subscription_id integer",
+      );
+      await pool.query(
+        "CREATE INDEX IF NOT EXISTS manual_payments_status_idx ON manual_payments (status, created_at DESC)",
+      );
+
       // Livraison des projets web : récapitulatif remis au client + validation
       // de recette horodatée (page publique /livraison/<ref>?t=<jeton>).
       await pool.query(`

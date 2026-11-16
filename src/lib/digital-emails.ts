@@ -18,6 +18,7 @@ import {
   type OffPlatformChannel,
 } from "@/lib/digital-offplatform-core";
 import type { GiftCardCode } from "@/lib/reloadly";
+import { MANUAL_PAYMENT_METHOD_LABELS } from "@/lib/manual-payment-core";
 
 export interface DigitalEmailResult {
   ok: boolean;
@@ -72,7 +73,7 @@ export async function sendDigitalCodesEmail(
    */
   telegramUrl?: string | null,
 ): Promise<DigitalEmailResult> {
-  const to = emailAddressFrom(order.recipientEmail);
+  const to = emailAddressFrom(order.recipientEmail ?? undefined);
   if (!to) return { ok: false, provider: "none", error: "destinataire absent" };
   if (codes.length === 0) return { ok: false, provider: "none", error: "aucun code" };
 
@@ -376,7 +377,7 @@ export async function sendDigitalCodePendingEmail(
    */
   telegramUrl?: string | null,
 ): Promise<DigitalEmailResult> {
-  const to = emailAddressFrom(order.recipientEmail);
+  const to = emailAddressFrom(order.recipientEmail ?? undefined);
   if (!to) return { ok: false, provider: "none", error: "destinataire absent" };
 
   const support = emailAddressFrom(siteEmail) || emailAddressFrom(process.env.EMAIL_FROM);
@@ -464,7 +465,7 @@ export async function sendDigitalTopupDeliveredEmail(
   /** Bloc de demande d'avis (voir `src/lib/review-emails.ts`), facultatif. */
   review?: { html: string; text: string[] } | null,
 ): Promise<DigitalEmailResult> {
-  const to = emailAddressFrom(order.recipientEmail);
+  const to = emailAddressFrom(order.recipientEmail ?? undefined);
   if (!to) return { ok: false, provider: "none", error: "destinataire absent" };
 
   const support = emailAddressFrom(siteEmail) || emailAddressFrom(process.env.EMAIL_FROM);
@@ -571,7 +572,7 @@ export async function sendDigitalDeliveredOffPlatformEmail(
     deliveredAtLabel?: string | null;
   },
 ): Promise<DigitalEmailResult> {
-  const to = emailAddressFrom(order.recipientEmail);
+  const to = emailAddressFrom(order.recipientEmail ?? undefined);
   if (!to) return { ok: false, provider: "none", error: "destinataire absent" };
 
   const support = emailAddressFrom(input.siteEmail) || emailAddressFrom(process.env.EMAIL_FROM);
@@ -606,7 +607,7 @@ export async function sendPhoneCardApprovedEmail(
   siteUrl: string,
   siteEmail?: string,
 ): Promise<DigitalEmailResult> {
-  const to = emailAddressFrom(order.recipientEmail);
+  const to = emailAddressFrom(order.recipientEmail ?? undefined);
   if (!to) return { ok: false, provider: "none", error: "destinataire absent" };
 
   const support = emailAddressFrom(siteEmail) || emailAddressFrom(process.env.EMAIL_FROM);
@@ -649,6 +650,188 @@ export async function sendPhoneCardApprovedEmail(
       </table>
       <p style="color:#666;font-size:13px;margin-top:16px">
         Suivi : <a href="${escapeHtml(siteLink(siteUrl, "/codes/commande"))}" style="color:#8A6D2F;font-weight:700">votre commande</a>.
+      </p>
+      ${support ? `<p style="color:#666;font-size:13px">Une question ? Écrivez à <a href="mailto:${escapeHtml(support)}" style="color:#8A6D2F">${escapeHtml(support)}</a>.</p>` : ""}
+      <p style="color:#999;font-size:12px;margin-top:24px">${escapeHtml(siteName)} — ${escapeHtml(siteUrl)}</p>
+    </div>`;
+
+  const result = await sendEmail({ to, subject, text, html });
+  return { ok: result.ok, provider: result.provider, error: result.error };
+}
+
+/* ---------------------------- Paiements manuels --------------------------- */
+// Skrill / Neteller / Airtm / D17 : le client a envoyé l'argent lui-même puis
+// déclaré sa preuve. Ces deux e-mails ne contiennent AUCUN secret (pas de
+// code cadeau) — seulement ce qu'il faut pour vérifier la réception.
+
+/**
+ * Alerte ADMIN : un paiement manuel attend une vérification humaine.
+ *
+ * Le corps contient la preuve déclarée (titulaire, compte expéditeur,
+ * identifiant de transaction) pour que l'administrateur puisse la confronter
+ * à son relevé Skrill / Neteller / Airtm / D17 sans ouvrir l'admin.
+ */
+/** Champs minimaux : une commande de projet web n'a pas de fiche digitale. */
+export interface ManualPaymentNoticeOrder {
+  ref: string;
+  productTitle: string;
+  denominationLabel?: string;
+  quantity?: number;
+  recipientName?: string | null;
+  recipientEmail?: string | null;
+  recipientPhone?: string | null;
+  /** Montant dû en USD (facultatif : absent pour un abonnement déjà chiffré). */
+  totalUsd?: string | null;
+}
+
+export async function sendManualPaymentReviewNotice(
+  order: ManualPaymentNoticeOrder,
+  payment: {
+    method: string;
+    targetAccount: string;
+    targetBeneficiary: string | null;
+    senderName: string;
+    senderAccount: string;
+    transactionRef: string;
+    note: string | null;
+    quote: {
+      payAmount: number;
+      payCurrency: string;
+      amountUsd: number;
+      payRate: number;
+      feePercent: number;
+    };
+  },
+  siteName: string,
+  siteUrl: string,
+  siteEmail?: string,
+): Promise<DigitalEmailResult> {
+  const to = adminRecipient(siteEmail);
+  if (!to) return { ok: false, provider: "none", error: "destinataire absent" };
+  const adminUrl = siteLink(siteUrl, "/admin/paiements-manuels");
+  const methodLabel =
+    MANUAL_PAYMENT_METHOD_LABELS[
+      payment.method as keyof typeof MANUAL_PAYMENT_METHOD_LABELS
+    ] ?? payment.method;
+  const amount = `${payment.quote.payAmount.toFixed(2)} ${payment.quote.payCurrency}`;
+  const subject = `💳 Paiement ${methodLabel} à vérifier — ${order.ref}`;
+
+  const rows: [string, string][] = [
+    ["Commande", order.ref],
+    [
+      "Produit",
+      `${order.productTitle}${order.denominationLabel ? ` — ${order.denominationLabel}` : ""}${
+        (order.quantity ?? 1) > 1 ? ` × ${order.quantity}` : ""
+      }`,
+    ],
+    ["Client", `${order.recipientName || "—"} · ${order.recipientEmail || "—"}`],
+    ["Téléphone", order.recipientPhone || "—"],
+    ["Moyen", methodLabel],
+    ["À envoyer", `${amount} (commande ${payment.quote.amountUsd.toFixed(2)} USD)`],
+    ["Taux appliqué", `1 USD = ${payment.quote.payRate} ${payment.quote.payCurrency}${payment.quote.feePercent ? ` · majoration ${payment.quote.feePercent} %` : ""}`],
+    ["Compte à créditer", payment.targetAccount + (payment.targetBeneficiary ? ` (${payment.targetBeneficiary})` : "")],
+    ["Titulaire expéditeur", payment.senderName],
+    ["Compte expéditeur", payment.senderAccount],
+    ["Identifiant transaction", payment.transactionRef],
+    ...(payment.note ? ([["Note client", payment.note]] as [string, string][]) : []),
+  ];
+
+  const text = [
+    "Un paiement manuel attend votre vérification.",
+    "",
+    ...rows.map(([label, value]) => `${label} : ${value}`),
+    "",
+    "Vérifiez que le montant a réellement été reçu (relevé du compte) avant d'accepter.",
+    "Aucun code n'est livré et aucune commande n'est marquée payée avant votre acceptation.",
+    `Vérifier : ${adminUrl}`,
+  ].join("\n");
+
+  const html = `
+    <div style="font-family:system-ui,Arial,sans-serif;max-width:560px;margin:0 auto;padding:24px;color:#1a1a1e">
+      <div style="font-size:13px;letter-spacing:.12em;color:#C6A664;font-weight:700">${escapeHtml(siteName.toUpperCase())} — VÉRIFICATION MANUELLE</div>
+      <h1 style="font-size:21px;font-weight:900">Paiement ${escapeHtml(methodLabel)} reçu 💳</h1>
+      <p style="color:#666;font-size:14px">Rien n'est encore accepté : la commande n'est pas marquée payée et aucune livraison n'a été déclenchée.</p>
+      <table style="width:100%;border-collapse:collapse;font-size:13px">
+        ${rows
+          .map(
+            ([label, value]) =>
+              `<tr><td style="padding:7px 11px;background:#f6f3ec;font-weight:700">${escapeHtml(label)}</td><td style="padding:7px 11px">${escapeHtml(value)}</td></tr>`,
+          )
+          .join("")}
+      </table>
+      <p style="font-size:13px;color:#666">Confrontez ces informations à votre relevé, puis acceptez ou refusez le paiement dans l'administration.</p>
+      <p><a href="${escapeHtml(adminUrl)}" style="display:inline-block;background:#C6A664;color:#111;font-weight:700;padding:12px 22px;border-radius:999px;text-decoration:none">Vérifier le paiement</a></p>
+    </div>`;
+
+  const result = await sendEmail({ to, subject, text, html });
+  return { ok: result.ok, provider: result.provider, error: result.error };
+}
+
+/**
+ * Prévient le CLIENT que son paiement manuel a été vérifié et accepté.
+ * Même raison d'être que l'e-mail équivalent des cartes téléphoniques :
+ * sans lui, le client reste dans le silence entre l'envoi et la livraison.
+ */
+export async function sendManualPaymentApprovedEmail(
+  order: ManualPaymentNoticeOrder,
+  method: string,
+  siteName: string,
+  siteUrl: string,
+  siteEmail?: string,
+): Promise<DigitalEmailResult> {
+  const to = emailAddressFrom(order.recipientEmail ?? undefined);
+  if (!to) return { ok: false, provider: "none", error: "destinataire absent" };
+
+  const support = emailAddressFrom(siteEmail) || emailAddressFrom(process.env.EMAIL_FROM);
+  const methodLabel =
+    MANUAL_PAYMENT_METHOD_LABELS[method as keyof typeof MANUAL_PAYMENT_METHOD_LABELS] ?? method;
+  const subject = `✅ Paiement ${methodLabel} vérifié — ${order.ref}`;
+  const amount = order.totalUsd
+    ? `${decimal(order.totalUsd)} USD`
+    : null;
+  const isCode = Boolean(order.denominationLabel);
+
+  const text = [
+    "Bonjour,",
+    "",
+    `Votre paiement ${methodLabel} a été vérifié et accepté.`,
+    "",
+    `Produit : ${order.productTitle}${order.denominationLabel ? ` — ${order.denominationLabel}` : ""}`,
+    `Commande : ${order.ref}`,
+    ...(amount ? [`Montant : ${amount}`] : []),
+    "",
+    isCode
+      ? "Notre équipe prépare votre commande. Vous recevrez un e-mail dès qu'elle sera disponible — aucune action n'est nécessaire de votre côté."
+      : "Votre accès est ouvert : aucune action n'est nécessaire de votre côté.",
+    "",
+    support ? `Une question ? Écrivez à ${support}.` : "",
+    `${siteName} — ${siteUrl}`,
+  ]
+    .filter((line) => line !== "")
+    .join("\n");
+
+  const html = `
+    <div style="font-family:system-ui,Arial,sans-serif;max-width:560px;margin:0 auto;padding:24px;color:#1a1a1e">
+      <div style="font-size:13px;letter-spacing:.12em;color:#C6A664;font-weight:700">${escapeHtml(siteName.toUpperCase())}</div>
+      <h1 style="font-size:22px;font-weight:900;margin:8px 0 4px">Paiement ${escapeHtml(methodLabel)} vérifié ✅</h1>
+      <p style="color:#666;font-size:14px;margin:0 0 18px">
+        ${escapeHtml(order.productTitle)}${order.denominationLabel ? ` — ${escapeHtml(order.denominationLabel)}` : ""}${
+          (order.quantity ?? 1) > 1 ? ` × ${order.quantity}` : ""
+        }
+      </p>
+      <div style="border:1px solid #e7e1d3;border-radius:14px;background:#faf8f3;padding:14px 16px;margin:10px 0;font-size:14px">
+        Votre paiement ${escapeHtml(methodLabel)} a été <strong>vérifié et accepté</strong>.
+        ${isCode
+          ? "Nous préparons votre commande : vous recevrez un e-mail dès qu'elle sera prête."
+          : "Votre accès est ouvert."}
+        Aucune action n'est nécessaire de votre côté.
+      </div>
+      <table style="width:100%;border-collapse:collapse;font-size:13px;margin-top:16px">
+        <tr><td style="padding:6px 10px;background:#f6f3ec;font-weight:700;width:150px">Commande</td><td style="padding:6px 10px">${escapeHtml(order.ref)}</td></tr>
+        ${amount ? `<tr><td style="padding:6px 10px;background:#f6f3ec;font-weight:700">Montant</td><td style="padding:6px 10px">${escapeHtml(amount)}</td></tr>` : ""}
+      </table>
+      <p style="color:#666;font-size:13px;margin-top:16px">
+        Suivi : <a href="${escapeHtml(siteLink(siteUrl, isCode ? "/codes/commande" : "/abonnements/suivi"))}" style="color:#8A6D2F;font-weight:700">votre espace</a>.
       </p>
       ${support ? `<p style="color:#666;font-size:13px">Une question ? Écrivez à <a href="mailto:${escapeHtml(support)}" style="color:#8A6D2F">${escapeHtml(support)}</a>.</p>` : ""}
       <p style="color:#999;font-size:12px;margin-top:24px">${escapeHtml(siteName)} — ${escapeHtml(siteUrl)}</p>

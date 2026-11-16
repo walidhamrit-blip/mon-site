@@ -1,9 +1,17 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { BadgeCheck, Clock, Loader2, XCircle } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import { formatUsd } from "@/lib/installments";
+import {
+  EMPTY_MANUAL_PAYMENT_DRAFT,
+  ManualPaymentForm,
+  manualQuoteForOption,
+  type ManualPaymentDraft,
+} from "@/components/manual-payment-form";
+import type { PublicManualPaymentOption } from "@/lib/manual-payment-public";
 
 interface OrderStatus {
   ref: string;
@@ -54,9 +62,45 @@ export function PaymentStatus({
   const ar = locale === "ar";
   const [order, setOrder] = useState<OrderStatus | null>(null);
   const [tranches, setTranches] = useState<Tranche[]>([]);
+  const router = useRouter();
   const [notFound, setNotFound] = useState(false);
   const [paying, setPaying] = useState<string | null>(null);
   const [payError, setPayError] = useState("");
+
+  // Paiement manuel (Skrill / Neteller / Airtm / D17) pour les tranches
+  // restantes : la configuration vient du serveur, jamais de la page.
+  const [manualOptions, setManualOptions] = useState<PublicManualPaymentOption[]>([]);
+  const [manualDraft, setManualDraft] = useState<ManualPaymentDraft>(EMPTY_MANUAL_PAYMENT_DRAFT);
+  const [manualAccepted, setManualAccepted] = useState(false);
+  const [manualMode, setManualMode] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      try {
+        const response = await fetch("/api/manual-payments/options", { cache: "no-store" });
+        const payload = (await response.json().catch(() => ({}))) as {
+          ok?: boolean;
+          options?: PublicManualPaymentOption[];
+        };
+        if (cancelled) return;
+        const list = response.ok && Array.isArray(payload.options) ? payload.options : [];
+        setManualOptions(list);
+        if (list.length > 0) {
+          setManualDraft((current) =>
+            list.some((item) => item.method === current.method)
+              ? current
+              : { ...current, method: list[0].method },
+          );
+        }
+      } catch {
+        if (!cancelled) setManualOptions([]);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useEffect(() => {
     if (!orderRef) return;
@@ -99,9 +143,40 @@ export function PaymentStatus({
 
   const status = order?.status ?? "pending";
 
-  /** Ouvre le paiement NOWPayments d'une tranche planifiée. */
+  /**
+   * Ouvre le paiement d'une tranche planifiée : page NOWPayments, ou
+   * enregistrement d'un virement manuel quand le client a choisi ce moyen.
+   */
   const payTranche = async (tranche: string) => {
     setPayError("");
+    if (manualMode) {
+      const option = manualOptions.find((item) => item.method === manualDraft.method);
+      const target = tranches.find((item) => item.ref === tranche);
+      if (!option || !target) {
+        setPayError(ar ? "طريقة الدفع اليدوي غير متاحة." : "The manual payment method is unavailable.");
+        return;
+      }
+      if (
+        manualDraft.senderName.trim().length < 2 ||
+        manualDraft.senderAccount.trim().length < 3 ||
+        manualDraft.transactionRef.trim().length < 3
+      ) {
+        setPayError(
+          ar
+            ? "أدخل اسم صاحب الحساب وحساب المُرسِل ومعرّف العملية."
+            : "Enter the sender name, sender account and transaction ID.",
+        );
+        return;
+      }
+      if (!manualAccepted) {
+        setPayError(
+          ar
+            ? "أكّد أنك حوّلت المبلغ المطلوب."
+            : "Confirm that you sent the stated amount.",
+        );
+        return;
+      }
+    }
     setPaying(tranche);
     try {
       const res = await fetch("/api/payments/create", {
@@ -110,6 +185,30 @@ export function PaymentStatus({
         body: JSON.stringify({
           orderRef: tranche,
           trackingToken: trackingToken || undefined,
+          ...(manualMode
+            ? {
+                manualPayment: {
+                  ...manualDraft,
+                  senderName: manualDraft.senderName.trim(),
+                  senderAccount: manualDraft.senderAccount.trim(),
+                  transactionRef: manualDraft.transactionRef.trim(),
+                  note: manualDraft.note.trim() || undefined,
+                  quoteAccepted: manualAccepted,
+                  quote: (() => {
+                    const option = manualOptions.find(
+                      (item) => item.method === manualDraft.method,
+                    );
+                    const target = tranches.find((item) => item.ref === tranche);
+                    return option && target
+                      ? manualQuoteForOption(
+                          option,
+                          Math.round(Number(target.amountUsd) * 100) / 100,
+                        )
+                      : undefined;
+                  })(),
+                },
+              }
+            : {}),
         }),
       });
       const data = await res.json().catch(() => ({}));
@@ -139,12 +238,23 @@ export function PaymentStatus({
         setPaying(null);
         return;
       }
+      if (data.manualPayment) {
+        // Virement déclaré : rien à ouvrir, la commande reste en attente de
+        // vérification humaine. On relit l'état pour l'afficher.
+        setPaying(null);
+        setManualAccepted(false);
+        router.refresh();
+        return;
+      }
       window.location.assign(data.paymentUrl);
     } catch {
       setPayError(ar ? t.pay.trancheErrorAr : t.pay.trancheErrorEn);
       setPaying(null);
     }
   };
+
+  /** Prochaine tranche non réglée : cible du virement manuel. */
+  const nextTranche = tranches.find((tranche) => tranche.status !== "paid") ?? null;
 
   const unpaidUsd = tranches
     .filter((tranche) => tranche.status !== "paid")
@@ -325,12 +435,70 @@ export function PaymentStatus({
                       {paying === tranche.ref && (
                         <Loader2 className="h-3 w-3 animate-spin" />
                       )}
-                      {ar ? t.pay.payTrancheAr : t.pay.payTrancheEn}
+                      {manualMode
+                        ? ar
+                          ? "إرسال بيانات التحويل"
+                          : "Submit transfer details"
+                        : ar
+                          ? t.pay.payTrancheAr
+                          : t.pay.payTrancheEn}
                     </button>
                   )}
                 </li>
               ))}
             </ul>
+          )}
+
+          {/* Virement manuel pour la prochaine tranche : même garde-fou que
+              la crypto — rien n'est encaissé sans vérification humaine. */}
+          {manualOptions.length > 0 && unpaidUsd > 0 && (
+            <div className="mt-3 space-y-2.5">
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  aria-pressed={!manualMode}
+                  onClick={() => {
+                    setManualMode(false);
+                    setPayError("");
+                  }}
+                  className={`min-h-10 rounded-lg border px-2 text-[11.5px] font-black ${
+                    !manualMode
+                      ? "border-[var(--accent)] bg-[var(--accent)]/10 text-[var(--accent)]"
+                      : "border-[var(--border)] hover:border-[var(--accent)]/60"
+                  }`}
+                >
+                  {ar ? "عملات رقمية" : "Crypto"}
+                </button>
+                <button
+                  type="button"
+                  aria-pressed={manualMode}
+                  onClick={() => {
+                    setManualMode(true);
+                    setPayError("");
+                  }}
+                  className={`min-h-10 rounded-lg border px-2 text-[11.5px] font-black ${
+                    manualMode
+                      ? "border-[var(--accent)] bg-[var(--accent)]/10 text-[var(--accent)]"
+                      : "border-[var(--border)] hover:border-[var(--accent)]/60"
+                  }`}
+                >
+                  {ar ? "تحويل يدوي" : "Manual transfer"}
+                </button>
+              </div>
+              {manualMode && (
+                <ManualPaymentForm
+                  options={manualOptions}
+                  amountUsd={
+                    Math.round(Number(nextTranche?.amountUsd ?? unpaidUsd) * 100) / 100
+                  }
+                  draft={manualDraft}
+                  onDraftChange={setManualDraft}
+                  quoteAccepted={manualAccepted}
+                  onQuoteAcceptedChange={setManualAccepted}
+                  locale={ar ? "ar" : "en"}
+                />
+              )}
+            </div>
           )}
 
           {payError && (

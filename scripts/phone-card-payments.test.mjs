@@ -81,7 +81,10 @@ test("les messages publics expliquent la revue sans contenir de secret", () => {
 
 test("la caisse conserve la crypto par défaut et propose la carte sans facture NOWPayments", () => {
   const route = code(read("src/app/api/fazercards/checkout/route.ts"));
-  assert.match(route, /paymentMethod: z\.enum\(\["nowpayments", "phone_card"\]\)\.default\("nowpayments"\)/);
+  assert.match(
+    route,
+    /paymentMethod: z\.enum\(\["nowpayments", "phone_card", "manual"\]\)\.default\("nowpayments"\)/,
+  );
   assert.match(route, /phoneCard: z\.object/);
   assert.match(route, /enforceSameOrigin\(req\)/);
   assert.match(route, /checkRateLimit\(CHECKOUT_LIMIT, req\)/);
@@ -90,10 +93,15 @@ test("la caisse conserve la crypto par défaut et propose la carte sans facture 
   const phoneBranch = checkout.indexOf("if (preparedPhoneCard) {");
   const invoice = checkout.indexOf("let invoice:");
   assert.ok(phoneBranch > 0 && invoice > phoneBranch, "la branche carte doit précéder la facture crypto");
-  assert.match(checkout, /fulfillment: usesPhoneCard \? "manual" : "auto"/);
-  assert.match(checkout, /paymentMethod: usesPhoneCard \? "phone_card" : "nowpayments"/);
+  // Un paiement manuel (Skrill/Neteller/Airtm/D17) suit la même règle : la
+  // livraison reste manuelle, jamais automatique.
+  assert.match(checkout, /fulfillment: usesPhoneCard \|\| usesManualPayment \? "manual" : "auto"/);
+  assert.match(checkout, /paymentMethod: usesPhoneCard/);
+  assert.match(checkout, /"phone_card"/);
   assert.match(checkout, /phone_card_already_used/);
-  assert.match(checkout, /!usesPhoneCard && totalUsd < minOrderUsd/);
+  // Les moyens manuels ne passent pas par la passerelle : le minimum de
+  // facture crypto ne les concerne pas (même règle que la carte).
+  assert.match(checkout, /!usesPhoneCard && !usesManualPayment && totalUsd < minOrderUsd/);
 });
 
 test("le code est chiffré, empreinté et unique dans la base", () => {

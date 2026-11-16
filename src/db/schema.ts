@@ -169,12 +169,71 @@ export const phoneCardPayments = pgTable("phone_card_payments", {
   codeHint: text("code_hint").notNull(),
   /** pending | approved | rejected — seul approved autorise la livraison. */
   status: text("status").notNull().default("pending"),
+  /**
+   * Abonnement concerné, le cas échéant. Renseigné uniquement quand la preuve
+   * porte sur une souscription (aucune commande `orders` dans ce cas) :
+   * l'approbation admin active alors l'abonnement.
+   */
+  subscriptionId: integer("subscription_id"),
   reviewedAt: timestamp("reviewed_at", { withTimezone: true }),
   reviewNote: text("review_note"),
 });
 
 export type PhoneCardPayment = typeof phoneCardPayments.$inferSelect;
 export type NewPhoneCardPayment = typeof phoneCardPayments.$inferInsert;
+
+/**
+ * Paiement manuel sans passerelle : Skrill, Neteller, Airtm, D17.
+ *
+ * Le client transfère LUI-MÊME le montant sur le compte de l'agence, puis
+ * déclare sa preuve (titulaire, compte expéditeur, identifiant de
+ * transaction). Rien n'est débloqué automatiquement : un administrateur
+ * vérifie la réception puis accepte ou refuse.
+ *
+ * Le devis (devise, taux, majoration, montant exact) est FIGÉ ici au moment
+ * de la commande : recalculer plus tard ferait payer un montant différent de
+ * celui que le client a lu.
+ */
+export const manualPayments = pgTable("manual_payments", {
+  id: serial("id").primaryKey(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  orderRef: text("order_ref")
+    .notNull()
+    .unique()
+    .references(() => orders.ref, { onDelete: "cascade" }),
+  /** skrill | neteller | airtm | d17 */
+  method: text("method").notNull(),
+  /** Compte de l'agence à créditer, tel qu'affiché au client. */
+  targetAccount: text("target_account").notNull(),
+  targetBeneficiary: text("target_beneficiary"),
+  /** Total dû de la commande en USD (recalculé côté serveur). */
+  amountUsd: text("amount_usd").notNull(),
+  /** Devise envoyée par le client + taux + majoration du devis accepté. */
+  payCurrency: text("pay_currency").notNull(),
+  payRate: text("pay_rate").notNull(),
+  feePercent: text("fee_percent").notNull(),
+  /** Montant exact à envoyer dans `payCurrency`. */
+  payAmount: text("pay_amount").notNull(),
+  senderName: text("sender_name").notNull(),
+  senderAccount: text("sender_account").notNull(),
+  /** Identifiant de transaction déclaré (jamais exposé côté public). */
+  transactionRef: text("transaction_ref").notNull(),
+  note: text("note"),
+  /** pending | approved | rejected — seul approved autorise la livraison. */
+  status: text("status").notNull().default("pending"),
+  /**
+   * Abonnement concerné, le cas échéant. Renseigné uniquement quand la preuve
+   * porte sur une souscription (aucune commande `orders` dans ce cas) :
+   * l'approbation admin active alors l'abonnement.
+   */
+  subscriptionId: integer("subscription_id"),
+  reviewedAt: timestamp("reviewed_at", { withTimezone: true }),
+  reviewNote: text("review_note"),
+});
+
+export type ManualPayment = typeof manualPayments.$inferSelect;
+export type NewManualPayment = typeof manualPayments.$inferInsert;
 
 // Plans d'abonnement (mensuel / annuel), synchronisés avec NOWPayments.
 export const subscriptionPlans = pgTable("subscription_plans", {

@@ -130,7 +130,15 @@ export default async function AdminOrdersPage({ searchParams }: Props) {
     payCurrency: o.payCurrency,
     payAmount: o.payAmount,
     paymentUrl: o.paymentUrl,
-    paymentMethod: o.paymentMethod === "phone_card" ? "phone_card" : "nowpayments",
+    // Trois canaux distincts : crypto, carte téléphonique, virement manuel
+    // (Skrill / Neteller / Airtm / D17). Le détail exact reste en base.
+    paymentMethod:
+      o.paymentMethod === "phone_card"
+        ? "phone_card"
+        : o.paymentMethod === "manual" ||
+            ["skrill", "neteller", "airtm", "d17"].includes(String(o.paymentMethod))
+          ? "manual"
+          : "nowpayments",
     status: (ORDER_STATUSES as readonly string[]).includes(o.status)
       ? (o.status as OrderStatus)
       : "pending",

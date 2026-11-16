@@ -192,7 +192,12 @@ test("caisse publique : option désactivée et explication AR/EN, crypto conserv
     }
   }
   const dialog = code(read("src/components/digital-buy-dialog.tsx"));
-  assert.match(dialog, /const paymentMethod = phoneCardEnabled \? selectedPaymentMethod : "nowpayments"/);
+  // La crypto reste le repli par défaut ; la carte n'est retenue que si elle
+  // est ouverte, et un moyen manuel (Skrill/Neteller/Airtm/D17) choisi
+  // explicitement reste prioritaire.
+  assert.match(dialog, /const paymentMethod = manualSelected/);
+  assert.match(dialog, /\? "manual"/);
+  assert.match(dialog, /: "nowpayments";/);
   assert.match(dialog, /data\.error === PHONE_CARD_DISABLED_ERROR/);
   assert.match(dialog, /setCardCode\(""\)/);
 });

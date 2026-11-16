@@ -279,6 +279,56 @@ export const siteConfig = {
   },
 
   /**
+   * Paiements manuels sans passerelle : Skrill, Neteller, Airtm, D17.
+   *
+   * TOUT est fermé et vide par défaut, volontairement : aucune méthode n'est
+   * proposée au client avant que l'administrateur n'ait saisi le compte à
+   * créditer (dans /admin → Réglages → Paiements manuels). Un compte vide ne
+   * peut donc jamais envoyer un client payer sur une adresse inexistante.
+   *
+   * Le montant envoyé = total USD × taux × (1 + majoration). Avec la devise
+   * USD et 0 % de majoration, le client envoie exactement le total affiché.
+   */
+  manualPayments: {
+    skrill: {
+      enabled: false as boolean,
+      account: "",
+      beneficiary: "",
+      currency: "USD" as "USD" | "LYD" | "EUR" | "TND",
+      rate: null as number | null,
+      feePercent: 0,
+      instructions: "",
+    },
+    neteller: {
+      enabled: false as boolean,
+      account: "",
+      beneficiary: "",
+      currency: "USD" as "USD" | "LYD" | "EUR" | "TND",
+      rate: null as number | null,
+      feePercent: 0,
+      instructions: "",
+    },
+    airtm: {
+      enabled: false as boolean,
+      account: "",
+      beneficiary: "",
+      currency: "USD" as "USD" | "LYD" | "EUR" | "TND",
+      rate: null as number | null,
+      feePercent: 0,
+      instructions: "",
+    },
+    d17: {
+      enabled: false as boolean,
+      account: "",
+      beneficiary: "",
+      currency: "USD" as "USD" | "LYD" | "EUR" | "TND",
+      rate: null as number | null,
+      feePercent: 0,
+      instructions: "",
+    },
+  },
+
+  /**
    * Avis clients — profils publics et demandes d'avis.
    *
    * Les URL sont **vides par défaut** : tant qu'elles ne sont pas renseignées

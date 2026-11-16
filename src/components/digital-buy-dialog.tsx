@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { CheckCircle2, CreditCard, Loader2, Lock, Minus, Plus, ShieldCheck, Smartphone, X, Zap } from "lucide-react";
+import { CheckCircle2, CreditCard, Loader2, Lock, Minus, Plus, ShieldCheck, Smartphone, Wallet, X, Zap } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import { useSiteConfig } from "@/components/site-provider";
 import { Price } from "@/components/price";
@@ -17,6 +17,13 @@ import { MAX_DIGITAL_ORDER_USD } from "@/lib/digital-sales-policy";
 import { playerIdGate } from "@/lib/fazercards-player-id-core";
 import type { PhoneCardLydQuote } from "@/lib/phone-card-pricing-core";
 import { PHONE_CARD_DISABLED_ERROR, phoneCardUnavailableNotice } from "@/lib/phone-card-core";
+import {
+  EMPTY_MANUAL_PAYMENT_DRAFT,
+  ManualPaymentForm,
+  manualQuoteForOption,
+  type ManualPaymentDraft,
+} from "@/components/manual-payment-form";
+import type { PublicManualPaymentOption } from "@/lib/manual-payment-public";
 
 const MAX_QUANTITY = 10;
 /** Mémorise la dernière commande du visiteur pour préremplir le suivi. */
@@ -35,7 +42,7 @@ interface Props {
  * le total facturé (aucun montant n'est envoyé par le navigateur).
  */
 export function DigitalBuyDialog({ product, denominationId, onClose }: Props) {
-  const { locale } = useI18n();
+  const { locale, t } = useI18n();
   const siteConfig = useSiteConfig();
   const ar = locale === "ar";
 
@@ -55,10 +62,25 @@ export function DigitalBuyDialog({ product, denominationId, onClose }: Props) {
   const [phone, setPhone] = useState("");
   const [phoneCardDisabled, setPhoneCardDisabled] = useState(false);
   const phoneCardEnabled = siteConfig.fazercards?.phoneCardPaymentsEnabled !== false && !phoneCardDisabled;
-  const [selectedPaymentMethod, setPaymentMethod] = useState<"nowpayments" | "phone_card">("nowpayments");
+  const [selectedPaymentMethod, setPaymentMethod] = useState<
+    "nowpayments" | "phone_card" | "manual"
+  >("nowpayments");
+  /**
+   * Moyens de paiement manuels proposables, lus depuis le serveur : le
+   * navigateur ne connaît pas la configuration (comptes, taux). Une liste
+   * vide = aucun moyen manuel configuré, ou configuration illisible.
+   */
+  const [manualOptions, setManualOptions] = useState<PublicManualPaymentOption[]>([]);
+  const [manualDraft, setManualDraft] = useState<ManualPaymentDraft>(EMPTY_MANUAL_PAYMENT_DRAFT);
+  const [manualQuoteAccepted, setManualQuoteAccepted] = useState(false);
   // Si l'admin coupe le flux pendant qu'un dialogue est ouvert, la sélection
   // retombe sur crypto sans conserver un formulaire de carte actif.
-  const paymentMethod = phoneCardEnabled ? selectedPaymentMethod : "nowpayments";
+  const manualSelected = selectedPaymentMethod === "manual" && manualOptions.length > 0;
+  const paymentMethod = manualSelected
+    ? "manual"
+    : phoneCardEnabled && selectedPaymentMethod === "phone_card"
+      ? "phone_card"
+      : "nowpayments";
   const [cardOperator, setCardOperator] = useState<"libyana" | "al_madar">("libyana");
   const [cardCode, setCardCode] = useState("");
   const [cardValueLyd, setCardValueLyd] = useState("");
@@ -180,6 +202,39 @@ export function DigitalBuyDialog({ product, denominationId, onClose }: Props) {
       clearTimeout(timer);
     };
   }, [isFazercards, paymentMethod, phoneQuoteAmount, phoneQuoteRefresh]);
+
+  // Moyens de paiement manuels : chargés une fois à l'ouverture du dialogue.
+  // En cas d'échec réseau, aucune option manuelle n'est proposée — le client
+  // garde la crypto, et rien ne peut être payé sur un compte inventé.
+  useEffect(() => {
+    if (!isFazercards) return;
+    let cancelled = false;
+    const load = async () => {
+      try {
+        const response = await fetch("/api/manual-payments/options", { cache: "no-store" });
+        const data = (await response.json().catch(() => ({}))) as {
+          ok?: boolean;
+          options?: PublicManualPaymentOption[];
+        };
+        if (cancelled) return;
+        const list = response.ok && data.ok && Array.isArray(data.options) ? data.options : [];
+        setManualOptions(list);
+        if (list.length > 0) {
+          setManualDraft((current) =>
+            list.some((item) => item.method === current.method)
+              ? current
+              : { ...current, method: list[0].method },
+          );
+        }
+      } catch {
+        if (!cancelled) setManualOptions([]);
+      }
+    };
+    void load();
+    return () => {
+      cancelled = true;
+    };
+  }, [isFazercards]);
 
   const idFieldsKey = JSON.stringify(buyerFields);
   const allIdFieldsFilled =
@@ -306,6 +361,67 @@ export function DigitalBuyDialog({ product, denominationId, onClose }: Props) {
         return;
       }
     }
+    if (paymentMethod === "manual") {
+      const option = manualOptions.find((item) => item.method === manualDraft.method);
+      if (!option) {
+        setError(
+          ar
+            ? "طريقة الدفع اليدوي هذه لم تعد متاحة. اختر طريقة أخرى أو الدفع بالعملات الرقمية."
+            : "This manual payment method is no longer available. Choose another method or crypto.",
+        );
+        return;
+      }
+      if (!phone.trim()) {
+        setError(
+          ar
+            ? "أدخل رقم هاتفك لنتمكن من التواصل معك بخصوص التحقق."
+            : "Enter your phone number so we can contact you about the verification.",
+        );
+        return;
+      }
+      if (manualDraft.senderName.trim().length < 2) {
+        setError(
+          ar
+            ? "أدخل اسم صاحب الحساب الذي حوّلت منه."
+            : "Enter the name of the account holder you paid from.",
+        );
+        return;
+      }
+      if (manualDraft.senderAccount.trim().length < 3) {
+        setError(
+          ar
+            ? "أدخل حساب المُرسِل (بريد إلكتروني أو محفظة أو رقم هاتف)."
+            : "Enter the sender account (e-mail, wallet or phone number).",
+        );
+        return;
+      }
+      if (manualDraft.transactionRef.trim().length < 3) {
+        setError(
+          ar
+            ? "أدخل معرّف العملية (مرجع التحويل)."
+            : "Enter the transaction ID (transfer reference).",
+        );
+        return;
+      }
+      const quote = manualQuoteForOption(option, Math.round(total * 100) / 100);
+      if (!quote) {
+        setError(
+          ar
+            ? "تعذر حساب مبلغ التحويل. تواصل معنا أو اختر الدفع بالعملات الرقمية."
+            : "The amount to send could not be calculated. Contact us or choose crypto.",
+        );
+        return;
+      }
+      if (!manualQuoteAccepted) {
+        setError(
+          ar
+            ? "أكّد في المربع أنك حوّلت المبلغ المطلوب إلى الحساب المذكور."
+            : "Tick the box confirming you sent the stated amount to that account.",
+        );
+        return;
+      }
+    }
+
     const missingField = requiredFields.find(
       (field) => !(buyerFields[field.key] ?? "").trim(),
     );
@@ -385,6 +501,26 @@ export function DigitalBuyDialog({ product, denominationId, onClose }: Props) {
                   },
                 }
               : {}),
+            // Paiement manuel : le devis envoyé est INDICATIF. Le serveur le
+            // recalcule depuis sa configuration et refuse tout écart.
+            ...(isFazercards && paymentMethod === "manual"
+              ? {
+                  manualPayment: {
+                    ...manualDraft,
+                    senderName: manualDraft.senderName.trim(),
+                    senderAccount: manualDraft.senderAccount.trim(),
+                    transactionRef: manualDraft.transactionRef.trim(),
+                    note: manualDraft.note.trim() || undefined,
+                    quoteAccepted: manualQuoteAccepted,
+                    quote: (() => {
+                      const option = manualOptions.find((item) => item.method === manualDraft.method);
+                      return option
+                        ? manualQuoteForOption(option, Math.round(total * 100) / 100)
+                        : undefined;
+                    })(),
+                  },
+                }
+              : {}),
           }),
         },
       );
@@ -408,6 +544,24 @@ export function DigitalBuyDialog({ product, denominationId, onClose }: Props) {
         setError(data.error === PHONE_CARD_DISABLED_ERROR
           ? phoneCardUnavailableNotice(ar ? "ar" : "en")
           : data.message || (ar ? "تعذر إنشاء الطلب. حاول مرة أخرى." : "Could not create the order. Please retry."));
+        if (
+          data.error === "manual_payment_quote_changed" ||
+          data.error === "manual_payment_rate_unavailable" ||
+          data.error === "manual_payment_method_unavailable"
+        ) {
+          // Le réglage a changé côté serveur : on redemande l'accord client sur
+          // le nouveau montant au lieu de renvoyer l'ancien indéfiniment.
+          setManualQuoteAccepted(false);
+          try {
+            const refreshed = await fetch("/api/manual-payments/options", { cache: "no-store" });
+            const payload = (await refreshed.json().catch(() => ({}))) as {
+              options?: PublicManualPaymentOption[];
+            };
+            if (Array.isArray(payload.options)) setManualOptions(payload.options);
+          } catch {
+            // Liste conservée : le client peut réessayer ou choisir la crypto.
+          }
+        }
         if (data.error === "phone_card_quote_changed" || data.error === "phone_card_rate_unavailable") {
           // Ne laisse pas l'utilisateur renvoyer indéfiniment l'ancien devis :
           // le nouveau taux est chargé et sa case d'accord est réinitialisée.
@@ -558,7 +712,7 @@ export function DigitalBuyDialog({ product, denominationId, onClose }: Props) {
             <div className="mb-2 text-[11px] font-black uppercase tracking-wide text-[var(--muted-foreground)]">
               {ar ? "طريقة الدفع" : "Payment method"}
             </div>
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-3 gap-2">
               <button
                 type="button"
                 onClick={() => {
@@ -592,6 +746,23 @@ export function DigitalBuyDialog({ product, denominationId, onClose }: Props) {
                 <Smartphone className="h-4 w-4" />
                 {ar ? "بطاقة / رصيد هاتف" : "Phone card / balance"}
               </button>
+              {manualOptions.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setPaymentMethod("manual");
+                    setError("");
+                  }}
+                  className={`flex min-h-12 items-center justify-center gap-1.5 rounded-xl border px-2 py-2 text-[11.5px] font-black ${
+                    paymentMethod === "manual"
+                      ? "border-[var(--accent)] bg-[var(--accent)]/10 text-[var(--accent)]"
+                      : "border-[var(--border)] hover:border-[var(--accent)]/60"
+                  }`}
+                >
+                  <Wallet className="h-4 w-4" />
+                  {ar ? t.checkout.manualTransferAr : t.checkout.manualTransferEn}
+                </button>
+              )}
             </div>
             {!phoneCardEnabled && (
               <p id="phone-card-paused-notice" role="status" className="mt-2 rounded-xl border border-amber-300/60 bg-amber-500/10 px-3 py-2.5 text-[12px] leading-5 text-[var(--foreground)]">
@@ -599,6 +770,20 @@ export function DigitalBuyDialog({ product, denominationId, onClose }: Props) {
                 {phoneCardUnavailableNotice(ar ? "ar" : "en")}
               </p>
             )}
+          </div>
+        )}
+
+        {isFazercards && paymentMethod === "manual" && manualOptions.length > 0 && (
+          <div className="mt-3">
+            <ManualPaymentForm
+              options={manualOptions}
+              amountUsd={phoneQuoteAmount}
+              draft={manualDraft}
+              onDraftChange={setManualDraft}
+              quoteAccepted={manualQuoteAccepted}
+              onQuoteAcceptedChange={setManualQuoteAccepted}
+              locale={ar ? "ar" : "en"}
+            />
           </div>
         )}
 
@@ -950,14 +1135,22 @@ export function DigitalBuyDialog({ product, denominationId, onClose }: Props) {
               ? ar
                 ? "إرسال البطاقة للتحقق"
                 : "Submit card for verification"
-              : ar
-                ? `الدفع الآن · ${total.toFixed(2)} $`
-                : `Pay now · $${total.toFixed(2)}`}
+              : paymentMethod === "manual"
+                ? ar
+                  ? t.checkout.manualSubmitAr
+                  : t.checkout.manualSubmitEn
+                : ar
+                  ? `الدفع الآن · ${total.toFixed(2)} $`
+                  : `Pay now · $${total.toFixed(2)}`}
         </button>
 
         <p className="mt-3 flex items-start gap-2 text-[11px] leading-5 text-[var(--muted-foreground)]">
           <ShieldCheck className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[var(--accent)]" />
-          {paymentMethod === "phone_card"
+          {paymentMethod === "manual"
+            ? ar
+              ? "لا يُخصم أي مبلغ من هذا الموقع: أنت تحوّل بنفسك. لا يُعد الطلب مدفوعاً ولا يُسلَّم الكود إلا بعد أن نتحقق يدوياً من وصول المبلغ؛ احتفظ بمرجع العملية."
+              : "Nothing is charged on this site: you send the money yourself. The order is not paid and no code is delivered until we verify receipt by hand; keep your transaction reference."
+            : paymentMethod === "phone_card"
             ? ar
               ? "الطلب مجاني الإنشاء ولا يُعد مدفوعاً إلا بعد قبول الإدارة للبطاقة. بعدها يتم تسليم بطاقة الهدية يدوياً إلى بريدك وعلى صفحة التتبع."
               : "Submitting an order is free; it is only marked paid after staff accept the card. Your gift card is then delivered manually by email and on the tracking page."

@@ -500,6 +500,20 @@ const translations = {
         "إيصال تأكيد فوري يصلك بالبريد الإلكتروني، وطلبك يُفعَّل فور تأكيد الشبكة — مع متابعتنا لك خلال ساعتين.",
       guarantee3En:
         "Instant email receipt, your order activates as soon as the network confirms — and we follow up within 2 hours.",
+      manualMethodAr: "طريقة الدفع",
+      manualMethodEn: "Payment method",
+      manualCryptoAr: "عملات رقمية",
+      manualCryptoEn: "Crypto",
+      manualTransferAr: "تحويل يدوي",
+      manualTransferEn: "Manual transfer",
+      manualSubmitAr: "إرسال بيانات التحويل للتحقق",
+      manualSubmitEn: "Submit transfer details",
+      manualTrackAr: "متابعة حالة الطلب",
+      manualTrackEn: "Track my order",
+      manualPendingAr:
+        "تم إرسال بياناتك. نتحقق يدوياً من وصول المبلغ قبل تسليم أي شيء؛ احتفظ بمرجع العملية ولا تُعد التحويل.",
+      manualPendingEn:
+        "Your details are submitted. We verify by hand that the money arrived before anything is delivered; keep your transaction reference and do not send it twice.",
       creatingAr: "جارٍ إنشاء الدفع…",
       creatingEn: "Creating your payment…",
       readyAr: "تم إنشاء الدفع. التحويل خلال",
@@ -799,6 +813,20 @@ const translations = {
         "Instant email receipt, your order activates as soon as the network confirms — and we follow up within 2 hours.",
       guarantee3En:
         "Instant email receipt, your order activates as soon as the network confirms — and we follow up within 2 hours.",
+      manualMethodAr: "Payment method",
+      manualMethodEn: "Payment method",
+      manualCryptoAr: "Crypto",
+      manualCryptoEn: "Crypto",
+      manualTransferAr: "Manual transfer",
+      manualTransferEn: "Manual transfer",
+      manualSubmitAr: "Submit transfer details",
+      manualSubmitEn: "Submit transfer details",
+      manualTrackAr: "Track my order",
+      manualTrackEn: "Track my order",
+      manualPendingAr:
+        "Your details are submitted. We verify by hand that the money arrived before anything is delivered; keep your transaction reference and do not send it twice.",
+      manualPendingEn:
+        "Your details are submitted. We verify by hand that the money arrived before anything is delivered; keep your transaction reference and do not send it twice.",
       creatingAr: "Creating your payment…",
       creatingEn: "Creating your payment…",
       readyAr: "Payment created. Redirecting in",
