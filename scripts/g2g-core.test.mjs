@@ -230,6 +230,20 @@ test("le webhook vérifie la signature AVANT de lire le corps", () => {
   assert.match(route, /dry_run: true/);
 });
 
+test("ouvrir l'URL du webhook dans un navigateur explique le 405 au lieu d'une page vide", () => {
+  const route = read("src/app/api/webhooks/g2g/route.ts");
+  const start = route.indexOf("export async function GET()");
+  assert.ok(start > 0, "handler GET absent");
+  const body = route.slice(start, route.indexOf("export async function POST"));
+  // Le GET doit RESTER en 405 : c'est la preuve que la route est déployée
+  // (une route inexistante renvoie 404), mais avec un corps explicatif.
+  assert.match(body, /method_not_allowed/);
+  assert.match(body, /405/);
+  assert.match(body, /Allow: "POST"/);
+  // Et surtout : aucune donnée de configuration ni secret dans cette réponse.
+  assert.doesNotMatch(body, /webhookSecretToken|secretKey|cfg\.|g2gConfig/);
+});
+
 test("le diagnostic admin exige une session admin et ne renvoie aucun secret", () => {
   const route = read("src/app/api/admin/g2g/route.ts");
   assert.match(route, /isAdminAuthenticated\(\)/);

@@ -328,10 +328,12 @@ doivent être verts et `GET /v2/store` doit afficher le compte vendeur.
 | `GET /api/admin/g2g` **sans session admin** | `401 {"ok":false,"error":"unauthorized"}` | **`404` = le code G2G n'est pas déployé** ; les variables d'environnement seules ne suffisent pas, il faut que le commit soit sur la branche déployée par Vercel |
 | `POST /api/webhooks/g2g` signé | `200 {"ok":true,"dry_run":true,…}` | vérifier `G2G_WEBHOOK_SECRET_TOKEN`, `G2G_WEBHOOK_URL` et l'horloge |
 
-⚠️ `/api/webhooks/g2g` n'expose **que** `POST` : un `GET` peut renvoyer
-404/405 même quand la route existe. Ce n'est donc pas un test fiable ; utiliser
-`GET /api/admin/g2g` (qui doit répondre `401`, pas `404`) ou un événement de
-test G2G.
+⚠️ `/api/webhooks/g2g` n'accepte **que** les `POST` signés. Ouvert dans un
+navigateur — donc en `GET` — il renvoie **405** avec un message
+d'explication : c'est **normal**, et c'est même la preuve que la route est
+déployée (une route inexistante renverrait 404). Ce n'est donc pas un test
+de bon fonctionnement. Pour valider : déclencher un **événement de test
+G2G**, ou vérifier `GET /api/admin/g2g` (qui doit répondre `401`, pas `404`).
 
 > 🛑 Rappel : redéployer n'active **aucune** livraison automatique. La phase 1
 > reste en *shadow mode* et toutes les offres G2G doivent garder
