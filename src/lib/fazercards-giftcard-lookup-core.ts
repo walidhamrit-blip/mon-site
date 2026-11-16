@@ -109,3 +109,87 @@ export function formatFazercardsUsd(value: string | number | null | undefined): 
   if (!Number.isFinite(amount)) return "—";
   return `${amount.toFixed(2)} $`;
 }
+
+/* ------------------ Vérification d'un SKU avant activation ------------------ */
+
+/**
+ * Résultat de la vérification d'un `card_id` / `key_id` avant enregistrement.
+ *
+ * Pourquoi c'est nécessaire : une correspondance G2G ↔ FazerCards repose sur
+ * un identifiant COLLÉ À LA MAIN. Une faute de frappe passerait totalement
+ * inaperçue jusqu'à la phase 2, où elle livrerait le mauvais produit à un
+ * client réel qui a déjà payé. Tant qu'on n'a pas prouvé que le SKU existe,
+ * on ne doit pas pouvoir activer la correspondance.
+ *
+ * `unavailable` est distingué de `not_found` à dessein : « FazerCards est
+ * injoignable » et « ce card_id n'existe pas » n'appellent pas du tout la
+ * même action, même si les deux empêchent l'activation.
+ */
+export type FazercardsSkuCheck =
+  /** Le SKU existe chez FazerCards : nom et prix résolus. */
+  | "verified"
+  /** La catégorie a été listée, mais ce SKU n'y figure pas. */
+  | "not_found"
+  /** FazerCards injoignable ou non configuré : rien ne peut être prouvé. */
+  | "unavailable"
+  /** Identifiants incomplets : il n'y a rien à vérifier. */
+  | "missing_ids";
+
+export interface FazercardsSkuCheckResult {
+  status: FazercardsSkuCheck;
+  /** Nom canonique résolu chez FazerCards (preuve affichable). */
+  name: string;
+  /** Prix fournisseur au moment de la vérification. */
+  priceUsd: string;
+  stock: number | null;
+}
+
+const EMPTY_CHECK: FazercardsSkuCheckResult = {
+  status: "missing_ids",
+  name: "",
+  priceUsd: "",
+  stock: null,
+};
+
+/**
+ * Vérifie qu'un `card_id` figure bien dans les offres d'une catégorie.
+ *
+ * @param offers liste renvoyée par FazerCards, ou `null` si l'appel a échoué
+ *               (injoignable, non configuré, erreur renvoyée).
+ */
+export function checkFazercardsGiftCardSku(input: {
+  offers: readonly FazercardsGiftCardOfferLite[] | null;
+  cardId: string;
+}): FazercardsSkuCheckResult {
+  const cardId = (input.cardId ?? "").trim();
+  if (!cardId) return EMPTY_CHECK;
+
+  // `null` = l'appel n'a pas abouti. Ce n'est PAS une preuve d'absence.
+  if (input.offers === null) {
+    return { status: "unavailable", name: "", priceUsd: "", stock: null };
+  }
+
+  const exact = input.offers.find((offer) => offer.card_id === cardId);
+  const resolved = exact ?? input.offers.find(
+    (offer) => (offer.card_id ?? "").trim().toLowerCase() === cardId.toLowerCase(),
+  );
+  if (!resolved) {
+    return { status: "not_found", name: "", priceUsd: "", stock: null };
+  }
+
+  return {
+    status: "verified",
+    name: resolved.name ?? "",
+    priceUsd: resolved.price_usd ?? "",
+    stock: Number.isFinite(Number(resolved.stock)) ? Number(resolved.stock) : null,
+  };
+}
+
+/**
+ * Règle d'activation : une correspondance ne peut être activée que si le SKU
+ * a été prouvé présent chez FazerCards. Fail-closed, sans exception — y
+ * compris quand FazerCards est injoignable (l'activation se retentera).
+ */
+export function canEnableFazercardsSku(check: FazercardsSkuCheckResult): boolean {
+  return check.status === "verified";
+}

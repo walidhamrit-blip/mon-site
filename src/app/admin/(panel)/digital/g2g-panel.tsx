@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { formatFazercardsUsd } from "@/lib/fazercards-giftcard-lookup-core";
 import {
   Check,
   Copy,
@@ -36,6 +37,8 @@ interface Mapping {
   supplierKind: string;
   categoryId: string;
   supplierSkuId: string;
+  supplierSkuName: string | null;
+  supplierPriceUsd: string | null;
   saleCurrency: string;
   minMarginPercent: number;
   maxCostUsd: string;
@@ -273,12 +276,34 @@ export function G2gPanel() {
           maxCostUsd: Number(form.maxCostUsd),
         }),
       });
-      const body = (await response.json()) as { ok?: boolean; message?: string; error?: string };
+      const body = (await response.json()) as {
+        ok?: boolean;
+        message?: string;
+        error?: string;
+        skuCheck?: { status?: string; name?: string; priceUsd?: string };
+      };
       if (!response.ok || !body.ok) {
         throw new Error(body.message ?? body.error ?? "Enregistrement refusé");
       }
       setForm((previous) => ({ ...EMPTY_FORM, offerId: "" }));
-      setNotice("Correspondance enregistrée.");
+      // Un enregistrement « réussi » mais non vérifié doit se voir : sinon on
+      // croit la correspondance bonne alors que le SKU n'a pas été prouvé.
+      const status = body.skuCheck?.status ?? "";
+      if (status === "verified") {
+        setNotice(
+          `Correspondance enregistrée — SKU vérifié chez FazerCards : ${body.skuCheck?.name || "nom inconnu"} (${formatFazercardsUsd(body.skuCheck?.priceUsd)}).`,
+        );
+      } else if (status === "not_found") {
+        setNotice(
+          "⚠️ Enregistré DÉSACTIVÉ : ce card_id n'existe pas dans la catégorie indiquée. Vérifiez la saisie avant d'activer.",
+        );
+      } else if (status === "unavailable") {
+        setNotice(
+          "⚠️ Enregistré DÉSACTIVÉ : FazerCards injoignable, le card_id n'a pas pu être vérifié. Réessayez l'activation plus tard.",
+        );
+      } else {
+        setNotice("Correspondance enregistrée.");
+      }
       await load();
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : String(cause));
@@ -599,6 +624,19 @@ export function G2gPanel() {
                       <td className="py-1.5 pr-2">{mapping.supplierKind === "game_key" ? "Clé jeu" : "Carte"}</td>
                       <td className="py-1.5 pr-2 font-mono text-stone-600">
                         {mapping.categoryId || "—"} / {mapping.supplierSkuId || "—"}
+                        {/* Preuve de résolution : le nom réel plutôt qu'un UUID nu. */}
+                        {mapping.supplierSkuName ? (
+                          <span className="block font-sans text-emerald-700">
+                            ✓ {mapping.supplierSkuName}
+                            {mapping.supplierPriceUsd
+                              ? ` · ${formatFazercardsUsd(mapping.supplierPriceUsd)}`
+                              : ""}
+                          </span>
+                        ) : mapping.supplierSkuId ? (
+                          <span className="block font-sans text-amber-700">
+                            ⚠️ SKU non vérifié
+                          </span>
+                        ) : null}
                       </td>
                       <td className="py-1.5 pr-2">{mapping.saleCurrency}</td>
                       <td className="py-1.5 pr-2">{mapping.minMarginPercent} %</td>

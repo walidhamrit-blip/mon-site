@@ -679,6 +679,14 @@ export function ensureSchema(): Promise<void> {
       await pool.query(
         "CREATE INDEX IF NOT EXISTS g2g_offer_mappings_enabled_idx ON g2g_offer_mappings (enabled)",
       );
+      // Preuve de résolution du SKU : sans ces colonnes, un `card_id` erroné
+      // ne serait détectable qu'au moment de livrer un client réel.
+      await pool.query(
+        "ALTER TABLE g2g_offer_mappings ADD COLUMN IF NOT EXISTS supplier_sku_name text",
+      );
+      await pool.query(
+        "ALTER TABLE g2g_offer_mappings ADD COLUMN IF NOT EXISTS supplier_price_usd text",
+      );
     })().catch((error) => {
       schemaReady = null; // permet de réessayer au prochain accès
       throw error;

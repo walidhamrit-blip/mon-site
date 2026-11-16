@@ -409,6 +409,31 @@ envoyée à un tiers.
    - marge nette après commission G2G ≥ `min_margin_percent` ;
    - **ne jamais lier un top-up par ID joueur** à une offre G2G qui attend un code.
 
+### Le garde-fou d'activation du SKU
+
+Un `card_id` est **collé à la main**. Une faute de frappe passerait
+totalement inaperçue jusqu'à la phase 2, où elle livrerait le mauvais
+produit à un client qui a déjà payé. L'activation est donc **fail-closed** :
+à l'enregistrement, le serveur liste la catégorie chez FazerCards
+(lecture seule, `GET /giftcards/cards`) et refuse d'activer tant que le
+SKU n'est pas prouvé présent.
+
+| Situation | Statut | Comportement |
+| --- | --- | --- |
+| `card_id` trouvé | `verified` | activable ; le nom et le prix réels sont mémorisés |
+| `card_id` absent de la catégorie | `not_found` | **400 — activation refusée** |
+| FazerCards injoignable ou non configuré | `unavailable` | **503 — activation refusée** (réessayer) |
+| identifiants incomplets | `missing_ids` | activation refusée (`incomplete_mapping`) |
+
+Dans tous les cas, l'enregistrement **désactivé** reste autorisé : une panne
+FazerCards ne doit pas bloquer la saisie. Le panneau affiche alors
+« ⚠️ SKU non vérifié », et « ✓ *nom réel* · *prix* » une fois la preuve
+obtenue.
+
+> `unavailable` et `not_found` sont délibérément distincts : « FazerCards est
+> injoignable » et « ce `card_id` n'existe pas » n'appellent pas du tout la
+> même action, même si les deux empêchent l'activation.
+
 Les mappings sont stockés dans `g2g_offer_mappings`, **`enabled = false` par
 défaut**, et l'API admin refuse d'activer une ligne sans `category_id` et
 `supplier_sku_id`.
