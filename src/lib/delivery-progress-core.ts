@@ -20,7 +20,7 @@
  * Telegram et les tests peuvent l'utiliser directement.
  */
 
-import { isManualPaymentMethod } from "@/lib/manual-payment-core";
+import { isManualPaymentMethod } from "./manual-payment-core.ts";
 
 /* --------------------------------- Étapes --------------------------------- */
 
