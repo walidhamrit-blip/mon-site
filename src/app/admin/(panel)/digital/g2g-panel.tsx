@@ -42,14 +42,26 @@ interface Mapping {
   note: string | null;
 }
 
+interface ProbeResult {
+  name: string;
+  description: string;
+  ok: boolean;
+  httpStatus: number | null;
+  code: string;
+  message: string;
+  requestId: string | null;
+}
+
 interface Diagnostic {
   ok: boolean;
   config: ConfigStatus;
   store: StoreStatus | null;
   storeError: string | null;
+  probe: ProbeResult[] | null;
   mappings: Mapping[];
   dbError: string | null;
   suggestedWebhookUrl: string;
+  deploy: { sha: string; env: string; region: string };
   autoDeliveryEnabled: boolean;
 }
 
@@ -106,6 +118,7 @@ export function G2gPanel() {
   const [form, setForm] = useState<FormState>(EMPTY_FORM);
   const [saving, setSaving] = useState(false);
   const [notice, setNotice] = useState("");
+  const [probing, setProbing] = useState(false);
 
   const load = useCallback(async () => {
     setBusy(true);
@@ -130,6 +143,25 @@ export function G2gPanel() {
     }, 0);
     return () => window.clearTimeout(timer);
   }, [load]);
+
+  /**
+   * Sonde `GET /v2/store` avec plusieurs jeux d'en-têtes pour identifier
+   * celui que G2G accepte. Strictement en lecture seule.
+   */
+  const runProbe = useCallback(async () => {
+    setProbing(true);
+    setError("");
+    try {
+      const response = await fetch("/api/admin/g2g?probe=1", { cache: "no-store" });
+      const body = (await response.json()) as Diagnostic & { error?: string };
+      if (!response.ok || !body.ok) throw new Error(body.error ?? "Diagnostic indisponible");
+      setData(body);
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : String(cause));
+    } finally {
+      setProbing(false);
+    }
+  }, []);
 
   const field = (key: keyof FormState, value: string | boolean) =>
     setForm((previous) => ({ ...previous, [key]: value }));
@@ -285,6 +317,66 @@ export function G2gPanel() {
                   {data.storeError ?? "Appel non effectué."}
                 </p>
               )}
+
+              <div className="mt-2 flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => void runProbe()}
+                  disabled={probing}
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-stone-300 px-2.5 py-1.5 text-[11px] font-bold text-stone-700 hover:bg-stone-50 disabled:opacity-50"
+                >
+                  {probing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : null}
+                  Diagnostiquer les en-têtes
+                </button>
+                <span className="text-[11px] text-stone-500">
+                  Code déployé :{" "}
+                  <code className="font-mono">
+                    {data.deploy?.sha || "inconnu (hors Vercel)"}
+                  </code>
+                  {data.deploy?.env ? ` · ${data.deploy.env}` : ""}
+                </span>
+              </div>
+              <p className="mt-1 text-[11px] text-stone-500">
+                Si le SHA ne correspond pas au dernier commit de la branche, le
+                correctif n&apos;est pas encore en production : redéployez avant
+                de conclure.
+              </p>
+
+              {data.probe ? (
+                <div className="mt-2 overflow-x-auto">
+                  <table className="w-full text-left text-[11px]">
+                    <thead className="text-stone-500">
+                      <tr>
+                        <th className="py-1.5 pr-2">Variante d&apos;en-têtes</th>
+                        <th className="py-1.5 pr-2">HTTP</th>
+                        <th className="py-1.5 pr-2">Code</th>
+                        <th className="py-1.5 pr-2">Réponse G2G</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-stone-100">
+                      {data.probe.map((row) => (
+                        <tr key={row.name} className={row.ok ? "bg-emerald-50" : undefined}>
+                          <td className="py-1.5 pr-2 text-stone-700">
+                            <span className="font-mono">{row.name}</span>
+                            <span className="block text-stone-500">{row.description}</span>
+                          </td>
+                          <td className="py-1.5 pr-2">{row.httpStatus ?? "—"}</td>
+                          <td className="py-1.5 pr-2 font-mono">{row.code || "—"}</td>
+                          <td className="py-1.5 pr-2 text-stone-600">
+                            {row.ok ? "✅ accepté" : row.message || "—"}
+                            {row.requestId ? (
+                              <span className="block font-mono text-stone-400">
+                                request_id {row.requestId}
+                              </span>
+                            ) : null}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ) : null}
+
               <h3 className="mt-3 text-xs font-bold text-stone-800">3. Callback URL à déclarer chez G2G</h3>
               <div className="mt-1.5 flex items-center gap-2">
                 <code className="min-w-0 flex-1 truncate rounded-lg border border-stone-200 bg-stone-50 px-2 py-1.5 font-mono text-[11px] text-stone-800">

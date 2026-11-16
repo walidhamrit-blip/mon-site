@@ -149,6 +149,35 @@ if (options.body !== undefined) headers["Content-Type"] = "application/json";
 Ne pas « nettoyer » cet en-tête sur les requêtes sans corps sous prétexte
 qu'il est inutile en HTTP : G2G le refuse.
 
+### Sonde d'en-têtes : quand la doc et la vraie API divergent
+
+La documentation officielle et les implémentations publiques ne sont pas
+d'accord entre elles (certaines envoient `Content-Type` sur un `GET` nu,
+d'autres non ; le nom de l'en-tête utilisateur apparaît aussi bien comme
+`g2g-userid` que `g2g-user-id`). Plutôt que de deviner depuis un
+environnement qui n'a pas accès à l'API, le panneau admin sait trancher :
+
+**`/admin/digital` → panneau G2G → « Diagnostiquer les en-têtes »**
+
+Il rejoue `GET /v2/store` (**lecture seule**, aucune offre touchée) avec
+plusieurs jeux d'en-têtes et affiche, pour chacun, le statut HTTP, le `code`
+G2G, le `request_id` et le message exact :
+
+| Variante | En-têtes |
+| --- | --- |
+| `baseline` | `Content-Type` + `Accept` + `g2g-userid` (configuration actuelle) |
+| `no_content_type` | `GET` nu, sans `Content-Type` |
+| `no_accept` | `Content-Type` sans `Accept` |
+| `charset_utf8` | `Content-Type: application/json; charset=utf-8` |
+| `user_id_hyphen` | `g2g-user-id` au lieu de `g2g-userid` |
+
+La ligne surlignée en vert est celle que G2G accepte : il suffit ensuite
+d'aligner `g2gRequestHeaders()` (`src/lib/g2g-core.ts`) dessus.
+
+Le panneau affiche aussi le **SHA du commit déployé** (`VERCEL_GIT_COMMIT_SHA`).
+S'il ne correspond pas au dernier commit de la branche, le correctif n'est pas
+encore en production : **redéployez avant de conclure que ça ne marche pas**.
+
 ---
 
 ## Étape 3 — Déclarer le webhook chez G2G

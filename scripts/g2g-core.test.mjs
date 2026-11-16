@@ -299,6 +299,30 @@ test("le script de vérification locale envoie aussi Content-Type sur le GET", (
   assert.match(call, /"Content-Type": "application\/json"/);
 });
 
+test("le diagnostic d'en-têtes reste en lecture seule et couvre les 2 hypothèses", () => {
+  const client = read("src/lib/g2g.ts");
+  const start = client.indexOf("/* ---------------- Diagnostic d'en-têtes");
+  const end = client.indexOf("export async function g2gGetOffer");
+  assert.ok(start > 0 && end > start, "bloc de diagnostic introuvable");
+  const block = client.slice(start, end);
+  // Strictement lecture seule : un GET /v2/store, aucune écriture.
+  assert.match(block, /method: "GET"/);
+  assert.doesNotMatch(block, /"POST"|"PATCH"|"DELETE"|g2gPatchOffer|g2gDeliverCodes/);
+  assert.match(block, /\/v2\/store/);
+  // Les deux hypothèses qui s'opposent (doc vs implémentations publiques).
+  assert.match(block, /baseline/);
+  assert.match(block, /no_content_type/);
+  // Côté route, la session admin est vérifiée avant de lancer la sonde.
+  // `lastIndexOf` cible l'appel dans le handler, pas l'import en tête de fichier.
+  const route = read("src/app/api/admin/g2g/route.ts");
+  assert.ok(route.indexOf("isAdminAuthenticated()") < route.lastIndexOf("g2gProbeStore"));
+});
+
+test("la route renvoie le SHA déployé pour distinguer « pas déployé » de « ne marche pas »", () => {
+  const route = read("src/app/api/admin/g2g/route.ts");
+  assert.match(route, /VERCEL_GIT_COMMIT_SHA/);
+});
+
 test("schéma et DDL créent la table de mapping désactivée par défaut", () => {
   const schema = read("src/db/schema.ts");
   const ddl = read("src/db/index.ts");

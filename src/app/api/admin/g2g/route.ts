@@ -8,6 +8,8 @@ import {
   g2gConfigured,
   g2gErrorMessage,
   g2gGetStore,
+  g2gProbeStore,
+  type G2gProbeResult,
 } from "@/lib/g2g";
 
 export const dynamic = "force-dynamic";
@@ -99,6 +101,19 @@ export async function GET(req: Request) {
     storeError = "Clé API, Secret Key ou User ID absent : aucun appel G2G effectué.";
   }
 
+  // `?probe=1` : sonde GET /v2/store avec plusieurs jeux d'en-têtes.
+  // Lecture seule — aucune offre n'est touchée. Sert à identifier quel
+  // en-tête G2G refuse quand la documentation et les implémentations
+  // publiques divergent.
+  let probe: G2gProbeResult[] | null = null;
+  if (new URL(req.url).searchParams.get("probe") === "1" && g2gConfigured()) {
+    try {
+      probe = await g2gProbeStore();
+    } catch (error) {
+      storeError = g2gErrorMessage(error);
+    }
+  }
+
   let mappings: ReturnType<typeof publicMapping>[] = [];
   let dbError: string | null = null;
   try {
@@ -117,9 +132,19 @@ export async function GET(req: Request) {
     config,
     store,
     storeError,
+    probe,
     mappings,
     dbError,
     suggestedWebhookUrl,
+    /**
+     * Quel code tourne réellement en production — indispensable pour savoir
+     * si un correctif est déployé avant de conclure qu'il ne fonctionne pas.
+     */
+    deploy: {
+      sha: (process.env.VERCEL_GIT_COMMIT_SHA ?? process.env.GIT_COMMIT_SHA ?? "").slice(0, 7),
+      env: process.env.VERCEL_ENV ?? "",
+      region: process.env.VERCEL_REGION ?? "",
+    },
     /** Tant que cette phase n'est pas terminée, aucun achat n'est câblé. */
     autoDeliveryEnabled: false,
   });
