@@ -209,6 +209,60 @@ export function verifyG2gWebhookSignature(input: {
   );
 }
 
+/* ------------------------- Diagnostic des erreurs ------------------------- */
+
+/**
+ * Famille d'erreur renvoyée par l'API G2G, pour guider le dépannage.
+ *
+ * Deux pannes très différentes se ressemblent dans le panneau admin :
+ *   - `400` = notre requête est malformée (en-tête refusé). C'est un problème
+ *     de **code**, indépendant des clés.
+ *   - `401` = la paire `G2G_API_KEY` / `G2G_SECRET_KEY` est désynchronisée
+ *     (les deux valeurs doivent venir de la MÊME génération) ou l'`user_id`
+ *     ne correspond pas. C'est un problème de **configuration** côté G2G.
+ *
+ * Faute de ce distinguo, on perd des heures à re-générer des clés alors que
+ * le défaut est dans le code (ou l'inverse).
+ */
+export type G2gErrorHint =
+  | "network"
+  | "headers"
+  | "request"
+  | "signature"
+  | "permissions"
+  | "rate_limit"
+  | "upstream"
+  | null;
+
+export function g2gErrorHint(input: {
+  status: number | null;
+  code?: string | null;
+  message?: string | null;
+}): G2gErrorHint {
+  const { status } = input;
+  const message = (input.message ?? "").toLowerCase();
+
+  if (status === null) return "network";
+  if (status === 401) return "signature";
+  if (status === 403) return "permissions";
+  if (status === 429) return "rate_limit";
+  if (status >= 500) return "upstream";
+
+  // Un 400 peut aussi masquer une clé refusée : G2G renvoie parfois
+  // « invalid api key » ou « signature » sans passer par un 401.
+  if (message.includes("signature") || message.includes("api key")) {
+    return "signature";
+  }
+  if (status === 400) {
+    // « Invalid Header 'Content-Type' » et consorts : en-tête refusé.
+    if (message.includes("header") || message.includes("content-type")) {
+      return "headers";
+    }
+    return "request";
+  }
+  return null;
+}
+
 /* --------------------------- Événements webhook --------------------------- */
 
 export interface G2gDeliveryEvent {

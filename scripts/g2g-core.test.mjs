@@ -17,6 +17,7 @@ import {
   evaluateG2gMargin,
   g2gApiSignature,
   g2gCanonicalPath,
+  g2gErrorHint,
   g2gRequestHeaders,
   g2gSignaturesEqual,
   g2gWebhookSignature,
@@ -316,6 +317,28 @@ test("le diagnostic d'en-têtes reste en lecture seule et couvre les 2 hypothès
   // `lastIndexOf` cible l'appel dans le handler, pas l'import en tête de fichier.
   const route = read("src/app/api/admin/g2g/route.ts");
   assert.ok(route.indexOf("isAdminAuthenticated()") < route.lastIndexOf("g2gProbeStore"));
+});
+
+test("une panne de clés et une panne d'en-têtes ne sont jamais confondues", () => {
+  // 400 + en-tête refusé => défaut de CODE, les clés n'y sont pour rien.
+  assert.equal(
+    g2gErrorHint({
+      status: 400,
+      message:
+        "The request was unacceptable, often due to missing a required parameter. Invalid Header 'Content-Type'.",
+    }),
+    "headers",
+  );
+  // 401 => paire de clés désynchronisée (régénérer les DEUX ensemble).
+  assert.equal(g2gErrorHint({ status: 401, message: "invalid signature" }), "signature");
+  assert.equal(g2gErrorHint({ status: 401, message: "" }), "signature");
+  // Une clé refusée signalée en 400 ne doit pas être rangée dans « headers ».
+  assert.equal(g2gErrorHint({ status: 400, message: "Invalid api key" }), "signature");
+  assert.equal(g2gErrorHint({ status: 403, message: "" }), "permissions");
+  assert.equal(g2gErrorHint({ status: 429, message: "" }), "rate_limit");
+  assert.equal(g2gErrorHint({ status: 503, message: "" }), "upstream");
+  // Pas de statut = on n'a jamais joint G2G.
+  assert.equal(g2gErrorHint({ status: null, message: "G2G injoignable" }), "network");
 });
 
 test("la route renvoie le SHA déployé pour distinguer « pas déployé » de « ne marche pas »", () => {

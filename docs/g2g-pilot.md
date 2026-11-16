@@ -97,6 +97,13 @@ bouton *Tester la connexion* : il affiche le `user_id`, `account_status`,
 `Content-Type: application/json` manque (ou n'est envoyé que sur les requêtes
 avec corps). Voir l'encadré ci-dessous.
 
+> Le panneau affiche automatiquement la **famille** de l'erreur sous le
+> message G2G (en-têtes, paire de clés, permissions, plafond, serveur…).
+> Ne régénérez jamais des clés sur un `400` d'en-tête : ce n'est pas un
+> problème de clé. À l'inverse, un `401` — ou un `400` contenant
+> « invalid api key » / « signature » — pointe toujours vers la paire
+> `G2G_API_KEY` / `G2G_SECRET_KEY`.
+
 **Si la réponse est `401` / signature invalide**, vérifier dans l'ordre :
 
 1. `G2G_SECRET_KEY` (régénérer la paire si elle a été perdue) ;

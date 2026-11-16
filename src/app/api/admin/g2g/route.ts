@@ -3,12 +3,14 @@ import { desc, eq } from "drizzle-orm";
 import { db, ensureSchema } from "@/db";
 import { g2gOfferMappings, type G2gOfferMapping } from "@/db/schema";
 import { isAdminAuthenticated } from "@/lib/auth";
+import { g2gErrorHint, type G2gErrorHint } from "@/lib/g2g-core";
 import {
   g2gConfigStatus,
   g2gConfigured,
   g2gErrorMessage,
   g2gGetStore,
   g2gProbeStore,
+  isG2gError,
   type G2gProbeResult,
 } from "@/lib/g2g";
 
@@ -72,6 +74,7 @@ export async function GET(req: Request) {
     sellingCurrencies: string[];
   } | null = null;
   let storeError: string | null = null;
+  let storeHint: G2gErrorHint = null;
   if (g2gConfigured()) {
     try {
       const response = await g2gGetStore();
@@ -96,9 +99,13 @@ export async function GET(req: Request) {
       };
     } catch (error) {
       storeError = g2gErrorMessage(error);
+      storeHint = isG2gError(error)
+        ? g2gErrorHint({ status: error.status, code: error.code, message: error.message })
+        : "network";
     }
   } else {
     storeError = "Clé API, Secret Key ou User ID absent : aucun appel G2G effectué.";
+    storeHint = "signature";
   }
 
   // `?probe=1` : sonde GET /v2/store avec plusieurs jeux d'en-têtes.
@@ -132,6 +139,7 @@ export async function GET(req: Request) {
     config,
     store,
     storeError,
+    storeHint,
     probe,
     mappings,
     dbError,

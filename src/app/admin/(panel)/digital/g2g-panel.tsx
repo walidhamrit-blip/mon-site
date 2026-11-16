@@ -52,11 +52,33 @@ interface ProbeResult {
   requestId: string | null;
 }
 
+/**
+ * Traduction de la famille d'erreur en action concrète.
+ *
+ * Sans ça, un `400` (notre requête est malformée) et un `401` (paire de clés
+ * désynchronisée) se ressemblent et on régénère des clés pour rien.
+ */
+const STORE_HINTS: Record<string, string> = {
+  signature:
+    "Paire de clés désynchronisée. G2G_API_KEY et G2G_SECRET_KEY doivent venir de la MÊME génération (le même clic sur « Generate key »), et G2G_USER_ID doit être le Seller ID, pas un ID d'offre. En cas de doute : régénérer une paire et remplacer les DEUX valeurs ensemble.",
+  headers:
+    "En-tête refusé par G2G (souvent Content-Type). C'est un défaut de code, pas de clé : utilisez « Diagnostiquer les en-têtes » ci-dessous pour voir quelle variante G2G accepte.",
+  request:
+    "Requête refusée : paramètre manquant ou schéma invalide. Vérifiez le chemin appelé et les paramètres envoyés.",
+  permissions:
+    "Clé non autorisée : vérifiez le statut vendeur et les droits de la clé côté G2G.",
+  rate_limit: "Trop d'appels en peu de temps. Réessayez dans quelques instants.",
+  upstream: "G2G renvoie une erreur serveur. Réessayez plus tard.",
+  network:
+    "G2G injoignable depuis le serveur : vérifiez le réseau sortant et G2G_API_BASE.",
+};
+
 interface Diagnostic {
   ok: boolean;
   config: ConfigStatus;
   store: StoreStatus | null;
   storeError: string | null;
+  storeHint: string | null;
   probe: ProbeResult[] | null;
   mappings: Mapping[];
   dbError: string | null;
@@ -317,6 +339,11 @@ export function G2gPanel() {
                   {data.storeError ?? "Appel non effectué."}
                 </p>
               )}
+              {data.storeHint && STORE_HINTS[data.storeHint] ? (
+                <p className="mt-1.5 rounded-lg border border-amber-300 bg-amber-50 p-2.5 text-[11px] leading-relaxed text-amber-900">
+                  <strong>Que faire :</strong> {STORE_HINTS[data.storeHint]}
+                </p>
+              ) : null}
 
               <div className="mt-2 flex flex-wrap items-center gap-2">
                 <button
