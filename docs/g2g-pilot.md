@@ -1,0 +1,339 @@
+# Pilote G2G OpenAPI v2 — procédure de branchement
+
+> Objectif : vendre nos cartes cadeaux et clés de jeux FazerCards sur G2G,
+> **sans acheter de stock d'avance**. Ce document décrit la **phase 1**
+> (brancher la clé, vérifier la signature, recevoir les webhooks, préparer le
+> mapping). L'achat automatique chez FazerCards et la livraison du code à
+> l'acheteur sont la **phase 2** et ne sont PAS encore déployés.
+
+- Compte vendeur : `Walwal78`, **Seller ID / User ID `1003177397`**
+- EKYC **Approved** le 13/11/2026 (ticket G2G `#5944715`)
+- 1re vente manuelle le 10/11/2026 : offre `#G1793906316865GE`
+  (*iTunes Gift Card TRY 100 (TR)*), commande `#1794322532545O5QE-1`
+- Documentation officielle : <https://docs.g2g.com/llms.txt>
+- Base API : `https://open-api.g2g.com`
+
+---
+
+## ⚠️ Règle n°1 — la clé secrète
+
+G2G affiche la **Secret Key une seule fois** (g2g.com → Avatar →
+**API Integration** → *Generate key*). Si elle est perdue, il faut régénérer
+une paire de clés.
+
+- ❌ Jamais dans un chat, un e-mail, un ticket support, un log, un screenshot,
+  un fichier du dépôt ou une URL.
+- ✅ Uniquement dans les **variables d'environnement Vercel** (Production +
+  Preview si nécessaire), puis **redéployer**.
+- ✅ En local : `.env.local` (ignoré par Git), jamais `.env` versionné.
+- Ne pas créer une variable Vercel avec une valeur vide : Vercel la refuse.
+
+---
+
+## Étape 1 — Renseigner les variables côté serveur
+
+Dans Vercel → projet `mon-site` → **Settings → Environment Variables** :
+
+| Variable | Origine | Obligatoire en phase 1 |
+| --- | --- | --- |
+| `G2G_API_KEY` | API Integration → *Generate key* (clé publique, 32 hex) | ✅ |
+| `G2G_SECRET_KEY` | Affichée **une seule fois** à la génération | ✅ |
+| `G2G_USER_ID` | Seller ID `1003177397` | ✅ |
+| `G2G_WEBHOOK_SECRET_TOKEN` | API Integration → section **Webhook** → *Generate random secret token* | ✅ (étape 3) |
+| `G2G_WEBHOOK_URL` | Callback URL **exact** déclaré chez G2G, ex. `https://nokhba.net.ly/api/webhooks/g2g` | ✅ (étape 3) |
+| `G2G_API_BASE` | `https://open-api.g2g.com` (défaut) | facultatif |
+
+`G2G_WEBHOOK_SECRET_TOKEN` est un secret **différent** de `G2G_SECRET_KEY` :
+le premier sert à vérifier les messages **entrants**, le second à signer nos
+appels **sortants**.
+
+### Rotation de clé : les 2 valeurs viennent de la MÊME génération
+
+Quand on clique de nouveau sur **« Generate key »** (parce qu'une ancienne
+clé existait déjà et que sa Secret Key n'était plus récupérable) :
+
+- **l'ancienne paire est invalidée** : `G2G_API_KEY` **et**
+  `G2G_SECRET_KEY` doivent être remplacées **ensemble**, avec les deux valeurs
+  affichées lors du même clic. Un mélange « nouvelle API Key + ancienne
+  Secret Key » (ou l'inverse) donne une erreur de signature sur tous les
+  appels, sans autre indice que `401` / `invalid signature`.
+- La nouvelle Secret Key n'est affichée **qu'une fois** : la copier avant de
+  fermer la fenêtre G2G.
+- Vérifier qu'il n'existe **qu'une seule ligne par nom** dans Vercel (un
+  doublon affiche un liseré rouge sur « Key » et n'est pas enregistré), et
+  qu'aucune ancienne valeur ne subsiste dans les environnements **Preview** ou
+  **Development** : elle donnerait des résultats différents selon l'URL testée.
+- `G2G_USER_ID`, `G2G_WEBHOOK_SECRET_TOKEN` et `G2G_WEBHOOK_URL` sont
+  **indépendants** de cette rotation : ils ne changent pas.
+- Comme pour toute modification de variable, un **redéploiement** est
+  nécessaire avant de tester.
+
+En cas de doute après le test `/admin/digital` : régénérer une nouvelle paire,
+remplacer les **deux** variables, redéployer. C'est sans risque tant qu'aucune
+offre n'est en `api_qty > 0`.
+
+---
+
+## Étape 2 — Vérifier que la clé fonctionne
+
+Trois possibilités, toutes en **lecture seule** (`GET /v2/store`) :
+
+```bash
+# En local, après avoir rempli .env.local :
+npm run g2g:check
+
+# Sans réseau (contrôle de la config + calcul de signature) :
+npm run g2g:check -- --sign-only
+
+# Tests du noyau (signatures, webhook, marges, câblage) :
+npm run test:g2g
+```
+
+Ou directement dans **`/admin/digital` → panneau « G2G — pilote OpenAPI v2 »**,
+bouton *Tester la connexion* : il affiche le `user_id`, `account_status`,
+`seller_status` et les devises de vente autorisées.
+
+**Si la réponse est `401` / signature invalide**, vérifier dans l'ordre :
+
+1. `G2G_SECRET_KEY` (régénérer la paire si elle a été perdue) ;
+2. `G2G_API_KEY` et `G2G_USER_ID` (pas l'ID d'offre, bien le Seller ID) ;
+3. l'horloge du serveur : le timestamp est en **millisecondes** et expire au
+   bout de **5 minutes** ;
+4. la casse / les espaces involontaires collés avec la clé.
+
+> Note documentation : la page officielle *Verifying Signatures* affiche un
+> hash d'exemple (`0884a10b…`) qui **ne se recalcule pas** avec les valeurs de
+> son propre exemple. Les snippets JS/Python/PHP de cette page font foi, et le
+> vecteur de la page *Message Signature* (`645343db…`) se recalcule
+> exactement. Notre implémentation suit les snippets, pas le hash imprimé.
+
+Signature des appels sortants :
+
+```
+canonicalString = canonicalPath + apiKey + userId + timestamp
+g2g-signature   = HMAC_SHA256(secretKey, canonicalString).hexdigest()
+```
+
+où `canonicalPath` est **uniquement le chemin** (`/v2/store`), sans l'hôte.
+En-têtes : `g2g-api-key`, `g2g-userid`, `g2g-timestamp`, `g2g-signature`.
+
+---
+
+## Étape 3 — Déclarer le webhook chez G2G
+
+Dans **g2g.com → Avatar → API Integration → section Webhook** :
+
+| Réglage | Valeur |
+| --- | --- |
+| Developer contact | une adresse e-mail surveillée (G2G alert si notre serveur ne répond pas) |
+| Callback URL | `https://<votre-domaine>/api/webhooks/g2g` — **copier la chaîne exacte** dans `G2G_WEBHOOK_URL` |
+| Secret token | générer avec *Generate random secret token* → `G2G_WEBHOOK_SECRET_TOKEN` |
+| Events | cocher **`order.api_delivery`** (pas « tous les événements ») |
+
+### Pas à pas dans la fenêtre « Callback URL »
+
+La fenêtre affichée par G2G contient deux champs vides, le lien
+*Generate random secret token* et le bouton **Save** :
+
+1. **Callback URL** : coller **exactement** `https://nokhba.net.ly/api/webhooks/g2g`
+   (domaine de production, en `https`, sans espace ni slash final). Cette même
+   chaîne sera la valeur de `G2G_WEBHOOK_URL` — G2G l'inclut dans le calcul de
+   la signature, donc les deux doivent être identiques au caractère près.
+2. Cliquer sur **« Generate random secret token »** : le 2ᵉ champ se remplit
+   avec une chaîne aléatoire (une douzaine de caractères, chiffres/lettres).
+3. **COPIER cette chaîne AVANT de cliquer sur Save.** Comme la Secret Key de
+   l'API, elle n'est pas récupérable ensuite ; si elle est perdue, il suffit de
+   cliquer de nouveau sur *Generate random secret token* pour en créer une
+   nouvelle (cela n'invalide PAS la paire `G2G_API_KEY` / `G2G_SECRET_KEY`).
+4. La coller dans Vercel → `mon-site` → Settings → Environment Variables :
+   **Name** = `G2G_WEBHOOK_SECRET_TOKEN`, **Value** = la chaîne,
+   **Environment** = Production (+ Preview si utilisé), puis **Save** et
+   **redéployer**. En local : `.env.local` uniquement.
+5. Revenir sur G2G et cliquer sur **Save**. Le token reste alors masqué côté
+   G2G : c'est la copie faite à l'étape 3 qui fait foi.
+6. Cocher ensuite l'événement **`order.api_delivery`** et **uniquement celui-là**
+   (ne pas cocher « Notification on all events »).
+
+⚠️ Ce token est **différent** de `G2G_SECRET_KEY` (qui signe nos appels
+sortants) et de `G2G_USER_ID`. Ne jamais le coller dans un chat, un e-mail ou
+un ticket support. Vérification : `npm run g2g:check -- --sign-only` doit
+afficher `Webhook token : présent`, et le voyant correspondant passe au vert
+dans `/admin/digital`.
+
+La signature entrante est :
+
+```
+canonicalString = webhookUrl + userId + timestamp
+g2g-signature   = HMAC_SHA256(webhookSecretToken, canonicalString).hexdigest()
+```
+
+`webhookUrl` doit être **strictement identique** à la valeur enregistrée chez
+G2G (casse, slash final, query string). Notre route accepte aussi la variante
+avec `apiKey` insérée, au cas où l'implémentation G2G diffère de l'exemple de
+code — dans les deux cas le secret token reste exigé.
+
+La route vérifie **la signature et la fraîcheur du timestamp avant de lire le
+corps**, déduplique par `delivery_id` via la table `webhook_events`, journalise
+uniquement les identifiants/quantités (jamais de code ni de secret) et envoie
+une alerte Telegram admin.
+
+---
+
+## Étape 3bis — Faut-il redéployer sur Vercel ?
+
+**Oui : toute modification d'une variable d'environnement Vercel ne prend
+effet qu'au déploiement suivant.** Un simple « Save » dans *Environment
+Variables* ne suffit pas. Mais **avant de cliquer sur Redeploy**, vérifie que
+les 5 variables obligatoires sont bien créées (sinon tu déploierais deux fois) :
+
+| Variable | Voyant attendu dans Vercel |
+| --- | --- |
+| `G2G_API_KEY` | présente |
+| `G2G_SECRET_KEY` | présente |
+| `G2G_USER_ID` | `1003177397` |
+| `G2G_WEBHOOK_SECRET_TOKEN` | présente (vient d'être générée) |
+| `G2G_WEBHOOK_URL` | `https://nokhba.net.ly/api/webhooks/g2g` |
+
+Points de vigilance :
+
+- Chaque variable doit être attachée à l'environnement **Production** (et
+  **Preview** seulement si tu testes aussi sur une URL de preview). Une
+  variable créée uniquement en *Development* n'existe pas en production.
+- `G2G_API_BASE` est facultative (`https://open-api.g2g.com` par défaut).
+- Ne jamais créer une variable avec une valeur vide : Vercel la refuse.
+- Ne rien committer : `.env.local` est ignoré par Git ; aucun secret ne doit
+  apparaître dans le dépôt.
+
+Ensuite, dans Vercel → **Deployments** → derniers `…` → **Redeploy** (sur le
+déploiement de la branche courante), laisse le build se terminer.
+
+En local, la checklist équivalente est :
+
+```bash
+npm run g2g:check -- --preflight
+```
+
+Elle affiche ✅/❌ pour les 6 variables, sans jamais montrer leur valeur, et
+refuse de conclure si `G2G_WEBHOOK_URL` n'est pas en `https` ou ne se termine
+pas par `/api/webhooks/g2g`.
+
+Après le déploiement, la vraie vérification se fait sur le site :
+**`/admin/digital` → panneau G2G → « Tester la connexion »** : les 5 voyants
+doivent être verts et `GET /v2/store` doit afficher le compte vendeur.
+
+#### Contrôles externes (sans aucun secret)
+
+| Contrôle | Résultat attendu | Si ce n'est pas le cas |
+| --- | --- | --- |
+| `GET /api/health` | `{"ok":true,…}` | site ou base indisponible |
+| `GET /api/admin/g2g` **sans session admin** | `401 {"ok":false,"error":"unauthorized"}` | **`404` = le code G2G n'est pas déployé** ; les variables d'environnement seules ne suffisent pas, il faut que le commit soit sur la branche déployée par Vercel |
+| `POST /api/webhooks/g2g` signé | `200 {"ok":true,"dry_run":true,…}` | vérifier `G2G_WEBHOOK_SECRET_TOKEN`, `G2G_WEBHOOK_URL` et l'horloge |
+
+⚠️ `/api/webhooks/g2g` n'expose **que** `POST` : un `GET` peut renvoyer
+404/405 même quand la route existe. Ce n'est donc pas un test fiable ; utiliser
+`GET /api/admin/g2g` (qui doit répondre `401`, pas `404`) ou un événement de
+test G2G.
+
+> 🛑 Rappel : redéployer n'active **aucune** livraison automatique. La phase 1
+> reste en *shadow mode* et toutes les offres G2G doivent garder
+> `api_qty = 0`.
+
+### Dépannage : contour rouge sur le champ « Key » dans Vercel
+
+Dans le formulaire d'ajout d'une variable, un liseré rouge autour de **Key**
+signale un problème sur le **nom**, pas sur la valeur. Les points noirs dans
+**Value** sont normaux : Vercel masque les secrets (l'icône « œil » les révèle ;
+ne jamais partager cette vue). Causes fréquentes :
+
+1. **Doublon (le plus courant)** : `G2G_API_KEY` existe déjà pour le même
+   environnement — Vercel refuse de créer deux fois la même clé. C'est une
+   bonne nouvelle : fermer le formulaire, retrouver la ligne dans la liste des
+   variables et vérifier simplement qu'elle est bien attachée à **Production**.
+   Ne pas créer de doublon, ne pas cliquer sur l'icône poubelle.
+2. **Caractère invisible** collé avec le nom (espace, guillemet, retour à la
+   ligne) : effacer le champ et retaper `G2G_API_KEY` à la main, en majuscules,
+   sans espace avant/après.
+3. **Mauvais environnement** : une variable créée uniquement en *Development*
+   n'existe pas en *Production* ; vérifier les cases d'environnement.
+
+Le libellé exact de l'erreur s'affiche sous le champ ou en bas du formulaire :
+le lire avant de réessayer. Aucun secret ne doit apparaître dans une capture
+envoyée à un tiers.
+
+---
+
+## Étape 4 — Préparer le mapping des offres
+
+1. **Trouver le SKU exact chez FazerCards** : `/admin/digital` → *Chercheur de
+   `card_id`*. Coller le lien/UUID de la catégorie, relever le `card_id`, le
+   prix USD, le stock et les quantités min/max.
+2. **Créer la correspondance** dans le panneau G2G de `/admin/digital` :
+   `offer_id` G2G → `category_id` + `card_id` (ou `game_id` + `key_id`).
+3. **Vérifier avant d'activer** :
+   - région **Global** ou pays exact (une carte TR ne se vend pas en Global) ;
+   - format du code attendu par G2G (`code_label` renvoyé par `GET /v2/offers/{id}`) ;
+   - prix de vente **en USD** : le garde-fou refuse toute autre devise (pas de
+     conversion implicite) ;
+   - marge nette après commission G2G ≥ `min_margin_percent` ;
+   - **ne jamais lier un top-up par ID joueur** à une offre G2G qui attend un code.
+
+Les mappings sont stockés dans `g2g_offer_mappings`, **`enabled = false` par
+défaut**, et l'API admin refuse d'activer une ligne sans `category_id` et
+`supplier_sku_id`.
+
+---
+
+## Étape 5 — Valider en « shadow mode » (phase 1)
+
+> 🛑 **Tant que la phase 2 n'est pas déployée, laisser `api_qty = 0` sur
+> TOUTES les offres G2G.** Une offre avec `api_qty > 0` est achetable : un
+> client paierait une commande que notre système ne livre pas encore. Les
+> ventes actuelles en inventaire pré-chargé manuel peuvent continuer
+> normalement.
+
+Séquence de test recommandée :
+
+1. `npm run g2g:check` → `code = 20000001`, `seller_status = active`.
+2. `/admin/digital` → tous les voyants de secrets au vert, compte vendeur
+   affiché, URL du webhook copiée.
+3. Déclarer le webhook chez G2G avec `order.api_delivery`.
+4. Déclencher un événement de test depuis G2G (ou attendre un événement réel
+   sur une offre à `api_qty = 0`) → la route doit répondre `200` avec
+   `dry_run: true`, une ligne dans `webhook_events` (`provider = g2g`) et une
+   alerte Telegram.
+5. Vérifier qu'une **signature falsifiée** est rejetée en `401`.
+
+---
+
+## Phase 2 (à construire, sur validation explicite)
+
+| Brique | Description |
+| --- | --- |
+| Achat JIT | `order.api_delivery` → lire l'offre G2G (`unit_price`, `currency`, `code_label`) → contrôle de marge et de plafond → achat FazerCards avec `Idempotency-Key = g2g-<delivery_id>` |
+| File de livraison | récupérer les codes (parfois asynchrones) via une file à retries, comme `delivery_jobs` — jamais dans le temps de vie d'un seul webhook serverless |
+| Livraison | `POST /v2/orders/{order_id}/delivery` avec `{ delivery_id, codes: [{ content, content_type: "text/plain", reference_id }] }` |
+| Stock & prix | cron qui aligne `api_qty` sur le stock FazerCards **et** le solde disponible, et coupe l'offre (`api_qty = 0`) si la marge passe sous le seuil |
+| Garde-fous | kill-switch explicite, alerte Telegram sur tout échec, interdiction des top-ups par ID joueur sur offres « code » |
+
+---
+
+## Fichiers concernés
+
+| Fichier | Rôle |
+| --- | --- |
+| `src/lib/g2g-core.ts` | Noyau pur : signatures HMAC, timestamp, décodage d'événement, marge |
+| `src/lib/g2g.ts` | Client serveur signé (`/v2/store`, offres, livraison) |
+| `src/app/api/admin/g2g/route.ts` | Diagnostic admin + CRUD des mappings (aucun secret renvoyé) |
+| `src/app/admin/(panel)/digital/g2g-panel.tsx` | Panneau `/admin/digital` |
+| `src/app/api/webhooks/g2g/route.ts` | Réception signée, idempotente, en shadow mode |
+| `src/db/schema.ts`, `src/db/index.ts` | Table `g2g_offer_mappings` (créée automatiquement) |
+| `scripts/g2g-check.mjs`, `scripts/g2g-core.test.mjs` | Vérification locale + tests |
+| `.env.example` | Liste commentée des variables `G2G_*` |
+
+Références : [Authentication Intro](https://docs.g2g.com/authentication-intro-1237152m0) ·
+[Setup API Key](https://docs.g2g.com/setup-api-key-1237153m0) ·
+[Setup Webhooks](https://docs.g2g.com/setup-webhooks-1237166m0) ·
+[Message Signature](https://docs.g2g.com/message-signature-1237168m0) ·
+[order.api_delivery](https://docs.g2g.com/order-api-delivery-18583502e0) ·
+[Deliver Code](https://docs.g2g.com/deliver-code-18583491e0) ·
+[Create/Update Offer](https://docs.g2g.com/create-offer-18583484e0)

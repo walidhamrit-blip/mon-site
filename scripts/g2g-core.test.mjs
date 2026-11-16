@@ -1,0 +1,272 @@
+#!/usr/bin/env node
+/**
+ * Garde-fous du pilote G2G OpenAPI v2.
+ *
+ * Couvre le noyau pur (signatures HMAC, fenêtre de timestamp, décodage de
+ * `order.api_delivery`, garde-fou de marge) et le câblage (authentification
+ * admin, vérification AVANT lecture du corps, absence d'achat automatique,
+ * aucun secret en clair dans le dépôt).
+ */
+import { test } from "node:test";
+import assert from "node:assert/strict";
+import { createHmac } from "node:crypto";
+import { readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
+import {
+  G2G_MAX_DELIVERY_QTY,
+  evaluateG2gMargin,
+  g2gApiSignature,
+  g2gCanonicalPath,
+  g2gSignaturesEqual,
+  g2gWebhookSignature,
+  isG2gTimestampFresh,
+  parseG2gDeliveryEvent,
+  verifyG2gWebhookSignature,
+} from "../src/lib/g2g-core.ts";
+
+const root = fileURLToPath(new URL("..", import.meta.url));
+const read = (path) => readFileSync(`${root}/${path}`, "utf8");
+
+/* -------------------------- Vecteurs officiels -------------------------- */
+
+// https://docs.g2g.com/verifying-signatures-1237154m0
+// ⚠️ Le hash IMPRIMÉ dans cette page (0884a10b…) ne se recalcule PAS avec
+// les valeurs de son propre exemple (incohérence de la documentation).
+// On valide donc la FORMULE (identique aux exemples JS/Python/PHP) contre
+// une implémentation indépendante, et le vecteur webhook ci-dessous, qui
+// lui se recalcule exactement.
+const API_VECTOR = {
+  secretKey: "dJirm8nG5AqQWoh7J5EHw3373Dk95zjRHaQ3gnv99kw",
+  apiKey: "b5769724c1cb1d52c58717d3d12ae2fe",
+  userId: "100000",
+  timestamp: "1653278884000",
+  canonicalPath: "/v1/offers/G1650445167989US/inventory_items/ba8551d9-47e3-424a-a809-4f043059eefb",
+};
+
+test("signature API = HMAC_SHA256(secretKey, path + apiKey + userId + timestamp)", () => {
+  const expected = createHmac("sha256", API_VECTOR.secretKey)
+    .update(
+      API_VECTOR.canonicalPath +
+        API_VECTOR.apiKey +
+        API_VECTOR.userId +
+        API_VECTOR.timestamp,
+      "utf8",
+    )
+    .digest("hex");
+  assert.equal(
+    g2gApiSignature(API_VECTOR),
+    expected,
+  );
+  assert.match(g2gApiSignature(API_VECTOR), /^[0-9a-f]{64}$/);
+  // Chaque composant entre dans la signature : une clé ou un timestamp
+  // différent ne doit jamais produire le même hash.
+  assert.notEqual(g2gApiSignature({ ...API_VECTOR, apiKey: "autre" }), expected);
+  assert.notEqual(g2gApiSignature({ ...API_VECTOR, userId: "100001" }), expected);
+  assert.notEqual(g2gApiSignature({ ...API_VECTOR, timestamp: "1653278884001" }), expected);
+  assert.notEqual(g2gApiSignature({ ...API_VECTOR, canonicalPath: "/v2/store" }), expected);
+});
+
+// https://docs.g2g.com/message-signature-1237168m0 — vecteur EXACT.
+test("signature webhook = vecteur officiel G2G", () => {
+  assert.equal(
+    g2gWebhookSignature({
+      secretToken: "gBW1wXgBNnA",
+      webhookUrl: "https://www.your_webhook_url.com",
+      userId: "100000",
+      timestamp: "1653278884000",
+    }),
+    "645343db00f974f5dab1f9e9ed8d4846a265e150291009fe40bfbdf437cfa16a",
+  );
+});
+
+test("chemin canonique : jamais d'hôte, query string conservée", () => {
+  assert.equal(g2gCanonicalPath("/v2/store"), "/v2/store");
+  assert.equal(
+    g2gCanonicalPath("https://open-api.g2g.com/v2/offers/G123?limit=10"),
+    "/v2/offers/G123?limit=10",
+  );
+  assert.equal(g2gCanonicalPath("v2/store"), "/v2/store");
+});
+
+/* ----------------------- Vérification des webhooks ----------------------- */
+
+const WEBHOOK = {
+  secretToken: "gBW1wXgBNnA",
+  webhookUrl: "https://nokhba.net.ly/api/webhooks/g2g",
+  userId: "1003177397",
+  apiKey: "b5769724c1cb1d52c58717d3d12ae2fe",
+  timestamp: "1653278884000",
+  now: 1653278884000,
+};
+
+/**
+ * Construit un webhook signé. Les `overrides` ne modifient QUE la signature :
+ * la vérification, elle, utilise toujours les paramètres légitimes (sinon on
+ * testerait « un faux secret accepté par un faux secret »).
+ */
+function signed(overrides = {}) {
+  const { now = WEBHOOK.now, ...signingOverrides } = overrides;
+  const signature = g2gWebhookSignature({ ...WEBHOOK, ...signingOverrides });
+  return { ...WEBHOOK, now, signature };
+}
+
+test("vérifie une signature webhook correcte et refuse toutes les altérations", () => {
+  assert.equal(verifyG2gWebhookSignature(signed()), true);
+  assert.equal(verifyG2gWebhookSignature(signed({ secretToken: "mauvais" })), false);
+  assert.equal(verifyG2gWebhookSignature(signed({ webhookUrl: "https://autre.example/webhook" })), false);
+  assert.equal(verifyG2gWebhookSignature(signed({ userId: "1003177398" })), false);
+  assert.equal(verifyG2gWebhookSignature(signed({ timestamp: "1653278884001" })), false);
+  assert.equal(verifyG2gWebhookSignature({ ...signed(), signature: "" }), false);
+  assert.equal(verifyG2gWebhookSignature({ ...signed(), signature: "z".repeat(64) }), false);
+});
+
+test("refuse un timestamp périmé (rejeu) ou invalide", () => {
+  assert.equal(isG2gTimestampFresh("1653278884000", 1653278884000), true);
+  assert.equal(isG2gTimestampFresh("1653278884000", 1653278884000 + 5 * 60 * 1000), true);
+  assert.equal(isG2gTimestampFresh("1653278884000", 1653278884000 + 5 * 60 * 1000 + 1), false);
+  assert.equal(isG2gTimestampFresh("1653278884000", 1653278884000 - 10 * 60 * 1000), false);
+  assert.equal(isG2gTimestampFresh("abc", 1653278884000), false);
+  assert.equal(verifyG2gWebhookSignature(signed({ now: 1653278884000 + 10 * 60 * 1000 })), false);
+});
+
+test("comparaison à temps constant : formes non hexadécimales refusées", () => {
+  assert.equal(g2gSignaturesEqual("A".repeat(64), "a".repeat(64)), true);
+  assert.equal(g2gSignaturesEqual("a".repeat(63), "a".repeat(64)), false);
+  assert.equal(g2gSignaturesEqual("", ""), false);
+});
+
+/* ------------------------- Événements de livraison ------------------------- */
+
+const GIFT_CARD_EVENT = {
+  id: "341a6ae1-34da-486e-b984-91a6f44cea07",
+  event_happened_at: 1661162789441,
+  event_type: "order.api_delivery",
+  payload: {
+    order_id: "1637925438960TE5T-1",
+    seller_id: "600001",
+    buyer_id: "600002",
+    offer_id: "G1650423467624TE",
+    purchased_qty: 5,
+    undelivered_qty: 3,
+    delivery_summary: {
+      delivery_id: "D1662278209721",
+      delivery_mode: "normal",
+      requested_qty: 4,
+      requested_at: 1662278209721,
+      expired_at: 1662279124000,
+    },
+  },
+};
+
+test("décode order.api_delivery sans conserver de donnée acheteur", () => {
+  const parsed = parseG2gDeliveryEvent(GIFT_CARD_EVENT);
+  assert.equal(parsed.ok, true);
+  assert.deepEqual(parsed.event, {
+    eventId: "341a6ae1-34da-486e-b984-91a6f44cea07",
+    eventType: "order.api_delivery",
+    orderId: "1637925438960TE5T-1",
+    offerId: "G1650423467624TE",
+    sellerId: "600001",
+    deliveryId: "D1662278209721",
+    requestedQty: 4,
+    expiredAt: 1662279124000,
+    deliveryMethodCode: "",
+  });
+});
+
+test("ignore les autres événements et refuse les payloads incomplets", () => {
+  assert.deepEqual(parseG2gDeliveryEvent({ event_type: "order.created", payload: {} }), {
+    ok: false,
+    reason: "unsupported_event",
+    eventType: "order.created",
+  });
+  assert.equal(parseG2gDeliveryEvent(null).ok, false);
+  assert.equal(parseG2gDeliveryEvent({}).ok, false);
+  const noDeliveryId = structuredClone(GIFT_CARD_EVENT);
+  delete noDeliveryId.payload.delivery_summary.delivery_id;
+  assert.equal(parseG2gDeliveryEvent(noDeliveryId).reason, "missing_fields");
+  const tooMany = structuredClone(GIFT_CARD_EVENT);
+  tooMany.payload.delivery_summary.requested_qty = G2G_MAX_DELIVERY_QTY + 1;
+  assert.equal(parseG2gDeliveryEvent(tooMany).reason, "invalid_quantity");
+});
+
+/* ------------------------------ Garde-fou de marge ------------------------------ */
+
+test("marge : accepte une vente rentable, refuse marge faible, plafond et devise", () => {
+  const base = {
+    unitPrice: 3,
+    saleCurrency: "USD",
+    costUsd: 2,
+    feePercent: 10,
+    minMarginPercent: 12,
+    maxCostUsd: 25,
+    requestedQty: 1,
+  };
+  const good = evaluateG2gMargin(base);
+  assert.equal(good.ok, true);
+  assert.equal(good.netRevenueUsd, 2.7);
+  assert.equal(good.totalCostUsd, 2);
+  assert.equal(good.netMarginPercent, 25.93);
+
+  assert.equal(evaluateG2gMargin({ ...base, costUsd: 2.6 }).reason, "margin");
+  assert.equal(evaluateG2gMargin({ ...base, requestedQty: 20, maxCostUsd: 25 }).reason, "cap");
+  assert.equal(evaluateG2gMargin({ ...base, saleCurrency: "MYR" }).reason, "currency");
+  assert.equal(evaluateG2gMargin({ ...base, unitPrice: 0 }).reason, "invalid");
+  assert.equal(evaluateG2gMargin({ ...base, requestedQty: 0 }).reason, "invalid");
+});
+
+/* -------------------------------- Câblage -------------------------------- */
+
+test("le webhook vérifie la signature AVANT de lire le corps", () => {
+  const route = read("src/app/api/webhooks/g2g/route.ts");
+  assert.ok(route.indexOf("verifyG2gWebhookSignature") < route.indexOf("JSON.parse(rawBody)"));
+  assert.match(route, /invalid_signature/);
+  assert.match(route, /reserveWebhookEvent/);
+  assert.match(route, /provider: "g2g"/);
+  // Phase 1 : aucun achat fournisseur, aucune livraison G2G.
+  assert.doesNotMatch(route, /fazercardsGiftCardOrder|fazercardsGameKeyOrder|g2gDeliverCodes/);
+  assert.match(route, /dry_run: true/);
+});
+
+test("le diagnostic admin exige une session admin et ne renvoie aucun secret", () => {
+  const route = read("src/app/api/admin/g2g/route.ts");
+  assert.match(route, /isAdminAuthenticated\(\)/);
+  assert.match(route, /"Cache-Control": "no-store"/);
+  assert.doesNotMatch(route, /g2gConfig\(\)\.secretKey|secretKey,/);
+  assert.match(route, /g2gConfigStatus\(\)/);
+});
+
+test("le client G2G signe chaque requête et ne journalise jamais le corps", () => {
+  const client = read("src/lib/g2g.ts");
+  for (const header of ["g2g-api-key", "g2g-userid", "g2g-timestamp", "g2g-signature"]) {
+    assert.ok(client.includes(header), `en-tête manquant : ${header}`);
+  }
+  assert.match(client, /g2gApiSignature/);
+  assert.match(client, /\/v2\/store/);
+  assert.doesNotMatch(client, /console\.log\(.*raw/);
+});
+
+test("schéma et DDL créent la table de mapping désactivée par défaut", () => {
+  const schema = read("src/db/schema.ts");
+  const ddl = read("src/db/index.ts");
+  assert.match(schema, /g2gOfferMappings/);
+  assert.match(ddl, /CREATE TABLE IF NOT EXISTS g2g_offer_mappings/);
+  assert.match(ddl, /enabled boolean NOT NULL DEFAULT false/);
+});
+
+test("aucun secret G2G en clair dans le dépôt", () => {
+  const env = read(".env.example");
+  for (const key of [
+    "G2G_API_KEY",
+    "G2G_SECRET_KEY",
+    "G2G_USER_ID",
+    "G2G_WEBHOOK_SECRET_TOKEN",
+    "G2G_WEBHOOK_URL",
+  ]) {
+    assert.match(env, new RegExp(`^${key}=$`, "m"));
+  }
+  const panel = read("src/app/admin/(panel)/digital/g2g-panel.tsx");
+  assert.match(panel, /Phase 1 — aucun achat automatique/);
+  assert.match(panel, /api_qty = 0/);
+  assert.match(read("src/app/admin/(panel)/digital/page.tsx"), /<G2gPanel \/>/);
+});

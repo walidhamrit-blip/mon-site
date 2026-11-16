@@ -742,3 +742,40 @@ export const webhookEvents = pgTable("webhook_events", {
 
 export type WebhookEvent = typeof webhookEvents.$inferSelect;
 export type NewWebhookEvent = typeof webhookEvents.$inferInsert;
+
+/**
+ * Correspondance pilote G2G ↔ FazerCards (phase 1 : mapping + diagnostic,
+ * AUCUN achat automatique). Une ligne = une offre G2G et le SKU exact à
+ * acheter chez le fournisseur si la livraison automatique est activée.
+ *
+ * `enabled = false` par défaut : une offre non validée par l'administrateur
+ * ne peut jamais déclencher d'achat. `sale_currency` est gardé en clair car
+ * le garde-fou de marge refuse toute devise autre que USD (pas de conversion
+ * implicite : une offre MYR/EUR passe en traitement manuel).
+ */
+export const g2gOfferMappings = pgTable("g2g_offer_mappings", {
+  id: serial("id").primaryKey(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  /** Identifiant de l'offre G2G, ex. G1793906316865GE. */
+  offerId: text("offer_id").notNull().unique(),
+  /** Libellé mémorisé (affichage admin uniquement). */
+  title: text("title").notNull().default(""),
+  /** gift_card (card_id) | game_key (key_id). Jamais de top-up par ID joueur. */
+  supplierKind: text("supplier_kind").notNull().default("gift_card"),
+  /** category_id (cartes) ou game_id (clés) chez FazerCards. */
+  categoryId: text("category_id").notNull().default(""),
+  /** card_id ou key_id exact chez FazerCards. */
+  supplierSkuId: text("supplier_sku_id").notNull().default(""),
+  saleCurrency: text("sale_currency").notNull().default("USD"),
+  /** Marge nette minimale exigée après commission G2G (%). */
+  minMarginPercent: integer("min_margin_percent").notNull().default(12),
+  /** Plafond d'achat automatique par livraison (USD). */
+  maxCostUsd: text("max_cost_usd").notNull().default("25"),
+  enabled: boolean("enabled").notNull().default(false),
+  note: text("note"),
+  lastCheckedAt: timestamp("last_checked_at", { withTimezone: true }),
+});
+
+export type G2gOfferMapping = typeof g2gOfferMappings.$inferSelect;
+export type NewG2gOfferMapping = typeof g2gOfferMappings.$inferInsert;

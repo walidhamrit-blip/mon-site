@@ -622,6 +622,30 @@ export function ensureSchema(): Promise<void> {
       await pool.query(
         "CREATE INDEX IF NOT EXISTS webhook_events_created_idx ON webhook_events (created_at DESC)",
       );
+      // Pilote G2G : mapping offre G2G ↔ SKU FazerCards. `enabled` reste à
+      // false tant que l'administrateur n'a pas validé région, format du
+      // code et marge. Voir docs/g2g-pilot.md.
+      await pool.query(`
+        CREATE TABLE IF NOT EXISTS g2g_offer_mappings (
+          id serial PRIMARY KEY,
+          created_at timestamptz NOT NULL DEFAULT now(),
+          updated_at timestamptz NOT NULL DEFAULT now(),
+          offer_id text NOT NULL UNIQUE,
+          title text NOT NULL DEFAULT '',
+          supplier_kind text NOT NULL DEFAULT 'gift_card',
+          category_id text NOT NULL DEFAULT '',
+          supplier_sku_id text NOT NULL DEFAULT '',
+          sale_currency text NOT NULL DEFAULT 'USD',
+          min_margin_percent integer NOT NULL DEFAULT 12,
+          max_cost_usd text NOT NULL DEFAULT '25',
+          enabled boolean NOT NULL DEFAULT false,
+          note text,
+          last_checked_at timestamptz
+        )
+      `);
+      await pool.query(
+        "CREATE INDEX IF NOT EXISTS g2g_offer_mappings_enabled_idx ON g2g_offer_mappings (enabled)",
+      );
     })().catch((error) => {
       schemaReady = null; // permet de réessayer au prochain accès
       throw error;
