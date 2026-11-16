@@ -8,7 +8,14 @@ export const ADMIN_PUBLIC_LINKS = [
 
 /** Only the most specific destination is active (catalogue != commandes). */
 export function activeAdminHref(pathname: string, destinations: readonly string[]): string | undefined {
+  const clean = (href: string) => href.split("?")[0].split("#")[0];
+  const hasQuery = (href: string) => href !== clean(href);
   return destinations
-    .filter((href) => pathname === href || (href !== "/admin" && pathname.startsWith(`${href}/`)))
-    .sort((a, b) => b.length - a.length)[0];
+    .filter((href) => {
+      const path = clean(href);
+      return pathname === path || (path !== "/admin" && pathname.startsWith(`${path}/`));
+    })
+    // À longueur de chemin égale, préfère l’entrée simple (ex. /admin/settings)
+    // à une entrée avec query (ex. /admin/settings?tab=…).
+    .sort((a, b) => clean(b).length - clean(a).length || Number(hasQuery(a)) - Number(hasQuery(b)))[0];
 }
