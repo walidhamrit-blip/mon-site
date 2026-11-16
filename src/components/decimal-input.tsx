@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 function formatValue(value: number | null, decimals?: number): string {
   if (value == null || !Number.isFinite(value)) return "";
@@ -32,12 +32,8 @@ export function DecimalInput({
   className?: string;
   ariaLabel?: string;
 }) {
-  const [text, setText] = useState(() => formatValue(value, decimals));
-  const [focused, setFocused] = useState(false);
-
-  useEffect(() => {
-    if (!focused) setText(formatValue(value, decimals));
-  }, [value, decimals, focused]);
+  const [draft, setDraft] = useState<string | null>(null);
+  const text = draft ?? formatValue(value, decimals);
 
   const allowed = decimals == null
     ? /^\d*(\.\d*)?$/
@@ -54,11 +50,11 @@ export function DecimalInput({
       placeholder={placeholder}
       aria-label={ariaLabel}
       value={text}
-      onFocus={() => setFocused(true)}
+      onFocus={() => setDraft(formatValue(value, decimals))}
       onChange={(event) => {
         const next = event.target.value.trim().replace(",", ".");
         if (!allowed.test(next)) return;
-        setText(next);
+        setDraft(next);
         if (next === "" || next === ".") {
           onChange(null);
           return;
@@ -67,14 +63,10 @@ export function DecimalInput({
         onChange(Number.isFinite(parsed) && parsed >= 0 ? parsed : null);
       }}
       onBlur={() => {
-        setFocused(false);
-        const normalized = text.trim().replace(",", ".");
-        const parsed = Number(normalized);
-        setText(normalized === "" || normalized === "." || !Number.isFinite(parsed)
-          ? ""
-          : decimals == null
-            ? String(parsed)
-            : parsed.toFixed(decimals));
+        // Les valeurs pendant la frappe sont déjà transmises à `onChange`
+        // (ou réinitialisées à null pour ""/".") ; il suffit de rendre la main
+        // à l’affichage formaté par `value`.
+        setDraft(null);
       }}
       className={className}
     />
