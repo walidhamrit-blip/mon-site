@@ -9,7 +9,13 @@ import { setPhoneCardPaymentsEnabled } from "@/app/admin/actions";
  * Interrupteur opérationnel, enregistré immédiatement et durablement.
  * Il coupe les nouvelles demandes, jamais la revue des cartes déjà reçues.
  */
-export function PhoneCardPaymentsToggle({ enabled: initialEnabled }: { enabled: boolean }) {
+export function PhoneCardPaymentsToggle({
+  enabled: initialEnabled,
+  embedded = false,
+}: {
+  enabled: boolean;
+  embedded?: boolean;
+}) {
   const router = useRouter();
   const descriptionId = useId();
   const [enabled, setEnabled] = useState(initialEnabled);
@@ -50,7 +56,7 @@ export function PhoneCardPaymentsToggle({ enabled: initialEnabled }: { enabled: 
   return (
     <section
       aria-labelledby={`${descriptionId}-title`}
-      className={`rounded-2xl border p-4 sm:p-5 shadow-2xs ${
+      className={`${embedded ? "rounded-xl" : "rounded-2xl"} border p-4 sm:p-5 ${embedded ? "" : "shadow-2xs "}${
         enabled ? "border-emerald-200 bg-emerald-50/50" : "border-amber-300 bg-amber-50/70"
       }`}
     >

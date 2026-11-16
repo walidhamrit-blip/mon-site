@@ -129,12 +129,15 @@ test("checkout : garde avant chiffrement et relecture avant insertion, uniquemen
 
 test("admin : bouton présent sur tableau de bord, commandes et réglages, confirmation et erreurs", () => {
   for (const path of [
-    "src/app/admin/(panel)/page.tsx",
     "src/app/admin/(panel)/digital/orders/page.tsx",
     "src/app/admin/(panel)/settings/settings-form.tsx",
   ]) {
     assert.match(read(path), /<PhoneCardPaymentsToggle enabled=/);
   }
+  const dashboard = read("src/app/admin/(panel)/page.tsx");
+  assert.match(dashboard, /<ManualPaymentsOverview/);
+  const overview = read("src/app/admin/(panel)/manual-payments-overview.tsx");
+  assert.match(overview, /<PhoneCardPaymentsToggle enabled=\{phoneCardEnabled\} embedded/);
   const toggle = read("src/app/admin/(panel)/phone-card-payments-toggle.tsx");
   assert.match(toggle, /role="switch"/);
   assert.match(toggle, /aria-checked=\{enabled\}/);

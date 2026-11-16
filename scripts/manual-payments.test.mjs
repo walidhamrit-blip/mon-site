@@ -360,6 +360,21 @@ test("les moyens se règlent depuis l'admin, devise et taux compris", () => {
   assert.match(manualPage, /\/admin\/settings\?tab=manual-payments/);
 });
 
+test("le tableau de bord pilote chaque paiement manuel séparément", () => {
+  const overview = code(read("src/app/admin/(panel)/manual-payments-overview.tsx"));
+  assert.match(overview, /MANUAL_PAYMENT_METHODS\.map/);
+  assert.match(overview, /<PhoneCardPaymentsToggle/);
+  assert.match(overview, /setManualPaymentMethodEnabled/);
+  assert.match(overview, /role="switch"/);
+  assert.match(overview, /Configurer les comptes/);
+
+  const actions = code(read("src/app/admin/manual-payments-actions.ts"));
+  assert.match(actions, /setManualPaymentMethodEnabled/);
+  assert.match(actions, /manualPaymentMethodReady/);
+  assert.match(actions, /normalizeManualPaymentsConfig/);
+  assert.match(actions, /les reçus déjà déclarés restent traitables/i);
+});
+
 test("la preuve n'est jamais publiée dans une réponse publique", () => {
   const digital = code(read("src/lib/digital-orders.ts"));
   // Le statut public ne remonte que méthode + statut de vérification.

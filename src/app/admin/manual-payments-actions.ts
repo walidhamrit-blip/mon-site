@@ -26,7 +26,13 @@ import {
   markDigitalOrderDeliveredOffPlatform,
 } from "@/lib/digital-orders";
 import { sendManualPaymentApprovedEmail } from "@/lib/digital-emails";
-import { getSiteData } from "@/lib/store";
+import {
+  MANUAL_PAYMENT_METHOD_LABELS,
+  manualPaymentMethodReady,
+  normalizeManualPaymentMethod,
+  normalizeManualPaymentsConfig,
+} from "@/lib/manual-payment-core";
+import { getSiteData, upsertSetting, SETTINGS_KEYS } from "@/lib/store";
 
 export interface ActionResult {
   ok: boolean;
@@ -189,6 +195,64 @@ export async function deliverManualPaymentOrderAction(
     revalidatePath("/codes/commande");
     if (!result.ok) return { ok: false, error: result.error };
     return { ok: true, message: `Code livré au client (${orderRef}).` };
+  } catch (error) {
+    return { ok: false, error: dbIssue(error) };
+  }
+}
+
+/**
+ * Interrupteur opérationnel immédiat d'un moyen Skrill / Neteller / Airtm /
+ * D17. Un moyen incomplet (compte absent, ou taux hors USD manquant) ne peut
+ * pas être activé depuis le tableau de bord. Les reçus déjà déclarés restent
+ * toujours vérifiables et livrables après une désactivation.
+ */
+export async function setManualPaymentMethodEnabled(
+  method: unknown,
+  enabled: unknown,
+): Promise<ActionResult> {
+  await requireAdmin();
+  const selected = normalizeManualPaymentMethod(method);
+  if (!selected) {
+    return { ok: false, error: "Moyen de paiement manuel invalide." };
+  }
+  if (typeof enabled !== "boolean") {
+    return { ok: false, error: "Valeur invalide : true ou false attendu." };
+  }
+
+  const label = MANUAL_PAYMENT_METHOD_LABELS[selected];
+  try {
+    const { config } = await getSiteData();
+    const manualPayments = normalizeManualPaymentsConfig(config.manualPayments);
+    const current = manualPayments[selected];
+
+    if (enabled && !manualPaymentMethodReady(current)) {
+      return {
+        ok: false,
+        error: `${label} est incomplet : renseignez le compte à créditer${current.currency === "USD" ? "" : " et un taux positif"} avant de l’activer.`,
+      };
+    }
+
+    const nextManualPayments = {
+      ...manualPayments,
+      [selected]: { ...current, enabled },
+    };
+    await upsertSetting(SETTINGS_KEYS.config, {
+      ...config,
+      manualPayments: nextManualPayments,
+    });
+
+    revalidatePath("/", "layout");
+    revalidatePath("/codes", "layout");
+    revalidatePath("/admin", "layout");
+    revalidatePath("/admin/settings");
+    revalidatePath("/admin/paiements-manuels");
+
+    return {
+      ok: true,
+      message: enabled
+        ? `${label} activé : les clients pourront le choisir.`
+        : `${label} désactivé : il ne sera plus proposé aux clients ; les reçus déjà déclarés restent traitables.`,
+    };
   } catch (error) {
     return { ok: false, error: dbIssue(error) };
   }
