@@ -30,7 +30,7 @@ import {
 import { ADMIN_PUBLIC_LINKS } from "@/lib/admin-navigation";
 import { SystemHealth } from "./system-health";
 import { StatusBadge } from "./status-badge";
-import { PhoneCardPaymentsToggle } from "./phone-card-payments-toggle";
+import { ManualPaymentsOverview } from "./manual-payments-overview";
 
 export const dynamic = "force-dynamic";
 
@@ -263,7 +263,10 @@ export default async function AdminDashboardPage() {
         </div>
       )}
 
-      <PhoneCardPaymentsToggle enabled={config.fazercards.phoneCardPaymentsEnabled !== false} />
+      <ManualPaymentsOverview
+        phoneCardEnabled={config.fazercards.phoneCardPaymentsEnabled !== false}
+        manualPayments={config.manualPayments}
+      />
 
       <nav aria-label="Parcours du site public" className="flex flex-wrap gap-2">
         {ADMIN_PUBLIC_LINKS.map((item) => <Link key={item.href} href={item.href} target="_blank" rel="noopener noreferrer" className="rounded-xl border border-stone-200 bg-white px-4 py-2 text-sm font-semibold">{item.label} ↗</Link>)}
