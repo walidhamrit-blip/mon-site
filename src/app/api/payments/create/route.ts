@@ -91,7 +91,7 @@ const createPaymentSchema = z
     locale: z.enum(["ar", "en"]).optional(),
     utm: z.string().max(500).optional(),
     /**
-     * Paiement manuel sans passerelle (Skrill / Neteller / Airtm / D17) :
+     * Paiement manuel sans passerelle (Skrill / Neteller / Airtm / D17 / Volet / WebMoney / Kashy) :
      * le client a envoyé l'argent lui-même et déclare sa preuve. Aucune
      * facture crypto n'est alors créée ; seul un administrateur peut
      * accepter le paiement (voir /admin/paiements-manuels).
@@ -274,7 +274,7 @@ async function createFlexibleManualOrder(
 }
 
 /**
- * Enregistre un paiement manuel (Skrill / Neteller / Airtm / D17) sur une
+ * Enregistre un paiement manuel (Skrill / Neteller / Airtm / D17 / Volet / WebMoney / Kashy) sur une
  * commande DÉJÀ créée, sans facture crypto.
  *
  * Utilisé par les trois tunnels : formule / paiement flexible / tranche. La

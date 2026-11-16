@@ -46,7 +46,7 @@ function adminDate(value: string): string {
 }
 
 /**
- * File de vérification des virements manuels (Skrill, Neteller, Airtm, D17).
+ * File de vérification des virements manuels (Skrill, Neteller, Airtm, D17, Volet, WebMoney et Kashy).
  *
  * L'argent n'est jamais confirmé automatiquement : l'administrateur compare
  * la preuve déclarée à son propre relevé, puis accepte (avec ou sans
@@ -112,7 +112,7 @@ export function ManualPaymentsTable({ rows }: { rows: AdminManualPaymentRow[] })
             Paiements manuels à vérifier
           </h2>
           <p className="mt-1 max-w-3xl text-[12px] leading-5 text-stone-600">
-            Skrill, Neteller, Airtm, D17. Confrontez le compte expéditeur et
+            Skrill, Neteller, Airtm, D17, Volet, WebMoney et Kashy. Confrontez le compte expéditeur et
             l’identifiant de transaction à votre relevé AVANT d’accepter : le site
             ne peut pas vérifier la réception à votre place. Sans votre
             acceptation, aucun code n’est livré et aucun achat fournisseur n’est fait.

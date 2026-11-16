@@ -15,7 +15,7 @@ const OPTIONS_LIMIT = {
 
 /**
  * Méthodes de paiement manuel réellement proposables (Skrill / Neteller /
- * Airtm / D17).
+ * Airtm / D17 / Volet / WebMoney / Kashy).
  *
  * L'interface client ne peut pas lire la configuration serveur : cette route
  * lui donne uniquement ce qu'il faut pour afficher le compte à créditer, la

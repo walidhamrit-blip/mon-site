@@ -1,5 +1,5 @@
 // Noyau PUR des moyens de paiement manuels sans passerelle :
-// Skrill, Neteller, Airtm et D17 (Poste Tunisienne).
+// Skrill, Neteller, Airtm, D17, Volet (AdvCash), WebMoney et Kashy (TND).
 //
 // Principe identique aux cartes de recharge téléphonique : le client envoie
 // l'argent LUI-MÊME sur le compte de l'agence, puis déclare sa preuve
@@ -11,12 +11,44 @@
 // navigateur (affichage du devis), par le serveur (recalcul autoritaire avant
 // enregistrement) et par les tests.
 
-export const MANUAL_PAYMENT_METHODS = ["skrill", "neteller", "airtm", "d17"] as const;
+export const MANUAL_PAYMENT_METHODS = [
+  "skrill",
+  "neteller",
+  "airtm",
+  "d17",
+  "advcash",
+  "webmoney",
+  "kashy",
+] as const;
 export type ManualPaymentMethod = (typeof MANUAL_PAYMENT_METHODS)[number];
 
 /** Devises dans lesquelles le client peut régler, selon le réglage admin. */
 export const MANUAL_PAYMENT_CURRENCIES = ["USD", "LYD", "EUR", "TND"] as const;
 export type ManualPaymentCurrency = (typeof MANUAL_PAYMENT_CURRENCIES)[number];
+
+/** Devises réellement autorisées pour chaque moyen (configuration manuelle). */
+export const MANUAL_PAYMENT_METHOD_CURRENCIES: Record<
+  ManualPaymentMethod,
+  readonly ManualPaymentCurrency[]
+> = {
+  skrill: MANUAL_PAYMENT_CURRENCIES,
+  neteller: MANUAL_PAYMENT_CURRENCIES,
+  airtm: MANUAL_PAYMENT_CURRENCIES,
+  d17: MANUAL_PAYMENT_CURRENCIES,
+  advcash: ["USD"],
+  webmoney: MANUAL_PAYMENT_CURRENCIES,
+  kashy: ["TND"],
+};
+
+export const MANUAL_PAYMENT_METHOD_DEFAULT_CURRENCY: Record<ManualPaymentMethod, ManualPaymentCurrency> = {
+  skrill: "USD",
+  neteller: "USD",
+  airtm: "USD",
+  d17: "USD",
+  advcash: "USD",
+  webmoney: "USD",
+  kashy: "TND",
+};
 
 export const MANUAL_PAYMENT_REVIEW_STATUSES = ["pending", "approved", "rejected"] as const;
 export type ManualPaymentReviewStatus = (typeof MANUAL_PAYMENT_REVIEW_STATUSES)[number];
@@ -36,6 +68,9 @@ export const MANUAL_PAYMENT_METHOD_LABELS: Record<ManualPaymentMethod, string> =
   neteller: "Neteller",
   airtm: "Airtm",
   d17: "D17 — Poste Tunisienne",
+  advcash: "Volet (AdvCash)",
+  webmoney: "WebMoney",
+  kashy: "Kashy (TND)",
 };
 
 /**
@@ -43,11 +78,17 @@ export const MANUAL_PAYMENT_METHOD_LABELS: Record<ManualPaymentMethod, string> =
  * Le libellé change parce que la cible n'est pas la même partout (e-mail,
  * portefeuille, numéro de téléphone).
  */
-export const MANUAL_PAYMENT_METHOD_KIND: Record<ManualPaymentMethod, "email" | "wallet" | "phone"> = {
+export const MANUAL_PAYMENT_METHOD_KIND: Record<
+  ManualPaymentMethod,
+  "email" | "wallet" | "phone" | "id"
+> = {
   skrill: "email",
   neteller: "email",
   airtm: "wallet",
   d17: "phone",
+  advcash: "id",
+  webmoney: "id",
+  kashy: "phone",
 };
 
 export const MANUAL_PAYMENT_CURRENCY_LABELS: Record<ManualPaymentCurrency, string> = {
@@ -60,7 +101,7 @@ export const MANUAL_PAYMENT_CURRENCY_LABELS: Record<ManualPaymentCurrency, strin
 export interface ManualPaymentMethodSettings {
   /** Activer cette méthode dans les tunnels de paiement. */
   enabled: boolean;
-  /** Compte à créditer, affiché au client (e-mail Skrill, wallet Airtm, n° D17…). */
+  /** Compte ou identifiant à créditer, affiché au client (e-mail, wallet, n° D17, WebMoney, Kashy…). */
   account: string;
   /** Bénéficiaire affiché au client (nom du compte). */
   beneficiary: string;
@@ -87,12 +128,15 @@ export const DEFAULT_MANUAL_PAYMENT_SETTINGS: ManualPaymentMethodSettings = {
 };
 
 export function defaultManualPaymentsConfig(): ManualPaymentsConfig {
-  return {
-    skrill: { ...DEFAULT_MANUAL_PAYMENT_SETTINGS },
-    neteller: { ...DEFAULT_MANUAL_PAYMENT_SETTINGS },
-    airtm: { ...DEFAULT_MANUAL_PAYMENT_SETTINGS },
-    d17: { ...DEFAULT_MANUAL_PAYMENT_SETTINGS },
-  };
+  return Object.fromEntries(
+    MANUAL_PAYMENT_METHODS.map((method) => [
+      method,
+      {
+        ...DEFAULT_MANUAL_PAYMENT_SETTINGS,
+        currency: MANUAL_PAYMENT_METHOD_DEFAULT_CURRENCY[method],
+      },
+    ]),
+  ) as ManualPaymentsConfig;
 }
 
 /**
@@ -124,7 +168,11 @@ export function normalizeManualPaymentsConfig(input: unknown): ManualPaymentsCon
       .replace(/[\r\n]+/g, " ")
       .trim()
       .slice(0, MANUAL_PAYMENT_LIMITS.note);
-    const currency = normalizeManualPaymentCurrency(raw.currency);
+    const allowedCurrencies = MANUAL_PAYMENT_METHOD_CURRENCIES[method];
+    const normalizedCurrency = normalizeManualPaymentCurrency(raw.currency);
+    const currency = allowedCurrencies.includes(normalizedCurrency)
+      ? normalizedCurrency
+      : allowedCurrencies[0];
     const rate = normalizeManualPaymentRate(raw.rate);
     result[method] = {
       // Une seule notion d'ouverture : cochée, compte présent, et taux
@@ -377,7 +425,7 @@ export function validateManualPaymentInput(
   if (senderAccount.length < 3) {
     return {
       ok: false,
-      error: "Indiquez le compte expéditeur (e-mail, portefeuille ou numéro de téléphone).",
+      error: "Indiquez le compte expéditeur (e-mail, identifiant, portefeuille ou numéro de téléphone).",
     };
   }
   const transactionRef = cleanText(input?.transactionRef, MANUAL_PAYMENT_LIMITS.transactionRef);
@@ -398,8 +446,8 @@ export function validateManualPaymentInput(
 
 export function manualPaymentUnavailableNotice(locale: "ar" | "en"): string {
   return locale === "ar"
-    ? "الدفع اليدوي (Skrill / Neteller / Airtm / D17) متوقف مؤقتاً لأن التحقق اليدوي غير متاح. لا تُحوّل أي مبلغ؛ يمكنك اختيار الدفع بالعملات الرقمية. الطلبات السابقة تبقى قابلة للمعالجة."
-    : "Manual payment (Skrill / Neteller / Airtm / D17) is temporarily paused because manual verification is unavailable. Do not transfer any money; crypto payment remains available. Existing orders can still be processed.";
+    ? "الدفع اليدوي (Skrill / Neteller / Airtm / D17 / Volet / WebMoney / Kashy) متوقف مؤقتاً لأن التحقق اليدوي غير متاح. لا تُحوّل أي مبلغ؛ يمكنك اختيار الدفع بالعملات الرقمية. الطلبات السابقة تبقى قابلة للمعالجة."
+    : "Manual payment (Skrill / Neteller / Airtm / D17 / Volet / WebMoney / Kashy) is temporarily paused because manual verification is unavailable. Do not transfer any money; crypto payment remains available. Existing orders can still be processed.";
 }
 
 export function manualPaymentUnavailableShort(locale: "ar" | "en"): string {

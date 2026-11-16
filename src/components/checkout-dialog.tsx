@@ -111,7 +111,7 @@ export function CheckoutDialog({
   const [phone, setPhone] = useState("");
   const [installments, setInstallments] = useState<InstallmentCount>(1);
   /**
-   * Paiement manuel (Skrill / Neteller / Airtm / D17) en alternative à la
+   * Paiement manuel (Skrill / Neteller / Airtm / D17 / Volet / WebMoney / Kashy) en alternative à la
    * crypto. Les moyens disponibles viennent du serveur : la configuration
    * (comptes, taux) n'est jamais embarquée dans la page.
    */

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { ChevronDown, ExternalLink, Mail, MessageCircle } from "lucide-react";
 import { ORDER_KIND_LABELS, type OrderRow } from "@/lib/site-types";
+import { isManualPaymentMethod } from "@/lib/manual-payment-core";
 import { OrderStatusBadge } from "../status-badge";
 import { TrackingLinkButton } from "../tracking-link-button";
 
@@ -91,7 +92,7 @@ export function OrdersTable({ rows }: { rows: OrderRow[] }) {
                       order.paymentMethod === "phone_card"
                         ? "Carte téléphonique — vérification manuelle"
                         : order.paymentMethod === "manual" ||
-                            ["skrill", "neteller", "airtm", "d17"].includes(order.paymentMethod)
+                            isManualPaymentMethod(order.paymentMethod)
                           ? "Virement manuel — vérification manuelle"
                           : "Crypto — NOWPayments"
                     }

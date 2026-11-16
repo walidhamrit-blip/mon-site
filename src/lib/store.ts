@@ -199,7 +199,7 @@ export function mergeConfig(override: unknown, phoneCardPaymentsEnabled?: unknow
         : null,
   };
 
-  // Paiements manuels (Skrill / Neteller / Airtm / D17) : on normalise chaque
+  // Paiements manuels (Skrill / Neteller / Airtm / D17 / Volet / WebMoney / Kashy) : on normalise chaque
   // méthode au lieu de faire confiance à la valeur stockée. Une config
   // ancienne (bloc absent) retombe sur « tout désactivé, tout vide » — aucune
   // méthode n'est jamais supposée configurée.

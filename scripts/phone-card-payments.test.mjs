@@ -93,7 +93,7 @@ test("la caisse conserve la crypto par défaut et propose la carte sans facture 
   const phoneBranch = checkout.indexOf("if (preparedPhoneCard) {");
   const invoice = checkout.indexOf("let invoice:");
   assert.ok(phoneBranch > 0 && invoice > phoneBranch, "la branche carte doit précéder la facture crypto");
-  // Un paiement manuel (Skrill/Neteller/Airtm/D17) suit la même règle : la
+  // Un paiement manuel (Skrill/Neteller/Airtm/D17/Volet/WebMoney/Kashy) suit la même règle : la
   // livraison reste manuelle, jamais automatique.
   assert.match(checkout, /fulfillment: usesPhoneCard \|\| usesManualPayment \? "manual" : "auto"/);
   assert.match(checkout, /paymentMethod: usesPhoneCard/);

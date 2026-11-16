@@ -1511,7 +1511,7 @@ export function SettingsForm({ initial, initialTab }: Props) {
         <div className="space-y-6">
           <div className="rounded-xl border border-[#C6A664]/40 bg-[#C6A664]/10 px-4 py-3 text-xs leading-relaxed text-stone-700 sm:text-sm">
             <p className="font-bold text-stone-900">
-              Configuration des moyens Skrill, Neteller, Airtm et D17.
+              Configuration des moyens Skrill, Neteller, Airtm, D17, Volet (AdvCash), WebMoney et Kashy.
             </p>
             <p className="mt-1">
               Renseignez puis activez chaque compte. La file de vérification
@@ -1639,7 +1639,7 @@ export function SettingsForm({ initial, initialTab }: Props) {
           <PhoneCardPaymentsToggle enabled={initial.fazercards?.phoneCardPaymentsEnabled !== false} />
 
           <div className="rounded-2xl border border-[#C6A664]/40 bg-[#C6A664]/10 px-4 py-3 text-xs leading-relaxed text-stone-700 sm:text-sm">
-            <p className="font-bold text-stone-900">Comptes Skrill, Neteller, Airtm et D17</p>
+            <p className="font-bold text-stone-900">Comptes Skrill, Neteller, Airtm, D17, Volet, WebMoney et Kashy</p>
             <p className="mt-1">
               Les moyens de paiement manuels se règlent maintenant dans l’onglet dédié{" "}
               <button

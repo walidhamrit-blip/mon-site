@@ -67,7 +67,7 @@ export function PaymentStatus({
   const [paying, setPaying] = useState<string | null>(null);
   const [payError, setPayError] = useState("");
 
-  // Paiement manuel (Skrill / Neteller / Airtm / D17) pour les tranches
+  // Paiement manuel (Skrill / Neteller / Airtm / D17 / Volet / WebMoney / Kashy) pour les tranches
   // restantes : la configuration vient du serveur, jamais de la page.
   const [manualOptions, setManualOptions] = useState<PublicManualPaymentOption[]>([]);
   const [manualDraft, setManualDraft] = useState<ManualPaymentDraft>(EMPTY_MANUAL_PAYMENT_DRAFT);

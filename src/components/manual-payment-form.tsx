@@ -14,7 +14,7 @@ import type { PublicManualPaymentOption } from "@/lib/manual-payment-public";
 
 /**
  * Champs de preuve de paiement pour un virement manuel
- * (Skrill, Neteller, Airtm, D17).
+ * (Skrill, Neteller, Airtm, D17, Volet, WebMoney et Kashy).
  *
  * Rendu partagé par les trois tunnels (boutique de codes, création de sites,
  * abonnements) : la consigne, le montant exact et les trois champs sont donc

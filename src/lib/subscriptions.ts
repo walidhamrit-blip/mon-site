@@ -197,7 +197,7 @@ export type SubscribeFailure =
   | { ok: false; code: "plans_not_synced"; status: 503; message: string }
   | { ok: false; code: "already_subscribed"; status: 409; message: string }
   | { ok: false; code: "gateway_error"; status: 502; message: string }
-  // Paiement manuel (Skrill / Neteller / Airtm / D17) : la preuve est
+  // Paiement manuel (Skrill / Neteller / Airtm / D17 / Volet / WebMoney / Kashy) : la preuve est
   // refusée avant tout enregistrement, ou n'a pas pu être enregistrée.
   | { ok: false; code: string; status: number; message: string };
 
@@ -245,8 +245,7 @@ function extractRemoteSubscriptionId(remote: unknown): string {
 }
 
 /**
- * Abonnement souscrit avec un virement manuel (Skrill / Neteller / Airtm /
- * D17) : aucun abonnement NOWPayments n'est créé, donc aucune facture
+ * Abonnement souscrit avec un virement manuel (Skrill / Neteller / Airtm / D17 / Volet / WebMoney / Kashy) : aucun abonnement NOWPayments n'est créé, donc aucune facture
  * récurrente n'existe. L'accès n'est ouvert qu'après approbation admin,
  * via `approveManualSubscription`.
  *

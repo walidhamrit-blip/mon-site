@@ -123,7 +123,7 @@ export interface CreateFazercardsCheckoutInput {
   /**
    * Par défaut, la facture crypto historique ; sinon revue manuelle d'une
    * recharge téléphonique, ou d'un paiement manuel (Skrill / Neteller /
-   * Airtm / D17).
+   * Airtm / D17 / Volet / WebMoney / Kashy).
    */
   paymentMethod?: "nowpayments" | "phone_card" | "manual";
   phoneCard?: PhoneCardInput & {
@@ -350,7 +350,7 @@ export async function createFazercardsCheckout(
     );
   }
 
-  // Paiement manuel (Skrill / Neteller / Airtm / D17) : on vérifie la méthode
+  // Paiement manuel (Skrill / Neteller / Airtm / D17 / Volet / WebMoney / Kashy) : on vérifie la méthode
   // et on valide la preuve AVANT toute création de commande, pour ne jamais
   // enregistrer une déclaration inexploitable.
   if (usesManualPayment) {
@@ -780,7 +780,7 @@ export async function createFazercardsCheckout(
     };
   }
 
-  // 3 bis) Paiement manuel (Skrill / Neteller / Airtm / D17) : le client a
+  // 3 bis) Paiement manuel (Skrill / Neteller / Airtm / D17 / Volet / WebMoney / Kashy) : le client a
   // DÉJÀ envoyé l'argent de son côté, on enregistre sa preuve déclarée.
   // Aucune facture crypto, aucune livraison : la revue admin est la seule
   // porte de sortie, exactement comme une carte téléphonique.

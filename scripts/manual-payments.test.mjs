@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * Garde-fous des paiements manuels sans passerelle :
- * Skrill, Neteller, Airtm, D17.
+ * Skrill, Neteller, Airtm, D17, Volet (AdvCash), WebMoney et Kashy.
  *
  * Règle centrale : rien n'est encaissé ni livré automatiquement. Le client
  * déclare son virement (compte expéditeur + identifiant de transaction),
@@ -16,6 +16,8 @@ import { build } from "esbuild";
 import {
   MANUAL_PAYMENT_CURRENCIES,
   MANUAL_PAYMENT_METHODS,
+  MANUAL_PAYMENT_METHOD_CURRENCIES,
+  MANUAL_PAYMENT_METHOD_DEFAULT_CURRENCY,
   availableManualPaymentMethods,
   calculateManualPaymentQuote,
   formatManualPaymentAmount,
@@ -73,8 +75,15 @@ const SKRILL = {
   instructions: "",
 };
 
-test("les quatre moyens demandés existent, et seulement ceux-là", () => {
-  assert.deepEqual([...MANUAL_PAYMENT_METHODS], ["skrill", "neteller", "airtm", "d17"]);
+test("les sept moyens demandés existent, avec leurs devises", () => {
+  assert.deepEqual(
+    [...MANUAL_PAYMENT_METHODS],
+    ["skrill", "neteller", "airtm", "d17", "advcash", "webmoney", "kashy"],
+  );
+  assert.deepEqual([...MANUAL_PAYMENT_METHOD_CURRENCIES.advcash], ["USD"]);
+  assert.deepEqual([...MANUAL_PAYMENT_METHOD_CURRENCIES.webmoney], ["USD", "LYD", "EUR", "TND"]);
+  assert.deepEqual([...MANUAL_PAYMENT_METHOD_CURRENCIES.kashy], ["TND"]);
+  assert.equal(MANUAL_PAYMENT_METHOD_DEFAULT_CURRENCY.kashy, "TND");
   assert.deepEqual([...MANUAL_PAYMENT_CURRENCIES].sort(), ["EUR", "LYD", "TND", "USD"]);
   assert.equal(normalizeManualPaymentMethod(" Skrill "), "skrill");
   assert.equal(normalizeManualPaymentMethod("D17"), "d17");
@@ -104,6 +113,32 @@ test("un moyen n'est utilisable que s'il est activé ET configuré", () => {
   assert.equal(config.airtm.enabled, false);
   assert.equal(config.d17.enabled, false);
   assert.deepEqual(availableManualPaymentMethods(config), ["skrill"]);
+});
+
+test("les nouveaux moyens sont normalisés et configurés séparément", () => {
+  const defaults = normalizeManualPaymentsConfig(undefined);
+  assert.equal(defaults.advcash.currency, "USD");
+  assert.equal(defaults.webmoney.currency, "USD");
+  assert.equal(defaults.kashy.currency, "TND");
+  assert.equal(defaults.kashy.enabled, false);
+
+  const configured = normalizeManualPaymentsConfig({
+    advcash: { ...SKRILL, currency: "TND", rate: 3.2, enabled: true },
+    webmoney: { ...SKRILL, currency: "EUR", rate: 0.92, enabled: true },
+    kashy: { ...SKRILL, currency: "TND", rate: 3.1, enabled: true },
+  });
+  // AdvCash est forcé en USD ; Kashy reste exclusivement en TND.
+  assert.equal(configured.advcash.currency, "USD");
+  assert.equal(configured.advcash.enabled, true);
+  assert.equal(configured.webmoney.currency, "EUR");
+  assert.equal(configured.webmoney.enabled, true);
+  assert.equal(configured.kashy.currency, "TND");
+  assert.equal(configured.kashy.enabled, true);
+
+  const incomplete = normalizeManualPaymentsConfig({
+    kashy: { ...SKRILL, currency: "TND", rate: null, enabled: true },
+  });
+  assert.equal(incomplete.kashy.enabled, false);
 });
 
 test("le montant à envoyer est calculé depuis le réglage, jamais codé en dur", () => {
@@ -249,10 +284,13 @@ test("la route d'options ne divulgue que les moyens réellement proposables", ()
     neteller: { ...SKRILL, enabled: false },
     airtm: { ...SKRILL, currency: "TND", rate: null },
     d17: { ...SKRILL, currency: "LYD", rate: 5.4, feePercent: 5, enabled: true },
+    advcash: { ...SKRILL, account: "volet-id", enabled: true },
+    webmoney: { ...SKRILL, account: "WMID-123", currency: "EUR", rate: 0.92, enabled: true },
+    kashy: { ...SKRILL, account: "+21600000000", currency: "TND", rate: 3.1, enabled: true },
   });
   assert.deepEqual(
     options.map((option) => option.method),
-    ["skrill", "d17"],
+    ["skrill", "d17", "advcash", "webmoney", "kashy"],
   );
   // Un compte fermé ne fuit pas dans le navigateur.
   assert.equal(JSON.stringify(options).includes("agence@example.com"), true);
@@ -344,10 +382,11 @@ test("l'admin reçoit une file de vérification dédiée", () => {
 
 test("les moyens se règlent depuis l'admin, devise et taux compris", () => {
   const settings = code(read("src/app/admin/(panel)/settings/manual-payments-settings.tsx"));
-  for (const method of MANUAL_PAYMENT_METHODS) {
-    assert.match(settings, new RegExp(method));
-  }
-  assert.match(settings, /MANUAL_PAYMENT_CURRENCIES/);
+  assert.match(settings, /MANUAL_PAYMENT_METHOD_CURRENCIES\[method\]/);
+  assert.match(settings, /advcash/);
+  assert.match(settings, /webmoney/);
+  assert.match(settings, /kashy/);
+  assert.match(settings, /MANUAL_PAYMENT_METHOD_CURRENCIES/);
   assert.match(settings, /feePercent/);
   assert.match(settings, /DecimalInput/);
   assert.match(settings, /decimals=\{2\}/);

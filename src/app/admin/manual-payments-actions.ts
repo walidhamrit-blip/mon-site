@@ -2,7 +2,7 @@
 
 /**
  * Actions admin de la file de vérification des paiements manuels
- * (Skrill, Neteller, Airtm, D17).
+ * (Skrill, Neteller, Airtm, D17, Volet, WebMoney et Kashy).
  *
  * Principe identique à la carte téléphonique : l'acceptation est un geste
  * HUMAIN qui atteste la réception réelle de l'argent. Ensuite seulement :
@@ -201,8 +201,7 @@ export async function deliverManualPaymentOrderAction(
 }
 
 /**
- * Interrupteur opérationnel immédiat d'un moyen Skrill / Neteller / Airtm /
- * D17. Un moyen incomplet (compte absent, ou taux hors USD manquant) ne peut
+ * Interrupteur opérationnel immédiat d'un moyen Skrill / Neteller / Airtm / D17 / Volet / WebMoney / Kashy. Un moyen incomplet (compte absent, ou taux hors USD manquant) ne peut
  * pas être activé depuis le tableau de bord. Les reçus déjà déclarés restent
  * toujours vérifiables et livrables après une désactivation.
  */

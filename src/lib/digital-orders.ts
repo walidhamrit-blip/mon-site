@@ -641,7 +641,7 @@ export async function deliverPaidDigitalOrder(
     };
   }
 
-  // Même garde pour les paiements manuels (Skrill / Neteller / Airtm / D17) :
+  // Même garde pour les paiements manuels (Skrill / Neteller / Airtm / D17 / Volet / WebMoney / Kashy) :
   // aucun achat fournisseur avant que l'administrateur n'ait constaté la
   // réception de l'argent.
   const manualGate = await manualPaymentDeliveryGate(loaded.ref);
@@ -970,7 +970,7 @@ export interface PublicDigitalOrder {
   codes: PublicDigitalCode[];
   paymentMethod: "nowpayments" | "phone_card" | "manual";
   phoneCardStatus: "pending" | "approved" | "rejected" | null;
-  /** Moyen manuel utilisé (skrill | neteller | airtm | d17), si applicable. */
+  /** Moyen manuel utilisé (skrill | neteller | airtm | d17 | advcash | webmoney | kashy), si applicable. */
   manualPaymentMethod: string | null;
   manualPaymentStatus: "pending" | "approved" | "rejected" | null;
   /** Message d'attente / d'action, sans détail technique. */
@@ -1288,7 +1288,7 @@ export async function deliverDigitalOrderManually(
       ok: false,
       delivered: 0,
       error:
-        "Livraison verrouillée : acceptez d’abord le paiement manuel (Skrill / Neteller / Airtm / D17) dans la file de vérification.",
+        "Livraison verrouillée : acceptez d’abord le paiement manuel (Skrill / Neteller / Airtm / D17 / Volet / WebMoney / Kashy) dans la file de vérification.",
     };
   }
 
