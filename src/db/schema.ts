@@ -826,6 +826,13 @@ export const g2gOfferMappings = pgTable("g2g_offer_mappings", {
   categoryId: text("category_id").notNull().default(""),
   /** card_id ou key_id exact chez FazerCards. */
   supplierSkuId: text("supplier_sku_id").notNull().default(""),
+  /**
+   * Nom canonique résolu chez FazerCards au dernier enregistrement.
+   * Sert de preuve lisible : « iTunes Turkey 100 TRY » plutôt qu'un UUID nu.
+   */
+  supplierSkuName: text("supplier_sku_name"),
+  /** Prix fournisseur (USD) relevé lors de cette résolution. */
+  supplierPriceUsd: text("supplier_price_usd"),
   saleCurrency: text("sale_currency").notNull().default("USD"),
   /** Marge nette minimale exigée après commission G2G (%). */
   minMarginPercent: integer("min_margin_percent").notNull().default(12),

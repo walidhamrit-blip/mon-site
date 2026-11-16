@@ -3,6 +3,12 @@ import { desc, eq } from "drizzle-orm";
 import { db, ensureSchema } from "@/db";
 import { g2gOfferMappings, type G2gOfferMapping } from "@/db/schema";
 import { isAdminAuthenticated } from "@/lib/auth";
+import {
+  canEnableFazercardsSku,
+  checkFazercardsGiftCardSku,
+  type FazercardsGiftCardOfferLite,
+} from "@/lib/fazercards-giftcard-lookup-core";
+import { fazercardsConfigured, fazercardsGiftCardCards } from "@/lib/fazercards";
 import { g2gErrorHint, type G2gErrorHint } from "@/lib/g2g-core";
 import {
   g2gConfigStatus,
@@ -34,6 +40,8 @@ function publicMapping(row: G2gOfferMapping) {
     supplierKind: row.supplierKind,
     categoryId: row.categoryId,
     supplierSkuId: row.supplierSkuId,
+    supplierSkuName: row.supplierSkuName ?? null,
+    supplierPriceUsd: row.supplierPriceUsd ?? null,
     saleCurrency: row.saleCurrency,
     minMarginPercent: row.minMarginPercent,
     maxCostUsd: row.maxCostUsd,
@@ -235,6 +243,48 @@ export async function POST(req: Request) {
       400,
     );
   }
+
+  /**
+   * Vérification du SKU chez FazerCards (lecture seule).
+   *
+   * Un `card_id` est collé à la main : une faute de frappe passerait
+   * inaperçue jusqu'à la phase 2, où elle livrerait le mauvais produit à un
+   * client qui a déjà payé. On exige donc la preuve que le SKU existe avant
+   * d'autoriser l'activation.
+   *
+   * Faute de preuve, on n'active pas — mais on autorise l'enregistrement
+   * DÉSACTIVÉ, pour ne pas bloquer la saisie quand FazerCards est injoignable.
+   */
+  let skuCheck = checkFazercardsGiftCardSku({ offers: null, cardId: "" });
+  if (categoryId && supplierSkuId && supplierKind === "gift_card") {
+    let offers: FazercardsGiftCardOfferLite[] | null = null;
+    if (fazercardsConfigured()) {
+      try {
+        const cards = await fazercardsGiftCardCards(categoryId);
+        offers = cards.offers ?? [];
+      } catch (error) {
+        console.warn(
+          "[admin][g2g] catégorie FazerCards illisible :",
+          error instanceof Error ? error.message : error,
+        );
+        offers = null; // reste `null` → statut « unavailable »
+      }
+    }
+    skuCheck = checkFazercardsGiftCardSku({ offers, cardId: supplierSkuId });
+
+    if (enabled && !canEnableFazercardsSku(skuCheck)) {
+      const reason =
+        skuCheck.status === "not_found"
+          ? `Ce card_id n'existe pas dans la catégorie FazerCards indiquée. Vérifiez la saisie : un identifiant erroné livrerait le mauvais produit.`
+          : skuCheck.status === "unavailable"
+            ? "FazerCards est injoignable ou non configuré : impossible de prouver que ce card_id existe. Enregistrez désactivé et réessayez l'activation plus tard."
+            : "Renseignez category_id et card_id avant d'activer l'offre.";
+      return noStoreJson(
+        { ok: false, error: `sku_${skuCheck.status}`, message: reason },
+        skuCheck.status === "unavailable" ? 503 : 400,
+      );
+    }
+  }
   if (enabled && saleCurrency !== "USD") {
     return noStoreJson(
       {
@@ -246,19 +296,31 @@ export async function POST(req: Request) {
     );
   }
 
+  // La résolution n'est mémorisée que si elle a réussi : `lastCheckedAt`
+  // fait alors foi, et on ne fige jamais un nom « vérifié » qui ne l'est pas.
+  const verified = skuCheck.status === "verified";
   const values = {
     offerId,
     title: cleanText(input.title, 160),
     supplierKind,
     categoryId,
     supplierSkuId,
+    supplierSkuName: verified ? skuCheck.name.slice(0, 200) : null,
+    supplierPriceUsd: verified ? skuCheck.priceUsd.slice(0, 40) : null,
     saleCurrency,
     minMarginPercent,
     maxCostUsd: String(maxCostUsd),
     enabled,
     note: cleanText(input.note, 500),
+    lastCheckedAt: verified ? new Date() : null,
     updatedAt: new Date(),
   };
+
+  if (verified) {
+    console.info(
+      `[admin][g2g] SKU vérifié offer=${offerId} card=${supplierSkuId} prix=${skuCheck.priceUsd} stock=${skuCheck.stock ?? "?"}`,
+    );
+  }
 
   try {
     await ensureSchema();
@@ -270,7 +332,18 @@ export async function POST(req: Request) {
         set: values,
       })
       .returning();
-    return noStoreJson({ ok: true, mapping: publicMapping(rows[0]) });
+    return noStoreJson({
+      ok: true,
+      mapping: publicMapping(rows[0]),
+      // Renvoyé même en cas d'échec : l'interface prévient immédiatement
+      // au lieu d'afficher un enregistrement trompeusement silencieux.
+      skuCheck: {
+        status: skuCheck.status,
+        name: skuCheck.name,
+        priceUsd: skuCheck.priceUsd,
+        stock: skuCheck.stock,
+      },
+    });
   } catch (error) {
     console.error("[admin][g2g] enregistrement impossible :", error instanceof Error ? error.message : error);
     return noStoreJson(

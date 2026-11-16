@@ -11,6 +11,8 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import {
+  canEnableFazercardsSku,
+  checkFazercardsGiftCardSku,
   extractFazercardsGiftCardCategoryId,
   filterFazercardsGiftCardCategories,
   filterFazercardsGiftCardOffers,
@@ -110,4 +112,79 @@ test("l'administration affiche le chercheur de card_id", () => {
   assert.match(component, /Lecture seule · aucun achat/);
   assert.match(component, /card_id/);
   assert.match(component, /navigator\.clipboard\.writeText\(cardId\)/);
+});
+
+/* ------------------------------------------------------------------ *
+ * Garde-fou d'activation d'une correspondance G2G ↔ FazerCards.
+ *
+ * Un `card_id` est COLLÉ À LA MAIN dans le formulaire. Une faute de
+ * frappe passerait inaperçue jusqu'à la phase 2, où elle livrerait le
+ * mauvais produit à un client qui a déjà payé. Tant que le SKU n'est
+ * pas prouvé présent chez FazerCards, l'activation doit être refusée.
+ * ------------------------------------------------------------------ */
+
+const CATALOG = [
+  { card_id: "it_tr_100", name: "iTunes Turkey 100 TRY", price_usd: "3.42", stock: 12, min_order_quantity: 1, max_order_quantity: 50 },
+  { card_id: "it_tr_250", name: "iTunes Turkey 250 TRY", price_usd: "8.10", stock: 0, min_order_quantity: 1, max_order_quantity: 50 },
+];
+
+test("un card_id présent est résolu avec son nom et son prix", () => {
+  const check = checkFazercardsGiftCardSku({ offers: CATALOG, cardId: "it_tr_100" });
+  assert.equal(check.status, "verified");
+  assert.equal(check.name, "iTunes Turkey 100 TRY");
+  assert.equal(check.priceUsd, "3.42");
+  assert.equal(check.stock, 12);
+  assert.equal(canEnableFazercardsSku(check), true);
+});
+
+test("un card_id absent n'est jamais activable, même de justesse", () => {
+  // La faute de frappe typique : un montant voisin qui existe, lui.
+  const typo = checkFazercardsGiftCardSku({ offers: CATALOG, cardId: "it_tr_1000" });
+  assert.equal(typo.status, "not_found");
+  assert.equal(canEnableFazercardsSku(typo), false);
+
+  const other = checkFazercardsGiftCardSku({ offers: CATALOG, cardId: "it_tr_250" });
+  assert.equal(other.status, "verified", "un montant voisin existant reste valide");
+});
+
+test("FazerCards injoignable n'est JAMAIS une preuve d'absence", () => {
+  // `offers: null` = l'appel a échoué. Confondre les deux ferait croire
+  // qu'un SKU valide n'existe pas, ou qu'un SKU invalide est acceptable.
+  const down = checkFazercardsGiftCardSku({ offers: null, cardId: "it_tr_100" });
+  assert.equal(down.status, "unavailable");
+  assert.equal(down.name, "", "aucun nom ne doit être inventé");
+  assert.equal(canEnableFazercardsSku(down), false, "fail-closed même en panne");
+
+  // Une liste vide, elle, EST une preuve d'absence.
+  const empty = checkFazercardsGiftCardSku({ offers: [], cardId: "it_tr_100" });
+  assert.equal(empty.status, "not_found");
+});
+
+test("sans card_id il n'y a rien à vérifier", () => {
+  for (const cardId of ["", "   "]) {
+    const check = checkFazercardsGiftCardSku({ offers: CATALOG, cardId });
+    assert.equal(check.status, "missing_ids");
+    assert.equal(canEnableFazercardsSku(check), false);
+  }
+});
+
+test("l'activation exige une preuve de résolution côté route et côté base", () => {
+  const route = read("src/app/api/admin/g2g/route.ts");
+  assert.match(route, /canEnableFazercardsSku\(skuCheck\)/);
+  assert.match(route, /checkFazercardsGiftCardSku/);
+  // Faute de preuve : on n'active pas.
+  assert.match(route, /enabled && !canEnableFazercardsSku\(skuCheck\)/);
+  // La résolution n'est mémorisée que si elle a réussi.
+  assert.match(route, /verified \? skuCheck\.name/);
+  assert.match(route, /lastCheckedAt: verified \? new Date\(\) : null/);
+  // Lecture seule : aucune commande passée pour vérifier un SKU.
+  assert.doesNotMatch(route, /fazercardsGiftCardOrder|fazercardsTopupOrder/);
+
+  // Les colonnes de preuve existent dans le schéma et le DDL.
+  const schema = read("src/db/schema.ts");
+  assert.match(schema, /supplierSkuName: text\("supplier_sku_name"\)/);
+  assert.match(schema, /supplierPriceUsd: text\("supplier_price_usd"\)/);
+  const ddl = read("src/db/index.ts");
+  assert.match(ddl, /ALTER TABLE g2g_offer_mappings ADD COLUMN IF NOT EXISTS supplier_sku_name/);
+  assert.match(ddl, /ALTER TABLE g2g_offer_mappings ADD COLUMN IF NOT EXISTS supplier_price_usd/);
 });
