@@ -20,8 +20,8 @@
 import { sanitizeSecret } from "@/lib/nowpayments";
 import {
   G2G_API_BASE,
-  g2gApiSignature,
   g2gCanonicalPath,
+  g2gRequestHeaders,
 } from "@/lib/g2g-core";
 
 export interface G2gConfig {
@@ -161,20 +161,16 @@ export async function g2gRequest<T>(
   }
 
   const timestamp = String(Date.now());
-  const headers: Record<string, string> = {
-    "g2g-api-key": cfg.apiKey,
-    "g2g-userid": cfg.userId,
-    "g2g-timestamp": timestamp,
-    "g2g-signature": g2gApiSignature({
-      secretKey: cfg.secretKey,
-      canonicalPath,
-      apiKey: cfg.apiKey,
-      userId: cfg.userId,
-      timestamp,
-    }),
-    Accept: "application/json",
-  };
-  if (options.body !== undefined) headers["Content-Type"] = "application/json";
+  // ⚠️ `Content-Type` est posé MÊME sur un GET sans corps : G2G rejette sinon
+  // la requête avec « Invalid Header 'Content-Type' ». Ne pas le conditionner
+  // à la présence de `options.body`.
+  const headers = g2gRequestHeaders({
+    apiKey: cfg.apiKey,
+    secretKey: cfg.secretKey,
+    userId: cfg.userId,
+    canonicalPath,
+    timestamp,
+  });
 
   let response: Response;
   try {

@@ -17,6 +17,7 @@ import {
   evaluateG2gMargin,
   g2gApiSignature,
   g2gCanonicalPath,
+  g2gRequestHeaders,
   g2gSignaturesEqual,
   g2gWebhookSignature,
   isG2gTimestampFresh,
@@ -241,9 +242,61 @@ test("le client G2G signe chaque requête et ne journalise jamais le corps", () 
   for (const header of ["g2g-api-key", "g2g-userid", "g2g-timestamp", "g2g-signature"]) {
     assert.ok(client.includes(header), `en-tête manquant : ${header}`);
   }
-  assert.match(client, /g2gApiSignature/);
+  assert.match(client, /g2gRequestHeaders/);
   assert.match(client, /\/v2\/store/);
   assert.doesNotMatch(client, /console\.log\(.*raw/);
+});
+
+/* ------------------------------------------------------------------ *
+ * Régression : `Content-Type` doit être envoyé sur CHAQUE requête.
+ *
+ * Sans lui, G2G répond « The request was unacceptable, often due to
+ * missing a required parameter. Invalid Header 'Content-Type' » dès le
+ * premier `GET /v2/store`, alors que la signature est pourtant correcte.
+ * ------------------------------------------------------------------ */
+
+test("chaque requête G2G porte Content-Type: application/json, corps ou non", () => {
+  const headers = g2gRequestHeaders({
+    ...API_VECTOR,
+    timestamp: "1653278884000",
+  });
+  assert.equal(headers["Content-Type"], "application/json");
+  // Le test porte sur l'absence de corps : c'est le cas `GET /v2/store`.
+  assert.equal(headers.Accept, "application/json");
+  for (const header of ["g2g-api-key", "g2g-userid", "g2g-timestamp", "g2g-signature"]) {
+    assert.ok(headers[header], `en-tête manquant : ${header}`);
+  }
+  // La signature reste celle du vecteur officiel (le refactoring ne l'a pas
+  // altérée) et n'inclut ni Content-Type ni Accept.
+  assert.equal(
+    headers["g2g-signature"],
+    createHmac("sha256", API_VECTOR.secretKey)
+      .update(
+        API_VECTOR.canonicalPath +
+          API_VECTOR.apiKey +
+          API_VECTOR.userId +
+          API_VECTOR.timestamp,
+        "utf8",
+      )
+      .digest("hex"),
+  );
+  assert.equal(headers["g2g-timestamp"], API_VECTOR.timestamp);
+});
+
+test("le client n'envoie plus Content-Type uniquement quand il y a un corps", () => {
+  const client = read("src/lib/g2g.ts");
+  // L'ancien code conditionnait l'en-tête à `options.body !== undefined`,
+  // ce qui privait tous les GET (dont /v2/store) de Content-Type.
+  assert.doesNotMatch(client, /options\.body !== undefined \? .*Content-Type/);
+  assert.doesNotMatch(client, /if \(options\.body[^)]*\) headers\["Content-Type"\]/);
+});
+
+test("le script de vérification locale envoie aussi Content-Type sur le GET", () => {
+  const script = read("scripts/g2g-check.mjs");
+  // Le bloc d'appel réel : on extrait les en-têtes pour vérifier le GET nu.
+  const call = script.slice(script.indexOf("await fetch(`${base}${path}`"));
+  assert.match(call, /Accept: "application\/json"/);
+  assert.match(call, /"Content-Type": "application\/json"/);
 });
 
 test("schéma et DDL créent la table de mapping désactivée par défaut", () => {

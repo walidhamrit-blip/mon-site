@@ -67,6 +67,55 @@ export function g2gApiSignature(input: {
 }
 
 /**
+ * Type de contenu exigé par G2G.
+ *
+ * ⚠️ G2G le réclame sur **CHAQUE** requête, y compris un `GET` sans corps :
+ * sans cet en-tête, l'API renvoie
+ * « The request was unacceptable, often due to missing a required parameter.
+ * Invalid Header 'Content-Type' ». Tous les exemples `curl` de la
+ * documentation officielle le portent, quelle que soit la méthode.
+ */
+export const G2G_CONTENT_TYPE = "application/json";
+
+/**
+ * En-têtes complets d'une requête SORTANTE signée.
+ *
+ * Factorisé ici (noyau pur) pour rester testable sans réseau et pour qu'un
+ * futur appelant ne puisse pas oublier `Content-Type` — l'erreur renvoyée
+ * par G2G dans ce cas ne cite pas le nom de notre configuration mais celui
+ * de l'en-tête, ce qui rend le diagnostic contre-intuitif côté admin.
+ *
+ * `Content-Type` est donc posé **inconditionnellement**, même sans corps.
+ */
+export function g2gRequestHeaders(input: {
+  apiKey: string;
+  secretKey: string;
+  userId: string;
+  /** Chemin canonique signé, ex. `/v2/store`. */
+  canonicalPath: string;
+  /** Horodatage en millisecondes (identique à celui de la signature). */
+  timestamp: string | number;
+  /** Surcharge exceptionnelle du type de contenu (défaut : `application/json`). */
+  contentType?: string;
+}): Record<string, string> {
+  const timestamp = String(input.timestamp);
+  return {
+    "g2g-api-key": input.apiKey,
+    "g2g-userid": input.userId,
+    "g2g-timestamp": timestamp,
+    "g2g-signature": g2gApiSignature({
+      secretKey: input.secretKey,
+      canonicalPath: input.canonicalPath,
+      apiKey: input.apiKey,
+      userId: input.userId,
+      timestamp,
+    }),
+    Accept: "application/json",
+    "Content-Type": input.contentType ?? G2G_CONTENT_TYPE,
+  };
+}
+
+/**
  * Signature des webhooks ENTRANTS, selon l'exemple de code officiel :
  * `HMAC_SHA256(webhookSecretToken, webhookUrl + userId + timestamp)`.
  *

@@ -93,6 +93,10 @@ Ou directement dans **`/admin/digital` → panneau « G2G — pilote OpenAPI v2 
 bouton *Tester la connexion* : il affiche le `user_id`, `account_status`,
 `seller_status` et les devises de vente autorisées.
 
+**Si la réponse est `400` avec `Invalid Header 'Content-Type'`**, l'en-tête
+`Content-Type: application/json` manque (ou n'est envoyé que sur les requêtes
+avec corps). Voir l'encadré ci-dessous.
+
 **Si la réponse est `401` / signature invalide**, vérifier dans l'ordre :
 
 1. `G2G_SECRET_KEY` (régénérer la paire si elle a été perdue) ;
@@ -116,6 +120,34 @@ g2g-signature   = HMAC_SHA256(secretKey, canonicalString).hexdigest()
 
 où `canonicalPath` est **uniquement le chemin** (`/v2/store`), sans l'hôte.
 En-têtes : `g2g-api-key`, `g2g-userid`, `g2g-timestamp`, `g2g-signature`.
+
+### ⚠️ `Content-Type` est obligatoire, **même sur un `GET` sans corps**
+
+C'est le piège n°1 du branchement, et il ne ressemble pas à un problème de
+clé : la signature est pourtant correcte, tous les voyants de secrets sont
+verts, et G2G répond quand même
+
+> The request was unacceptable, often due to missing a required parameter.
+> Invalid Header 'Content-Type'.
+
+L'API exige `Content-Type: application/json` sur **chaque** requête, y
+compris un `GET` vide. Tous les exemples `curl` de la documentation
+officielle le portent, quelle que soit la méthode.
+
+Côté code, l'en-tête est donc posé **inconditionnellement** par
+`g2gRequestHeaders()` (`src/lib/g2g-core.ts`), jamais conditionné à la
+présence d'un corps :
+
+```ts
+// ✅ correct — Content-Type part même sans corps
+const headers = g2gRequestHeaders({ apiKey, secretKey, userId, canonicalPath, timestamp });
+
+// ❌ casse tous les GET, dont GET /v2/store
+if (options.body !== undefined) headers["Content-Type"] = "application/json";
+```
+
+Ne pas « nettoyer » cet en-tête sur les requêtes sans corps sous prétexte
+qu'il est inutile en HTTP : G2G le refuse.
 
 ---
 

@@ -99,6 +99,9 @@ if (process.argv.includes("--preflight")) {
         "g2g-timestamp": timestamp,
         "g2g-signature": signature,
         Accept: "application/json",
+        // ⚠️ Obligatoire MÊME sur un GET sans corps : G2G répond sinon
+        // « Invalid Header 'Content-Type' ».
+        "Content-Type": "application/json",
       },
       signal: AbortSignal.timeout(15000),
     });
