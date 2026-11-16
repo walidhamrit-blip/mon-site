@@ -18,7 +18,7 @@ const METHOD_HINTS: Record<ManualPaymentMethod, string> = {
   airtm: "E-mail du compte Airtm (adresse d’envoi des fonds).",
   d17: "Numéro D17 / e-Dinar de la Poste Tunisienne qui reçoit l’argent.",
   advcash: "Identifiant Volet / AdvCash qui reçoit les fonds (USD uniquement).",
-  webmoney: "Identifiant WebMoney qui reçoit les fonds.",
+  webmoney: "Identifiant WebMoney qui reçoit les fonds (devise WMZ : indiquez le taux).",
   kashy: "Numéro de téléphone / identifiant Kashy qui reçoit les fonds (TND uniquement).",
 };
 
@@ -148,13 +148,19 @@ export function ManualPaymentsSettings({
                   </span>
                   <select
                     value={settings.currency}
-                    onChange={(event) =>
+                    onChange={(event) => {
+                      const currency = event.target.value as ManualPaymentCurrency;
+                      // On efface le taux lors d’un changement de devise : le
+                      // taux de l’ancienne devise ne doit jamais être réutilisé
+                      // par erreur (notamment pour WMZ).
                       update(method, {
-                        currency: event.target.value as ManualPaymentCurrency,
+                        currency,
                         rate:
-                          event.target.value === "USD" ? null : settings.rate,
-                      })
-                    }
+                          currency === "USD" || currency !== settings.currency
+                            ? null
+                            : settings.rate,
+                      });
+                    }}
                     className="h-10 w-full rounded-lg border border-stone-300 bg-white px-3 text-[12.5px] outline-none focus:border-[#8A6D2F]"
                   >
                     {MANUAL_PAYMENT_METHOD_CURRENCIES[method].map((currency) => (
@@ -178,7 +184,7 @@ export function ManualPaymentsSettings({
                     }
                     disabled={settings.currency === "USD"}
                     decimals={2}
-                    placeholder="Ex. 3.10"
+                    placeholder={settings.currency === "WMZ" ? "À renseigner" : "Ex. 3.10"}
                     className="h-10 w-full rounded-lg border border-stone-300 bg-white px-3 text-[12.5px] outline-none focus:border-[#8A6D2F] disabled:bg-stone-100 disabled:text-stone-400"
                     ariaLabel={`Taux de conversion ${method}`}
                   />

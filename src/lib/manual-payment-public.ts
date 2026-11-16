@@ -17,7 +17,7 @@ export interface PublicManualPaymentOption {
   /** Compte à créditer tel qu'affiché au client (jamais un compte vide). */
   account: string;
   beneficiary: string;
-  currency: "USD" | "LYD" | "EUR" | "TND";
+  currency: "USD" | "LYD" | "EUR" | "TND" | "WMZ";
   rate: number | null;
   feePercent: number;
   instructions: string;

@@ -160,7 +160,7 @@ export interface ManualPaymentMethodConfigData {
   /** Titulaire du compte (affiché au client pour éviter les erreurs). */
   beneficiary: string;
   /** Devise que le client doit envoyer. */
-  currency: "USD" | "LYD" | "EUR" | "TND";
+  currency: "USD" | "LYD" | "EUR" | "TND" | "WMZ";
   /** 1 USD = X devise. Ignoré pour la devise USD ; requis sinon. */
   rate: number | null;
   /** Majoration appliquée au montant envoyé (frais, perte de change). */
