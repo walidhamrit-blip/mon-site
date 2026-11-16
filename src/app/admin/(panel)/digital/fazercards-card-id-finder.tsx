@@ -60,6 +60,7 @@ export function FazercardsCardIdFinder() {
   const [copied, setCopied] = useState<string | null>(null);
   const [hasMore, setHasMore] = useState(false);
   const [nextCursor, setNextCursor] = useState<string | null>(null);
+  const [scanned, setScanned] = useState(0);
   const [lastQuery, setLastQuery] = useState("");
 
   const visibleOffers = useMemo(
@@ -110,12 +111,27 @@ export function FazercardsCardIdFinder() {
       setHasMore(Boolean(data.hasMore));
       setNextCursor(data.nextCursor ?? null);
       setLastQuery(query);
+      setScanned(data.scanned ?? 0);
       if (!cursor) {
         setCategory(null);
         setOffers([]);
       }
-      if (!cursor && found.length === 0) {
-        setError("Aucune catégorie trouvée. Essayez « Free Fire » ou collez le lien FazerCards.");
+      if (found.length === 0) {
+        /**
+         * Deux situations très différentes, longtemps confondues :
+         *   - le balayage était PARTIEL : rien trouvé dans cette tranche, mais
+         *     le catalogue continue. Le dire, sinon l'administrateur conclut à
+         *     tort que le produit n'existe pas chez FazerCards.
+         *   - le catalogue a été entièrement parcouru : le produit est réellement
+         *     absent (ou porte un autre nom).
+         */
+        setError(
+          data.hasMore
+            ? `Aucune correspondance dans les ${data.scanned ?? 0} premières catégories parcourues — le catalogue est plus vaste. Affinez la recherche (« Apple », « iTunes », un mot plus court) ou cliquez sur « Charger plus de catégories ».`
+            : cursor
+              ? `Aucune nouvelle correspondance dans cette tranche (${data.scanned ?? 0} catégories parcourues au total). Essayez un autre mot-clé.`
+              : "Aucune catégorie trouvée dans tout le catalogue FazerCards. Essayez un autre mot-clé (« Apple », « Free Fire ») ou collez le lien de la catégorie depuis le panneau revendeur.",
+        );
       }
     } catch (err) {
       if (!cursor) {
@@ -227,18 +243,30 @@ export function FazercardsCardIdFinder() {
               </li>
             ))}
           </ul>
-          {hasMore && nextCursor && (
-            <div className="border-t border-stone-100 px-3 py-2">
-              <button
-                type="button"
-                onClick={() => void searchCategories(lastQuery, nextCursor)}
-                disabled={busy}
-                className="rounded-md border border-stone-300 px-2.5 py-1.5 text-[11.5px] font-bold text-stone-700 hover:bg-stone-50 disabled:opacity-60"
-              >
-                Charger plus de catégories
-              </button>
-            </div>
-          )}
+        </div>
+      )}
+
+      {/*
+        ⚠️ Ce bouton doit rester HORS du bloc `categories.length > 0`.
+        Imbriqué dedans, il disparaissait précisément quand la première
+        recherche ne renvoyait rien : impossible alors de parcourir la suite
+        d'un catalogue plus vaste que la tranche balayée.
+      */}
+      {hasMore && nextCursor && !category && (
+        <div className="mt-2 flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            onClick={() => void searchCategories(lastQuery, nextCursor)}
+            disabled={busy}
+            className="rounded-md border border-stone-300 px-2.5 py-1.5 text-[11.5px] font-bold text-stone-700 hover:bg-stone-50 disabled:opacity-60"
+          >
+            Charger plus de catégories
+          </button>
+          {scanned > 0 ? (
+            <span className="text-[11px] text-stone-500">
+              {scanned} catégories parcourues — le catalogue continue.
+            </span>
+          ) : null}
         </div>
       )}
 

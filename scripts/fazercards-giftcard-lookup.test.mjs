@@ -188,3 +188,55 @@ test("l'activation exige une preuve de résolution côté route et côté base",
   assert.match(ddl, /ALTER TABLE g2g_offer_mappings ADD COLUMN IF NOT EXISTS supplier_sku_name/);
   assert.match(ddl, /ALTER TABLE g2g_offer_mappings ADD COLUMN IF NOT EXISTS supplier_price_usd/);
 });
+
+/* ------------------------------------------------------------------ *
+ * Régression : le bouton « Charger plus » ne doit pas disparaître
+ * quand la première recherche ne renvoie rien.
+ *
+ * Imbriqué dans le bloc `categories.length > 0`, il était invisible
+ * précisément dans le cas qui en a besoin : un catalogue plus vaste que
+ * la tranche balayée. L'administrateur lisait alors « aucune catégorie
+ * trouvée » et concluait à tort que le produit n'existe pas.
+ * ------------------------------------------------------------------ */
+
+test("on peut parcourir la suite du catalogue même sans résultat", () => {
+  const finder = read("src/app/admin/(panel)/digital/fazercards-card-id-finder.tsx");
+
+  // Le bouton a sa PROPRE condition, indépendante du nombre de résultats.
+  assert.match(
+    finder,
+    /\{hasMore && nextCursor && !category && \(/,
+    "le bouton doit avoir une condition indépendante de `categories.length`",
+  );
+
+  // …et il ne se trouve plus à l'intérieur du bloc des résultats.
+  const resultsBlock = finder.indexOf("{categories.length > 0 && !category && (");
+  assert.ok(resultsBlock >= 0, "bloc de résultats introuvable");
+  // Chercher APRÈS le bloc : le libellé figure aussi dans un message d'aide.
+  const moreButton = finder.indexOf("Charger plus de catégories", resultsBlock);
+  assert.ok(moreButton > 0, "bouton « Charger plus » introuvable");
+  assert.ok(
+    moreButton > finder.indexOf("</ul>", resultsBlock),
+    "le bouton doit figurer APRÈS la liste des résultats, pas dedans",
+  );
+});
+
+test("une recherche vide distingue balayage partiel et catalogue épuisé", () => {
+  const finder = read("src/app/admin/(panel)/digital/fazercards-card-id-finder.tsx");
+  // Sans cette nuance, « pas trouvé dans cette tranche » et « n'existe pas »
+  // produisaient le même message, avec des conséquences opposées.
+  assert.match(finder, /data\.hasMore\s*\?/);
+  assert.match(finder, /le catalogue est plus vaste/);
+  assert.match(finder, /dans tout le catalogue FazerCards/);
+  assert.match(finder, /scanned/);
+});
+
+test("la recherche balaie une tranche de catalogue suffisante", () => {
+  const route = read("src/app/api/admin/fazercards/giftcards/route.ts");
+  // 5 pages × 100 = 500 entrées : insuffisant pour un catalogue de
+  // cartes cadeaux, et la cause la plus plausible d'un faux négatif.
+  assert.match(route, /MAX_CATEGORY_PAGES = 10/);
+  assert.doesNotMatch(route, /MAX_CATEGORY_PAGES = 5/);
+  // Le nombre d'entrées réellement parcourues est renvoyé à l'interface.
+  assert.match(route, /scanned,/);
+});

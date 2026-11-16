@@ -19,7 +19,14 @@ export const runtime = "nodejs";
 export const maxDuration = 30;
 
 const CATEGORY_PAGE_LIMIT = 100;
-const MAX_CATEGORY_PAGES = 5;
+/**
+ * Pages balayées par recherche. Le catalogue FazerCards dépasse largement
+ * 500 entrées : à 5 pages, un produit parfaitement référencé (iTunes, Free
+ * Fire…) pouvait rester hors de portée et la recherche concluait à tort
+ * « aucune catégorie trouvée ». On couvre désormais 1 000 entrées par clic,
+ * la suite restant accessible via « Charger plus ».
+ */
+const MAX_CATEGORY_PAGES = 10;
 const MAX_CATEGORY_RESULTS = 100;
 
 function noStoreJson(body: unknown, status = 200) {
