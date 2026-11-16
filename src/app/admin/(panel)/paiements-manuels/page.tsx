@@ -1,3 +1,4 @@
+import Link from "next/link";
 import type { Metadata } from "next";
 import { ManualPaymentsTable } from "./manual-payments-table";
 import { listManualPayments } from "@/lib/manual-payments";
@@ -24,13 +25,21 @@ export default async function AdminManualPaymentsPage() {
 
   return (
     <div className="space-y-5">
-      <header>
-        <h1 className="text-[20px] font-black text-stone-900">Paiements manuels</h1>
-        <p className="mt-1 max-w-3xl text-[12.5px] leading-6 text-stone-600">
-          Virements reçus hors passerelle (Skrill, Neteller, Airtm, D17). Rien
-          n’est livré et aucun achat fournisseur n’est déclenché avant votre
-          acceptation. Activez ou fermez chaque moyen dans Réglages.
-        </p>
+      <header className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <h1 className="text-[20px] font-black text-stone-900">Paiements manuels</h1>
+          <p className="mt-1 max-w-3xl text-[12.5px] leading-6 text-stone-600">
+            Virements reçus hors passerelle (Skrill, Neteller, Airtm, D17). Rien
+            n’est livré et aucun achat fournisseur n’est déclenché avant votre
+            acceptation.
+          </p>
+        </div>
+        <Link
+          href="/admin/settings?tab=manual-payments"
+          className="inline-flex shrink-0 items-center gap-2 rounded-xl border border-[#C6A664]/50 bg-[#C6A664]/10 px-4 py-2.5 text-xs font-bold text-[#8A6D2F] transition-colors hover:bg-[#C6A664]/20"
+        >
+          Configurer les comptes →
+        </Link>
       </header>
 
       {error ? (

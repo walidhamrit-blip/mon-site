@@ -41,6 +41,7 @@ type SettingsTab =
   | "market"
   | "pricing"
   | "flex"
+  | "manualPayments"
   | "fazercards"
   | "trust";
 
@@ -57,6 +58,14 @@ export function SettingsForm({ initial, initialTab }: Props) {
     if (raw === "market" || raw === "currency") return "market";
     if (raw === "pricing") return "pricing";
     if (raw === "flex" || raw === "services") return "flex";
+    if (
+      raw === "manual-payments" ||
+      raw === "manualPayments" ||
+      raw === "paiements-manuels" ||
+      raw === "manuels"
+    ) {
+      return "manualPayments";
+    }
     if (raw === "fazercards" || raw === "boutique" || raw === "digital") {
       return "fazercards";
     }
@@ -159,6 +168,7 @@ export function SettingsForm({ initial, initialTab }: Props) {
     { id: "market", label: "Marché & Devises" },
     { id: "pricing", label: "Formules & Réservation 1 $" },
     { id: "flex", label: "Paiement libre & Services à la carte" },
+    { id: "manualPayments", label: "Paiements manuels" },
     { id: "fazercards", label: "Boutique & FazerCards" },
     { id: "trust", label: "Avis & Mentions légales" },
   ];
@@ -1495,6 +1505,27 @@ export function SettingsForm({ initial, initialTab }: Props) {
         </div>
       )}
 
+      {/* --- TAB 6 : PAIEMENTS MANUELS --- */}
+      {tab === "manualPayments" && (
+        <div className="space-y-6">
+          <div className="rounded-xl border border-[#C6A664]/40 bg-[#C6A664]/10 px-4 py-3 text-xs leading-relaxed text-stone-700 sm:text-sm">
+            <p className="font-bold text-stone-900">
+              Configuration des moyens Skrill, Neteller, Airtm et D17.
+            </p>
+            <p className="mt-1">
+              Renseignez puis activez chaque compte. La file de vérification
+              des reçus reste dans <Link href="/admin/paiements-manuels" className="font-bold text-[#8A6D2F] underline underline-offset-2">Paiements manuels</Link>.
+            </p>
+          </div>
+          <div className="rounded-2xl border border-stone-200 bg-white p-5 shadow-xs sm:p-6">
+            <ManualPaymentsSettings
+              value={form.manualPayments}
+              onChange={(next) => patch({ manualPayments: next })}
+            />
+          </div>
+        </div>
+      )}
+
       {tab === "fazercards" && (
         <div className="space-y-6">
           <div className="rounded-2xl border border-stone-200 bg-white p-5 sm:p-6 shadow-xs space-y-5">
@@ -1606,12 +1637,18 @@ export function SettingsForm({ initial, initialTab }: Props) {
 
           <PhoneCardPaymentsToggle enabled={initial.fazercards?.phoneCardPaymentsEnabled !== false} />
 
-          {/* Moyens de paiement manuels : comptes, devises et taux pilotés ici. */}
-          <div className="rounded-2xl border border-stone-200 bg-white p-5 shadow-xs sm:p-6">
-            <ManualPaymentsSettings
-              value={form.manualPayments}
-              onChange={(next) => patch({ manualPayments: next })}
-            />
+          <div className="rounded-2xl border border-[#C6A664]/40 bg-[#C6A664]/10 px-4 py-3 text-xs leading-relaxed text-stone-700 sm:text-sm">
+            <p className="font-bold text-stone-900">Comptes Skrill, Neteller, Airtm et D17</p>
+            <p className="mt-1">
+              Les moyens de paiement manuels se règlent maintenant dans l’onglet dédié{" "}
+              <button
+                type="button"
+                onClick={() => setTab("manualPayments")}
+                className="font-bold text-[#8A6D2F] underline underline-offset-2 cursor-pointer"
+              >
+                Paiements manuels →
+              </button>
+            </p>
           </div>
 
           <div className="rounded-2xl border border-stone-200 bg-white p-5 sm:p-6 shadow-xs space-y-5">

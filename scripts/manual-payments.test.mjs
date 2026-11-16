@@ -332,7 +332,10 @@ test("l'admin reçoit une file de vérification dédiée", () => {
 
   const page = code(read("src/app/admin/(panel)/paiements-manuels/page.tsx"));
   assert.match(page, /listManualPayments/);
-  assert.match(read("src/app/admin/(panel)/admin-nav.tsx"), /\/admin\/paiements-manuels/);
+  const nav = read("src/app/admin/(panel)/admin-nav.tsx");
+  assert.match(nav, /\/admin\/paiements-manuels/);
+  assert.match(nav, /\/admin\/settings\?tab=manual-payments/);
+  assert.match(nav, /Configurer les paiements/);
   // Garde anti-404 : le dossier doit correspondre exactement au lien de la
   // navigation (Next.js sert /admin/paiements-manuels depuis ce dossier).
   assert.ok(existsSync("src/app/admin/(panel)/paiements-manuels/page.tsx"));
@@ -346,7 +349,13 @@ test("les moyens se règlent depuis l'admin, devise et taux compris", () => {
   }
   assert.match(settings, /MANUAL_PAYMENT_CURRENCIES/);
   assert.match(settings, /feePercent/);
-  assert.match(read("src/app/admin/(panel)/settings/settings-form.tsx"), /ManualPaymentsSettings/);
+  const settingsForm = read("src/app/admin/(panel)/settings/settings-form.tsx");
+  const settingsCode = code(settingsForm);
+  assert.match(settingsCode, /ManualPaymentsSettings/);
+  assert.match(settingsCode, /id: "manualPayments", label: "Paiements manuels"/);
+  assert.match(settingsCode, /tab === "manualPayments"/);
+  const manualPage = code(read("src/app/admin/(panel)/paiements-manuels/page.tsx"));
+  assert.match(manualPage, /\/admin\/settings\?tab=manual-payments/);
 });
 
 test("la preuve n'est jamais publiée dans une réponse publique", () => {
