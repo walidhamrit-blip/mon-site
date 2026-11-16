@@ -37,11 +37,36 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export const maxDuration = 30;
 
-function noStoreJson(body: unknown, status = 200) {
+function noStoreJson(body: unknown, status = 200, extraHeaders: Record<string, string> = {}) {
   return NextResponse.json(body, {
     status,
-    headers: { "Cache-Control": "no-store" },
+    headers: { "Cache-Control": "no-store", ...extraHeaders },
   });
+}
+
+/**
+ * Réponse explicite pour qui ouvre l'URL dans un navigateur.
+ *
+ * La route n'accepte QUE les `POST` signés de G2G. Sans ce handler, un `GET`
+ * produisait une page d'erreur nue (« This page isn't working right now » /
+ * HTTP ERROR 405) qui laissait croire à une route absente ou cassée — alors
+ * qu'un 405 est au contraire la preuve qu'elle est déployée (une route
+ * inexistante renvoie 404).
+ *
+ * On garde strictement le même statut 405 : aucune information sur la
+ * configuration, aucun secret, aucune donnée d'événement n'est exposé.
+ */
+export async function GET() {
+  return noStoreJson(
+    {
+      ok: false,
+      error: "method_not_allowed",
+      message:
+        "Cette URL est un webhook G2G : elle n'accepte que les POST signés (événement order.api_delivery). Ce 405 est normal et confirme que la route est déployée.",
+    },
+    405,
+    { Allow: "POST" },
+  );
 }
 
 export async function POST(req: Request) {

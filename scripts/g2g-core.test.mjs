@@ -230,6 +230,20 @@ test("le webhook vérifie la signature AVANT de lire le corps", () => {
   assert.match(route, /dry_run: true/);
 });
 
+test("ouvrir l'URL du webhook dans un navigateur explique le 405 au lieu d'une page vide", () => {
+  const route = read("src/app/api/webhooks/g2g/route.ts");
+  const start = route.indexOf("export async function GET()");
+  assert.ok(start > 0, "handler GET absent");
+  const body = route.slice(start, route.indexOf("export async function POST"));
+  // Le GET doit RESTER en 405 : c'est la preuve que la route est déployée
+  // (une route inexistante renvoie 404), mais avec un corps explicatif.
+  assert.match(body, /method_not_allowed/);
+  assert.match(body, /405/);
+  assert.match(body, /Allow: "POST"/);
+  // Et surtout : aucune donnée de configuration ni secret dans cette réponse.
+  assert.doesNotMatch(body, /webhookSecretToken|secretKey|cfg\.|g2gConfig/);
+});
+
 test("le diagnostic admin exige une session admin et ne renvoie aucun secret", () => {
   const route = read("src/app/api/admin/g2g/route.ts");
   assert.match(route, /isAdminAuthenticated\(\)/);
@@ -262,6 +276,17 @@ test("chaque requête G2G porte Content-Type: application/json, corps ou non", (
     timestamp: "1653278884000",
   });
   assert.equal(headers["Content-Type"], "application/json");
+  // ⚠️ Mesuré sur l'API réelle (16/11/2026) : la variante
+  // `application/json; charset=utf-8` est REFUSÉE (400, « Invalid Header
+  // 'Content-Type' »), alors qu'elle est plus correcte en HTTP. La valeur
+  // doit rester EXACTEMENT `application/json` — ne jamais l'enrichir.
+  assert.equal(headers["Content-Type"], "application/json");
+  assert.doesNotMatch(headers["Content-Type"], /charset/i);
+  // ⚠️ Mesuré également : l'en-tête utilisateur est `g2g-userid` (sans
+  // tirets). Avec `g2g-user-id`, G2G répond « Missing Header
+  // 'g2g-user-id' » — il nomme la forme reçue, pas celle attendue.
+  assert.ok(headers["g2g-userid"], "g2g-userid doit être présent");
+  assert.equal(headers["g2g-user-id"], undefined);
   // Le test porte sur l'absence de corps : c'est le cas `GET /v2/store`.
   assert.equal(headers.Accept, "application/json");
   for (const header of ["g2g-api-key", "g2g-userid", "g2g-timestamp", "g2g-signature"]) {
