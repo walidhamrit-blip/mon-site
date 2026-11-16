@@ -349,6 +349,8 @@ test("les moyens se règlent depuis l'admin, devise et taux compris", () => {
   }
   assert.match(settings, /MANUAL_PAYMENT_CURRENCIES/);
   assert.match(settings, /feePercent/);
+  assert.match(settings, /DecimalInput/);
+  assert.match(settings, /decimals=\{2\}/);
   const settingsForm = read("src/app/admin/(panel)/settings/settings-form.tsx");
   const settingsCode = code(settingsForm);
   assert.match(settingsCode, /ManualPaymentsSettings/);

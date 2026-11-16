@@ -1,5 +1,6 @@
 "use client";
 
+import { DecimalInput } from "@/components/decimal-input";
 import type { ManualPaymentsConfigData, ManualPaymentMethodConfigData } from "@/lib/site-types";
 import {
   MANUAL_PAYMENT_CURRENCIES,
@@ -86,7 +87,6 @@ export function ManualPaymentsSettings({
             } as ManualPaymentMethodConfigData);
           const complete = manualPaymentMethodReady(settings);
           const ready = settings.enabled === true && complete;
-          const rateSuffix = settings.currency === "USD" ? "1" : String(settings.rate ?? "");
 
           return (
             <div
@@ -173,24 +173,18 @@ export function ManualPaymentsSettings({
                   <span className="mb-1 block text-[11px] font-bold text-stone-500">
                     Taux : 1 USD = ? {settings.currency}
                   </span>
-                  <input
-                    value={rateSuffix}
-                    onChange={(event) => {
-                      const raw = event.target.value.replace(",", ".").trim();
-                      const parsed = Number(raw);
+                  <DecimalInput
+                    value={settings.currency === "USD" ? 1 : settings.rate}
+                    onChange={(rate) =>
                       update(method, {
-                        rate:
-                          settings.currency === "USD"
-                            ? null
-                            : raw === "" || !Number.isFinite(parsed) || parsed <= 0
-                              ? null
-                              : parsed,
-                      });
-                    }}
+                        rate: settings.currency === "USD" ? null : rate,
+                      })
+                    }
                     disabled={settings.currency === "USD"}
-                    inputMode="decimal"
-                    dir="ltr"
+                    decimals={2}
+                    placeholder="Ex. 3.10"
                     className="h-10 w-full rounded-lg border border-stone-300 bg-white px-3 text-[12.5px] outline-none focus:border-[#8A6D2F] disabled:bg-stone-100 disabled:text-stone-400"
+                    ariaLabel={`Taux de conversion ${method}`}
                   />
                 </label>
 
@@ -198,21 +192,17 @@ export function ManualPaymentsSettings({
                   <span className="mb-1 block text-[11px] font-bold text-stone-500">
                     Majoration (%)
                   </span>
-                  <input
-                    value={String(settings.feePercent ?? 0)}
-                    onChange={(event) => {
-                      const raw = event.target.value.replace(",", ".").trim();
-                      const parsed = Number(raw);
+                  <DecimalInput
+                    value={settings.feePercent ?? 0}
+                    onChange={(fee) =>
                       update(method, {
-                        feePercent:
-                          raw === "" || !Number.isFinite(parsed)
-                            ? 0
-                            : Math.min(25, Math.max(0, parsed)),
-                      });
-                    }}
-                    inputMode="decimal"
-                    dir="ltr"
+                        feePercent: Math.min(25, Math.max(0, fee ?? 0)),
+                      })
+                    }
+                    decimals={2}
+                    placeholder="0.00"
                     className="h-10 w-full rounded-lg border border-stone-300 bg-white px-3 text-[12.5px] outline-none focus:border-[#8A6D2F]"
+                    ariaLabel={`Majoration ${method}`}
                   />
                 </label>
 
