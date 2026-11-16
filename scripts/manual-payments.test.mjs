@@ -9,7 +9,7 @@
  */
 import test from "node:test";
 import assert from "node:assert/strict";
-import { mkdirSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { build } from "esbuild";
@@ -330,9 +330,13 @@ test("l'admin reçoit une file de vérification dédiée", () => {
   assert.match(actions, /sendManualPaymentApprovedEmail/);
   assert.match(actions, /approveManualSubscription/);
 
-  const page = code(read("src/app/admin/(panel)/manual-payments/page.tsx"));
+  const page = code(read("src/app/admin/(panel)/paiements-manuels/page.tsx"));
   assert.match(page, /listManualPayments/);
   assert.match(read("src/app/admin/(panel)/admin-nav.tsx"), /\/admin\/paiements-manuels/);
+  // Garde anti-404 : le dossier doit correspondre exactement au lien de la
+  // navigation (Next.js sert /admin/paiements-manuels depuis ce dossier).
+  assert.ok(existsSync("src/app/admin/(panel)/paiements-manuels/page.tsx"));
+  assert.ok(!existsSync("src/app/admin/(panel)/manual-payments/page.tsx"));
 });
 
 test("les moyens se règlent depuis l'admin, devise et taux compris", () => {
