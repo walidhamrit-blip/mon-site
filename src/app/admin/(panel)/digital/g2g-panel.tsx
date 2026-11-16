@@ -6,6 +6,7 @@ import {
   Copy,
   Loader2,
   RefreshCw,
+  Send,
   ShieldAlert,
   Trash2,
 } from "lucide-react";
@@ -72,6 +73,44 @@ const STORE_HINTS: Record<string, string> = {
   network:
     "G2G injoignable depuis le serveur : vérifiez le réseau sortant et G2G_API_BASE.",
 };
+
+/**
+ * Traduction du verdict d'un événement de test en action concrète.
+ *
+ * Le but : qu'un échec dise QUOI corriger plutôt que de laisser croire à une
+ * panne. Le cas le plus fréquent (`bad_signature`) est un token régénéré côté
+ * G2G sans mise à jour côté Vercel — pas un problème de code.
+ */
+const WEBHOOK_TEST_HINTS: Record<string, string> = {
+  accepted:
+    "Tout fonctionne : la signature est acceptée, l'événement est journalisé et une alerte Telegram a été envoyée. Vous pouvez passer à l'étape suivante.",
+  duplicate:
+    "Déjà reçu une fois : ce delivery_id est connu, donc la chaîne fonctionnait déjà. Relancez pour un nouvel identifiant.",
+  bad_signature:
+    "Signature refusée. Le secret token de G2G et G2G_WEBHOOK_SECRET_TOKEN (côté Vercel) ne correspondent pas, ou G2G_WEBHOOK_URL diffère de l'URL déclarée chez G2G au caractère près. Régénérez un token dans G2G → Webhook → « Generate random secret token », copiez-le AVANT de sauvegarder, mettez-le dans Vercel puis redéployez.",
+  not_configured:
+    "Le déploiement qui répond n'a pas les variables : après avoir ajouté G2G_WEBHOOK_SECRET_TOKEN, G2G_WEBHOOK_URL ou G2G_USER_ID, il faut redéployer (Deployments → ⋯ → Redeploy).",
+  db_error:
+    "La signature a été acceptée, mais la base de données est indisponible : l'événement n'a pas pu être journalisé. Vérifiez DATABASE_URL, puis relancez le test.",
+  wrong_target:
+    "G2G_WEBHOOK_URL ne pointe pas sur notre webhook. Elle doit être exactement https://votre-domaine/api/webhooks/g2g — sans slash final, sans paramètre.",
+  rejected:
+    "L'événement a été refusé avant traitement. Lisez le corps de réponse ci-dessous : il précise la raison (JSON invalide, quantité hors bornes…).",
+  unreachable:
+    "Le serveur n'arrive pas à joindre l'URL : DNS, TLS ou délai dépassé. En preview, les variables G2G sont « Production only » et donc absentes — testez depuis la production.",
+  unexpected:
+    "Réponse inattendue : le corps reçu ne ressemble pas à celui de notre webhook. Vérifiez que G2G_WEBHOOK_URL pointe bien sur /api/webhooks/g2g.",
+};
+
+interface WebhookTestResult {
+  ok: boolean;
+  verdict: string;
+  httpStatus: number | null;
+  targetUrl: string;
+  deliveryId: string;
+  response: unknown;
+  networkError?: string | null;
+}
 
 interface Diagnostic {
   ok: boolean;
@@ -141,6 +180,8 @@ export function G2gPanel() {
   const [saving, setSaving] = useState(false);
   const [notice, setNotice] = useState("");
   const [probing, setProbing] = useState(false);
+  const [testing, setTesting] = useState(false);
+  const [webhookTest, setWebhookTest] = useState<WebhookTestResult | null>(null);
 
   const load = useCallback(async () => {
     setBusy(true);
@@ -184,6 +225,36 @@ export function G2gPanel() {
       setProbing(false);
     }
   }, []);
+
+  /**
+   * Envoie un `order.api_delivery` synthétique et signé à notre propre
+   * webhook, puis affiche le verdict. Aucun achat, aucune livraison.
+   */
+  const runWebhookTest = useCallback(async () => {
+    setTesting(true);
+    setError("");
+    setNotice("");
+    try {
+      const response = await fetch("/api/admin/g2g/webhook-test", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ offerId: form.offerId }),
+        cache: "no-store",
+      });
+      const result = (await response.json()) as WebhookTestResult & {
+        error?: string;
+        message?: string;
+      };
+      if (!response.ok && !result.verdict) {
+        throw new Error(result.message ?? result.error ?? "Test impossible");
+      }
+      setWebhookTest(result);
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : String(cause));
+    } finally {
+      setTesting(false);
+    }
+  }, [form.offerId]);
 
   const field = (key: keyof FormState, value: string | boolean) =>
     setForm((previous) => ({ ...previous, [key]: value }));
@@ -423,6 +494,79 @@ export function G2gPanel() {
                 la même valeur dans <code className="font-mono">G2G_WEBHOOK_URL</code> (la signature
                 porte sur l&apos;URL). Événement à cocher : <code className="font-mono">order.api_delivery</code>.
               </p>
+
+              <h3 className="mt-4 text-xs font-bold text-stone-800">
+                3 bis. Tester la réception (sans commande réelle)
+              </h3>
+              <p className="mt-1 text-[11px] text-stone-500">
+                Envoie un <code className="font-mono">order.api_delivery</code> synthétique et
+                signé à notre propre webhook. Aucun achat, aucune livraison, aucune modification
+                d&apos;offre. Indispensable en phase 1 : avec <code className="font-mono">api_qty = 0</code>,
+                G2G n&apos;émettra jamais d&apos;événement tout seul.
+              </p>
+              <div className="mt-2 flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => void runWebhookTest()}
+                  disabled={testing || !data.config.webhookConfigured}
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-stone-300 bg-stone-900 px-2.5 py-1.5 text-[11px] font-bold text-white hover:bg-stone-800 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {testing ? (
+                    <Loader2 className="h-3 w-3 animate-spin" />
+                  ) : (
+                    <Send className="h-3 w-3" />
+                  )}
+                  {testing ? "Envoi…" : "Envoyer un événement de test"}
+                </button>
+                {!data.config.webhookConfigured ? (
+                  <span className="text-[11px] text-amber-700">
+                    Renseignez d&apos;abord G2G_WEBHOOK_SECRET_TOKEN, G2G_WEBHOOK_URL et G2G_USER_ID.
+                  </span>
+                ) : null}
+              </div>
+
+              {webhookTest ? (
+                <div
+                  className={`mt-2 rounded-lg border p-2.5 text-[11px] ${
+                    webhookTest.verdict === "accepted" || webhookTest.verdict === "duplicate"
+                      ? "border-emerald-200 bg-emerald-50"
+                      : "border-amber-200 bg-amber-50"
+                  }`}
+                >
+                  <p className="font-bold text-stone-800">
+                    {webhookTest.verdict === "accepted" || webhookTest.verdict === "duplicate"
+                      ? "✅ Webhook opérationnel"
+                      : "⚠️ À corriger"}
+                    <span className="ml-1.5 font-mono font-normal text-stone-600">
+                      HTTP {webhookTest.httpStatus ?? "—"} · {webhookTest.verdict}
+                    </span>
+                  </p>
+                  <dl className="mt-1.5 space-y-0.5 font-mono text-[10px] text-stone-600">
+                    <div>
+                      <dt className="inline text-stone-500">cible :</dt>{" "}
+                      <dd className="inline break-all">{webhookTest.targetUrl}</dd>
+                    </div>
+                    <div>
+                      <dt className="inline text-stone-500">delivery_id :</dt>{" "}
+                      <dd className="inline break-all">{webhookTest.deliveryId}</dd>
+                    </div>
+                    {webhookTest.networkError ? (
+                      <div>
+                        <dt className="inline text-stone-500">réseau :</dt>{" "}
+                        <dd className="inline break-all">{webhookTest.networkError}</dd>
+                      </div>
+                    ) : null}
+                  </dl>
+                  {WEBHOOK_TEST_HINTS[webhookTest.verdict] ? (
+                    <p className="mt-1.5 font-sans text-stone-700">
+                      {WEBHOOK_TEST_HINTS[webhookTest.verdict]}
+                    </p>
+                  ) : null}
+                  <pre className="mt-1.5 overflow-x-auto rounded border border-stone-200 bg-white p-1.5 font-mono text-[10px] text-stone-700">
+                    {JSON.stringify(webhookTest.response, null, 2)}
+                  </pre>
+                </div>
+              ) : null}
             </div>
           </div>
 

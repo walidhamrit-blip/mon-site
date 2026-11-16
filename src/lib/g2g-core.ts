@@ -428,3 +428,101 @@ export function evaluateG2gMargin(input: G2gMarginInput): G2gMarginVerdict {
   }
   return verdict;
 }
+
+/* ------------------- Événement de test webhook (admin) ------------------- */
+
+/**
+ * Verdict d'un envoi de test `order.api_delivery`.
+ *
+ * Le texte affiché à l'administrateur vit côté interface (comme `STORE_HINTS`) ;
+ * ce classifieur reste pur et testable : il ne fait que nommer la situation
+ * pour éviter qu'un `401` (signature) ne soit pris pour une panne réseau.
+ */
+export type G2gWebhookTestVerdict =
+  | "accepted"
+  | "duplicate"
+  | "bad_signature"
+  | "not_configured"
+  | "wrong_target"
+  | "db_error"
+  | "rejected"
+  | "unreachable"
+  | "unexpected";
+
+/**
+ * Construit un événement `order.api_delivery` synthétique, signable puis
+ * envoyé à notre propre webhook pour valider toute la chaîne de réception.
+ *
+ * ⚠️ Strictement sans effet de bord réel : aucun achat fournisseur, aucune
+ * écriture d'offre, et `delivery_id` est préfixé `TESTD` pour qu'une telle
+ * ligne soit identifiable dans la table `webhook_events`.
+ */
+export function g2gBuildTestDeliveryEvent(input: {
+  sellerId: string;
+  offerId: string;
+  timestamp: number;
+}): Record<string, unknown> {
+  const stamp = String(input.timestamp);
+  return {
+    id: `test-${stamp}`,
+    event_happened_at: input.timestamp,
+    event_type: "order.api_delivery",
+    payload: {
+      order_id: `TEST-ORDER-${stamp}`,
+      buyer_id: "0",
+      seller_id: input.sellerId,
+      offer_id: input.offerId,
+      purchased_qty: 1,
+      delivered_qty: 0,
+      undelivered_qty: 1,
+      delivery_summary: {
+        delivery_id: `TESTD${stamp}`,
+        delivery_mode: "normal",
+        requested_qty: 1,
+        requested_at: input.timestamp,
+        expired_at: 0,
+        delivery_method_code: "direct_top_up",
+      },
+    },
+  };
+}
+
+/**
+ * Classe la réponse obtenue après l'envoi d'un événement de test.
+ *
+ * `httpStatus` vaut `null` quand la requête n'a pas abouti (DNS, TLS,
+ * timeout) — on ne confond alors jamais l'injoignabilité avec un rejet.
+ */
+export function g2gWebhookTestVerdict(input: {
+  httpStatus: number | null;
+  body?: unknown;
+  networkError?: boolean;
+}): G2gWebhookTestVerdict {
+  if (input.networkError || input.httpStatus === null) return "unreachable";
+
+  const status = input.httpStatus;
+  const body = isRecord(input.body) ? input.body : {};
+  const error = typeof body.error === "string" ? body.error : "";
+
+  // Le rejet de signature passe AVANT tout : c'est la panne la plus
+  // probable (token régénéré côté G2G sans mise à jour côté Vercel).
+  if (status === 401 || error === "invalid_signature") return "bad_signature";
+  // Deux causes très différentes partagent le statut 503 : il faut les
+  // séparer, sinon on cherche une variable manquante alors que c'est la
+  // base de données qui est indisponible.
+  if (error === "db_unavailable") return "db_error";
+  if (status === 503 || error === "not_configured") return "not_configured";
+
+  // Notre webhook répond toujours en 200 sur un POST valide ; un 404/405
+  // signifie que `G2G_WEBHOOK_URL` ne pointe pas sur `/api/webhooks/g2g`.
+  if (status === 404 || status === 405) return "wrong_target";
+
+  if (status === 200) {
+    if (body.duplicate === true) return "duplicate";
+    if (body.ok === true || body.dry_run === true) return "accepted";
+    return "unexpected";
+  }
+
+  if (status >= 400) return "rejected";
+  return "unexpected";
+}

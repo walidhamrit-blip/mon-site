@@ -326,14 +326,45 @@ doivent être verts et `GET /v2/store` doit afficher le compte vendeur.
 | --- | --- | --- |
 | `GET /api/health` | `{"ok":true,…}` | site ou base indisponible |
 | `GET /api/admin/g2g` **sans session admin** | `401 {"ok":false,"error":"unauthorized"}` | **`404` = le code G2G n'est pas déployé** ; les variables d'environnement seules ne suffisent pas, il faut que le commit soit sur la branche déployée par Vercel |
+| `POST /api/admin/g2g/webhook-test` (session admin) | `200` avec `verdict: "accepted"` | lire le `verdict` renvoyé — il nomme la cause exacte (voir ci-dessous) |
 | `POST /api/webhooks/g2g` signé | `200 {"ok":true,"dry_run":true,…}` | vérifier `G2G_WEBHOOK_SECRET_TOKEN`, `G2G_WEBHOOK_URL` et l'horloge |
 
 ⚠️ `/api/webhooks/g2g` n'accepte **que** les `POST` signés. Ouvert dans un
 navigateur — donc en `GET` — il renvoie **405** avec un message
 d'explication : c'est **normal**, et c'est même la preuve que la route est
 déployée (une route inexistante renverrait 404). Ce n'est donc pas un test
-de bon fonctionnement. Pour valider : déclencher un **événement de test
-G2G**, ou vérifier `GET /api/admin/g2g` (qui doit répondre `401`, pas `404`).
+de bon fonctionnement. Pour valider : utiliser le bouton **« Envoyer un
+événement de test »** du panneau, ou vérifier `GET /api/admin/g2g` (qui doit
+répondre `401`, pas `404`).
+
+### Valider la réception sans attendre G2G
+
+En phase 1, `api_qty = 0` interdit toute commande réelle : **G2G n'émettra
+donc jamais d'événement tout seul.** Sans bouton de test, la première
+exécution du webhook aurait lieu le jour où un vrai client paie — le pire
+moment pour découvrir qu'une signature est refusée.
+
+Le panneau `/admin/digital` → section **« 3 bis. Tester la réception »**
+envoie un `order.api_delivery` synthétique, correctement signé, à notre
+propre webhook, puis affiche le verdict. Aucun achat, aucune livraison,
+aucune modification d'offre ; le `delivery_id` est préfixé `TESTD…` pour être
+repérable dans `webhook_events`.
+
+| `verdict` | Signification | Action |
+| --- | --- | --- |
+| `accepted` | chaîne complète validée | passer à la correspondance d'offre |
+| `duplicate` | déjà reçu | relancer pour un nouvel `delivery_id` |
+| `bad_signature` | token G2G ≠ `G2G_WEBHOOK_SECRET_TOKEN`, **ou** `G2G_WEBHOOK_URL` différente au caractère près | régénérer le token, le copier **avant** de sauvegarder, le mettre dans Vercel, redéployer |
+| `not_configured` | variable absente du déploiement qui répond | ajouter la variable puis **redéployer** |
+| `wrong_target` | `G2G_WEBHOOK_URL` ne pointe pas sur `/api/webhooks/g2g` | corriger l'URL (ni slash final, ni paramètre) |
+| `db_error` | signature acceptée, base indisponible | vérifier `DATABASE_URL` puis relancer |
+| `unreachable` | DNS / TLS / délai dépassé | en preview les variables G2G sont *Production only* : tester depuis la production |
+| `rejected` / `unexpected` | refus avant traitement | lire le corps de réponse affiché |
+
+> Un `503` seul ne suffit pas à conclure : `not_configured` (variable
+> manquante) et `db_error` (base indisponible) partagent ce statut mais
+> n'appellent aucune action commune. D'où le classifieur
+> `g2gWebhookTestVerdict()`.
 
 > 🛑 Rappel : redéployer n'active **aucune** livraison automatique. La phase 1
 > reste en *shadow mode* et toutes les offres G2G doivent garder
@@ -398,10 +429,10 @@ Séquence de test recommandée :
 2. `/admin/digital` → tous les voyants de secrets au vert, compte vendeur
    affiché, URL du webhook copiée.
 3. Déclarer le webhook chez G2G avec `order.api_delivery`.
-4. Déclencher un événement de test depuis G2G (ou attendre un événement réel
-   sur une offre à `api_qty = 0`) → la route doit répondre `200` avec
-   `dry_run: true`, une ligne dans `webhook_events` (`provider = g2g`) et une
-   alerte Telegram.
+4. `/admin/digital` → **« Envoyer un événement de test »** → `verdict:
+   "accepted"`, une ligne `TESTD…` dans `webhook_events` (`provider = g2g`)
+   et une alerte Telegram. (Inutile d'attendre un événement réel : avec
+   `api_qty = 0`, G2G n'en émettra aucun.)
 5. Vérifier qu'une **signature falsifiée** est rejetée en `401`.
 
 ---

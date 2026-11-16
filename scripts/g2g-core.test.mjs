@@ -16,11 +16,13 @@ import {
   G2G_MAX_DELIVERY_QTY,
   evaluateG2gMargin,
   g2gApiSignature,
+  g2gBuildTestDeliveryEvent,
   g2gCanonicalPath,
   g2gErrorHint,
   g2gRequestHeaders,
   g2gSignaturesEqual,
   g2gWebhookSignature,
+  g2gWebhookTestVerdict,
   isG2gTimestampFresh,
   parseG2gDeliveryEvent,
   verifyG2gWebhookSignature,
@@ -377,6 +379,110 @@ test("schéma et DDL créent la table de mapping désactivée par défaut", () =
   assert.match(schema, /g2gOfferMappings/);
   assert.match(ddl, /CREATE TABLE IF NOT EXISTS g2g_offer_mappings/);
   assert.match(ddl, /enabled boolean NOT NULL DEFAULT false/);
+});
+
+/* ------------------------------------------------------------------ *
+ * Événement de test du webhook (bouton admin).
+ *
+ * En phase 1, `api_qty = 0` interdit toute commande réelle : G2G
+ * n'émet donc jamais d'événement spontanément. Sans bouton de test, la
+ * première exécution du webhook aurait lieu le jour où un vrai client
+ * paie. Le piège à éviter : un événement de test que NOTRE propre
+ * parseur refuserait, ce qui ferait croire à une panne de signature.
+ * ------------------------------------------------------------------ */
+
+test("l'événement de test est accepté par notre propre parseur", () => {
+  const sellerId = "1003177397";
+  const timestamp = 1763323200000;
+  const event = g2gBuildTestDeliveryEvent({
+    sellerId,
+    offerId: "G1793906316865GE",
+    timestamp,
+  });
+
+  const parsed = parseG2gDeliveryEvent(event);
+  assert.equal(parsed.ok, true, "l'événement de test doit être décodable");
+  assert.equal(parsed.event.eventType, "order.api_delivery");
+  assert.equal(parsed.event.offerId, "G1793906316865GE");
+  assert.equal(parsed.event.sellerId, sellerId);
+  assert.equal(parsed.event.requestedQty, 1);
+
+  // Traçable et non rejouable : l'identifiant change à chaque envoi.
+  assert.equal(parsed.event.deliveryId, `TESTD${timestamp}`);
+  assert.match(parsed.event.deliveryId, /^TESTD/);
+
+  // Surtout pas de donnée acheteur réelle ni de code.
+  assert.equal(parsed.event.expiredAt, 0);
+  const serialized = JSON.stringify(event);
+  for (const secret of ["G2G_SECRET_KEY", "g2g-signature", "webhookSecretToken"]) {
+    assert.doesNotMatch(serialized, new RegExp(secret));
+  }
+});
+
+test("le verdict d'un événement de test distingue signature, config et cible", () => {
+  // Accepté en mode « shadow » : c'est le cas nominal.
+  assert.equal(
+    g2gWebhookTestVerdict({ httpStatus: 200, body: { ok: true, dry_run: true } }),
+    "accepted",
+  );
+  // Rejoué : la chaîne fonctionnait déjà.
+  assert.equal(
+    g2gWebhookTestVerdict({ httpStatus: 200, body: { ok: true, duplicate: true } }),
+    "duplicate",
+  );
+  // Le piège classique : token régénéré côté G2G sans mise à jour Vercel.
+  assert.equal(
+    g2gWebhookTestVerdict({ httpStatus: 401, body: { error: "invalid_signature" } }),
+    "bad_signature",
+  );
+  // Variables absentes du déploiement qui répond.
+  assert.equal(
+    g2gWebhookTestVerdict({ httpStatus: 503, body: { error: "not_configured" } }),
+    "not_configured",
+  );
+  // Même statut 503, cause opposée : la signature était bonne, c'est la base.
+  // Les confondre ferait chercher une variable manquante pour rien.
+  assert.equal(
+    g2gWebhookTestVerdict({ httpStatus: 503, body: { error: "db_unavailable" } }),
+    "db_error",
+  );
+  // L'URL ne pointe pas sur /api/webhooks/g2g.
+  assert.equal(g2gWebhookTestVerdict({ httpStatus: 404, body: {} }), "wrong_target");
+  assert.equal(g2gWebhookTestVerdict({ httpStatus: 405, body: {} }), "wrong_target");
+  // Injoignable : jamais confondu avec un rejet applicatif.
+  assert.equal(g2gWebhookTestVerdict({ httpStatus: null, networkError: true }), "unreachable");
+  assert.equal(g2gWebhookTestVerdict({ httpStatus: 400, body: { error: "invalid_json" } }), "rejected");
+  assert.equal(g2gWebhookTestVerdict({ httpStatus: 200, body: { hello: 1 } }), "unexpected");
+});
+
+test("le test du webhook exige un admin et n'expose ni secret ni signature", () => {
+  const route = read("src/app/api/admin/g2g/webhook-test/route.ts");
+  assert.match(route, /isAdminAuthenticated\(\)/);
+  assert.match(route, /export const runtime = "nodejs"/);
+  // La cible reste sous contrôle : https imposé en production.
+  assert.match(route, /protocol !== "https:"/);
+  // Timeout : un test ne doit pas immobiliser la fonction.
+  assert.match(route, /AbortSignal\.timeout\(/);
+  assert.match(route, /g2gWebhookTestVerdict/);
+
+  // La charge renvoyée au navigateur : des verdicts et des statuts, point.
+  const start = route.indexOf("ok: verdict ===");
+  assert.notEqual(start, -1, "bloc de réponse du test introuvable");
+  const payload = route.slice(start, route.indexOf("\n  });", start));
+  assert.match(payload, /verdict,/);
+  assert.match(payload, /deliveryId/);
+  assert.doesNotMatch(payload, /signature/);
+  assert.doesNotMatch(payload, /secretToken|apiKey|secretKey/);
+
+  // Variable absente : seul son NOM est exposé, jamais sa valeur.
+  const missingAt = route.indexOf("const missing = [");
+  assert.notEqual(missingAt, -1, "bloc « variables manquantes » introuvable");
+  const missingBlock = route.slice(
+    missingAt,
+    route.indexOf("return noStoreJson(", missingAt),
+  );
+  assert.match(missingBlock, /"G2G_WEBHOOK_SECRET_TOKEN"/);
+  assert.doesNotMatch(missingBlock, /: cfg\./);
 });
 
 test("aucun secret G2G en clair dans le dépôt", () => {
