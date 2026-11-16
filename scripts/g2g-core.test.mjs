@@ -262,6 +262,17 @@ test("chaque requête G2G porte Content-Type: application/json, corps ou non", (
     timestamp: "1653278884000",
   });
   assert.equal(headers["Content-Type"], "application/json");
+  // ⚠️ Mesuré sur l'API réelle (16/11/2026) : la variante
+  // `application/json; charset=utf-8` est REFUSÉE (400, « Invalid Header
+  // 'Content-Type' »), alors qu'elle est plus correcte en HTTP. La valeur
+  // doit rester EXACTEMENT `application/json` — ne jamais l'enrichir.
+  assert.equal(headers["Content-Type"], "application/json");
+  assert.doesNotMatch(headers["Content-Type"], /charset/i);
+  // ⚠️ Mesuré également : l'en-tête utilisateur est `g2g-userid` (sans
+  // tirets). Avec `g2g-user-id`, G2G répond « Missing Header
+  // 'g2g-user-id' » — il nomme la forme reçue, pas celle attendue.
+  assert.ok(headers["g2g-userid"], "g2g-userid doit être présent");
+  assert.equal(headers["g2g-user-id"], undefined);
   // Le test porte sur l'absence de corps : c'est le cas `GET /v2/store`.
   assert.equal(headers.Accept, "application/json");
   for (const header of ["g2g-api-key", "g2g-userid", "g2g-timestamp", "g2g-signature"]) {

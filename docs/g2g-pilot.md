@@ -172,7 +172,7 @@ G2G, le `request_id` et le message exact :
 
 | Variante | En-têtes |
 | --- | --- |
-| `baseline` | `Content-Type` + `Accept` + `g2g-userid` (configuration actuelle) |
+| `baseline` | `Content-Type: application/json` + `Accept` + `g2g-userid` |
 | `no_content_type` | `GET` nu, sans `Content-Type` |
 | `no_accept` | `Content-Type` sans `Accept` |
 | `charset_utf8` | `Content-Type: application/json; charset=utf-8` |
@@ -180,6 +180,37 @@ G2G, le `request_id` et le message exact :
 
 La ligne surlignée en vert est celle que G2G accepte : il suffit ensuite
 d'aligner `g2gRequestHeaders()` (`src/lib/g2g-core.ts`) dessus.
+
+#### Résultat relevé sur l'API réelle (16/11/2026)
+
+La sonde a été exécutée en production, sur `GET /v2/store`, avec des
+identifiants valides. **Résultat consolidé — c'est désormais une référence
+mesurée, plus une hypothèse :**
+
+| Variante | HTTP | Verdict | Message G2G |
+| --- | --- | --- | --- |
+| `baseline` | **200** | ✅ accepté | — |
+| `no_content_type` | 400 | ❌ refusé | `Invalid Header 'Content-Type'` |
+| `no_accept` | **200** | ✅ accepté | — |
+| `charset_utf8` | 400 | ❌ refusé | `Invalid Header 'Content-Type'` |
+| `user_id_hyphen` | 400 | ❌ refusé | `Missing Header 'g2g-user-id'` |
+
+Trois enseignements, tous contre-intuitifs :
+
+1. **`Content-Type` est obligatoire, y compris sur un `GET` vide.** C'était
+   la panne d'origine.
+2. **La valeur doit être exactement `application/json`** — la variante
+   `application/json; charset=utf-8`, pourtant plus « correcte » en HTTP,
+   est **refusée**. ⚠️ Ne jamais « enrichir » cet en-tête.
+3. **L'en-tête utilisateur s'appelle bien `g2g-userid`** (sans tirets). Le
+   piège : quand on envoie `g2g-user-id`, G2G répond `Missing Header
+   'g2g-user-id'` — c'est-à-dire qu'il nomme **la forme qu'on a envoyée** et
+   non celle qu'il attend. Ce message a déjà induit en erreur des
+   intégrateurs en dehors de ce projet : le lire comme « il manque ce que je
+   viens d'envoyer », donc « le vrai nom est l'autre forme ».
+
+`Accept: application/json` est facultatif (`no_accept` passe en 200) ; on
+continue de l'envoyer par hygiène.
 
 Le panneau affiche aussi le **SHA du commit déployé** (`VERCEL_GIT_COMMIT_SHA`).
 S'il ne correspond pas au dernier commit de la branche, le correctif n'est pas
