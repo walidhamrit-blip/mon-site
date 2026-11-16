@@ -19,6 +19,18 @@ import {
   trackingQuery,
 } from "@/lib/order-tracking";
 import { checkRateLimit } from "@/lib/rate-limit";
+import {
+  insertPreparedManualPayment,
+  isManualPaymentDuplicateError,
+  ManualPaymentError,
+  prepareManualPaymentForSite,
+} from "@/lib/manual-payments";
+import {
+  MANUAL_PAYMENT_CURRENCIES,
+  MANUAL_PAYMENT_LIMITS,
+  MANUAL_PAYMENT_METHODS,
+} from "@/lib/manual-payment-core";
+import { sendManualPaymentReviewNotice } from "@/lib/digital-emails";
 import { enforceSameOrigin } from "@/lib/csrf";
 import { localizedPath } from "@/lib/locale";
 
@@ -79,6 +91,31 @@ const reserveSchema = z.object({
   phone: z.string().max(40).optional(),
   locale: z.enum(["ar", "en"]).optional(),
   utm: z.string().max(500).optional(),
+  /**
+   * Acompte réglé par virement manuel (Skrill / Neteller / Airtm / D17).
+   * Aucune facture crypto n'est alors créée et la réservation n'est
+   * confirmée qu'après vérification humaine de la réception.
+   */
+  manualPayment: z
+    .object({
+      method: z.enum(MANUAL_PAYMENT_METHODS),
+      senderName: z.string().trim().min(2).max(MANUAL_PAYMENT_LIMITS.senderName),
+      senderAccount: z.string().trim().min(3).max(MANUAL_PAYMENT_LIMITS.senderAccount),
+      transactionRef: z.string().trim().min(3).max(MANUAL_PAYMENT_LIMITS.transactionRef),
+      note: z.string().trim().max(MANUAL_PAYMENT_LIMITS.note).optional(),
+      quoteAccepted: z.boolean().optional(),
+      quote: z
+        .object({
+          method: z.enum(MANUAL_PAYMENT_METHODS),
+          amountUsd: z.number(),
+          payCurrency: z.enum(MANUAL_PAYMENT_CURRENCIES),
+          payRate: z.number(),
+          feePercent: z.number(),
+          payAmount: z.number(),
+        })
+        .optional(),
+    })
+    .optional(),
 });
 
 export async function POST(req: Request) {
@@ -158,7 +195,7 @@ export async function POST(req: Request) {
     });
   }
 
-  if (!nowPaymentsConfigured()) {
+  if (!nowPaymentsConfigured() && !data.manualPayment) {
     return errorResponse("gateway_not_configured", 503, {
       source: "config",
       status: null,
@@ -201,12 +238,95 @@ export async function POST(req: Request) {
         phone: data.phone?.trim() || null,
         utm: data.utm || null,
         locale: data.locale ?? null,
+        ...(data.manualPayment ? { paymentMethod: "manual" } : {}),
       })
       .returning({ id: orders.id });
     orderId = inserted[0]?.id ?? 0;
   } catch (error) {
     console.error("[reservation] création commande impossible :", errorMessage(error));
     return errorResponse("save_failed", 500, databaseDetail(error));
+  }
+
+  // 2 bis) Acompte réglé par virement manuel : aucune facture. La
+  //    réservation reste en attente jusqu'à ce que l'administrateur
+  //    constate la réception du montant.
+  if (data.manualPayment) {
+    let prepared;
+    try {
+      prepared = await prepareManualPaymentForSite(
+        data.manualPayment,
+        depositUsd,
+        data.locale ?? "ar",
+      );
+    } catch (error) {
+      await db.delete(orders).where(eq(orders.id, orderId)).catch(() => null);
+      if (error instanceof ManualPaymentError) {
+        return errorResponse(error.code, error.status, {
+          source: "input",
+          status: null,
+          message: error.message,
+        });
+      }
+      throw error;
+    }
+
+    try {
+      await insertPreparedManualPayment(ref, prepared);
+    } catch (error) {
+      await db.delete(orders).where(eq(orders.id, orderId)).catch(() => null);
+      if (isManualPaymentDuplicateError(error)) {
+        return errorResponse("manual_payment_already_used", 409, {
+          source: "input",
+          status: null,
+          message:
+            "Cette référence est déjà rattachée à une commande. Ne la ressaisissez pas : contactez-nous avec votre référence.",
+        });
+      }
+      console.error("[reservation] paiement manuel non enregistré :", errorMessage(error));
+      return errorResponse("save_failed", 500, databaseDetail(error));
+    }
+
+    await sendManualPaymentReviewNotice(
+      {
+        ref,
+        productTitle: `Réservation — ${demo.titleEn}${categoryLabel ? ` (${categoryLabel})` : ""}`,
+        recipientName: data.name ?? null,
+        recipientEmail: data.email,
+        recipientPhone: data.phone ?? null,
+      },
+      prepared,
+      config.name,
+      config.url,
+      config.email,
+    ).catch((error: unknown) => {
+      console.warn(
+        "[reservation] notification admin impossible :",
+        errorMessage(error),
+      );
+    });
+
+    return NextResponse.json(
+      {
+        ok: true,
+        orderRef: ref,
+        trackingToken: tracking.token,
+        groupRef: ref,
+        installments: 1,
+        installmentIndex: 1,
+        trancheAmountUsd: depositUsd,
+        paymentUrl: `${siteBaseUrl(req)}${localizedPath(
+          `/pay/success?${trackingQuery(ref, tracking.token)}`,
+          data.locale ?? "ar",
+        )}`,
+        manualPayment: {
+          method: prepared.method,
+          payAmount: prepared.quote.payAmount,
+          payCurrency: prepared.quote.payCurrency,
+          account: prepared.targetAccount,
+        },
+      },
+      { status: 201 },
+    );
   }
 
   // 2) Facture NOWPayments à 1 $ (page de paiement hébergée).

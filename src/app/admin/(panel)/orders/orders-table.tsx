@@ -87,7 +87,14 @@ export function OrdersTable({ rows }: { rows: OrderRow[] }) {
                   <Detail label="Type" value={ORDER_KIND_LABELS[order.kind]} />
                   <Detail
                     label="Canal de paiement"
-                    value={order.paymentMethod === "phone_card" ? "Carte téléphonique — vérification manuelle" : "Crypto — NOWPayments"}
+                    value={
+                      order.paymentMethod === "phone_card"
+                        ? "Carte téléphonique — vérification manuelle"
+                        : order.paymentMethod === "manual" ||
+                            ["skrill", "neteller", "airtm", "d17"].includes(order.paymentMethod)
+                          ? "Virement manuel — vérification manuelle"
+                          : "Crypto — NOWPayments"
+                    }
                   />
                   <Detail label="Formule" value={order.planName} />
                   {order.demoSlug && (

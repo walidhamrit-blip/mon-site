@@ -144,11 +144,42 @@ export interface LegalConfigData {
   hostWebsite: string;
 }
 
+/**
+ * Réglages d'un moyen de paiement manuel (Skrill, Neteller, Airtm, D17).
+ *
+ * Le montant à envoyer est calculé côté serveur :
+ *   montant envoyé = total USD × taux de la devise × (1 + majoration).
+ * Avec la devise USD et une majoration nulle, le client envoie donc
+ * exactement le total de sa commande.
+ */
+export interface ManualPaymentMethodConfigData {
+  /** Activer cette méthode dans les tunnels de paiement. */
+  enabled: boolean;
+  /** Compte à créditer tel qu'affiché au client (e-mail, wallet, n° D17…). */
+  account: string;
+  /** Titulaire du compte (affiché au client pour éviter les erreurs). */
+  beneficiary: string;
+  /** Devise que le client doit envoyer. */
+  currency: "USD" | "LYD" | "EUR" | "TND";
+  /** 1 USD = X devise. Ignoré pour la devise USD ; requis sinon. */
+  rate: number | null;
+  /** Majoration appliquée au montant envoyé (frais, perte de change). */
+  feePercent: number;
+  /** Consigne libre affichée au client avant son transfert. */
+  instructions: string;
+}
+
+export type ManualPaymentsConfigData = {
+  skrill: ManualPaymentMethodConfigData;
+  neteller: ManualPaymentMethodConfigData;
+  airtm: ManualPaymentMethodConfigData;
+  d17: ManualPaymentMethodConfigData;
+};
+
 export interface SiteConfigData {
   name: string;
   nameAr: string;
-  tagline: string;
-  domain: string;
+  tagline: string;domain: string;
   url: string;
   email: string;
   phone: string;
@@ -209,6 +240,14 @@ export interface SiteConfigData {
     phoneCardManualRateLyd: number | null;
     phoneCardManualRateUpdatedAt: string | null;
   };
+  /**
+   * Paiements manuels sans passerelle (Skrill, Neteller, Airtm, D17).
+   *
+   * Chaque méthode a son interrupteur : activer Skrill n'active rien d'autre.
+   * Le compte à créditer n'est JAMAIS écrit en dur dans le code — il est
+   * saisi par l'administrateur, et une méthode sans compte reste fermée.
+   */
+  manualPayments: ManualPaymentsConfigData;
   /** Profils d'avis (Trustpilot, Google, Scamadviser) + demandes d'avis. */
   trust: TrustConfigData;
   /** Identité légale publiée sur /mentions-legales. */
@@ -587,7 +626,7 @@ export interface OrderRow {
   payCurrency: string | null;
   payAmount: string | null;
   paymentUrl: string | null;
-  paymentMethod: "nowpayments" | "phone_card";
+  paymentMethod: "nowpayments" | "phone_card" | "manual";
   status: OrderStatus;
   ipnStatus: string | null;
   utm: string | null;

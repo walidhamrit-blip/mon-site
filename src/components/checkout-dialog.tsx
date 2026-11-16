@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import {
   BadgeCheck,
   Bitcoin,
+  Landmark,
   BookOpen,
   Copy,
   Loader2,
@@ -18,6 +19,13 @@ import {
   resolvePlanPriceBreakdown,
   type ClassificationPlan,
 } from "@/lib/classification";
+import {
+  EMPTY_MANUAL_PAYMENT_DRAFT,
+  ManualPaymentForm,
+  manualQuoteForOption,
+  type ManualPaymentDraft,
+} from "@/components/manual-payment-form";
+import type { PublicManualPaymentOption } from "@/lib/manual-payment-public";
 import { Price } from "@/components/price";
 import { useCurrency } from "@/components/currency-provider";
 import type { Demo } from "@/lib/site-types";
@@ -49,6 +57,13 @@ interface CreatePaymentResponse {
   payAmount?: number;
   priceAmount?: number;
   priceCurrency?: string;
+  /** Présent quand le paiement a été déclaré en virement manuel. */
+  manualPayment?: {
+    method: string;
+    payAmount: number;
+    payCurrency: string;
+    account: string;
+  };
 }
 
 /** Échec de création, avec la cause exacte pour l'afficher au client. */
@@ -95,6 +110,15 @@ export function CheckoutDialog({
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [installments, setInstallments] = useState<InstallmentCount>(1);
+  /**
+   * Paiement manuel (Skrill / Neteller / Airtm / D17) en alternative à la
+   * crypto. Les moyens disponibles viennent du serveur : la configuration
+   * (comptes, taux) n'est jamais embarquée dans la page.
+   */
+  const [manualOptions, setManualOptions] = useState<PublicManualPaymentOption[]>([]);
+  const [manualDraft, setManualDraft] = useState<ManualPaymentDraft>(EMPTY_MANUAL_PAYMENT_DRAFT);
+  const [manualAccepted, setManualAccepted] = useState(false);
+  const [manualMode, setManualMode] = useState(false);
   const [error, setError] = useState("");
   const [failure, setFailure] = useState<Failure | null>(null);
   const [countdown, setCountdown] = useState(3);
@@ -123,6 +147,35 @@ export function CheckoutDialog({
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [plan, flex, onClose]);
+
+  // Moyens manuels réellement proposables (aucun si tout est fermé).
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      try {
+        const response = await fetch("/api/manual-payments/options", { cache: "no-store" });
+        const payload = (await response.json().catch(() => ({}))) as {
+          ok?: boolean;
+          options?: PublicManualPaymentOption[];
+        };
+        if (cancelled) return;
+        const list = response.ok && Array.isArray(payload.options) ? payload.options : [];
+        setManualOptions(list);
+        if (list.length > 0) {
+          setManualDraft((current) =>
+            list.some((item) => item.method === current.method)
+              ? current
+              : { ...current, method: list[0].method },
+          );
+        }
+      } catch {
+        if (!cancelled) setManualOptions([]);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const flexMode = Boolean(flex && !plan);
   const demoClassification = demo
@@ -156,6 +209,33 @@ export function CheckoutDialog({
       setError(ar ? "البريد الإلكتروني مطلوب" : "Email required");
       return;
     }
+    if (manualMode) {
+      const option = manualOptions.find((item) => item.method === manualDraft.method);
+      if (!option) {
+        setError(ar ? "طريقة الدفع اليدوي غير متاحة." : "The manual payment method is unavailable.");
+        return;
+      }
+      if (
+        manualDraft.senderName.trim().length < 2 ||
+        manualDraft.senderAccount.trim().length < 3 ||
+        manualDraft.transactionRef.trim().length < 3
+      ) {
+        setError(
+          ar
+            ? "أدخل اسم صاحب الحساب وحساب المُرسِل ومعرّف العملية."
+            : "Enter the sender name, sender account and transaction ID.",
+        );
+        return;
+      }
+      if (!manualAccepted) {
+        setError(
+          ar
+            ? "أكّد أنك حوّلت المبلغ المطلوب إلى الحساب المذكور."
+            : "Confirm that you sent the stated amount to that account.",
+        );
+        return;
+      }
+    }
     setStep("creating");
     setError("");
     setFailure(null);
@@ -173,6 +253,26 @@ export function CheckoutDialog({
                 email: email.trim() || undefined,
                 phone: phone.trim() || undefined,
                 locale,
+                ...(manualMode
+                  ? {
+                      manualPayment: {
+                        ...manualDraft,
+                        senderName: manualDraft.senderName.trim(),
+                        senderAccount: manualDraft.senderAccount.trim(),
+                        transactionRef: manualDraft.transactionRef.trim(),
+                        note: manualDraft.note.trim() || undefined,
+                        quoteAccepted: manualAccepted,
+                        quote: (() => {
+                          const option = manualOptions.find(
+                            (item) => item.method === manualDraft.method,
+                          );
+                          return option
+                            ? manualQuoteForOption(option, Math.round(totalUsd * 100) / 100)
+                            : undefined;
+                        })(),
+                      },
+                    }
+                  : {}),
               }
             : {
                 planId: plan!.id,
@@ -182,6 +282,26 @@ export function CheckoutDialog({
                 email: email.trim() || undefined,
                 phone: phone.trim() || undefined,
                 locale,
+                ...(manualMode
+                  ? {
+                      manualPayment: {
+                        ...manualDraft,
+                        senderName: manualDraft.senderName.trim(),
+                        senderAccount: manualDraft.senderAccount.trim(),
+                        transactionRef: manualDraft.transactionRef.trim(),
+                        note: manualDraft.note.trim() || undefined,
+                        quoteAccepted: manualAccepted,
+                        quote: (() => {
+                          const option = manualOptions.find(
+                            (item) => item.method === manualDraft.method,
+                          );
+                          return option
+                            ? manualQuoteForOption(option, Math.round(dueNow * 100) / 100)
+                            : undefined;
+                        })(),
+                      },
+                    }
+                  : {}),
               },
         ),
       });
@@ -449,24 +569,82 @@ export function CheckoutDialog({
               dir="ltr"
             />
 
+            {manualOptions.length > 0 && (
+              <div className="rounded-xl border border-[var(--border)] p-2.5">
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    aria-pressed={!manualMode}
+                    onClick={() => {
+                      setManualMode(false);
+                      setError("");
+                    }}
+                    className={`flex min-h-11 items-center justify-center gap-1.5 rounded-lg border px-2 text-[11.5px] font-black ${
+                      !manualMode
+                        ? "border-[var(--accent)] bg-[var(--accent)]/10 text-[var(--accent)]"
+                        : "border-[var(--border)] hover:border-[var(--accent)]/60"
+                    }`}
+                  >
+                    <Bitcoin className="h-4 w-4" />
+                    {ar ? t.checkout.manualCryptoAr : t.checkout.manualCryptoEn}
+                  </button>
+                  <button
+                    type="button"
+                    aria-pressed={manualMode}
+                    onClick={() => {
+                      setManualMode(true);
+                      setError("");
+                    }}
+                    className={`flex min-h-11 items-center justify-center gap-1.5 rounded-lg border px-2 text-[11.5px] font-black ${
+                      manualMode
+                        ? "border-[var(--accent)] bg-[var(--accent)]/10 text-[var(--accent)]"
+                        : "border-[var(--border)] hover:border-[var(--accent)]/60"
+                    }`}
+                  >
+                    <Landmark className="h-4 w-4" />
+                    {ar ? t.checkout.manualTransferAr : t.checkout.manualTransferEn}
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {manualMode && manualOptions.length > 0 && (
+              <ManualPaymentForm
+                options={manualOptions}
+                amountUsd={Math.round(dueNow * 100) / 100}
+                draft={manualDraft}
+                onDraftChange={setManualDraft}
+                quoteAccepted={manualAccepted}
+                onQuoteAcceptedChange={setManualAccepted}
+                locale={ar ? "ar" : "en"}
+              />
+            )}
+
             {error && (
               <p className="text-xs font-semibold text-red-400">{error}</p>
             )}
 
             {/* Garantie du service — rassure avant le paiement via la passerelle */}
-            <PaymentGuarantee />
+            {!manualMode && <PaymentGuarantee />}
 
             <button
               type="submit"
               className="h-12 w-full rounded-full bg-[var(--accent)] font-black text-[var(--accent-foreground)] hover:bg-[var(--accent-hover)] transition-colors cursor-pointer inline-flex items-center justify-center gap-2"
             >
-              <Bitcoin className="h-4 w-4" />
-              {ar ? t.checkout.continueAr : t.checkout.continueEn}
+              {manualMode ? <Landmark className="h-4 w-4" /> : <Bitcoin className="h-4 w-4" />}
+              {manualMode
+                ? ar
+                  ? t.checkout.manualSubmitAr
+                  : t.checkout.manualSubmitEn
+                : ar
+                  ? t.checkout.continueAr
+                  : t.checkout.continueEn}
               {" — "}${formatUsd(dueNow)}
             </button>
             <p className="text-center text-[11px] opacity-50">
               {ar ? t.checkout.secureAr : t.checkout.secureEn}
             </p>
+            {!manualMode && (
             <p className="text-center">
               <Link
                 href={CRYPTO_GUIDE_PATH}
@@ -478,6 +656,7 @@ export function CheckoutDialog({
                   : "First crypto payment? Read the step-by-step USDT photo guide"}
               </Link>
             </p>
+            )}
           </form>
         )}
 
@@ -494,10 +673,18 @@ export function CheckoutDialog({
           <div className="mt-5 space-y-4">
             <div className="flex items-start gap-3 rounded-2xl border border-emerald-500/30 bg-emerald-500/10 p-4">
               <BadgeCheck className="mt-0.5 h-5 w-5 text-emerald-400 flex-shrink-0" />
-              <p className="text-sm font-semibold text-emerald-300">
-                {ar ? t.checkout.readyAr : t.checkout.readyEn}{" "}
-                <strong>{countdown}</strong>
-              </p>
+              {payment.manualPayment ? (
+                <p className="text-sm font-semibold text-emerald-300">
+                  {ar
+                    ? `${t.checkout.manualPendingAr} (${payment.manualPayment.payAmount} ${payment.manualPayment.payCurrency})`
+                    : `${t.checkout.manualPendingEn} (${payment.manualPayment.payAmount} ${payment.manualPayment.payCurrency})`}
+                </p>
+              ) : (
+                <p className="text-sm font-semibold text-emerald-300">
+                  {ar ? t.checkout.readyAr : t.checkout.readyEn}{" "}
+                  <strong>{countdown}</strong>
+                </p>
+              )}
             </div>
 
             {payment.installments != null && payment.installments > 1 && (
@@ -519,7 +706,13 @@ export function CheckoutDialog({
               }}
               className="h-12 w-full rounded-full bg-[var(--accent)] font-black text-[var(--accent-foreground)] hover:bg-[var(--accent-hover)] transition-colors cursor-pointer"
             >
-              {ar ? t.checkout.openAr : t.checkout.openEn}
+              {payment.manualPayment
+                ? ar
+                  ? t.checkout.manualTrackAr
+                  : t.checkout.manualTrackEn
+                : ar
+                  ? t.checkout.openAr
+                  : t.checkout.openEn}
             </button>
 
             {payment.payAddress && (
@@ -582,7 +775,13 @@ export function CheckoutDialog({
             )}
 
             <p className="text-[11px] opacity-50 leading-relaxed">
-              {ar ? t.checkout.waitNoteAr : t.checkout.waitNoteEn}
+              {payment.manualPayment
+                ? ar
+                  ? "الطلب معلّق حتى التحقق. لا تُعد التحويل؛ إن استغرقت المراجعة وقتاً راسلنا مع ذكر مرجع العملية."
+                  : "The order stays pending until verification. Do not send the transfer twice; if the review takes long, contact us with your transaction reference."
+                : ar
+                  ? t.checkout.waitNoteAr
+                  : t.checkout.waitNoteEn}
             </p>
           </div>
         )}

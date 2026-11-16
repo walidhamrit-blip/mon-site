@@ -1,0 +1,195 @@
+"use server";
+
+/**
+ * Actions admin de la file de vérification des paiements manuels
+ * (Skrill, Neteller, Airtm, D17).
+ *
+ * Principe identique à la carte téléphonique : l'acceptation est un geste
+ * HUMAIN qui atteste la réception réelle de l'argent. Ensuite seulement :
+ *  - `autoDeliver` → livraison du code (achat fournisseur autorisé) ;
+ *  - sans `autoDeliver` → livraison manuelle par le gérant.
+ * Un refus ne livre jamais rien et ne déclenche aucun achat.
+ */
+
+import { revalidatePath } from "next/cache";
+import { requireAdmin } from "@/lib/auth";
+import {
+  listManualPayments,
+  manualPaymentDeliveryGate,
+  reviewManualPayment,
+  type ReviewManualPaymentResult,
+} from "@/lib/manual-payments";
+import { approveManualSubscription } from "@/lib/subscriptions";
+import {
+  deliverPaidDigitalOrder,
+  getAdminDigitalOrder,
+  markDigitalOrderDeliveredOffPlatform,
+} from "@/lib/digital-orders";
+import { sendManualPaymentApprovedEmail } from "@/lib/digital-emails";
+import { getSiteData } from "@/lib/store";
+
+export interface ActionResult {
+  ok: boolean;
+  error?: string;
+  message?: string;
+}
+
+function dbIssue(error: unknown): string {
+  return error instanceof Error ? error.message : String(error);
+}
+
+export async function reviewManualPaymentAction(
+  ref: string,
+  decision: "approved" | "rejected",
+  note?: string,
+  options: { autoDeliver?: boolean } = {},
+): Promise<ActionResult> {
+  await requireAdmin();
+  if (decision !== "approved" && decision !== "rejected") {
+    return { ok: false, error: "Décision de vérification invalide." };
+  }
+  const orderRef = String(ref ?? "").trim().toUpperCase();
+  if (!orderRef) return { ok: false, error: "Référence manquante." };
+  const autoDeliver = options?.autoDeliver === true;
+
+  try {
+    const rows = await listManualPayments(300);
+    const row = rows.find((item) => item.ref === orderRef);
+    if (!row) return { ok: false, error: "Paiement manuel introuvable." };
+
+    const result: ReviewManualPaymentResult = await reviewManualPayment(
+      orderRef,
+      decision,
+      note,
+    );
+    if (!result.ok) return { ok: false, error: result.error ?? "Vérification impossible." };
+
+    revalidatePath("/admin/paiements-manuels");
+    revalidatePath("/admin/orders");
+    revalidatePath("/admin/digital/orders");
+
+    if (decision === "rejected") {
+      return {
+        ok: true,
+        message:
+          "Paiement refusé. La commande est marquée comme non payée : aucun code ne sera livré et aucun achat fournisseur n’est déclenché.",
+      };
+    }
+
+    // 1) Abonnement réglé par virement : l'approbation ouvre la période.
+    if (result.subscriptionId) {
+      const activation = await approveManualSubscription(result.subscriptionId, orderRef);
+      revalidatePath("/admin/abonnements");
+      if (!activation.ok) {
+        return { ok: false, error: activation.error };
+      }
+      let mailWarning = "";
+      try {
+        const { config } = await getSiteData();
+        const email = await sendManualPaymentApprovedEmail(
+          {
+            ref: orderRef,
+            productTitle: row.productTitle,
+            recipientName: row.recipientName,
+            recipientEmail: row.recipientEmail,
+            recipientPhone: row.recipientPhone,
+          },
+          row.method,
+          config.name,
+          config.url,
+          config.email,
+        );
+        if (!email.ok) mailWarning = ` E-mail non envoyé : ${email.error ?? "échec inconnu"}`;
+      } catch (error) {
+        mailWarning = ` E-mail non envoyé : ${dbIssue(error)}`;
+      }
+      return {
+        ok: true,
+        message: `Paiement accepté : l’abonnement est actif pour la période en cours.${mailWarning}`,
+      };
+    }
+
+    // 2) Commande digitale : livraison du code, seulement maintenant.
+    const gate = await manualPaymentDeliveryGate(orderRef);
+    let deliveryMessage = "";
+    if (row.digitalOrderRef) {
+      if (autoDeliver) {
+        try {
+          const delivery = await deliverPaidDigitalOrder(orderRef, {
+            manualPaymentApproved: true,
+          });
+          deliveryMessage =
+            delivery.outcome === "delivered"
+              ? ` Code livré au client (${delivery.ref}).`
+              : ` Livraison non effectuée : ${delivery.message} Saisissez le code manuellement.`;
+        } catch (error) {
+          deliveryMessage = ` Livraison automatique impossible : ${dbIssue(error)} Saisissez le code manuellement.`;
+        }
+      } else {
+        deliveryMessage =
+          " Commande marquée « à livrer manuellement » : saisissez le code cadeau dans la table des commandes.";
+      }
+      revalidatePath("/admin/digital/orders");
+      revalidatePath("/codes/commande");
+    } else if (gate.isManual) {
+      deliveryMessage = "";
+    }
+
+    // 3) E-mail client « paiement accepté » (jamais de code dedans).
+    let mailWarning = "";
+    try {
+      const order = await getAdminDigitalOrder(orderRef);
+      if (order) {
+        const { config } = await getSiteData();
+        const email = await sendManualPaymentApprovedEmail(
+          order,
+          row.method,
+          config.name,
+          config.url,
+          config.email,
+        );
+        if (!email.ok) mailWarning = ` E-mail non envoyé : ${email.error ?? "échec inconnu"}`;
+      }
+    } catch (error) {
+      mailWarning = ` E-mail non envoyé : ${dbIssue(error)}`;
+    }
+
+    return {
+      ok: true,
+      message: `Paiement accepté.${deliveryMessage}${mailWarning}`.trim(),
+    };
+  } catch (error) {
+    return { ok: false, error: dbIssue(error) };
+  }
+}
+
+/**
+ * Livraison manuelle d'un code après acceptation du paiement : refuse tant
+ * que le paiement n'est pas accepté (le verrou est aussi dans la couche
+ * métier, cette action ne fait que remonter l'erreur).
+ */
+export async function deliverManualPaymentOrderAction(
+  ref: string,
+  content: string,
+  note?: string,
+): Promise<ActionResult> {
+  await requireAdmin();
+  const orderRef = String(ref ?? "").trim().toUpperCase();
+  if (!orderRef) return { ok: false, error: "Référence manquante." };
+  const value = String(content ?? "").trim();
+  if (value.length < 3) return { ok: false, error: "Saisissez le code à livrer." };
+
+  try {
+    const result = await markDigitalOrderDeliveredOffPlatform(orderRef, {
+      channel: "manual",
+      note: [value, note].filter(Boolean).join(" — "),
+    });
+    revalidatePath("/admin/paiements-manuels");
+    revalidatePath("/admin/digital/orders");
+    revalidatePath("/codes/commande");
+    if (!result.ok) return { ok: false, error: result.error };
+    return { ok: true, message: `Code livré au client (${orderRef}).` };
+  } catch (error) {
+    return { ok: false, error: dbIssue(error) };
+  }
+}

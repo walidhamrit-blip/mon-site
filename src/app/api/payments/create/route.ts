@@ -28,6 +28,18 @@ import {
 import { checkRateLimit } from "@/lib/rate-limit";
 import { enforceSameOrigin } from "@/lib/csrf";
 import { localizedPath, type Locale } from "@/lib/locale";
+import {
+  insertPreparedManualPayment,
+  isManualPaymentDuplicateError,
+  ManualPaymentError,
+  prepareManualPaymentForSite,
+} from "@/lib/manual-payments";
+import {
+  MANUAL_PAYMENT_CURRENCIES,
+  MANUAL_PAYMENT_LIMITS,
+  MANUAL_PAYMENT_METHODS,
+} from "@/lib/manual-payment-core";
+import { sendManualPaymentReviewNotice } from "@/lib/digital-emails";
 
 /* Limite la cadence de création de factures crypto par IP+UA. Bloque
  * les bots qui tentent de générer des dizaines de liens de paiement
@@ -78,6 +90,32 @@ const createPaymentSchema = z
     phone: z.string().max(40).optional(),
     locale: z.enum(["ar", "en"]).optional(),
     utm: z.string().max(500).optional(),
+    /**
+     * Paiement manuel sans passerelle (Skrill / Neteller / Airtm / D17) :
+     * le client a envoyé l'argent lui-même et déclare sa preuve. Aucune
+     * facture crypto n'est alors créée ; seul un administrateur peut
+     * accepter le paiement (voir /admin/paiements-manuels).
+     */
+    manualPayment: z
+      .object({
+        method: z.enum(MANUAL_PAYMENT_METHODS),
+        senderName: z.string().trim().min(2).max(MANUAL_PAYMENT_LIMITS.senderName),
+        senderAccount: z.string().trim().min(3).max(MANUAL_PAYMENT_LIMITS.senderAccount),
+        transactionRef: z.string().trim().min(3).max(MANUAL_PAYMENT_LIMITS.transactionRef),
+        note: z.string().trim().max(MANUAL_PAYMENT_LIMITS.note).optional(),
+        quoteAccepted: z.boolean().optional(),
+        quote: z
+          .object({
+            method: z.enum(MANUAL_PAYMENT_METHODS),
+            amountUsd: z.number(),
+            payCurrency: z.enum(MANUAL_PAYMENT_CURRENCIES),
+            payRate: z.number(),
+            feePercent: z.number(),
+            payAmount: z.number(),
+          })
+          .optional(),
+      })
+      .optional(),
   })
   .refine(
     (data) =>
@@ -137,6 +175,207 @@ function paymentUrls(req: Request, ref: string, trackingToken?: string | null, l
 }
 
 /**
+ * Paiement flexible (montant libre) réglé par virement manuel : on reprend
+ * exactement les mêmes contrôles de bornes que la version crypto, mais aucune
+ * facture NOWPayments n'est créée et la commande reste en attente de
+ * vérification humaine.
+ */
+async function createFlexibleManualOrder(
+  req: Request,
+  data: {
+    amountUsd: number;
+    description?: string;
+    name?: string;
+    email?: string;
+    phone?: string;
+    locale?: "ar" | "en";
+    utm?: string;
+    manualPayment?: unknown;
+  },
+) {
+  const { config } = await getSiteData();
+  const flex = (config.flexiblePayment ?? siteConfig.flexiblePayment) as unknown as {
+    enabled: boolean;
+    minUsd: number;
+    maxUsd: number;
+  };
+
+  if (flex.enabled === false) {
+    return errorResponse("flex_disabled", 403, {
+      source: "config",
+      status: null,
+      message: "Le paiement flexible est désactivé (Configuration → site).",
+    });
+  }
+
+  const minUsd = Number(flex.minUsd) > 0 ? Number(flex.minUsd) : 1;
+  const maxUsd = Number(flex.maxUsd) > 0 ? Number(flex.maxUsd) : 5000;
+  const amount = Math.round(Number(data.amountUsd) * 100) / 100;
+  if (!Number.isFinite(amount) || amount < minUsd || amount > maxUsd) {
+    return errorResponse("invalid_amount", 400, {
+      source: "input",
+      status: null,
+      message: `Montant flexible hors limites : ${data.amountUsd} (attendu ${minUsd}–${maxUsd} USD)`,
+    });
+  }
+
+  const ref = newOrderReference("NKH");
+  const tracking = createTrackingToken();
+  const label = data.description?.trim() || "Flexible payment";
+
+  let orderId: number;
+  try {
+    await ensureSchema();
+    const inserted = await db
+      .insert(orders)
+      .values({
+        ref,
+        trackingTokenHash: tracking.hash,
+        groupRef: ref,
+        kind: "flex",
+        planId: "flexible",
+        planName: label.slice(0, 190),
+        amountLyd: String(amount),
+        amountUsd: String(amount),
+        currency: "usd",
+        installments: 1,
+        installmentIndex: 1,
+        clientName: data.name?.trim() || null,
+        email: data.email?.trim() || null,
+        phone: data.phone?.trim() || null,
+        utm: data.utm || null,
+        locale: data.locale ?? null,
+        paymentMethod: "manual",
+      })
+      .returning({ id: orders.id });
+    orderId = inserted[0]?.id ?? 0;
+  } catch (error) {
+    console.error("[payments] création commande flexible manuelle impossible :", errorMessage(error));
+    return errorResponse("save_failed", 500, databaseDetail(error));
+  }
+
+  const response = await attachManualPayment(
+    req,
+    ref,
+    amount,
+    tracking.token,
+    data.manualPayment,
+    data.locale ?? "ar",
+  );
+
+  // Preuve refusée (méthode fermée, devis modifié, référence déjà utilisée) :
+  // on retire la commande orpheline pour ne pas laisser une ligne fantôme
+  // dans /admin/orders.
+  if (response.status >= 300) {
+    await db.delete(orders).where(eq(orders.id, orderId)).catch(() => null);
+    return response;
+  }
+  return response;
+}
+
+/**
+ * Enregistre un paiement manuel (Skrill / Neteller / Airtm / D17) sur une
+ * commande DÉJÀ créée, sans facture crypto.
+ *
+ * Utilisé par les trois tunnels : formule / paiement flexible / tranche. La
+ * commande reste `pending` : aucune ligne de commande n'est marquée payée,
+ * l'administrateur seul peut le faire après avoir constaté la réception.
+ */
+async function attachManualPayment(
+  req: Request,
+  orderRef: string,
+  amountUsd: number,
+  trackingToken: string | null,
+  manualPayment: unknown,
+  locale: "ar" | "en",
+) {
+  let prepared;
+  try {
+    prepared = await prepareManualPaymentForSite(
+      manualPayment as Parameters<typeof prepareManualPaymentForSite>[0],
+      amountUsd,
+      locale,
+    );
+  } catch (error) {
+    if (error instanceof ManualPaymentError) {
+      return errorResponse(error.code, error.status, {
+        source: "input",
+        status: null,
+        message: error.message,
+      });
+    }
+    throw error;
+  }
+
+  try {
+    await insertPreparedManualPayment(orderRef, prepared);
+  } catch (error) {
+    if (isManualPaymentDuplicateError(error)) {
+      return errorResponse("manual_payment_already_used", 409, {
+        source: "input",
+        status: null,
+        message:
+          "Cette référence est déjà rattachée à une commande. Ne la ressaisissez pas : contactez-nous avec votre référence.",
+      });
+    }
+    console.error("[payments] paiement manuel non enregistré :", errorMessage(error));
+    return errorResponse("save_failed", 500, databaseDetail(error));
+  }
+
+  // Notification interne : la preuve déclarée doit arriver sans que
+  // l'administrateur ait à surveiller l'admin en continu.
+  try {
+    const { config } = await getSiteData();
+    const [row] = await db
+      .select()
+      .from(orders)
+      .where(eq(orders.ref, orderRef))
+      .limit(1);
+    if (row) {
+      await sendManualPaymentReviewNotice(
+        {
+          // Champs communs seulement : cet e-mail ne parle pas de codes.
+          ref: row.ref,
+          productTitle: row.planName,
+          recipientName: row.clientName,
+          recipientEmail: row.email,
+          recipientPhone: row.phone,
+        },
+        prepared,
+        config.name,
+        config.url,
+        config.email,
+      );
+    }
+  } catch (error) {
+    console.warn(
+      "[manual-payment] notification admin impossible :",
+      error instanceof Error ? error.message : error,
+    );
+  }
+
+  const baseUrl = siteBaseUrl(req);
+  return NextResponse.json(
+    {
+      ok: true,
+      orderRef,
+      trackingToken: trackingToken ?? undefined,
+      paymentUrl: `${baseUrl}${localizedPath(
+        `/pay/success?${trackingQuery(orderRef, trackingToken)}`,
+        locale,
+      )}`,
+      manualPayment: {
+        method: prepared.method,
+        payAmount: prepared.quote.payAmount,
+        payCurrency: prepared.quote.payCurrency,
+        account: prepared.targetAccount,
+      },
+    },
+    { status: 201 },
+  );
+}
+
+/**
  * Facture une tranche existante (2e/3e versement) et met à jour
  * les informations de paiement de la commande.
  */
@@ -144,6 +383,7 @@ async function payExistingOrder(
   orderRef: string,
   trackingToken: string | undefined,
   req: Request,
+  manualPayment?: unknown,
 ) {
   await ensureSchema();
   const wanted = orderRef.trim().toUpperCase();
@@ -189,6 +429,28 @@ async function payExistingOrder(
       status: null,
       message: `Montant invalide pour « ${order.ref} » : ${order.amountUsd}`,
     });
+  }
+
+  // Paiement manuel d'une tranche : on enregistre la preuve sur cette
+  // commande précise. La tranche reste en attente jusqu'à vérification.
+  if (manualPayment) {
+    const response = await attachManualPayment(
+      req,
+      order.ref,
+      amount,
+      access === "granted" ? (trackingToken ?? null) : null,
+      manualPayment,
+      order.locale === "en" ? "en" : "ar",
+    );
+    if (response.status < 300) {
+      // La preuve est enregistrée : la commande est en file de vérification.
+      await db
+        .update(orders)
+        .set({ paymentMethod: "manual", status: "pending", updatedAt: new Date() })
+        .where(and(eq(orders.id, order.id), ne(orders.status, "paid")))
+        .catch(() => null);
+    }
+    return response;
   }
 
   const { config } = await getSiteData();
@@ -434,15 +696,6 @@ export async function POST(req: Request) {
     );
   }
 
-  if (!nowPaymentsConfigured()) {
-    return errorResponse("gateway_not_configured", 503, {
-      source: "config",
-      status: null,
-      message:
-        "NOWPAYMENTS_API_KEY absente du serveur (variable d'environnement non définie, ou non appliquée à l'environnement Production — après ajout sur Vercel, redéployer)",
-    });
-  }
-
   let body: unknown;
   try {
     body = await req.json();
@@ -467,10 +720,26 @@ export async function POST(req: Request) {
 
   const data = parsed.data;
 
+  // Le paiement manuel ne dépend d'aucune passerelle : on ne refuse l'absence
+  // de clé NOWPayments que pour les paiements crypto.
+  if (!data.manualPayment && !nowPaymentsConfigured()) {
+    return errorResponse("gateway_not_configured", 503, {
+      source: "config",
+      status: null,
+      message:
+        "NOWPAYMENTS_API_KEY absente du serveur (variable d'environnement non définie, ou non appliquée à l'environnement Production — après ajout sur Vercel, redéployer)",
+    });
+  }
+
   // ── Mode « tranche suivante » : commande déjà planifiée ──
   if (data.orderRef) {
     try {
-      return await payExistingOrder(data.orderRef, data.trackingToken, req);
+      return await payExistingOrder(
+        data.orderRef,
+        data.trackingToken,
+        req,
+        data.manualPayment,
+      );
     } catch (error) {
       console.error(
         "[payments] paiement d'une tranche impossible :",
@@ -482,6 +751,23 @@ export async function POST(req: Request) {
 
   // ── Mode « paiement flexible » : montant libre 1 $ ou plus ──
   if (data.kind === "flex") {
+    if (data.manualPayment) {
+      try {
+        return await createFlexibleManualOrder(req, {
+        amountUsd: data.amountUsd ?? 0,
+        description: data.description,
+        name: data.name,
+        email: data.email,
+        phone: data.phone,
+        locale: data.locale,
+        utm: data.utm,
+        manualPayment: data.manualPayment,
+      });
+      } catch (error) {
+        console.error("[payments] paiement manuel flexible impossible :", errorMessage(error));
+        return errorResponse("save_failed", 500, databaseDetail(error));
+      }
+    }
     try {
       return await createFlexibleOrder(req, {
         amountUsd: data.amountUsd ?? 0,
@@ -602,6 +888,7 @@ export async function POST(req: Request) {
           phone: data.phone || null,
           utm: data.utm || null,
           locale: data.locale ?? null,
+          ...(data.manualPayment ? { paymentMethod: "manual" } : {}),
         })),
       )
       .returning({ id: orders.id, ref: orders.ref });
@@ -613,6 +900,30 @@ export async function POST(req: Request) {
       errorMessage(error),
     );
     return errorResponse("save_failed", 500, databaseDetail(error));
+  }
+
+  // 2 bis) Paiement manuel : aucune facture. Le client déclare son virement
+  //    et la première tranche reste en attente de vérification humaine ;
+  //    les tranches suivantes restent planifiées comme d'habitude.
+  if (data.manualPayment) {
+    const firstRef = trancheRef(baseRef, 1);
+    const response = await attachManualPayment(
+      req,
+      firstRef,
+      usdTranches[0] ?? totalUsd,
+      tracking.token,
+      data.manualPayment,
+      data.locale ?? "ar",
+    );
+    if (response.status >= 300) {
+      // Preuve refusée : on retire tout le groupe pour ne pas laisser des
+      // tranches fantômes dans /admin/orders.
+      await db
+        .delete(orders)
+        .where(eq(orders.groupRef, baseRef))
+        .catch(() => null);
+    }
+    return response;
   }
 
   // 2) Facture NOWPayments pour la première tranche : le client est

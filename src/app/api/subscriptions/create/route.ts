@@ -1,6 +1,17 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { createClientSubscription } from "@/lib/subscriptions";
+import {
+  createClientSubscription,
+  createManualClientSubscription,
+} from "@/lib/subscriptions";
+import {
+  MANUAL_PAYMENT_CURRENCIES,
+  MANUAL_PAYMENT_LIMITS,
+  MANUAL_PAYMENT_METHODS,
+} from "@/lib/manual-payment-core";
+import { sendManualPaymentReviewNotice } from "@/lib/digital-emails";
+import { getSiteData } from "@/lib/store";
+import { getSubscriptionPlan } from "@/lib/subscription-plans";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { enforceSameOrigin } from "@/lib/csrf";
 import { SUBSCRIPTION_GRACE_DAYS } from "@/lib/subscription-plans";
@@ -25,6 +36,31 @@ const subscribeSchema = z.object({
   /** Le client doit avoir pris connaissance de la règle de grâce (5 jours). */
   acceptGraceRule: z.literal(true),
   locale: z.enum(["ar", "en"]).optional(),
+  /**
+   * Virement manuel (Skrill / Neteller / Airtm / D17) au lieu d'un
+   * abonnement NOWPayments : aucune facture récurrente, l'accès n'est ouvert
+   * qu'après vérification humaine du versement.
+   */
+  manualPayment: z
+    .object({
+      method: z.enum(MANUAL_PAYMENT_METHODS),
+      senderName: z.string().trim().min(2).max(MANUAL_PAYMENT_LIMITS.senderName),
+      senderAccount: z.string().trim().min(3).max(MANUAL_PAYMENT_LIMITS.senderAccount),
+      transactionRef: z.string().trim().min(3).max(MANUAL_PAYMENT_LIMITS.transactionRef),
+      note: z.string().trim().max(MANUAL_PAYMENT_LIMITS.note).optional(),
+      quoteAccepted: z.boolean().optional(),
+      quote: z
+        .object({
+          method: z.enum(MANUAL_PAYMENT_METHODS),
+          amountUsd: z.number(),
+          payCurrency: z.enum(MANUAL_PAYMENT_CURRENCIES),
+          payRate: z.number(),
+          feePercent: z.number(),
+          payAmount: z.number(),
+        })
+        .optional(),
+    })
+    .optional(),
 });
 
 /**
@@ -64,7 +100,17 @@ export async function POST(req: Request) {
   }
 
   try {
-    const result = await createClientSubscription(parsed.data);
+    const manualPayment = parsed.data.manualPayment;
+    const result = manualPayment
+      ? await createManualClientSubscription({
+          planId: parsed.data.planId,
+          email: parsed.data.email,
+          name: parsed.data.name,
+          phone: parsed.data.phone,
+          locale: parsed.data.locale,
+          manualPayment,
+        })
+      : await createClientSubscription(parsed.data);
     if (!result.ok) {
       // Détail de la passerelle : affiché hors production seulement (diagnostic).
       const showDetail =
@@ -73,6 +119,30 @@ export async function POST(req: Request) {
         { ok: false, error: result.code, message: showDetail ? result.message : undefined },
         { status: result.status },
       );
+    }
+
+    if (result.manualPayment) {
+      // Prévient l'administrateur qu'un versement attend sa vérification.
+      const { config } = await getSiteData();
+      const plan = getSubscriptionPlan(parsed.data.planId);
+      await sendManualPaymentReviewNotice(
+        {
+          ref: result.ref,
+          productTitle: `Abonnement — ${plan?.name ?? parsed.data.planId}`,
+          recipientName: parsed.data.name,
+          recipientEmail: parsed.data.email,
+          recipientPhone: parsed.data.phone,
+        },
+        result.manualPayment,
+        config.name,
+        config.url,
+        config.email,
+      ).catch((error: unknown) => {
+        console.warn(
+          "[subscriptions] notification admin impossible :",
+          error instanceof Error ? error.message : error,
+        );
+      });
     }
 
     const params = new URLSearchParams({

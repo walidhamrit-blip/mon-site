@@ -4,6 +4,7 @@ import { db, ensureSchema } from "@/db";
 import { settings } from "@/db/schema";
 import { siteConfig } from "@/lib/config";
 import { normalizePhoneCardPaymentsEnabled } from "@/lib/phone-card-core";
+import { normalizeManualPaymentsConfig } from "@/lib/manual-payment-core";
 import { fazercardsMaxOrderUsd } from "@/lib/fazercards";
 import { ensureDemoSeoFields } from "@/lib/ai/seo-generator";
 import {
@@ -197,8 +198,17 @@ export function mergeConfig(override: unknown, phoneCardPaymentsEnabled?: unknow
         ? manualRateDate
         : null,
   };
+
+  // Paiements manuels (Skrill / Neteller / Airtm / D17) : on normalise chaque
+  // méthode au lieu de faire confiance à la valeur stockée. Une config
+  // ancienne (bloc absent) retombe sur « tout désactivé, tout vide » — aucune
+  // méthode n'est jamais supposée configurée.
+  merged.manualPayments = normalizeManualPaymentsConfig(merged.manualPayments);
   return merged as unknown as typeof siteConfig;
 }
+
+/** Ré-export : la normalisation vit dans le noyau pur (testable sans base). */
+export { normalizeManualPaymentsConfig } from "@/lib/manual-payment-core";
 
 /**
  * Résout le plafond de commande FazerCards en USD à partir des réglages

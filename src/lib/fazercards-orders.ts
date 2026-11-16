@@ -54,6 +54,7 @@ import {
   sendDigitalCodesEmail,
   sendDigitalManualNotice,
   sendDigitalTopupDeliveredEmail,
+  sendManualPaymentReviewNotice,
   sendPhoneCardReviewNotice,
 } from "@/lib/digital-emails";
 import { checkFazercardsPlayerId } from "@/lib/fazercards-player-id";
@@ -86,6 +87,18 @@ import {
   phoneCardQuoteMatches,
   type PhoneCardLydQuote,
 } from "@/lib/phone-card-pricing-core";
+import {
+  insertPreparedManualPayment,
+  isManualPaymentDuplicateError,
+  ManualPaymentError,
+  prepareManualPayment,
+  type PreparedManualPayment,
+} from "@/lib/manual-payments";
+import {
+  manualPaymentQuoteMatches,
+  normalizeManualPaymentMethod,
+  type ManualPaymentInput,
+} from "@/lib/manual-payment-core";
 
 
 /* --------------------------------- Types -------------------------------- */
@@ -107,10 +120,19 @@ export interface CreateFazercardsCheckoutInput {
    * ouvrait auparavant la page de paiement sans le moindre garde-fou.
    */
   idConfirmed?: boolean;
-  /** Par défaut, la facture crypto historique ; sinon revue manuelle d'une recharge. */
-  paymentMethod?: "nowpayments" | "phone_card";
+  /**
+   * Par défaut, la facture crypto historique ; sinon revue manuelle d'une
+   * recharge téléphonique, ou d'un paiement manuel (Skrill / Neteller /
+   * Airtm / D17).
+   */
+  paymentMethod?: "nowpayments" | "phone_card" | "manual";
   phoneCard?: PhoneCardInput & {
     /** Confirmation client obligatoire ; le devis est revérifié côté serveur. */
+    quoteAccepted?: boolean;
+    quote?: unknown;
+  };
+  manualPayment?: ManualPaymentInput & {
+    /** Le devis recalculé côté serveur doit être confirmé par le client. */
     quoteAccepted?: boolean;
     quote?: unknown;
   };
@@ -284,6 +306,7 @@ export async function createFazercardsCheckout(
   req: Request,
 ): Promise<FazercardsCheckoutResult> {
   const usesPhoneCard = input.paymentMethod === "phone_card";
+  const usesManualPayment = input.paymentMethod === "manual";
   const locale = input.locale === "en" ? "en" : "ar";
   // Garde serveur avant chiffrement, appel fournisseur ou création de commande.
   // Une page ouverte avant la désactivation ne peut donc pas contourner le bouton.
@@ -324,6 +347,40 @@ export async function createFazercardsCheckout(
       "phone_required",
       400,
       "Le numéro de téléphone est obligatoire pour une commande payée par carte téléphonique.",
+    );
+  }
+
+  // Paiement manuel (Skrill / Neteller / Airtm / D17) : on vérifie la méthode
+  // et on valide la preuve AVANT toute création de commande, pour ne jamais
+  // enregistrer une déclaration inexploitable.
+  if (usesManualPayment) {
+    const method = normalizeManualPaymentMethod(input.manualPayment?.method);
+    const { config } = await getSiteData();
+    const settings = method ? config.manualPayments?.[method] : null;
+    if (!method || !settings || settings.enabled !== true) {
+      throw new FazercardsOrderError(
+        "manual_payment_method_unavailable",
+        409,
+        locale === "ar"
+          ? "طريقة الدفع اليدوي هذه غير متاحة حالياً. اختر طريقة أخرى أو الدفع بالعملات الرقمية."
+          : "This manual payment method is not available right now. Choose another method or crypto payment.",
+      );
+    }
+    if (input.manualPayment?.quoteAccepted !== true) {
+      throw new FazercardsOrderError(
+        "manual_payment_quote_unconfirmed",
+        400,
+        locale === "ar"
+          ? "أكّد قراءتك لمبلغ التحويل المطلوب قبل إرسال بيانات الدفع."
+          : "Confirm the amount to send before submitting your payment details.",
+      );
+    }
+  }
+  if (usesManualPayment && !input.phone?.trim()) {
+    throw new FazercardsOrderError(
+      "phone_required",
+      400,
+      "Le numéro de téléphone est obligatoire pour un paiement manuel : nous vous contactons si la vérification bloque.",
     );
   }
 
@@ -386,7 +443,7 @@ export async function createFazercardsCheckout(
   // AVANT le paiement, avec l'action à faire (augmenter la quantité).
   const minOrderUsd = fazercardsMinOrderUsd();
   const minQuantity = Math.max(1, Math.ceil(minOrderUsd / unitPriceUsd));
-  if (!usesPhoneCard && totalUsd < minOrderUsd) {
+  if (!usesPhoneCard && !usesManualPayment && totalUsd < minOrderUsd) {
     throw new FazercardsOrderError(
       "below_minimum",
       400,
@@ -433,7 +490,7 @@ export async function createFazercardsCheckout(
     balanceUsd: balanceStatus.assessment.balanceUsd,
     orderCostUsd,
   });
-  if (!usesPhoneCard && balanceDecision.decision === "block") {
+  if (!usesPhoneCard && !usesManualPayment && balanceDecision.decision === "block") {
     // Le message client ne contient AUCUN montant interne (ni solde, ni coût).
     throw new FazercardsOrderError(
       "supplier_balance_insufficient",
@@ -544,6 +601,43 @@ export async function createFazercardsCheckout(
     }
   }
 
+  // Paiement manuel : le devis (devise, taux, majoration, montant exact) est
+  // recalculé ici à partir du total catalogue, puis comparé à ce que le
+  // client a lu. Un réglage modifié entre l'affichage et l'envoi est refusé
+  // plutôt que de faire payer un montant différent de celui affiché.
+  let preparedManualPayment: PreparedManualPayment | null = null;
+  if (usesManualPayment) {
+    const method = normalizeManualPaymentMethod(input.manualPayment?.method);
+    if (!method) {
+      throw new FazercardsOrderError(
+        "manual_payment_method_unavailable",
+        400,
+        "Choisissez un moyen de paiement manuel valide.",
+      );
+    }
+    const { config } = await getSiteData();
+    const settings = config.manualPayments?.[method];
+    let candidate: PreparedManualPayment | null = null;
+    try {
+      candidate = prepareManualPayment(input.manualPayment, settings, totalUsd);
+    } catch (error) {
+      if (error instanceof ManualPaymentError) {
+        throw new FazercardsOrderError(error.code, error.status, error.message);
+      }
+      throw error;
+    }
+    if (!manualPaymentQuoteMatches(input.manualPayment?.quote, candidate.quote)) {
+      throw new FazercardsOrderError(
+        "manual_payment_quote_changed",
+        409,
+        locale === "ar"
+          ? "تغيّر مبلغ التحويل المطلوب. راجع المبلغ الجديد وأكّده قبل إعادة إرسال بيانات الدفع."
+          : "The amount to send has changed. Review the new amount and confirm it again before resubmitting.",
+      );
+    }
+    preparedManualPayment = candidate;
+  }
+
   // Relu après les contrôles fournisseur potentiellement lents, juste avant
   // d'enregistrer la carte : une désactivation pendant l'attente est respectée.
   if (usesPhoneCard) await assertPhoneCardAvailable();
@@ -581,7 +675,7 @@ export async function createFazercardsCheckout(
       locale,
       status: "pending",
       // Une recharge téléphonique est toujours vérifiée puis livrée par un humain.
-      fulfillment: usesPhoneCard ? "manual" : "auto",
+      fulfillment: usesPhoneCard || usesManualPayment ? "manual" : "auto",
       reloadlyProductId: null,
       reloadlyUnitPrice: denomination.supplierCostUsd
         ? String(denomination.supplierCostUsd)
@@ -621,7 +715,11 @@ export async function createFazercardsCheckout(
       email: input.email,
       phone: input.phone?.trim() || null,
       locale,
-      paymentMethod: usesPhoneCard ? "phone_card" : "nowpayments",
+      paymentMethod: usesPhoneCard
+        ? "phone_card"
+        : usesManualPayment
+          ? (normalizeManualPaymentMethod(input.manualPayment?.method) ?? "manual")
+          : "nowpayments",
       digitalOrderId: digitalOrderId ?? null,
     });
   } catch (error) {
@@ -669,6 +767,49 @@ export async function createFazercardsCheckout(
           error instanceof Error ? error.message : error,
         );
       });
+    }
+
+    return {
+      orderRef: ref,
+      trackingToken: tracking.token,
+      paymentUrl: trackingUrl,
+      totalUsd,
+      productTitle: title,
+      denominationLabel: denomination.label,
+      quantity,
+    };
+  }
+
+  // 3 bis) Paiement manuel (Skrill / Neteller / Airtm / D17) : le client a
+  // DÉJÀ envoyé l'argent de son côté, on enregistre sa preuve déclarée.
+  // Aucune facture crypto, aucune livraison : la revue admin est la seule
+  // porte de sortie, exactement comme une carte téléphonique.
+  if (preparedManualPayment) {
+    try {
+      await insertPreparedManualPayment(ref, preparedManualPayment);
+    } catch (error) {
+      await db.delete(orders).where(eq(orders.ref, ref)).catch(() => null);
+      await db.delete(digitalOrders).where(eq(digitalOrders.ref, ref)).catch(() => null);
+      if (isManualPaymentDuplicateError(error)) {
+        throw new FazercardsOrderError(
+          "manual_payment_already_used",
+          409,
+          "Cette référence de paiement est déjà rattachée à une commande. Ne la ressaisissez pas : contactez-nous avec votre référence.",
+        );
+      }
+      throw error;
+    }
+
+    const created = await loadFazercardsOrder(ref);
+    if (created) {
+      await sendManualPaymentReviewNotice(created, preparedManualPayment, config.name, config.url, config.email).catch(
+        (error: unknown) => {
+          console.warn(
+            "[manual-payment] notification admin impossible :",
+            error instanceof Error ? error.message : error,
+          );
+        },
+      );
     }
 
     return {

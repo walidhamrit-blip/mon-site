@@ -56,6 +56,13 @@ import {
 } from "@/lib/subscription-lifecycle";
 import { buildNoticeEmail } from "@/lib/subscription-emails";
 import type { OutgoingEmail } from "@/lib/mailer";
+import {
+  insertPreparedManualPayment,
+  isManualPaymentDuplicateError,
+  ManualPaymentError,
+  prepareManualPaymentForSite,
+  type PreparedManualPayment,
+} from "@/lib/manual-payments";
 
 /** Message d'erreur sans secret (le corps NOWPayments est déjà tronqué). */
 function describeError(error: unknown): string {
@@ -189,7 +196,10 @@ export type SubscribeFailure =
   | { ok: false; code: "unknown_plan"; status: 400; message: string }
   | { ok: false; code: "plans_not_synced"; status: 503; message: string }
   | { ok: false; code: "already_subscribed"; status: 409; message: string }
-  | { ok: false; code: "gateway_error"; status: 502; message: string };
+  | { ok: false; code: "gateway_error"; status: 502; message: string }
+  // Paiement manuel (Skrill / Neteller / Airtm / D17) : la preuve est
+  // refusée avant tout enregistrement, ou n'a pas pu être enregistrée.
+  | { ok: false; code: string; status: number; message: string };
 
 export type SubscribeResult =
   | {
@@ -200,6 +210,12 @@ export type SubscribeResult =
       planName: string;
       priceUsd: string;
       intervalDay: number;
+      /**
+       * Devis réellement enregistré (paiement manuel seulement). Le route
+       * handler s'en sert pour l'e-mail admin : il ne recompose jamais un
+       * montant à partir de la saisie du navigateur.
+       */
+      manualPayment?: PreparedManualPayment;
     }
   | SubscribeFailure;
 
@@ -226,6 +242,179 @@ function extractRemoteSubscriptionId(remote: unknown): string {
     if (id != null && String(id) !== "") return String(id);
   }
   return "";
+}
+
+/**
+ * Abonnement souscrit avec un virement manuel (Skrill / Neteller / Airtm /
+ * D17) : aucun abonnement NOWPayments n'est créé, donc aucune facture
+ * récurrente n'existe. L'accès n'est ouvert qu'après approbation admin,
+ * via `approveManualSubscription`.
+ *
+ * La preuve est enregistrée dans `manual_payments` avec `subscription_id`
+ * et une référence de commande préfixée par `ABO` (identifiant lisible en
+ * admin), sans créer de ligne `orders` : il n'y a pas de commande produit.
+ */
+export async function createManualClientSubscription(input: {
+  planId: string;
+  email: string;
+  name: string;
+  phone: string;
+  manualPayment: unknown;
+  locale?: "ar" | "en";
+}): Promise<SubscribeResult> {
+  await ensureSchema();
+
+  const catalogue = getSubscriptionPlan(input.planId);
+  if (!catalogue) {
+    return { ok: false, code: "unknown_plan", status: 400, message: "Formule inconnue." };
+  }
+  const [plan] = await db
+    .select()
+    .from(subscriptionPlans)
+    .where(eq(subscriptionPlans.id, catalogue.id))
+    .limit(1);
+  if (!plan) {
+    return {
+      ok: false,
+      code: "plans_not_synced",
+      status: 503,
+      message: "Les abonnements ne sont pas encore disponibles. Réessayez plus tard.",
+    };
+  }
+
+  const email = normalizeEmail(input.email);
+  const sameOffer = await db
+    .select()
+    .from(subscriptions)
+    .where(
+      and(
+        eq(subscriptions.email, email),
+        eq(subscriptions.planId, plan.id),
+        inArray(subscriptions.status, ["inactive", "active"]),
+      ),
+    );
+  const blocking = sameOffer.some((row) => {
+    const status = displayStatus(row, new Date(), SUBSCRIPTION_GRACE_DAYS);
+    return row.canceledAt ? hasAccess(status) : blocksNewSubscription(status);
+  });
+  if (blocking) {
+    return {
+      ok: false,
+      code: "already_subscribed",
+      status: 409,
+      message:
+        "Un abonnement à cette formule existe déjà pour cette adresse e-mail (actif ou en attente de paiement). Utilisez votre lien de suivi.",
+    };
+  }
+
+  // Contrôles communs (méthode ouverte, devis recalculé, accord client).
+  let prepared: PreparedManualPayment;
+  try {
+    prepared = await prepareManualPaymentForSite(
+      input.manualPayment as Parameters<typeof prepareManualPaymentForSite>[0],
+      Number(plan.priceUsd),
+      input.locale ?? "ar",
+    );
+  } catch (error) {
+    if (error instanceof ManualPaymentError) {
+      return { ok: false, code: error.code, status: error.status, message: error.message };
+    }
+    throw error;
+  }
+
+  const ref = newOrderReference("ABO");
+  const token = createTrackingToken();
+  const [row] = await db
+    .insert(subscriptions)
+    .values({
+      ref,
+      trackingTokenHash: token.hash,
+      planId: plan.id,
+      email,
+      clientName: input.name.trim(),
+      phone: input.phone.trim(),
+      status: "inactive",
+    })
+    .returning();
+
+  try {
+    await insertPreparedManualPayment(ref, prepared, { subscriptionId: row.id });
+  } catch (error) {
+    await db.delete(subscriptions).where(eq(subscriptions.id, row.id));
+    if (isManualPaymentDuplicateError(error)) {
+      return {
+        ok: false,
+        code: "manual_payment_already_used",
+        status: 409,
+        message:
+          "Cette référence de transaction est déjà utilisée. Contactez-nous avec votre référence.",
+      };
+    }
+    return {
+      ok: false,
+      code: "save_failed",
+      status: 500,
+      message: `Enregistrement de la preuve impossible : ${describeError(error)}`,
+    };
+  }
+
+  return {
+    ok: true,
+    ref,
+    trackingToken: token.token,
+    planName: plan.title,
+    priceUsd: plan.priceUsd,
+    intervalDay: plan.intervalDay,
+    manualPayment: prepared,
+  };
+}
+
+/**
+ * Active un abonnement dont le virement manuel vient d'être accepté.
+ *
+ * Équivalent de `applyPaidIpnToSubscription` sans IPN : la période démarre à
+ * l'approbation et `lastPaymentId` reçoit une trace interne
+ * (`manual:<ref>`) qui ne peut jamais entrer en collision avec un
+ * identifiant NOWPayments.
+ */
+export async function approveManualSubscription(
+  subscriptionId: number,
+  paymentRef: string,
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  await ensureSchema();
+  const [current] = await db
+    .select()
+    .from(subscriptions)
+    .where(eq(subscriptions.id, subscriptionId))
+    .limit(1);
+  if (!current) return { ok: false, error: "Abonnement introuvable." };
+
+  const [plan] = await db
+    .select()
+    .from(subscriptionPlans)
+    .where(eq(subscriptionPlans.id, current.planId))
+    .limit(1);
+  if (!plan) return { ok: false, error: "Formule de l’abonnement introuvable." };
+
+  const paidAt = new Date();
+  const period = nextBillingPeriod(
+    current.currentPeriodEnd,
+    paidAt,
+    plan.intervalDay,
+  );
+
+  await db
+    .update(subscriptions)
+    .set({
+      status: "active",
+      currentPeriodStart: period.periodStart,
+      currentPeriodEnd: period.periodEnd,
+      lastPaymentId: `manual:${paymentRef}`.slice(0, 190),
+      updatedAt: paidAt,
+    })
+    .where(eq(subscriptions.id, current.id));
+
+  return { ok: true };
 }
 
 export async function createClientSubscription(

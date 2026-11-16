@@ -2,6 +2,59 @@ import { z } from "zod";
 import { LEAD_STATUSES } from "@/lib/site-types";
 import { DIGITAL_KINDS, DIGITAL_STATUSES } from "@/lib/digital-types";
 import { DEFAULT_THEME_ID } from "@/lib/themes";
+import {
+  MANUAL_PAYMENT_CURRENCIES,
+  MANUAL_PAYMENT_LIMITS,
+  MANUAL_PAYMENT_METHODS,
+  type ManualPaymentMethodSettings,
+} from "@/lib/manual-payment-core";
+
+/* ---------- Paiements manuels sans passerelle (Skrill / Neteller / Airtm / D17) ---------- */
+
+/**
+ * Une méthode de paiement manuel, telle que saisie dans /admin → Réglages.
+ *
+ * Le compte à créditer est facultatif au niveau Zod (on peut vouloir préparer
+ * un réglage sans l'activer) mais la normalisation serveur refermera la
+ * méthode si le compte est vide : aucun client ne doit pouvoir choisir une
+ * option sans destination.
+ */
+export const manualPaymentMethodSchema = z.object({
+  enabled: z.boolean().default(false),
+  account: z.string().trim().max(MANUAL_PAYMENT_LIMITS.account).default(""),
+  beneficiary: z.string().trim().max(MANUAL_PAYMENT_LIMITS.beneficiary).default(""),
+  currency: z.enum(MANUAL_PAYMENT_CURRENCIES).default("USD"),
+  rate: z.coerce
+    .number()
+    .min(0.000001, "Le taux doit être supérieur à zéro.")
+    .max(100_000, "Le taux est invraisemblable.")
+    .nullable()
+    .default(null),
+  feePercent: z.coerce
+    .number()
+    .min(0, "La majoration ne peut pas être négative.")
+    .max(100, "La majoration ne peut pas dépasser 100 %.")
+    .default(0),
+  instructions: z.string().trim().max(MANUAL_PAYMENT_LIMITS.note).default(""),
+});
+
+export const manualPaymentsConfigSchema = z.object(
+  Object.fromEntries(
+    MANUAL_PAYMENT_METHODS.map((method) => [method, manualPaymentMethodSchema]),
+  ) as Record<(typeof MANUAL_PAYMENT_METHODS)[number], typeof manualPaymentMethodSchema>,
+);
+
+export function defaultManualPaymentConfig(): ManualPaymentMethodSettings {
+  return {
+    enabled: false,
+    account: "",
+    beneficiary: "",
+    currency: "USD",
+    rate: null,
+    feePercent: 0,
+    instructions: "",
+  };
+}
 
 /* ---------- Nouvelle demande (formulaire public -> /api/lead) ---------- */
 
@@ -561,6 +614,20 @@ export const siteConfigSchema = z.object({
       phoneCardManualRateLyd: null,
       phoneCardManualRateUpdatedAt: null,
     }),
+  /**
+   * Paiements manuels sans passerelle (Skrill, Neteller, Airtm, D17).
+   *
+   * `.default()` obligatoire : les configurations déjà enregistrées en base
+   * n'ont pas ce bloc, et un enregistrement depuis l'admin ne doit pas
+   * échouer pour autant. Les règles métier (compte obligatoire pour activer,
+   * taux requis hors USD) sont appliquées par `normalizeManualPaymentsConfig`.
+   */
+  manualPayments: manualPaymentsConfigSchema.default({
+    skrill: defaultManualPaymentConfig(),
+    neteller: defaultManualPaymentConfig(),
+    airtm: defaultManualPaymentConfig(),
+    d17: defaultManualPaymentConfig(),
+  }),
   /**
    * Profils d'avis + demandes d'avis. `.default()` est indispensable : les
    * configurations déjà enregistrées en base n'ont pas ce bloc, et un

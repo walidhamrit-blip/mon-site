@@ -71,6 +71,29 @@ const PHONE_CARD_LABELS: Record<DeliveryLocale, string> = {
   ar: "التحقق من البطاقة",
 };
 
+/**
+ * Étape « confirmation » pour un paiement manuel (Skrill, Neteller, Airtm,
+ * D17) : le client a envoyé l'argent lui-même, l'étape est la vérification
+ * humaine de la réception — pas une blockchain.
+ */
+const MANUAL_PAYMENT_LABELS: Record<DeliveryLocale, string> = {
+  fr: "Vérification du paiement",
+  en: "Payment verification",
+  ar: "التحقق من الدفع",
+};
+
+/** Variante d'affichage d'une commande : crypto, carte ou virement manuel. */
+export type DeliveryVariant = "nowpayments" | "phone_card" | "manual_payment";
+
+export function deliveryVariantFor(paymentMethod: string | null | undefined): DeliveryVariant {
+  const value = (paymentMethod ?? "").trim().toLowerCase();
+  if (value === "phone_card") return "phone_card";
+  if (value === "manual" || value === "skrill" || value === "neteller" || value === "airtm" || value === "d17") {
+    return "manual_payment";
+  }
+  return "nowpayments";
+}
+
 const STEP_HINTS: Record<DeliveryLocale, Record<DeliveryStep, string>> = {
   fr: {
     confirmation: "Transfert détecté : la blockchain attend le nombre de confirmations requis.",
@@ -93,10 +116,13 @@ const STEP_HINTS: Record<DeliveryLocale, Record<DeliveryStep, string>> = {
 export function deliveryStepLabel(
   step: DeliveryStep,
   locale: DeliveryLocale,
-  variant: "nowpayments" | "phone_card" = "nowpayments",
+  variant: DeliveryVariant = "nowpayments",
 ): string {
   if (step === "confirmation" && variant === "phone_card") {
     return PHONE_CARD_LABELS[locale] ?? PHONE_CARD_LABELS.en;
+  }
+  if (step === "confirmation" && variant === "manual_payment") {
+    return MANUAL_PAYMENT_LABELS[locale] ?? MANUAL_PAYMENT_LABELS.en;
   }
   return STEP_LABELS[locale]?.[step] ?? STEP_LABELS.en[step];
 }
@@ -116,6 +142,8 @@ export interface DeliveryProgressInput {
   paymentMethod?: string | null;
   /** pending | approved | rejected (cartes téléphoniques). */
   phoneCardStatus?: string | null;
+  /** pending | approved | rejected (paiements manuels Skrill/Neteller/Airtm/D17). */
+  manualPaymentStatus?: string | null;
   /** Statut brut NOWPayments : waiting, confirming, confirmed, sending, finished… */
   ipnStatus?: string | null;
   /** Crypto utilisée par le client (usdttrc20, btc…) — sert à l'estimation. */
@@ -135,12 +163,14 @@ export interface DeliveryProgress {
   /**
    * Code d'état, pour que l'interface choisisse son message :
    * `awaiting_payment`, `awaiting_network`, `awaiting_phone_card`,
-   * `issuing`, `manual_review`, `delivered`, `failed`.
+   * `awaiting_manual_payment`, `issuing`, `manual_review`, `delivered`,
+   * `failed`.
    */
   stage:
     | "awaiting_payment"
     | "awaiting_network"
     | "awaiting_phone_card"
+    | "awaiting_manual_payment"
     | "issuing"
     | "manual_review"
     | "delivered"
@@ -211,7 +241,10 @@ export function deliveryProgress(input: DeliveryProgressInput): DeliveryProgress
   const fulfillment = (input.fulfillmentStatus ?? "").trim();
   const ipn = (input.ipnStatus ?? "").trim().toLowerCase();
   const isPhoneCard = (input.paymentMethod ?? "").trim() === "phone_card";
-  const eta = isPhoneCard ? null : confirmationEtaSeconds(input.payCurrency);
+  // Un virement manuel n'a pas non plus de confirmation réseau à afficher :
+  // l'attente est humaine, donc on ne promet aucun délai blockchain.
+  const isManualPayment = deliveryVariantFor(input.paymentMethod) === "manual_payment";
+  const eta = isPhoneCard || isManualPayment ? null : confirmationEtaSeconds(input.payCurrency);
 
   const delivered = status === "delivered" || fulfillment === "delivered";
   const failed = status === "failed";
@@ -269,7 +302,22 @@ export function deliveryProgress(input: DeliveryProgressInput): DeliveryProgress
     };
   }
 
-  // Paiement pas encore confirmé — étape 1, deux nuances.
+  // Paiement pas encore confirmé — étape 1, trois nuances.
+  if (isManualPayment) {
+    return {
+      steps: [
+        { id: "confirmation", state: "current" },
+        { id: "issuing", state: "todo" },
+        { id: "delivered", state: "todo" },
+      ],
+      currentIndex: 0,
+      percent: 20,
+      tone: "waiting",
+      stage: "awaiting_manual_payment",
+      confirmationEtaSeconds: null,
+    };
+  }
+
   if (isPhoneCard) {
     return {
       steps: [
@@ -356,6 +404,12 @@ export function deliveryProgressMessage(
             : " Do not send a second payment.")
       );
     }
+    case "awaiting_manual_payment":
+      return locale === "ar"
+        ? "تحويلك قيد التحقق اليدوي من طرفنا. لا تُعد الإرسال قبل أن نتواصل معك، واحتفظ بمرجع العملية."
+        : locale === "fr"
+          ? "Votre virement est en cours de vérification manuelle. Ne renvoyez pas d'argent avant notre réponse, et conservez votre référence de transaction."
+          : "Your transfer is being verified by hand. Do not send the money again before our reply, and keep your transaction reference.";
     case "awaiting_phone_card":
       return locale === "ar"
         ? "بطاقتك قيد التحقق اليدوي. لا ترسل بطاقة أخرى قبل أن نتواصل معك."
