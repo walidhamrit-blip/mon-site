@@ -4,6 +4,7 @@ import { FazercardsReplenishmentPanel } from "./fazercards-replenishment-panel";
 import { readReplenishmentSettings } from "@/lib/fazercards-replenishment";
 import { FazercardsBalancePanel } from "./fazercards-balance-panel";
 import { FazercardsCardIdFinder } from "./fazercards-card-id-finder";
+import { G2gPanel } from "./g2g-panel";
 import { getFazercardsBalanceStatus } from "@/lib/fazercards-balance";
 import { getFazercardsDigitalCatalog } from "@/lib/fazercards-catalog";
 import { fazercardsConfigured } from "@/lib/fazercards";
@@ -79,6 +80,8 @@ export default async function AdminDigitalPage() {
       )}
 
       <FazercardsCardIdFinder />
+
+      <G2gPanel />
 
       <FazercardsCatalogPanel
         products={liveProducts}
