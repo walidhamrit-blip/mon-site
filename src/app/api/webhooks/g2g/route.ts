@@ -1,8 +1,20 @@
 import { NextResponse } from "next/server";
 import { eq } from "drizzle-orm";
 import { db, ensureSchema } from "@/db";
-import { g2gOfferMappings } from "@/db/schema";
-import { g2gConfig } from "@/lib/g2g";
+import { g2gDeliveries, g2gOfferMappings, type G2gOfferMapping } from "@/db/schema";
+import {
+  g2gAutoDeliveryEnabled,
+  g2gFeePercent,
+  planG2gFulfilment,
+  type G2gFulfilmentDecision,
+  type G2gFulfilmentPlan,
+} from "@/lib/g2g-fulfilment-core";
+import {
+  g2gConfig,
+  g2gConfigured,
+  g2gGetOffer,
+  type G2gOffer,
+} from "@/lib/g2g";
 import {
   parseG2gDeliveryEvent,
   verifyG2gWebhookSignature,
@@ -143,13 +155,15 @@ export async function POST(req: Request) {
 
   let mappingFound = false;
   let mappingEnabled = false;
+  let mapping: G2gOfferMapping | null = null;
   try {
     await ensureSchema();
     const rows = await db
-      .select({ enabled: g2gOfferMappings.enabled })
+      .select()
       .from(g2gOfferMappings)
       .where(eq(g2gOfferMappings.offerId, event.offerId))
       .limit(1);
+    mapping = rows[0] ?? null;
     mappingFound = rows.length > 0;
     mappingEnabled = rows[0]?.enabled === true;
   } catch (error) {
@@ -161,20 +175,101 @@ export async function POST(req: Request) {
     return noStoreJson({ ok: false, error: "db_unavailable" }, 503);
   }
 
-  // Journal UNIQUEMENT des identifiants et quantités : jamais de code,
-  // jamais de donnée acheteur, jamais de secret.
+  // Coupe-circuit global : tant qu'il n'est pas activé, AUCUN achat n'est
+  // possible, quel que soit l'état de la correspondance.
+  const autoDeliveryEnabled = g2gAutoDeliveryEnabled(process.env.G2G_AUTO_DELIVERY);
+
+  /**
+   * Répétition générale de la phase 2.
+   *
+   * On calcule la décision qu'on PRENDRAIT, et on la consigne — sans jamais
+   * dépenser un centime : l'achat fournisseur n'est pas encore câblé. Cela
+   * permet de voir, sur des événements réels, exactement ce que l'automation
+   * ferait avant de l'autoriser.
+   */
+  let decision: G2gFulfilmentDecision = mappingFound ? "kill_switch_off" : "mapping_disabled";
+  let plan: G2gFulfilmentPlan | null = null;
+  let offerUnreadable: string | null = null;
+
+  if (mapping) {
+    let offer: G2gOffer | null = null;
+    if (g2gConfigured()) {
+      try {
+        const response = await g2gGetOffer(event.offerId);
+        offer = response.payload ?? null;
+      } catch (error) {
+        offerUnreadable = error instanceof Error ? error.message : String(error);
+        console.warn("[g2g][webhook] offre illisible :", offerUnreadable);
+      }
+    } else {
+      offerUnreadable = "clés API G2G absentes";
+    }
+
+    if (offer) {
+      plan = planG2gFulfilment({
+        mappingEnabled: mapping.enabled,
+        autoDeliveryEnabled,
+        feePercent: g2gFeePercent(process.env.G2G_FEE_PERCENT),
+        offerUnitPrice: offer.unit_price ?? null,
+        offerCurrency: offer.currency ?? mapping.saleCurrency,
+        offerDeliveryType: offer.delivery_type ?? null,
+        offerCodeLabel: offer.code_label ?? null,
+        supplierCostUsd: Number(mapping.supplierPriceUsd ?? 0) || 0,
+        saleCurrency: mapping.saleCurrency,
+        minMarginPercent: mapping.minMarginPercent,
+        maxCostUsd: Number(mapping.maxCostUsd ?? 0) || 0,
+        requestedQty: event.requestedQty,
+      });
+      decision = plan.decision;
+    }
+  }
+
+  // Journal de la décision : identifiants, montants et verdict uniquement.
+  // Jamais de code, jamais de donnée acheteur, jamais de secret.
   console.info(
-    `[g2g][webhook] order.api_delivery order=${event.orderId} offer=${event.offerId} delivery=${event.deliveryId} qty=${event.requestedQty} mapping=${mappingFound ? (mappingEnabled ? "enabled" : "disabled") : "absent"} mode=shadow`,
+    `[g2g][webhook] order.api_delivery order=${event.orderId} offer=${event.offerId} delivery=${event.deliveryId} qty=${event.requestedQty} mapping=${mappingFound ? (mappingEnabled ? "enabled" : "disabled") : "absent"} decision=${decision}${offerUnreadable ? ` offer_illisible=1` : ""} achat=aucun`,
   );
+
+  try {
+    await ensureSchema();
+    await db
+      .insert(g2gDeliveries)
+      .values({
+        deliveryId: event.deliveryId,
+        orderId: event.orderId,
+        offerId: event.offerId,
+        requestedQty: event.requestedQty,
+        decision,
+        status: offerUnreadable ? "failed" : decision === "proceed" ? "planned" : "skipped",
+        unitPriceUsd: plan && plan.unitPrice > 0 ? String(plan.unitPrice) : null,
+        supplierCostUsd: plan && plan.supplierCostUsd > 0 ? String(plan.supplierCostUsd) : null,
+        netMarginPercent: plan ? String(plan.netMarginPercent) : null,
+        detail: offerUnreadable
+          ? `Offre G2G illisible : ${offerUnreadable}`
+          : (plan?.summary ?? decision),
+        updatedAt: new Date(),
+      })
+      .onConflictDoNothing({ target: g2gDeliveries.deliveryId });
+  } catch (error) {
+    // Une panne du journal ne doit jamais faire échouer la réception :
+    // mieux vaut un événement sans trace qu'un événement rejoué sans fin.
+    console.warn(
+      "[g2g][webhook] journal de livraison indisponible :",
+      error instanceof Error ? error.message : error,
+    );
+  }
 
   try {
     await notifyTelegramAdmin(
       [
-        "🛰️ G2G — événement reçu (phase 1, aucun achat automatique)",
+        "🛰️ G2G — événement reçu (aucun achat automatique)",
         `Commande : ${event.orderId}`,
         `Offre : ${event.offerId}`,
         `Livraison : ${event.deliveryId} · qté ${event.requestedQty}`,
         `Mapping : ${mappingFound ? (mappingEnabled ? "actif" : "désactivé") : "absent"}`,
+        plan
+          ? `Décision : ${decision} — ${plan.summary}`
+          : `Décision : ${decision}${offerUnreadable ? " (offre illisible)" : ""}`,
         "Action : garder api_qty = 0 et traiter manuellement si une vente est en cours.",
       ].join("\n"),
     );
@@ -190,7 +285,10 @@ export async function POST(req: Request) {
   return noStoreJson({
     ok: true,
     dry_run: true,
+    /** Reflète le coupe-circuit, pas une capacité : rien n'est acheté. */
     auto_delivery: false,
+    auto_delivery_enabled: autoDeliveryEnabled,
     mapping: mappingFound ? (mappingEnabled ? "enabled" : "disabled") : "absent",
+    decision,
   });
 }

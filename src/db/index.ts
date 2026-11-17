@@ -687,6 +687,35 @@ export function ensureSchema(): Promise<void> {
       await pool.query(
         "ALTER TABLE g2g_offer_mappings ADD COLUMN IF NOT EXISTS supplier_price_usd text",
       );
+
+      // Journal des livraisons : sans lui, une commande rejouée après un
+      // incident provoquerait un SECOND achat du même code.
+      await pool.query(`
+        CREATE TABLE IF NOT EXISTS g2g_deliveries (
+          id serial PRIMARY KEY,
+          created_at timestamptz NOT NULL DEFAULT now(),
+          updated_at timestamptz NOT NULL DEFAULT now(),
+          delivery_id text NOT NULL UNIQUE,
+          order_id text NOT NULL DEFAULT '',
+          offer_id text NOT NULL DEFAULT '',
+          requested_qty integer NOT NULL DEFAULT 1,
+          decision text NOT NULL DEFAULT '',
+          status text NOT NULL DEFAULT 'planned',
+          unit_price_usd text,
+          supplier_cost_usd text,
+          net_margin_percent text,
+          supplier_order_ref text,
+          attempts integer NOT NULL DEFAULT 0,
+          next_attempt_at timestamptz,
+          detail text
+        )
+      `);
+      await pool.query(
+        "CREATE INDEX IF NOT EXISTS g2g_deliveries_status_idx ON g2g_deliveries (status)",
+      );
+      await pool.query(
+        "CREATE INDEX IF NOT EXISTS g2g_deliveries_next_attempt_idx ON g2g_deliveries (next_attempt_at)",
+      );
     })().catch((error) => {
       schemaReady = null; // permet de réessayer au prochain accès
       throw error;

@@ -845,3 +845,42 @@ export const g2gOfferMappings = pgTable("g2g_offer_mappings", {
 
 export type G2gOfferMapping = typeof g2gOfferMappings.$inferSelect;
 export type NewG2gOfferMapping = typeof g2gOfferMappings.$inferInsert;
+
+/**
+ * Journal des livraisons G2G (phase 2).
+ *
+ * Une ligne par `delivery_id` : la clé d'idempotence est celle de G2G, donc
+ * un événement rejoué ne peut jamais produire un second achat. On y consigne
+ * la DÉCISION et son résultat — jamais de code produit, jamais de secret.
+ *
+ * Le cycle de vie est volontairement explicite : `planned` (décision prise)
+ * → `purchased` (fournisseur payé) → `delivered` (code transmis à G2G) ou
+ * `failed` / `skipped`. C'est ce qui permet de reprendre une livraison
+ * interrompue sans jamais racheter deux fois.
+ */
+export const g2gDeliveries = pgTable("g2g_deliveries", {
+  id: serial("id").primaryKey(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  /** `delivery_id` G2G : clé d'idempotence, unique. */
+  deliveryId: text("delivery_id").notNull().unique(),
+  orderId: text("order_id").notNull().default(""),
+  offerId: text("offer_id").notNull().default(""),
+  requestedQty: integer("requested_qty").notNull().default(1),
+  /** Verdict de `planG2gFulfilment()` — la raison exacte d'un non-achat. */
+  decision: text("decision").notNull().default(""),
+  /** planned | purchased | delivered | failed | skipped */
+  status: text("status").notNull().default("planned"),
+  unitPriceUsd: text("unit_price_usd"),
+  supplierCostUsd: text("supplier_cost_usd"),
+  netMarginPercent: text("net_margin_percent"),
+  /** Référence de commande fournisseur (jamais le code lui-même). */
+  supplierOrderRef: text("supplier_order_ref"),
+  attempts: integer("attempts").notNull().default(0),
+  nextAttemptAt: timestamp("next_attempt_at", { withTimezone: true }),
+  /** Message lisible, sans code ni secret. */
+  detail: text("detail"),
+});
+
+export type G2gDelivery = typeof g2gDeliveries.$inferSelect;
+export type NewG2gDelivery = typeof g2gDeliveries.$inferInsert;
