@@ -27,9 +27,14 @@ interface Props {
 export function SitesManager({ initialDemos, plans, currency }: Props) {
   const router = useRouter();
   const [demos, setDemos] = useState<Demo[]>(initialDemos);
+  // Keep a stable key independent of the editable slug, otherwise React
+  // remounts the editor after every keystroke and collapses the accordion.
+  const [demoKeys, setDemoKeys] = useState(() =>
+    initialDemos.map((_, index) => `demo-row-${index}`),
+  );
   const [search, setSearch] = useState("");
   const [sectorFilter, setSectorFilter] = useState("all");
-  const [openSlugs, setOpenSlugs] = useState<Record<string, boolean>>({});
+  const [openDemoKeys, setOpenDemoKeys] = useState<Record<string, boolean>>({});
   const [dirty, setDirty] = useState(false);
   const [aiBatchLoading, setAiBatchLoading] = useState(false);
   const [toast, setToast] = useState<{ msg: string; kind: "ok" | "err" } | null>(
@@ -47,8 +52,10 @@ export function SitesManager({ initialDemos, plans, currency }: Props) {
       demos.map((d) => d.slug),
       plans,
     );
-    setDemos([blank, ...demos]);
-    setOpenSlugs((prev) => ({ ...prev, [blank.slug]: true }));
+    const key = `demo-row-${globalThis.crypto?.randomUUID?.() ?? Date.now()}`;
+    setDemos((prev) => [blank, ...prev]);
+    setDemoKeys((prev) => [key, ...prev]);
+    setOpenDemoKeys((prev) => ({ ...prev, [key]: true }));
     setDirty(true);
   };
 
@@ -65,6 +72,11 @@ export function SitesManager({ initialDemos, plans, currency }: Props) {
     const copy = [...demos];
     [copy[idx], copy[target]] = [copy[target], copy[idx]];
     setDemos(copy);
+    setDemoKeys((prev) => {
+      const next = [...prev];
+      [next[idx], next[target]] = [next[target], next[idx]];
+      return next;
+    });
     setDirty(true);
   };
 
@@ -78,6 +90,7 @@ export function SitesManager({ initialDemos, plans, currency }: Props) {
       return;
     }
     setDemos(demos.filter((_, i) => i !== idx));
+    setDemoKeys((prev) => prev.filter((_, i) => i !== idx));
     setDirty(true);
   };
 
@@ -259,19 +272,21 @@ export function SitesManager({ initialDemos, plans, currency }: Props) {
         </div>
       ) : (
         <div className="space-y-2.5">
-          {visibleDemos.map(({ demo, index }) => (
+          {visibleDemos.map(({ demo, index }) => {
+            const key = demoKeys[index] ?? `demo-row-${index}`;
+            return (
             <SiteItemEditor
-              key={`${demo.slug}-${index}`}
+              key={key}
               demo={demo}
               index={index}
               total={demos.length}
               plans={plans}
               currency={currency}
-              expanded={Boolean(openSlugs[demo.slug])}
+              expanded={Boolean(openDemoKeys[key])}
               onToggleExpand={() =>
-                setOpenSlugs((prev) => ({
+                setOpenDemoKeys((prev) => ({
                   ...prev,
-                  [demo.slug]: !prev[demo.slug],
+                  [key]: !prev[key],
                 }))
               }
               onChange={(next) => updateDemo(index, next)}
@@ -279,7 +294,8 @@ export function SitesManager({ initialDemos, plans, currency }: Props) {
               onDelete={() => deleteDemo(index)}
               onFlash={flash}
             />
-          ))}
+            );
+          })}
         </div>
       )}
 

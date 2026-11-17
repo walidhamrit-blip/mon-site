@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import {
   ArrowDown,
   ArrowUp,
@@ -9,6 +9,7 @@ import {
   Loader2,
   Sparkles,
   Trash2,
+  Upload,
 } from "lucide-react";
 import { sectors } from "@/lib/content";
 import { resolveDemoClassification } from "@/lib/classification";
@@ -81,6 +82,8 @@ export function SiteItemEditor({
 }: SiteItemEditorProps) {
   const [seoOpen, setSeoOpen] = useState(false);
   const [aiLoading, setAiLoading] = useState(false);
+  const [imageUploading, setImageUploading] = useState(false);
+  const imageFileInput = useRef<HTMLInputElement>(null);
 
   const sectorOptions = sectors.filter((s) => s.id !== "all");
   const classification = resolveDemoClassification(demo, plans);
@@ -105,6 +108,43 @@ export function SiteItemEditor({
       sectorAr: found ? found.labelAr : demo.sectorAr,
       sectorEn: found ? found.labelEn : demo.sectorEn,
     });
+  };
+
+  const uploadImage = async (file: File) => {
+    if (file.size > 4 * 1024 * 1024) {
+      onFlash?.("Image trop volumineuse : 4 Mo maximum.", "err");
+      return;
+    }
+    setImageUploading(true);
+    try {
+      const body = new FormData();
+      body.append("file", file);
+      const response = await fetch("/api/admin/media", {
+        method: "POST",
+        body,
+      });
+      const result = (await response.json()) as {
+        ok?: boolean;
+        url?: string;
+        error?: string;
+      };
+      if (!response.ok || !result.ok || !result.url) {
+        throw new Error(result.error || "Import impossible.");
+      }
+      onChange({ ...demo, image: result.url });
+      onFlash?.(
+        "Image importée. Cliquez sur « Enregistrer la galerie » pour publier.",
+        "ok",
+      );
+    } catch (error) {
+      onFlash?.(
+        error instanceof Error ? error.message : "Import impossible.",
+        "err",
+      );
+    } finally {
+      setImageUploading(false);
+      if (imageFileInput.current) imageFileInput.current.value = "";
+    }
   };
 
   const generateAiSeo = async () => {
@@ -373,12 +413,46 @@ export function SiteItemEditor({
               />
             </Field>
 
-            <Field label="Image miniature (URL https://... ou /chemin)">
-              <input
-                value={demo.image}
-                onChange={(e) => onChange({ ...demo, image: e.target.value })}
-                className={ADMIN_INPUT_CLS}
-              />
+            <Field label="Image miniature">
+              <div className="flex gap-2">
+                <input
+                  value={demo.image}
+                  onChange={(e) => onChange({ ...demo, image: e.target.value })}
+                  placeholder="URL https://... ou image importée"
+                  className={`${ADMIN_INPUT_CLS} min-w-0 flex-1`}
+                />
+                <input
+                  ref={imageFileInput}
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp,image/avif"
+                  className="sr-only"
+                  tabIndex={-1}
+                  aria-label="Choisir une image sur votre ordinateur"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) void uploadImage(file);
+                  }}
+                />
+                <button
+                  type="button"
+                  disabled={imageUploading}
+                  onClick={() => imageFileInput.current?.click()}
+                  className="h-10 shrink-0 rounded-xl border border-stone-300 bg-white px-3 text-xs font-semibold text-stone-700 hover:bg-stone-50 disabled:opacity-60 inline-flex items-center gap-1.5"
+                >
+                  {imageUploading ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Upload className="h-4 w-4" />
+                  )}
+                  <span className="hidden xl:inline">
+                    {imageUploading ? "Import…" : "Depuis l’ordinateur"}
+                  </span>
+                  <span className="xl:hidden">Importer</span>
+                </button>
+              </div>
+              <p className="mt-1 text-[11px] text-stone-500">
+                JPG, PNG, WebP ou AVIF — 4 Mo maximum.
+              </p>
             </Field>
             <div className="hidden sm:flex items-end">
               {demo.image && (
