@@ -1,0 +1,353 @@
+{
+  "observedAt": "2026-11-17",
+  "currency": "USD",
+  "region": "US",
+  "sources": {
+    "g2g_prices": "Pages publiques G2G (page de groupe d'offres de chaque montant), relevé le 17/11/2026. Prix = prix de vente affiché (le frais de traitement acheteur s'ajoute au checkout, il n'est PAS déduit du vendeur).",
+    "fazercards_costs": "Grille revendeur FazerCards région US relevée le 03/11/2026 (docs/alignement-marche-2026-11-04.md §4 et §5). À réactualiser depuis /admin/digital, qui affiche le coût réel du SKU.",
+    "g2g_fees": "support.g2g.com art. 5000001408 (commission, màj 14/08/2026) et art. 5000001416 (retraits, table USD)."
+  },
+  "fees": {
+    "commission": {
+      "giftCardsTopupSoftwareVideoGames": 4.99,
+      "otherServiceByRank": {
+        "Normal": 9.99,
+        "Common": 8.99,
+        "Uncommon": 7.99,
+        "Rare": 6.99,
+        "Epic": 5.99,
+        "Legendary": 4.99
+      },
+      "accountServiceByRank": {
+        "Normal": 12.99,
+        "Common": 11.99,
+        "Uncommon": 10.99,
+        "Rare": 9.99,
+        "Epic": 8.99,
+        "Legendary": 7.99
+      },
+      "softwareAppsByRank": {
+        "Normal": 19.99,
+        "Common": 18.99,
+        "Uncommon": 17.99,
+        "Rare": 16.99,
+        "Epic": 15.99,
+        "Legendary": 14.99
+      }
+    },
+    "withdrawalsUsd": {
+      "usdtTrc20": {
+        "min": 10,
+        "max": 50000,
+        "Normal": 4.99,
+        "mid": 3.99,
+        "Legendary": 2.99,
+        "fixedUsd": 0.99
+      },
+      "usdtPolygon": {
+        "min": 10,
+        "max": 50000,
+        "Normal": 4.99,
+        "mid": 3.99,
+        "Legendary": 2.99,
+        "fixedUsd": 0.99
+      },
+      "bitcoin": {
+        "min": 10,
+        "max": 50000,
+        "Normal": 4.99,
+        "mid": 3.99,
+        "Legendary": 2.99,
+        "fixedUsd": 0.99
+      },
+      "paypal": {
+        "min": 10,
+        "max": 10000,
+        "Normal": 2.99,
+        "mid": 1.99,
+        "Legendary": 0.99,
+        "fixedUsd": 0.99
+      },
+      "payoneer": {
+        "min": 50,
+        "max": 20000,
+        "Normal": 2.99,
+        "mid": 1.99,
+        "Legendary": 0.99,
+        "fixedUsd": 3.99
+      },
+      "usLocalBank": {
+        "min": 50,
+        "max": 20000,
+        "Normal": 2.99,
+        "mid": 1.99,
+        "Legendary": 0.99,
+        "fixedUsd": 2.99
+      },
+      "swift": {
+        "min": 50,
+        "max": 20000,
+        "Normal": 2.99,
+        "mid": 1.99,
+        "Legendary": 0.99,
+        "fixedUsd": 13.99
+      },
+      "skrill": {
+        "min": 10,
+        "max": 5000,
+        "Normal": 7.99,
+        "mid": 6.99,
+        "Legendary": 5.99,
+        "fixedUsd": 0.99
+      }
+    },
+    "networkFeePerCryptoWithdrawalUsd": 1.0
+  },
+  "scenarios": [
+    {
+      "id": "pessimiste",
+      "label": "Pessimiste — USDT TRC20, rang Normal, lot de retrait 200 $",
+      "commissionPct": 4.99,
+      "withdrawalPct": 4.99,
+      "withdrawalFixedUsd": 0.99,
+      "networkUsd": 1.0,
+      "batchUsd": 200
+    },
+    {
+      "id": "realiste",
+      "label": "Réaliste — USDT TRC20, rang Normal, lot de retrait 400 $",
+      "commissionPct": 4.99,
+      "withdrawalPct": 4.99,
+      "withdrawalFixedUsd": 0.99,
+      "networkUsd": 1.0,
+      "batchUsd": 400
+    },
+    {
+      "id": "cible",
+      "label": "Cible — PayPal USD, rang Legendary, lot de retrait 800 $",
+      "commissionPct": 4.99,
+      "withdrawalPct": 0.99,
+      "withdrawalFixedUsd": 0.99,
+      "networkUsd": 0.0,
+      "batchUsd": 800
+    },
+    {
+      "id": "risque_fin_promo",
+      "label": "Risque — fin de la promo 4,99 % (retour au tarif « Other Service » rang Normal), lot de 400 $",
+      "commissionPct": 9.99,
+      "withdrawalPct": 4.99,
+      "withdrawalFixedUsd": 0.99,
+      "networkUsd": 1.0,
+      "batchUsd": 400
+    }
+  ],
+  "products": [
+    {
+      "id": "psn-50",
+      "family": "PlayStation",
+      "label": "PSN Gift Card USD 50 (US)",
+      "faceValueUsd": 50,
+      "supplierCostUsd": 42.63,
+      "costSource": "fazercards-2026-11-03",
+      "pricesUsd": [
+        49.19,
+        49.2,
+        50.4
+      ],
+      "sellersSampled": 9
+    },
+    {
+      "id": "psn-25",
+      "family": "PlayStation",
+      "label": "PSN Gift Card USD 25 (US)",
+      "faceValueUsd": 25,
+      "supplierCostUsd": 21.81,
+      "costSource": "fazercards-2026-11-03",
+      "pricesUsd": [
+        24.73,
+        24.74,
+        24.92
+      ],
+      "sellersSampled": 9
+    },
+    {
+      "id": "psn-10",
+      "family": "PlayStation",
+      "label": "PSN Gift Card USD 10 (US)",
+      "faceValueUsd": 10,
+      "supplierCostUsd": 8.62,
+      "costSource": "fazercards-2026-11-03",
+      "pricesUsd": [
+        9.84,
+        9.85,
+        9.9
+      ],
+      "sellersSampled": 11
+    },
+    {
+      "id": "robux-4500",
+      "family": "Roblox",
+      "label": "Robux 4 500 (Global)",
+      "faceValueUsd": 49.99,
+      "supplierCostUsd": 41.35,
+      "costSource": "fazercards-2026-11-03",
+      "pricesUsd": [
+        23.55,
+        26.84,
+        26.99
+      ],
+      "sellersSampled": 19,
+      "note": "Les trois moins chers vendent très en dessous du coût FazerCards : ce sont des top-ups manuels par identifiant (méthode non reproductible sans accès au compte). Comparables uniquement sur le canal « code »."
+    },
+    {
+      "id": "robux-1700",
+      "family": "Roblox",
+      "label": "Robux 1 700 (Global)",
+      "faceValueUsd": 19.99,
+      "supplierCostUsd": 17.15,
+      "costSource": "fazercards-2026-11-03",
+      "pricesUsd": [
+        9.96,
+        10.0,
+        10.14
+      ],
+      "sellersSampled": 17,
+      "note": "Idem : top-up manuel, prix hors marché du code."
+    },
+    {
+      "id": "robux-800",
+      "family": "Roblox",
+      "label": "Robux 800 (Global)",
+      "faceValueUsd": 9.99,
+      "supplierCostUsd": 8.15,
+      "costSource": "fazercards-2026-11-03",
+      "pricesUsd": [
+        4.66,
+        4.77,
+        4.79
+      ],
+      "sellersSampled": 24,
+      "note": "Idem : top-up manuel."
+    },
+    {
+      "id": "amazon-50",
+      "family": "Amazon",
+      "label": "Amazon Gift Card USD 50 (US)",
+      "faceValueUsd": 50,
+      "supplierCostUsd": 49,
+      "costSource": "fazercards-2026-11-03",
+      "pricesUsd": [
+        53.4,
+        53.5,
+        54.18
+      ],
+      "sellersSampled": 8
+    },
+    {
+      "id": "steam-50",
+      "family": "Steam",
+      "label": "Steam Wallet Code USD 50 (US)",
+      "faceValueUsd": 50,
+      "supplierCostUsd": 49.25,
+      "costSource": "fazercards-2026-11-03",
+      "pricesUsd": [
+        50.0,
+        50.69,
+        54.45
+      ],
+      "sellersSampled": 9
+    },
+    {
+      "id": "steam-100",
+      "family": "Steam",
+      "label": "Steam Wallet Code USD 100 (US)",
+      "faceValueUsd": 100,
+      "supplierCostUsd": 98.98,
+      "costSource": "fazercards-2026-11-03",
+      "pricesUsd": [
+        141.75,
+        141.76
+      ],
+      "sellersSampled": 2,
+      "note": "Seulement 2 vendeurs : prix très au-dessus de la valeur faciale, créneau laissé libre."
+    },
+    {
+      "id": "steam-10",
+      "family": "Steam",
+      "label": "Steam Wallet Code USD 10 (US)",
+      "faceValueUsd": 10,
+      "supplierCostUsd": 10.01,
+      "costSource": "fazercards-2026-11-03",
+      "pricesUsd": [
+        10.72
+      ],
+      "sellersSampled": 1,
+      "note": "Relevé « à partir de » seulement (prix le plus bas), pas de top-3."
+    },
+    {
+      "id": "psn-100",
+      "family": "PlayStation",
+      "label": "PSN Gift Card USD 100 (US)",
+      "faceValueUsd": 100,
+      "supplierCostUsd": 87.42,
+      "costSource": "fazercards-2026-11-03",
+      "pricesUsd": [
+        90.0
+      ],
+      "sellersSampled": 1,
+      "note": "Relevé « à partir de » seulement."
+    },
+    {
+      "id": "googleplay-10",
+      "family": "Google Play",
+      "label": "Google Play Gift Card USD 10 (US)",
+      "faceValueUsd": 10,
+      "supplierCostUsd": 9.63,
+      "costSource": "fazercards-2026-11-03",
+      "pricesUsd": [
+        8.0
+      ],
+      "sellersSampled": 1,
+      "note": "Relevé « à partir de » seulement ; prix sous le coût fournisseur."
+    },
+    {
+      "id": "googleplay-25",
+      "family": "Google Play",
+      "label": "Google Play Gift Card USD 25 (US)",
+      "faceValueUsd": 25,
+      "supplierCostUsd": 24.09,
+      "costSource": "estimation-proportionnelle",
+      "pricesUsd": [
+        27.56,
+        27.99,
+        28.0
+      ],
+      "sellersSampled": 4,
+      "note": "Coût 25 $ non relevé : estimé au prorata du 50 $ (48,18 → 24,09). À vérifier avant décision."
+    },
+    {
+      "id": "amazon-10",
+      "family": "Amazon",
+      "label": "Amazon Gift Card USD 10 (US)",
+      "faceValueUsd": 10,
+      "supplierCostUsd": 9.8,
+      "costSource": "fazercards-2026-11-03",
+      "pricesUsd": [
+        10.7
+      ],
+      "sellersSampled": 1,
+      "note": "Relevé « à partir de » seulement."
+    }
+  ],
+  "excluded": [
+    {
+      "label": "Amazon Gift Card USD 100 (US)",
+      "observedFromUsd": 15.86,
+      "reason": "Prix aberrant (100 $ de valeur faciale à 15,86 $) : annonce erronée ou produit non conforme. Écarté du calcul, mais à signaler comme risque de confiance côté place de marché."
+    },
+    {
+      "label": "Xbox Live Gift Card USD 25 / 50 (US)",
+      "reason": "Aucune offre USD US exploitable relevée dans la catégorie Xbox Gift Cards le 17/11/2026 (catégorie dominée par les abonnements Game Pass et les devises locales). À re-relever avant de lister."
+    }
+  ]
+}

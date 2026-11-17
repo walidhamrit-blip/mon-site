@@ -477,10 +477,17 @@ Deux variables gouvernent tout :
 | Variable | Rôle |
 | --- | --- |
 | `G2G_AUTO_DELIVERY` | coupe-circuit : doit valoir exactement `1`. Sinon, aucun achat n'est possible, même avec une correspondance activée. |
-| `G2G_FEE_PERCENT` | commission G2G + frais de retrait, en %. **Aucun défaut** : sans elle, la décision est toujours un refus. |
+| `G2G_FEE_PERCENT` | commission G2G + frais de retrait, en %. **Aucun défaut** : sans elle, la décision est toujours un refus. **Valeur recommandée : `12`** (audit du 17/11/2026, voir `docs/audit-marges-g2g-2026-11-17.md`). |
 
 Cette exigence est volontaire. Une commission sous-évaluée ou « devinée »
 ferait acheter à perte de façon automatique et silencieuse.
+
+La valeur à déployer est **`12`** : elle vient de l'audit des frais G2G du
+17/11/2026 (`docs/audit-marges-g2g-2026-11-17.md`), qui mesure un prélèvement
+total réel de **6,05 % à 14,98 %** selon le canal de retrait et le maintien de
+la promotion de commission. `12` couvre le régime nominal sans jamais
+surestimer la marge : au pire le moteur refuse une vente marginale, jamais il
+n'en accepte une à perte. Recalcul : `npm run g2g:marges`.
 
 ### Les décisions possibles
 
