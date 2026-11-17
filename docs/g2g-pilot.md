@@ -488,6 +488,7 @@ ferait acheter à perte de façon automatique et silencieuse.
 | --- | --- |
 | `proceed` | marge démontrée → achat autorisé (rien n'est encore acheté) |
 | `mapping_disabled` | correspondance non activée |
+| `offer_unreadable` | l'offre G2G n'a pas pu être relue à l'instant de l'événement |
 | `kill_switch_off` | `G2G_AUTO_DELIVERY` absent |
 | `fee_not_configured` | commission G2G non déclarée |
 | `missing_price` | prix de vente illisible |

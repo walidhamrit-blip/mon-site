@@ -31,6 +31,13 @@ export type G2gFulfilmentDecision =
   | "proceed"
   /** La correspondance existe mais n'est pas activée. */
   | "mapping_disabled"
+  /**
+   * L'offre G2G n'a pas pu être relue au moment de l'événement (clés API
+   * absentes, erreur réseau, offre supprimée). Sans prix courant, aucune
+   * marge n'est démontrable — et il ne faut surtout pas laisser croire à
+   * un simple « coupe-circuit », qui pousserait à chercher ailleurs.
+   */
+  | "offer_unreadable"
   /** L'automatisation est coupée globalement (coupe-circuit). */
   | "kill_switch_off"
   /** Commission G2G non déclarée : la rentabilité est incalculable. */
