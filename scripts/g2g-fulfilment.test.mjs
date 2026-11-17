@@ -158,6 +158,17 @@ test("la répétition générale révèle la marge même coupe-circuit baissé",
   assert.equal(applyKillSwitch(losing.decision, false), "margin_too_low");
 });
 
+test("une offre illisible ne se déguise pas en coupe-circuit", () => {
+  // Le défaut qu'on corrige : `decision` restait sur « kill_switch_off »
+  // quand la lecture de l'offre échouait, envoyant chercher la panne au
+  // mauvais endroit. La vraie raison doit rester visible.
+  const route = read("src/app/api/webhooks/g2g/route.ts");
+  assert.match(route, /mappingFound \? "offer_unreadable" : "mapping_disabled"/);
+  // …et le motif est reflété dans le journal comme dans l'alerte.
+  assert.match(route, /Offre G2G illisible/);
+  assert.match(route, /offer_illisible=1/);
+});
+
 test("l'ordre des refus dit la vraie raison", () => {
   // Une offre à la fois désactivée ET hors marge doit annoncer la cause
   // structurelle : chercher une marge à corriger serait perdre du temps.

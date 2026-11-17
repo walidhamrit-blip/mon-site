@@ -188,7 +188,7 @@ export async function POST(req: Request) {
    * permet de voir, sur des événements réels, exactement ce que l'automation
    * ferait avant de l'autoriser.
    */
-  let decision: G2gFulfilmentDecision = mappingFound ? "kill_switch_off" : "mapping_disabled";
+  let decision: G2gFulfilmentDecision = mappingFound ? "offer_unreadable" : "mapping_disabled";
   let plan: G2gFulfilmentPlan | null = null;
   let offerUnreadable: string | null = null;
 
