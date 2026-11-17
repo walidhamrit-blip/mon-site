@@ -505,12 +505,29 @@ traite à la main.
 
 ### Comment répéter sans risque
 
-1. `/admin/digital` → **« Envoyer un événement de test »**.
-2. La réponse contient désormais `decision`.
-3. Les logs et Telegram indiquent la décision **et** son motif.
+1. Renseigner **`G2G_FEE_PERCENT`** dans Vercel (Environment Variables),
+   puis redéployer. **Ne pas** renseigner `G2G_AUTO_DELIVERY`.
+2. `/admin/digital` → **« Envoyer un événement de test »**.
+3. Lire `decision` (ce qui se passe réellement) et
+   `hypothetical_decision` (ce qui se passerait une fois activé).
 
-Tant que `G2G_AUTO_DELIVERY` n'est pas à `1`, la décision sera
-`kill_switch_off`. C'est le comportement attendu et souhaité à ce stade.
+Les deux réponses à connaître :
+
+- **`fee_not_configured`** — la commission n'est pas encore déclarée.
+  Tant qu'elle manque, aucune marge n'est calculable : c'est le seul
+  réglage à faire pour que la répétition devienne instructive.
+- **`kill_switch_off`** — comportement normal et souhaité. La décision
+  hypothétique, elle, est déjà significative : elle dit ce qui se
+  passerait une fois l'automation activée.
+
+Le coupe-circuit ne masque **pas** les autres motifs : une offre non
+rentable annonce `margin_too_low`, pas `kill_switch_off`. C'est
+volontaire — pendant la répétition, on veut voir la vraie raison.
+
+| Réglage | Pendant la répétition |
+| --- | --- |
+| `G2G_FEE_PERCENT` | **à renseigner** (information, aucune dépense) |
+| `G2G_AUTO_DELIVERY` | **à laisser vide** (c'est la sécurité) |
 
 ### Briques restantes
 

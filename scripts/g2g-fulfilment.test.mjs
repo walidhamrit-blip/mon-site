@@ -13,6 +13,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import {
+  applyKillSwitch,
   g2gAutoDeliveryEnabled,
   g2gFeePercent,
   planG2gFulfilment,
@@ -130,6 +131,33 @@ test("un coût fournisseur inconnu n'est jamais remplacé par zéro", () => {
   }
 });
 
+test("le coupe-circuit retient l'achat sans masquer les autres motifs", () => {
+  // C'est tout l'intérêt de la répétition générale : si le coupe-circuit
+  // écrasait tout, chaque événement dirait « kill_switch_off » et on
+  // n'apprendrait jamais rien sur les marges, plafonds ni formats de code.
+  assert.equal(applyKillSwitch("proceed", false), "kill_switch_off");
+  // Un refus économique reste nommé : c'est la vraie raison, et elle le
+  // restera après activation.
+  for (const d of ["margin_too_low", "cap_exceeded", "cost_unknown", "topup_forbidden"]) {
+    assert.equal(applyKillSwitch(d, false), d, `${d} ne doit pas être masqué`);
+  }
+  // Coupe-circuit activé : la décision passe telle quelle.
+  assert.equal(applyKillSwitch("proceed", true), "proceed");
+  assert.equal(applyKillSwitch("margin_too_low", true), "margin_too_low");
+});
+
+test("la répétition générale révèle la marge même coupe-circuit baissé", () => {
+  // Le calcul se fait « comme si » l'automation était activée, puis le
+  // coupe-circuit retient. Sinon la répétition n'aurait aucun intérêt.
+  const hypothetical = planG2gFulfilment({ ...OK, autoDeliveryEnabled: true });
+  assert.equal(hypothetical.decision, "proceed");
+  assert.equal(applyKillSwitch(hypothetical.decision, false), "kill_switch_off");
+  // …et une offre non rentable se voit comme telle dès maintenant.
+  const losing = planG2gFulfilment({ ...OK, autoDeliveryEnabled: true, minMarginPercent: 95 });
+  assert.equal(losing.decision, "margin_too_low");
+  assert.equal(applyKillSwitch(losing.decision, false), "margin_too_low");
+});
+
 test("l'ordre des refus dit la vraie raison", () => {
   // Une offre à la fois désactivée ET hors marge doit annoncer la cause
   // structurelle : chercher une marge à corriger serait perdre du temps.
@@ -154,6 +182,18 @@ test("le webhook consigne la décision sans jamais acheter", () => {
   // La réponse reste explicitement en « dry run ».
   assert.match(route, /dry_run: true/);
   assert.match(route, /auto_delivery: false/);
+});
+
+test("la répétition générale calcule « comme si », puis retient", () => {
+  const route = read("src/app/api/webhooks/g2g/route.ts");
+  // Le plan est calculé avec l'automation considérée activée, sinon le
+  // coupe-circuit masquerait marge et plafond derrière un motif unique.
+  assert.match(route, /autoDeliveryEnabled: true/);
+  // …puis le coupe-circuit réel retient la décision.
+  assert.match(route, /applyKillSwitch\(plan\.decision, autoDeliveryEnabled\)/);
+  // L'écart entre les deux est rendu visible.
+  assert.match(route, /hypothetical_decision/);
+  assert.match(route, /Si l'automation était activée/);
 });
 
 test("le schéma et le DDL créent la table des livraisons", () => {

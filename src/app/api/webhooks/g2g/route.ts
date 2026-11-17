@@ -3,6 +3,7 @@ import { eq } from "drizzle-orm";
 import { db, ensureSchema } from "@/db";
 import { g2gDeliveries, g2gOfferMappings, type G2gOfferMapping } from "@/db/schema";
 import {
+  applyKillSwitch,
   g2gAutoDeliveryEnabled,
   g2gFeePercent,
   planG2gFulfilment,
@@ -208,7 +209,17 @@ export async function POST(req: Request) {
     if (offer) {
       plan = planG2gFulfilment({
         mappingEnabled: mapping.enabled,
-        autoDeliveryEnabled,
+        /**
+         * « Comme si » l'automation était activée — VOLONTAIRE, et sans
+         * risque puisqu'aucun achat n'est câblé.
+         *
+         * Le coupe-circuit est vérifié en tête de `planG2gFulfilment` : le
+         * laisser ici masquerait marge, plafond et format de code derrière
+         * un sempiternel `kill_switch_off`, et la répétition générale
+         * n'apprendrait rien. On calcule donc la décision hypothétique,
+         * puis `applyKillSwitch()` la retient si elle aurait acheté.
+         */
+        autoDeliveryEnabled: true,
         feePercent: g2gFeePercent(process.env.G2G_FEE_PERCENT),
         offerUnitPrice: offer.unit_price ?? null,
         offerCurrency: offer.currency ?? mapping.saleCurrency,
@@ -220,14 +231,14 @@ export async function POST(req: Request) {
         maxCostUsd: Number(mapping.maxCostUsd ?? 0) || 0,
         requestedQty: event.requestedQty,
       });
-      decision = plan.decision;
+      decision = applyKillSwitch(plan.decision, autoDeliveryEnabled);
     }
   }
 
   // Journal de la décision : identifiants, montants et verdict uniquement.
   // Jamais de code, jamais de donnée acheteur, jamais de secret.
   console.info(
-    `[g2g][webhook] order.api_delivery order=${event.orderId} offer=${event.offerId} delivery=${event.deliveryId} qty=${event.requestedQty} mapping=${mappingFound ? (mappingEnabled ? "enabled" : "disabled") : "absent"} decision=${decision}${offerUnreadable ? ` offer_illisible=1` : ""} achat=aucun`,
+    `[g2g][webhook] order.api_delivery order=${event.orderId} offer=${event.offerId} delivery=${event.deliveryId} qty=${event.requestedQty} mapping=${mappingFound ? (mappingEnabled ? "enabled" : "disabled") : "absent"} decision=${decision}${plan ? ` hypothetique=${plan.decision}` : ""}${plan ? ` marge=${plan.netMarginPercent}%` : ""}${offerUnreadable ? ` offer_illisible=1` : ""} coupe_circuit=${autoDeliveryEnabled ? "on" : "off"} achat=aucun`,
   );
 
   try {
@@ -246,7 +257,11 @@ export async function POST(req: Request) {
         netMarginPercent: plan ? String(plan.netMarginPercent) : null,
         detail: offerUnreadable
           ? `Offre G2G illisible : ${offerUnreadable}`
-          : (plan?.summary ?? decision),
+          : plan
+            ? autoDeliveryEnabled
+              ? plan.summary
+              : `${plan.summary} — achat retenu par le coupe-circuit (G2G_AUTO_DELIVERY).`
+            : decision,
         updatedAt: new Date(),
       })
       .onConflictDoNothing({ target: g2gDeliveries.deliveryId });
@@ -270,8 +285,13 @@ export async function POST(req: Request) {
         plan
           ? `Décision : ${decision} — ${plan.summary}`
           : `Décision : ${decision}${offerUnreadable ? " (offre illisible)" : ""}`,
+        plan && !autoDeliveryEnabled
+          ? `Si l'automation était activée : ${plan.decision} (marge ${plan.netMarginPercent} %)`
+          : null,
         "Action : garder api_qty = 0 et traiter manuellement si une vente est en cours.",
-      ].join("\n"),
+      ]
+        .filter((line): line is string => Boolean(line))
+        .join("\n"),
     );
   } catch (error) {
     console.warn(
@@ -290,5 +310,8 @@ export async function POST(req: Request) {
     auto_delivery_enabled: autoDeliveryEnabled,
     mapping: mappingFound ? (mappingEnabled ? "enabled" : "disabled") : "absent",
     decision,
+    /** Ce qui se serait passé si le coupe-circuit était activé. */
+    hypothetical_decision: plan?.decision ?? null,
+    net_margin_percent: plan?.netMarginPercent ?? null,
   });
 }

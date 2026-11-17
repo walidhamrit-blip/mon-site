@@ -263,6 +263,26 @@ export function g2gFeePercent(raw: string | undefined | null): number | null {
   return value;
 }
 
+/**
+ * Applique le coupe-circuit à une décision calculée « comme si » l'automation
+ * était activée.
+ *
+ * Example : répétition générale → `proceed` devient `kill_switch_off`, mais
+ * un `margin_too_low` reste `margin_too_low` (c'est la vraie raison, et elle
+ * le restera après activation).
+ *
+ * ⚠️ Quand l'achat sera câblé, c'est `shouldPurchase` de l'appel fait avec
+ * le VRAI `autoDeliveryEnabled` qui doit le déclencher — jamais un plan
+ * calculé en « comme si ».
+ */
+export function applyKillSwitch(
+  hypothetical: G2gFulfilmentDecision,
+  autoDeliveryEnabled: boolean,
+): G2gFulfilmentDecision {
+  if (autoDeliveryEnabled) return hypothetical;
+  return hypothetical === "proceed" ? "kill_switch_off" : hypothetical;
+}
+
 /** Coupe-circuit : `G2G_AUTO_DELIVERY` doit valoir explicitement « 1 ». */
 export function g2gAutoDeliveryEnabled(raw: string | undefined | null): boolean {
   return (raw ?? "").trim() === "1";
