@@ -464,6 +464,73 @@ Séquence de test recommandée :
 
 ## Phase 2 (à construire, sur validation explicite)
 
+### État : répétition générale (aucun achat câblé)
+
+Le moteur de décision est en place et s'exécute sur chaque
+`order.api_delivery` : il calcule la décision qu'il **prendrait**, la
+consigne dans `g2g_deliveries` et l'annonce dans les logs et sur
+Telegram. **Il n'achète rien.** L'achat fournisseur et la livraison ne
+sont pas encore câblés.
+
+Deux variables gouvernent tout :
+
+| Variable | Rôle |
+| --- | --- |
+| `G2G_AUTO_DELIVERY` | coupe-circuit : doit valoir exactement `1`. Sinon, aucun achat n'est possible, même avec une correspondance activée. |
+| `G2G_FEE_PERCENT` | commission G2G + frais de retrait, en %. **Aucun défaut** : sans elle, la décision est toujours un refus. |
+
+Cette exigence est volontaire. Une commission sous-évaluée ou « devinée »
+ferait acheter à perte de façon automatique et silencieuse.
+
+### Les décisions possibles
+
+| Décision | Signification |
+| --- | --- |
+| `proceed` | marge démontrée → achat autorisé (rien n'est encore acheté) |
+| `mapping_disabled` | correspondance non activée |
+| `kill_switch_off` | `G2G_AUTO_DELIVERY` absent |
+| `fee_not_configured` | commission G2G non déclarée |
+| `missing_price` | prix de vente illisible |
+| `topup_forbidden` | l'offre attend un rechargement par ID joueur, jamais un code |
+| `code_label_missing` | G2G n'indique pas le format de code attendu |
+| `cost_unknown` | coût fournisseur inconnu (SKU jamais vérifié) — jamais assimilé à 0 |
+| `currency_mismatch` | offre non libellée en USD |
+| `quantity_invalid` | quantité hors bornes (1 à 100) |
+| `cap_exceeded` | coût total supérieur au plafond du mapping |
+| `margin_too_low` | marge nette insuffisante |
+
+Tout est `fail-closed` : dans le doute, on ne dépense pas. Un achat
+engagé par erreur est irréversible, alors qu'une commande non honorée se
+traite à la main.
+
+### Comment répéter sans risque
+
+1. Renseigner **`G2G_FEE_PERCENT`** dans Vercel (Environment Variables),
+   puis redéployer. **Ne pas** renseigner `G2G_AUTO_DELIVERY`.
+2. `/admin/digital` → **« Envoyer un événement de test »**.
+3. Lire `decision` (ce qui se passe réellement) et
+   `hypothetical_decision` (ce qui se passerait une fois activé).
+
+Les deux réponses à connaître :
+
+- **`fee_not_configured`** — la commission n'est pas encore déclarée.
+  Tant qu'elle manque, aucune marge n'est calculable : c'est le seul
+  réglage à faire pour que la répétition devienne instructive.
+- **`kill_switch_off`** — comportement normal et souhaité. La décision
+  hypothétique, elle, est déjà significative : elle dit ce qui se
+  passerait une fois l'automation activée.
+
+Le coupe-circuit ne masque **pas** les autres motifs : une offre non
+rentable annonce `margin_too_low`, pas `kill_switch_off`. C'est
+volontaire — pendant la répétition, on veut voir la vraie raison.
+
+| Réglage | Pendant la répétition |
+| --- | --- |
+| `G2G_FEE_PERCENT` | **à renseigner** (information, aucune dépense) |
+| `G2G_AUTO_DELIVERY` | **à laisser vide** (c'est la sécurité) |
+
+### Briques restantes
+
 | Brique | Description |
 | --- | --- |
 | Achat JIT | `order.api_delivery` → lire l'offre G2G (`unit_price`, `currency`, `code_label`) → contrôle de marge et de plafond → achat FazerCards avec `Idempotency-Key = g2g-<delivery_id>` |
