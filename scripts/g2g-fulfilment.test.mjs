@@ -169,6 +169,36 @@ test("une offre illisible ne se déguise pas en coupe-circuit", () => {
   assert.match(route, /offer_illisible=1/);
 });
 
+test("un refus de marge reste relisible : les chiffres sont conservés", () => {
+  // Un `margin_too_low` sans les montants qui l'expliquent obligerait à
+  // rouvrir les logs. Le verdict doit se suffire à lui-même.
+  const plan = planG2gFulfilment({ ...OK, minMarginPercent: 95 });
+  assert.equal(plan.decision, "margin_too_low");
+  assert.equal(plan.feePercent, OK.feePercent);
+  assert.equal(plan.unitPrice, OK.offerUnitPrice);
+  assert.equal(plan.supplierCostUsd, OK.supplierCostUsd);
+  assert.ok(plan.netRevenueUsd > 0, "le revenu net doit être calculé");
+  assert.ok(plan.netMarginPercent > 0, "la marge doit être calculée");
+});
+
+test("le coût fournisseur ne quitte jamais le serveur", () => {
+  // La réponse du webhook revient à G2G sur un vrai événement : notre prix
+  // d'achat est un avantage concurrentiel, il ne doit pas y figurer.
+  const route = read("src/app/api/webhooks/g2g/route.ts");
+  assert.match(route, /unit_price_usd: plan\?\.unitPrice/);
+  assert.match(route, /fee_percent: plan\?\.feePercent/);
+  // On isole le bloc de réponse final, seul endroit qui quitte le serveur :
+  // la table de journalisation, elle, a parfaitement le droit de stocker
+  // le coût.
+  const start = route.lastIndexOf("return noStoreJson({");
+  assert.ok(start > 0, "bloc de réponse introuvable");
+  const responseBlock = route.slice(start);
+  assert.doesNotMatch(responseBlock, /supplier/i);
+  // …en revanche il doit rester visible pour l'admin (logs + Telegram).
+  assert.match(route, /cout=\$\{plan\.supplierCostUsd\}/);
+  assert.match(route, /coût \$\{plan\.supplierCostUsd\}/);
+});
+
 test("l'ordre des refus dit la vraie raison", () => {
   // Une offre à la fois désactivée ET hors marge doit annoncer la cause
   // structurelle : chercher une marge à corriger serait perdre du temps.

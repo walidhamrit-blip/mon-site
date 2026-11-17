@@ -238,7 +238,7 @@ export async function POST(req: Request) {
   // Journal de la décision : identifiants, montants et verdict uniquement.
   // Jamais de code, jamais de donnée acheteur, jamais de secret.
   console.info(
-    `[g2g][webhook] order.api_delivery order=${event.orderId} offer=${event.offerId} delivery=${event.deliveryId} qty=${event.requestedQty} mapping=${mappingFound ? (mappingEnabled ? "enabled" : "disabled") : "absent"} decision=${decision}${plan ? ` hypothetique=${plan.decision}` : ""}${plan ? ` marge=${plan.netMarginPercent}%` : ""}${offerUnreadable ? ` offer_illisible=1` : ""} coupe_circuit=${autoDeliveryEnabled ? "on" : "off"} achat=aucun`,
+    `[g2g][webhook] order.api_delivery order=${event.orderId} offer=${event.offerId} delivery=${event.deliveryId} qty=${event.requestedQty} mapping=${mappingFound ? (mappingEnabled ? "enabled" : "disabled") : "absent"} decision=${decision}${plan ? ` hypothetique=${plan.decision}` : ""}${plan ? ` prix=${plan.unitPrice} cout=${plan.supplierCostUsd} commission=${plan.feePercent}% net=${plan.netRevenueUsd} marge=${plan.netMarginPercent}%` : ""}${offerUnreadable ? ` offer_illisible=1` : ""} coupe_circuit=${autoDeliveryEnabled ? "on" : "off"} achat=aucun`,
   );
 
   try {
@@ -285,6 +285,12 @@ export async function POST(req: Request) {
         plan
           ? `Décision : ${decision} — ${plan.summary}`
           : `Décision : ${decision}${offerUnreadable ? " (offre illisible)" : ""}`,
+        plan
+          ? `Prix ${plan.unitPrice} $ · coût ${plan.supplierCostUsd} $ · commission ${plan.feePercent} %`
+          : null,
+        plan
+          ? `Net ${plan.netRevenueUsd} $ → marge ${plan.netMarginPercent} % (seuil ${mapping?.minMarginPercent ?? "?"} %)`
+          : null,
         plan && !autoDeliveryEnabled
           ? `Si l'automation était activée : ${plan.decision} (marge ${plan.netMarginPercent} %)`
           : null,
@@ -313,5 +319,13 @@ export async function POST(req: Request) {
     /** Ce qui se serait passé si le coupe-circuit était activé. */
     hypothetical_decision: plan?.decision ?? null,
     net_margin_percent: plan?.netMarginPercent ?? null,
+    /**
+     * Prix de vente relu chez G2G et commission appliquée — de quoi
+     * relire un verdict sans ouvrir les logs. Le coût fournisseur est
+     * délibérément absent : cette réponse revient à G2G sur un vrai
+     * événement, et notre prix d'achat ne les regarde pas.
+     */
+    unit_price_usd: plan?.unitPrice ?? null,
+    fee_percent: plan?.feePercent ?? null,
   });
 }

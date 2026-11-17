@@ -87,6 +87,8 @@ export interface G2gFulfilmentPlan {
   netRevenueUsd: number;
   totalCostUsd: number;
   netMarginPercent: number;
+  /** Commission appliquée, pour relire un verdict sans fouiller les logs. */
+  feePercent: number;
   /** Phrase courte, exploitable dans un log ou une alerte Telegram. */
   summary: string;
 }
@@ -99,6 +101,7 @@ const EMPTY_PLAN: Omit<G2gFulfilmentPlan, "decision" | "summary"> = {
   netRevenueUsd: 0,
   totalCostUsd: 0,
   netMarginPercent: 0,
+  feePercent: 0,
 };
 
 function refuse(
@@ -239,6 +242,7 @@ export function planG2gFulfilment(input: G2gFulfilmentInput): G2gFulfilmentPlan 
       netRevenueUsd: verdict.netRevenueUsd,
       totalCostUsd: verdict.totalCostUsd,
       netMarginPercent: verdict.netMarginPercent,
+      feePercent: fee,
     };
   }
 
@@ -251,6 +255,7 @@ export function planG2gFulfilment(input: G2gFulfilmentInput): G2gFulfilmentPlan 
     netRevenueUsd: verdict.netRevenueUsd,
     totalCostUsd: verdict.totalCostUsd,
     netMarginPercent: Math.round(verdict.netMarginPercent * 100) / 100,
+    feePercent: fee,
     summary: `Marge nette ${verdict.netMarginPercent.toFixed(1)} % sur ${qty} unité(s) : achat autorisé.`,
   };
 }
