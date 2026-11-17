@@ -111,6 +111,10 @@ interface WebhookTestResult {
   httpStatus: number | null;
   targetUrl: string;
   deliveryId: string;
+  /** Offre réellement testée — indispensable pour lire un `mapping: absent`. */
+  offerId?: string;
+  /** Vrai si aucune offre n'était disponible : le test a porté sur un leurre. */
+  usedFallbackOffer?: boolean;
   response: unknown;
   networkError?: string | null;
 }
@@ -233,6 +237,15 @@ export function G2gPanel() {
    * Envoie un `order.api_delivery` synthétique et signé à notre propre
    * webhook, puis affiche le verdict. Aucun achat, aucune livraison.
    */
+  /**
+   * L'offre testée : celle du formulaire, sinon la première correspondance.
+   *
+   * Après un enregistrement, le formulaire est vidé — envoyer ce champ vide
+   * faisait tester un `offer_id` fictif, donc inconnaissable, et afficher
+   * `mapping: "absent"` alors que la correspondance était bonne.
+   */
+  const testOfferId = form.offerId.trim() || data?.mappings[0]?.offerId || "";
+
   const runWebhookTest = useCallback(async () => {
     setTesting(true);
     setError("");
@@ -241,7 +254,7 @@ export function G2gPanel() {
       const response = await fetch("/api/admin/g2g/webhook-test", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ offerId: form.offerId }),
+        body: JSON.stringify({ offerId: testOfferId }),
         cache: "no-store",
       });
       const result = (await response.json()) as WebhookTestResult & {
@@ -257,7 +270,7 @@ export function G2gPanel() {
     } finally {
       setTesting(false);
     }
-  }, [form.offerId]);
+  }, [testOfferId]);
 
   const field = (key: keyof FormState, value: string | boolean) =>
     setForm((previous) => ({ ...previous, [key]: value }));
@@ -572,6 +585,10 @@ export function G2gPanel() {
                       <dd className="inline break-all">{webhookTest.targetUrl}</dd>
                     </div>
                     <div>
+                      <dt className="inline text-stone-500">offre testée :</dt>{" "}
+                      <dd className="inline break-all">{webhookTest.offerId || "—"}</dd>
+                    </div>
+                    <div>
                       <dt className="inline text-stone-500">delivery_id :</dt>{" "}
                       <dd className="inline break-all">{webhookTest.deliveryId}</dd>
                     </div>
@@ -585,6 +602,15 @@ export function G2gPanel() {
                   {WEBHOOK_TEST_HINTS[webhookTest.verdict] ? (
                     <p className="mt-1.5 font-sans text-stone-700">
                       {WEBHOOK_TEST_HINTS[webhookTest.verdict]}
+                    </p>
+                  ) : null}
+                  {webhookTest.usedFallbackOffer ? (
+                    <p className="mt-1.5 font-sans font-semibold text-amber-800">
+                      ⚠️ Aucune offre à tester : l&apos;événement portait sur un identifiant
+                      fictif, donc <code className="font-mono">mapping: absent</code> est
+                      attendu et ne signale aucune erreur. Créez une correspondance, ou
+                      saisissez un <code className="font-mono">offer_id</code> dans le
+                      formulaire, pour tester une offre réelle.
                     </p>
                   ) : null}
                   <pre className="mt-1.5 overflow-x-auto rounded border border-stone-200 bg-white p-1.5 font-mono text-[10px] text-stone-700">
