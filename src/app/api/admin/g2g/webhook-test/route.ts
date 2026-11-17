@@ -1,4 +1,7 @@
 import { NextResponse } from "next/server";
+import { desc } from "drizzle-orm";
+import { db, ensureSchema } from "@/db";
+import { g2gOfferMappings } from "@/db/schema";
 import { isAdminAuthenticated } from "@/lib/auth";
 import { g2gConfig, g2gWebhookConfigured } from "@/lib/g2g";
 import {
@@ -147,9 +150,38 @@ export async function POST(req: Request) {
     userId: cfg.userId,
     timestamp,
   });
+  /**
+   * À défaut d'offre fournie, on retombe sur la correspondance la plus
+   * récente plutôt que sur un identifiant fictif.
+   *
+   * Sans ça, un test lancé juste après un enregistrement — moment où le
+   * formulaire vient d'être vidé — portait sur un `offer_id` inventé,
+   * donc ne correspondait à aucune ligne, et renvoyait `mapping: "absent"`.
+   * Un faux négatif : on croyait la correspondance non reconnue alors
+   * qu'elle était parfaitement bonne.
+   */
+  let testedOfferId = offerId;
+  if (!testedOfferId) {
+    try {
+      await ensureSchema();
+      const rows = await db
+        .select({ offerId: g2gOfferMappings.offerId })
+        .from(g2gOfferMappings)
+        .orderBy(desc(g2gOfferMappings.createdAt))
+        .limit(1);
+      testedOfferId = rows[0]?.offerId ?? "";
+    } catch {
+      // Base indisponible : on continue avec le repli — le test porte
+      // d'abord sur la chaîne de signature, qui reste valable.
+      testedOfferId = "";
+    }
+  }
+  const testedOfferIdFinal = testedOfferId || "G0000000000TEST";
+  const usedFallback = testedOfferIdFinal === "G0000000000TEST";
+
   const body = g2gBuildTestDeliveryEvent({
     sellerId: cfg.userId,
-    offerId: offerId || "G0000000000TEST",
+    offerId: testedOfferIdFinal,
     timestamp,
   });
 
@@ -192,6 +224,13 @@ export async function POST(req: Request) {
     targetUrl: cfg.webhookUrl,
     deliveryId: `TESTD${timestamp}`,
     timestamp,
+    /**
+     * Renvoyé pour que l'interface montre QUELLE offre a été testée : sans
+     * ça, un `mapping: "absent"` reste indéchiffrable — on ne peut pas voir
+     * si le test portait sur la bonne offre.
+     */
+    offerId: testedOfferIdFinal,
+    usedFallbackOffer: usedFallback,
     response: responseBody,
     networkError,
   });

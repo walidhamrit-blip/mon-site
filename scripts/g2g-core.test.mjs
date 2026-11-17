@@ -501,3 +501,38 @@ test("aucun secret G2G en clair dans le dépôt", () => {
   assert.match(panel, /api_qty = 0/);
   assert.match(read("src/app/admin/(panel)/digital/page.tsx"), /<G2gPanel \/>/);
 });
+
+/* ------------------------------------------------------------------ *
+ * Régression : un test ne doit pas porter sur une offre inventée.
+ *
+ * L'offre venait du formulaire, vidé juste après un enregistrement. Le
+ * test partait donc sur un `offer_id` fictif, ne correspondait à rien,
+ * et affichait `mapping: "absent"` — un faux négatif qui laissait croire
+ * la correspondance non reconnue alors qu'elle était parfaite.
+ * ------------------------------------------------------------------ */
+
+test("le test du webhook retombe sur une offre réelle et dit laquelle", () => {
+  const route = read("src/app/api/admin/g2g/webhook-test/route.ts");
+  // Repli : la correspondance la plus récente, pas un identifiant fictif.
+  assert.match(route, /from\(g2gOfferMappings\)/);
+  assert.match(route, /orderBy\(desc\(g2gOfferMappings\.createdAt\)\)/);
+  assert.match(route, /limit\(1\)/);
+  // L'offre réellement testée est renvoyée : sans elle, un
+  // `mapping: absent` reste indéchiffrable.
+  assert.match(route, /offerId: testedOfferIdFinal,/);
+  assert.match(route, /usedFallbackOffer: usedFallback,/);
+  // Le repli reste explicite s'il n'y a vraiment aucune correspondance.
+  assert.match(route, /G0000000000TEST/);
+});
+
+test("le panneau propose une offre réelle et prévient si le test est factice", () => {
+  const panel = read("src/app/admin/(panel)/digital/g2g-panel.tsx");
+  // Le formulaire étant vidé après enregistrement, on retombe sur la
+  // première correspondance existante.
+  assert.match(panel, /form\.offerId\.trim\(\) \|\| data\?\.mappings\[0\]\?\.offerId/);
+  // L'offre testée est affichée…
+  assert.match(panel, /offre testée :/);
+  // …et un test sans offre réelle est signalé comme tel.
+  assert.match(panel, /usedFallbackOffer \? \(/);
+  assert.match(panel, /identifiant\s+fictif/);
+});
