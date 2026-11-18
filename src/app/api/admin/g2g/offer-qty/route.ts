@@ -40,9 +40,9 @@ export async function PATCH(req: Request) {
     return noStoreJson({ ok: false, error: "unauthorized" }, 401);
   }
 
-  let input: { offerId?: unknown; api_qty?: unknown };
+  let input: { offerId?: unknown; api_qty?: unknown; apiQty?: unknown };
   try {
-    input = (await req.json()) as { offerId?: unknown; api_qty?: unknown };
+    input = (await req.json()) as { offerId?: unknown; api_qty?: unknown; apiQty?: unknown };
   } catch {
     return noStoreJson({ ok: false, error: "invalid_json" }, 400);
   }
@@ -59,7 +59,7 @@ export async function PATCH(req: Request) {
     );
   }
 
-  const apiQty = Number(input.api_qty);
+  const apiQty = Number(input.apiQty ?? input.api_qty);
   if (!Number.isInteger(apiQty) || apiQty < 0 || apiQty > 10000) {
     return noStoreJson(
       { ok: false, error: "invalid_api_qty", message: "api_qty doit être un entier entre 0 et 10000." },
