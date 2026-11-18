@@ -16,7 +16,9 @@ import {
   applyKillSwitch,
   g2gAutoDeliveryEnabled,
   g2gFeePercent,
+  g2gIdempotencyKey,
   planG2gFulfilment,
+  shouldPurchaseNow,
 } from "../src/lib/g2g-fulfilment-core.ts";
 
 const root = fileURLToPath(new URL("..", import.meta.url));
@@ -197,6 +199,113 @@ test("le coût fournisseur ne quitte jamais le serveur", () => {
   // …en revanche il doit rester visible pour l'admin (logs + Telegram).
   assert.match(route, /cout=\$\{plan\.supplierCostUsd\}/);
   assert.match(route, /coût \$\{plan\.supplierCostUsd\}/);
+});
+
+test("la clé d'idempotence est déterministe et bornée", () => {
+  // Un événement rejoué doit produire la MÊME clé, sinon le fournisseur
+  // prélèverait deux fois.
+  assert.equal(g2gIdempotencyKey("TESTD123"), g2gIdempotencyKey("TESTD123"));
+  assert.equal(g2gIdempotencyKey("TESTD123"), "g2g-TESTD123");
+  // Caractères douteux neutralisés, longueur maîtrisée.
+  assert.equal(g2gIdempotencyKey("ab cd/ef"), "g2g-ab-cd-ef");
+  assert.ok(g2gIdempotencyKey("x".repeat(500)).length <= 64);
+  // Sans identifiant exploitable : pas de clé, donc pas d'achat.
+  for (const bad of ["", "   ", "///", null, undefined]) {
+    assert.equal(g2gIdempotencyKey(bad), null, `« ${bad} » doit être refusé`);
+  }
+});
+
+test("le coupe-circuit empêche RÉELLEMENT la dépense", () => {
+  // C'est le test le plus important du fichier : tout le reste peut
+  // faillir, celui-ci protège le compte en banque.
+  const wouldBuy = planG2gFulfilment({ ...OK, autoDeliveryEnabled: true });
+  assert.equal(wouldBuy.decision, "proceed");
+  assert.equal(shouldPurchaseNow(wouldBuy, true), true, "activé : on achète");
+  assert.equal(shouldPurchaseNow(wouldBuy, false), false, "BAissé : on n'achète PAS");
+  // Un plan calculé « comme si » ne doit jamais suffire à lui seul :
+  // c'est la décision réelle, coupe-circuit appliqué, qui compte.
+  assert.equal(applyKillSwitch(wouldBuy.decision, false), "kill_switch_off");
+  assert.equal(shouldPurchaseNow(planG2gFulfilment({ ...OK, autoDeliveryEnabled: false }), true), false);
+});
+
+test("aucun autre motif ne déclenche une dépense", () => {
+  for (const patch of [
+    { minMarginPercent: 95 }, // marge insuffisante
+    { maxCostUsd: 1 }, // plafond dépassé
+    { offerDeliveryType: ["top_up"] }, // top-up interdit
+    { supplierCostUsd: 0 }, // coût inconnu
+    { offerCurrency: "EUR" }, // devise non gérée
+    { requestedQty: 0 }, // quantité invalide
+  ]) {
+    const plan = planG2gFulfilment({ ...OK, ...patch, autoDeliveryEnabled: true });
+    assert.notEqual(plan.decision, "proceed");
+    assert.equal(shouldPurchaseNow(plan, true), false, `${plan.decision} ne doit pas acheter`);
+  }
+  // Pas de plan du tout (offre illisible) : pas d'achat non plus.
+  assert.equal(shouldPurchaseNow(null, true), false);
+});
+
+test("l'achat est verrouillé derrière trois portes avant tout appel réseau", () => {
+  const src = read("src/lib/g2g-purchase.ts");
+  // 1. la porte de décision, 2. les identifiants SKU, 3. la clé d'idempotence
+  // — toutes avant le premier appel au fournisseur.
+  const firstCall = src.indexOf("fazercardsGiftCardOrder(");
+  assert.ok(firstCall > 0, "appel fournisseur introuvable");
+  for (const gate of ["shouldPurchaseNow(", "missing_sku", "invalid_key"]) {
+    const at = src.indexOf(gate);
+    assert.ok(at > 0 && at < firstCall, `${gate} doit précéder l'appel`);
+  }
+  // La clé d'idempotence est bien transmise.
+  assert.match(src, /idempotencyKey,/);
+});
+
+test("le solde est vérifié avant de dépenser, sans condamner la ligne", () => {
+  const src = read("src/lib/g2g-purchase.ts");
+  const balanceCall = src.indexOf("fazercardsBalance(");
+  const claim = src.indexOf('status: "purchasing"');
+  const orderCall = src.indexOf("fazercardsGiftCardOrder(");
+  assert.ok(balanceCall > 0, "vérification de solde absente");
+  assert.ok(balanceCall < claim, "le solde doit précéder la prise de possession");
+  assert.ok(balanceCall < orderCall, "le solde doit précéder l'achat");
+  // Un solde insuffisant laisse la ligne « planned » : c'est transitoire,
+  // on veut pouvoir reprendre après rechargement.
+  const start = src.indexOf("if (balanceUsd < neededUsd)");
+  // À partir de `start` : sinon on retombe sur la déclaration du type,
+  // qui figure en haut de fichier.
+  const insuff = src.indexOf('outcome: "insufficient_balance"', start);
+  assert.ok(start > 0, "bloc « solde insuffisant » introuvable");
+  const block = src.slice(start, insuff);
+  assert.match(block, /nextAttemptAt/, "une reprise doit être programmée");
+  assert.doesNotMatch(block, /"purchasing"/, "ne doit pas prendre possession");
+  // Solde illisible ⇒ on ne commande pas à l'aveugle.
+  assert.match(src, /outcome: "balance_unknown"/);
+});
+
+test("la prise de possession est atomique et écrite avant l'appel", () => {
+  const src = read("src/lib/g2g-purchase.ts");
+  // Un UPDATE conditionnel : seul un traitement peut réclamer la ligne.
+  assert.match(src, /inArray\(g2gDeliveries\.status, \["planned"\]\)/);
+  // Le statut « purchasing » est posé AVANT l'appel réseau : si le
+  // processus meurt, on sait que de l'argent a pu partir.
+  const purchasing = src.indexOf('status: "purchasing"');
+  assert.ok(purchasing > 0 && purchasing < src.indexOf("fazercardsGiftCardOrder("));
+  // Un rejeu ne repart pas dépenser.
+  assert.match(src, /already_handled/);
+});
+
+test("le webhook n'achète que sur décision « proceed », jamais en amont", () => {
+  const route = read("src/app/api/webhooks/g2g/route.ts");
+  // L'appel est conditionné, et placé APRÈS la journalisation.
+  assert.match(route, /if \(decision === "proceed"\)/);
+  const guard = route.indexOf('if (decision === "proceed")');
+  const journal = route.indexOf("db\n      .insert(g2gDeliveries)");
+  const purchase = route.indexOf("purchaseG2gDelivery({");
+  assert.ok(journal > 0 && purchase > 0, "ordre journal/achat introuvable");
+  assert.ok(journal < guard, "le journal doit précéder l'achat");
+  assert.ok(guard < purchase, "l'achat doit être conditionné");
+  // Une panne d'achat ne doit jamais transformer la réception en échec,
+  // sinon G2G rejouerait l'événement sans fin.
+  assert.match(route, /\[g2g\]\[webhook\] achat impossible/);
 });
 
 test("l'ordre des refus dit la vraie raison", () => {

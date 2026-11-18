@@ -24,6 +24,7 @@ import {
   reserveWebhookEvent,
   settleWebhookEvent,
 } from "@/lib/delivery-queue";
+import { purchaseG2gDelivery, type G2gPurchaseOutcome } from "@/lib/g2g-purchase";
 import { notifyTelegramAdmin } from "@/lib/telegram";
 
 /**
@@ -274,10 +275,50 @@ export async function POST(req: Request) {
     );
   }
 
+  /**
+   * Achat juste-à-temps (brique 1 de la phase 2).
+   *
+   * La journalisation précède volontairement cet appel : la ligne doit
+   * exister pour pouvoir être réclamée atomiquement.
+   *
+   * En pratique, ceci ne dépense rien tant que `G2G_AUTO_DELIVERY` n'est
+   * pas à « 1 » — la porte `shouldPurchaseNow()` exige que la décision
+   * RÉELLE soit `proceed`, ce qui est impossible coupe-circuit baissé.
+   */
+  let purchase: G2gPurchaseOutcome | null = null;
+  if (decision === "proceed") {
+    try {
+      purchase = await purchaseG2gDelivery({
+        deliveryId: event.deliveryId,
+        orderId: event.orderId,
+        offerId: event.offerId,
+        requestedQty: event.requestedQty,
+        categoryId: mapping?.categoryId,
+        cardId: mapping?.supplierSkuId,
+        plan,
+        autoDeliveryEnabled,
+      });
+      console.info(
+        `[g2g][webhook] achat delivery=${event.deliveryId} issue=${purchase.outcome}${
+          purchase.outcome === "purchased" ? ` ref=${purchase.supplierOrderRef}` : ""
+        }`,
+      );
+    } catch (error) {
+      // Ne jamais propager : l'événement a été reçu et tracé. Mieux vaut
+      // une alerte qu'un 503 qui ferait rejouer G2G sans fin.
+      console.error(
+        "[g2g][webhook] achat impossible :",
+        error instanceof Error ? error.message : error,
+      );
+    }
+  }
+
   try {
     await notifyTelegramAdmin(
       [
-        "🛰️ G2G — événement reçu (aucun achat automatique)",
+        purchase?.outcome === "purchased"
+          ? "💳 G2G — ACHAT EFFECTUÉ, livraison à faire"
+          : "🛰️ G2G — événement reçu (aucun achat automatique)",
         `Commande : ${event.orderId}`,
         `Offre : ${event.offerId}`,
         `Livraison : ${event.deliveryId} · qté ${event.requestedQty}`,
@@ -294,7 +335,28 @@ export async function POST(req: Request) {
         plan && !autoDeliveryEnabled
           ? `Si l'automation était activée : ${plan.decision} (marge ${plan.netMarginPercent} %)`
           : null,
-        "Action : garder api_qty = 0 et traiter manuellement si une vente est en cours.",
+        purchase
+          ? `Achat : ${purchase.outcome}${
+              purchase.outcome === "purchased" ? ` (réf. ${purchase.supplierOrderRef})` : ""
+            }`
+          : null,
+        // De l'argent est sorti sans livraison automatique : c'est le seul
+        // cas qui exige une intervention humaine immédiate.
+        purchase?.outcome === "purchased"
+          ? "⚠️ À LIVRER À LA MAIN — la livraison automatique n'est pas encore câblée."
+          : null,
+        purchase?.outcome === "failed"
+          ? `⚠️ Échec d'achat : ${purchase.reason}`
+          : null,
+        purchase?.outcome === "insufficient_balance"
+          ? `⚠️ Solde fournisseur insuffisant : ${purchase.balanceUsd} $ pour ${purchase.neededUsd} $ nécessaires. Recharger FazerCards.`
+          : null,
+        purchase?.outcome === "balance_unknown"
+          ? `⚠️ Solde fournisseur illisible : ${purchase.reason} — aucun achat tenté.`
+          : null,
+        purchase?.outcome === "purchased"
+          ? "Action : récupérer le code chez FazerCards et livrer la commande sur G2G."
+          : "Action : garder api_qty = 0 et traiter manuellement si une vente est en cours.",
       ]
         .filter((line): line is string => Boolean(line))
         .join("\n"),
@@ -327,5 +389,8 @@ export async function POST(req: Request) {
      */
     unit_price_usd: plan?.unitPrice ?? null,
     fee_percent: plan?.feePercent ?? null,
+    /** Toujours `false` tant que l'achat n'est pas effectivement câblé. */
+    purchased: purchase?.outcome === "purchased",
+    purchase_outcome: purchase?.outcome ?? null,
   });
 }
