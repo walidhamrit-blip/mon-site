@@ -530,6 +530,27 @@ volontaire — pendant la répétition, on veut voir la vraie raison.
 | `G2G_FEE_PERCENT` | **à renseigner** (information, aucune dépense) |
 | `G2G_AUTO_DELIVERY` | **à laisser vide** (c'est la sécurité) |
 
+### État des briques
+
+| Brique | État |
+| --- | --- |
+| Achat JIT | ✅ **construit** (brique 1) |
+| File de livraison | ⬜ à construire |
+| Livraison des codes | ⬜ à construire |
+| Stock & prix (cron) | ⬜ à construire |
+| Garde-fous | 🟡 partiel (coupe-circuit, alertes, interdiction top-up en place) |
+
+### ⚠️ Ne pas activer l'automation maintenant
+
+L'achat est câblé, **la livraison ne l'est pas**. Passer
+`G2G_AUTO_DELIVERY` à `1` aujourd'hui déclencherait des achats réels dont
+le code ne serait jamais transmis à l'acheteur : commandes payées, non
+honorées, litiges.
+
+Tant que la brique « livraison des codes » n'est pas déployée,
+`G2G_AUTO_DELIVERY` doit rester **vide**. Si un achat devait malgré tout
+aboutir, une alerte Telegram « ⚠️ À LIVRER À LA MAIN » est émise.
+
 ### Briques restantes
 
 | Brique | Description |

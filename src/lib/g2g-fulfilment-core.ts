@@ -261,6 +261,54 @@ export function planG2gFulfilment(input: G2gFulfilmentInput): G2gFulfilmentPlan 
 }
 
 /**
+ * Préfixe des clés d'idempotence envoyées au fournisseur.
+ *
+ * Le préfixe `g2g-` distingue nos achats automatisés des commandes de la
+ * boutique, ce qui permet de les retrouver chez le fournisseur.
+ */
+const G2G_IDEMPOTENCY_PREFIX = "g2g-";
+
+/**
+ * Clé d'idempotence dérivée du `delivery_id` G2G.
+ *
+ * Déterministe par construction : le même `delivery_id` produit toujours la
+ * même clé. C'est ce qui rend un événement rejoué inoffensif — le
+ * fournisseur reconnaît la clé et ne prélève qu'une fois.
+ *
+ * Renvoie `null` si l'identifiant est inexploitable : sans clé fiable, on
+ * ne doit pas acheter.
+ */
+export function g2gIdempotencyKey(deliveryId: string | undefined | null): string | null {
+  const cleaned = (deliveryId ?? "")
+    .trim()
+    .replace(/[^A-Za-z0-9_-]+/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-|-$/g, "");
+  if (!cleaned) return null;
+  // 64 caractères : assez pour l'identifiant G2G, et borné pour l'en-tête.
+  return (G2G_IDEMPOTENCY_PREFIX + cleaned).slice(0, 64);
+}
+
+/**
+ * LA question qui engage de l'argent : doit-on acheter maintenant ?
+ *
+ * Toute dépense doit passer par cette fonction. Elle est le seul endroit
+ * où l'on croise le verdict du moteur avec l'état réel du coupe-circuit —
+ * donc le seul endroit où une erreur coûterait de l'argent.
+ *
+ * Le plan est calculé « comme si » l'automation était activée (pour rester
+ * lisible pendant la répétition) : on lui réapplique donc le coupe-circuit
+ * ici. Un plan `proceed` avec le coupe-circuit baissé ne déclenche rien.
+ */
+export function shouldPurchaseNow(
+  plan: G2gFulfilmentPlan | null,
+  autoDeliveryEnabled: boolean,
+): boolean {
+  if (!plan) return false;
+  return applyKillSwitch(plan.decision, autoDeliveryEnabled) === "proceed";
+}
+
+/**
  * Commission G2G déclarée côté serveur (`G2G_FEE_PERCENT`).
  *
  * Renvoie `null` — donc un refus — si la valeur est absente ou inexploitable.
