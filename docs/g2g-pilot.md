@@ -541,8 +541,8 @@ volontaire — pendant la répétition, on veut voir la vraie raison.
 | --- | --- |
 | Achat JIT | ✅ déployé (PR #207) |
 | File de livraison | ✅ déployé (PR #209) |
-| Pilotage single-offer | 🟡 en cours — une offre en `api_qty = 1`, coupe-circuit armé |
-| Stock & prix (cron) | ⬜ à construire |
+| Pilotage single-offer | ✅ déployé (PR #210) — attend activation (`api_qty = 1`, `G2G_AUTO_DELIVERY = 1`) |
+| Stock & prix (cron) | ✅ construit (brique 4) — attend activation du cron sur Vercel |
 | Garde-fous | 🟡 partiel (coupe-circuit, alertes, interdiction top-up en place) |
 
 ### Activation de l'automation (brique 3)
