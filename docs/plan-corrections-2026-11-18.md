@@ -6,7 +6,7 @@
 **Hors périmètre (non accessible depuis cet environnement) :** base de production, logs Vercel, Search Console, analytics réels, site live.
 
 > **Mise à jour du 18/11/2026 :** D1 (**90 USDT**) et D2 (**Better Stack**)
-> validés ; **C-01 à C-04 appliqués** (C-04 : code prêt, DSN à ajouter).
+> validés ; **C-01 à C-04 appliqués et vérifiés en preview**.
 > Prix à source unique, outils de build sans avis bloquant non justifié,
 > frontières d'erreur, instrumentation serveur et SDK Sentry conditionnel —
 > **tests verts**, build et `seo:check` OK. Reste C-05 : créer le compte
@@ -258,7 +258,8 @@ Les avis Next concernent précisément un mécanisme que le site utilise massive
 - Tunnel : route `POST /monitoring` avec liste blanche de DSN (testé : DSN étranger → **403**, sans DSN → **404**). La CSP n'a pas été élargie.
 - `withSentryConfig` n'est activé que si un DSN ou un jeton d'upload existe : sans cela, le build reste nu ; avec DSN factice, le build passe et l'inclusion des fichiers `server-runtime-injection` est correcte (plus d'avertissement au démarrage).
 - Tests : 3 cas ajoutés (désactivation sans DSN, absence de PII, tunnel non ouvert) → `npm run test:resilience` = **9/9**.
-- **Reste à faire (propriétaire) :** créer le projet Sentry, coller `SENTRY_DSN` + `NEXT_PUBLIC_SENTRY_DSN` dans Vercel (Production et Preview), redéployer, puis provoquer une erreur pour vérifier l'arrivée de l'événement.
+- **Vérifié en preview le 18/11/2026 :** `dsnConfigured: true`, `clientInitialized: true`, `eventId e0662133f8764750b838ebbf27da298a`, `flushed: true`. L'événement est bien arrivé dans Sentry (projet `MON-SITE-1`, environnement `preview`). Les routes de diagnostic temporaires ont été supprimées.
+- **Correctif issu du test :** `onRequestError` appelle désormais `Sentry.flush(2000)` après `captureRequestError`. Sans cela, une fonction Vercel peut être gelée dès la réponse et perdre l'événement resté dans le tampon.
 
 ---
 

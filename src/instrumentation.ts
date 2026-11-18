@@ -95,6 +95,9 @@ export async function onRequestError(
     // pas au démarrage de chaque fonction.
     const Sentry = await import("@sentry/nextjs");
     Sentry.captureRequestError(error, request, context);
+    // Sur Vercel, la fonction peut être gelée dès la réponse envoyée : sans
+    // flush explicite, l'événement peut rester dans le tampon et être perdu.
+    await Sentry.flush(2000);
   } catch (reportingError) {
     console.error(
       JSON.stringify({
