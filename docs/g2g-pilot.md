@@ -1,10 +1,15 @@
 # Pilote G2G OpenAPI v2 — procédure de branchement
 
 > Objectif : vendre nos cartes cadeaux et clés de jeux FazerCards sur G2G,
-> **sans acheter de stock d'avance**. Ce document décrit la **phase 1**
-> (brancher la clé, vérifier la signature, recevoir les webhooks, préparer le
-> mapping). L'achat automatique chez FazerCards et la livraison du code à
-> l'acheteur sont la **phase 2** et ne sont PAS encore déployés.
+> **sans acheter de stock d'avance**. Ce document décrit le déploiement
+> progressif de l'automation : phase 1 (branchement, webhook, mapping),
+> puis phase 2 (achat JIT, file de livraison, pilotage single-offer).
+>
+> **Briques 1 et 2 déjà déployées en production** (PR #207 et #209, merged sur main) :
+> - ✅ Achat JIT (`src/lib/g2g-purchase.ts`) — 3 verrous : coupe-circuit, solde fournisseur, idempotence
+> - ✅ File de livraison (`src/lib/g2g-delivery.ts`, cron `/api/cron/g2g-delivery`) — retry avec backoff, escalade Telegram
+>
+> **Brique 3 en cours : pilotage single-offer** — une seule offre passe en `api_qty = 1` avec le coupe-circuit armé, pour valider qu'une vraie vente se déroule sans litige avant d'élargir.
 
 - Compte vendeur : `Walwal78`, **Seller ID / User ID `1003177397`**
 - EKYC **Approved** le 13/11/2026 (ticket G2G `#5944715`)
@@ -534,22 +539,22 @@ volontaire — pendant la répétition, on veut voir la vraie raison.
 
 | Brique | État |
 | --- | --- |
-| Achat JIT | ✅ **construit** (brique 1) |
-| File de livraison | ⬜ à construire |
-| Livraison des codes | ⬜ à construire |
+| Achat JIT | ✅ déployé (PR #207) |
+| File de livraison | ✅ déployé (PR #209) |
+| Pilotage single-offer | 🟡 en cours — une offre en `api_qty = 1`, coupe-circuit armé |
 | Stock & prix (cron) | ⬜ à construire |
 | Garde-fous | 🟡 partiel (coupe-circuit, alertes, interdiction top-up en place) |
 
-### ⚠️ Ne pas activer l'automation maintenant
+### Activation de l'automation (brique 3)
 
-L'achat est câblé, **la livraison ne l'est pas**. Passer
-`G2G_AUTO_DELIVERY` à `1` aujourd'hui déclencherait des achats réels dont
-le code ne serait jamais transmis à l'acheteur : commandes payées, non
-honorées, litiges.
+Les deux briques techniques sont déployées. Pour passer en vente réelle sur **une seule offre** :
 
-Tant que la brique « livraison des codes » n'est pas déployée,
-`G2G_AUTO_DELIVERY` doit rester **vide**. Si un achat devait malgré tout
-aboutir, une alerte Telegram « ⚠️ À LIVRER À LA MAIN » est émise.
+1. Le mapping `G1793906316865GE` doit exister et être `enabled = true` dans `g2g_offer_mappings` (via `/admin/digital` → panneau G2G).
+2. `G2G_FEE_PERCENT` doit être renseigné dans les variables Vercel (déjà fait).
+3. `G2G_AUTO_DELIVERY` doit valoir exactement `"1"` dans les variables Vercel (c'est le coupe-circuit : sans lui, aucun achat n'est possible).
+4. `api_qty = 1` doit être posé sur l'offre chez G2G (via l'endpoint admin `PATCH /api/admin/g2g/offer-qty` ou directement sur g2g.com).
+
+Tant que cette validation single-offer n'est pas concluante, `api_qty` reste à **0** sur toutes les autres offres.
 
 ### Briques restantes
 

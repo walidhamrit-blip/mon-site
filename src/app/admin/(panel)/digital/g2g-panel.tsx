@@ -133,6 +133,13 @@ interface Diagnostic {
   autoDeliveryEnabled: boolean;
 }
 
+interface ApiQtyPatch {
+  offerId: string;
+  apiQty: number;
+  busy: boolean;
+  result: { ok: boolean; message?: string } | null;
+}
+
 interface FormState {
   offerId: string;
   title: string;
@@ -189,6 +196,12 @@ export function G2gPanel() {
   const [probing, setProbing] = useState(false);
   const [testing, setTesting] = useState(false);
   const [webhookTest, setWebhookTest] = useState<WebhookTestResult | null>(null);
+  const [apiQtyPatch, setApiQtyPatch] = useState<ApiQtyPatch>({
+    offerId: "",
+    apiQty: 0,
+    busy: false,
+    result: null,
+  });
 
   const load = useCallback(async () => {
     setBusy(true);
@@ -322,6 +335,45 @@ export function G2gPanel() {
       setError(cause instanceof Error ? cause.message : String(cause));
     } finally {
       setSaving(false);
+    }
+  }
+
+  async function patchApiQty() {
+    setApiQtyPatch((previous) => ({ ...previous, busy: true, result: null }));
+    try {
+      const response = await fetch("/api/admin/g2g/offer-qty", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          offerId: apiQtyPatch.offerId.trim().toUpperCase(),
+          apiQty: apiQtyPatch.apiQty,
+        }),
+        cache: "no-store",
+      });
+      const body = (await response.json()) as {
+        ok?: boolean;
+        message?: string;
+        error?: string;
+        api_qty?: number;
+      };
+      setApiQtyPatch((previous) => ({
+        ...previous,
+        busy: false,
+        result: {
+          ok: Boolean(response.ok && body.ok),
+          message: body.message ?? body.error ?? (response.ok ? "Mis à jour sur G2G." : "Échec de la mise à jour."),
+        },
+      }));
+      if (body.ok) await load();
+    } catch (cause) {
+      setApiQtyPatch((previous) => ({
+        ...previous,
+        busy: false,
+        result: {
+          ok: false,
+          message: cause instanceof Error ? cause.message : String(cause),
+        },
+      }));
     }
   }
 
@@ -715,6 +767,79 @@ export function G2gPanel() {
             Vérifiez la région (Global ou pays exact) et le format attendu par G2G (
             <code className="font-mono">code_label</code> de l&apos;offre) avant d&apos;activer un mapping.
           </p>
+
+          <h3 className="mt-5 text-xs font-bold text-stone-800">
+            5. Pilotage single-offer (brique 3)
+          </h3>
+          <div className="mt-2 rounded-lg border border-stone-200 bg-stone-50 p-3">
+            <p className="text-[11px] text-stone-600">
+              Coupe-circuit <code className="font-mono">G2G_AUTO_DELIVERY</code> :{' '}
+              <span
+                className={`font-mono font-semibold ${data.autoDeliveryEnabled ? "text-emerald-700" : "text-amber-700"}`}
+              >
+                {data.autoDeliveryEnabled ? "ARMÉ (achats possibles)" : "désarmé (aucun achat)"}
+              </span>{' '}
+              . Passez à <code className="font-mono">1</code> dans les variables Vercel pour autoriser les achats.
+            </p>
+            <p className="mt-1 text-[11px] text-stone-600">
+              Passer une offre en <code className="font-mono">api_qty = 1</code> la rend achetable sur G2G : un
+              client peut payer et déclencher un webhook{' '}
+              <code className="font-mono">order.api_delivery</code>. Ne le faire que sur{' '}
+              <strong>une seule offre</strong>, avec le mapping activé et le coupe-circuit armé.
+            </p>
+            <div className="mt-3 grid gap-2 sm:grid-cols-2">
+              <label className="block">
+                <span className={labelClass}>offer_id G2G</span>
+                <input
+                  className={inputClass}
+                  value={apiQtyPatch.offerId}
+                  onChange={(e) =>
+                    setApiQtyPatch((previous) => ({
+                      ...previous,
+                      offerId: e.target.value.toUpperCase(),
+                    }))
+                  }
+                  placeholder="G1793906316865GE"
+                />
+              </label>
+              <label className="block">
+                <span className={labelClass}>api_qty</span>
+                <input
+                  className={inputClass}
+                  type="number"
+                  min={0}
+                  max={10000}
+                  value={apiQtyPatch.apiQty}
+                  onChange={(e) =>
+                    setApiQtyPatch((previous) => ({
+                      ...previous,
+                      apiQty: Number(e.target.value) || 0,
+                    }))
+                  }
+                />
+              </label>
+              <div className="sm:col-span-2">
+                <button
+                  type="button"
+                  onClick={() => void patchApiQty()}
+                  disabled={apiQtyPatch.busy || !apiQtyPatch.offerId}
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-stone-300 px-3 py-1.5 text-xs font-bold text-stone-700 hover:bg-stone-50 disabled:opacity-50"
+                >
+                  {apiQtyPatch.busy ? (
+                    <Loader2 className="h-3 w-3 animate-spin" />
+                  ) : null}
+                  Mettre api_qty à jour sur G2G
+                </button>
+              </div>
+            </div>
+            {apiQtyPatch.result ? (
+              <p
+                className={`mt-2 text-[11px] p-2.5 rounded-lg border ${apiQtyPatch.result.ok ? "border-emerald-200 bg-emerald-50 text-emerald-800" : "border-red-200 bg-red-50 text-red-800"}`}
+              >
+                {apiQtyPatch.result.message}
+              </p>
+            ) : null}
+          </div>
         </>
       ) : null}
     </section>
