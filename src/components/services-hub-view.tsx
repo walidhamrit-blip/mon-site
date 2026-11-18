@@ -5,6 +5,7 @@ import { ArrowUpRight, Check, Clock, Layers, Sparkles } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import { Price } from "@/components/price";
 import { formatMainPrice } from "@/lib/installments";
+import { formatServicePrice, lowestServicePrice } from "@/lib/service-pricing";
 import { renderTemplate } from "@/lib/text-template";
 import { resolveServiceLanding, servicePath, type ServiceLike } from "@/lib/services";
 import { ComparisonStrip } from "@/components/comparison-strip";
@@ -32,6 +33,11 @@ export function ServicesHubView({
   const s = t.servicesHub;
   const pick = <T,>(arValue: T, enValue: T): T => (ar ? arValue : enValue);
 
+  // Prix d'entrée du catalogue : calculé, jamais recopié. Si un tarif change
+  // dans /admin, le hero, la réponse et les cartes suivent ensemble.
+  const lowestPrice = lowestServicePrice(services, 19);
+  const fromLabel = formatServicePrice(lowestPrice, ar ? "ar" : "en");
+
   const price = (id: string, fallback: number) =>
     formatMainPrice(
       services.find((service) => service.id === id)?.priceFromUsd ?? fallback,
@@ -54,7 +60,7 @@ export function ServicesHubView({
       slides: price("slides", 29),
       branding: price("branding", 39),
       landing: price("landing", 59),
-      fix: price("fix-optimize", 15),
+      fix: price("fix-optimize", 90),
     },
   );
 
@@ -111,7 +117,7 @@ export function ServicesHubView({
           </h1>
           <p className="mt-4 max-w-[66ch] text-[15.5px] leading-8 text-[var(--muted-foreground)]">
             {renderTemplate(pick(s.heroTextAr, s.heroTextEn), {
-              from: ar ? "15 دولاراً" : "$15",
+              from: fromLabel,
               delivery: ar ? "24 ساعة" : "24 hours",
             })}
           </p>
@@ -120,7 +126,10 @@ export function ServicesHubView({
               className="mt-2 max-w-[66ch] text-[13px] text-[var(--muted-foreground)]/75"
               dir="ltr"
             >
-              {s.heroSecondaryEn}
+              {renderTemplate(s.heroSecondaryEn, {
+                from: formatServicePrice(lowestPrice, "en"),
+                delivery: "24 hours",
+              })}
             </p>
           )}
 

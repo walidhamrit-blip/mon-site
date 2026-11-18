@@ -151,8 +151,8 @@ export const comparisons: Record<string, ComparisonSeo> = {
       {
         labelAr: "التكلفة الشهرية",
         labelEn: "Monthly cost",
-        usAr: "دفعة واحدة: موقع من $300 + خدمات من $15",
-        usEn: "One-time: website from $300, services from $15",
+        usAr: "دفعة واحدة: موقع من $300، بلا اشتراك شهري",
+        usEn: "One-time: website from $300, no monthly fee",
         themAr: "عادةً $500 – $2,000+ شهرياً حسب السوق والمنافسة",
         themEn: "Typically $500–$2,000+/month depending on market and competition",
         winner: "us",
@@ -233,8 +233,8 @@ export const comparisons: Record<string, ComparisonSeo> = {
       {
         qAr: "كم يكلّف الموقع مقارنة بالحملة الإعلانية؟",
         qEn: "How much does a website cost compared with an ad campaign?",
-        aAr: "موقع نخبة يبدأ من 300 دولار لمرة واحدة، والخدمات السريعة من 15 دولاراً. الحملة الإعلانية النموذجية في هذا المجال 500 إلى 2000 دولار شهرياً — أي ما يعادل تكلفة موقع كامل خلال شهر أو شهرين، ثم تسقط التكلفة إلى صفر.",
-        aEn: "A Nukhba website starts at $300 one-time, and standalone services from $15. A typical campaign in this market runs $500–$2,000 per month — the cost of a complete website within one or two months, after which the running cost drops to zero.",
+        aAr: "موقع نخبة يبدأ من 300 دولار لمرة واحدة، والخدمات السريعة بأسعار منشورة على صفحة الخدمات. الحملة الإعلانية النموذجية في هذا المجال 500 إلى 2000 دولار شهرياً — أي ما يعادل تكلفة موقع كامل خلال شهر أو شهرين، ثم تسقط التكلفة إلى صفر.",
+        aEn: "A Nukhba website starts at $300 one-time, and standalone services are priced on the services page. A typical campaign in this market runs $500–$2,000 per month — the cost of a complete website within one or two months, after which the running cost drops to zero.",
       },
       {
         qAr: "هل أحتاج إلى الإعلان بعد إطلاق الموقع؟",
@@ -304,8 +304,8 @@ export const comparisons: Record<string, ComparisonSeo> = {
       {
         labelAr: "التكلفة",
         labelEn: "Cost",
-        usAr: "دفعة واحدة من $300 (خدمات من $15)",
-        usEn: "One payment from $300 (services from $15)",
+        usAr: "دفعة واحدة من $300 (خدمات بأسعار منشورة)",
+        usEn: "One payment from $300 (services at published prices)",
         themAr: "متوسط $500 – $2,000 شهرياً لتغطية الجمهور",
         themEn: "On average $500–$2,000/month to cover the audience",
         winner: "us",
@@ -859,8 +859,8 @@ export const comparisons: Record<string, ComparisonSeo> = {
       {
         qAr: "هل يمكن شراء خدمة SEO فقط دون موقع؟",
         qEn: "Can I buy SEO alone without a website?",
-        aAr: "نعم، عبر خدمة التدقيق والإصلاح (من 15 دولاراً): تقرير من 40+ نقطة عن السرعة والموبايل والـ SEO والأمان، مع إصلاح فوري. لكن الإصلاح بلا أساس تقني صحيح يبقى حلاً مؤقتاً — ولهذا نوصي ببناء الأساس أولاً.",
-        aEn: "Yes, through the audit & fix service (from $15): a 40+ point report on speed, mobile, SEO and security, with immediate fixes. But fixes without a correct technical base stay a temporary solution — which is why we recommend building the base first.",
+        aAr: "نعم، عبر خدمة التدقيق والإصلاح (السعر المنشور على صفحة الخدمة): تقرير من 40+ نقطة عن السرعة والموبايل والـ SEO والأمان، مع إصلاح فوري. لكن الإصلاح بلا أساس تقني صحيح يبقى حلاً مؤقتاً — ولهذا نوصي ببناء الأساس أولاً.",
+        aEn: "Yes, through the audit & fix service (its price is published on the service page): a 40+ point report on speed, mobile, SEO and security, with immediate fixes. But fixes without a correct technical base stay a temporary solution — which is why we recommend building the base first.",
       },
     ],
     relatedServices: ["fix-optimize", "restyle", "add-section"],
@@ -1138,8 +1138,8 @@ export const comparisonsHubFaqs: Faq[] = [
   {
     qAr: "هل المقارنات مبنية على أرقام حقيقية؟",
     qEn: "Are these comparisons based on real numbers?",
-    aAr: "الأرقام الخاصة بنخبة مأخوذة من أسعارنا المنشورة (تبدأ من 15 دولاراً للخدمات ومن 300 دولار للمواقع). أرقام البدائل معروضة كـ «نمط تسعير شائع» لأنها تختلف حسب السوق والمنافسة والإعدادات — ونحن نذكر ذلك في كل صفحة.",
-    aEn: "Nukhba's own numbers come from our published prices (services from $15, websites from $300). Competitor figures are presented as “typical pricing patterns” because they vary by market, competition and settings — and each page states that explicitly.",
+    aAr: "الأرقام الخاصة بنخبة مأخوذة من أسعارنا المنشورة (الخدمات والمواقع على صفحات الخدمات والباقات). أرقام البدائل معروضة كـ «نمط تسعير شائع» لأنها تختلف حسب السوق والمنافسة والإعدادات — ونحن نذكر ذلك في كل صفحة.",
+    aEn: "Nukhba's own numbers come from our published prices (services and websites on their respective pages). Competitor figures are presented as “typical pricing patterns” because they vary by market, competition and settings — and each page states that explicitly.",
   },
   {
     qAr: "هل يمكن أن تكون المقارنة في صالح البديل؟",
@@ -1150,7 +1150,7 @@ export const comparisonsHubFaqs: Faq[] = [
   {
     qAr: "هل تقبلون مشروعاً واحداً فقط؟",
     qEn: "Do you take on single projects?",
-    aAr: "بالتأكيد. الخدمات السريعة تبدأ من 15 دولاراً بعرض سعر مكتوب، ونقبل المشاريع الصغيرة كما نقبل المواقع الكاملة. الاستشارة الأولى مجانية وتستغرق ساعتين.",
-    aEn: "Absolutely. Standalone services start at $15 with a written quote, and we take small projects as seriously as full sites. The first consultation is free and takes about two hours.",
+    aAr: "بالتأكيد. الخدمات السريعة تُسعَّر وفق الأسعار المنشورة وبعرض سعر مكتوب، ونقبل المشاريع الصغيرة كما نقبل المواقع الكاملة. الاستشارة الأولى مجانية وتستغرق ساعتين.",
+    aEn: "Absolutely. Standalone services are quoted from our published prices, and we take small projects as seriously as full sites. The first consultation is free and takes about two hours.",
   },
 ];

@@ -3,6 +3,7 @@ import { whatsappLink } from "@/lib/utils";
 import { defaultAppsPage, defaultProductsPage } from "@/lib/content";
 import { sectorSeo } from "@/lib/sectors";
 import { resolveServiceLanding, servicesHubFaqs } from "@/lib/services";
+import { lowestServicePrice } from "@/lib/service-pricing";
 import { comparisonIds, comparisons, comparisonText } from "@/lib/comparisons";
 import { blogArticles } from "@/lib/blog-articles";
 import { formatArticleDate, sortArticles } from "@/lib/blog";
@@ -388,7 +389,7 @@ export function buildLlmsFullTxt({
   lines.push("");
   lines.push(`- **Comparisons hub URL**: ${cleanUrl(base, "/compare")}`);
   lines.push(
-    "- **Reading rule**: Nukhba figures are our published prices (websites from $300 one-time, standalone services from $15). Competitor figures are stated as typical market pricing, not as verified facts about a specific company.",
+    `- **Reading rule**: Nukhba figures are our published prices (websites from $${config.pricing.plans[0]?.priceUsd ?? 300} one-time, standalone services from $${lowestServicePrice(config.standaloneServices, 19)}). Competitor figures are stated as typical market pricing, not as verified facts about a specific company.`,
   );
   lines.push("");
   for (const id of comparisonIds) {

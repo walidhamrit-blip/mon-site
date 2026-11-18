@@ -39,6 +39,13 @@ jobs:
       - name: Installation des dépendances
         run: npm ci
 
+      # Les dépendances de production seulement : un avis « high » doit
+      # arrêter la CI. Le script applique des exceptions datées et justifiées
+      # (aujourd'hui : un ReDoS de build sans correctif, jamais déployé) et
+      # refuse toute exception expirée.
+      - name: Audit des dépendances (production)
+        run: node scripts/audit-prod.mjs
+
       - name: Lint (ESLint 9, flat config)
         run: npm run lint
 

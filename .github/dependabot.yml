@@ -1,0 +1,54 @@
+version: 2
+
+# Mises à jour de dépendances, une fois par semaine.
+#
+# - les correctifs et mineures de production arrivent groupés dans une seule
+#   PR : moins de bruit, un seul build à vérifier ;
+# - les majeures restent des PR séparées (jamais fusionnées automatiquement) ;
+# - les outils de développement sont groupés à part, car ils ne partent pas
+#   en production.
+#
+# La CI (lint, types, 1027 tests, build) reste le juge de paix : aucune mise
+# à jour n'est fusionnée sans elle.
+
+updates:
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "06:00"
+      timezone: "Africa/Tripoli"
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "chore(deps)"
+    groups:
+      production-minor-patch:
+        dependency-type: "production"
+        update-types:
+          - "minor"
+          - "patch"
+      development-minor-patch:
+        dependency-type: "development"
+        update-types:
+          - "minor"
+          - "patch"
+    ignore:
+      # Next.js est mis à jour manuellement : une montée de version majeure
+      # touche le routeur, le cache et la CSP, et mérite une session dédiée.
+      - dependency-name: "next"
+        update-types:
+          - "version-update:semver-major"
+      - dependency-name: "react"
+        update-types:
+          - "version-update:semver-major"
+      - dependency-name: "react-dom"
+        update-types:
+          - "version-update:semver-major"
+
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "monthly"
+    commit-message:
+      prefix: "chore(ci)"
