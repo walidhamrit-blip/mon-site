@@ -9,8 +9,8 @@
 > validés ; **C-01 à C-04 appliqués et vérifiés en preview**.
 > Prix à source unique, outils de build sans avis bloquant non justifié,
 > frontières d'erreur, instrumentation serveur et SDK Sentry conditionnel —
-> **tests verts**, build et `seo:check` OK. Reste C-05 : créer le compte
-> Better Stack et brancher les alertes. Le diagnostic initial est conservé
+> **tests verts**, build et `seo:check` OK. C-05 : contrôle GitHub planifié
+> ajouté ; reste le compte Better Stack et les alertes Telegram. Le diagnostic initial est conservé
 > pour référence.
 
 ---
@@ -277,6 +277,12 @@ Les avis Next concernent précisément un mécanisme que le site utilise massive
 
 **Critère d'acceptation.** Couper la base sur une preview déclenche une alerte < 5 min ; le runbook permet à une personne non développeuse d'appliquer la première étape.
 **Effort.** ½ session + compte. **Risque.** Faible.
+
+**Correction partielle appliquée (18/11/2026).**
+- Workflow `.github/workflows/surveillance.yml` : toutes les 6 h + lancement manuel ; santé (200 **et** `ok:true`), accueil, `/codes`, TLS (échec < 7 j, alerte < 14 j).
+- En cas d'échec : ouverture ou mise à jour d'une issue `surveillance`, avec le rapport complet ; fermeture automatique au rétablissement.
+- Règles testées sans réseau (`scripts/uptime-check.test.mjs`, 6 cas) et script utilisable à la main : `SITE_URL=… node scripts/uptime-check.mjs`.
+- **Reste à faire (propriétaire) :** compte Better Stack + moniteurs et alertes Telegram (runbook §2). Le workflow GitHub ne remplace pas l'alerte temps réel.
 
 ---
 

@@ -1,0 +1,88 @@
+name: Surveillance disponibilité
+
+# Contrôle indépendant de Vercel et de Better Stack : même si le tableau de
+# bord du fournisseur est faux, GitHub voit la production depuis l'extérieur.
+#
+# - Toutes les 6 heures (GitHub peut décaler de quelques minutes).
+# - Une issue étiquetée `surveillance` est ouverte au premier échec, mise à
+#   jour aux échecs suivants, puis commentée et fermée au rétablissement.
+#
+# Les workflows planifiés ne s'exécutent que sur la branche par défaut : ce
+# contrôle ne démarrera qu'après la fusion de la pull request. En attendant,
+# `workflow_dispatch` permet de le lancer à la main sur n'importe quelle
+# branche.
+
+on:
+  schedule:
+    - cron: "17 */6 * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: surveillance-disponibilite
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  disponibilite:
+    name: Santé, pages et TLS
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Récupération du code
+        uses: actions/checkout@v5
+
+      - name: Installation Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: 22
+
+      - name: Contrôles
+        run: |
+          set -o pipefail
+          node scripts/uptime-check.mjs | tee "$RUNNER_TEMP/rapport.md"
+
+      - name: Ouvrir ou mettre à jour l'alerte
+        if: failure()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          [ -s "$RUNNER_TEMP/rapport.md" ] || echo "Rapport indisponible." > "$RUNNER_TEMP/rapport.md"
+          gh label create surveillance \
+            --color B60205 \
+            --description "Alerte automatique de disponibilité" 2>/dev/null || true
+          numero=$(gh issue list --label surveillance --state open --limit 1 \
+            --json number --jq '.[0].number // empty')
+          if [ -n "$numero" ]; then
+            gh issue comment "$numero" --body-file "$RUNNER_TEMP/rapport.md"
+          else
+            {
+              echo "Le contrôle automatique du $(date -u +'%Y-%m-%d %H:%M UTC') a échoué."
+              echo
+              cat "$RUNNER_TEMP/rapport.md"
+              echo
+              echo "Workflow : $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
+            } > "$RUNNER_TEMP/issue.md"
+            gh issue create \
+              --title "Surveillance : la production ne répond pas correctement" \
+              --label surveillance \
+              --body-file "$RUNNER_TEMP/issue.md"
+          fi
+
+      - name: Clore l'alerte après rétablissement
+        if: success()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          numero=$(gh issue list --label surveillance --state open --limit 1 \
+            --json number --jq '.[0].number // empty')
+          if [ -n "$numero" ]; then
+            gh issue comment "$numero" --body \
+              "Rétabli : le contrôle du $(date -u +'%Y-%m-%d %H:%M UTC') est passé."
+            gh issue close "$numero"
+          fi

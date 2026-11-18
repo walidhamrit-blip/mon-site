@@ -22,6 +22,7 @@
     "test:crypto": "node --test scripts/digital-codes-keyring.test.mjs",
     "test:health": "node --test scripts/health-access.test.mjs",
     "test:resilience": "node --test scripts/error-boundaries.test.mjs",
+    "test:ops": "node --test scripts/uptime-check.test.mjs",
     "test:deliveries": "node --test scripts/delivery-handover.test.mjs scripts/delivery-check.test.mjs",
     "test:subscriptions": "node --test scripts/subscription-plans.test.mjs",
     "doctor": "node scripts/check-setup.mjs",

@@ -85,6 +85,24 @@ La page d'accueil peut être servie depuis un cache ou un repli alors que la bas
 > Ne jamais mettre `CRON_SECRET` ni aucun en-tête d'authentification dans le
 > moniteur : la sonde publique suffit et un secret chez un tiers est une fuite.
 
+### Contrôle GitHub complémentaire (déjà en place)
+
+Le workflow `.github/workflows/surveillance.yml` s'exécute **toutes les 6 heures**
+et à la demande. Il vérifie :
+
+- `/api/health` → HTTP 200 **et** `"ok":true` ;
+- l'accueil → marqueur de marque arabe ;
+- `/codes` → HTTP 200 ;
+- le certificat TLS → échec sous 7 jours, avertissement sous 14 jours.
+
+En cas d'échec, il ouvre une issue GitHub étiquetée `surveillance` (ou commente
+celle déjà ouverte) ; au rétablissement, il la commente et la ferme.
+
+Ce contrôle **ne remplace pas Better Stack** : il n'envoie pas de Telegram et
+peut être décalé par GitHub. Il sert de second avis, indépendant de Vercel.
+Il ne démarre qu'après fusion sur `main` (les crons GitHub ne s'exécutent que
+sur la branche par défaut). Lancement manuel possible depuis l'onglet Actions.
+
 ---
 
 ## 3. Mise en place de Sentry (1 h, action propriétaire + agent)
