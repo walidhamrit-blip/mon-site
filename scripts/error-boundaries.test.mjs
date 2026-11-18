@@ -121,6 +121,8 @@ test("le tunnel Sentry n'est pas un proxy ouvert", () => {
   assert.match(source, /createSentryTunnelRoute/);
   assert.match(source, /allowedDsns/);
   assert.match(source, /SENTRY_DSN/);
+  assert.match(source, /checkRateLimit/, "le tunnel doit limiter les abus");
+  assert.match(source, /413|MAX_ENVELOPE_BYTES/, "le tunnel doit borner la taille");
   assert.match(read(sentryClientConfig), /tunnel: "\/monitoring"/);
 });
 
