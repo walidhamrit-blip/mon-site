@@ -119,6 +119,33 @@ interface WebhookTestResult {
   networkError?: string | null;
 }
 
+interface G2gDeliveryRow {
+  id: number;
+  createdAt: string | null;
+  updatedAt: string | null;
+  deliveryId: string;
+  orderId: string;
+  offerId: string;
+  requestedQty: number;
+  decision: string;
+  status: string;
+  unitPriceUsd: string | null;
+  supplierCostUsd: string | null;
+  netMarginPercent: string | null;
+  supplierOrderRef: string | null;
+  attempts: number;
+  nextAttemptAt: string | null;
+  deliveryAttempts: number;
+  deliveryClaimedAt: string | null;
+  detail: string | null;
+}
+
+interface G2gDeliveryStats {
+  purchased: number;
+  delivered: number;
+  failed: number;
+}
+
 interface Diagnostic {
   ok: boolean;
   config: ConfigStatus;
@@ -203,6 +230,13 @@ export function G2gPanel() {
     result: null,
   });
 
+  const [deliveries, setDeliveries] = useState<{
+    rows: G2gDeliveryRow[];
+    stats: G2gDeliveryStats | null;
+    busy: boolean;
+    error: string | null;
+  }>({ rows: [], stats: null, busy: false, error: null });
+
   const load = useCallback(async () => {
     setBusy(true);
     setError("");
@@ -218,14 +252,46 @@ export function G2gPanel() {
     }
   }, []);
 
+  /** Charge la liste des livraisons G2G (suivi des achats et livraisons). */
+  const loadDeliveries = useCallback(async () => {
+    setDeliveries((previous) => ({ ...previous, busy: true, error: null }));
+    try {
+      const response = await fetch("/api/admin/g2g/deliveries?limit=50", {
+        cache: "no-store",
+      });
+      const body = (await response.json()) as {
+        ok?: boolean;
+        stats?: G2gDeliveryStats;
+        deliveries?: G2gDeliveryRow[];
+        error?: string;
+      };
+      if (!response.ok || !body.ok) {
+        throw new Error(body.error ?? "Impossible de charger les livraisons");
+      }
+      setDeliveries({
+        rows: body.deliveries ?? [],
+        stats: body.stats ?? null,
+        busy: false,
+        error: null,
+      });
+    } catch (cause) {
+      setDeliveries((previous) => ({
+        ...previous,
+        busy: false,
+        error: cause instanceof Error ? cause.message : String(cause),
+      }));
+    }
+  }, []);
+
   // Le chargement initial part dans une tâche asynchrone : aucune mise à
   // jour d'état synchrone dans le corps de l'effet (règle react-hooks).
   useEffect(() => {
     const timer = window.setTimeout(() => {
       void load();
+      void loadDeliveries();
     }, 0);
     return () => window.clearTimeout(timer);
-  }, [load]);
+  }, [load, loadDeliveries]);
 
   /**
    * Sonde `GET /v2/store` avec plusieurs jeux d'en-têtes pour identifier
@@ -839,6 +905,127 @@ export function G2gPanel() {
                 {apiQtyPatch.result.message}
               </p>
             ) : null}
+          </div>
+
+          <h3 className="mt-5 text-xs font-bold text-stone-800">
+            6. Suivi des livraisons G2G (brique 5)
+          </h3>
+          <div className="mt-2 rounded-lg border border-stone-200 bg-white p-3">
+            {deliveries.busy ? (
+              <p className="text-[11px] text-stone-500">Chargement des livraisons…</p>
+            ) : deliveries.error ? (
+              <p className="text-[11px] text-red-700">{deliveries.error}</p>
+            ) : (
+              <>
+                <div className="mt-2 flex flex-wrap items-center gap-4 text-[11px]">
+                  <span className="flex items-center gap-1">
+                    <span className="h-2 w-2 rounded-full bg-stone-400" />
+                    {deliveries.stats?.purchased ?? 0} achetés
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <span className="h-2 w-2 rounded-full bg-emerald-500" />
+                    {deliveries.stats?.delivered ?? 0} livrés
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <span className="h-2 w-2 rounded-full bg-red-500" />
+                    {deliveries.stats?.failed ?? 0} échoués
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <span className="h-2 w-2 rounded-full bg-amber-500" />
+                    {deliveries.rows.length} au total
+                  </span>
+                </div>
+
+                {deliveries.rows.length > 0 ? (
+                  <div className="mt-3 overflow-x-auto">
+                    <table className="w-full text-left text-[10px]">
+                      <thead className="text-stone-500">
+                        <tr>
+                          <th className="py-1.5 pr-2">Livraison</th>
+                          <th className="py-1.5 pr-2">Offre</th>
+                          <th className="py-1.5 pr-2">Commande</th>
+                          <th className="py-1.5 pr-2">Statut</th>
+                          <th className="py-1.5 pr-2">Décision</th>
+                          <th className="py-1.5 pr-2">Prix / coût</th>
+                          <th className="py-1.5 pr-2">Marge</th>
+                          <th className="py-1.5 pr-2">Tentatives</th>
+                          <th className="py-1.5 pr-2" />
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-stone-100">
+                        {deliveries.rows.map((row) => (
+                          <tr key={row.deliveryId}>
+                            <td className="py-1.5 pr-2 font-mono text-stone-700">
+                              {row.deliveryId}
+                            </td>
+                            <td className="py-1.5 pr-2 font-mono text-stone-600">
+                              {row.offerId}
+                            </td>
+                            <td className="py-1.5 pr-2 font-mono text-stone-600">
+                              {row.orderId || "—"}
+                            </td>
+                            <td className="py-1.5 pr-2">
+                              <span
+                                className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-semibold ${
+                                  row.status === "delivered"
+                                    ? "bg-emerald-100 text-emerald-700"
+                                    : row.status === "purchased"
+                                      ? "bg-amber-100 text-amber-700"
+                                      : row.status === "failed"
+                                        ? "bg-red-100 text-red-700"
+                                        : row.status === "purchasing"
+                                          ? "bg-blue-100 text-blue-700"
+                                          : "bg-stone-100 text-stone-700"
+                                }`}
+                              >
+                                {row.status}
+                              </span>
+                            </td>
+                            <td className="py-1.5 pr-2 font-mono text-stone-600">
+                              {row.decision || "—"}
+                            </td>
+                            <td className="py-1.5 pr-2 font-mono text-stone-600">
+                              {row.unitPriceUsd ? `${row.unitPriceUsd} $` : "—"} /
+                              {row.supplierCostUsd ? `${row.supplierCostUsd} $` : "—"}
+                            </td>
+                            <td className="py-1.5 pr-2 font-mono text-stone-600">
+                              {row.netMarginPercent ? `${row.netMarginPercent} %` : "—"}
+                            </td>
+                            <td className="py-1.5 pr-2 text-[9px] font-mono text-stone-600">
+                              {row.deliveryAttempts}
+                            </td>
+                            <td className="py-1.5 pr-2">
+                              {row.nextAttemptAt ? (
+                                <span className="text-amber-600 font-mono text-[9px]">
+                                  Reprise {new Date(row.nextAttemptAt).toLocaleString(
+                                    "fr-FR",
+                                    { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" },
+                                  )}
+                                </span>
+                              ) : (
+                                <span className="text-stone-400 text-[9px]">—</span>
+                              )}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                ) : (
+                  <p className="mt-2 text-[11px] text-stone-500">
+                    Aucune livraison G2G pour l’instant.
+                  </p>
+                )}
+
+                {deliveries.stats && (
+                  <p className="mt-2 text-[10px] text-stone-500">
+                    Les statuts « purchased » sans reprise programmée
+                    nécessitent une intervention manuelle : la file de
+                    livraison retry automatiquement toutes les minutes.
+                  </p>
+                )}
+              </>
+            )}
           </div>
         </>
       ) : null}
