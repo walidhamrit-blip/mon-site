@@ -880,6 +880,11 @@ export const g2gDeliveries = pgTable("g2g_deliveries", {
   nextAttemptAt: timestamp("next_attempt_at", { withTimezone: true }),
   /** Message lisible, sans code ni secret. */
   detail: text("detail"),
+  /** Nombre de tentatives de livraison (distinct des tentatives d'achat). */
+  deliveryAttempts: integer("delivery_attempts").notNull().default(0),
+  /** Bail de reprise : une livraison `delivery_processing` dont ce bail est
+   * expiré peut être réclamée à nouveau par le cron. */
+  deliveryClaimedAt: timestamp("delivery_claimed_at", { withTimezone: true }),
 });
 
 export type G2gDelivery = typeof g2gDeliveries.$inferSelect;

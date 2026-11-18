@@ -716,6 +716,14 @@ export function ensureSchema(): Promise<void> {
       await pool.query(
         "CREATE INDEX IF NOT EXISTS g2g_deliveries_next_attempt_idx ON g2g_deliveries (next_attempt_at)",
       );
+      // Colonnes de la file de livraison (brique 2) : tentatives de livraison
+      // distinctes des tentatives d'achat, et bail de reprise pour le cron.
+      await pool.query(
+        "ALTER TABLE g2g_deliveries ADD COLUMN IF NOT EXISTS delivery_attempts integer NOT NULL DEFAULT 0",
+      );
+      await pool.query(
+        "ALTER TABLE g2g_deliveries ADD COLUMN IF NOT EXISTS delivery_claimed_at timestamptz",
+      );
     })().catch((error) => {
       schemaReady = null; // permet de réessayer au prochain accès
       throw error;

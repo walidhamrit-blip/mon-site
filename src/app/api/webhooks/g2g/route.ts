@@ -25,6 +25,7 @@ import {
   settleWebhookEvent,
 } from "@/lib/delivery-queue";
 import { purchaseG2gDelivery, type G2gPurchaseOutcome } from "@/lib/g2g-purchase";
+import { attemptG2gDelivery } from "@/lib/g2g-delivery";
 import { notifyTelegramAdmin } from "@/lib/telegram";
 
 /**
@@ -313,11 +314,63 @@ export async function POST(req: Request) {
     }
   }
 
+  /** Fast path : livraison synchrone après achat réussi. FazerCards rend
+   * parfois les codes immédiatement ; dans ce cas, l'acheteur les reçoit
+   * sans attendre le prochain passage du cron. On tente trois fois sur
+   * ~6 s, puis on laisse le cron reprendre (brique 2). */
+  let deliveredSync = false;
+  if (purchase?.outcome === "purchased") {
+    try {
+      const [deliveryRow] = await db
+        .select()
+        .from(g2gDeliveries)
+        .where(eq(g2gDeliveries.deliveryId, event.deliveryId))
+        .limit(1);
+      const delivery = deliveryRow ?? null;
+      if (delivery) {
+        for (let i = 0; i < 3; i++) {
+          await new Promise((resolve) => setTimeout(resolve, 2000));
+          const result = await attemptG2gDelivery(delivery);
+          if (result.kind === "delivered") {
+            await db
+              .update(g2gDeliveries)
+              .set({
+                status: "delivered",
+                deliveryAttempts:
+                  Number(delivery.deliveryAttempts ?? 0) + 1,
+                nextAttemptAt: null,
+                detail: `Livré (synchrone) : ${result.codes} code(s) transmis à G2G.`,
+                updatedAt: new Date(),
+              })
+              .where(eq(g2gDeliveries.deliveryId, event.deliveryId));
+            deliveredSync = true;
+            break;
+          }
+          if (result.kind === "failed") {
+            // Une erreur G2G (pas un problème de codes manquants) ne doit
+            // pas être retentée en boucle dans le webhook : le cron s'en
+            // chargera avec son propre backoff.
+            break;
+          }
+          // awaiting_codes / no_order_ref → on retente au prochain tour.
+        }
+      }
+    } catch (error) {
+      // Le fast path échoue : ce n'est pas bloquant, le cron prend le relai.
+      console.warn(
+        "[g2g][webhook] livraison synchrone impossible :",
+        error instanceof Error ? error.message : String(error),
+      );
+    }
+  }
+
   try {
     await notifyTelegramAdmin(
       [
         purchase?.outcome === "purchased"
-          ? "💳 G2G — ACHAT EFFECTUÉ, livraison à faire"
+          ? deliveredSync
+            ? "💳 G2G — ACHAT EFFECTUÉ ET LIVRÉ"
+            : "💳 G2G — ACHAT EFFECTUÉ, livraison en cours"
           : "🛰️ G2G — événement reçu (aucun achat automatique)",
         `Commande : ${event.orderId}`,
         `Offre : ${event.offerId}`,
@@ -342,8 +395,8 @@ export async function POST(req: Request) {
           : null,
         // De l'argent est sorti sans livraison automatique : c'est le seul
         // cas qui exige une intervention humaine immédiate.
-        purchase?.outcome === "purchased"
-          ? "⚠️ À LIVRER À LA MAIN — la livraison automatique n'est pas encore câblée."
+        purchase?.outcome === "purchased" && !deliveredSync
+          ? "⚠️ À LIVRER À LA MAIN — le code n'a pas encore été récupéré chez FazerCards ; la file de livraison retry automatiquement."
           : null,
         purchase?.outcome === "failed"
           ? `⚠️ Échec d'achat : ${purchase.reason}`
@@ -354,9 +407,11 @@ export async function POST(req: Request) {
         purchase?.outcome === "balance_unknown"
           ? `⚠️ Solde fournisseur illisible : ${purchase.reason} — aucun achat tenté.`
           : null,
-        purchase?.outcome === "purchased"
-          ? "Action : récupérer le code chez FazerCards et livrer la commande sur G2G."
-          : "Action : garder api_qty = 0 et traiter manuellement si une vente est en cours.",
+        purchase?.outcome === "purchased" && !deliveredSync
+          ? "Action : si la file ne livre pas dans quelques minutes, récupérer le code chez FazerCards et livrer manuellement sur G2G."
+          : purchase?.outcome === "purchased"
+            ? "Action : livraison tentée en synchrone ; vérifier le statut si l'acheteur ne reçoit rien."
+            : "Action : garder api_qty = 0 et traiter manuellement si une vente est en cours.",
       ]
         .filter((line): line is string => Boolean(line))
         .join("\n"),
