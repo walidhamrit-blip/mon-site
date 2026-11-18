@@ -51,7 +51,7 @@ const CSP_DIRECTIVES = [
   "style-src 'self' 'unsafe-inline'",
   "font-src 'self' data:",
   "img-src 'self' data: blob: https:",
-  "connect-src 'self' https://vitals.vercel-insights.com https://va.vercel-scripts.com https://api.nowpayments.io https://api-sandbox.nowpayments.io https://api.openai.com https://*.openai.azure.com https://openrouter.ai https://api.indexnow.org https://www.google-analytics.com https://*.ingest.sentry.io",
+  "connect-src 'self' https://vitals.vercel-insights.com https://va.vercel-scripts.com https://api.nowpayments.io https://api-sandbox.nowpayments.io https://api.openai.com https://*.openai.azure.com https://openrouter.ai https://api.indexnow.org https://www.google-analytics.com https://*.ingest.sentry.io https://*.ingest.de.sentry.io",
   "frame-src 'self' https:",
   isVercelProduction
     ? "frame-ancestors 'self'"
