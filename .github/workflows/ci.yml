@@ -39,6 +39,13 @@ jobs:
       - name: Installation des dépendances
         run: npm ci
 
+      # Les dépendances de production seulement : un avis « high » doit
+      # arrêter la CI, mais les outils de build (ESLint, PostCSS) ne sont pas
+      # embarqués dans le déploiement. `--audit-level=high` laisse passer les
+      # modérés, visibles dans le rapport sans bloquer chaque pull request.
+      - name: Audit des dépendances (production)
+        run: npm audit --omit=dev --audit-level=high
+
       - name: Lint (ESLint 9, flat config)
         run: npm run lint
 

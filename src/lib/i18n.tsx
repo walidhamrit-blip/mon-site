@@ -110,9 +110,9 @@ export const servicesHubLabels = {
   heroTextEn:
     "You don't need a full project for every idea. Pick the service you need today: refresh your site, add a section, a presentation deck, a visual identity, a landing page or a technical fix — starting at {from} with delivery from {delivery}.",
   heroSecondaryAr:
-    "خدمات رقمية سريعة بأسعار ثابتة في طرابلس، ليبيا — تبدأ من 15 دولاراً وتسليم خلال 24 ساعة.",
+    "خدمات رقمية سريعة بأسعار ثابتة في طرابلس، ليبيا — تبدأ من {from} وتسليم خلال {delivery}.",
   heroSecondaryEn:
-    "Fast, fixed-scope digital services in Tripoli, Libya — from $15 with delivery in as little as 24 hours.",
+    "Fast, fixed-scope digital services in Tripoli, Libya — from {from} with delivery in as little as {delivery}.",
   shortAr: "باختصار:",
   shortEn: "In short:",
   answerAr:

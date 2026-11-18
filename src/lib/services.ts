@@ -1,5 +1,6 @@
 import type { Faq } from "./site-types";
 import { absoluteUrl } from "./seo";
+import { fillPriceTokens } from "./service-pricing";
 import { localizedAbsoluteUrl, type Locale } from "@/lib/locale";
 
 /**
@@ -97,9 +98,9 @@ const serviceLandingDefaults: Record<string, ServiceLandingContent> = {
     titleAr: "إعادة تصميم موقع قديم في طرابلس — تجديد بدون فقدان SEO",
     titleEn: "Website Redesign in Tripoli — Modern Rebuild, Zero SEO Loss",
     descriptionAr:
-      "نعيد تصميم موقعك القديم من 49 $ خلال 48–72 ساعة: واجهة عصرية متجاوبة، سرعة 90+، نقل كامل للمحتوى، وتحويلات 301 تحفظ روابطك وترتيبك في جوجل.",
+      "نعيد تصميم موقعك القديم من {price} خلال 48–72 ساعة: واجهة عصرية متجاوبة، سرعة 90+، نقل كامل للمحتوى، وتحويلات 301 تحفظ روابطك وترتيبك في جوجل.",
     descriptionEn:
-      "Redesign your old website from $49 in 48–72 hours: modern responsive UI, 90+ speed, full content migration and 301 redirects that keep your rankings.",
+      "Redesign your old website from {price} in 48–72 hours: modern responsive UI, 90+ speed, full content migration and 301 redirects that keep your rankings.",
     h1Ar: "إعادة تصميم موقع قديم — واجهة جديدة تحافظ على ترتيبك",
     h1En: "Website Redesign — A Fresh Look Without Losing Rankings",
     subtitleAr:
@@ -107,9 +108,9 @@ const serviceLandingDefaults: Record<string, ServiceLandingContent> = {
     subtitleEn:
       "Does your site still work but look dated? We rebuild it into a fast, modern storefront on your brand — keeping every page, every URL and every ranking you already earned.",
     answerAr:
-      "إعادة تصميم موقع قديم هي تحديث الواجهة والبنية التقنية لموقع قائم مع الحفاظ على روابطه ومحتواه وترتيبه في محركات البحث. في نخبة تبدأ الخدمة من 49 دولاراً وتُسلّم خلال 48 إلى 72 ساعة، وتشمل تصميماً جديداً على هويتك، تحسين السرعة وSEO التقني، ونقل المحتوى مجاناً — دون أي توقف للموقع.",
+      "إعادة تصميم موقع قديم هي تحديث الواجهة والبنية التقنية لموقع قائم مع الحفاظ على روابطه ومحتواه وترتيبه في محركات البحث. في نخبة تبدأ الخدمة من {price} وتُسلّم خلال 48 إلى 72 ساعة، وتشمل تصميماً جديداً على هويتك، تحسين السرعة وSEO التقني، ونقل المحتوى مجاناً — دون أي توقف للموقع.",
     answerEn:
-      "A website redesign modernises the interface and technical build of an existing site while preserving its URLs, content and search rankings. At Nukhba it starts at $49 and is delivered in 48–72 hours: a new on-brand design, speed and technical SEO improvements, and free content migration — with zero downtime.",
+      "A website redesign modernises the interface and technical build of an existing site while preserving its URLs, content and search rankings. At Nukhba it starts at {price} and is delivered in 48–72 hours: a new on-brand design, speed and technical SEO improvements, and free content migration — with zero downtime.",
     keywordsAr: [
       "إعادة تصميم موقع قديم",
       "تجديد موقع طرابلس",
@@ -177,9 +178,9 @@ const serviceLandingDefaults: Record<string, ServiceLandingContent> = {
     titleAr: "إضافة قسم جديد لموقعك في طرابلس — تسليم 48–72 ساعة",
     titleEn: "Add a New Section to Your Website — 48–72h Delivery",
     descriptionAr:
-      "نضيف لموقعك قسماً جديداً متجاوباً على هويتك: معرض أعمال، مدونة، حجز مواعيد، متجر مصغّر أو أسئلة شائعة — من 19 $ مع ربط النماذج بواتساب.",
+      "نضيف لموقعك قسماً جديداً متجاوباً على هويتك: معرض أعمال، مدونة، حجز مواعيد، متجر مصغّر أو أسئلة شائعة — من {price} مع ربط النماذج بواتساب.",
     descriptionEn:
-      "We add a responsive new section to your existing site — portfolio, blog, booking, mini-shop or FAQ — from $19, with forms connected to WhatsApp.",
+      "We add a responsive new section to your existing site — portfolio, blog, booking, mini-shop or FAQ — from {price}, with forms connected to WhatsApp.",
     h1Ar: "إضافة قسم جديد لموقعك الحالي — بدون إعادة بناء",
     h1En: "Add a New Section to Your Existing Website",
     subtitleAr:
@@ -187,9 +188,9 @@ const serviceLandingDefaults: Record<string, ServiceLandingContent> = {
     subtitleEn:
       "You do not need a whole new website for every idea. We add the section you need to your current site, in the same identity, fonts and colours — ready to publish in 48–72 hours.",
     answerAr:
-      "إضافة قسم جديد خدمة تسمح بتوسيع موقعك القائم دون إعادة بنائه: معرض أعمال، مدونة، نظام حجز، متجر مصغّر أو قسم أسئلة شائعة. تبدأ من 19 دولاراً، تُسلّم في 48 إلى 72 ساعة، وتشمل التصميم المتجاوب وربط النماذج بواتساب والبريد، مع لوحة تحكم إن كانت مطلوبة.",
+      "إضافة قسم جديد خدمة تسمح بتوسيع موقعك القائم دون إعادة بنائه: معرض أعمال، مدونة، نظام حجز، متجر مصغّر أو قسم أسئلة شائعة. تبدأ من {price}، تُسلّم في 48 إلى 72 ساعة، وتشمل التصميم المتجاوب وربط النماذج بواتساب والبريد، مع لوحة تحكم إن كانت مطلوبة.",
     answerEn:
-      "Adding a new section lets you extend an existing website without rebuilding it: portfolio, blog, booking module, mini-shop or FAQ. It starts at $19, ships in 48–72 hours, and includes responsive design, WhatsApp and email form wiring, plus an admin panel when needed.",
+      "Adding a new section lets you extend an existing website without rebuilding it: portfolio, blog, booking module, mini-shop or FAQ. It starts at {price}, ships in 48–72 hours, and includes responsive design, WhatsApp and email form wiring, plus an admin panel when needed.",
     keywordsAr: [
       "إضافة قسم لموقع",
       "تطوير موقع قائم طرابلس",
@@ -234,8 +235,8 @@ const serviceLandingDefaults: Record<string, ServiceLandingContent> = {
       {
         qAr: "هل يمكن إضافة أكثر من قسم بسعر مخفّض؟",
         qEn: "Can I add several sections at a discount?",
-        aAr: "نعم — القسم الثاني في نفس الطلب يبدأ من 15 دولاراً، ونقدّم عرضاً مجمّعاً عند طلب ثلاثة أقسام أو أكثر.",
-        aEn: "Yes — a second section in the same order starts at $15, and we quote a bundle for three or more sections.",
+        aAr: "نعم — القسم الثاني في نفس الطلب يأتي بسعر أقل، ونقدّم عرضاً مجمّعاً عند طلب ثلاثة أقسام أو أكثر.",
+        aEn: "Yes — a second section in the same order is priced lower, and we quote a bundle for three or more sections.",
       },
       {
         qAr: "هل سيظهر القسم الجديد في نتائج جوجل؟",
@@ -257,9 +258,9 @@ const serviceLandingDefaults: Record<string, ServiceLandingContent> = {
     titleAr: "تصميم عرض تقديمي احترافي في طرابلس — Pitch Deck",
     titleEn: "Pitch Deck & Presentation Design in Tripoli",
     descriptionAr:
-      "نصمم عروضاً تقديمية تبيع: Pitch Deck للمستثمرين، ملف شركة، وعرض مبيعات — إنفوغرافيك وأرقام واضحة، ملف قابل للتعديل وPDF، من 29 $.",
+      "نصمم عروضاً تقديمية تبيع: Pitch Deck للمستثمرين، ملف شركة، وعرض مبيعات — إنفوغرافيك وأرقام واضحة، ملف قابل للتعديل وPDF، من {price}.",
     descriptionEn:
-      "We design presentations that sell: investor pitch decks, company profiles and sales decks — clear infographics and numbers, editable file and PDF, from $29.",
+      "We design presentations that sell: investor pitch decks, company profiles and sales decks — clear infographics and numbers, editable file and PDF, from {price}.",
     h1Ar: "عروض تقديمية تبيع — Pitch Deck وملف شركة وعرض مبيعات",
     h1En: "Presentations That Sell — Pitch Decks, Profiles & Sales Decks",
     subtitleAr:
@@ -267,9 +268,9 @@ const serviceLandingDefaults: Record<string, ServiceLandingContent> = {
     subtitleEn:
       "Your content is strong but the slides weaken the message? We turn it into a clean visual story that convinces an investor or a client in under ten minutes.",
     answerAr:
-      "تصميم العروض التقديمية هو تحويل محتوى الشركة إلى شرائح احترافية تحكي قصة واضحة: مشكلة، حل، أرقام، عرض. تبدأ الخدمة من 29 دولاراً وتُسلّم في 2 إلى 4 أيام، وتشمل الهيكل والكتابة المختصرة والإنفوغرافيك وملف PowerPoint أو Google Slides أو Keynote قابلاً للتعديل مع نسخة PDF.",
+      "تصميم العروض التقديمية هو تحويل محتوى الشركة إلى شرائح احترافية تحكي قصة واضحة: مشكلة، حل، أرقام، عرض. تبدأ الخدمة من {price} وتُسلّم في 2 إلى 4 أيام، وتشمل الهيكل والكتابة المختصرة والإنفوغرافيك وملف PowerPoint أو Google Slides أو Keynote قابلاً للتعديل مع نسخة PDF.",
     answerEn:
-      "Presentation design turns company content into professional slides that tell a clear story: problem, solution, traction, offer. Pricing starts at $29 with 2–4 day delivery, including structure, concise copywriting, infographics, an editable PowerPoint / Google Slides / Keynote file and a PDF export.",
+      "Presentation design turns company content into professional slides that tell a clear story: problem, solution, traction, offer. Pricing starts at {price} with 2–4 day delivery, including structure, concise copywriting, infographics, an editable PowerPoint / Google Slides / Keynote file and a PDF export.",
     keywordsAr: [
       "تصميم عرض تقديمي",
       "بيتش ديك طرابلس",
@@ -333,12 +334,12 @@ const serviceLandingDefaults: Record<string, ServiceLandingContent> = {
   },
 
   branding: {
-    titleAr: "تصميم هوية بصرية وشعار لشركتك في طرابلس — من 39 $",
-    titleEn: "Brand Identity & Logo Design in Tripoli — From $39",
+    titleAr: "تصميم هوية بصرية وشعار لشركتك في طرابلس — من {price}",
+    titleEn: "Brand Identity & Logo Design in Tripoli — From {price}",
     descriptionAr:
-      "هوية بصرية متكاملة: شعار أصلي، دليل ألوان وخطوط، بطاقات عمل، قوالب سوشيال وملفات جاهزة للطباعة والويب — من 39 $ وتسليم 3–5 أيام.",
+      "هوية بصرية متكاملة: شعار أصلي، دليل ألوان وخطوط، بطاقات عمل، قوالب سوشيال وملفات جاهزة للطباعة والويب — من {price} وتسليم 3–5 أيام.",
     descriptionEn:
-      "Complete visual identity: original logo, colour and type guide, business cards, social templates and print/web-ready files — from $39 in 3–5 days.",
+      "Complete visual identity: original logo, colour and type guide, business cards, social templates and print/web-ready files — from {price} in 3–5 days.",
     h1Ar: "هوية بصرية متكاملة تبدأ من شعار أصلي",
     h1En: "A Complete Visual Identity, Starting With an Original Logo",
     subtitleAr:
@@ -346,9 +347,9 @@ const serviceLandingDefaults: Record<string, ServiceLandingContent> = {
     subtitleEn:
       "Identity is more than a logo — it is everything that makes a client recognise you instantly: colours, type, cards and post templates, consistent on web and print.",
     answerAr:
-      "الهوية البصرية هي مجموعة العناصر التي تميّز علامتك: الشعار، الألوان، الخطوط، وتطبيقاتها على البطاقات والسوشيال والموقع. تبدأ الخدمة من 39 دولاراً وتُسلّم في 3 إلى 5 أيام، وتشمل ثلاثة اتجاهات للشعار، دليل ألوان وخطوط، قوالب منشورات، وملفات AI/SVG/PNG/PDF جاهزة للطباعة والويب.",
+      "الهوية البصرية هي مجموعة العناصر التي تميّز علامتك: الشعار، الألوان، الخطوط، وتطبيقاتها على البطاقات والسوشيال والموقع. تبدأ الخدمة من {price} وتُسلّم في 3 إلى 5 أيام، وتشمل ثلاثة اتجاهات للشعار، دليل ألوان وخطوط، قوالب منشورات، وملفات AI/SVG/PNG/PDF جاهزة للطباعة والويب.",
     answerEn:
-      "Visual identity is the set of elements that distinguish your brand: logo, colours, typography and their application to cards, social media and the website. Pricing starts at $39 with 3–5 day delivery, including three logo directions, a colour and type guide, social templates and AI/SVG/PNG/PDF files ready for print and web.",
+      "Visual identity is the set of elements that distinguish your brand: logo, colours, typography and their application to cards, social media and the website. Pricing starts at {price} with 3–5 day delivery, including three logo directions, a colour and type guide, social templates and AI/SVG/PNG/PDF files ready for print and web.",
     keywordsAr: [
       "تصميم شعار طرابلس",
       "هوية بصرية ليبيا",
@@ -416,9 +417,9 @@ const serviceLandingDefaults: Record<string, ServiceLandingContent> = {
     titleAr: "تصميم صفحة هبوط عالية التحويل في طرابلس — 3 إلى 5 أيام",
     titleEn: "High-Converting Landing Page Design in Tripoli — 3–5 Days",
     descriptionAr:
-      "صفحة هبوط واحدة بهدف واحد: بيع أو تسجيل. هيكل إقناعي، كتابة إعلانية، نموذج مربوط بواتساب، تتبع تحويلات وسرعة عالية — من 59 $.",
+      "صفحة هبوط واحدة بهدف واحد: بيع أو تسجيل. هيكل إقناعي، كتابة إعلانية، نموذج مربوط بواتساب، تتبع تحويلات وسرعة عالية — من {price}.",
     descriptionEn:
-      "One landing page, one goal: sell or capture leads. Persuasive structure, ad copy, WhatsApp-wired form, conversion tracking and high speed — from $59.",
+      "One landing page, one goal: sell or capture leads. Persuasive structure, ad copy, WhatsApp-wired form, conversion tracking and high speed — from {price}.",
     h1Ar: "صفحة هبوط واحدة… هدف واحد: التحويل",
     h1En: "One Landing Page. One Goal. Conversion.",
     subtitleAr:
@@ -426,9 +427,9 @@ const serviceLandingDefaults: Record<string, ServiceLandingContent> = {
     subtitleEn:
       "Your campaign deserves a page that explains the offer in seconds and pushes the visitor to one action — not a full website that scatters attention.",
     answerAr:
-      "صفحة الهبوط هي صفحة مستقلة مصممة حول عرض واحد ودعوة إجراء واحدة، هدفها تحويل الزائر إلى عميل أو تسجيل. تبدأ من 59 دولاراً وتُسلّم في 3 إلى 5 أيام، وتشمل هيكلاً إقناعياً، كتابة إعلانية، نموذجاً مربوطاً بواتساب، تتبّع التحويلات، وسرعة تحميل عالية على الهواتف.",
+      "صفحة الهبوط هي صفحة مستقلة مصممة حول عرض واحد ودعوة إجراء واحدة، هدفها تحويل الزائر إلى عميل أو تسجيل. تبدأ من {price} وتُسلّم في 3 إلى 5 أيام، وتشمل هيكلاً إقناعياً، كتابة إعلانية، نموذجاً مربوطاً بواتساب، تتبّع التحويلات، وسرعة تحميل عالية على الهواتف.",
     answerEn:
-      "A landing page is a standalone page built around a single offer and a single call to action, designed to turn visitors into customers or leads. It starts at $59 and ships in 3–5 days, including a persuasive structure, ad copy, a WhatsApp-connected form, conversion tracking and fast mobile loading.",
+      "A landing page is a standalone page built around a single offer and a single call to action, designed to turn visitors into customers or leads. It starts at {price} and ships in 3–5 days, including a persuasive structure, ad copy, a WhatsApp-connected form, conversion tracking and fast mobile loading.",
     keywordsAr: [
       "تصميم صفحة هبوط",
       "لاندينغ بيج طرابلس",
@@ -498,9 +499,9 @@ const serviceLandingDefaults: Record<string, ServiceLandingContent> = {
     titleAr: "تدقيق وإصلاح الموقع: سرعة، أخطاء، SEO وأمان — طرابلس",
     titleEn: "Website Audit, Speed Fix & SEO Cleanup — Tripoli",
     descriptionAr:
-      "تدقيق 40+ نقطة وإصلاح فوري: بطء التحميل، أخطاء الموبايل، مشاكل SEO، روابط مكسورة وأمان — تقرير قبل/بعد واضح من 15 $.",
+      "تدقيق 40+ نقطة وإصلاح فوري: بطء التحميل، أخطاء الموبايل، مشاكل SEO، روابط مكسورة وأمان — تقرير قبل/بعد واضح من {price}.",
     descriptionEn:
-      "40+ point audit and immediate fixes: slow loading, mobile bugs, SEO issues, broken links and security — a clear before/after report from $15.",
+      "40+ point audit and immediate fixes: slow loading, mobile bugs, SEO issues, broken links and security — a clear before/after report from {price}.",
     h1Ar: "أصلح موقعك: سرعة، أخطاء، SEO وأمان في تقرير واحد",
     h1En: "Fix Your Website: Speed, Bugs, SEO and Security in One Report",
     subtitleAr:
@@ -508,9 +509,9 @@ const serviceLandingDefaults: Record<string, ServiceLandingContent> = {
     subtitleEn:
       "Is your site slow, showing errors or invisible on Google? We inspect it thoroughly, fix what can be fixed immediately, and give you a plain-language report for the rest.",
     answerAr:
-      "خدمة الإصلاح والتحسين هي تدقيق تقني شامل لموقعك يغطي السرعة، التوافق مع الهواتف، أخطاء الزحف والفهرسة، الروابط المكسورة، وأساسيات الأمان. تبدأ من 15 دولاراً، وتشمل إصلاحاً فورياً للأخطاء القابلة للإصلاح وتقريراً قبل/بعد واضحاً — عادة خلال 24 إلى 48 ساعة.",
+      "خدمة الإصلاح والتحسين هي تدقيق تقني شامل لموقعك يغطي السرعة، التوافق مع الهواتف، أخطاء الزحف والفهرسة، الروابط المكسورة، وأساسيات الأمان. تبدأ من {price}، وتشمل إصلاحاً فورياً للأخطاء القابلة للإصلاح وتقريراً قبل/بعد واضحاً — عادة خلال 24 إلى 48 ساعة.",
     answerEn:
-      "The fix-and-optimise service is a full technical audit covering speed, mobile compatibility, crawl and indexing errors, broken links and security basics. It starts at $15, includes immediate fixes for actionable issues and a clear before/after report — usually within 24–48 hours.",
+      "The fix-and-optimise service is a full technical audit covering speed, mobile compatibility, crawl and indexing errors, broken links and security basics. It starts at {price}, includes immediate fixes for actionable issues and a clear before/after report — usually within 24–48 hours.",
     keywordsAr: [
       "إصلاح موقع",
       "تدقيق SEO موقع",
@@ -600,9 +601,25 @@ function genericLanding(service: ServiceLike): ServiceLandingContent {
   };
 }
 
-/** Contenu éditorial complet d'un service (socle par défaut ou repli générique). */
+/**
+ * Contenu éditorial complet d'un service (socle par défaut ou repli générique).
+ *
+ * Le jeton `{price}` est résolu **ici**, avec le prix vivant du service :
+ * changer un tarif dans /admin met à jour la carte, la description, la
+ * réponse « answer-first » et le JSON-LD en même temps. Les textes de
+ * `serviceLandingDefaults` ne doivent jamais contenir un montant en dur.
+ */
 export function resolveServiceLanding(service: ServiceLike): ServiceLandingContent {
-  return serviceLandingDefaults[service.id] ?? genericLanding(service);
+  const base = serviceLandingDefaults[service.id] ?? genericLanding(service);
+  return {
+    ...base,
+    titleAr: fillPriceTokens(base.titleAr, service.priceFromUsd, "ar"),
+    titleEn: fillPriceTokens(base.titleEn, service.priceFromUsd, "en"),
+    descriptionAr: fillPriceTokens(base.descriptionAr, service.priceFromUsd, "ar"),
+    descriptionEn: fillPriceTokens(base.descriptionEn, service.priceFromUsd, "en"),
+    answerAr: fillPriceTokens(base.answerAr, service.priceFromUsd, "ar"),
+    answerEn: fillPriceTokens(base.answerEn, service.priceFromUsd, "en"),
+  };
 }
 
 /** Retrouve un service dans la configuration vivante par son identifiant. */

@@ -40,12 +40,12 @@ export async function generateMetadata({ searchParams }: LocalePageProps): Promi
     `خدمات نخبة الرقمية في طرابلس بأسعار معلنة: إعادة تصميم موقع من ${price("restyle", 49)}، ` +
     `إضافة قسم من ${price("add-section", 19)}، عرض تقديمي من ${price("slides", 29)}، ` +
     `هوية بصرية من ${price("branding", 39)}، صفحة هبوط من ${price("landing", 59)}، ` +
-    `وإصلاح موقع من ${price("fix-optimize", 15)}.`;
+    `وإصلاح موقع من ${price("fix-optimize", 90)}.`;
   const descriptionEn =
     `Nukhba digital services in Tripoli at published prices: site restyle from ${price("restyle", 49)}, ` +
     `new section from ${price("add-section", 19)}, decks from ${price("slides", 29)}, ` +
     `branding from ${price("branding", 39)}, landing page from ${price("landing", 59)}, ` +
-    `fix from ${price("fix-optimize", 15)}.`;
+    `fix from ${price("fix-optimize", 90)}.`;
 
   return pageMetadata(config, {
     locale,

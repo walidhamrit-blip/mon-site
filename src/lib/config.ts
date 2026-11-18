@@ -528,7 +528,10 @@ export const siteConfig = {
       titleEn: "Fix & Optimize",
       descAr: "حل مشاكل السرعة، التجاوب، الأخطاء، الـ SEO، أو الأمان — تدقيق + إصلاح + تقرير.",
       descEn: "Fix speed, responsiveness, bugs, SEO or security — audit + fix + report.",
-      priceFromUsd: 15,
+      // Tarif confirmé par le propriétaire le 18/11/2026 : 90 USD (= 90 USDT).
+      // C'est la valeur de repli si /admin est indisponible ; la valeur vivante
+      // reste celle enregistrée en base.
+      priceFromUsd: 90,
       featuresAr: ["تدقيق شامل", "إصلاح فوري", "تقرير قبل/بعد"],
       featuresEn: ["Full audit", "Instant fix", "Before/after report"],
     },

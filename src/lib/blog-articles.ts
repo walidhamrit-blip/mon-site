@@ -394,8 +394,8 @@ export const blogArticles: BlogArticle[] = [
       {
         qAr: "ماذا لو احتجت تعديلات بعد التسليم؟",
         qEn: "What if I need changes after delivery?",
-        aAr: "التعديلات البسيطة على النصوص والصور مجانية خلال 14 يوماً بعد التسليم. التعديلات الهيكلية لاحقاً تُسعَّر من 15 دولاراً حسب الخدمة المطلوبة.",
-        aEn: "Minor text and image edits are free for 14 days after delivery. Later structural changes are quoted from $15 depending on the service needed.",
+        aAr: "التعديلات البسيطة على النصوص والصور مجانية خلال 14 يوماً بعد التسليم. التعديلات الهيكلية لاحقاً تُسعَّر حسب الخدمة المطلوبة وفق الأسعار المنشورة.",
+        aEn: "Minor text and image edits are free for 14 days after delivery. Later structural changes are quoted per service at our published prices.",
       },
       {
         qAr: "هل يوجد أرخص من ذلك في السوق الليبي؟",
