@@ -37,6 +37,7 @@ import {
   type InstallmentCount,
 } from "@/lib/installments";
 import { PaymentGuarantee } from "@/components/payment-guarantee";
+import { trackEvent } from "@/lib/analytics";
 
 interface CreatePaymentResponse {
   ok: boolean;
@@ -103,6 +104,11 @@ export function CheckoutDialog({
 }) {
   const config = useSiteConfig();
   const { locale, t } = useI18n();
+
+  // Ouverture du dialogue = intention d'achat pour un site / une démo.
+  useEffect(() => {
+    trackEvent({ name: "checkout_start", kind: "website" });
+  }, []);
   const { currency, format } = useCurrency();
   const ar = locale === "ar";
   const [step, setStep] = useState<Step>("form");

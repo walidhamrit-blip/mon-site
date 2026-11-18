@@ -61,7 +61,7 @@ export function Footer({ telegramBot }: { telegramBot?: string }) {
           <h3>{ar ? "لنتواصل" : "Let’s talk"}</h3>
           <ul>
             <li><Link href="/contact">{ar ? "مساعدة وتواصل" : "Help & contact"}</Link></li>
-            <li><WhatsAppEnquiry className="cursor-pointer">WhatsApp ↗</WhatsAppEnquiry></li>
+            <li><WhatsAppEnquiry className="cursor-pointer" source="footer">WhatsApp ↗</WhatsAppEnquiry></li>
             {telegramUrl ? <li><a href={telegramUrl} target="_blank" rel="noopener">Telegram ↗</a></li> : null}
             <li><a href={`mailto:${config.email}`} className="flex items-center gap-2"><Mail className="h-3.5 w-3.5" /><span dir="ltr">{config.email}</span></a></li>
             <li><a href={`tel:${config.phone.replace(/\s/g, "")}`} className="flex items-center gap-2"><Phone className="h-3.5 w-3.5" /><span dir="ltr">{config.phone}</span></a></li>

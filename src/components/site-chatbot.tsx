@@ -376,6 +376,7 @@ function ChatShell() {
                             action.external && /^https:\/\/wa\.me\//i.test(action.href) ? (
                               <WhatsAppEnquiry
                                 key={action.href + action.label}
+                                source="chatbot"
                                 initialSubject={messages.slice(0, messageIndex).reverse().find((item) => item.role === "user")?.text ?? ""}
                                 className="inline-flex items-center gap-1 rounded-full bg-[var(--accent)] px-3 py-1.5 text-[11.5px] font-black text-[var(--accent-foreground)] hover:bg-[var(--accent-hover)] transition-colors"
                               >

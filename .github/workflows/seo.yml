@@ -10,7 +10,7 @@ on:
 jobs:
   seo-audit:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 25
 
     steps:
       - name: Récupération du code
@@ -61,6 +61,10 @@ jobs:
             http://localhost:3100/demos
             http://localhost:3100/pricing
             http://localhost:3100/contact
+            http://localhost:3100/services
+            http://localhost:3100/services/fix-optimize
+            http://localhost:3100/codes
+            http://localhost:3100/codes/steam-card
           configPath: ./lighthouserc.json
           uploadArtifacts: true
           temporaryPublicStorage: true

@@ -67,6 +67,7 @@ export function MidPageCta() {
                 <ArrowUpRight className="h-4 w-4" />
               </button>
               <WhatsAppEnquiry
+                source="mid-page-cta"
                 className="inline-flex h-12 items-center justify-center gap-2 rounded-full border border-white/20 px-6 text-[14px] font-semibold transition-colors hover:bg-white/10"
               >
                 <MessageCircle className="h-4 w-4" />

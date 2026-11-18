@@ -193,6 +193,7 @@ export function Navbar() {
                 <ThemeSwitcher />
               </div>
               <WhatsAppEnquiry
+                source="navbar-desktop"
                 className="hidden h-11 items-center gap-1.5 rounded-full bg-[var(--secondary)] px-4 text-[12.5px] font-semibold text-[var(--foreground)] transition-colors hover:bg-[var(--muted)] 2xl:inline-flex"
               >
                 WhatsApp
@@ -278,6 +279,7 @@ export function Navbar() {
                     <ArrowUpRight className="h-4 w-4 rtl:rotate-180" />
                   </button>
                   <WhatsAppEnquiry
+                    source="navbar-mobile"
                     className="inline-flex min-h-11 w-full items-center justify-center rounded-full bg-[#0B6B3A] px-4 text-[14px] font-bold text-white"
                   >
                     WhatsApp

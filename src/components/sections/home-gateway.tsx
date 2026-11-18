@@ -6,6 +6,7 @@ import { LocalizedLink as Link } from "@/components/localized-link";
 import { ArrowUpRight, Code2, Gift, Gamepad2 } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import { useSiteContent } from "@/components/site-provider";
+import { trackEvent } from "@/lib/analytics";
 
 export function HomeGateway() {
   const { locale } = useI18n();
@@ -20,7 +21,7 @@ export function HomeGateway() {
     <section aria-label={ar ? "اختر ما تحتاجه" : "Choose what you need"} className="home-gateway site-container relative z-10 px-4 sm:px-6 lg:px-8">
       <div className="grid gap-5 md:grid-cols-3">
         {items.map(({ icon: Icon, ...item }, i) => (
-          <Link key={item.href} href={item.href} data-category={i} className="gateway-card group flex flex-col rounded-[var(--radius-lg)] border border-[var(--border)] bg-[var(--card)] p-5 sm:p-6">
+          <Link key={item.href} href={item.href} data-category={i} onClick={() => trackEvent({ name: "gateway_click", path: item.href })} className="gateway-card group flex flex-col rounded-[var(--radius-lg)] border border-[var(--border)] bg-[var(--card)] p-5 sm:p-6">
             <div className="gateway-art">
               <Image src={item.visual.src} alt={ar ? item.visual.altAr || item.title : item.visual.altEn || item.title} fill sizes="(max-width: 768px) 85vw, 380px" className="object-cover object-top" {...imageOptimizationProps(item.visual.src)} />
               <span className="gateway-art-icon"><Icon className="h-5 w-5" /></span>
