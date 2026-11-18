@@ -79,6 +79,9 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
+          gh label create surveillance \
+            --color B60205 \
+            --description "Alerte automatique de disponibilité" 2>/dev/null || true
           numero=$(gh issue list --label surveillance --state open --limit 1 \
             --json number --jq '.[0].number // empty')
           if [ -n "$numero" ]; then
