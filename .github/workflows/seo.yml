@@ -64,7 +64,7 @@ jobs:
             http://localhost:3100/services
             http://localhost:3100/services/fix-optimize
             http://localhost:3100/codes
-            http://localhost:3100/codes/steam-card
+            http://localhost:3100/codes/steam-wallet
           configPath: ./lighthouserc.json
           uploadArtifacts: true
           temporaryPublicStorage: true
