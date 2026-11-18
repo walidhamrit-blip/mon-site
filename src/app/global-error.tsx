@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect } from "react";
 
 /**
  * Dernière frontière d'erreur : elle remplace le layout racine quand celui-ci
@@ -17,6 +18,17 @@ export default function GlobalError({
   error: Error & { digest?: string };
   reset: () => void;
 }) {
+  useEffect(() => {
+    // Sans DSN, on ne télécharge même pas le SDK pour la page d'erreur.
+    if (process.env.NEXT_PUBLIC_SENTRY_DSN) {
+      void import("@sentry/nextjs")
+        .then(({ captureException }) => captureException(error))
+        .catch(() => {
+          // Sentry indisponible : la trace console suffit.
+        });
+    }
+  }, [error]);
+
   return (
     <html lang="ar" dir="rtl">
       <body

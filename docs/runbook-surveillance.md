@@ -38,7 +38,7 @@ La page d'accueil peut être servie depuis un cache ou un repli alors que la bas
 
 ## 2. Mise en place du moniteur externe (30 min)
 
-### Option A — Better Stack (recommandé si page de statut + Telegram)
+### Option A — Better Stack ✅ **choisi le 18/11/2026**
 
 1. Créer un compte sur `betterstack.com`, plan gratuit.
 2. Créer 4 moniteurs HTTP(S) :
@@ -53,7 +53,7 @@ La page d'accueil peut être servie depuis un cache ou un repli alors que la bas
 3. Configurer les alertes : e-mail + Telegram. Escalade après 2 échecs consécutifs (évite les faux positifs).
 4. Activer la page de statut publique seulement si elle est maintenue (sinon, ne pas la publier).
 
-### Option B — UptimeRobot (plus simple)
+### Option B — UptimeRobot (solution de repli, non retenue)
 
 1. Créer un compte, plan gratuit (50 moniteurs, 5 min).
 2. Moniteur HTTP(s) avec **keyword monitoring** sur `/api/health` → `"ok":true`.
@@ -68,16 +68,39 @@ La page d'accueil peut être servie depuis un cache ou un repli alors que la bas
 4. Remettre le moniteur sur la production.
 5. Noter la date du test dans le tableau §8.
 
+### Réglages Better Stack à appliquer tels quels
+
+| Réglage | Valeur |
+|---|---|
+| Type | HTTP(S) |
+| URL santé | `https://nokhba.net.ly/api/health` |
+| Règle de succès | statut `200` **et** corps contenant `"ok":true` |
+| Intervalle | 3 min |
+| Régions | 2 régions (Europe + Moyen-Orient si disponible) |
+| Confirmation | 2 échecs consécutifs avant alerte |
+| Timeout | 10 s |
+| Alerte | e-mail + Telegram |
+| Page de statut | privée au départ, publique seulement si maintenue |
+
+> Ne jamais mettre `CRON_SECRET` ni aucun en-tête d'authentification dans le
+> moniteur : la sonde publique suffit et un secret chez un tiers est une fuite.
+
 ---
 
 ## 3. Mise en place de Sentry (1 h, action propriétaire + agent)
 
+> **État du code (18/11/2026, C-04) :** l'intégration est écrite et testée.
+> Sans DSN, le SDK n'est **ni chargé ni téléchargé** : aucun impact sur le
+> build, le serveur ou le navigateur. Il ne manque que le compte et les
+> variables d'environnement.
+
 1. Créer un projet **Next.js** sur `sentry.io` (plan gratuit).
-2. Récupérer le **DSN** et le stocker dans Vercel → Settings → Environment Variables → Production :
-   - `SENTRY_DSN`
-   - `SENTRY_AUTH_TOKEN` (pour les source maps — scope `project:releases`)
-   - `SENTRY_ORG`, `SENTRY_PROJECT`
-3. **Ne jamais** committer ces valeurs ; `.env*` est déjà ignoré.
+2. Récupérer le **DSN** et le stocker dans Vercel → Settings → Environment Variables (Production **et** Preview) :
+   - `SENTRY_DSN` — événements serveur et tunnel ;
+   - `NEXT_PUBLIC_SENTRY_DSN` — **le même DSN**, pour les erreurs navigateur (il est public par nature : il ne permet que d'écrire, pas de lire) ;
+   - `SENTRY_AUTH_TOKEN` (scope `project:releases`, pour les source maps) ;
+   - `SENTRY_ORG`, `SENTRY_PROJECT`.
+3. **Ne jamais** committer ces valeurs ; `.env*` est déjà ignoré. Un jeton collé dans un chat doit être révoqué.
 4. Redéployer (un déploiement existant ne relit pas les nouvelles variables).
 5. Vérifier : provoquer une erreur sur une **preview** (route de test), constater l'événement dans Sentry avec la pile et le commit.
 6. Vérifier qu'une preview **sans** `SENTRY_DSN` build et fonctionne normalement.
@@ -85,7 +108,18 @@ La page d'accueil peut être servie depuis un cache ou un repli alors que la bas
    - nouvelle issue → e-mail ;
    - erreur sur `/api/payments/*`, `/api/lead`, `/codes/commande` → e-mail + Telegram ;
    - taux d'erreur > 2 % sur 5 min → e-mail + Telegram.
-8. Vérifier la confidentialité : aucun e-mail, téléphone ou référence de commande visible dans les événements.
+8. Vérifier la confidentialité : aucun e-mail, téléphone, cookie, en-tête ni référence de commande visible dans les événements.
+
+### Ce que le code applique déjà
+
+| Réglage | Valeur | Pourquoi |
+|---|---|---|
+| Collecte des données | `dataCollection` : identité, cookies, en-têtes, corps, query string **tous désactivés** | Sentry 11 collecte ces champs par défaut |
+| Filtre supplémentaire | `scrubSentryEvent` (`src/lib/sentry-scrub.ts`) | retire URL de requête, cookies, corps, query des breadcrumbs |
+| Échantillonnage | traces `0.1`, replays `0` | quota et vie privée |
+| Tunnel | `POST /monitoring` → Sentry, DSN autorisés uniquement | contourne les bloqueurs de publicité |
+| Chargement | `import()` conditionnel | zéro octet Sentry sans DSN |
+| Source maps | upload uniquement si jeton + org + projet | un build sans jeton ne casse pas |
 
 **À ne pas faire :** activer les replays de session au départ (données personnelles, poids), ni `tracesSampleRate: 1.0` (coût et bruit).
 

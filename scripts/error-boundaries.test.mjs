@@ -79,3 +79,60 @@ test("onRequestError journalise un JSON structuré sans en-têtes", () => {
     "ne jamais journaliser les en-têtes (cookies, jetons)",
   );
 });
+
+const sentryServerConfig = "src/sentry.server.config.ts";
+const sentryEdgeConfig = "src/sentry.edge.config.ts";
+const sentryClientConfig = "src/instrumentation-client.ts";
+const sentryTunnel = "src/app/monitoring/route.ts";
+
+test("Sentry reste inactif sans DSN et ne collecte aucune donnée personnelle", () => {
+  for (const path of [sentryServerConfig, sentryEdgeConfig, sentryClientConfig]) {
+    const source = read(path);
+    assert.match(source, /userInfo: false/, `${path} ne doit pas envoyer d'identité`);
+    assert.match(source, /cookies: false/, `${path} ne doit pas envoyer de cookies`);
+    assert.match(source, /httpHeaders: false/, `${path} ne doit pas envoyer d'en-têtes`);
+    assert.match(source, /httpBodies: \[\]/, `${path} ne doit pas envoyer de corps`);
+    assert.match(source, /urlQueryParams: false/, `${path} ne doit pas envoyer de query`);
+    assert.match(source, /tracesSampleRate: 0\.1/, `${path} doit échantillonner les traces`);
+    assert.match(source, /traceLifecycle: "static"/, `${path} doit filtrer les transactions`);
+    assert.match(source, /scrubSentryEvent/, `${path} doit filtrer les requêtes`);
+    assert.doesNotMatch(
+      source,
+      /https:\/\/[a-f0-9]{16,}@/i,
+      `${path} ne doit contenir aucun DSN en dur`,
+    );
+    assert.doesNotMatch(
+      source,
+      /replaysSessionSampleRate:\s*(?:0\.[1-9]|[1-9])/,
+      `${path} ne doit pas enregistrer de session`,
+    );
+  }
+
+  // Serveur/Edge : le SDK s'initialise mais reste désactivé sans DSN.
+  for (const path of [sentryServerConfig, sentryEdgeConfig]) {
+    assert.match(read(path), /enabled: Boolean\(dsn\)/);
+  }
+  // Navigateur : le SDK n'est même pas téléchargé sans DSN.
+  assert.match(read(sentryClientConfig), /if \(dsn\) \{/);
+});
+
+test("le tunnel Sentry n'est pas un proxy ouvert", () => {
+  const source = read(sentryTunnel);
+  assert.match(source, /createSentryTunnelRoute/);
+  assert.match(source, /allowedDsns/);
+  assert.match(source, /SENTRY_DSN/);
+  assert.match(read(sentryClientConfig), /tunnel: "\/monitoring"/);
+});
+
+test("les frontières et l'instrumentation transmettent les erreurs à Sentry", () => {
+  for (const path of [siteError, adminError, globalError]) {
+    const boundary = read(path);
+    assert.match(boundary, /NEXT_PUBLIC_SENTRY_DSN/, `${path} doit vérifier le DSN`);
+    assert.match(boundary, /captureException\(error\)/, `${path} doit remonter l'erreur`);
+  }
+  const source = read(instrumentation);
+  assert.match(source, /export async function register/);
+  assert.match(source, /sentry\.server\.config/);
+  assert.match(source, /sentry\.edge\.config/);
+  assert.match(source, /Sentry\.captureRequestError\(error, request, context\)/);
+});

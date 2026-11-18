@@ -40,11 +40,11 @@ jobs:
         run: npm ci
 
       # Les dépendances de production seulement : un avis « high » doit
-      # arrêter la CI, mais les outils de build (ESLint, PostCSS) ne sont pas
-      # embarqués dans le déploiement. `--audit-level=high` laisse passer les
-      # modérés, visibles dans le rapport sans bloquer chaque pull request.
+      # arrêter la CI. Le script applique des exceptions datées et justifiées
+      # (aujourd'hui : un ReDoS de build sans correctif, jamais déployé) et
+      # refuse toute exception expirée.
       - name: Audit des dépendances (production)
-        run: npm audit --omit=dev --audit-level=high
+        run: node scripts/audit-prod.mjs
 
       - name: Lint (ESLint 9, flat config)
         run: npm run lint

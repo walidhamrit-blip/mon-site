@@ -21,6 +21,14 @@ export default function AdminError({
     console.error(
       `[admin] rendu en erreur${error.digest ? ` (digest ${error.digest})` : ""}`,
     );
+    // Sans DSN, on ne télécharge même pas le SDK pour la page d'erreur.
+    if (process.env.NEXT_PUBLIC_SENTRY_DSN) {
+      void import("@sentry/nextjs")
+        .then(({ captureException }) => captureException(error))
+        .catch(() => {
+          // Sentry indisponible : la trace console suffit.
+        });
+    }
   }, [error]);
 
   return (

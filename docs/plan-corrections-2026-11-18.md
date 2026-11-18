@@ -5,11 +5,13 @@
 **Périmètre :** code source, build local, tests, configuration de déploiement.
 **Hors périmètre (non accessible depuis cet environnement) :** base de production, logs Vercel, Search Console, analytics réels, site live.
 
-> **Mise à jour du 18/11/2026 :** D1 validé (**90 USDT**) ; **C-01, C-02 et C-03 appliqués**.
-> Prix à source unique, dépendances de production à 0 vulnérabilité,
-> frontières d'erreur et instrumentation serveur en place — **1033 tests verts**,
-> build et `seo:check` OK. C-04 (Sentry) et C-05 (uptime) restent à lancer.
-> Le diagnostic initial est conservé pour référence.
+> **Mise à jour du 18/11/2026 :** D1 (**90 USDT**) et D2 (**Better Stack**)
+> validés ; **C-01 à C-04 appliqués** (C-04 : code prêt, DSN à ajouter).
+> Prix à source unique, outils de build sans avis bloquant non justifié,
+> frontières d'erreur, instrumentation serveur et SDK Sentry conditionnel —
+> **tests verts**, build et `seo:check` OK. Reste C-05 : créer le compte
+> Better Stack et brancher les alertes. Le diagnostic initial est conservé
+> pour référence.
 
 ---
 
@@ -80,8 +82,8 @@ Les vrais risques sont ailleurs :
 |---|---|---|
 | Cohérence commerciale (prix, offres) | 🟢 Corrigée le 18/11 (90 unique) | — |
 | Robustesse runtime (erreurs, récupération) | 🟢 Frontières + instrumentation (18/11) | — |
-| Sécurité des dépendances | 🟢 0 vulnérabilité de production (18/11) | — |
-| Observabilité (erreurs, disponibilité) | 🟠 Analytics présent, alertes absentes | **P1** |
+| Sécurité des dépendances | 🟢 0 avis bloquant non justifié (18/11) | — |
+| Observabilité (erreurs, disponibilité) | 🟠 Sentry prêt (DSN à ajouter), uptime non installé | **P1** |
 | Preuve / conversion | 🟠 Base solide, preuves insuffisantes | **P1** |
 | Clarté de l'accueil | 🟠 Deux parcours, trop d'entrées | **P1** |
 | Performance | 🟢 Bonne base, tout est dynamique | P2 |
@@ -198,9 +200,10 @@ Les avis Next concernent précisément un mécanisme que le site utilise massive
 **Correction appliquée (18/11/2026).**
 - `next` **16.4.2 → 16.4.6**, `nodemailer` **10.1.2 → 10.6.0**, `postcss` **8.5.8 → 8.5.33**.
 - `npm audit --omit=dev` : **0 vulnérabilité**.
-- CI : étape `npm audit --omit=dev --audit-level=high` ajoutée avant le lint.
+- CI : étape `node scripts/audit-prod.mjs` avant le lint. Le script échoue sur tout avis high/critical non justifié, imprime les exceptions et refuse celles qui ont expiré.
 - `.github/dependabot.yml` : mises à jour hebdomadaires groupées (production / développement), majeures Next/React en PR séparées, GitHub Actions mensuelles.
-- Note honnête : un `npm audit` complet (outils de développement inclus) conserve des avis dans la chaîne ESLint. `npm audit fix --force` propose de **rétrograder** `eslint-config-next` (14.x) : refusé, car ces paquets ne sont pas déployés et la rétrogradation casserait la configuration. À suivre via Dependabot.
+- **Exception documentée (ajoutée le 18/11 avec Sentry) :** `GHSA-fc5q-39xc-vjpf`, ReDoS dans `picomatch` ≤ 4.0.7, tiré par `@sentry/bundler-plugins`. Aucun correctif publié à ce jour ; ce code sert uniquement au build des source maps, n'est ni déployé ni exécuté au runtime. Exception datée au **31/01/2027** dans `scripts/audit-prod.mjs` : dès qu'une version corrigée sort, Dependabot la propose et l'exception doit être retirée.
+- Note honnête : un `npm audit` complet (outils de développement inclus) conserve des avis dans la chaîne ESLint. `npm audit fix --force` propose de **rétrograder** `eslint-config-next` ou `@sentry/nextjs` : refusé, car ces paquets ne sont pas déployés et la rétrogradation casserait la configuration.
 
 ---
 
@@ -237,8 +240,8 @@ Les avis Next concernent précisément un mécanisme que le site utilise massive
 **Correction.**
 1. Installer Sentry (offre gratuite ; vérifier le quota mensuel actuel, il suffit largement pour un site de cette taille).
 2. Configuration manuelle plutôt que wizard : `sentry.server.config.ts`, `sentry.edge.config.ts`, `src/instrumentation-client.ts`, `withSentryConfig`.
-3. `tunnelRoute: "/monitoring"` pour éviter les bloqueurs de publicité et **ne pas élargir la CSP**.
-4. Confidentialité : `sendDefaultPii: false`, `replaysSessionSampleRate: 0` au départ, `beforeSend` qui masque e-mails, téléphones et références de commande.
+3. Tunnel `POST /monitoring` (route propre, DSN autorisés uniquement) pour éviter les bloqueurs de publicité et **ne pas élargir la CSP**.
+4. Confidentialité : `dataCollection` coupe identité, cookies, en-têtes, corps et query string ; `replaysSessionSampleRate: 0` ; filtre `scrubSentryEvent` en plus.
 5. Échantillonnage : `tracesSampleRate: 0.1` (pas 1.0), `profilesSampleRate: 0`.
 6. Source maps : `SENTRY_AUTH_TOKEN` côté Vercel (action propriétaire), jamais dans le dépôt.
 7. Le DSN doit être **optionnel** : sans `SENTRY_DSN`, le build et le site fonctionnent exactement comme aujourd'hui (même philosophie que le repli base).
@@ -247,6 +250,15 @@ Les avis Next concernent précisément un mécanisme que le site utilise massive
 
 **Critère d'acceptation.** Une erreur provoquée en preview apparaît dans Sentry avec la pile, le chemin et la version ; aucune donnée personnelle visible ; le build sans DSN passe.
 **Effort.** 1 session + création du compte. **Risque.** Moyen (poids client, CSP) → tunnel + échantillonnage faible.
+
+**Correction appliquée (18/11/2026) — code prêt, compte à créer.**
+- Ajout de `@sentry/nextjs` **11.14.0** et de quatre points d'entrée : `src/sentry.server.config.ts`, `src/sentry.edge.config.ts`, `src/instrumentation-client.ts`, `src/app/monitoring/route.ts`.
+- `register()` et `onRequestError` n'importent le SDK que si `SENTRY_DSN` existe ; le navigateur ne télécharge le SDK que si `NEXT_PUBLIC_SENTRY_DSN` existe. **Sans DSN : zéro octet, zéro requête, build identique.**
+- Confidentialité : Sentry 11 collecte par défaut identité, cookies, en-têtes, corps et query string ; tout est coupé via `dataCollection`, puis `scrubSentryEvent` retire URL de requête, cookies et corps. `traceLifecycle: "static"` rend le filtre des transactions effectif.
+- Tunnel : route `POST /monitoring` avec liste blanche de DSN (testé : DSN étranger → **403**, sans DSN → **404**). La CSP n'a pas été élargie.
+- `withSentryConfig` n'est activé que si un DSN ou un jeton d'upload existe : sans cela, le build reste nu ; avec DSN factice, le build passe et l'inclusion des fichiers `server-runtime-injection` est correcte (plus d'avertissement au démarrage).
+- Tests : 3 cas ajoutés (désactivation sans DSN, absence de PII, tunnel non ouvert) → `npm run test:resilience` = **9/9**.
+- **Reste à faire (propriétaire) :** créer le projet Sentry, coller `SENTRY_DSN` + `NEXT_PUBLIC_SENTRY_DSN` dans Vercel (Production et Preview), redéployer, puis provoquer une erreur pour vérifier l'arrivée de l'événement.
 
 ---
 
@@ -426,7 +438,7 @@ Transformer la surveillance en abonnement (site + uptime + rapport mensuel). À 
 | ID | Décision | Recommandation |
 |---|---|---|
 | D1 | Prix de départ `Fix & Optimize` | ✅ **90 USDT** (confirmé le 18/11/2026). Un seul chiffre, partout. |
-| D2 | Moniteur de disponibilité | **Better Stack** (3 min, page de statut, Telegram) ou **UptimeRobot** (5 min, plus simple). Un seul suffit. |
+| D2 | Moniteur de disponibilité | ✅ **Better Stack** (choisi le 18/11/2026) : 3 min, page de statut, Telegram. UptimeRobot reste la solution de repli. |
 | D3 | Nokhba AI Doctor | D'abord **aimant à prospects** (scan gratuit, réparation payante), pas un produit autonome. |
 | D4 | Témoignages sans accord écrit | **Anonymiser** ou retirer avant publication. |
 
@@ -460,9 +472,9 @@ Attendu : 0 erreur de type, 0 vulnérabilité, tests verts, build OK.
 
 ### Lot 2 — Voir les pannes (1 session + comptes)
 
-**Tâches :** C-04, C-05, runbook.
+**Tâches :** C-04 ✅ (code), C-05, runbook ✅.
 
-**Actions propriétaire :** créer le projet Sentry, copier `SENTRY_DSN`, créer `SENTRY_AUTH_TOKEN` dans Vercel, créer le moniteur et les alertes.
+**Actions propriétaire :** créer le projet Sentry et copier `SENTRY_DSN` + `NEXT_PUBLIC_SENTRY_DSN` dans Vercel ; créer `SENTRY_AUTH_TOKEN` ; créer les moniteurs Better Stack et les alertes Telegram.
 
 **Exercices de validation :**
 - preview avec `SENTRY_DSN` absent → build OK ;
@@ -815,4 +827,4 @@ Après réponse, l'ordre d'exécution est : **Lot 1** (prix, dépendances, erreu
 
 ---
 
-*Document préparé le 18/11/2026. C-01, C-02 et C-03 appliqués le même jour ; C-04 et C-05 restent à lancer. Les constats sont reproductibles avec les commandes du §10.*
+*Document préparé le 18/11/2026. C-01, C-02 et C-03 appliqués le même jour ; C-04 écrit et testé, en attente du DSN ; C-05 reste à lancer (compte Better Stack). Les constats sont reproductibles avec les commandes du §10.*

@@ -8,8 +8,8 @@ import { useEffect } from "react";
  *
  * Elle garde l'identité du site, propose une reprise (`reset`) et un chemin de
  * secours (accueil, contact). Le message technique n'est jamais rendu : seul
- * le `digest` est affiché, et la remontée centralisée arrivera avec Sentry
- * (C-04). Sans elle, Next afficherait une page générique sans marque.
+ * le `digest` est affiché. L'erreur est aussi transmise à Sentry (C-04),
+ * désactivé tant qu'aucun DSN n'est configuré.
  */
 export default function SiteError({
   error,
@@ -23,6 +23,15 @@ export default function SiteError({
     console.error(
       `[site] rendu en erreur${error.digest ? ` (digest ${error.digest})` : ""}`,
     );
+    // Sentry ajoute le contexte technique (pile, route) ; sans DSN, no-op.
+    // Sans DSN, on ne télécharge même pas le SDK pour la page d'erreur.
+    if (process.env.NEXT_PUBLIC_SENTRY_DSN) {
+      void import("@sentry/nextjs")
+        .then(({ captureException }) => captureException(error))
+        .catch(() => {
+          // Sentry indisponible : la trace console suffit.
+        });
+    }
   }, [error]);
 
   return (

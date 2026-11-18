@@ -1,3 +1,4 @@
+import { withSentryConfig } from "@sentry/nextjs/config";
 import type { NextConfig } from "next";
 import { OPTIMIZED_IMAGE_HOSTS } from "./src/lib/image-source";
 
@@ -214,4 +215,33 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default nextConfig;
+// Sentry — l'enveloppe de build n'est activée que si Sentry est réellement
+// utilisé (DSN présent) ou si l'upload des source maps est configuré.
+//
+// - Sans DSN : configuration nue, build strictement identique à l'état
+//   précédent, aucun paquet Sentry dans le serveur.
+// - Avec DSN : `withSentryConfig` active l'instrumentation de build et
+//   inclut les fichiers de tracing manquants (`server-runtime-injection`).
+// - Upload des source maps seulement si jeton + organisation + projet.
+//   (Commentaires en `//` volontairement : les motifs `/**` des globs
+//   d'images trompent le nettoyeur de commentaires de certains tests.)
+const sentryUploadEnabled = Boolean(
+  process.env.SENTRY_AUTH_TOKEN &&
+    process.env.SENTRY_ORG &&
+    process.env.SENTRY_PROJECT,
+);
+const sentryBuildEnabled = Boolean(
+  process.env.SENTRY_DSN ||
+    process.env.NEXT_PUBLIC_SENTRY_DSN ||
+    sentryUploadEnabled,
+);
+
+export default sentryBuildEnabled
+  ? withSentryConfig(nextConfig, {
+      org: process.env.SENTRY_ORG,
+      project: process.env.SENTRY_PROJECT,
+      silent: true,
+      widenClientFileUpload: false,
+      sourcemaps: { disable: !sentryUploadEnabled },
+    })
+  : nextConfig;
