@@ -23,6 +23,7 @@ import {
   listPhoneCardPayments,
   type AdminPhoneCardPaymentRow,
 } from "@/lib/phone-card-payments";
+import { describeDbError } from "@/lib/db-error";
 
 export const dynamic = "force-dynamic";
 
@@ -42,11 +43,21 @@ export default async function AdminDigitalOrdersPage() {
   let orders: AdminDigitalOrder[] = [];
   let phoneCardPayments: AdminPhoneCardPaymentRow[] = [];
   let dbError: string | null = null;
+  // Une seule requête en échec (par exemple une colonne manquante sur
+  // `phone_card_payments`) ne doit pas effacer tout l'écran : les commandes
+  // restent affichées et seule la file des preuves est signalée.
+  let phoneCardError: string | null = null;
   try {
     orders = await listDigitalOrders(200);
-    phoneCardPayments = await listPhoneCardPayments(200);
   } catch (error) {
-    dbError = error instanceof Error ? error.message : String(error);
+    dbError = describeDbError(error);
+  }
+  if (!dbError) {
+    try {
+      phoneCardPayments = await listPhoneCardPayments(200);
+    } catch (error) {
+      phoneCardError = describeDbError(error);
+    }
   }
 
   const { config } = await getSiteData();
@@ -108,6 +119,13 @@ export default async function AdminDigitalOrdersPage() {
       {dbError && (
         <div className="rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-800">
           Base de données inaccessible : {dbError}
+        </div>
+      )}
+
+      {phoneCardError && (
+        <div className="rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-800">
+          Preuves de cartes téléphoniques illisibles (les commandes ci-dessous
+          restent disponibles) : {phoneCardError}
         </div>
       )}
 
