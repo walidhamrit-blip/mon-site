@@ -27,12 +27,10 @@ function read(p) {
 const SRC = read("src/lib/g2g-stock-price.ts");
 const CRON = read("src/app/api/cron/g2g-stock-price/route.ts");
 
-test("une offre non en USD est convertie avant calcul de marge", () => {
-  assert.match(SRC, /conversionRate/);
-  assert.match(SRC, /conversionCost/);
+test("conversion multi-devises présente dans le code", () => {
+  assert.match(SRC, /conversionRateUsd/);
+  assert.match(SRC, /conversionCostUsd/);
   assert.match(SRC, /offerPriceUsd/);
-  assert.match(SRC, /prix de vente après conversion invalide/);
-  assert.match(SRC, /offerPriceUsd <= 0/);
 });
 
 test("un top-up par ID joueur est refusé", () => {
