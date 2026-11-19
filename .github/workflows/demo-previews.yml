@@ -145,7 +145,7 @@ jobs:
 
       - name: Alerte — démos hors ligne
         if: always() && steps.report.outputs.down_count != '0'
-        uses: actions/github-script@v8
+        uses: actions/github-script@v9
         env:
           # Le corps du rapport est multi-ligne : l'injecter dans une chaîne
           # JS produirait des retours à la ligne dans le source et une

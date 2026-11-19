@@ -198,7 +198,7 @@ jobs:
 
       - name: Issue — sites sans badge
         if: always() && steps.summary.outputs.missing != '0'
-        uses: actions/github-script@v8
+        uses: actions/github-script@v9
         env:
           # Le corps du rapport est multi-ligne : l'injecter dans une chaîne
           # JS produirait des retours à la ligne dans le source et une
@@ -257,7 +257,7 @@ jobs:
 
       - name: Clôture de l'issue quand tout est bon
         if: always() && steps.summary.outputs.missing == '0'
-        uses: actions/github-script@v8
+        uses: actions/github-script@v9
         with:
           script: |
             const title = "Badge client : sites à corriger (netlinking)";
