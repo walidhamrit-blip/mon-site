@@ -28,7 +28,7 @@ jobs:
 
     steps:
       - name: Récupération du code
-        uses: actions/checkout@v5
+        uses: actions/checkout@v7
 
       - name: Installation Node.js
         uses: actions/setup-node@v5
