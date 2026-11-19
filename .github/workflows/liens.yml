@@ -73,6 +73,12 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
+          # Un contrôle reporté (sitemap limité) ne prouve pas un rétablissement :
+          # on conserve l'issue ouverte.
+          if grep -q "Résultat : REPORTÉ" "$RUNNER_TEMP/rapport.md"; then
+            echo "Contrôle reporté : issue conservée."
+            exit 0
+          fi
           gh label create liens \
             --color D93F0B \
             --description "Lien cassé détecté automatiquement" 2>/dev/null || true

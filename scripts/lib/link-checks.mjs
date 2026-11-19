@@ -83,6 +83,11 @@ export function classifyStatus(status) {
   return "warn";
 }
 
+/** Ces statuts valent une nouvelle tentative : limitation ou incident passager. */
+export function isRetryableStatus(status) {
+  return status === 429 || status >= 500;
+}
+
 /** Résumé lisible pour le rapport et l'issue. */
 export function summarize(results) {
   const failures = results.filter((result) => result.status === "fail");

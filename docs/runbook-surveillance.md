@@ -171,6 +171,11 @@ du lundi suivant **ferme** l'issue si tout est revenu à la normale. Un
 **401/403/429** n'est qu'un avertissement : ces codes viennent presque toujours
 d'une protection anti-robots, pas d'un lien mort.
 
+Les **timeouts réseau, 429 et 5xx** sont retentés deux fois (pause de 2 s puis
+5 s) avant d'être comptés : un scan lancé juste après un déploiement ne doit
+pas ouvrir une fausse alerte. Si le **sitemap** répond 429, le contrôle est
+**reporté** (sortie 0, issue conservée) au lieu d'être déclaré en échec.
+
 Reproduction à la main :
 
 ```bash

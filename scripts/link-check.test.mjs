@@ -8,6 +8,7 @@ import assert from "node:assert/strict";
 import {
   classifyStatus,
   extractLinks,
+  isRetryableStatus,
   isSameOrigin,
   parseSitemap,
   summarize,
@@ -58,6 +59,15 @@ test("statuts : 404/410/5xx échouent, 401/403/429 avertissent", () => {
   assert.equal(classifyStatus(500), "fail");
   assert.equal(classifyStatus(403), "warn");
   assert.equal(classifyStatus(429), "warn");
+});
+
+test("seuls 429 et 5xx méritent une nouvelle tentative", () => {
+  assert.equal(isRetryableStatus(429), true);
+  assert.equal(isRetryableStatus(500), true);
+  assert.equal(isRetryableStatus(503), true);
+  assert.equal(isRetryableStatus(404), false);
+  assert.equal(isRetryableStatus(403), false);
+  assert.equal(isRetryableStatus(200), false);
 });
 
 test("résumé : compte les échecs et les avertissements", () => {
