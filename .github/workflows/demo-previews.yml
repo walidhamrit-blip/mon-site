@@ -231,7 +231,7 @@ jobs:
         id: pr
         continue-on-error: true
         if: always() && steps.report.outputs.down_count == '0' && steps.report.outputs.error_count == '0'
-        uses: peter-evans/create-pull-request@v7
+        uses: peter-evans/create-pull-request@v8
         with:
           branch: chore/demo-previews
           delete-branch: true

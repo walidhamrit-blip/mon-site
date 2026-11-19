@@ -172,7 +172,7 @@ jobs:
       - name: Proposition de mise à jour du statut
         id: pr
         continue-on-error: true
-        uses: peter-evans/create-pull-request@v7
+        uses: peter-evans/create-pull-request@v8
         with:
           branch: chore/badge-status
           delete-branch: true
