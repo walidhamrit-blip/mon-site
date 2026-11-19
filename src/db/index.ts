@@ -451,6 +451,7 @@ export function ensureSchema(): Promise<void> {
           code_fingerprint text NOT NULL UNIQUE,
           code_hint text NOT NULL,
           status text NOT NULL DEFAULT 'pending',
+          subscription_id integer,
           reviewed_at timestamptz,
           review_note text
         )
@@ -464,7 +465,8 @@ export function ensureSchema(): Promise<void> {
           ADD COLUMN IF NOT EXISTS quote_source text,
           ADD COLUMN IF NOT EXISTS quote_rate_updated_at timestamptz,
           ADD COLUMN IF NOT EXISTS quote_fetched_at timestamptz,
-          ADD COLUMN IF NOT EXISTS quote_references jsonb
+          ADD COLUMN IF NOT EXISTS quote_references jsonb,
+          ADD COLUMN IF NOT EXISTS subscription_id integer
       `);
       await pool.query(
         "CREATE INDEX IF NOT EXISTS phone_card_payments_status_idx ON phone_card_payments (status, created_at DESC)",

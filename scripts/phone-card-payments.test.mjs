@@ -417,3 +417,62 @@ test("un taux modifié est rechargé et l'information client reste cohérente", 
   const assistant = read("src/lib/site-assistant.ts");
   assert.match(assistant, /Never invent a live rate/);
 });
+
+test("chaque colonne du schéma Drizzle existe dans le DDL auto-migré", () => {
+  // `ensureSchema()` crée et met à niveau les tables sur Vercel : une colonne
+  // ajoutée au schéma sans DDL correspondant fait échouer toute lecture
+  // complète de la table (« Failed query: select … ») alors que la base est
+  // saine. C'est exactement l'erreur affichée dans /admin/digital/orders.
+  const schema = read("src/db/schema.ts");
+  const ddl = read("src/db/index.ts");
+
+  // Colonnes servies par le DDL : CREATE TABLE (colonnes listées) puis
+  // ALTER TABLE ... ADD COLUMN IF NOT EXISTS.
+  const served = new Set();
+  const tables = new Set();
+  for (const statement of ddl.split("pool.query(").slice(1)) {
+    const sql = statement.replace(/`/g, "").replace(/"/g, "");
+    const create = sql.match(/CREATE TABLE IF NOT EXISTS\s+(\w+)\s*\(([\s\S]*?)\n\s*\)/);
+    if (create) {
+      tables.add(create[1]);
+      for (const column of create[2].matchAll(/^\s*(\w+)\s+\w/gm)) {
+        served.add(`${create[1]}.${column[1]}`);
+      }
+      continue;
+    }
+    const alter = sql.match(/ALTER TABLE\s+(\w+)([\s\S]*?)(?:`|$)/);
+    if (alter) {
+      for (const column of alter[2].matchAll(/ADD COLUMN IF NOT EXISTS\s+(\w+)/g)) {
+        served.add(`${alter[1]}.${column[1]}`);
+      }
+    }
+  }
+
+  const missing = [];
+  for (const match of schema.matchAll(/pgTable\(\s*\n?\s*"([a-z_]+)"/g)) {
+    const table = match[1];
+    if (!tables.has(table)) {
+      missing.push(`${table} (table absente du DDL)`);
+      continue;
+    }
+    const body = schema.slice(match.index, schema.indexOf("export const", match.index + 1));
+    for (const column of body.matchAll(/^\s+\w+: \w+\("([a-z_]+)"/gm)) {
+      if (!served.has(`${table}.${column[1]}`)) missing.push(`${table}.${column[1]}`);
+    }
+  }
+  assert.deepEqual(missing, []);
+});
+
+test("l'erreur SQL affichée à l'admin montre la cause, pas la requête entière", async () => {
+  // Drizzle met le vrai motif dans `cause` : sans lui, l'admin ne lit qu'un
+  // « Failed query: select … » de 1 500 caractères, illisible.
+  const { describeDbError } = await import("../src/lib/db-error.ts");
+  const cause = new Error('column "subscription_id" does not exist');
+  const wrapped = new Error(`Failed query: select ${"col, ".repeat(200)}from "phone_card_payments"`);
+  wrapped.cause = cause;
+  const message = describeDbError(wrapped);
+  assert.match(message, /column "subscription_id" does not exist/);
+  assert.ok(message.length < 400, "le message reste lisible");
+  assert.equal(describeDbError(new Error("DATABASE_URL is required")), "DATABASE_URL is required");
+  assert.equal(describeDbError(null), "null");
+});
