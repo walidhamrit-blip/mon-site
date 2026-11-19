@@ -24,6 +24,7 @@ import {
   type ManualPaymentDraft,
 } from "@/components/manual-payment-form";
 import type { PublicManualPaymentOption } from "@/lib/manual-payment-public";
+import { trackEvent } from "@/lib/analytics";
 
 const MAX_QUANTITY = 10;
 /** Mémorise la dernière commande du visiteur pour préremplir le suivi. */
@@ -43,6 +44,11 @@ interface Props {
  */
 export function DigitalBuyDialog({ product, denominationId, onClose }: Props) {
   const { locale, t } = useI18n();
+
+  // Ouverture du dialogue = début de checkout pour ce type de produit.
+  useEffect(() => {
+    trackEvent({ name: "checkout_start", kind: product.kind });
+  }, [product.kind]);
   const siteConfig = useSiteConfig();
   const ar = locale === "ar";
 

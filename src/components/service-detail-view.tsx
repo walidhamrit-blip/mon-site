@@ -1,11 +1,14 @@
 "use client";
 
+import { useEffect } from "react";
+
 import { LocalizedLink as Link } from "@/components/localized-link";
 import { ArrowLeft, Check, Clock, MessageCircle, ShieldCheck, Sparkles } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import { Price } from "@/components/price";
 import { fillTemplate, renderTemplate } from "@/lib/text-template";
 import { servicePath, type ServiceLike, type ServiceLandingContent } from "@/lib/services";
+import { trackEvent } from "@/lib/analytics";
 
 /**
  * Page d'un service (/services/[service]) — composant client.
@@ -43,6 +46,12 @@ export function ServiceDetailView({
 }) {
   const { locale, t } = useI18n();
   const ar = locale === "ar";
+
+  // Une vue par service, pas par rendu : la dépendance est l'identifiant.
+  useEffect(() => {
+    trackEvent({ name: "service_view", id: service.id });
+  }, [service.id]);
+
   const s = t.serviceDetail;
   const pick = <T,>(arValue: T, enValue: T): T => (ar ? arValue : enValue);
 

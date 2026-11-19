@@ -156,6 +156,35 @@ sur la branche par défaut). Lancement manuel possible depuis l'onglet Actions.
 | Mensuel | `npm audit` complet + mise à jour des dépendances | local / Dependabot |
 | Trimestriel | Exercice de restauration base | Neon |
 
+### 4 bis. Contrôle automatique des liens (lundi 05:23 UTC)
+
+`.github/workflows/liens.yml` exécute `scripts/link-check.mjs` sur la
+production :
+
+- toutes les pages du sitemap (40 maximum) ;
+- jusqu'à 80 liens internes découverts dans ces pages ;
+- jusqu'à 60 liens externes, dont 5 par page au maximum.
+
+Un **404/410/5xx** est un échec : l'issue `liens` est créée (ou complétée d'un
+commentaire) avec le rapport, l'URL fautive et la page d'origine. Le workflow
+du lundi suivant **ferme** l'issue si tout est revenu à la normale. Un
+**401/403/429** n'est qu'un avertissement : ces codes viennent presque toujours
+d'une protection anti-robots, pas d'un lien mort.
+
+Reproduction à la main :
+
+```bash
+SITE_URL=https://nokhba.net.ly node scripts/link-check.mjs
+```
+
+Lecture d'une alerte : corriger d'abord les liens **internes** (ils sont sous
+notre contrôle), puis vérifier un lien externe dans un navigateur avant de le
+retirer — un site partenaire peut bloquer momentanément les robots. Ne jamais
+supprimer un lien externe sur la seule foi d'un 403.
+
+Comme tout `schedule`, le workflow ne s'exécute qu'une fois sur la branche par
+défaut : le tester avec `gh workflow run liens.yml --ref main` après fusion.
+
 ---
 
 ## 5. Playbooks d'incident

@@ -358,6 +358,16 @@ Les avis Next concernent précisément un mécanisme que le site utilise massive
 **Critère d'acceptation.** Les événements apparaissent dans Vercel Analytics en preview ; aucune donnée personnelle dans les propriétés.
 **Effort.** ½ session. **Risque.** Faible.
 
+**État au 18/11/2026 — appliqué.** `src/lib/analytics.ts` (liste blanche
+`path`/`id`/`source`/`kind`, 64 caractères, silencieux en cas d'échec) ;
+6 événements branchés (`gateway_click`, `service_view`, `whatsapp_click` avec
+8 sources distinctes, `lead_submit`, `checkout_start` site et digital,
+`audit_request` déclaré pour C-06). Tests `scripts/analytics.test.mjs`.
+Mode d'emploi et routine : **`docs/mesure-funnel.md`** ; tableau de suivi :
+`docs/suivi-mesure.md`. La preuve en preview (onglet Réseau → payload
+`/_vercel/insights/event`) reste à faire par l'utilisateur, faute d'accès au
+déploiement depuis l'environnement de développement.
+
 ---
 
 ### C-10 — CI : dépendances non auditées, Lighthouse partiel · **P1**
@@ -376,6 +386,20 @@ Les avis Next concernent précisément un mécanisme que le site utilise massive
 
 **Critère d'acceptation.** Une régression de performance ou un lien cassé produit une issue, pas un silence.
 **Effort.** 1 session. **Risque.** Faible (seuils à calibrer).
+
+**État au 18/11/2026 — appliqué, sauf le seuil de performance.**
+- Audit des dépendances : déjà dans `ci.yml` via `scripts/audit-prod.mjs`
+  (high/critical, exception expirante `picomatch` au 31/01/2027).
+- Lighthouse : 8 URL (ajout de `/services`, `/services/fix-optimize`,
+  `/codes`, `/codes/steam-card`), délai du job porté à 25 min.
+- **La performance reste en `warn` à 0,75** : passer en `error` à 0,85 sans
+  mesure de la base réelle produirait un rouge permanent. À relever après deux
+  semaines de runs verts, sur mobile.
+- Liens : `scripts/link-checks` (règles pures + tests) et
+  `scripts/link-check.mjs` (sitemap ≤ 40 pages, ≤ 80 liens internes, ≤ 60 liens
+  externes dont 5 par page ; 404/410/5xx = échec, 401/403/429 = avertissement).
+  Workflow `.github/workflows/liens.yml` : lundi 05:23 UTC, issue label `liens`
+  ouverte/mise à jour, fermée au rétablissement.
 
 ---
 

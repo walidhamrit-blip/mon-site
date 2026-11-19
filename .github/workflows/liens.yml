@@ -1,0 +1,85 @@
+name: Contrôle des liens
+
+# Une fois par semaine : pages du sitemap, liens internes découverts et cinq
+# liens externes par page. Un lien mort ouvre une issue, pas un silence.
+#
+# Les workflows planifiés ne s'exécutent que sur la branche par défaut ;
+# `workflow_dispatch` permet de lancer le contrôle à la main après fusion.
+
+on:
+  schedule:
+    - cron: "23 5 * * 1"
+  workflow_dispatch:
+
+concurrency:
+  group: controle-liens
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  liens:
+    name: Sitemap, liens internes et externes
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Récupération du code
+        uses: actions/checkout@v5
+
+      - name: Installation Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: 22
+
+      - name: Contrôle des liens
+        run: |
+          set -o pipefail
+          node scripts/link-check.mjs | tee "$RUNNER_TEMP/rapport.md"
+
+      - name: Ouvrir ou mettre à jour l'alerte
+        if: failure()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          [ -s "$RUNNER_TEMP/rapport.md" ] || echo "Rapport indisponible." > "$RUNNER_TEMP/rapport.md"
+          gh label create liens \
+            --color D93F0B \
+            --description "Lien cassé détecté automatiquement" 2>/dev/null || true
+          numero=$(gh issue list --label liens --state open --limit 1 \
+            --json number --jq '.[0].number // empty')
+          if [ -n "$numero" ]; then
+            gh issue comment "$numero" --body-file "$RUNNER_TEMP/rapport.md"
+          else
+            {
+              echo "Le contrôle automatique du $(date -u +'%Y-%m-%d %H:%M UTC') a trouvé des liens cassés."
+              echo
+              cat "$RUNNER_TEMP/rapport.md"
+              echo
+              echo "Workflow : $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
+            } > "$RUNNER_TEMP/issue.md"
+            gh issue create \
+              --title "Liens cassés détectés sur le site" \
+              --label liens \
+              --body-file "$RUNNER_TEMP/issue.md"
+          fi
+
+      - name: Clore l'alerte après rétablissement
+        if: success()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh label create liens \
+            --color D93F0B \
+            --description "Lien cassé détecté automatiquement" 2>/dev/null || true
+          numero=$(gh issue list --label liens --state open --limit 1 \
+            --json number --jq '.[0].number // empty')
+          if [ -n "$numero" ]; then
+            gh issue comment "$numero" --body \
+              "Rétabli : le contrôle du $(date -u +'%Y-%m-%d %H:%M UTC') ne trouve plus de lien cassé."
+            gh issue close "$numero"
+          fi

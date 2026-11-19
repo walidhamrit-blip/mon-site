@@ -1,5 +1,7 @@
 "use client";
 import { useState } from "react";
+
+import { trackEvent } from "@/lib/analytics";
 import { motion } from "framer-motion";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -71,6 +73,7 @@ export function CTAForm() {
         body: JSON.stringify({ ...data, utm, locale }),
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      trackEvent({ name: "lead_submit", source: "cta-form" });
       setSubmitted(true);
       // Reset after
       setTimeout(() => setStep(1), 2000);

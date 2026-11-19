@@ -6,6 +6,7 @@ import { useI18n } from "@/lib/i18n";
 import { useSiteConfig } from "@/components/site-provider";
 import { whatsappLink } from "@/lib/utils";
 import { buildEnquiryMessage, publicEnquiryPage } from "@/lib/whatsapp-enquiry";
+import { trackEvent } from "@/lib/analytics";
 
 /**
  * Fenêtre « Continuer vers WhatsApp ».
@@ -22,11 +23,13 @@ import { buildEnquiryMessage, publicEnquiryPage } from "@/lib/whatsapp-enquiry";
  * concernée par `form-action`, et le lien reste « ouvrable dans un nouvel
  * onglet » au clic du milieu, ce qu'un formulaire ne permettait pas.
  */
-export function WhatsAppEnquiry({ children, className, ariaLabel, initialSubject = "" }: {
+export function WhatsAppEnquiry({ children, className, ariaLabel, initialSubject = "", source = "page" }: {
   children: ReactNode;
   className?: string;
   ariaLabel?: string;
   initialSubject?: string;
+  /** Origine du clic, pour distinguer les points d'entrée (jamais de PII). */
+  source?: string;
 }) {
   const { locale } = useI18n();
   const { whatsapp } = useSiteConfig();
@@ -67,6 +70,7 @@ export function WhatsAppEnquiry({ children, className, ariaLabel, initialSubject
               event.preventDefault();
               return;
             }
+            trackEvent({ name: "whatsapp_click", source });
             dialog.current?.close();
           }}
           className={`mt-5 inline-flex min-h-11 w-full items-center justify-center rounded-full bg-[#0B6B3A] px-5 font-bold text-white ${blocked ? "pointer-events-none opacity-50" : ""}`}
