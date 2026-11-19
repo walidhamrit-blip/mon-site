@@ -687,6 +687,13 @@ export function ensureSchema(): Promise<void> {
       await pool.query(
         "ALTER TABLE g2g_offer_mappings ADD COLUMN IF NOT EXISTS supplier_price_usd text",
       );
+      // Support multi-devises : taux de conversion et coût forfaitaire.
+      await pool.query(
+        "ALTER TABLE g2g_offer_mappings ADD COLUMN IF NOT EXISTS conversion_rate_usd text DEFAULT '1'",
+      );
+      await pool.query(
+        "ALTER TABLE g2g_offer_mappings ADD COLUMN IF NOT EXISTS conversion_cost_usd text DEFAULT '0'",
+      );
 
       // Journal des livraisons : sans lui, une commande rejouée après un
       // incident provoquerait un SECOND achat du même code.

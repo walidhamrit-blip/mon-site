@@ -833,7 +833,12 @@ export const g2gOfferMappings = pgTable("g2g_offer_mappings", {
   supplierSkuName: text("supplier_sku_name"),
   /** Prix fournisseur (USD) relevé lors de cette résolution. */
   supplierPriceUsd: text("supplier_price_usd"),
+  /** Devise de vente affichée sur l'offre G2G (USD, EUR, GBP, TRY…). */
   saleCurrency: text("sale_currency").notNull().default("USD"),
+  /** Taux de conversion : 1 unité de saleCurrency = X USD. Ex. "1.08" pour EUR. */
+  conversionRateUsd: text("conversion_rate_usd").notNull().default("1"),
+  /** Coût de conversion forfaitaire en USD par transaction. Ex. "0.50". */
+  conversionCostUsd: text("conversion_cost_usd").notNull().default("0"),
   /** Marge nette minimale exigée après commission G2G (%). */
   minMarginPercent: integer("min_margin_percent").notNull().default(12),
   /** Plafond d'achat automatique par livraison (USD). */
