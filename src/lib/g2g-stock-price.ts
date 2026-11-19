@@ -90,13 +90,10 @@ export async function evaluateOfferStockPrice(
     return { kind: "skipped", reason: `Offre G2G ${offerId} introuvable.` };
   }
 
-  // Seules les offres libellées en USD sont automatisées (pas de conversion implicite).
-  if (offer.currency !== "USD") {
-    return {
-      kind: "skipped",
-      reason: `Devise ${offer.currency ?? "?"} — seule USD est automatisée.`,
-    };
-  }
+  // Multi-devises : on convertit le prix de vente G2G en USD avant le calcul
+  // de marge, en utilisant le taux et le coût de conversion du mapping.
+  const conversionRate = Number(mapping.conversionRateUsd ?? 1) || 1;
+  const conversionCost = Number(mapping.conversionCostUsd ?? 0) || 0;
 
   // Le format de code attendu doit être connu.
   if (!offer.code_label) {
@@ -137,18 +134,27 @@ export async function evaluateOfferStockPrice(
     };
   }
 
-  // 3. Calcul de la marge sur 1 unité (la marge % est identique pour N unités).
+  // 3. Convertir le prix de vente G2G en USD (taux + coût forfaitaire).
+  const offerUnitPrice = Number(offer.unit_price ?? 0);
+  const offerPriceUsd = offerUnitPrice * conversionRate - conversionCost;
+  if (!Number.isFinite(offerPriceUsd) || offerPriceUsd <= 0) {
+    return {
+      kind: "skipped",
+      reason: `Prix de vente après conversion invalide : ${offerUnitPrice} ${offer.currency ?? "?"} × ${conversionRate} − ${conversionCost} $ = ${offerPriceUsd} $.`,
+    };
+  }
+
   const feePercent = g2gFeePercent(process.env.G2G_FEE_PERCENT);
   const plan = planG2gFulfilment({
     mappingEnabled: true,
     autoDeliveryEnabled: true, // calcul hypothétique : on veut juste connaître la marge
     feePercent,
-    offerUnitPrice: offer.unit_price ?? null,
-    offerCurrency: offer.currency ?? "USD",
+    offerUnitPrice: offerPriceUsd,
+    offerCurrency: "USD", // déjà converti au-dessus
     offerDeliveryType: offer.delivery_type ?? null,
     offerCodeLabel: offer.code_label ?? null,
     supplierCostUsd: Number(mapping.supplierPriceUsd ?? 0) || 0,
-    saleCurrency: mapping.saleCurrency,
+    saleCurrency: "USD", // déjà converti au-dessus
     minMarginPercent,
     maxCostUsd,
     requestedQty: 1,
@@ -174,7 +180,7 @@ export async function evaluateOfferStockPrice(
   }
 
   // Respecter le plafond de coût : ne pas proposer plus que ce que maxCostUsd permet.
-  const unitPrice = Number(offer.unit_price ?? 0);
+  const unitPrice = offerPriceUsd;
   if (Number.isFinite(unitPrice) && unitPrice > 0 && Number.isFinite(maxCostUsd) && maxCostUsd > 0) {
     const qtyByCost = Math.floor(maxCostUsd / unitPrice);
     if (qtyByCost < apiQty) {

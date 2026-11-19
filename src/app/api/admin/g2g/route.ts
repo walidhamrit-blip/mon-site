@@ -45,6 +45,8 @@ function publicMapping(row: G2gOfferMapping) {
     supplierSkuName: row.supplierSkuName ?? null,
     supplierPriceUsd: row.supplierPriceUsd ?? null,
     saleCurrency: row.saleCurrency,
+    conversionRateUsd: row.conversionRateUsd ?? "1",
+    conversionCostUsd: row.conversionCostUsd ?? "0",
     minMarginPercent: row.minMarginPercent,
     maxCostUsd: row.maxCostUsd,
     enabled: row.enabled,
@@ -175,6 +177,8 @@ interface MappingInput {
   categoryId?: unknown;
   supplierSkuId?: unknown;
   saleCurrency?: unknown;
+  conversionRateUsd?: unknown;
+  conversionCostUsd?: unknown;
   minMarginPercent?: unknown;
   maxCostUsd?: unknown;
   enabled?: unknown;
@@ -221,12 +225,20 @@ export async function POST(req: Request) {
   const categoryId = cleanText(input.categoryId, 120);
   const supplierSkuId = cleanText(input.supplierSkuId, 120);
   const saleCurrency = (cleanText(input.saleCurrency, 3) || "USD").toUpperCase();
+  const conversionRateUsd = cleanText(input.conversionRateUsd, 20) || "1";
+  const conversionCostUsd = cleanText(input.conversionCostUsd, 20) || "0";
   const minMarginPercent = Number(input.minMarginPercent ?? 12);
   const maxCostUsd = Number(input.maxCostUsd ?? 25);
   const enabled = input.enabled === true;
 
   if (!/^[A-Z]{3}$/.test(saleCurrency)) {
     return noStoreJson({ ok: false, error: "invalid_currency" }, 400);
+  }
+  if (!/^\d+(\.\d+)?$/.test(conversionRateUsd) || Number(conversionRateUsd) <= 0) {
+    return noStoreJson({ ok: false, error: "invalid_conversion_rate" }, 400);
+  }
+  if (!/^\d+(\.\d+)?$/.test(conversionCostUsd) || Number(conversionCostUsd) < 0) {
+    return noStoreJson({ ok: false, error: "invalid_conversion_cost" }, 400);
   }
   if (
     !Number.isInteger(minMarginPercent) || minMarginPercent < 0 || minMarginPercent > 90 ||
@@ -287,16 +299,8 @@ export async function POST(req: Request) {
       );
     }
   }
-  if (enabled && saleCurrency !== "USD") {
-    return noStoreJson(
-      {
-        ok: false,
-        error: "currency_not_supported",
-        message: "L'automatisation exige une offre libellée en USD (pas de conversion implicite).",
-      },
-      400,
-    );
-  }
+  // Multi-devises : le taux et le coût de conversion sont stockés sur le mapping.
+  // Le cron g2g-stock-price convertit le prix de vente en USD avant le calcul de marge.
 
   // La résolution n'est mémorisée que si elle a réussi : `lastCheckedAt`
   // fait alors foi, et on ne fige jamais un nom « vérifié » qui ne l'est pas.
@@ -310,6 +314,8 @@ export async function POST(req: Request) {
     supplierSkuName: verified ? skuCheck.name.slice(0, 200) : null,
     supplierPriceUsd: verified ? skuCheck.priceUsd.slice(0, 40) : null,
     saleCurrency,
+    conversionRateUsd,
+    conversionCostUsd,
     minMarginPercent,
     maxCostUsd: String(maxCostUsd),
     enabled,
@@ -475,16 +481,9 @@ export async function PATCH(req: Request) {
       404,
     );
   }
-  if (offer.currency !== "USD") {
-    return noStoreJson(
-      {
-        ok: false,
-        error: "currency_not_usd",
-        message: `Offre ${offerId} libellée en ${offer.currency ?? "?"} : l'automation exige USD (pas de conversion implicite).`,
-      },
-      400,
-    );
-  }
+  // Multi-devises : le prix de vente sera converti en USD par le cron
+  // g2g-stock-price avant le calcul de marge. L'activation d'api_qty est
+  // autorisée quelle que soit la devise de l'offre.
 
   try {
     const response = await g2gPatchOffer(offerId, { api_qty: apiQty });

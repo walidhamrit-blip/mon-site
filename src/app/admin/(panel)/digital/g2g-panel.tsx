@@ -40,6 +40,8 @@ interface Mapping {
   supplierSkuName: string | null;
   supplierPriceUsd: string | null;
   saleCurrency: string;
+  conversionRateUsd: string;
+  conversionCostUsd: string;
   minMarginPercent: number;
   maxCostUsd: string;
   enabled: boolean;
@@ -174,6 +176,8 @@ interface FormState {
   categoryId: string;
   supplierSkuId: string;
   saleCurrency: string;
+  conversionRateUsd: string;
+  conversionCostUsd: string;
   minMarginPercent: string;
   maxCostUsd: string;
   enabled: boolean;
@@ -187,6 +191,8 @@ const EMPTY_FORM: FormState = {
   categoryId: "",
   supplierSkuId: "",
   saleCurrency: "USD",
+  conversionRateUsd: "1",
+  conversionCostUsd: "0",
   minMarginPercent: "12",
   maxCostUsd: "25",
   enabled: false,
@@ -467,6 +473,8 @@ export function G2gPanel() {
       categoryId: mapping.categoryId,
       supplierSkuId: mapping.supplierSkuId,
       saleCurrency: mapping.saleCurrency,
+      conversionRateUsd: mapping.conversionRateUsd,
+      conversionCostUsd: mapping.conversionCostUsd,
       minMarginPercent: String(mapping.minMarginPercent),
       maxCostUsd: mapping.maxCostUsd,
       enabled: mapping.enabled,
@@ -753,6 +761,8 @@ export function G2gPanel() {
                     <th className="py-1.5 pr-2">Type</th>
                     <th className="py-1.5 pr-2">catégorie / SKU FazerCards</th>
                     <th className="py-1.5 pr-2">Devise</th>
+                    <th className="py-1.5 pr-2">Taux → USD</th>
+                    <th className="py-1.5 pr-2">Coût conv. (USD)</th>
                     <th className="py-1.5 pr-2">Marge min.</th>
                     <th className="py-1.5 pr-2">Actif</th>
                     <th className="py-1.5 pr-2" />
@@ -783,6 +793,8 @@ export function G2gPanel() {
                         ) : null}
                       </td>
                       <td className="py-1.5 pr-2">{mapping.saleCurrency}</td>
+                      <td className="py-1.5 pr-2 font-mono text-[9px]">{mapping.conversionRateUsd}</td>
+                      <td className="py-1.5 pr-2 font-mono text-[9px]">{mapping.conversionCostUsd}</td>
                       <td className="py-1.5 pr-2">{mapping.minMarginPercent} %</td>
                       <td className="py-1.5 pr-2">{mapping.enabled ? "✅" : "⏸"}</td>
                       <td className="py-1.5 pr-2">
@@ -813,7 +825,9 @@ export function G2gPanel() {
             </label>
             <label className="block"><span className={labelClass}>category_id / game_id</span><input className={inputClass} value={form.categoryId} onChange={(e) => field("categoryId", e.target.value)} placeholder="UUID ou slug FazerCards" /></label>
             <label className="block"><span className={labelClass}>card_id / key_id exact</span><input className={inputClass} value={form.supplierSkuId} onChange={(e) => field("supplierSkuId", e.target.value)} placeholder="Trouvé via le chercheur ci-dessus" /></label>
-            <label className="block"><span className={labelClass}>Devise de l&apos;offre</span><input className={inputClass} value={form.saleCurrency} onChange={(e) => field("saleCurrency", e.target.value.toUpperCase())} maxLength={3} /></label>
+            <label className="block"><span className={labelClass}>Devise de l&apos;offre</span><select className={inputClass} value={form.saleCurrency} onChange={(e) => field("saleCurrency", e.target.value.toUpperCase())}><option value="USD">USD (Dollar)</option><option value="EUR">EUR (Euro)</option><option value="GBP">GBP (Livre)</option><option value="TRY">TRY (Livre turque)</option><option value="AED">AED (Dirham EAU)</option><option value="SAR">SAR (Riyal saoudien)</option></select></label>
+            <label className="block"><span className={labelClass}>Taux de conversion (1 saleCurrency = X USD)</span><input className={inputClass} type="number" step="0.000001" min="0.000001" value={form.conversionRateUsd} onChange={(e) => field("conversionRateUsd", e.target.value)} placeholder="1.000000" /></label>
+            <label className="block"><span className={labelClass}>Coût de conversion forfaitaire (USD)</span><input className={inputClass} type="number" step="0.01" min="0" value={form.conversionCostUsd} onChange={(e) => field("conversionCostUsd", e.target.value)} placeholder="0.00" /></label>
             <label className="block"><span className={labelClass}>Marge nette min. (%)</span><input className={inputClass} type="number" min={0} max={90} value={form.minMarginPercent} onChange={(e) => field("minMarginPercent", e.target.value)} /></label>
             <label className="block"><span className={labelClass}>Plafond d&apos;achat auto (USD)</span><input className={inputClass} type="number" min={1} max={1000} value={form.maxCostUsd} onChange={(e) => field("maxCostUsd", e.target.value)} /></label>
             <label className="flex items-center gap-2 self-end pb-1.5 text-[11px] font-semibold text-stone-700">
