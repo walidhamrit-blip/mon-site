@@ -34,6 +34,12 @@ function clean(value: string): string {
  * Envoie un événement de funnel. Sans effet côté serveur, et silencieux en
  * cas d'échec : la mesure ne doit jamais dégrader le parcours.
  */
+type AnalyticsWindow = Window & {
+  /** File d'attente officielle de Vercel, rejouée au chargement du script. */
+  vaq?: unknown[];
+  va?: (...args: unknown[]) => void;
+};
+
 export function trackEvent(event: AnalyticsEvent): void {
   if (typeof window === "undefined") return;
 
@@ -46,8 +52,20 @@ export function trackEvent(event: AnalyticsEvent): void {
     properties[key] = clean(value);
   }
 
+  const w = window as AnalyticsWindow;
+
   try {
-    track(name, properties);
+    if (typeof w.va === "function") {
+      track(name, properties);
+      return;
+    }
+
+    // `<Analytics />` installe `window.va` dans un effet qui s'exécute APRÈS
+    // les effets des pages : un événement de montage (`service_view`,
+    // `checkout_start`) partirait avant, et `track()` le perdrait sans bruit.
+    // On remplit donc la file officielle `vaq`, rejouée par le script Vercel.
+    w.vaq = w.vaq ?? [];
+    w.vaq.push(["event", { name, data: properties }]);
   } catch {
     // Bloqueur de publicité, réseau coupé, Analytics désactivé : on continue.
   }
