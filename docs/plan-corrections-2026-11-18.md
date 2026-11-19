@@ -364,9 +364,15 @@ Les avis Next concernent précisément un mécanisme que le site utilise massive
 8 sources distinctes, `lead_submit`, `checkout_start` site et digital,
 `audit_request` déclaré pour C-06). Tests `scripts/analytics.test.mjs`.
 Mode d'emploi et routine : **`docs/mesure-funnel.md`** ; tableau de suivi :
-`docs/suivi-mesure.md`. La preuve en preview (onglet Réseau → payload
-`/_vercel/insights/event`) reste à faire par l'utilisateur, faute d'accès au
-déploiement depuis l'environnement de développement.
+`docs/suivi-mesure.md`.
+
+**Correctif du 19/11/2026.** `track()` de Vercel perd silencieusement un
+événement si `window.va` n'existe pas encore. Or `<Analytics />` installe
+`window.va` dans un effet exécuté **après** ceux des pages : `service_view` et
+`checkout_start` (événements de montage) étaient donc jetés au chargement
+direct. `trackEvent` remplit désormais la file officielle `vaq`, rejouée par le
+script Vercel. Test de comportement : `scripts/analytics-runtime.test.mjs`
+(navigateur simulé, Node exécute le TypeScript directement).
 
 ---
 

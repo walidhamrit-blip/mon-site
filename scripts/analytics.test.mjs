@@ -32,6 +32,21 @@ test("l'enveloppe ne transporte que des propriétés non personnelles", () => {
   assert.match(source, /try \{[\s\S]*track\(/, "une erreur de mesure ne casse pas le clic");
 });
 
+test("un événement de montage est mis en file avant le chargement du script", () => {
+  const source = code(read(analytics));
+  assert.match(
+    source,
+    /typeof w\.va === "function"/,
+    "il faut vérifier que le script a installé window.va",
+  );
+  assert.match(source, /w\.vaq = w\.vaq \?\? \[\]/, "la file vaq doit être créée");
+  assert.match(
+    source,
+    /w\.vaq\.push\(\["event", \{ name, data: properties \}\]\)/,
+    "l'événement doit être poussé au format attendu par Vercel",
+  );
+});
+
 test("les six événements du plan sont déclarés", () => {
   const source = read(analytics);
   for (const event of [
