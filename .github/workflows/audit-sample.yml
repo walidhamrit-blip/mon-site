@@ -14,12 +14,24 @@ jobs:
       - uses: actions/setup-node@v5
         with:
           node-version: 22
-      - name: Attendre le déploiement de la preview
-        run: sleep 150
+      - name: Installation des dépendances
+        run: npm ci
+      - name: Build de production
+        run: npm run build
+        env:
+          DATABASE_URL: ""
+      - name: Démarrage du serveur
+        run: |
+          npx next start -p 3100 &
+          for i in $(seq 1 60); do
+            if curl -sf http://localhost:3100/ > /dev/null; then exit 0; fi
+            sleep 1
+          done
+          exit 1
       - name: Lighthouse mobile (3 runs)
         run: |
           for i in 1 2 3; do
-            npx --yes lighthouse@12 https://mon-site-git-arena-f719f724-mon-site-walid-website.vercel.app/demos/tulin-magazin \
+            npx --yes lighthouse@12 http://localhost:3100/demos/tulin-magazin \
               --output=json --output-path="lh-$i.json" \
               --chrome-flags="--headless --no-sandbox" \
               --only-categories=performance,accessibility,best-practices,seo \

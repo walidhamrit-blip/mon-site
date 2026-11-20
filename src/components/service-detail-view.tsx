@@ -190,6 +190,27 @@ export function ServiceDetailView({
                   <li key={item}>· {item}</li>
                 ))}
               </ul>
+
+              {service.id === "fix-optimize" && (
+                <div className="mt-6 rounded-2xl border border-[var(--accent)]/40 bg-[var(--accent)]/10 p-5">
+                  <p className="text-sm font-black">
+                    {pick("46 نقطة موثّقة وتقرير مثال حقيقي", "46 documented points and a real sample report")}
+                  </p>
+                  <p className="mt-1 text-xs leading-5 opacity-70">
+                    {pick(
+                      "اطّلع على قائمة الفحص كاملة وعلى تدقيق حقيقي قبل/بعد قبل أن تطلب.",
+                      "See the full checklist and a real before/after audit before you order.",
+                    )}
+                  </p>
+                  <Link
+                    href="/audit"
+                    className="mt-3 inline-flex items-center gap-1.5 text-xs font-black text-[var(--accent)] hover:underline"
+                  >
+                    {pick("عرض التدقيق والتقرير", "View the audit and sample report")}
+                    <ArrowLeft className="h-3.5 w-3.5 rotate-180" />
+                  </Link>
+                </div>
+              )}
             </div>
 
             <div className="space-y-5">
