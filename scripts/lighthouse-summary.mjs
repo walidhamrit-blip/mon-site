@@ -40,6 +40,12 @@ for (const ref of [...(categories.accessibility?.auditRefs ?? []), ...(categorie
   const a = audits[ref.id];
   if (a && a.score !== null && a.score < 1 && a.scoreDisplayMode !== "notApplicable" && a.scoreDisplayMode !== "manual") {
     lines.push(`- [${ref.id}] ${a.title}${a.displayValue ? ` — ${a.displayValue}` : ""}`);
+    const items = a.details?.items ?? [];
+    for (const item of items.slice(0, 3)) {
+      const node = item.node;
+      if (node?.snippet) lines.push(`  - \`${node.snippet.slice(0, 200)}\``);
+      else if (item.url) lines.push(`  - ${item.url}`);
+    }
   }
 }
 
