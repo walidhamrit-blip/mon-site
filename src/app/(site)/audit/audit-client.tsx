@@ -9,11 +9,11 @@ import { useI18n } from "@/lib/i18n";
 /** Mesures réelles — Lighthouse 12 mobile, 3 runs, médiane, 20/11/2026. */
 const BEFORE = { performance: 82, accessibility: 96, bestPractices: 75, seo: 100 };
 /**
- * « Après » = build local du correctif, même page, même jour. La performance
- * n'est pas comparable entre un runner local et la production : elle est donc
- * affichée « n.c. » plutôt que présentée comme un gain.
+ * « Après » = même page en production, après déploiement du correctif, même
+ * outil, même jour, 3 runs. La performance varie de 67 à 90 selon le run :
+ * l'écart 82 → 85 est dans le bruit, il n'est donc pas présenté comme un gain.
  */
-const AFTER = { performance: null, accessibility: 100, bestPractices: 75, seo: 100 };
+const AFTER = { performance: 85, accessibility: 100, bestPractices: 75, seo: 100 };
 
 const FINDINGS = [
   {
@@ -34,7 +34,7 @@ const FINDINGS = [
   },
   {
     severity: { ar: "متوسط", en: "Medium" },
-    finding: { ar: "195 كيلوبايت من JavaScript غير مستخدم", en: "195 KiB of unused JavaScript" },
+    finding: { ar: "حوالي 190 كيلوبايت من JavaScript غير مستخدم", en: "About 190 KiB of unused JavaScript" },
     cause: {
       ar: "حزمة إطار العمل تُحمّل كاملة في هذه الصفحة.",
       en: "The framework bundle is shipped whole on this page.",
@@ -283,8 +283,8 @@ export function AuditClient() {
           </ul>
           <p className="mt-2 text-[11px] opacity-55">
             {t(
-              "هذه أرقام الإنتاج قبل التدقيق. القياس «بعد» أُجري على بناء محلي: الوصولية قابلة للمقارنة، أما الأداء فغير قابل للمقارنة بين بيئتين — لذلك لا ندّعي تحسناً في السرعة.",
-              "These are production figures before the audit. The “after” run was a local build: accessibility is comparable, performance is not comparable across environments — so no speed improvement is claimed.",
+              "أرقام «قبل» من الإنتاج في 20/11/2026. أرقام «بعد» من نفس الصفحة في الإنتاج بعد نشر الإصلاح، بنفس الأداة وثلاث تشغيلات. الأداء تراوح بين 67 و90 في التشغيلات الثلاثة: الفرق 82 ← 85 داخل التباين، لذلك لا ندّعي تحسناً في السرعة. الوصولية 100 ظهرت في التشغيلات الثلاثة كلها.",
+              "The “before” figures are production, 20/11/2026. The “after” figures are the same page in production after the fix was deployed, same tool, three runs. Performance ranged from 67 to 90 across those runs: the 82 → 85 difference is within noise, so no speed improvement is claimed. Accessibility 100 appeared in all three runs.",
             )}
           </p>
 
