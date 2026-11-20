@@ -8,7 +8,12 @@ import { useI18n } from "@/lib/i18n";
 
 /** Mesures réelles — Lighthouse 12 mobile, 3 runs, médiane, 20/11/2026. */
 const BEFORE = { performance: 82, accessibility: 96, bestPractices: 75, seo: 100 };
-const AFTER = { performance: 82, accessibility: 100, bestPractices: 75, seo: 100 };
+/**
+ * « Après » = build local du correctif, même page, même jour. La performance
+ * n'est pas comparable entre un runner local et la production : elle est donc
+ * affichée « n.c. » plutôt que présentée comme un gain.
+ */
+const AFTER = { performance: null, accessibility: 100, bestPractices: 75, seo: 100 };
 
 const FINDINGS = [
   {
@@ -91,20 +96,20 @@ const FINDINGS = [
   },
 ];
 
-const METRICS = [
-  { label: { ar: "LCP", en: "LCP" }, before: "3,2 s", after: "3,2 s" },
-  { label: { ar: "TBT", en: "TBT" }, before: "359 ms", after: "359 ms" },
-  { label: { ar: "CLS", en: "CLS" }, before: "0", after: "0" },
-  { label: { ar: "Speed Index", en: "Speed Index" }, before: "4,3 s", after: "4,3 s" },
+const BEFORE_METRICS = [
+  { label: { ar: "LCP", en: "LCP" }, value: "3,18 s" },
+  { label: { ar: "TBT", en: "TBT" }, value: "359 ms" },
+  { label: { ar: "CLS", en: "CLS" }, value: "0" },
+  { label: { ar: "Speed Index", en: "Speed Index" }, value: "4,28 s" },
 ];
 
-function Score({ label, before, after }: { label: string; before: number; after: number }) {
+function Score({ label, before, after }: { label: string; before: number; after: number | null }) {
   return (
     <div className="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-4 text-center">
       <p className="text-xs font-bold opacity-55">{label}</p>
       <p className="mt-2 text-sm opacity-60">
         <span className="line-through">{before}</span> <ArrowRight className="inline h-3 w-3" />{" "}
-        <span className="text-2xl font-black text-[var(--accent)]">{after}</span>
+        <span className="text-2xl font-black text-[var(--accent)]">{after ?? "n.c."}</span>
       </p>
     </div>
   );
@@ -268,26 +273,20 @@ export function AuditClient() {
             <Score label={t("SEO", "SEO")} before={BEFORE.seo} after={AFTER.seo} />
           </div>
 
-          <div className="mt-4 overflow-x-auto rounded-2xl border border-[var(--border)]">
-            <table className="w-full min-w-[540px] text-start text-xs">
-              <thead className="bg-[var(--secondary)]/50 text-[11px] uppercase tracking-wide">
-                <tr>
-                  <th className="px-4 py-2.5 text-start">{t("المقياس", "Metric")}</th>
-                  <th className="px-4 py-2.5 text-start">{t("قبل", "Before")}</th>
-                  <th className="px-4 py-2.5 text-start">{t("بعد", "After")}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {METRICS.map((metric) => (
-                  <tr key={metric.label.en} className="border-t border-[var(--border)]">
-                    <td className="px-4 py-2.5 font-bold">{ar ? metric.label.ar : metric.label.en}</td>
-                    <td className="px-4 py-2.5 opacity-70">{metric.before}</td>
-                    <td className="px-4 py-2.5 font-bold">{metric.after}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <ul className="mt-4 grid gap-2 rounded-2xl border border-[var(--border)] bg-[var(--card)] p-4 text-xs sm:grid-cols-2 lg:grid-cols-4">
+            {BEFORE_METRICS.map((metric) => (
+              <li key={metric.label.en} className="flex items-baseline justify-between gap-2">
+                <span className="font-bold">{ar ? metric.label.ar : metric.label.en}</span>
+                <span className="opacity-70">{metric.value}</span>
+              </li>
+            ))}
+          </ul>
+          <p className="mt-2 text-[11px] opacity-55">
+            {t(
+              "هذه أرقام الإنتاج قبل التدقيق. القياس «بعد» أُجري على بناء محلي: الوصولية قابلة للمقارنة، أما الأداء فغير قابل للمقارنة بين بيئتين — لذلك لا ندّعي تحسناً في السرعة.",
+              "These are production figures before the audit. The “after” run was a local build: accessibility is comparable, performance is not comparable across environments — so no speed improvement is claimed.",
+            )}
+          </p>
 
           <div className="mt-6 overflow-x-auto rounded-2xl border border-[var(--border)]">
             <table className="w-full min-w-[760px] text-start text-xs">
@@ -338,8 +337,8 @@ export function AuditClient() {
               <h3 className="text-sm font-black opacity-100">{t("حدود هذا المثال", "Limits of this example")}</h3>
               <p className="mt-2">
                 {t(
-                  "صفحة واحدة، محاكاة هاتف، بدون بيانات ميدانية (CrUX) أو تحليلات العميل. ثلاث تشغيلات تُظهر تبايناً: الأداء تراوح بين 69 و86. المتوسط هو المعروض، وليس أفضل نتيجة.",
-                  "One page, emulated mobile, no field data (CrUX) and no client analytics. Three runs show variance: performance ranged from 69 to 86. The median is reported, not the best run.",
+                  "صفحة واحدة، محاكاة هاتف، بدون بيانات ميدانية (CrUX) أو تحليلات العميل. ثلاث تشغيلات تُظهر تبايناً: الأداء تراوح بين 69 و86. المتوسط هو المعروض، وليس أفضل نتيجة. القياس «بعد» أُجري على بناء محلي، لذلك لا تُقارن السرعة بين البيئتين.",
+                  "One page, emulated mobile, no field data (CrUX) and no client analytics. Three runs show variance: performance ranged from 69 to 86. The median is reported, not the best run. The “after” run used a local build, so speed is not compared across environments.",
                 )}
               </p>
             </div>

@@ -59,7 +59,6 @@ export function AuditRequestForm() {
 
       trackEvent({ name: "audit_request", source: "audit-form" });
       setStatus("sent");
-      event.currentTarget.reset();
     } catch {
       setStatus("error");
       setError(
