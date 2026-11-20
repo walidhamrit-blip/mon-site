@@ -1,0 +1,38 @@
+name: Audit exemple — après production (temporaire)
+on:
+  push:
+    branches: [arena/468fa345-mon-site]
+permissions:
+  contents: read
+  issues: write
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+      - name: Vérifier que la production sert le correctif
+        run: |
+          html=$(curl -sfL https://nokhba.net.ly/demos/tulin-magazin)
+          echo "taille=$(( ${#html} ))"
+          echo "opacity-70=$(grep -o 'opacity-70' <<<"$html" | wc -l)"
+          echo "opacity-50=$(grep -o 'opacity-50' <<<"$html" | wc -l)"
+          echo "aria-label=$(grep -o 'aria-label' <<<"$html" | wc -l)"
+      - name: Lighthouse mobile (3 runs)
+        run: |
+          for i in 1 2 3; do
+            npx --yes lighthouse@12 https://nokhba.net.ly/demos/tulin-magazin \
+              --output=json --output-path="lh-$i.json" \
+              --chrome-flags="--headless --no-sandbox" \
+              --only-categories=performance,accessibility,best-practices,seo \
+              --form-factor=mobile --quiet
+          done
+      - name: Résumé
+        run: node scripts/lighthouse-summary.mjs lh-1.json lh-2.json lh-3.json > rapport.md
+      - name: Publier le rapport
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh issue create --title "Audit après production — résultats Lighthouse" --body-file rapport.md
