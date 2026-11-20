@@ -14,10 +14,12 @@ jobs:
       - uses: actions/setup-node@v5
         with:
           node-version: 22
+      - name: Attendre le déploiement de la preview
+        run: sleep 150
       - name: Lighthouse mobile (3 runs)
         run: |
           for i in 1 2 3; do
-            npx --yes lighthouse@12 https://nokhba.net.ly/demos/tulin-magazin \
+            npx --yes lighthouse@12 https://mon-site-git-arena-f719f724-mon-site-walid-website.vercel.app/demos/tulin-magazin \
               --output=json --output-path="lh-$i.json" \
               --chrome-flags="--headless --no-sandbox" \
               --only-categories=performance,accessibility,best-practices,seo \
