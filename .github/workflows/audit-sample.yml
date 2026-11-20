@@ -14,10 +14,17 @@ jobs:
       - uses: actions/setup-node@v5
         with:
           node-version: 22
-      - name: Lighthouse mobile
-        run: npx --yes lighthouse@12 https://nokhba.net.ly/demos/tulin-magazin --output=json --output-path=lh.json --chrome-flags="--headless --no-sandbox" --only-categories=performance,accessibility,best-practices,seo --form-factor=mobile
+      - name: Lighthouse mobile (3 runs)
+        run: |
+          for i in 1 2 3; do
+            npx --yes lighthouse@12 https://nokhba.net.ly/demos/tulin-magazin \
+              --output=json --output-path="lh-$i.json" \
+              --chrome-flags="--headless --no-sandbox" \
+              --only-categories=performance,accessibility,best-practices,seo \
+              --form-factor=mobile --quiet
+          done
       - name: Résumé
-        run: node scripts/lighthouse-summary.mjs lh.json > rapport.md
+        run: node scripts/lighthouse-summary.mjs lh-1.json lh-2.json lh-3.json > rapport.md
       - name: Publier le rapport
         env:
           GH_TOKEN: ${{ github.token }}
