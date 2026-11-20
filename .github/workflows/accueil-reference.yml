@@ -1,0 +1,40 @@
+name: Référence accueil (temporaire)
+on:
+  push:
+    branches: [arena/8d6f0698-mon-site]
+permissions:
+  contents: read
+  issues: write
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+      - name: Lighthouse mobile (3 runs)
+        run: |
+          for i in 1 2 3; do
+            for attempt in 1 2 3; do
+              npx --yes lighthouse@12 https://nokhba.net.ly/ \
+                --output=json --output-path="lh-$i.json" \
+                --chrome-flags="--headless --no-sandbox --disable-dev-shm-usage" \
+                --only-categories=performance,accessibility,best-practices,seo \
+                --form-factor=mobile --quiet && break
+              echo "run $i tentative $attempt échouée"; sleep 10
+            done
+          done
+      - name: Résumé
+        run: |
+          node scripts/lighthouse-summary.mjs lh-1.json lh-2.json lh-3.json > rapport.md
+          echo "" >> rapport.md
+          echo "## Environnement" >> rapport.md
+          echo "- URL : https://nokhba.net.ly/ (accueil, production)" >> rapport.md
+          echo "- Outil : Lighthouse 12, mobile émulé, 3 runs, médiane" >> rapport.md
+          echo "- Fenêtre : accueil figé jusqu'au 27/11/2026" >> rapport.md
+      - name: Publier le rapport
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh issue create --title "Référence accueil — Lighthouse production" --body-file rapport.md
