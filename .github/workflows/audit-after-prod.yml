@@ -24,11 +24,14 @@ jobs:
       - name: Lighthouse mobile (3 runs)
         run: |
           for i in 1 2 3; do
-            npx --yes lighthouse@12 https://nokhba.net.ly/demos/tulin-magazin \
-              --output=json --output-path="lh-$i.json" \
-              --chrome-flags="--headless --no-sandbox" \
-              --only-categories=performance,accessibility,best-practices,seo \
-              --form-factor=mobile --quiet
+            for attempt in 1 2 3; do
+              npx --yes lighthouse@12 https://nokhba.net.ly/demos/tulin-magazin \
+                --output=json --output-path="lh-$i.json" \
+                --chrome-flags="--headless --no-sandbox --disable-dev-shm-usage" \
+                --only-categories=performance,accessibility,best-practices,seo \
+                --form-factor=mobile --quiet && break
+              echo "run $i tentative $attempt échouée"; sleep 10
+            done
           done
       - name: Résumé
         run: node scripts/lighthouse-summary.mjs lh-1.json lh-2.json lh-3.json > rapport.md
