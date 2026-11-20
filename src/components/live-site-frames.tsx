@@ -200,6 +200,7 @@ export function FullscreenLiveViewer({
             <button
               type="button"
               onClick={onClose}
+              aria-label={locale === "ar" ? "إغلاق العرض الكامل" : "Exit Fullscreen"}
               className="h-9 px-3.5 rounded-full bg-white/10 hover:bg-white/20 text-xs font-bold inline-flex items-center gap-1.5 transition-colors cursor-pointer flex-shrink-0"
             >
               <Minimize2 className="h-3.5 w-3.5" />
@@ -210,6 +211,7 @@ export function FullscreenLiveViewer({
           ) : backHref ? (
             <Link
               href={backHref}
+              aria-label={locale === "ar" ? "الرجوع للمعارض" : "Back to Demos"}
               className="h-9 px-3.5 rounded-full bg-white/10 hover:bg-white/20 text-xs font-bold inline-flex items-center gap-1.5 transition-colors flex-shrink-0"
             >
               {locale === "ar" ? (
@@ -303,6 +305,7 @@ export function FullscreenLiveViewer({
               setReloadKey((k) => k + 1);
             }}
             title={locale === "ar" ? "إعادة تحميل الموقع" : "Reload site"}
+            aria-label={locale === "ar" ? "إعادة تحميل الموقع" : "Reload site"}
             className="h-9 w-9 rounded-full bg-white/10 hover:bg-white/20 grid place-items-center transition-colors cursor-pointer"
           >
             <RotateCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
@@ -321,6 +324,7 @@ export function FullscreenLiveViewer({
             href={demo.previewUrl}
             target="_blank"
             rel="noopener noreferrer"
+            aria-label={locale === "ar" ? "فتح في نافذة جديدة" : "Open in New Tab"}
             className="h-9 px-4 rounded-full bg-white/10 hover:bg-white/20 text-xs font-bold inline-flex items-center gap-1.5 transition-colors"
           >
             <span className="hidden sm:inline">

@@ -158,7 +158,7 @@ export function DemoViewer({ demo, allDemos }: { demo: Demo; allDemos: Demo[] })
                 {classification && (
                   <div className="mt-5 rounded-2xl border border-[var(--accent)]/30 bg-[var(--accent)]/5 p-4">
                     <div className="mb-3">
-                      <div className="text-[10px] font-bold uppercase tracking-wider opacity-50">
+                      <div className="text-[10px] font-bold uppercase tracking-wider opacity-70">
                         {locale === "ar"
                           ? `الفئة ${classification.tier}`
                           : `Category ${classification.tier}`}
@@ -181,7 +181,7 @@ export function DemoViewer({ demo, allDemos }: { demo: Demo; allDemos: Demo[] })
                       demo={demo}
                       className="mt-2 h-10 w-full rounded-full bg-[var(--accent)] text-[var(--accent-foreground)] text-xs font-black inline-flex items-center justify-center gap-1.5 hover:bg-[var(--accent-hover)] transition-colors cursor-pointer"
                     />
-                    <p className="mt-2 text-[10px] opacity-50 leading-relaxed">
+                    <p className="mt-2 text-[10px] opacity-70 leading-relaxed">
                       {locale === "ar"
                         ? `عربون ${formatUsd(depositUsd)} $ يُخصم من الإجمالي النهائي بعد اعتماد التخصيص.`
                         : `$${formatUsd(depositUsd)} deposit is deducted from the final total once customization is approved.`}

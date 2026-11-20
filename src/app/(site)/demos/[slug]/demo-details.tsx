@@ -103,7 +103,7 @@ export function DemoDetails({
                       <span>
                         {feature}
                         {plan.featuresEn[idx] ? (
-                          <span className="opacity-50"> — {plan.featuresEn[idx]}</span>
+                          <span className="opacity-70"> — {plan.featuresEn[idx]}</span>
                         ) : null}
                       </span>
                     </li>
@@ -191,7 +191,7 @@ export function DemoDetails({
                 عرض سعر مجاني
               </Link>
             </div>
-            <p className="mt-3 text-[11px] opacity-50 leading-relaxed">
+            <p className="mt-3 text-[11px] opacity-70 leading-relaxed">
               تسليم في 7–14 يوماً، تحسين SEO وظهور في محركات الذكاء الاصطناعي،
               ودعم عبر واتساب — من طرابلس، ليبيا.
             </p>

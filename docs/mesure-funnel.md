@@ -17,7 +17,7 @@
 | `whatsapp_click` | clic sur un CTA WhatsApp (après confirmation) | `source` (`float`, `footer`, `navbar-desktop`, `navbar-mobile`, `contact`, `how-it-works`, `mid-page-cta`, `chatbot`) | WhatsApp est-il le vrai canal de contact ? Depuis où ? |
 | `lead_submit` | formulaire de contact accepté par `/api/lead` | `source` (`cta-form`) | Combien de demandes abouties ? |
 | `checkout_start` | ouverture d'un dialogue d'achat | `kind` (`website`, `gift_card`, `game_topup`, `software_key`, …) | Quelle intention d'achat sans passage à l'acte ? |
-| `audit_request` | réservé au futur Audit Doctor (C-06) | `source` | Demandes d'audit reçues |
+| `audit_request` | formulaire de la page `/audit` | `source` (`audit-form`) | Demandes d'audit reçues |
 
 **Jamais collecté** : e-mail, téléphone, nom, message, référence de commande,
 montant saisi, adresse. Le module `src/lib/analytics.ts` n'accepte que les clés
