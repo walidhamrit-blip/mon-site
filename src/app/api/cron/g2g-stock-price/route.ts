@@ -21,7 +21,7 @@ export const maxDuration = 60;
  *  - Une offre dont le stock est nul ou la marge insuffisante est coupée
  *    (`api_qty = 0`) : plus de commande automatique tant que le problème
  *    persiste.
- *  - Une panne sur une offre ne bloque pas les autres : chaque offre est
+ *  - Le cron ne réactive jamais une offre. Une panne sur une offre ne bloque pas les autres : chaque offre est
  *    traitée indépendamment.
  */
 export async function GET(req: Request) {

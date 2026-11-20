@@ -11,9 +11,9 @@ import { readFileSync } from "node:fs";
  * que les protections critiques sont bien présentes dans le texte.
  *
  * Ce qui est verrouillé ici :
- *  - une offre non en USD est refusée (pas de conversion implicite) ;
+ *  - une offre non USD est convertie avant calcul ;
  *  - un top-up par ID joueur est refusé (jamais de code automatique) ;
- *  - un stock nul ou indisponible coupe l'offre (api_qty = 0) ;
+ *  - un stock nul ou indisponible déclenche une fermeture par le cron ;
  *  - une marge insuffisante coupe l'offre (plan.decision !== "proceed") ;
  *  - le qty proposé est borné par le stock et par le plafond de coût ;
  *  - g2gPatchOffer est appelé pour poser api_qty sur l'offre ;
@@ -49,12 +49,16 @@ test("une marge insuffisante coupe l'offre", () => {
 
 test("le qty proposé est borné par le stock et le plafond", () => {
   assert.match(SRC, /Math\.min\(stock, G2G_STOCK_QTY_CAP\)/);
-  assert.match(SRC, /G2G_STOCK_QTY_CAP = 100/);
+  assert.match(SRC, /G2G_STOCK_QTY_CAP = 1/);
   assert.match(SRC, /qtyByCost.*maxCostUsd.*unitPrice/);
 });
 
-test("g2gPatchOffer est appelé pour poser api_qty", () => {
-  assert.match(SRC, /g2gPatchOffer\(mapping\.offerId, \{ api_qty: evaluation\.apiQty \}\)/);
+test("le cron ne réactive pas le stock et applique le plafond du pilote", () => {
+  assert.doesNotMatch(SRC, /api_qty: evaluation\.apiQty/);
+  assert.match(SRC, /api_qty: 0/);
+  assert.match(SRC, /current > 1/);
+  assert.doesNotMatch(SRC, /g2gPatchOffer\(mapping\.offerId, \{ api_qty: 1 \}\)/);
+  assert.match(SRC, /mapping.offerId !== pilotId/);
 });
 
 test("last_checked_at est mis à jour après chaque évaluation", () => {
