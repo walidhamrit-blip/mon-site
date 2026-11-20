@@ -42,6 +42,9 @@ test("le rapport exemple est daté, outillé et limité explicitement", () => {
   assert.match(page, /69/);
   assert.match(page, /86/);
   assert.match(page, /not a client|لا عميل/, "le site audité doit être présenté comme une démo");
+  assert.match(page, /67/, "la variance du relevé après doit être publiée");
+  assert.match(page, /90/, "la variance du relevé après doit être publiée");
+  assert.match(page, /no speed improvement|لا ندّعي تحسناً/, "aucun gain de vitesse ne doit être revendiqué");
 });
 
 test("le formulaire réutilise /api/lead et émet audit_request", () => {

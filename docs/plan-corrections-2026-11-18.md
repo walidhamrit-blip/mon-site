@@ -311,19 +311,21 @@ Les avis Next concernent précisément un mécanisme que le site utilise massive
   imprimable, points classés, mesures datées, appel de 30 min + suivi 14 jours),
   **rapport exemple réel** et formulaire.
 - Rapport exemple : démo **Tulin Magazin** (notre démo, pas un client),
-  Lighthouse 12 mobile, 3 runs, médiane, **20/11/2026**. Avant (production) :
-  performance 82, accessibilité 96, bonnes pratiques 75, SEO 100. Après (build
-  local du correctif) : accessibilité **100**, bonnes pratiques 75, SEO 100.
-  La performance est affichée **« n.c. »** : un runner local n'est pas
-  comparable à la production, aucun gain de vitesse n'est revendiqué.
+  Lighthouse 12 mobile, 3 runs, médiane, **20/11/2026**, avant et après en
+  production (après déploiement du correctif). Avant : performance 82
+  (69–86), accessibilité 96, bonnes pratiques 75, SEO 100. Après : performance
+  85 (67–90), accessibilité **100**, bonnes pratiques 75, SEO 100.
+  L'écart de performance est dans le bruit : **aucun gain de vitesse n'est
+  revendiqué**. Seule l'accessibilité (96 → 100, sur les trois runs) est
+  présentée comme un gain.
 - Correctifs réels mesurés : `aria-label` sur les commandes icône du lecteur de
   démo (`link-name`) et contraste des libellés à `opacity-50` (`color-contrast`).
 - Formulaire : réutilise `/api/lead` (`need=audit`, URL dans `message`), émet
   `audit_request {source:"audit-form"}` ; aucune PII dans l'analytics.
 - Liens : appel depuis Fix & Optimize et entrée dans le sitemap.
-- **Limite assumée** : la mesure « après » a été faite sur un build local, les
-  runners n'accédant pas aux previews Vercel. Un avant/après strictement
-  identique pourra être refait sur production après fusion.
+- **Reproductibilité** : les runners GitHub n'accèdent pas aux previews Vercel ;
+  les deux mesures ont donc été faites sur la production, même outil, même
+  jour, avec la médiane de 3 runs (issues #234 et #238).
 
 ---
 
