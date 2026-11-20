@@ -37,6 +37,25 @@ Lighthouse **12**, mobile émulé, **3 runs**, médiane — production
 - Pour comparer après C-08 : même outil, même URL, **3 runs**, et 14 jours de
   recul. Un écart inférieur à la variance observée ici (58–89) ne prouve rien.
 
+## Événements vérifiés en production
+
+| Événement | État | Preuve |
+|---|---|---|
+| `audit_request` | **vérifié** le 20/11/2026 | envoi du formulaire de `/audit`, événement visible dans Vercel Analytics |
+| `service_view` | **vérifié** | événement visible lors d'un test d'ouverture de page service |
+| `gateway_click` | à confirmer | — |
+| `whatsapp_click` | à confirmer | — |
+| `lead_submit` | à confirmer | — |
+| `checkout_start` | à confirmer | — |
+
+- `audit_request` est désormais observé en production : le formulaire de
+  `/audit` l'émet bien, avec `source:"audit-form"`.
+- Les quatre autres restent à confirmer dans l'onglet Events : le code les
+  émet, mais cela ne remplace pas une observation réelle.
+- Ne cocher « vérifié » qu'après l'avoir vu dans l'onglet Events, jamais par
+  déduction depuis le code.
+- Refaire ce contrôle une fois par mois et après tout changement de formulaire.
+
 ## Journal des décisions
 
 | Date | Observation | Décision | Effet attendu | Mesuré le |
