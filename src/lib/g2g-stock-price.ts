@@ -1,7 +1,7 @@
 /**
  * Synchronisation stock & prix des offres G2G (phase 2, brique 4).
  *
- * Ce cron, appelé régulièrement, aligne `api_qty` sur chaque offre G2G :
+ * Ce cron peut uniquement fermer les offres ; il ne les réactive jamais :
  *
  *   - **Stock** : le qty disponible chez FazerCards pour le `card_id` du
  *     mapping. Si le stock est nul, l'offre est coupée (`api_qty = 0`).
@@ -15,7 +15,7 @@
  * sont manipulés.
  */
 
-import { and, eq } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 
 import { db, ensureSchema } from "@/db";
 import { g2gOfferMappings, type G2gOfferMapping } from "@/db/schema";
@@ -26,10 +26,11 @@ import {
   g2gConfigured,
   type G2gOffer,
 } from "@/lib/g2g";
+import { pilotOfferId } from "@/lib/g2g-pilot";
 import { g2gFeePercent, planG2gFulfilment } from "@/lib/g2g-fulfilment-core";
 
 /** Quantité maximale proposée sur une offre G2G, même si le stock est plus élevé. */
-const G2G_STOCK_QTY_CAP = 100;
+const G2G_STOCK_QTY_CAP = 1;
 
 /**
  * Résultat de l'évaluation d'une seule offre : le qty à proposer sur G2G
@@ -53,9 +54,9 @@ export type G2gStockPriceResult =
  * Calcule le `api_qty` à proposer pour une offre G2G donnée, en fonction
  * du stock chez FazerCards et de la marge nette.
  *
- * Retourne `0` (offre coupée) quand :
+ * Retourne une évaluation refusée quand :
  *   - le stock chez FazerCards est nul ou indisponible ;
- *   - le prix de vente G2G est illisible ou non en USD ;
+ *   - le prix de vente converti est invalide ;
  *   - la marge nette passe sous le seuil du mapping.
  */
 export async function evaluateOfferStockPrice(
@@ -203,8 +204,8 @@ export async function evaluateOfferStockPrice(
 }
 
 /**
- * Traite tous les mappings G2G activés : pour chacun, évalue le stock et
- * la marge, puis pose `api_qty` sur l'offre chez G2G.
+ * Traite les mappings activés et ferme les offres hors pilote ou non sûres.
+ * Ne réactive jamais une offre et ne modifie pas les mappings désactivés.
  *
  * C'est le point d'entrée du cron `/api/cron/g2g-stock-price`.
  */
@@ -237,35 +238,48 @@ export async function syncG2gStockAndPrice(): Promise<{
   let updated = 0;
   let skipped = 0;
 
+  const pilotId = pilotOfferId(process.env.G2G_PILOT_OFFER_ID);
   for (const mapping of mappings) {
-    const evaluation = await evaluateOfferStockPrice(mapping);
-
-    if (evaluation.kind === "updated") {
-      // Pose api_qty sur l'offre G2G.
-      try {
-        await g2gPatchOffer(mapping.offerId, { api_qty: evaluation.apiQty });
+    try {
+      // Les autres mappings activés sont fermés, jamais ouverts par le cron.
+      if (mapping.offerId !== pilotId) {
+        await g2gPatchOffer(mapping.offerId, { api_qty: 0 });
         updated++;
-        results.push({
-          offerId: mapping.offerId,
-          kind: "updated",
-          apiQty: evaluation.apiQty,
-          reason: evaluation.reason,
-        });
-      } catch (error) {
-        skipped++;
-        results.push({
-          offerId: mapping.offerId,
-          kind: "skipped",
-          reason: `Échec de mise à jour G2G : ${error instanceof Error ? error.message : String(error)}`,
-        });
+        results.push({ offerId: mapping.offerId, kind: "updated", apiQty: 0, reason: "Offre non désignée pour le pilote : fermeture." });
+      } else {
+        const evaluation = await evaluateOfferStockPrice(mapping);
+        if (evaluation.kind === "skipped") {
+          // Échec économique ou technique : fermer plutôt que conserver un stock périmé.
+          await g2gPatchOffer(mapping.offerId, { api_qty: 0 });
+          updated++;
+          results.push({ offerId: mapping.offerId, kind: "updated", apiQty: 0, reason: evaluation.reason });
+        } else {
+          // Ne jamais réactiver ou augmenter le stock automatiquement.
+          const current = (await g2gGetOffer(mapping.offerId)).payload?.api_qty;
+          if (typeof current !== "number" || !Number.isInteger(current) || current < 0) {
+            await g2gPatchOffer(mapping.offerId, { api_qty: 0 });
+            updated++;
+            results.push({ offerId: mapping.offerId, kind: "updated", apiQty: 0, reason: "Quantité G2G illisible : fermeture préventive." });
+          } else if (current > 1) {
+            await g2gPatchOffer(mapping.offerId, { api_qty: 0 });
+            updated++;
+            results.push({ offerId: mapping.offerId, kind: "updated", apiQty: 0, reason: "Stock supérieur au maximum du pilote : fermeture préventive." });
+          } else {
+            skipped++;
+            results.push({ offerId: mapping.offerId, kind: "skipped", reason: "Stock inchangé : le cron ne réactive pas le pilote." });
+          }
+        }
       }
-    } else {
-      skipped++;
-      results.push({
-        offerId: mapping.offerId,
-        kind: "skipped",
-        reason: evaluation.reason,
-      });
+    } catch (error) {
+      const reason = error instanceof Error ? error.message : String(error);
+      try {
+        await g2gPatchOffer(mapping.offerId, { api_qty: 0 });
+        updated++;
+        results.push({ offerId: mapping.offerId, kind: "updated", apiQty: 0, reason: `Erreur : fermeture préventive (${reason}).` });
+      } catch (closeError) {
+        skipped++;
+        results.push({ offerId: mapping.offerId, kind: "skipped", reason: `Échec de synchronisation (${reason}) et de fermeture : ${closeError instanceof Error ? closeError.message : String(closeError)}` });
+      }
     }
 
     // Met à jour last_checked_at quel que soit le résultat.

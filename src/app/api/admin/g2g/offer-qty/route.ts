@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { eq } from "drizzle-orm";
 import { db, ensureSchema } from "@/db";
 import { g2gOfferMappings } from "@/db/schema";
+import { pilotQuantityAllowed } from "@/lib/g2g-pilot";
 import { isAdminAuthenticated } from "@/lib/auth";
 import { g2gConfigured, g2gErrorMessage, g2gGetOffer, g2gPatchOffer } from "@/lib/g2g";
 
@@ -31,9 +32,9 @@ function cleanText(value: unknown, max = 200): string {
  * Garde-fous :
  *  - Refuse si le mapping n'existe pas ou n'est pas activé (pas d'achat sans
  *    correspondance).
- *  - Refuse si l'offre n'est pas en USD (pas de conversion implicite).
+ *  - Toute activation est limitée à l’offre pilote explicitement configurée.
  *  - Refuse si G2G n'est pas configuré.
- *  - `api_qty` doit être un entier entre 0 et 10000.
+ *  - `api_qty` doit être 0 ou 1.
  */
 export async function PATCH(req: Request) {
   if (!(await isAdminAuthenticated())) {
@@ -60,11 +61,19 @@ export async function PATCH(req: Request) {
   }
 
   const apiQty = Number(input.apiQty ?? input.api_qty);
-  if (!Number.isInteger(apiQty) || apiQty < 0 || apiQty > 10000) {
+  if (!Number.isInteger(apiQty) || apiQty < 0 || apiQty > 1) {
     return noStoreJson(
-      { ok: false, error: "invalid_api_qty", message: "api_qty doit être un entier entre 0 et 10000." },
+      { ok: false, error: "invalid_api_qty", message: "api_qty doit être un entier entre 0 et 1." },
       400,
     );
+  }
+
+  if (!pilotQuantityAllowed(offerId, apiQty, process.env.G2G_PILOT_OFFER_ID)) {
+    return noStoreJson({ ok: false, error: "pilot_offer_not_configured", message: "Activation refusée : configurez G2G_PILOT_OFFER_ID pour cette offre unique et vérifiez les autres offres sur G2G." }, 403);
+  }
+
+  if (apiQty > 0 && process.env.G2G_AUTO_DELIVERY !== "1") {
+    return noStoreJson({ ok: false, error: "auto_delivery_disabled", message: "Activation refusée : G2G_AUTO_DELIVERY n'est pas armé." }, 403);
   }
 
   // Si on active (api_qty > 0), le mapping doit exister et être activé :
@@ -128,7 +137,7 @@ export async function PATCH(req: Request) {
       404,
     );
   }
-  if (offer.currency !== "USD") {
+  if (apiQty > 0 && offer.currency !== "USD") {
     return noStoreJson(
       {
         ok: false,

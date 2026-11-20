@@ -865,7 +865,7 @@ export function G2gPanel() {
               Passer une offre en <code className="font-mono">api_qty = 1</code> la rend achetable sur G2G : un
               client peut payer et déclencher un webhook{' '}
               <code className="font-mono">order.api_delivery</code>. Ne le faire que sur{' '}
-              <strong>une seule offre</strong>, avec le mapping activé et le coupe-circuit armé.
+              <strong>une seule offre</strong>, désignée par G2G_PILOT_OFFER_ID, avec le mapping activé et le coupe-circuit armé. Le cron ne réactive jamais une offre ; vérifiez les autres stocks directement sur G2G.
             </p>
             <div className="mt-3 grid gap-2 sm:grid-cols-2">
               <label className="block">
@@ -888,7 +888,7 @@ export function G2gPanel() {
                   className={inputClass}
                   type="number"
                   min={0}
-                  max={10000}
+                  max={1}
                   value={apiQtyPatch.apiQty}
                   onChange={(e) =>
                     setApiQtyPatch((previous) => ({

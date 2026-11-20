@@ -588,3 +588,19 @@ Références : [Authentication Intro](https://docs.g2g.com/authentication-intro-
 [order.api_delivery](https://docs.g2g.com/order-api-delivery-18583502e0) ·
 [Deliver Code](https://docs.g2g.com/deliver-code-18583491e0) ·
 [Create/Update Offer](https://docs.g2g.com/create-offer-18583484e0)
+
+## Sécurité stock pendant le pilote
+
+Configurer `G2G_PILOT_OFFER_ID` avec l'identifiant de l'unique offre pilote
+(par exemple `G1795076410074VF`) avant toute activation manuelle. Sans cette
+configuration, aucune activation depuis l'admin n'est possible. La quantité
+manuelle est limitée à 0 ou 1 ; 0 reste possible pour toute offre.
+
+Le cron ne réactive jamais une offre : il ferme les mappings actifs non désignés,
+ferme le pilote si son évaluation échoue et ferme le pilote si son stock dépasse 1.
+Il ne traite pas les mappings désactivés. Avant activation et lors de tout
+changement de pilote, vérifier et mettre à 0 **toutes les autres offres** chez
+G2G, y compris celles sans mapping. Une modification directe sur G2G contourne
+ces protections ; elles ne garantissent pas l'état global du compte ni une
+fermeture si l'API G2G échoue. Vérifier le résultat et les logs. Le cron reste
+quotidien : il ne remplace pas une surveillance en temps réel.
