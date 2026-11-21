@@ -84,11 +84,12 @@ export async function getFazercardsBalanceStatus(
   }
 
   if (!fazercardsConfigured()) {
+    const error = "FAZERCARDS_API_KEY absent : aucun achat automatique possible.";
     const status: FazercardsBalanceStatus = {
       configured: false,
-      assessment: assessFazercardsBalance({ balanceUsd: null, maxOrderUsd }),
+      assessment: assessFazercardsBalance({ balanceUsd: null, maxOrderUsd, error }),
       fetchedAt: null,
-      error: "FAZERCARDS_API_KEY absent : aucun achat automatique possible.",
+      error,
     };
     cache = { status, readAt: Date.now() };
     return status;
@@ -97,23 +98,31 @@ export async function getFazercardsBalanceStatus(
   try {
     const balance = await fazercardsBalance({ timeoutMs: options.timeoutMs ?? 6000 });
     const parsed = Number(balance.balance);
+    // Une réponse 200 dont le montant n'est pas un nombre est une lecture
+    // illisible au même titre qu'une erreur : sans ce motif, l'alerte dirait
+    // seulement « illisible » alors que la cause est dans la réponse.
+    const parseError = Number.isFinite(parsed)
+      ? null
+      : `Réponse du fournisseur inexploitable : montant « ${String(balance.balance).slice(0, 60)} » non numérique.`;
     const status: FazercardsBalanceStatus = {
       configured: true,
       assessment: assessFazercardsBalance({
         balanceUsd: Number.isFinite(parsed) ? parsed : null,
         maxOrderUsd,
+        error: parseError,
       }),
-      fetchedAt: new Date().toISOString(),
-      error: null,
+      fetchedAt: parseError ? null : new Date().toISOString(),
+      error: parseError,
     };
     cache = { status, readAt: Date.now() };
     return status;
   } catch (error) {
+    const message = fazercardsErrorMessage(error);
     const status: FazercardsBalanceStatus = {
       configured: true,
-      assessment: assessFazercardsBalance({ balanceUsd: null, maxOrderUsd }),
+      assessment: assessFazercardsBalance({ balanceUsd: null, maxOrderUsd, error: message }),
       fetchedAt: null,
-      error: fazercardsErrorMessage(error),
+      error: message,
     };
     cache = { status, readAt: Date.now() };
     return status;
@@ -134,6 +143,9 @@ function withCurrentCap(
     assessment: assessFazercardsBalance({
       balanceUsd: status.assessment.balanceUsd,
       maxOrderUsd,
+      // Conserve le motif : sans lui, une valeur en cache redeviendrait
+      // « illisible » sans cause au simple changement de plafond.
+      error: status.assessment.unknown?.error ?? status.error,
     }),
   };
 }
@@ -215,9 +227,14 @@ function alertEmail(input: {
   const recovery = input.kind === "recovery";
   const level = LEVEL_LABELS[input.alertLevel] ?? input.alertLevel;
 
+  // L'objet nomme la cause quand elle est connue : « illisible » seul oblige
+  // à ouvrir le message, puis le panneau admin, pour savoir quoi faire.
+  const cause = assessment.unknown?.label ?? null;
   const subject = recovery
     ? `✅ Solde fournisseur rétabli — ${assessment.balanceUsd?.toFixed(2) ?? "?"} $`
-    : `⚠️ Solde fournisseur ${level} — vérification nécessaire`;
+    : cause
+      ? `⚠️ Solde fournisseur illisible (${cause}) — action requise`
+      : `⚠️ Solde fournisseur ${level} — vérification nécessaire`;
 
   const lines = [
     recovery
@@ -237,10 +254,20 @@ function alertEmail(input: {
       : []),
     ``,
     assessment.summary,
+    ...(cause
+      ? [
+          ``,
+          `Cause : ${cause}`,
+          ...(assessment.unknown?.error ? [`Erreur exacte : ${assessment.unknown.error}`] : []),
+          `À faire : ${assessment.unknown?.action ?? ""}`,
+        ]
+      : []),
     ``,
     recovery
       ? `Aucune action requise.`
-      : `Vérifiez le solde et rechargez si nécessaire ; aucun transfert n'est lancé automatiquement.`,
+      : cause
+        ? `Aucun transfert n'est lancé automatiquement ; la boutique reste ouverte.`
+        : `Vérifiez le solde et rechargez si nécessaire ; aucun transfert n'est lancé automatiquement.`,
     ``,
     `Administration : ${siteUrl.replace(/\/+$/, "")}/admin/digital`,
     ``,
@@ -271,11 +298,22 @@ function alertEmail(input: {
         }
       </table>
       <p style="font-size:13px;color:#444;margin-top:16px">${escapeHtml(assessment.summary)}</p>
+      ${
+        cause
+          ? `<div style="border-left:3px solid #C6A664;background:#faf8f2;padding:10px 14px;margin-top:12px">
+        <p style="font-size:13px;color:#1a1a1e;margin:0 0 6px"><strong>Cause :</strong> ${escapeHtml(cause)}</p>
+        ${assessment.unknown?.error ? `<p style="font-size:12px;color:#666;margin:0 0 6px">Erreur exacte : ${escapeHtml(assessment.unknown.error)}</p>` : ""}
+        <p style="font-size:13px;color:#1a1a1e;margin:0"><strong>À faire :</strong> ${escapeHtml(assessment.unknown?.action ?? "")}</p>
+      </div>`
+          : ""
+      }
       <p style="font-size:13px;color:#444">
         ${
           recovery
             ? "Aucune action requise."
-            : "Vérifiez le solde et rechargez si nécessaire ; aucun transfert n’est lancé automatiquement."
+            : cause
+              ? "Aucun transfert n’est lancé automatiquement ; la boutique reste ouverte."
+              : "Vérifiez le solde et rechargez si nécessaire ; aucun transfert n’est lancé automatiquement."
         }
       </p>
       <p style="font-size:12px;color:#999;margin-top:20px">${escapeHtml(siteName)} — ${escapeHtml(siteUrl)}</p>

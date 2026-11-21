@@ -18,7 +18,9 @@ import {
   BALANCE_MIN_USD,
   BALANCE_TOPUP_ROUNDING_USD,
   assessFazercardsBalance,
+  balanceAction,
   balanceGate,
+  diagnoseBalanceUnknown,
   shouldSendBalanceAlert,
   supplierCostForSalePrice,
 } from "../src/lib/fazercards-balance-core.ts";
@@ -94,6 +96,106 @@ test("un solde illisible est UNKNOWN, jamais OK", () => {
     assert.equal(assessment.balanceUsd, null);
     assert.ok(assessment.recommendedTopUpUsd > 0);
   }
+});
+
+/* ------------- Cause d'un solde illisible (message actionnable) ------------- */
+
+test("chaque cause réelle d'un solde illisible est nommée", () => {
+  // Clé absente côté serveur.
+  assert.equal(
+    diagnoseBalanceUnknown(
+      "FAZERCARDS_API_KEY absent : aucun achat automatique possible.",
+    ),
+    "key_missing",
+  );
+  assert.equal(
+    diagnoseBalanceUnknown("FAZERCARDS_API_KEY manquant — configurez la variable d'environnement"),
+    "key_missing",
+  );
+  // Clé présentée mais refusée (le statut prime sur le mot « key »).
+  assert.equal(diagnoseBalanceUnknown("FazerCards GET /balance → 401"), "key_rejected");
+  assert.equal(
+    diagnoseBalanceUnknown("FazerCards GET /balance → 403 (invalid_api_key)"),
+    "key_rejected",
+  );
+  // Panne : ni la clé ni la configuration ne sont en cause.
+  assert.equal(
+    diagnoseBalanceUnknown("FazerCards injoignable — fetch failed"),
+    "unreachable",
+  );
+  assert.equal(diagnoseBalanceUnknown("FazerCards GET /balance — trop de tentatives (429)"), "unreachable");
+  // Réponse reçue mais illisible.
+  assert.equal(
+    diagnoseBalanceUnknown("Réponse FazerCards illisible (/balance)"),
+    "unparsable",
+  );
+  // Message absent ou inconnu : on ne devine pas.
+  assert.equal(diagnoseBalanceUnknown(null), "unknown");
+  assert.equal(diagnoseBalanceUnknown("   "), "unknown");
+  assert.equal(diagnoseBalanceUnknown("boom"), "unknown");
+});
+
+test("une clé refusée n'est jamais présentée comme une clé absente", () => {
+  // Cas réel : le corps 401 contient « Invalid API key » — sans priorité au
+  // statut, le message enverrait ajouter une variable déjà présente.
+  const cause = diagnoseBalanceUnknown("Invalid API key (401)");
+  assert.equal(cause, "key_rejected");
+  assert.notEqual(cause, "key_missing");
+});
+
+test("chaque cause mène à UNE action concrète", () => {
+  for (const cause of [
+    "key_missing",
+    "key_rejected",
+    "unreachable",
+    "unparsable",
+    "unknown",
+  ]) {
+    const action = balanceAction(cause);
+    assert.ok(action.length > 20, `action trop vague pour ${cause}`);
+  }
+  // Les causes actionnables nomment l'endroit exact où intervenir.
+  assert.match(balanceAction("key_missing"), /Vercel/);
+  assert.match(balanceAction("key_missing"), /Redeploy/);
+  assert.match(balanceAction("key_rejected"), /reseller\.fazercards\.com/);
+  // Une panne fournisseur ne doit pas faire changer la configuration.
+  assert.match(balanceAction("unreachable"), /Aucune correction de configuration/);
+});
+
+test("l'évaluation expose la cause et l'action, jamais un simple « illisible »", () => {
+  const assessment = assessFazercardsBalance({
+    balanceUsd: null,
+    maxOrderUsd: 300,
+    error: "FazerCards GET /balance → 401",
+  });
+  assert.equal(assessment.level, "unknown");
+  assert.equal(assessment.unknown?.cause, "key_rejected");
+  assert.equal(assessment.unknown?.label, "clé refusée par le fournisseur");
+  assert.match(assessment.unknown?.action ?? "", /reseller\.fazercards\.com/);
+  // Le résumé affiché dans l'e-mail porte la cause ET le geste à faire.
+  assert.match(assessment.summary, /clé refusée/);
+  assert.match(assessment.summary, /reseller\.fazercards\.com/);
+});
+
+test("sans message d'erreur, le diagnostic reste honnête (pas de cause inventée)", () => {
+  const assessment = assessFazercardsBalance({ balanceUsd: null, maxOrderUsd: 300 });
+  assert.equal(assessment.level, "unknown");
+  assert.equal(assessment.unknown?.cause, "unknown");
+  assert.equal(assessment.unknown?.error, null);
+  // Un solde lu n'a aucune cause d'échec.
+  const healthy = assessFazercardsBalance({ balanceUsd: 120, maxOrderUsd: 50 });
+  assert.equal(healthy.unknown, undefined);
+});
+
+test("l'email et le panneau admin nomment la cause", () => {
+  const runtime = read("src/lib/fazercards-balance.ts");
+  assert.match(runtime, /Solde fournisseur illisible \(\$\{cause\}\)/);
+  assert.match(runtime, /Cause : \$\{cause\}/);
+  assert.match(runtime, /À faire : \$\{assessment\.unknown\?\.action/);
+  const panel = read("src/app/admin/(panel)/digital/fazercards-balance-panel.tsx");
+  assert.match(panel, /assessment\.unknown/);
+  assert.match(panel, /\.label/);
+  assert.match(panel, /assessment\.unknown\.action/);
 });
 
 /* ----------------------------- Alertes ----------------------------- */

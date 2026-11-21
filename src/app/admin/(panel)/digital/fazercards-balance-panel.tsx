@@ -29,7 +29,7 @@ export function FazercardsBalancePanel({ status }: { status: FazercardsBalanceSt
         ? "Solde fournisseur : couvre seulement une partie du plafond"
         : assessment.level === "critical"
           ? "Solde fournisseur : insuffisant pour le plafond de vente"
-          : "Solde fournisseur : illisible";
+          : `Solde fournisseur : illisible${assessment.unknown ? ` — ${assessment.unknown.label}` : ""}`;
 
   const Icon =
     assessment.level === "ok" ? Landmark : assessment.level === "low" ? TriangleAlert : CircleAlert;
@@ -93,6 +93,12 @@ export function FazercardsBalancePanel({ status }: { status: FazercardsBalanceSt
       {error && (
         <p className={`mt-1 text-[11.5px] leading-5 ${palette.text}`}>
           <span className="font-bold">Erreur de lecture :</span> {error}
+        </p>
+      )}
+
+      {assessment.unknown && (
+        <p className={`mt-1 text-[11.5px] leading-5 ${palette.text}`}>
+          <span className="font-bold">À faire :</span> {assessment.unknown.action}
         </p>
       )}
 

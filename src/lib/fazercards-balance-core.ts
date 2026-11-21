@@ -40,6 +40,88 @@ export const BALANCE_TOPUP_SAFETY = 1.15;
 export const BALANCE_TOPUP_ROUNDING_USD = 10;
 
 /**
+ * Cause d'un solde illisible, quand elle est identifiable sans deviner.
+ *
+ * Un solde « illisible » n'est PAS un solde vide : c'est une lecture qui a
+ * échoué. Les trois causes réelles n'ont ni la même gravité ni le même
+ * correctif — les confondre sous un seul mot oblige le propriétaire à
+ * enquêter alors que le message d'erreur contient déjà la réponse.
+ */
+export const BALANCE_UNKNOWN_CAUSES = [
+  "key_missing",
+  "key_rejected",
+  "unreachable",
+  "unparsable",
+  "unknown",
+] as const;
+export type BalanceUnknownCause = (typeof BALANCE_UNKNOWN_CAUSES)[number];
+
+/** Libellé court de chaque cause (français — interface et e-mail d'alerte). */
+export const BALANCE_UNKNOWN_LABELS: Record<BalanceUnknownCause, string> = {
+  key_missing: "clé API absente",
+  key_rejected: "clé refusée par le fournisseur",
+  unreachable: "fournisseur injoignable",
+  unparsable: "réponse du fournisseur inexploitable",
+  unknown: "cause non identifiée",
+};
+
+/**
+ * Traduit le message d'erreur du fournisseur en cause exploitable.
+ *
+ * ⚠️ L'ordre des tests compte : une réponse `401` accompagnée de
+ * « Invalid API key » contient les mots « api key » ; conclure « clé absente »
+ * enverrait le propriétaire ajouter une variable dans Vercel alors qu'il faut
+ * d'abord vérifier la clé dans le hub revendeur. Le statut HTTP passe donc
+ * avant la recherche du mot « manquant ».
+ */
+export function diagnoseBalanceUnknown(error: string | null | undefined): BalanceUnknownCause {
+  const text = (error ?? "").toLowerCase();
+  if (!text) return "unknown";
+  // 1. Clé présentée mais refusée (401/403, clé invalide, abonnement suspendu).
+  if (/401|403|unauthor|forbidden|invalid|refus|révoqu|revoqu|suspend/.test(text)) {
+    return "key_rejected";
+  }
+  // 2. Aucune clé configurée côté serveur.
+  if (/manquant|absent|missing|not configured|api_key/.test(text)) {
+    return "key_missing";
+  }
+  // 3. Panne réseau, timeout ou limitation de débit : transitoire.
+  if (
+    /injoignable|timeout|timed out|econn|enotfound|fetch failed|network|abort|socket|réseau|429|trop de tentatives/.test(
+      text,
+    )
+  ) {
+    return "unreachable";
+  }
+  // 4. Réponse reçue mais impossible à lire (base d'API erronée, HTML, JSON cassé).
+  if (/illisible|json|parse|unexpected|non json/.test(text)) {
+    return "unparsable";
+  }
+  return "unknown";
+}
+
+/**
+ * Marche à suivre, en une phrase actionnable, sans jargon.
+ *
+ * Écrite pour être lue telle quelle dans un e-mail par une personne qui ne
+ * développe pas : chaque cause mène à UN geste précis.
+ */
+export function balanceAction(cause: BalanceUnknownCause): string {
+  switch (cause) {
+    case "key_missing":
+      return "Ajouter FAZERCARDS_API_KEY dans Vercel (Settings → Environment Variables, environnement Production), puis Redeploy : un déploiement déjà en ligne ne relit jamais une variable ajoutée après coup.";
+    case "key_rejected":
+      return "La clé est refusée : la vérifier dans reseller.fazercards.com → Profile → API key, la régénérer si nécessaire, la recopier dans Vercel (Production uniquement), puis Redeploy. Vérifier aussi que l'abonnement revendeur est actif (Wallet / Subscription).";
+    case "unreachable":
+      return "Fournisseur injoignable ou limité en débit (réseau, panne FazerCards) : réessayer plus tard. Aucune correction de configuration n'est nécessaire, la boutique reste ouverte.";
+    case "unparsable":
+      return "Réponse reçue mais illisible : vérifier FAZERCARDS_API_BASE (attendu https://api.fzr.cards/api/v2) et lire l'erreur exacte affichée sur /admin/digital.";
+    default:
+      return "Lire l'erreur exacte dans le bandeau « Solde fournisseur » de /admin/digital, puis vérifier FAZERCARDS_API_KEY dans Vercel.";
+  }
+}
+
+/**
  * Coût fournisseur maximal dont le prix de vente reste ≤ `priceUsd`.
  *
  * Le barème de marge étant dégressif (voir `fazercards-pricing.ts`), il n'y a
@@ -76,6 +158,17 @@ export interface BalanceAssessment {
   recommendedTopUpUsd: number;
   /** Phrase prête à afficher (français — interface d'administration). */
   summary: string;
+  /**
+   * Pourquoi le solde est illisible et quoi faire (`null` si le solde est lu).
+   * Absent sur les évaluations construites sans message d'erreur.
+   */
+  unknown?: {
+    cause: BalanceUnknownCause;
+    label: string;
+    action: string;
+    /** Message brut du fournisseur, pour le diagnostic (jamais public). */
+    error: string | null;
+  };
 }
 
 /**
@@ -87,6 +180,15 @@ export interface BalanceAssessment {
 export function assessFazercardsBalance(input: {
   balanceUsd: number | null;
   maxOrderUsd: number;
+  /**
+   * Message d'erreur de la lecture du solde (facultatif).
+   *
+   * Sans lui, un solde illisible reste « illisible » : le propriétaire doit
+   * enquêter. Avec lui, l'alerte nomme la cause (clé absente, clé refusée,
+   * fournisseur injoignable) et donne le geste à faire. Paramètre optionnel
+   * pour ne pas casser les appels existants.
+   */
+  error?: string | null;
 }): BalanceAssessment {
   const maxOrderUsd =
     Number.isFinite(input.maxOrderUsd) && input.maxOrderUsd > 0
@@ -99,6 +201,9 @@ export function assessFazercardsBalance(input: {
       : null;
 
   if (balanceUsd == null) {
+    const cause = diagnoseBalanceUnknown(input.error);
+    const label = BALANCE_UNKNOWN_LABELS[cause];
+    const base = `Solde fournisseur illisible (${label}) : impossible de garantir l'achat après encaissement.`;
     return {
       level: "unknown",
       balanceUsd: null,
@@ -107,8 +212,13 @@ export function assessFazercardsBalance(input: {
       coveredSaleUsd: null,
       coverageRatio: null,
       recommendedTopUpUsd: roundTopUp(costCeilingUsd * BALANCE_TOPUP_SAFETY),
-      summary:
-        "Solde fournisseur illisible (clé API absente ou passerelle muette) : impossible de garantir l'achat après encaissement.",
+      summary: cause === "unknown" ? base : `${base} ${balanceAction(cause)}`,
+      unknown: {
+        cause,
+        label,
+        action: balanceAction(cause),
+        error: input.error?.trim() ? input.error.trim() : null,
+      },
     };
   }
 

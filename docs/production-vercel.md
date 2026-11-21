@@ -265,6 +265,30 @@ famille) et `rotation` (position de la fenêtre), puis
    FazerCards** (Wallet / Subscription), jamais sur `/api/health` — le
    solde n'est volontairement pas exposé sur une route publique.
 
+### Alerte « Solde fournisseur illisible » — que faire
+
+L'e-mail du cron `/api/cron/fazercards-balance` (05:10 UTC) part vers
+`LEAD_NOTIFICATION_EMAIL`, sinon l'e-mail public du site
+(`contact@nokhba.net.ly`). Un solde **illisible** n'est pas un solde vide :
+la lecture a échoué. Le sujet de l'e-mail, le bandeau `/admin/digital` et
+`assessment.unknown` nomment la cause ; chaque cause a un seul correctif.
+
+| Sujet / cause | Ce que ça veut dire | Correctif |
+|---|---|---|
+| `clé API absente` | aucune `FAZERCARDS_API_KEY` dans l'environnement **Production**, ou déploiement non refait | ajouter la variable puis **Redeploy** |
+| `clé refusée par le fournisseur` | 401/403 : clé révoquée, tronquée, recopiée avec des guillemets, ou abonnement revendeur expiré | `reseller.fazercards.com` → Profile → API key ; vérifier Wallet / Subscription ; recopier dans Vercel ; Redeploy |
+| `fournisseur injoignable` | panne réseau, timeout ou limitation de débit (429) | rien à configurer : réessayer plus tard, la boutique reste ouverte |
+| `réponse du fournisseur inexploitable` | réponse reçue mais non lisible (HTML, JSON cassé, `FAZERCARDS_API_BASE` erroné) | vérifier `FAZERCARDS_API_BASE` (`https://api.fzr.cards/api/v2`) et lire l'erreur exacte sur `/admin/digital` |
+
+Dans tous les cas de solde illisible, la caisse **ne ferme pas** : la vente
+passe et la commande bascule en livraison manuelle (`balanceGate` →
+`allow / balance_unknown`). Tant que la lecture échoue, la couverture du
+plafond n'est pas garantie : il est prudent d'**abaisser le plafond**
+(`/admin/settings?tab=fazercards`) à ce qui peut être honoré à coup sûr.
+
+> Ne pas confondre avec « Solde fournisseur BAS / CRITIQUE » : là, le solde
+> est lu et il est insuffisant — il faut recharger, pas corriger une clé.
+
 🔐 Ne pas recopier la vraie clé FazerCards dans l'environnement
 **Preview** : les Preview lisent les mêmes noms de variables et le même
 compte fournisseur, donc elles engageraient le solde réel.
