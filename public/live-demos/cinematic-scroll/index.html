@@ -3,10 +3,10 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>ALTITUDE — L'architecture du silence</title>
+    <title>MIRA — Habiter l'horizon</title>
     <meta
       name="description"
-      content="Démo d'expérience web cinématique : scroll piloté, sections épinglées, galerie horizontale. Construite 100 % gratuitement avec GSAP + Lenis et des visuels IA."
+      content="Démo client : site immobilier de luxe bilingue (français/arabe) avec scroll cinématique. Construite 100 % gratuitement avec GSAP + Lenis et des visuels IA."
     />
     <!--
       Démo technique autonome (voir src/components/live-site-frames.tsx).
@@ -14,25 +14,39 @@
       éditoriale. Même convention que /live-demos/tulin-magazin.
     -->
     <meta name="robots" content="noindex, follow" />
-    <meta name="theme-color" content="#0b0d10" />
+    <meta name="theme-color" content="#f2efe8" />
     <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
     <link rel="stylesheet" href="./vendor/lenis.css" />
     <noscript><style>.preloader { display: none; }</style></noscript>
     <style>
-      /* ============ ALTITUDE — expérience cinématique ============
-         100 % gratuit : GSAP + ScrollTrigger + SplitText + Lenis
-         (licences libres, usage commercial inclus). Aucun CDN :
-         polices système + librairies locales (CSP du site : 'self'). */
+      /* ============ MIRA — expérience cinématique (thème clair) ============
+         Démo client bilingue FR/AR (RTL) — immobilier de luxe.
+         100 % gratuit : GSAP + ScrollTrigger + SplitText + Lenis (locaux),
+         police Cairo auto-hébergée (OFL), visuels IA. CSP : 'self' uniquement. */
+
+      /* Police arabe auto-hébergée (licence OFL — voir fonts/OFL-Cairo.txt) */
+      @font-face {
+        font-family: "Cairo";
+        src: url("./fonts/cairo-arabic-var.woff2") format("woff2");
+        font-weight: 200 1000;
+        font-display: swap;
+      }
+
       :root {
-        --bg: #0b0d10;
-        --ink: #ece7df;
-        --muted: #97a0a8;
-        --accent: #c9a227;
-        --line: rgba(236, 231, 223, 0.14);
+        --bg: #f2efe8;
+        --bg-soft: #e9e4da;
+        --ink: #1c1812;
+        --muted: #6e6759;
+        --accent: #8c6a3f;
+        --line: rgba(28, 24, 18, 0.16);
         --font-display: Didot, "Bodoni MT", "Playfair Display",
           "Cormorant Garamond", Georgia, "Times New Roman", serif;
         --font-ui: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI",
           Roboto, Helvetica, Arial, sans-serif;
+      }
+      html[lang="ar"] {
+        --font-display: "Cairo", "Geeza Pro", "Segoe UI", Tahoma, sans-serif;
+        --font-ui: "Cairo", "Geeza Pro", "Segoe UI", Tahoma, sans-serif;
       }
       * { margin: 0; padding: 0; box-sizing: border-box; }
       html { -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; }
@@ -44,7 +58,7 @@
       }
       img { display: block; }
       a { color: inherit; text-decoration: none; }
-      ::selection { background: var(--accent); color: #0b0d10; }
+      ::selection { background: var(--accent); color: #f2efe8; }
 
       .kicker {
         font-size: 11px;
@@ -55,9 +69,27 @@
       .title {
         font-family: var(--font-display);
         font-weight: 400;
-        line-height: 1.02;
+        line-height: 1.04;
         font-size: clamp(32px, 4.6vw, 62px);
       }
+
+      /* L'interlettrage casse les liaisons de l'écriture arabe :
+         neutralisé en arabe, conservé en latin. */
+      html[lang="ar"] .kicker,
+      html[lang="ar"] .btn,
+      html[lang="ar"] .header__logo,
+      html[lang="ar"] .header__nav a,
+      html[lang="ar"] .hero__scroll,
+      html[lang="ar"] .card__index,
+      html[lang="ar"] .stat p,
+      html[lang="ar"] .footer__brand,
+      html[lang="ar"] .preloader__brand,
+      html[lang="ar"] .lang-toggle {
+        letter-spacing: normal;
+        text-transform: none;
+      }
+      html[lang="ar"] .manifesto__text { line-height: 1.6; }
+      html[lang="ar"] .hero__title { line-height: 1.12; }
 
       /* ---- Boutons ---- */
       .btn {
@@ -74,20 +106,40 @@
         background: transparent;
         cursor: pointer;
         transition: background 0.45s ease, color 0.45s ease,
-          border-color 0.45s ease, transform 0.3s ease;
+          border-color 0.45s ease;
       }
-      .btn:hover { background: var(--accent); border-color: var(--accent); color: #0b0d10; }
+      .btn:hover { background: var(--ink); border-color: var(--ink); color: var(--bg); }
       .btn--big { padding: 22px 46px; font-size: 13px; }
       .btn--ghost { padding: 11px 22px; font-size: 10.5px; }
 
-      /* ---- Overlays cinéma ---- */
+      /* ---- Sélecteur de langue ---- */
+      .lang-toggle {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 46px;
+        height: 38px;
+        padding: 0 14px;
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        background: transparent;
+        color: var(--ink);
+        font-family: var(--font-ui);
+        font-size: 12px;
+        letter-spacing: 0.12em;
+        cursor: pointer;
+        transition: background 0.35s ease, color 0.35s ease;
+      }
+      .lang-toggle:hover { background: var(--ink); color: var(--bg); }
+
+      /* ---- Overlays : grain papier + vignette douce ---- */
       .grain {
         position: fixed;
         top: -60%; left: -60%;
         width: 220%; height: 220%;
         pointer-events: none;
         z-index: 9999;
-        opacity: 0.085;
+        opacity: 0.06;
         animation: grain 0.8s steps(7) infinite;
       }
       @keyframes grain {
@@ -104,8 +156,8 @@
         position: fixed; inset: 0;
         pointer-events: none;
         z-index: 9998;
-        background: radial-gradient(120% 90% at 50% 45%,
-          transparent 42%, rgba(5, 7, 9, 0.42) 78%, rgba(5, 7, 9, 0.78) 100%);
+        background: radial-gradient(125% 95% at 50% 45%,
+          transparent 55%, rgba(28, 24, 18, 0.07) 82%, rgba(28, 24, 18, 0.16) 100%);
       }
 
       /* ---- Curseur ---- */
@@ -138,7 +190,7 @@
       .progress { position: fixed; top: 0; left: 0; right: 0; height: 2px; z-index: 9000; }
       .progress__bar {
         height: 100%;
-        background: linear-gradient(90deg, var(--accent), #e8c979);
+        background: var(--accent);
         transform: scaleX(0);
         transform-origin: left center;
       }
@@ -197,12 +249,12 @@
         font-size: 15px;
         letter-spacing: 0.5em;
       }
-      .header__nav { display: flex; align-items: center; gap: clamp(18px, 2.6vw, 40px); }
+      .header__nav { display: flex; align-items: center; gap: clamp(16px, 2.4vw, 36px); }
       .header__nav a:not(.btn) {
         font-size: 11px;
         letter-spacing: 0.22em;
         text-transform: uppercase;
-        color: rgba(236, 231, 223, 0.72);
+        color: rgba(28, 24, 18, 0.66);
         transition: color 0.3s ease;
       }
       .header__nav a:not(.btn):hover { color: var(--ink); }
@@ -220,9 +272,8 @@
       }
       .hero__content {
         position: absolute;
-        left: clamp(24px, 7vw, 96px);
-        top: 0;
-        bottom: 0;
+        inset-inline-start: clamp(24px, 7vw, 96px);
+        top: 0; bottom: 0;
         display: flex;
         flex-direction: column;
         justify-content: center;
@@ -234,11 +285,15 @@
         font-size: clamp(54px, 11vw, 148px);
         line-height: 0.94;
         margin: 26px 0 30px;
+        color: #f4f1ea;
+        text-shadow: 0 2px 40px rgba(10, 10, 10, 0.35);
       }
+      .hero__kicker { color: #e2c894; }
       .hero__sub {
         font-size: clamp(14px, 1.35vw, 19px);
         line-height: 1.75;
-        color: rgba(236, 231, 223, 0.78);
+        color: rgba(244, 241, 234, 0.86);
+        text-shadow: 0 1px 24px rgba(10, 10, 10, 0.4);
       }
       .hero__scroll {
         position: absolute;
@@ -248,11 +303,11 @@
         font-size: 10px;
         letter-spacing: 0.34em;
         text-transform: uppercase;
-        color: rgba(236, 231, 223, 0.6);
+        color: rgba(244, 241, 234, 0.75);
       }
       .hero__scroll i {
         width: 1px; height: 56px;
-        background: linear-gradient(to bottom, var(--accent), transparent);
+        background: linear-gradient(to bottom, #e2c894, transparent);
         position: relative;
         overflow: hidden;
       }
@@ -261,7 +316,7 @@
         position: absolute;
         top: -20px; left: 0;
         width: 100%; height: 20px;
-        background: var(--ink);
+        background: #f4f1ea;
         animation: scrollDrop 2.2s cubic-bezier(0.65, 0, 0.35, 1) infinite;
       }
       @keyframes scrollDrop {
@@ -269,7 +324,7 @@
         70%, 100% { top: 60px; }
       }
 
-      /* ---- Manifeste (défilement piloté) ---- */
+      /* ---- Manifeste ---- */
       .manifesto {
         min-height: 100vh;
         display: flex;
@@ -280,7 +335,7 @@
       .manifesto__text {
         font-family: var(--font-display);
         font-size: clamp(26px, 4.4vw, 60px);
-        line-height: 1.3;
+        line-height: 1.32;
         color: var(--ink);
       }
 
@@ -308,7 +363,7 @@
         position: relative;
         aspect-ratio: 3 / 4;
         overflow: hidden;
-        background: var(--bg-soft, #11141a);
+        background: var(--bg-soft);
       }
       .card__media img {
         position: absolute;
@@ -365,7 +420,7 @@
       .feature__text {
         font-size: clamp(14.5px, 1.25vw, 17.5px);
         line-height: 1.85;
-        color: rgba(236, 231, 223, 0.72);
+        color: var(--muted);
         margin-bottom: 38px;
       }
 
@@ -396,12 +451,13 @@
       .cta {
         text-align: center;
         padding: 23vh 24px;
+        background: var(--bg-soft);
       }
       .cta__title {
         font-family: var(--font-display);
         font-weight: 400;
         font-size: clamp(48px, 9vw, 128px);
-        line-height: 0.97;
+        line-height: 0.99;
         margin: 26px 0 48px;
       }
 
@@ -426,7 +482,7 @@
       }
       .footer__copy {
         font-size: 11px;
-        color: rgba(236, 231, 223, 0.35);
+        color: rgba(28, 24, 18, 0.42);
       }
 
       /* ---- Responsive ---- */
@@ -438,8 +494,12 @@
       }
       @media (max-width: 600px) {
         .stats { grid-template-columns: 1fr; gap: 44px; }
-        .hero__content { left: 22px; right: 22px; }
+        .hero__content { inset-inline-start: 22px; max-width: none; width: calc(100vw - 44px); }
       }
+
+      /* ---- Sens de lecture RTL : les barres se remplissent depuis la droite ---- */
+      html[dir="rtl"] .progress__bar,
+      html[dir="rtl"] .preloader__bar span { transform-origin: right center; }
 
       /* ---- Accessibilité ---- */
       @media (prefers-reduced-motion: reduce) {
@@ -459,19 +519,22 @@
 
     <div class="preloader" id="preloader">
       <div class="preloader__inner">
-        <div class="preloader__brand">ALTITUDE</div>
+        <div class="preloader__brand">MIRA</div>
         <div class="preloader__count" id="preloaderCount">0</div>
       </div>
       <div class="preloader__bar"><span id="preloaderBar"></span></div>
     </div>
 
     <header class="header" id="header">
-      <a class="header__logo" href="#hero">ALTITUDE</a>
+      <a class="header__logo" href="#hero">MIRA</a>
       <nav class="header__nav">
-        <a href="#manifeste">Manifeste</a>
-        <a href="#espaces">Espaces</a>
-        <a href="#matiere">Matière</a>
-        <a class="btn btn--ghost" href="#visite">Visite privée</a>
+        <a href="#manifeste" data-i18n="nav_manifeste">Manifeste</a>
+        <a href="#espaces" data-i18n="nav_espaces">Espaces</a>
+        <a href="#matiere" data-i18n="nav_matiere">Matière</a>
+        <a class="btn btn--ghost" href="#visite" data-i18n="nav_visite">Visite privée</a>
+        <button class="lang-toggle" id="langToggle" type="button" aria-label="Changer de langue">
+          <span id="langLabel">ع</span>
+        </button>
       </nav>
     </header>
 
@@ -480,76 +543,75 @@
         <div class="hero__media">
           <img
             src="./images/hero.jpg"
-            alt="Villa suspendue au crépuscule, brume dans la vallée"
+            alt=""
             loading="eager"
           />
         </div>
         <div class="hero__content">
-          <p class="kicker hero__kicker">Collection 2026 · Résidences d'exception</p>
-          <h1 class="hero__title">L'architecture<br />du silence</h1>
-          <p class="hero__sub">
-            Douze résidences suspendues entre ciel et roche,<br />
-            où la lumière devient un matériau.
+          <p class="kicker hero__kicker" data-i18n="hero_kicker">Collection 2026 · Résidences d'exception</p>
+          <h1 class="hero__title" data-i18n-html="hero_title">Habiter<br />l'horizon</h1>
+          <p class="hero__sub" data-i18n-html="hero_sub">
+            Quinze villas suspendues entre mer et ciel,<br />où la lumière devient une adresse.
           </p>
         </div>
-        <div class="hero__scroll"><span>Défiler</span><i></i></div>
+        <div class="hero__scroll"><span data-i18n="scroll">Défiler</span><i></i></div>
       </section>
 
       <section class="manifesto" id="manifeste">
         <div class="manifesto__inner">
-          <p class="manifesto__text">
-            Nous ne construisons pas des maisons. Nous sculptons des lieux où la
-            lumière, la pierre et le silence composent une expérience rare —
-            suspendue entre ciel et roche.
+          <p class="manifesto__text" data-i18n="manifesto">
+            Nous ne vendons pas des villas. Nous composons des lieux où la
+            lumière, la pierre et le silence deviennent le cadre de vos plus
+            beaux jours.
           </p>
         </div>
       </section>
 
       <section class="gallery" id="espaces">
         <div class="gallery__head">
-          <p class="kicker" data-reveal>01 — Les espaces</p>
-          <h2 class="title" data-reveal>Conçus pour disparaître<br />dans le paysage</h2>
+          <p class="kicker" data-reveal data-i18n="gal_kicker">01 — Les espaces</p>
+          <h2 class="title" data-reveal data-i18n-html="gal_title">Conçus pour disparaître<br />dans le paysage</h2>
         </div>
         <div class="gallery__viewport">
           <div class="gallery__track" id="galleryTrack">
             <article class="card">
               <div class="card__media">
-                <img src="./images/interior.jpg" alt="Intérieur panoramique au crépuscule" loading="lazy" />
+                <img src="./images/interior.jpg" alt="" loading="lazy" />
               </div>
               <div class="card__caption">
                 <span class="card__index">01</span>
-                <h3>Le Belvédère</h3>
-                <p>Salon ouvert sur la vallée</p>
+                <h3 data-i18n="card1_t">Le Belvédère</h3>
+                <p data-i18n="card1_s">Salon ouvert sur la vallée</p>
               </div>
             </article>
             <article class="card">
               <div class="card__media">
-                <img src="./images/aerial.jpg" alt="Villa sur la falaise vue du ciel" loading="lazy" />
+                <img src="./images/aerial.jpg" alt="" loading="lazy" />
               </div>
               <div class="card__caption">
                 <span class="card__index">02</span>
-                <h3>Le Promontoire</h3>
-                <p>Posée sur la roche, jamais sur le paysage</p>
+                <h3 data-i18n="card2_t">Le Promontoire</h3>
+                <p data-i18n="card2_s">Posée sur la roche, jamais sur le paysage</p>
               </div>
             </article>
             <article class="card">
               <div class="card__media">
-                <img src="./images/terrace.jpg" alt="Terrasse et piscine à débordement dans la brume" loading="lazy" />
+                <img src="./images/terrace.jpg" alt="" loading="lazy" />
               </div>
               <div class="card__caption">
                 <span class="card__index">03</span>
-                <h3>L'Horizon</h3>
-                <p>Piscine à débordement et brume</p>
+                <h3 data-i18n="card3_t">L'Horizon</h3>
+                <p data-i18n="card3_s">Piscine à débordement et brume</p>
               </div>
             </article>
             <article class="card">
               <div class="card__media">
-                <img src="./images/stone.jpg" alt="Détail de pierre sombre et gouttes de pluie" loading="lazy" />
+                <img src="./images/stone.jpg" alt="" loading="lazy" />
               </div>
               <div class="card__caption">
                 <span class="card__index">04</span>
-                <h3>La Pierre</h3>
-                <p>Matières brutes, gestes précis</p>
+                <h3 data-i18n="card4_t">La Pierre</h3>
+                <p data-i18n="card4_s">Matières brutes, gestes précis</p>
               </div>
             </article>
           </div>
@@ -558,50 +620,50 @@
 
       <section class="feature" id="matiere">
         <div class="feature__media">
-          <img src="./images/hero.jpg" alt="Façade de pierre et de verre au crépuscule" loading="lazy" />
+          <img src="./images/hero.jpg" alt="" loading="lazy" />
         </div>
         <div class="feature__content">
-          <p class="kicker">02 — La matière</p>
-          <h2 class="title feature__title">La lumière<br />comme matériau</h2>
-          <p class="feature__text">
-            Chaque résidence est orientée au degré près pour capter la première
-            et la dernière lumière du jour. La pierre locale absorbe la chaleur,
+          <p class="kicker" data-i18n="feat_kicker">02 — La matière</p>
+          <h2 class="title feature__title" data-i18n-html="feat_title">La lumière<br />comme matériau</h2>
+          <p class="feature__text" data-i18n="feat_text">
+            Chaque villa est orientée au degré près pour capter la première et
+            la dernière lumière du jour. La pierre locale absorbe la chaleur,
             le verre la restitue, et l'ombre dessine les heures.
           </p>
-          <a class="btn magnetic" href="#visite">Découvrir la collection</a>
+          <a class="btn magnetic" href="#visite" data-i18n="feat_btn">Découvrir la collection</a>
         </div>
       </section>
 
       <section class="stats">
         <div class="stat">
-          <div class="stat__num" data-count="12">12</div>
-          <p>résidences</p>
+          <div class="stat__num" data-count="15">15</div>
+          <p data-i18n="stat1_l">villas</p>
         </div>
         <div class="stat">
           <div class="stat__num" data-count="480">480</div>
-          <p>mètres d'altitude</p>
+          <p data-i18n="stat2_l">mètres d'altitude</p>
         </div>
         <div class="stat">
           <div class="stat__num" data-count="360">360</div>
-          <p>degrés d'horizon</p>
+          <p data-i18n="stat3_l">degrés d'horizon</p>
         </div>
       </section>
 
       <section class="cta" id="visite">
-        <p class="kicker">Visite privée</p>
-        <h2 class="cta__title">Le silence<br />vous attend.</h2>
-        <a class="btn btn--big magnetic" href="#hero">Réserver une visite</a>
+        <p class="kicker" data-i18n="cta_kicker">Visite privée</p>
+        <h2 class="cta__title" data-i18n-html="cta_title">Votre horizon<br />vous attend.</h2>
+        <a class="btn btn--big magnetic" href="#hero" data-i18n="cta_btn">Réserver une visite</a>
       </section>
     </main>
 
     <footer class="footer">
-      <div class="footer__brand">ALTITUDE</div>
-      <p class="footer__note">
-        Démo d'expérience cinématique — construite avec GSAP + ScrollTrigger +
-        SplitText + Lenis (gratuits, usage commercial inclus) et des visuels
-        générés par IA. Aucun abonnement, aucun service payant.
+      <div class="footer__brand">MIRA</div>
+      <p class="footer__note" data-i18n="footer_note">
+        Démo d'expérience cinématique conçue pour un client — GSAP + Lenis
+        (gratuits), visuels générés par IA, deux langues (français / arabe).
+        Aucun abonnement, aucun service payant.
       </p>
-      <p class="footer__copy">© 2026 · La qualité « Awwwards » n'exige pas d'outils payants.</p>
+      <p class="footer__copy" data-i18n="footer_copy">© 2026 · La qualité « Awwwards » n'exige pas d'outils payants.</p>
     </footer>
 
     <script src="./vendor/gsap.min.js"></script>
@@ -611,6 +673,108 @@
     <script>
       (function () {
         "use strict";
+
+        /* =================== Bilinguisme (FR / AR) =================== */
+        var I18N = {
+          fr: {
+            nav_manifeste: "Manifeste",
+            nav_espaces: "Espaces",
+            nav_matiere: "Matière",
+            nav_visite: "Visite privée",
+            hero_kicker: "Collection 2026 · Résidences d'exception",
+            hero_title: "Habiter<br>l'horizon",
+            hero_sub: "Quinze villas suspendues entre mer et ciel,<br>où la lumière devient une adresse.",
+            scroll: "Défiler",
+            manifesto: "Nous ne vendons pas des villas. Nous composons des lieux où la lumière, la pierre et le silence deviennent le cadre de vos plus beaux jours.",
+            gal_kicker: "01 — Les espaces",
+            gal_title: "Conçus pour disparaître<br>dans le paysage",
+            card1_t: "Le Belvédère",
+            card1_s: "Salon ouvert sur la vallée",
+            card2_t: "Le Promontoire",
+            card2_s: "Posée sur la roche, jamais sur le paysage",
+            card3_t: "L'Horizon",
+            card3_s: "Piscine à débordement et brume",
+            card4_t: "La Pierre",
+            card4_s: "Matières brutes, gestes précis",
+            feat_kicker: "02 — La matière",
+            feat_title: "La lumière<br>comme matériau",
+            feat_text: "Chaque villa est orientée au degré près pour capter la première et la dernière lumière du jour. La pierre locale absorbe la chaleur, le verre la restitue, et l'ombre dessine les heures.",
+            feat_btn: "Découvrir la collection",
+            stat1_l: "villas",
+            stat2_l: "mètres d'altitude",
+            stat3_l: "degrés d'horizon",
+            cta_kicker: "Visite privée",
+            cta_title: "Votre horizon<br>vous attend.",
+            cta_btn: "Réserver une visite",
+            footer_note: "Démo d'expérience cinématique conçue pour un client — GSAP + Lenis (gratuits), visuels générés par IA, deux langues (français / arabe). Aucun abonnement, aucun service payant.",
+            footer_copy: "© 2026 · La qualité « Awwwards » n'exige pas d'outils payants.",
+          },
+          ar: {
+            nav_manifeste: "الرؤية",
+            nav_espaces: "المساحات",
+            nav_matiere: "المادة",
+            nav_visite: "زيارة خاصة",
+            hero_kicker: "المجموعة 2026 · إقامات استثنائية",
+            hero_title: "العيشُ<br>على الأفق",
+            hero_sub: "خمس عشرة فيلا معلّقة بين البحر والسماء،<br>حيث يصبح الضوء عنوانًا.",
+            scroll: "مرّر",
+            manifesto: "نحن لا نبيع فيلا. بل نصمّم موضعًا يصبح فيه الضوء والصخر والصمت إطارًا لأجمل أيامك.",
+            gal_kicker: "01 — المساحات",
+            gal_title: "مصمّمة لتذوب<br>في المشهد",
+            card1_t: "الشرفة المطلّة",
+            card1_s: "صالة مفتوحة على الوادي",
+            card2_t: "الرأس الصخري",
+            card2_s: "بُنيت على الصخر، لا على المشهد",
+            card3_t: "الأفق",
+            card3_s: "مسبح لا نهائيّ وضباب",
+            card4_t: "الحجر",
+            card4_s: "خاماتٌ صافية، وتفاصيلٌ دقيقة",
+            feat_kicker: "02 — المادة",
+            feat_title: "الضوء<br>كمادةٍّ بنائية",
+            feat_text: "كل فيلا موجَّهة بدقة الدرجة لتلتقط أول الضوء وآخره. الحجرُ المحليّ يمتصّ الدفأ، والزجاجُ يعيدُه، والظلُّ يرسمُ الساعات.",
+            feat_btn: "اكتشف المجموعة",
+            stat1_l: "فيلا",
+            stat2_l: "مترًا ارتفاعًا",
+            stat3_l: "درجة من الأفق",
+            cta_kicker: "زيارة خاصة",
+            cta_title: "أفقُك<br>ينتظرك.",
+            cta_btn: "احجز زيارة",
+            footer_note: "نموذج تجربة سينمائية مُصمَّمة للعملاء — GSAP + Lenis (مجانيان)، صور مولّدة بالذكاء الاصطناعي، لغتان (العربية / الفرنسية). بلا اشتراكات ولا خدمات مدفوعة.",
+            footer_copy: "© 2026 · جودة عالمية دون أدوات مدفوعة.",
+          },
+        };
+
+        var LANG = "fr";
+        try {
+          if (localStorage.getItem("mira-lang") === "ar") LANG = "ar";
+        } catch (e) {}
+
+        function applyLang() {
+          document.documentElement.lang = LANG;
+          document.documentElement.dir = LANG === "ar" ? "rtl" : "ltr";
+          var dict = I18N[LANG];
+          document.querySelectorAll("[data-i18n]").forEach(function (el) {
+            var k = el.getAttribute("data-i18n");
+            if (dict[k]) el.textContent = dict[k];
+          });
+          document.querySelectorAll("[data-i18n-html]").forEach(function (el) {
+            var k = el.getAttribute("data-i18n-html");
+            if (dict[k]) el.innerHTML = dict[k];
+          });
+          var label = document.getElementById("langLabel");
+          if (label) label.textContent = LANG === "ar" ? "FR" : "ع";
+          document.title =
+            LANG === "ar" ? "MIRA — العيش على الأفق" : "MIRA — Habiter l'horizon";
+        }
+        applyLang();
+
+        document.getElementById("langToggle").addEventListener("click", function () {
+          try {
+            localStorage.setItem("mira-lang", LANG === "ar" ? "fr" : "ar");
+            sessionStorage.setItem("mira-skip-intro", "1");
+          } catch (e) {}
+          location.reload();
+        });
 
         /* Garde-fou : le préchargeur ne reste jamais bloqué. */
         var preloader = document.getElementById("preloader");
@@ -630,88 +794,110 @@
           return; /* contenu entièrement visible, sans animation */
         }
 
-        gsap.registerPlugin(ScrollTrigger, SplitText);
+        /* Au changement de langue : plus d'intro, on va droit au contenu. */
+        var skipIntro = false;
+        try {
+          skipIntro = sessionStorage.getItem("mira-skip-intro") === "1";
+          sessionStorage.removeItem("mira-skip-intro");
+        } catch (e) {}
 
-        /* ---------- Défilement fluide (Lenis) ---------- */
-        var lenis = new Lenis({
-          duration: 1.15,
-          smoothWheel: true,
-          touchMultiplier: 1.4,
-        });
-        lenis.on("scroll", ScrollTrigger.update);
-        gsap.ticker.add(function (time) {
-          lenis.raf(time * 1000);
-        });
-        gsap.ticker.lagSmoothing(0);
+        function isRtl() {
+          return document.documentElement.dir === "rtl";
+        }
 
-        document.querySelectorAll('a[href^="#"]').forEach(function (a) {
-          a.addEventListener("click", function (e) {
-            var id = a.getAttribute("href");
-            if (id && id.length > 1 && document.querySelector(id)) {
-              e.preventDefault();
-              lenis.scrollTo(id, { duration: 1.5 });
+        /* L'init attend la police (l'arabe est servi par Cairo) pour que
+           SplitText découpe sur les vraies boîtes de ligne. */
+        var started = false;
+        function start() {
+          if (started) return;
+          started = true;
+          init();
+        }
+        if (document.fonts && document.fonts.ready) {
+          document.fonts.ready.then(start);
+          setTimeout(start, 2500);
+        } else {
+          start();
+        }
+
+        function init() {
+          gsap.registerPlugin(ScrollTrigger, SplitText);
+
+          /* ---------- Défilement fluide (Lenis) ---------- */
+          var lenis = new Lenis({
+            duration: 1.15,
+            smoothWheel: true,
+            touchMultiplier: 1.4,
+          });
+          lenis.on("scroll", ScrollTrigger.update);
+          gsap.ticker.add(function (time) {
+            lenis.raf(time * 1000);
+          });
+          gsap.ticker.lagSmoothing(0);
+
+          document.querySelectorAll('a[href^="#"]').forEach(function (a) {
+            a.addEventListener("click", function (e) {
+              var id = a.getAttribute("href");
+              if (id && id.length > 1 && document.querySelector(id)) {
+                e.preventDefault();
+                lenis.scrollTo(id, { duration: 1.5 });
+              }
+            });
+          });
+
+          /* ---------- Grain papier (bruit canvas) ---------- */
+          (function grain() {
+            var c = document.createElement("canvas");
+            c.width = 160;
+            c.height = 160;
+            var ctx = c.getContext("2d");
+            var img = ctx.createImageData(160, 160);
+            for (var i = 0; i < img.data.length; i += 4) {
+              var v = Math.random() * 120;
+              img.data[i] = img.data[i + 1] = img.data[i + 2] = v;
+              img.data[i + 3] = 22;
             }
-          });
-        });
+            ctx.putImageData(img, 0, 0);
+            document.querySelector(".grain").style.backgroundImage =
+              "url(" + c.toDataURL() + ")";
+          })();
 
-        /* ---------- Grain de film (bruit canvas) ---------- */
-        (function grain() {
-          var c = document.createElement("canvas");
-          c.width = 160;
-          c.height = 160;
-          var ctx = c.getContext("2d");
-          var img = ctx.createImageData(160, 160);
-          for (var i = 0; i < img.data.length; i += 4) {
-            var v = 110 + Math.random() * 145;
-            img.data[i] = img.data[i + 1] = img.data[i + 2] = v;
-            img.data[i + 3] = 26;
-          }
-          ctx.putImageData(img, 0, 0);
-          document.querySelector(".grain").style.backgroundImage =
-            "url(" + c.toDataURL() + ")";
-        })();
+          /* ---------- Progression + en-tête ---------- */
+          var bar = document.querySelector(".progress__bar");
+          var header = document.getElementById("header");
+          var lastY = 0;
+          window.addEventListener(
+            "scroll",
+            function () {
+              var y = window.scrollY;
+              var max =
+                document.documentElement.scrollHeight - window.innerHeight;
+              bar.style.transform =
+                "scaleX(" + (max > 0 ? Math.min(1, y / max) : 0) + ")";
+              if (y > 140 && y > lastY) header.classList.add("is-hidden");
+              else header.classList.remove("is-hidden");
+              lastY = y;
+            },
+            { passive: true }
+          );
 
-        /* ---------- Progression + en-tête ---------- */
-        var bar = document.querySelector(".progress__bar");
-        var header = document.getElementById("header");
-        var lastY = 0;
-        window.addEventListener(
-          "scroll",
-          function () {
-            var y = window.scrollY;
-            var max =
-              document.documentElement.scrollHeight - window.innerHeight;
-            bar.style.transform =
-              "scaleX(" + (max > 0 ? Math.min(1, y / max) : 0) + ")";
-            if (y > 140 && y > lastY) header.classList.add("is-hidden");
-            else header.classList.remove("is-hidden");
-            lastY = y;
-          },
-          { passive: true }
-        );
-
-        /* ---------- Curseur sur mesure ---------- */
-        if (
-          window.matchMedia("(hover: hover) and (pointer: fine)").matches
-        ) {
-          var cursor = document.querySelector(".cursor");
-          var ring = document.querySelector(".cursor__ring");
-          var dot = document.querySelector(".cursor__dot");
-          cursor.classList.add("is-on");
-          gsap.set([ring, dot], { xPercent: 0, yPercent: 0 });
-          var xTo = gsap.quickTo(ring, "x", { duration: 0.55, ease: "power3" });
-          var yTo = gsap.quickTo(ring, "y", { duration: 0.55, ease: "power3" });
-          var xd = gsap.quickTo(dot, "x", { duration: 0.12, ease: "power2" });
-          var yd = gsap.quickTo(dot, "y", { duration: 0.12, ease: "power2" });
-          window.addEventListener("mousemove", function (e) {
-            xTo(e.clientX);
-            yTo(e.clientY);
-            xd(e.clientX);
-            yd(e.clientY);
-          });
-          document
-            .querySelectorAll("a, button, .card")
-            .forEach(function (el) {
+          /* ---------- Curseur sur mesure ---------- */
+          if (window.matchMedia("(hover: hover) and (pointer: fine)").matches) {
+            var cursor = document.querySelector(".cursor");
+            var ring = document.querySelector(".cursor__ring");
+            var dot = document.querySelector(".cursor__dot");
+            cursor.classList.add("is-on");
+            var xTo = gsap.quickTo(ring, "x", { duration: 0.55, ease: "power3" });
+            var yTo = gsap.quickTo(ring, "y", { duration: 0.55, ease: "power3" });
+            var xd = gsap.quickTo(dot, "x", { duration: 0.12, ease: "power2" });
+            var yd = gsap.quickTo(dot, "y", { duration: 0.12, ease: "power2" });
+            window.addEventListener("mousemove", function (e) {
+              xTo(e.clientX);
+              yTo(e.clientY);
+              xd(e.clientX);
+              yd(e.clientY);
+            });
+            document.querySelectorAll("a, button, .card").forEach(function (el) {
               el.addEventListener("mouseenter", function () {
                 cursor.classList.add("is-hover");
               });
@@ -719,314 +905,317 @@
                 cursor.classList.remove("is-hover");
               });
             });
-        }
+          }
 
-        /* ---------- Préchargeur + révélation du hero ---------- */
-        var countEl = document.getElementById("preloaderCount");
-        var counter = { v: 0 };
-        var heroSplit = new SplitText(".hero__title", {
-          type: "lines",
-          mask: "lines",
-        });
-        gsap.set(".hero__kicker, .hero__sub, .hero__scroll", {
-          autoAlpha: 0,
-          y: 26,
-        });
+          /* ---------- Préchargeur + révélation du hero ---------- */
+          var heroSplit = new SplitText(".hero__title", {
+            type: "lines",
+            mask: "lines",
+          });
+          gsap.set(".hero__kicker, .hero__sub, .hero__scroll", {
+            autoAlpha: 0,
+            y: 26,
+          });
 
-        var intro = gsap.timeline();
-        intro.to(
-          counter,
-          {
-            v: 100,
-            duration: 1.5,
-            ease: "power2.inOut",
-            onUpdate: function () {
-              countEl.textContent = Math.round(counter.v);
-            },
-          },
-          0
-        );
-        intro.to(
-          "#preloaderBar",
-          { scaleX: 1, duration: 1.5, ease: "power2.inOut" },
-          0
-        );
-        intro.to("#preloader", {
-          yPercent: -100,
-          duration: 0.95,
-          ease: "power4.inOut",
-          onComplete: function () {
+          function heroReveal(at) {
+            var tl = gsap.timeline();
+            tl.from(
+              heroSplit.lines,
+              {
+                yPercent: 115,
+                duration: 1.15,
+                ease: "power4.out",
+                stagger: 0.12,
+              },
+              at
+            );
+            tl.to(
+              ".hero__kicker",
+              { autoAlpha: 1, y: 0, duration: 0.8, ease: "power3.out" },
+              at + 0.25
+            );
+            tl.to(
+              ".hero__sub",
+              { autoAlpha: 1, y: 0, duration: 0.8, ease: "power3.out" },
+              at + 0.45
+            );
+            tl.to(".hero__scroll", { autoAlpha: 1, y: 0, duration: 0.8 }, at + 0.6);
+            return tl;
+          }
+
+          if (skipIntro) {
             window.__preloaderDone = true;
             preloader.style.display = "none";
-          },
-        });
-        intro.from(
-          heroSplit.lines,
-          {
-            yPercent: 115,
-            duration: 1.15,
-            ease: "power4.out",
-            stagger: 0.12,
-          },
-          "-=0.5"
-        );
-        intro.to(
-          ".hero__kicker",
-          { autoAlpha: 1, y: 0, duration: 0.8, ease: "power3.out" },
-          "-=0.85"
-        );
-        intro.to(
-          ".hero__sub",
-          { autoAlpha: 1, y: 0, duration: 0.8, ease: "power3.out" },
-          "-=0.6"
-        );
-        intro.to(
-          ".hero__scroll",
-          { autoAlpha: 1, y: 0, duration: 0.8 },
-          "-=0.5"
-        );
+            heroReveal(0);
+          } else {
+            var countEl = document.getElementById("preloaderCount");
+            var counter = { v: 0 };
+            var intro = gsap.timeline();
+            intro.to(
+              counter,
+              {
+                v: 100,
+                duration: 1.5,
+                ease: "power2.inOut",
+                onUpdate: function () {
+                  countEl.textContent = Math.round(counter.v);
+                },
+              },
+              0
+            );
+            intro.to(
+              "#preloaderBar",
+              { scaleX: 1, duration: 1.5, ease: "power2.inOut" },
+              0
+            );
+            intro.to("#preloader", {
+              yPercent: -100,
+              duration: 0.95,
+              ease: "power4.inOut",
+              onComplete: function () {
+                window.__preloaderDone = true;
+                preloader.style.display = "none";
+              },
+            });
+            intro.add(heroReveal(0), "-=0.5");
+          }
 
-        /* ---------- Hero : parallaxe liée au scroll ---------- */
-        gsap.to(".hero__media img", {
-          yPercent: 14,
-          scale: 1.14,
-          ease: "none",
-          scrollTrigger: {
-            trigger: ".hero",
-            start: "top top",
-            end: "bottom top",
-            scrub: true,
-          },
-        });
-        gsap.to(".hero__content", {
-          yPercent: -32,
-          autoAlpha: 0.25,
-          ease: "none",
-          scrollTrigger: {
-            trigger: ".hero",
-            start: "top top",
-            end: "bottom top",
-            scrub: true,
-          },
-        });
-        gsap.to(".hero__scroll", {
-          autoAlpha: 0,
-          ease: "none",
-          scrollTrigger: {
-            trigger: ".hero",
-            start: "top top",
-            end: "25% top",
-            scrub: true,
-          },
-        });
-
-        /* ---------- Manifeste : mots illuminés au scroll ---------- */
-        var mSplit = new SplitText(".manifesto__text", {
-          type: "words",
-          wordsClass: "word",
-        });
-        gsap.set(mSplit.words, { opacity: 0.12 });
-        gsap.to(mSplit.words, {
-          opacity: 1,
-          stagger: 0.05,
-          ease: "none",
-          scrollTrigger: {
-            trigger: ".manifesto",
-            start: "top top",
-            end: "+=150%",
-            pin: true,
-            scrub: 0.6,
-          },
-        });
-
-        /* ---------- Galerie : défilement horizontal épinglé ---------- */
-        var track = document.getElementById("galleryTrack");
-        function trackDistance() {
-          return Math.max(0, track.scrollWidth - window.innerWidth + 60);
-        }
-        var scrollTween = gsap.to(track, {
-          x: function () {
-            return -trackDistance();
-          },
-          ease: "none",
-          scrollTrigger: {
-            trigger: ".gallery",
-            start: "top top",
-            end: function () {
-              return "+=" + trackDistance();
+          /* ---------- Hero : parallaxe liée au scroll ---------- */
+          gsap.to(".hero__media img", {
+            yPercent: 14,
+            scale: 1.14,
+            ease: "none",
+            scrollTrigger: {
+              trigger: ".hero",
+              start: "top top",
+              end: "bottom top",
+              scrub: true,
             },
-            pin: true,
-            scrub: 1,
-            invalidateOnRefresh: true,
-            anticipatePin: 1,
-          },
-        });
-        gsap.utils.toArray(".card").forEach(function (card) {
-          gsap.fromTo(
-            card.querySelector("img"),
-            { xPercent: -6 },
-            {
-              xPercent: 6,
-              ease: "none",
+          });
+          gsap.to(".hero__content", {
+            yPercent: -32,
+            autoAlpha: 0.25,
+            ease: "none",
+            scrollTrigger: {
+              trigger: ".hero",
+              start: "top top",
+              end: "bottom top",
+              scrub: true,
+            },
+          });
+          gsap.to(".hero__scroll", {
+            autoAlpha: 0,
+            ease: "none",
+            scrollTrigger: {
+              trigger: ".hero",
+              start: "top top",
+              end: "25% top",
+              scrub: true,
+            },
+          });
+
+          /* ---------- Manifeste : mots illuminés au scroll ---------- */
+          var mSplit = new SplitText(".manifesto__text", {
+            type: "words",
+            wordsClass: "word",
+          });
+          gsap.set(mSplit.words, { opacity: 0.12 });
+          gsap.to(mSplit.words, {
+            opacity: 1,
+            stagger: 0.05,
+            ease: "none",
+            scrollTrigger: {
+              trigger: ".manifesto",
+              start: "top top",
+              end: "+=150%",
+              pin: true,
+              scrub: 0.6,
+            },
+          });
+
+          /* ---------- Galerie horizontale épinglée (sens RTL géré) ---------- */
+          var track = document.getElementById("galleryTrack");
+          function trackDistance() {
+            return Math.max(0, track.scrollWidth - window.innerWidth + 60);
+          }
+          var scrollTween = gsap.to(track, {
+            x: function () {
+              return (isRtl() ? 1 : -1) * trackDistance();
+            },
+            ease: "none",
+            scrollTrigger: {
+              trigger: ".gallery",
+              start: "top top",
+              end: function () {
+                return "+=" + trackDistance();
+              },
+              pin: true,
+              scrub: 1,
+              invalidateOnRefresh: true,
+              anticipatePin: 1,
+            },
+          });
+          gsap.utils.toArray(".card").forEach(function (card) {
+            gsap.fromTo(
+              card.querySelector("img"),
+              { xPercent: -6 },
+              {
+                xPercent: 6,
+                ease: "none",
+                scrollTrigger: {
+                  trigger: card,
+                  containerAnimation: scrollTween,
+                  start: "left right",
+                  end: "right left",
+                  scrub: true,
+                },
+              }
+            );
+            gsap.from(card.querySelector(".card__caption"), {
+              autoAlpha: 0,
+              y: 30,
+              duration: 0.7,
+              ease: "power2.out",
               scrollTrigger: {
                 trigger: card,
                 containerAnimation: scrollTween,
-                start: "left right",
-                end: "right left",
-                scrub: true,
+                start: "left 78%",
+              },
+            });
+          });
+
+          /* ---------- Matière : révélation par volet ---------- */
+          gsap.fromTo(
+            ".feature__media",
+            { clipPath: "inset(0% 100% 0% 0%)" },
+            {
+              clipPath: "inset(0% 0% 0% 0%)",
+              ease: "none",
+              scrollTrigger: {
+                trigger: ".feature",
+                start: "top 80%",
+                end: "top 18%",
+                scrub: 0.7,
               },
             }
           );
-          gsap.from(card.querySelector(".card__caption"), {
+          gsap.fromTo(
+            ".feature__media img",
+            { scale: 1.25 },
+            {
+              scale: 1,
+              ease: "none",
+              scrollTrigger: {
+                trigger: ".feature",
+                start: "top 80%",
+                end: "bottom 45%",
+                scrub: 0.7,
+              },
+            }
+          );
+          var fSplit = new SplitText(".feature__title", {
+            type: "lines",
+            mask: "lines",
+          });
+          gsap.from(fSplit.lines, {
+            yPercent: 110,
+            duration: 1,
+            ease: "power4.out",
+            stagger: 0.12,
+            scrollTrigger: { trigger: ".feature__content", start: "top 82%" },
+          });
+          gsap.from(".feature__content .kicker, .feature__text, .feature .btn", {
             autoAlpha: 0,
-            y: 30,
-            duration: 0.7,
-            ease: "power2.out",
-            scrollTrigger: {
-              trigger: card,
-              containerAnimation: scrollTween,
-              start: "left 78%",
-            },
+            y: 28,
+            duration: 0.9,
+            stagger: 0.12,
+            ease: "power3.out",
+            scrollTrigger: { trigger: ".feature__content", start: "top 78%" },
           });
-        });
 
-        /* ---------- Matière : révélation par volet ---------- */
-        gsap.fromTo(
-          ".feature__media",
-          { clipPath: "inset(0% 100% 0% 0%)" },
-          {
-            clipPath: "inset(0% 0% 0% 0%)",
-            ease: "none",
-            scrollTrigger: {
-              trigger: ".feature",
-              start: "top 80%",
-              end: "top 18%",
-              scrub: 0.7,
-            },
-          }
-        );
-        gsap.fromTo(
-          ".feature__media img",
-          { scale: 1.25 },
-          {
-            scale: 1,
-            ease: "none",
-            scrollTrigger: {
-              trigger: ".feature",
-              start: "top 80%",
-              end: "bottom 45%",
-              scrub: 0.7,
-            },
-          }
-        );
-        var fSplit = new SplitText(".feature__title", {
-          type: "lines",
-          mask: "lines",
-        });
-        gsap.from(fSplit.lines, {
-          yPercent: 110,
-          duration: 1,
-          ease: "power4.out",
-          stagger: 0.12,
-          scrollTrigger: { trigger: ".feature__content", start: "top 82%" },
-        });
-        gsap.from(".feature__content .kicker, .feature__text, .feature .btn", {
-          autoAlpha: 0,
-          y: 28,
-          duration: 0.9,
-          stagger: 0.12,
-          ease: "power3.out",
-          scrollTrigger: { trigger: ".feature__content", start: "top 78%" },
-        });
+          /* ---------- Chiffres animés ---------- */
+          gsap.from(".stat", {
+            autoAlpha: 0,
+            y: 36,
+            duration: 0.9,
+            stagger: 0.12,
+            ease: "power3.out",
+            scrollTrigger: { trigger: ".stats", start: "top 82%" },
+          });
+          gsap.utils.toArray(".stat__num").forEach(function (el) {
+            var target = parseInt(el.getAttribute("data-count"), 10) || 0;
+            var obj = { v: 0 };
+            ScrollTrigger.create({
+              trigger: el,
+              start: "top 88%",
+              once: true,
+              onEnter: function () {
+                el.textContent = "0";
+                gsap.to(obj, {
+                  v: target,
+                  duration: 1.7,
+                  ease: "power2.out",
+                  onUpdate: function () {
+                    el.textContent = Math.round(obj.v);
+                  },
+                });
+              },
+            });
+          });
 
-        /* ---------- Chiffres animés ---------- */
-        gsap.from(".stat", {
-          autoAlpha: 0,
-          y: 36,
-          duration: 0.9,
-          stagger: 0.12,
-          ease: "power3.out",
-          scrollTrigger: { trigger: ".stats", start: "top 82%" },
-        });
-        gsap.utils.toArray(".stat__num").forEach(function (el) {
-          var target = parseInt(el.getAttribute("data-count"), 10) || 0;
-          var obj = { v: 0 };
-          ScrollTrigger.create({
-            trigger: el,
-            start: "top 88%",
-            once: true,
-            onEnter: function () {
-              el.textContent = "0";
-              gsap.to(obj, {
-                v: target,
-                duration: 1.7,
-                ease: "power2.out",
-                onUpdate: function () {
-                  el.textContent = Math.round(obj.v);
-                },
+          /* ---------- Appel à l'action ---------- */
+          var cSplit = new SplitText(".cta__title", {
+            type: "lines",
+            mask: "lines",
+          });
+          gsap.from(cSplit.lines, {
+            yPercent: 115,
+            duration: 1.1,
+            ease: "power4.out",
+            stagger: 0.14,
+            scrollTrigger: { trigger: ".cta", start: "top 72%" },
+          });
+          gsap.from(".cta .kicker, .cta .btn", {
+            autoAlpha: 0,
+            y: 26,
+            duration: 0.9,
+            stagger: 0.15,
+            scrollTrigger: { trigger: ".cta", start: "top 72%" },
+          });
+
+          /* ---------- Boutons magnétiques ---------- */
+          if (window.matchMedia("(hover: hover) and (pointer: fine)").matches) {
+            document.querySelectorAll(".magnetic").forEach(function (btn) {
+              var bx = gsap.quickTo(btn, "x", { duration: 0.4, ease: "power3" });
+              var by = gsap.quickTo(btn, "y", { duration: 0.4, ease: "power3" });
+              btn.addEventListener("mousemove", function (e) {
+                var r = btn.getBoundingClientRect();
+                bx((e.clientX - r.left - r.width / 2) * 0.28);
+                by((e.clientY - r.top - r.height / 2) * 0.38);
               });
-            },
+              btn.addEventListener("mouseleave", function () {
+                bx(0);
+                by(0);
+              });
+            });
+          }
+
+          /* ---------- Révélations génériques ---------- */
+          gsap.utils.toArray("[data-reveal]").forEach(function (el) {
+            gsap.from(el, {
+              autoAlpha: 0,
+              y: 34,
+              duration: 1,
+              ease: "power3.out",
+              scrollTrigger: { trigger: el, start: "top 88%" },
+            });
           });
-        });
 
-        /* ---------- Appel à l'action ---------- */
-        var cSplit = new SplitText(".cta__title", {
-          type: "lines",
-          mask: "lines",
-        });
-        gsap.from(cSplit.lines, {
-          yPercent: 115,
-          duration: 1.1,
-          ease: "power4.out",
-          stagger: 0.14,
-          scrollTrigger: { trigger: ".cta", start: "top 72%" },
-        });
-        gsap.from(".cta .kicker, .cta .btn", {
-          autoAlpha: 0,
-          y: 26,
-          duration: 0.9,
-          stagger: 0.15,
-          scrollTrigger: { trigger: ".cta", start: "top 72%" },
-        });
-
-        /* ---------- Boutons magnétiques ---------- */
-        if (window.matchMedia("(hover: hover) and (pointer: fine)").matches) {
-          document.querySelectorAll(".magnetic").forEach(function (btn) {
-            var bx = gsap.quickTo(btn, "x", {
-              duration: 0.4,
-              ease: "power3",
-            });
-            var by = gsap.quickTo(btn, "y", {
-              duration: 0.4,
-              ease: "power3",
-            });
-            btn.addEventListener("mousemove", function (e) {
-              var r = btn.getBoundingClientRect();
-              bx((e.clientX - r.left - r.width / 2) * 0.28);
-              by((e.clientY - r.top - r.height / 2) * 0.38);
-            });
-            btn.addEventListener("mouseleave", function () {
-              bx(0);
-              by(0);
-            });
+          /* ---------- Recalcul après chargement des images ---------- */
+          window.addEventListener("load", function () {
+            ScrollTrigger.refresh();
           });
         }
-
-        /* ---------- Révélations génériques ---------- */
-        gsap.utils.toArray("[data-reveal]").forEach(function (el) {
-          gsap.from(el, {
-            autoAlpha: 0,
-            y: 34,
-            duration: 1,
-            ease: "power3.out",
-            scrollTrigger: { trigger: el, start: "top 88%" },
-          });
-        });
-
-        /* ---------- Recalcul après chargement des images ---------- */
-        window.addEventListener("load", function () {
-          ScrollTrigger.refresh();
-        });
       })();
     </script>
   </body>
