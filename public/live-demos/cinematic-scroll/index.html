@@ -101,8 +101,31 @@
         letter-spacing: normal;
         text-transform: none;
       }
-      html[lang="ar"] .manifesto__text { line-height: 1.6; }
-      html[lang="ar"] .hero__title { line-height: 1.12; }
+      html[lang="ar"] .manifesto__text {
+        line-height: 1.75;
+        font-weight: 500;
+      }
+      html[lang="ar"] .hero__title {
+        line-height: 1.18;
+        font-weight: 600;
+        font-size: clamp(48px, 9.5vw, 118px);
+      }
+      html[lang="ar"] .title,
+      html[lang="ar"] .cta__title,
+      html[lang="ar"] .card__caption h3 {
+        font-weight: 600;
+      }
+      html[lang="ar"] .stat__num { font-weight: 500; }
+      html[lang="ar"] .hero__sub,
+      html[lang="ar"] .feature__text { line-height: 1.95; }
+      html[lang="ar"] .kicker { font-size: 12px; }
+      html[lang="ar"] .btn { font-size: 12.5px; }
+      /* Masques de lignes SplitText : marge de protection pour les
+         descendants arabes (ي، ج، ن…) afin qu'ils ne soient pas coupés. */
+      .sp-line-mask {
+        padding-bottom: 0.22em;
+        margin-bottom: -0.22em;
+      }
 
       /* ---- Boutons ---- */
       .btn {
@@ -763,31 +786,31 @@
             nav_matiere: "الحرفة",
             nav_visite: "موعد خاص",
             hero_kicker: "المجموعة 2026 · ساعات وقطع فاخرة",
-            hero_title: "الزمنُ<br>منحوتٌ.",
-            hero_sub: "قطعٌ استثنائية مصنوعةٌ يدويًا،<br>حيث تصبح كل ثانيةٍ عملًا فنيًا.",
+            hero_title: "الزمن<br>منحوت.",
+            hero_sub: "قطع استثنائية مصنوعة يدويًا،<br>حيث تصبح كل ثانية عملًا فنيًا.",
             scroll: "مرّر",
-            manifesto: "نحن لا نقيس الزمن، بل ننحته — في الذهب والفضة والفولاذ والياقوت، حتى يصبح كل نبضٍ صمتًا مثاليًا.",
+            manifesto: "نحن لا نقيس الزمن، بل ننحته — في الذهب والفضة والفولاذ والياقوت، حتى يصبح كل نبض صمتًا مثاليًا.",
             gal_kicker: "01 — القطع",
             gal_title: "مصنوعة لتعبر<br>الزمن",
             card1_t: "الكرونوغراف",
-            card1_s: "صقلٌ فولاذيّ، وميناءٌ أزرقُ الليل",
+            card1_s: "صقل فولاذي، وميناء أزرق الليل",
             card2_t: "الذهب",
-            card2_s: "ذهبٌ أصفر 18 قيراطًا، بحركةٍ أوتوماتيكية",
+            card2_s: "ذهب أصفر عيار 18، بحركة أوتوماتيكية",
             card3_t: "الفضة",
-            card3_s: "مجوهراتٌ من الفضة الخالصة محفورةٌ يدويًا، مع ياقوت",
+            card3_s: "مجوهرات من الفضة الخالصة محفورة يدويًا، مع ياقوت",
             card4_t: "الكنوز",
-            card4_s: "سلاسل وخواتم وأقلامٌ من الذهب",
+            card4_s: "سلاسل وخواتم وأقلام من الذهب",
             feat_kicker: "02 — الحرفة",
-            feat_title: "الصبرُ<br>كمادةٍّ",
-            feat_text: "كل قطعة تولد من مئة ساعة عملٍ في المشغل: النقش، والتدريج، والتلميع الأسود. يوقّع حرفيّونا كل حركةٍ، ثم يتركونها للزمن.",
+            feat_title: "الصبر<br>كمادة",
+            feat_text: "كل قطعة تولد من مئة ساعة عمل في المشغل: النقش والتدريج والتلميع الأسود. يوقّع حرفيونا كل حركة، ثم يتركونها للزمن.",
             feat_btn: "اكتشف المجموعة",
             stat1_l: "قطعة في كل حركة",
-            stat2_l: "ساعة عملٍ",
+            stat2_l: "ساعة عمل",
             stat3_l: "سنوات ضمان",
             cta_kicker: "موعد خاص",
-            cta_title: "الزمنُ<br>ينتظرك.",
+            cta_title: "الزمن<br>ينتظرك.",
             cta_btn: "احجز موعدًا",
-            footer_note: "نموذج تجربة سينمائية — ساعات وقطع فاخرة، ثنائي اللغة (العربية / الفرنسية)، بثيمٍ فاتح وداكن. GSAP + Lenis (مجانيان)، صور مولّدة بالذكاء الاصطناعي. بلا اشتراكات ولا خدمات مدفوعة.",
+            footer_note: "نموذج تجربة سينمائية — ساعات وقطع فاخرة، ثنائي اللغة (العربية / الفرنسية)، بثيم فاتح وداكن. GSAP + Lenis (مجانيان)، صور مولّدة بالذكاء الاصطناعي. بلا اشتراكات ولا خدمات مدفوعة.",
             footer_copy: "© 2026 · جودة عالمية دون أدوات مدفوعة.",
           },
         };
@@ -812,7 +835,7 @@
           var label = document.getElementById("langLabel");
           if (label) label.textContent = LANG === "ar" ? "FR" : "ع";
           document.title =
-            LANG === "ar" ? "MIRA — الزمنُ منحوتٌ" : "MIRA — Le temps, sculpté";
+            LANG === "ar" ? "MIRA — الزمن منحوت" : "MIRA — Le temps, sculpté";
         }
         applyLang();
 
@@ -959,6 +982,7 @@
           var heroSplit = new SplitText(".hero__title", {
             type: "lines",
             mask: "lines",
+            linesClass: "sp-line",
           });
           gsap.set(".hero__kicker, .hero__sub, .hero__scroll", {
             autoAlpha: 0,
@@ -1164,6 +1188,7 @@
           var fSplit = new SplitText(".feature__title", {
             type: "lines",
             mask: "lines",
+            linesClass: "sp-line",
           });
           gsap.from(fSplit.lines, {
             yPercent: 110,
@@ -1215,6 +1240,7 @@
           var cSplit = new SplitText(".cta__title", {
             type: "lines",
             mask: "lines",
+            linesClass: "sp-line",
           });
           gsap.from(cSplit.lines, {
             yPercent: 115,
