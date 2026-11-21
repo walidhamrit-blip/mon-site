@@ -27,7 +27,7 @@ ChatGPT » — réalisée **sans aucun service payant**.
 index.html          ← le site complet (HTML + CSS + JS inline, dictionnaire i18n)
 favicon.svg
 fonts/              ← Cairo variable (OFL)
-images/             ← 6 visuels IA (hero, watch-blue, watch-gold, silver, gold, movement)
+images/             ← 6 visuels IA (watch-hero, watch-blue, watch-gold, silver, gold, movement)
 vendor/             ← gsap.min.js, ScrollTrigger.min.js, SplitText.min.js, lenis.min.js
 ```
 
