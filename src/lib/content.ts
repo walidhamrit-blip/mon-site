@@ -239,6 +239,25 @@ export const demos = [
     planId: "vitrine",
     categoryTier: 1,
   },
+  {
+    slug: "cinematic-scroll",
+    sector: "watches",
+    sectorAr: "ساعات ومجوهرات",
+    sectorEn: "Watches & Jewelry",
+    title: "ساعتي — ساعات ومجوهرات فاخرة بتجربة سينمائية",
+    titleEn: "My Clock — Luxury Watches & Jewelry with Cinematic Scroll",
+    description:
+      "متجر إلكتروني لساعات ومجوهرات فاخرة — تجربة تمرير سينمائية، كتالوج تفاعلي، فتح تفاصيل المنتجات، دفع آمن وطلب عبر واتساب، بالعربية والفرنسية",
+    descriptionEn:
+      "Luxury watches & jewelry store — cinematic scroll experience, interactive catalog, product detail modals, secure payment & WhatsApp ordering, Arabic + French",
+    image: "/previews/cinematic-scroll-cover.jpg",
+    color: "#21499C",
+    features: ["تجربة تمرير سينمائية", "كتالوج وتفاصيل المنتجات", "دفع آمن وطلب واتساب", "عربي + فرنسي، ثيم فاتح وداكن"],
+    featuresEn: ["Cinematic Scroll Experience", "Catalog & Product Modals", "Secure Payment & WhatsApp", "AR + FR, Light/Dark Theme"],
+    previewUrl: "/live-demos/cinematic-scroll/",
+    planId: "boutique",
+    categoryTier: 3,
+  },
 ] as const;
 
 export const sectors = [
@@ -253,6 +272,7 @@ export const sectors = [
   { id: "hardware", labelAr: "مواد بناء وعدد", labelEn: "Tools & Construction" },
   { id: "stationery", labelAr: "قرطاسية وتقنية", labelEn: "Stationery & Tech" },
   { id: "sanitary", labelAr: "أطقم صحية وصنابير", labelEn: "Sanitary & Brassware" },
+  { id: "watches", labelAr: "ساعات ومجوهرات", labelEn: "Watches & Jewelry" },
 ] as const;
 
 export const whyUs = [

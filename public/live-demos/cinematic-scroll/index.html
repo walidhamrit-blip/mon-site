@@ -1,0 +1,2079 @@
+<!doctype html>
+<html lang="fr" data-theme="light">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>My Clock — Le temps, sculpté</title>
+    <meta
+      name="description"
+      content="Démo client : site d'horlogerie et d'objets de luxe bilingue (français/arabe) avec scroll cinématique et thème clair/sombre. Construite 100 % gratuitement avec GSAP + Lenis et des visuels IA."
+    />
+    <!--
+      Démo technique autonome (voir src/components/live-site-frames.tsx).
+      Document non indexé : il sert d'aperçu embarquable, pas de page
+      éditoriale. Même convention que /live-demos/tulin-magazin.
+    -->
+    <meta name="robots" content="noindex, follow" />
+    <meta name="theme-color" content="#f5f7fa" />
+    <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
+    <link rel="stylesheet" href="./vendor/lenis.css" />
+    <noscript><style>.preloader { display: none; }</style></noscript>
+    <style>
+      /* ============ MIRA — expérience cinématique ============
+         Démo client bilingue FR/AR (RTL) — horlogerie & objets de luxe.
+         Palette : bleu / blanc / noir, avec sélecteur clair ↔ sombre.
+         100 % gratuit : GSAP + ScrollTrigger + SplitText + Lenis (locaux),
+         police Cairo auto-hébergée (OFL), visuels IA. CSP : 'self' uniquement. */
+
+      /* Police arabe auto-hébergée (licence OFL — voir fonts/OFL-Cairo.txt) */
+      @font-face {
+        font-family: "Cairo";
+        src: url("./fonts/cairo-arabic-var.woff2") format("woff2");
+        font-weight: 200 1000;
+        font-display: swap;
+      }
+
+      :root {
+        --bg: #f5f7fa;
+        --bg-soft: #e8ecf2;
+        --ink: #0b1017;
+        --ink-soft: rgba(11, 16, 23, 0.66);
+        --faint: rgba(11, 16, 23, 0.42);
+        --muted: #5a6472;
+        --accent: #21499c;
+        --line: rgba(11, 16, 23, 0.15);
+        --header-bg: rgba(245, 247, 250, 0.78);
+        --font-display: Didot, "Bodoni MT", "Playfair Display",
+          "Cormorant Garamond", Georgia, "Times New Roman", serif;
+        --font-ui: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI",
+          Roboto, Helvetica, Arial, sans-serif;
+      }
+      [data-theme="dark"] {
+        --bg: #0a0e15;
+        --bg-soft: #121a26;
+        --ink: #eef2f8;
+        --ink-soft: rgba(238, 242, 248, 0.66);
+        --faint: rgba(238, 242, 248, 0.4);
+        --muted: #97a2b3;
+        --accent: #7ba1f0;
+        --line: rgba(238, 242, 248, 0.15);
+        --header-bg: rgba(10, 14, 21, 0.78);
+      }
+      html[lang="ar"] {
+        --font-display: "Cairo", "Geeza Pro", "Segoe UI", Tahoma, sans-serif;
+        --font-ui: "Cairo", "Geeza Pro", "Segoe UI", Tahoma, sans-serif;
+      }
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      html { -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; }
+      body {
+        background: var(--bg);
+        color: var(--ink);
+        font-family: var(--font-ui);
+        overflow-x: hidden;
+      }
+      img { display: block; }
+      a { color: inherit; text-decoration: none; }
+      ::selection { background: var(--accent); color: var(--bg); }
+
+      .kicker {
+        font-size: 11px;
+        letter-spacing: 0.34em;
+        text-transform: uppercase;
+        color: var(--accent);
+      }
+      .title {
+        font-family: var(--font-display);
+        font-weight: 400;
+        line-height: 1.04;
+        font-size: clamp(32px, 4.6vw, 62px);
+      }
+
+      /* L'interlettrage casse les liaisons de l'écriture arabe :
+         neutralisé en arabe, conservé en latin. */
+      html[lang="ar"] .kicker,
+      html[lang="ar"] .btn,
+      html[lang="ar"] .header__logo,
+      html[lang="ar"] .header__nav a,
+      html[lang="ar"] .hero__scroll,
+      html[lang="ar"] .card__index,
+      html[lang="ar"] .stat p,
+      html[lang="ar"] .footer__brand,
+      html[lang="ar"] .preloader__brand,
+      html[lang="ar"] .toggle-pill {
+        letter-spacing: normal;
+        text-transform: none;
+      }
+      html[lang="ar"] .manifesto__text {
+        line-height: 1.75;
+        font-weight: 500;
+      }
+      html[lang="ar"] .hero__title {
+        line-height: 1.18;
+        font-weight: 600;
+        font-size: clamp(48px, 9.5vw, 118px);
+      }
+      html[lang="ar"] .title,
+      html[lang="ar"] .cta__title,
+      html[lang="ar"] .card__caption h3 {
+        font-weight: 600;
+      }
+      html[lang="ar"] .stat__num { font-weight: 500; }
+      html[lang="ar"] .hero__sub,
+      html[lang="ar"] .feature__text { line-height: 1.95; }
+      html[lang="ar"] .kicker { font-size: 12px; }
+      html[lang="ar"] .btn { font-size: 12.5px; }
+      /* Masques de lignes SplitText : marge de protection pour les
+         descendants arabes (ي، ج، ن…) afin qu'ils ne soient pas coupés. */
+      .sp-line-mask {
+        padding-bottom: 0.22em;
+        margin-bottom: -0.22em;
+      }
+
+      /* ---- Boutons ---- */
+      .btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 14px;
+        padding: 16px 30px;
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        color: var(--ink);
+        font-size: 12px;
+        letter-spacing: 0.22em;
+        text-transform: uppercase;
+        background: transparent;
+        cursor: pointer;
+        transition: background 0.45s ease, color 0.45s ease,
+          border-color 0.45s ease;
+      }
+      .btn:hover { background: var(--ink); border-color: var(--ink); color: var(--bg); }
+      .btn--big { padding: 22px 46px; font-size: 13px; }
+      .btn--ghost { padding: 11px 22px; font-size: 10.5px; }
+
+      /* ---- Pastilles (langue / thème) ---- */
+      .toggle-pill {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 46px;
+        height: 38px;
+        padding: 0 14px;
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        background: transparent;
+        color: var(--ink);
+        font-family: var(--font-ui);
+        font-size: 13px;
+        letter-spacing: 0.12em;
+        cursor: pointer;
+        transition: background 0.35s ease, color 0.35s ease;
+      }
+      .toggle-pill:hover { background: var(--ink); color: var(--bg); }
+
+      /* ---- Overlays : grain papier + vignette douce ---- */
+      .grain {
+        position: fixed;
+        top: -60%; left: -60%;
+        width: 220%; height: 220%;
+        pointer-events: none;
+        z-index: 9999;
+        opacity: 0.06;
+        animation: grain 0.8s steps(7) infinite;
+      }
+      @keyframes grain {
+        0% { transform: translate(0, 0); }
+        14% { transform: translate(-3%, -6%); }
+        28% { transform: translate(-8%, 3%); }
+        42% { transform: translate(5%, -8%); }
+        57% { transform: translate(-4%, 7%); }
+        71% { transform: translate(7%, -2%); }
+        85% { transform: translate(-6%, -4%); }
+        100% { transform: translate(0, 0); }
+      }
+      .vignette {
+        position: fixed; inset: 0;
+        pointer-events: none;
+        z-index: 9998;
+        background: radial-gradient(125% 95% at 50% 45%,
+          transparent 55%, rgba(6, 10, 18, 0.07) 82%, rgba(6, 10, 18, 0.18) 100%);
+      }
+
+      /* ---- Curseur ---- */
+      .cursor { position: fixed; inset: 0; pointer-events: none; z-index: 12000; display: none; }
+      .cursor.is-on { display: block; }
+      .cursor__dot {
+        position: fixed; top: 0; left: 0;
+        width: 6px; height: 6px;
+        margin: -3px 0 0 -3px;
+        border-radius: 50%;
+        background: #fff;
+        mix-blend-mode: difference;
+      }
+      .cursor__ring {
+        position: fixed; top: 0; left: 0;
+        width: 38px; height: 38px;
+        margin: -19px 0 0 -19px;
+        border-radius: 50%;
+        border: 1px solid rgba(255, 255, 255, 0.65);
+        mix-blend-mode: difference;
+        transition: width 0.35s ease, height 0.35s ease, margin 0.35s ease, opacity 0.35s ease;
+      }
+      .cursor.is-hover .cursor__ring {
+        width: 76px; height: 76px;
+        margin: -38px 0 0 -38px;
+        opacity: 0.9;
+      }
+
+      /* ---- Barre de progression ---- */
+      .progress { position: fixed; top: 0; left: 0; right: 0; height: 2px; z-index: 9000; }
+      .progress__bar {
+        height: 100%;
+        background: var(--accent);
+        transform: scaleX(0);
+        transform-origin: left center;
+      }
+
+      /* ---- Préchargeur ---- */
+      .preloader {
+        position: fixed; inset: 0;
+        z-index: 11000;
+        background: var(--bg);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .preloader__inner { text-align: center; }
+      .preloader__brand {
+        font-family: var(--font-display);
+        font-size: 13px;
+        letter-spacing: 0.55em;
+        color: var(--muted);
+        margin-bottom: 18px;
+      }
+      .preloader__count {
+        font-family: var(--font-display);
+        font-size: clamp(72px, 14vw, 180px);
+        line-height: 1;
+      }
+      .preloader__bar {
+        position: absolute;
+        left: 0; right: 0; bottom: 0;
+        height: 1px;
+        background: var(--line);
+      }
+      .preloader__bar span {
+        display: block;
+        height: 100%;
+        width: 100%;
+        background: var(--accent);
+        transform: scaleX(0);
+        transform-origin: left center;
+      }
+
+      /* ---- En-tête ---- */
+      .header {
+        position: fixed;
+        top: 0; left: 0; right: 0;
+        z-index:8000;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 15px clamp(20px, 5vw, 64px);
+        /* Fond givré : la barre et les sélecteurs restent toujours lisibles,
+           y compris au-dessus de la photo du hero, et ne se masquent jamais. */
+        background: var(--header-bg);
+        -webkit-backdrop-filter: blur(14px);
+        backdrop-filter: blur(14px);
+      }
+      .header__logo {
+        font-family: var(--font-display);
+        font-size: 15px;
+        letter-spacing: 0.5em;
+      }
+      .header__nav { display: flex; align-items: center; gap: clamp(12px, 1.8vw, 28px); }
+      .header__nav a:not(.btn) {
+        font-size: 11px;
+        letter-spacing: 0.22em;
+        text-transform: uppercase;
+        color: var(--ink-soft);
+        transition: color 0.3s ease;
+      }
+      .header__nav a:not(.btn):hover { color: var(--ink); }
+      .header__toggles { display: flex; align-items: center; gap: 10px; }
+
+      /* ---- Hero ---- */
+      .hero { position: relative; height: 100vh; height: 100svh; overflow: hidden; }
+      .hero__media { position: absolute; inset: 0; overflow: hidden; }
+      .hero__media img {
+        position: absolute;
+        top: -9%; left: 0;
+        width: 100%; height: 118%;
+        object-fit: cover;
+        transform: scale(1.05);
+        will-change: transform, opacity;
+      }
+      /* Séquence photo du hero : les frames 2-3 apparaissent au scroll. */
+      .hero__frame + .hero__frame { opacity: 0; }
+      .hero__content {
+        position: absolute;
+        inset-inline-start: clamp(24px, 7vw, 96px);
+        top: 0; bottom: 0;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        max-width: 920px;
+      }
+      .hero__title {
+        font-family: var(--font-display);
+        font-weight: 400;
+        font-size: clamp(54px, 11vw, 148px);
+        line-height: 0.94;
+        margin: 26px 0 30px;
+        color: #f3f6fb;
+        text-shadow: 0 2px 40px rgba(6, 10, 18, 0.45);
+      }
+      .hero__kicker { color: #a9c3ff; }
+      .hero__sub {
+        font-size: clamp(14px, 1.35vw, 19px);
+        line-height: 1.75;
+        color: rgba(243, 246, 251, 0.88);
+        text-shadow: 0 1px 24px rgba(6, 10, 18, 0.5);
+      }
+      .hero__scroll {
+        position: absolute;
+        bottom: 30px; left: 50%;
+        transform: translateX(-50%);
+        display: flex; flex-direction: column; align-items: center; gap: 12px;
+        font-size: 10px;
+        letter-spacing: 0.34em;
+        text-transform: uppercase;
+        color: rgba(243, 246, 251, 0.78);
+      }
+      .hero__scroll i {
+        width: 1px; height: 56px;
+        background: linear-gradient(to bottom, #a9c3ff, transparent);
+        position: relative;
+        overflow: hidden;
+      }
+      .hero__scroll i::after {
+        content: "";
+        position: absolute;
+        top: -20px; left: 0;
+        width: 100%; height: 20px;
+        background: #f3f6fb;
+        animation: scrollDrop 2.2s cubic-bezier(0.65, 0, 0.35, 1) infinite;
+      }
+      @keyframes scrollDrop {
+        0% { top: -20px; }
+        70%, 100% { top: 60px; }
+      }
+
+      /* ---- Manifeste ---- */
+      .manifesto {
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        padding: 0 clamp(24px, 8vw, 140px);
+      }
+      .manifesto__inner { max-width: 1150px; }
+      .manifesto__text {
+        font-family: var(--font-display);
+        font-size: clamp(26px, 4.4vw, 60px);
+        line-height: 1.32;
+        color: var(--ink);
+      }
+
+      /* ---- Galerie horizontale ---- */
+      .gallery {
+        height: 100vh;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        gap: 5vh;
+      }
+      .gallery__head { padding: 0 clamp(24px, 6vw, 96px); }
+      .gallery__head .title { margin-top: 16px; }
+      .gallery__viewport { width: 100%; overflow: hidden; }
+      .gallery__track {
+        display: flex;
+        gap: clamp(20px, 3vw, 48px);
+        padding: 0 clamp(24px, 6vw, 96px);
+        width: max-content;
+        will-change: transform;
+      }
+      .card { width: clamp(250px, 30vw, 430px); }
+      .card__media {
+        position: relative;
+        aspect-ratio: 3 / 4;
+        overflow: hidden;
+        background: var(--bg-soft);
+      }
+      .card__media img {
+        position: absolute;
+        top: -6%; left: 0;
+        width: 100%; height: 112%;
+        object-fit: cover;
+        will-change: transform;
+      }
+      .card__index {
+        display: block;
+        margin-top: 20px;
+        font-size: 10px;
+        letter-spacing: 0.34em;
+        color: var(--accent);
+      }
+      .card__caption h3 {
+        font-family: var(--font-display);
+        font-weight: 400;
+        font-size: clamp(20px, 1.9vw, 28px);
+        margin-top: 8px;
+      }
+      .card__caption p {
+        margin-top: 7px;
+        font-size: 13.5px;
+        line-height: 1.6;
+        color: var(--muted);
+      }
+
+      /* ---- Section savoir-faire ---- */
+      .feature {
+        display: grid;
+        grid-template-columns: 1.05fr 1fr;
+        gap: clamp(36px, 6vw, 100px);
+        align-items: center;
+        padding: 20vh clamp(24px, 6vw, 96px);
+      }
+      .feature__media {
+        position: relative;
+        aspect-ratio: 4 / 5;
+        overflow: hidden;
+        /* État par défaut visible : le volet animé part de l'état caché
+           uniquement quand GSAP tourne (fallback sans JS / reduced-motion). */
+        clip-path: inset(0% 0% 0% 0%);
+      }
+      .feature__media img {
+        position: absolute;
+        top: -10%; left: 0;
+        width: 100%; height: 120%;
+        object-fit: cover;
+        object-position: 50% 60%;
+      }
+      .feature__content { max-width: 540px; }
+      .feature__title { margin: 18px 0 26px; }
+      .feature__text {
+        font-size: clamp(14.5px, 1.25vw, 17.5px);
+        line-height: 1.85;
+        color: var(--muted);
+        margin-bottom: 38px;
+      }
+
+      /* ---- Chiffres ---- */
+      .stats {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 24px;
+        padding: 13vh clamp(24px, 6vw, 96px);
+        border-top: 1px solid var(--line);
+        border-bottom: 1px solid var(--line);
+        text-align: center;
+      }
+      .stat__num {
+        font-family: var(--font-display);
+        font-size: clamp(52px, 8vw, 108px);
+        line-height: 1;
+      }
+      .stat p {
+        margin-top: 14px;
+        font-size: 11px;
+        letter-spacing: 0.3em;
+        text-transform: uppercase;
+        color: var(--muted);
+      }
+
+      /* ---- Appel à l'action ---- */
+      .cta {
+        text-align: center;
+        padding: 23vh 24px;
+        background: var(--bg-soft);
+      }
+      .cta__title {
+        font-family: var(--font-display);
+        font-weight: 400;
+        font-size: clamp(48px, 9vw, 128px);
+        line-height: 0.99;
+        margin: 26px 0 48px;
+      }
+
+      /* ---- Pied de page ---- */
+      .footer {
+        border-top: 1px solid var(--line);
+        padding: 56px clamp(24px, 6vw, 96px) 44px;
+        display: flex;
+        flex-direction: column;
+        gap: 18px;
+      }
+      .footer__brand {
+        font-family: var(--font-display);
+        font-size: 13px;
+        letter-spacing: 0.55em;
+      }
+      .footer__note {
+        max-width: 660px;
+        font-size: 13px;
+        line-height: 1.85;
+        color: var(--muted);
+      }
+      .footer__copy {
+        font-size: 11px;
+        color: var(--faint);
+      }
+      .footer__dl { margin-top: 12px; }
+
+      /* ---- Boutique : catalogue & fiches produit ---- */
+      .shop__head { padding: 0 clamp(24px, 6vw, 96px); max-width: 900px; }
+      .shop__head .title { margin: 16px 0 18px; }
+      .shop__sub {
+        font-size: clamp(14px, 1.25vw, 17px);
+        line-height: 1.8;
+        color: var(--muted);
+      }
+      .shop__grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: clamp(18px, 2.4vw, 36px);
+        padding: 6vh clamp(24px, 6vw, 96px) 10vh;
+      }
+      .pcard {
+        position: relative;
+        background: var(--bg-soft);
+        border: 1px solid var(--line);
+        cursor: pointer;
+        transition: transform 0.5s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.5s ease;
+      }
+      .pcard:hover {
+        transform: translateY(-8px);
+        box-shadow: 0 30px 60px rgba(6, 10, 18, 0.18);
+      }
+      .pcard__media { position: relative; aspect-ratio: 4 / 3; overflow: hidden; }
+      .pcard__media img {
+        width: 100%; height: 100%;
+        object-fit: cover;
+        transition: transform 0.8s cubic-bezier(0.22, 1, 0.36, 1);
+      }
+      .pcard:hover .pcard__media img { transform: scale(1.08); }
+      .pcard__badge {
+        position: absolute;
+        top: 14px; inset-inline-start: 14px;
+        padding: 6px 12px;
+        background: rgba(6, 10, 18, 0.72);
+        color: #f3f6fb;
+        font-size: 10px;
+        letter-spacing: 0.22em;
+        text-transform: uppercase;
+        border-radius: 999px;
+      }
+      html[lang="ar"] .pcard__badge,
+      html[lang="ar"] .pcard__cat,
+      html[lang="ar"] .pcard__cta {
+        letter-spacing: normal;
+        text-transform: none;
+      }
+      .pcard__body { padding: 22px 22px 26px; }
+      .pcard__cat {
+        font-size: 10px;
+        letter-spacing: 0.28em;
+        text-transform: uppercase;
+        color: var(--accent);
+      }
+      .pcard__name {
+        font-family: var(--font-display);
+        font-weight: 400;
+        font-size: clamp(19px, 1.7vw, 24px);
+        margin: 10px 0 12px;
+      }
+      html[lang="ar"] .pcard__name { font-weight: 600; }
+      .pcard__row {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 12px;
+      }
+      .pcard__price { font-family: var(--font-display); font-size: 20px; }
+      .pcard__cta {
+        font-size: 10.5px;
+        letter-spacing: 0.22em;
+        text-transform: uppercase;
+        color: var(--accent);
+      }
+
+      /* ---- Fiche produit (modale) ---- */
+      .modal {
+        position: fixed; inset: 0;
+        z-index: 11500;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        padding: 24px;
+      }
+      .modal.is-open { display: flex; }
+      .modal__backdrop {
+        position: absolute; inset: 0;
+        background: rgba(6, 10, 18, 0.62);
+        -webkit-backdrop-filter: blur(8px);
+        backdrop-filter: blur(8px);
+      }
+      .modal__panel {
+        position: relative;
+        width: min(1080px, 100%);
+        max-height: 88vh;
+        overflow: auto;
+        display: grid;
+        grid-template-columns: 1.05fr 1fr;
+        background: var(--bg);
+        border: 1px solid var(--line);
+        box-shadow: 0 40px 120px rgba(6, 10, 18, 0.45);
+      }
+      .modal__close {
+        position: absolute;
+        top: 14px; inset-inline-end: 14px;
+        z-index: 2;
+        width: 42px; height: 42px;
+        border-radius: 50%;
+        border: 1px solid var(--line);
+        background: var(--bg);
+        color: var(--ink);
+        font-size: 20px;
+        line-height: 1;
+        cursor: pointer;
+      }
+      .modal__media { position: relative; min-height: 320px; background: var(--bg-soft); }
+      .modal__media img {
+        position: absolute; inset: 0;
+        width: 100%; height: 100%;
+        object-fit: cover;
+      }
+      .modal__body { padding: clamp(24px, 3.2vw, 46px); }
+      .modal__title {
+        font-family: var(--font-display);
+        font-weight: 400;
+        font-size: clamp(26px, 2.6vw, 38px);
+        margin: 12px 0 10px;
+      }
+      html[lang="ar"] .modal__title { font-weight: 600; }
+      .modal__price {
+        font-family: var(--font-display);
+        font-size: 26px;
+        color: var(--accent);
+        margin-bottom: 16px;
+      }
+      .modal__desc {
+        font-size: 14.5px;
+        line-height: 1.85;
+        color: var(--muted);
+        margin-bottom: 22px;
+      }
+      .specs { list-style: none; border-top: 1px solid var(--line); margin-bottom: 24px; }
+      .specs li {
+        display: flex;
+        justify-content: space-between;
+        gap: 16px;
+        padding: 11px 0;
+        border-bottom: 1px solid var(--line);
+        font-size: 13px;
+      }
+      .specs li span:first-child { color: var(--muted); }
+      .qty {
+        display: inline-flex;
+        align-items: center;
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        overflow: hidden;
+        margin-bottom: 20px;
+      }
+      .qty button {
+        width: 42px; height: 42px;
+        border: 0;
+        background: transparent;
+        color: var(--ink);
+        font-size: 18px;
+        cursor: pointer;
+      }
+      .qty button:hover { background: var(--bg-soft); }
+      .qty span { min-width: 46px; text-align: center; font-size: 15px; }
+      .btn--wa {
+        width: 100%;
+        justify-content: center;
+        background: #1fa855;
+        border-color: #1fa855;
+        color: #fff;
+      }
+      .btn--wa:hover { background: #178f46; border-color: #178f46; color: #fff; }
+
+      /* ---- Paiement ---- */
+      .pay { margin-top: 28px; padding-top: 22px; border-top: 1px solid var(--line); }
+      .pay h4 {
+        font-size: 11px;
+        letter-spacing: 0.28em;
+        text-transform: uppercase;
+        margin-bottom: 14px;
+      }
+      html[lang="ar"] .pay h4 { letter-spacing: normal; text-transform: none; font-size: 13px; }
+      .pay__chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
+      .chip {
+        padding: 9px 15px;
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        background: transparent;
+        color: var(--ink-soft);
+        font-family: var(--font-ui);
+        font-size: 11.5px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+      }
+      .chip:hover { border-color: var(--accent); color: var(--ink); }
+      .chip.is-active { background: var(--accent); border-color: var(--accent); color: var(--bg); }
+      .pay__fields { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }
+      .pay__fields input {
+        padding: 13px 16px;
+        border: 1px solid var(--line);
+        background: transparent;
+        color: var(--ink);
+        font-family: var(--font-ui);
+        font-size: 13.5px;
+      }
+      .pay__fields input::placeholder { color: var(--faint); }
+      .pay__fields input:focus { outline: none; border-color: var(--accent); }
+      .pay__fields input:first-child { grid-column: 1 / -1; }
+      .btn--pay {
+        width: 100%;
+        justify-content: center;
+        background: var(--ink);
+        border-color: var(--ink);
+        color: var(--bg);
+      }
+      .btn--pay:hover { opacity: 0.88; }
+      .pay__success {
+        display: none;
+        margin-top: 16px;
+        padding: 18px;
+        border: 1px solid #1fa855;
+        background: rgba(31, 168, 85, 0.1);
+        font-size: 13.5px;
+        line-height: 1.75;
+      }
+      .pay__success.is-on { display: block; }
+      .pay__success strong { display: block; margin-bottom: 6px; color: #1fa855; }
+
+      /* ---- WhatsApp flottant ---- */
+      .wa-fab {
+        position: fixed;
+        bottom: 26px; inset-inline-end: 26px;
+        z-index: 9500;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        text-decoration: none;
+      }
+      .wa-fab__btn {
+        position: relative;
+        width: 60px; height: 60px;
+        border-radius: 50%;
+        background: #1fa855;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 14px 34px rgba(31, 168, 85, 0.45);
+        transition: transform 0.35s ease;
+      }
+      .wa-fab:hover .wa-fab__btn { transform: scale(1.08); }
+      .wa-fab__btn::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        border-radius: 50%;
+        border: 2px solid rgba(31, 168, 85, 0.55);
+        animation: waPulse 2.4s ease-out infinite;
+      }
+      @keyframes waPulse {
+        0% { transform: scale(1); opacity: 1; }
+        80%, 100% { transform: scale(1.75); opacity: 0; }
+      }
+      .wa-fab__label {
+        padding: 11px 18px;
+        background: var(--bg);
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        font-size: 11.5px;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: var(--ink);
+        box-shadow: 0 12px 30px rgba(6, 10, 18, 0.18);
+      }
+      html[lang="ar"] .wa-fab__label { letter-spacing: normal; text-transform: none; font-size: 12.5px; }
+      @media (max-width: 700px) { .wa-fab__label { display: none; } }
+
+      /* ---- Responsive boutique ---- */
+      @media (max-width: 1000px) {
+        .shop__grid { grid-template-columns: repeat(2, 1fr); }
+        .modal__panel { grid-template-columns: 1fr; }
+        .modal__media { aspect-ratio: 16 / 10; min-height: 0; }
+      }
+      @media (max-width: 620px) {
+        .shop__grid { grid-template-columns: 1fr; }
+        .pay__fields { grid-template-columns: 1fr; }
+        .pay__fields input:first-child { grid-column: auto; }
+      }
+
+      /* ---- Responsive ---- */
+      @media (max-width: 900px) {
+        .header__nav a:not(.btn) { display: none; }
+        .feature { grid-template-columns: 1fr; padding-top: 12vh; padding-bottom: 12vh; }
+        .feature__media { aspect-ratio: 16 / 11; }
+        .manifesto__text { font-size: clamp(24px, 6.4vw, 40px); }
+      }
+      @media (max-width: 600px) {
+        .stats { grid-template-columns: 1fr; gap: 44px; }
+        .hero__content { inset-inline-start: 22px; max-width: none; width: calc(100vw - 44px); }
+      }
+
+      /* ---- Sens de lecture RTL : les barres se remplissent depuis la droite ---- */
+      html[dir="rtl"] .progress__bar,
+      html[dir="rtl"] .preloader__bar span { transform-origin: right center; }
+
+      /* ---- Accessibilité ---- */
+      @media (prefers-reduced-motion: reduce) {
+        .grain, .hero__scroll i::after { display: none; }
+        * { animation: none !important; transition: none !important; }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="grain" aria-hidden="true"></div>
+    <div class="vignette" aria-hidden="true"></div>
+    <div class="cursor" aria-hidden="true">
+      <div class="cursor__ring"></div>
+      <div class="cursor__dot"></div>
+    </div>
+    <div class="progress" aria-hidden="true"><div class="progress__bar"></div></div>
+
+    <div class="preloader" id="preloader">
+      <div class="preloader__inner">
+        <div class="preloader__brand" data-i18n="brand">My Clock</div>
+        <div class="preloader__count" id="preloaderCount">0</div>
+      </div>
+      <div class="preloader__bar"><span id="preloaderBar"></span></div>
+    </div>
+
+    <header class="header" id="header">
+      <a class="header__logo" href="#hero" data-i18n="brand">My Clock</a>
+      <nav class="header__nav">
+        <a href="#manifeste" data-i18n="nav_manifeste">Manifeste</a>
+        <a href="#espaces" data-i18n="nav_espaces">Pièces</a>
+        <a href="#matiere" data-i18n="nav_matiere">Savoir-faire</a>
+        <a href="#boutique" data-i18n="nav_boutique">Boutique</a>
+        <a class="btn btn--ghost" href="#visite" data-i18n="nav_visite">Rendez-vous</a>
+        <span class="header__toggles">
+          <button class="toggle-pill" id="themeToggle" type="button" aria-label="Changer de thème">
+            <span id="themeLabel">☾</span>
+          </button>
+          <button class="toggle-pill" id="langToggle" type="button" aria-label="Changer de langue">
+            <span id="langLabel">ع</span>
+          </button>
+        </span>
+      </nav>
+    </header>
+
+    <main>
+      <section class="hero" id="hero">
+        <div class="hero__media">
+          <img
+            class="hero__frame"
+            src="./images/watch-hero.jpg"
+            alt=""
+            loading="eager"
+          />
+          <img
+            class="hero__frame"
+            src="./images/watch-diver.jpg"
+            alt=""
+            loading="eager"
+          />
+          <img
+            class="hero__frame"
+            src="./images/watch-skeleton.jpg"
+            alt=""
+            loading="eager"
+          />
+        </div>
+        <div class="hero__content">
+          <p class="kicker hero__kicker" data-i18n="hero_kicker">Collection 2026 · Montres & objets de luxe</p>
+          <h1 class="hero__title" data-i18n-html="hero_title">Le temps,<br />sculpté.</h1>
+          <p class="hero__sub" data-i18n-html="hero_sub">
+            Des pièces d'exception façonnées à la main,<br />où chaque seconde devient une œuvre.
+          </p>
+        </div>
+        <div class="hero__scroll"><span data-i18n="scroll">Défiler</span><i></i></div>
+      </section>
+
+      <section class="manifesto" id="manifeste">
+        <div class="manifesto__inner">
+          <p class="manifesto__text" data-i18n="manifesto">
+            Nous ne mesurons pas le temps. Nous le sculptons — dans l'or,
+            l'argent, l'acier et le saphir, jusqu'à ce que chaque battement
+            devienne un silence parfait.
+          </p>
+        </div>
+      </section>
+
+      <section class="gallery" id="espaces">
+        <div class="gallery__head">
+          <p class="kicker" data-reveal data-i18n="gal_kicker">01 — Les pièces</p>
+          <h2 class="title" data-reveal data-i18n-html="gal_title">Façonnées pour<br />traverser le temps</h2>
+        </div>
+        <div class="gallery__viewport">
+          <div class="gallery__track" id="galleryTrack">
+            <article class="card">
+              <div class="card__media">
+                <img src="./images/watch-blue.jpg" alt="" loading="lazy" />
+              </div>
+              <div class="card__caption">
+                <span class="card__index">01</span>
+                <h3 data-i18n="card1_t">Le Chronographe</h3>
+                <p data-i18n="card1_s">Acier poli, cadran bleu nuit</p>
+              </div>
+            </article>
+            <article class="card">
+              <div class="card__media">
+                <img src="./images/watch-gold.jpg" alt="" loading="lazy" />
+              </div>
+              <div class="card__caption">
+                <span class="card__index">02</span>
+                <h3 data-i18n="card2_t">L'Or</h3>
+                <p data-i18n="card2_s">Or jaune 18 carats, mouvement automatique</p>
+              </div>
+            </article>
+            <article class="card">
+              <div class="card__media">
+                <img src="./images/silver.jpg" alt="" loading="lazy" />
+              </div>
+              <div class="card__caption">
+                <span class="card__index">03</span>
+                <h3 data-i18n="card3_t">L'Argent</h3>
+                <p data-i18n="card3_s">Bijoux d'argent massif gravés main, saphir</p>
+              </div>
+            </article>
+            <article class="card">
+              <div class="card__media">
+                <img src="./images/gold.jpg" alt="" loading="lazy" />
+              </div>
+              <div class="card__caption">
+                <span class="card__index">04</span>
+                <h3 data-i18n="card4_t">Les Trésors</h3>
+                <p data-i18n="card4_s">Chaînes, bagues et stylos en or</p>
+              </div>
+            </article>
+            <article class="card">
+              <div class="card__media">
+                <img src="./images/watch-diver.jpg" alt="" loading="lazy" />
+              </div>
+              <div class="card__caption">
+                <span class="card__index">05</span>
+                <h3 data-i18n="card5_t">Le Plongeur</h3>
+                <p data-i18n="card5_s">Bézel rotatif, étanche 300 m</p>
+              </div>
+            </article>
+            <article class="card">
+              <div class="card__media">
+                <img src="./images/watch-skeleton.jpg" alt="" loading="lazy" />
+              </div>
+              <div class="card__caption">
+                <span class="card__index">06</span>
+                <h3 data-i18n="card6_t">Le Squelette</h3>
+                <p data-i18n="card6_s">Mouvement apparent, or et acier</p>
+              </div>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section class="feature" id="matiere">
+        <div class="feature__media">
+          <img src="./images/movement.jpg" alt="" loading="lazy" />
+        </div>
+        <div class="feature__content">
+          <p class="kicker" data-i18n="feat_kicker">02 — Le savoir-faire</p>
+          <h2 class="title feature__title" data-i18n-html="feat_title">La patience<br />comme matière</h2>
+          <p class="feature__text" data-i18n="feat_text">
+            Chaque pièce naît de cent heures d'atelier : guillochage, anglage,
+            polissage noir. Nos maîtres horlogers signent chaque mouvement,
+            puis le laissent au temps.
+          </p>
+          <a class="btn magnetic" href="#visite" data-i18n="feat_btn">Découvrir la collection</a>
+        </div>
+      </section>
+
+      <section class="shop" id="boutique">
+        <div class="shop__head">
+          <p class="kicker" data-reveal data-i18n="shop_kicker">03 — La boutique</p>
+          <h2 class="title" data-reveal data-i18n-html="shop_title">La collection,<br />disponible en ligne</h2>
+          <p class="shop__sub" data-reveal data-i18n="shop_sub">
+            Commande directe via WhatsApp, paiement sécurisé par carte,
+            CIB / Edahabia ou espèces à la livraison.
+          </p>
+        </div>
+        <div class="shop__grid" id="shopGrid"></div>
+      </section>
+
+      <section class="stats">
+        <div class="stat">
+          <div class="stat__num" data-count="250">250</div>
+          <p data-i18n="stat1_l">composants par mouvement</p>
+        </div>
+        <div class="stat">
+          <div class="stat__num" data-count="120">120</div>
+          <p data-i18n="stat2_l">heures d'atelier</p>
+        </div>
+        <div class="stat">
+          <div class="stat__num" data-count="5">5</div>
+          <p data-i18n="stat3_l">ans de garantie</p>
+        </div>
+      </section>
+
+      <section class="cta" id="visite">
+        <p class="kicker" data-i18n="cta_kicker">Rendez-vous privé</p>
+        <h2 class="cta__title" data-i18n-html="cta_title">Le temps<br />vous attend.</h2>
+        <a class="btn btn--big magnetic" href="#hero" data-i18n="cta_btn">Prendre rendez-vous</a>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <div class="footer__brand" data-i18n="brand">My Clock</div>
+      <p class="footer__note" data-i18n="footer_note">
+        Démo d'expérience cinématique — horlogerie & objets de luxe, bilingue
+        français / arabe, thème clair et sombre. GSAP + Lenis (gratuits),
+        visuels générés par IA. Aucun abonnement, aucun service payant.
+      </p>
+      <p class="footer__copy" data-i18n="footer_copy">© 2026 · La qualité « Awwwards » n'exige pas d'outils payants.</p>
+      <p class="footer__dl">
+        <a class="btn btn--ghost" href="./downloads/my-clock-cinematic-scroll.zip" download data-i18n="dl_btn">Télécharger le code source (ZIP)</a>
+      </p>
+    </footer>
+
+    <div class="modal" id="productModal" aria-hidden="true">
+      <div class="modal__backdrop" data-close></div>
+      <div class="modal__panel" role="dialog" aria-modal="true" aria-labelledby="modalName">
+        <button class="modal__close" type="button" data-close aria-label="Fermer">×</button>
+        <div class="modal__media"><img id="modalImg" src="" alt="" /></div>
+        <div class="modal__body">
+          <p class="kicker" id="modalCat"></p>
+          <h3 class="modal__title" id="modalName"></h3>
+          <div class="modal__price" id="modalPrice"></div>
+          <p class="modal__desc" id="modalDesc"></p>
+          <ul class="specs" id="modalSpecs"></ul>
+          <div class="qty">
+            <button type="button" id="qtyMinus" aria-label="−">−</button>
+            <span id="qtyVal">1</span>
+            <button type="button" id="qtyPlus" aria-label="+">+</button>
+          </div>
+          <br />
+          <a class="btn btn--wa" id="modalWa" href="https://wa.me/218913442640" target="_blank" rel="noopener" data-i18n="m_order_wa">Commander via WhatsApp</a>
+          <div class="pay">
+            <h4 data-i18n="m_pay_title">Paiement sécurisé</h4>
+            <div class="pay__chips" id="payChips">
+              <button type="button" class="chip is-active" data-pay="card" data-i18n="m_pay_card">Carte bancaire</button>
+              <button type="button" class="chip" data-pay="cib" data-i18n="m_pay_cib">CIB</button>
+              <button type="button" class="chip" data-pay="edahabia" data-i18n="m_pay_edahabia">Edahabia</button>
+              <button type="button" class="chip" data-pay="cash" data-i18n="m_pay_cash">Espèces à la livraison</button>
+              <button type="button" class="chip" data-pay="crypto" data-i18n="m_pay_crypto">Crypto (USDT)</button>
+            </div>
+            <div class="pay__fields" id="payFields">
+              <input type="text" id="cardName" data-i18n-ph="m_card_name" placeholder="Nom sur la carte" autocomplete="cc-name" />
+              <input type="text" id="cardNumber" data-i18n-ph="m_card_number" placeholder="Numéro de carte" inputmode="numeric" autocomplete="cc-number" />
+              <input type="text" id="cardExp" data-i18n-ph="m_card_exp" placeholder="MM/AA" inputmode="numeric" autocomplete="cc-exp" />
+              <input type="text" id="cardCvc" data-i18n-ph="m_card_cvc" placeholder="CVC" inputmode="numeric" autocomplete="cc-csc" />
+            </div>
+            <button type="button" class="btn btn--pay" id="payConfirm" data-i18n="m_confirm">Confirmer la commande</button>
+            <div class="pay__success" id="paySuccess">
+              <strong data-i18n="m_success">Commande confirmée !</strong>
+              <span data-i18n="m_success_text">Ceci est une démonstration — aucun paiement réel n'a été effectué. Notre équipe vous contacte pour la livraison.</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <a class="wa-fab" id="waFab" href="https://wa.me/218913442640" target="_blank" rel="noopener">
+      <span class="wa-fab__label" data-i18n="wa_tooltip">Commander sur WhatsApp</span>
+      <span class="wa-fab__btn" aria-label="WhatsApp">
+        <svg width="30" height="30" viewBox="0 0 24 24" fill="#fff" aria-hidden="true"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+      </span>
+    </a>
+
+    <script src="./vendor/gsap.min.js"></script>
+    <script src="./vendor/ScrollTrigger.min.js"></script>
+    <script src="./vendor/SplitText.min.js"></script>
+    <script src="./vendor/lenis.min.js"></script>
+    <script>
+      (function () {
+        "use strict";
+
+        /* =================== Thème clair / sombre =================== */
+        var THEME = null;
+        try {
+          THEME = localStorage.getItem("mira-theme");
+        } catch (e) {}
+        if (THEME !== "dark" && THEME !== "light") {
+          THEME =
+            window.matchMedia &&
+            window.matchMedia("(prefers-color-scheme: dark)").matches
+              ? "dark"
+              : "light";
+        }
+        function applyTheme() {
+          document.documentElement.setAttribute("data-theme", THEME);
+          var label = document.getElementById("themeLabel");
+          if (label) label.textContent = THEME === "dark" ? "☀" : "☾";
+          var meta = document.querySelector('meta[name="theme-color"]');
+          if (meta)
+            meta.setAttribute("content", THEME === "dark" ? "#0a0e15" : "#f5f7fa");
+        }
+        applyTheme();
+        document.getElementById("themeToggle").addEventListener("click", function () {
+          THEME = THEME === "dark" ? "light" : "dark";
+          try {
+            localStorage.setItem("mira-theme", THEME);
+          } catch (e) {}
+          applyTheme();
+        });
+
+        /* =================== Bilinguisme (FR / AR) =================== */
+        var I18N = {
+          fr: {
+            brand: "My Clock",
+            nav_manifeste: "Manifeste",
+            nav_espaces: "Pièces",
+            nav_matiere: "Savoir-faire",
+            nav_visite: "Rendez-vous",
+            hero_kicker: "Collection 2026 · Montres & objets de luxe",
+            hero_title: "Le temps,<br>sculpté.",
+            hero_sub: "Des pièces d'exception façonnées à la main,<br>où chaque seconde devient une œuvre.",
+            scroll: "Défiler",
+            manifesto: "Nous ne mesurons pas le temps. Nous le sculptons — dans l'or, l'argent, l'acier et le saphir, jusqu'à ce que chaque battement devienne un silence parfait.",
+            gal_kicker: "01 — Les pièces",
+            gal_title: "Façonnées pour<br>traverser le temps",
+            card1_t: "Le Chronographe",
+            card1_s: "Acier poli, cadran bleu nuit",
+            card2_t: "L'Or",
+            card2_s: "Or jaune 18 carats, mouvement automatique",
+            card3_t: "L'Argent",
+            card3_s: "Bijoux d'argent massif gravés main, saphir",
+            card4_t: "Les Trésors",
+            card4_s: "Chaînes, bagues et stylos en or",
+            card5_t: "Le Plongeur",
+            card5_s: "Bézel rotatif, étanche 300 m",
+            card6_t: "Le Squelette",
+            card6_s: "Mouvement apparent, or et acier",
+            feat_kicker: "02 — Le savoir-faire",
+            feat_title: "La patience<br>comme matière",
+            feat_text: "Chaque pièce naît de cent heures d'atelier : guillochage, anglage, polissage noir. Nos maîtres horlogers signent chaque mouvement, puis le laissent au temps.",
+            feat_btn: "Découvrir la collection",
+            nav_boutique: "Boutique",
+            shop_kicker: "03 — La boutique",
+            shop_title: "La collection,<br>disponible en ligne",
+            shop_sub: "Commande directe via WhatsApp, paiement sécurisé par carte, CIB / Edahabia ou espèces à la livraison.",
+            badge_new: "Nouveau",
+            badge_excl: "Exclusif",
+            m_specs: "Caractéristiques",
+            m_movement: "Mouvement",
+            m_water: "Étanchéité",
+            m_materials: "Matériaux",
+            m_warranty: "Garantie",
+            m_qty: "Quantité",
+            m_order_wa: "Commander via WhatsApp",
+            m_pay_title: "Paiement sécurisé",
+            m_pay_card: "Carte bancaire",
+            m_pay_cib: "CIB",
+            m_pay_edahabia: "Edahabia",
+            m_pay_cash: "Espèces à la livraison",
+            m_pay_crypto: "Crypto (USDT)",
+            m_card_name: "Nom sur la carte",
+            m_card_number: "Numéro de carte",
+            m_card_exp: "MM/AA",
+            m_card_cvc: "CVC",
+            m_confirm: "Confirmer la commande",
+            m_success: "Commande confirmée !",
+            m_success_text: "Ceci est une démonstration — aucun paiement réel n'a été effectué. Notre équipe vous contacte pour la livraison.",
+            m_close: "Fermer",
+            wa_tooltip: "Commander sur WhatsApp",
+            dl_btn: "Télécharger le code source (ZIP)",
+            stat1_l: "composants par mouvement",
+            stat2_l: "heures d'atelier",
+            stat3_l: "ans de garantie",
+            cta_kicker: "Rendez-vous privé",
+            cta_title: "Le temps<br>vous attend.",
+            cta_btn: "Prendre rendez-vous",
+            footer_note: "Démo d'expérience cinématique — horlogerie & objets de luxe, bilingue français / arabe, thème clair et sombre. GSAP + Lenis (gratuits), visuels générés par IA. Aucun abonnement, aucun service payant.",
+            footer_copy: "© 2026 · La qualité « Awwwards » n'exige pas d'outils payants.",
+          },
+          ar: {
+            brand: "ساعتي",
+            nav_manifeste: "الرؤية",
+            nav_espaces: "القطع",
+            nav_matiere: "الحرفة",
+            nav_visite: "موعد خاص",
+            hero_kicker: "المجموعة 2026 · ساعات وقطع فاخرة",
+            hero_title: "الزمن<br>منحوت.",
+            hero_sub: "قطع استثنائية مصنوعة يدويًا،<br>حيث تصبح كل ثانية عملًا فنيًا.",
+            scroll: "مرّر",
+            manifesto: "نحن لا نقيس الزمن، بل ننحته — في الذهب والفضة والفولاذ والياقوت، حتى يصبح كل نبض صمتًا مثاليًا.",
+            gal_kicker: "01 — القطع",
+            gal_title: "مصنوعة لتعبر<br>الزمن",
+            card1_t: "الكرونوغراف",
+            card1_s: "صقل فولاذي، وميناء أزرق الليل",
+            card2_t: "الذهب",
+            card2_s: "ذهب أصفر عيار 18، بحركة أوتوماتيكية",
+            card3_t: "الفضة",
+            card3_s: "مجوهرات من الفضة الخالصة محفورة يدويًا، مع ياقوت",
+            card4_t: "الكنوز",
+            card4_s: "سلاسل وخواتم وأقلام من الذهب",
+            card5_t: "الغوّاص",
+            card5_s: "إطار دوّار، مقاوم للماء حتى 300 متر",
+            card6_t: "الهيكل",
+            card6_s: "حركة ظاهرة، ذهب وفولاذ",
+            feat_kicker: "02 — الحرفة",
+            feat_title: "الصبر<br>كمادة",
+            feat_text: "كل قطعة تولد من مئة ساعة عمل في المشغل: النقش والتدريج والتلميع الأسود. يوقّع حرفيونا كل حركة، ثم يتركونها للزمن.",
+            feat_btn: "اكتشف المجموعة",
+            nav_boutique: "المتجر",
+            shop_kicker: "03 — المتجر",
+            shop_title: "المجموعة،<br>متاحة عبر الإنترنت",
+            shop_sub: "اطلب مباشرة عبر واتساب، مع دفع آمن بالبطاقة أو CIB / الذهبية أو عند التسليم.",
+            badge_new: "جديد",
+            badge_excl: "حصري",
+            m_specs: "المواصفات",
+            m_movement: "الحركة",
+            m_water: "مقاومة الماء",
+            m_materials: "الخامات",
+            m_warranty: "الضمان",
+            m_qty: "الكمية",
+            m_order_wa: "اطلب عبر واتساب",
+            m_pay_title: "دفع آمن",
+            m_pay_card: "بطاقة مصرفية",
+            m_pay_cib: "CIB",
+            m_pay_edahabia: "الذهبية",
+            m_pay_cash: "الدفع عند التسليم",
+            m_pay_crypto: "عملات رقمية (USDT)",
+            m_card_name: "الاسم على البطاقة",
+            m_card_number: "رقم البطاقة",
+            m_card_exp: "شهر/سنة",
+            m_card_cvc: "الرمز",
+            m_confirm: "تأكيد الطلب",
+            m_success: "تم تأكيد الطلب!",
+            m_success_text: "هذا عرض توضيحي — لم تتم أي عملية دفع حقيقية. سيتواصل فريقنا معك للتسليم.",
+            m_close: "إغلاق",
+            wa_tooltip: "اطلب عبر واتساب",
+            dl_btn: "تحميل الكود المصدري (ZIP)",
+            stat1_l: "قطعة في كل حركة",
+            stat2_l: "ساعة عمل",
+            stat3_l: "سنوات ضمان",
+            cta_kicker: "موعد خاص",
+            cta_title: "الزمن<br>ينتظرك.",
+            cta_btn: "احجز موعدًا",
+            footer_note: "نموذج تجربة سينمائية — ساعات وقطع فاخرة، ثنائي اللغة (العربية / الفرنسية)، بثيم فاتح وداكن. GSAP + Lenis (مجانيان)، صور مولّدة بالذكاء الاصطناعي. بلا اشتراكات ولا خدمات مدفوعة.",
+            footer_copy: "© 2026 · جودة عالمية دون أدوات مدفوعة.",
+          },
+        };
+
+        var LANG = "fr";
+        try {
+          if (localStorage.getItem("mira-lang") === "ar") LANG = "ar";
+        } catch (e) {}
+
+        function applyLang() {
+          document.documentElement.lang = LANG;
+          document.documentElement.dir = LANG === "ar" ? "rtl" : "ltr";
+          var dict = I18N[LANG];
+          document.querySelectorAll("[data-i18n]").forEach(function (el) {
+            var k = el.getAttribute("data-i18n");
+            if (dict[k]) el.textContent = dict[k];
+          });
+          document.querySelectorAll("[data-i18n-html]").forEach(function (el) {
+            var k = el.getAttribute("data-i18n-html");
+            if (dict[k]) el.innerHTML = dict[k];
+          });
+          document.querySelectorAll("[data-i18n-ph]").forEach(function (el) {
+            var k = el.getAttribute("data-i18n-ph");
+            if (dict[k]) el.setAttribute("placeholder", dict[k]);
+          });
+          var label = document.getElementById("langLabel");
+          if (label) label.textContent = LANG === "ar" ? "FR" : "ع";
+          document.title =
+            LANG === "ar" ? "ساعتي — الزمن منحوت" : "My Clock — Le temps, sculpté";
+        }
+        applyLang();
+
+        document.getElementById("langToggle").addEventListener("click", function () {
+          try {
+            localStorage.setItem("mira-lang", LANG === "ar" ? "fr" : "ar");
+            sessionStorage.setItem("mira-skip-intro", "1");
+          } catch (e) {}
+          location.reload();
+        });
+
+        /* Garde-fou : le préchargeur ne reste jamais bloqué. */
+        var preloader = document.getElementById("preloader");
+        setTimeout(function () {
+          if (preloader && !window.__preloaderDone) {
+            window.__preloaderDone = true;
+            preloader.style.display = "none";
+          }
+        }, 4500);
+
+        var reduceMotion = window.matchMedia(
+          "(prefers-reduced-motion: reduce)"
+        ).matches;
+        if (reduceMotion) {
+          window.__preloaderDone = true;
+          preloader.style.display = "none";
+          return; /* contenu entièrement visible, sans animation */
+        }
+
+        /* Au changement de langue : plus d'intro, on va droit au contenu. */
+        var skipIntro = false;
+        try {
+          skipIntro = sessionStorage.getItem("mira-skip-intro") === "1";
+          sessionStorage.removeItem("mira-skip-intro");
+        } catch (e) {}
+
+        function isRtl() {
+          return document.documentElement.dir === "rtl";
+        }
+
+        /* L'init attend la police (l'arabe est servi par Cairo) pour que
+           SplitText découpe sur les vraies boîtes de ligne. */
+        var started = false;
+        function start() {
+          if (started) return;
+          started = true;
+          init();
+        }
+        if (document.fonts && document.fonts.ready) {
+          document.fonts.ready.then(start);
+          setTimeout(start, 2500);
+        } else {
+          start();
+        }
+
+        function init() {
+          try {
+          gsap.registerPlugin(ScrollTrigger, SplitText);
+
+          /* ---------- Défilement fluide (Lenis) ---------- */
+          var lenis = new Lenis({
+            duration: 1.15,
+            smoothWheel: true,
+            touchMultiplier: 1.4,
+          });
+          lenis.on("scroll", ScrollTrigger.update);
+          gsap.ticker.add(function (time) {
+            lenis.raf(time * 1000);
+          });
+          gsap.ticker.lagSmoothing(0);
+          window.__lenis = lenis;
+
+          document.querySelectorAll('a[href^="#"]').forEach(function (a) {
+            a.addEventListener("click", function (e) {
+              var id = a.getAttribute("href");
+              if (id && id.length > 1 && document.querySelector(id)) {
+                e.preventDefault();
+                lenis.scrollTo(id, { duration: 1.5 });
+              }
+            });
+          });
+
+          /* ---------- Grain papier (bruit canvas) ---------- */
+          (function grain() {
+            var c = document.createElement("canvas");
+            c.width = 160;
+            c.height = 160;
+            var ctx = c.getContext("2d");
+            var img = ctx.createImageData(160, 160);
+            for (var i = 0; i < img.data.length; i += 4) {
+              var v = Math.random() * 120;
+              img.data[i] = img.data[i + 1] = img.data[i + 2] = v;
+              img.data[i + 3] = 22;
+            }
+            ctx.putImageData(img, 0, 0);
+            document.querySelector(".grain").style.backgroundImage =
+              "url(" + c.toDataURL() + ")";
+          })();
+
+          /* ---------- Progression + en-tête ---------- */
+          var bar = document.querySelector(".progress__bar");
+          window.addEventListener(
+            "scroll",
+            function () {
+              var y = window.scrollY;
+              var max =
+                document.documentElement.scrollHeight - window.innerHeight;
+              bar.style.transform =
+                "scaleX(" + (max > 0 ? Math.min(1, y / max) : 0) + ")";
+            },
+            { passive: true }
+          );
+
+          /* ---------- Curseur sur mesure ---------- */
+          if (window.matchMedia("(hover: hover) and (pointer: fine)").matches) {
+            var cursor = document.querySelector(".cursor");
+            var ring = document.querySelector(".cursor__ring");
+            var dot = document.querySelector(".cursor__dot");
+            cursor.classList.add("is-on");
+            var xTo = gsap.quickTo(ring, "x", { duration: 0.55, ease: "power3" });
+            var yTo = gsap.quickTo(ring, "y", { duration: 0.55, ease: "power3" });
+            var xd = gsap.quickTo(dot, "x", { duration: 0.12, ease: "power2" });
+            var yd = gsap.quickTo(dot, "y", { duration: 0.12, ease: "power2" });
+            window.addEventListener("mousemove", function (e) {
+              xTo(e.clientX);
+              yTo(e.clientY);
+              xd(e.clientX);
+              yd(e.clientY);
+            });
+            document.querySelectorAll("a, button, .card").forEach(function (el) {
+              el.addEventListener("mouseenter", function () {
+                cursor.classList.add("is-hover");
+              });
+              el.addEventListener("mouseleave", function () {
+                cursor.classList.remove("is-hover");
+              });
+            });
+          }
+
+          /* ---------- Préchargeur + révélation du hero ---------- */
+          var heroSplit = new SplitText(".hero__title", {
+            type: "lines",
+            mask: "lines",
+            linesClass: "sp-line",
+          });
+          gsap.set(".hero__kicker, .hero__sub, .hero__scroll", {
+            autoAlpha: 0,
+            y: 26,
+          });
+
+          function heroReveal(at) {
+            var tl = gsap.timeline();
+            tl.from(
+              heroSplit.lines,
+              {
+                yPercent: 115,
+                duration: 1.15,
+                ease: "power4.out",
+                stagger: 0.12,
+              },
+              at
+            );
+            tl.to(
+              ".hero__kicker",
+              { autoAlpha: 1, y: 0, duration: 0.8, ease: "power3.out" },
+              at + 0.25
+            );
+            tl.to(
+              ".hero__sub",
+              { autoAlpha: 1, y: 0, duration: 0.8, ease: "power3.out" },
+              at + 0.45
+            );
+            tl.to(".hero__scroll", { autoAlpha: 1, y: 0, duration: 0.8 }, at + 0.6);
+            return tl;
+          }
+
+          if (skipIntro) {
+            window.__preloaderDone = true;
+            preloader.style.display = "none";
+            heroReveal(0);
+          } else {
+            var countEl = document.getElementById("preloaderCount");
+            var counter = { v: 0 };
+            var intro = gsap.timeline();
+            intro.to(
+              counter,
+              {
+                v: 100,
+                duration: 1.5,
+                ease: "power2.inOut",
+                onUpdate: function () {
+                  countEl.textContent = Math.round(counter.v);
+                },
+              },
+              0
+            );
+            intro.to(
+              "#preloaderBar",
+              { scaleX: 1, duration: 1.5, ease: "power2.inOut" },
+              0
+            );
+            intro.to("#preloader", {
+              yPercent: -100,
+              duration: 0.95,
+              ease: "power4.inOut",
+              onComplete: function () {
+                window.__preloaderDone = true;
+                preloader.style.display = "none";
+              },
+            });
+            intro.add(heroReveal(0), "-=0.5");
+          }
+
+          /* ---------- Hero : séquence photo scrubbée au scroll ----------
+             Effet « vidéo pilotée par la souris » : les trois photos se
+             succèdent en fondu enchaîné avec zoom continu — le principe des
+             démos Higgsfield, ici en images. */
+          var heroFrames = gsap.utils.toArray(".hero__frame");
+          heroFrames.forEach(function (frame, i) {
+            gsap.set(frame, { autoAlpha: i === 0 ? 1 : 0, scale: 1.06 });
+          });
+          var heroTl = gsap.timeline({
+            scrollTrigger: {
+              trigger: ".hero",
+              start: "top top",
+              end: "+=170%",
+              pin: true,
+              scrub: 0.7,
+            },
+          });
+          heroFrames.forEach(function (frame, i) {
+            heroTl.to(
+              frame,
+              { scale: 1.18, ease: "none", duration: heroFrames.length },
+              0
+            );
+            if (i > 0) {
+              heroTl.to(
+                frame,
+                { autoAlpha: 1, ease: "none", duration: 0.5 },
+                i - 0.25
+              );
+            }
+            if (i < heroFrames.length - 1) {
+              heroTl.to(
+                frame,
+                { autoAlpha: 0, ease: "none", duration: 0.5 },
+                i + 0.75
+              );
+            }
+          });
+          heroTl.to(
+            ".hero__scroll",
+            { autoAlpha: 0, ease: "none", duration: 0.3 },
+            0.05
+          );
+          heroTl.to(
+            ".hero__content",
+            { yPercent: -14, autoAlpha: 0, ease: "none", duration: 0.9 },
+            heroFrames.length - 1.1
+          );
+
+          /* ---------- Manifeste : mots illuminés au scroll ---------- */
+          var mSplit = new SplitText(".manifesto__text", {
+            type: "words",
+            wordsClass: "word",
+          });
+          gsap.set(mSplit.words, { opacity: 0.12 });
+          gsap.to(mSplit.words, {
+            opacity: 1,
+            stagger: 0.05,
+            ease: "none",
+            scrollTrigger: {
+              trigger: ".manifesto",
+              start: "top top",
+              end: "+=150%",
+              pin: true,
+              scrub: 0.6,
+            },
+          });
+
+          /* ---------- Galerie horizontale épinglée (sens RTL géré) ---------- */
+          var track = document.getElementById("galleryTrack");
+          function trackDistance() {
+            return Math.max(0, track.scrollWidth - window.innerWidth + 60);
+          }
+          var scrollTween = gsap.to(track, {
+            x: function () {
+              return (isRtl() ? 1 : -1) * trackDistance();
+            },
+            ease: "none",
+            scrollTrigger: {
+              trigger: ".gallery",
+              start: "top top",
+              end: function () {
+                return "+=" + trackDistance();
+              },
+              pin: true,
+              scrub: 1,
+              invalidateOnRefresh: true,
+              anticipatePin: 1,
+            },
+          });
+          gsap.utils.toArray(".card").forEach(function (card) {
+            gsap.fromTo(
+              card.querySelector("img"),
+              { xPercent: -6 },
+              {
+                xPercent: 6,
+                ease: "none",
+                scrollTrigger: {
+                  trigger: card,
+                  containerAnimation: scrollTween,
+                  start: "left right",
+                  end: "right left",
+                  scrub: true,
+                },
+              }
+            );
+            gsap.from(card.querySelector(".card__caption"), {
+              autoAlpha: 0,
+              y: 30,
+              duration: 0.7,
+              ease: "power2.out",
+              scrollTrigger: {
+                trigger: card,
+                containerAnimation: scrollTween,
+                start: "left 78%",
+              },
+            });
+          });
+
+          /* ---------- Savoir-faire : révélation par volet ---------- */
+          gsap.fromTo(
+            ".feature__media",
+            { clipPath: "inset(0% 100% 0% 0%)" },
+            {
+              clipPath: "inset(0% 0% 0% 0%)",
+              ease: "none",
+              scrollTrigger: {
+                trigger: ".feature",
+                start: "top 80%",
+                end: "top 18%",
+                scrub: 0.7,
+              },
+            }
+          );
+          gsap.fromTo(
+            ".feature__media img",
+            { scale: 1.25 },
+            {
+              scale: 1,
+              ease: "none",
+              scrollTrigger: {
+                trigger: ".feature",
+                start: "top 80%",
+                end: "bottom 45%",
+                scrub: 0.7,
+              },
+            }
+          );
+          var fSplit = new SplitText(".feature__title", {
+            type: "lines",
+            mask: "lines",
+            linesClass: "sp-line",
+          });
+          gsap.from(fSplit.lines, {
+            yPercent: 110,
+            duration: 1,
+            ease: "power4.out",
+            stagger: 0.12,
+            scrollTrigger: { trigger: ".feature__content", start: "top 82%" },
+          });
+          gsap.from(".feature__content .kicker, .feature__text, .feature .btn", {
+            autoAlpha: 0,
+            y: 28,
+            duration: 0.9,
+            stagger: 0.12,
+            ease: "power3.out",
+            scrollTrigger: { trigger: ".feature__content", start: "top 78%" },
+          });
+
+          /* ---------- Chiffres animés ---------- */
+          gsap.from(".stat", {
+            autoAlpha: 0,
+            y: 36,
+            duration: 0.9,
+            stagger: 0.12,
+            ease: "power3.out",
+            scrollTrigger: { trigger: ".stats", start: "top 82%" },
+          });
+          gsap.utils.toArray(".stat__num").forEach(function (el) {
+            var target = parseInt(el.getAttribute("data-count"), 10) || 0;
+            var obj = { v: 0 };
+            ScrollTrigger.create({
+              trigger: el,
+              start: "top 88%",
+              once: true,
+              onEnter: function () {
+                el.textContent = "0";
+                gsap.to(obj, {
+                  v: target,
+                  duration: 1.7,
+                  ease: "power2.out",
+                  onUpdate: function () {
+                    el.textContent = Math.round(obj.v);
+                  },
+                });
+              },
+            });
+          });
+
+          /* ---------- Appel à l'action ---------- */
+          var cSplit = new SplitText(".cta__title", {
+            type: "lines",
+            mask: "lines",
+            linesClass: "sp-line",
+          });
+          gsap.from(cSplit.lines, {
+            yPercent: 115,
+            duration: 1.1,
+            ease: "power4.out",
+            stagger: 0.14,
+            scrollTrigger: { trigger: ".cta", start: "top 72%" },
+          });
+          gsap.from(".cta .kicker, .cta .btn", {
+            autoAlpha: 0,
+            y: 26,
+            duration: 0.9,
+            stagger: 0.15,
+            scrollTrigger: { trigger: ".cta", start: "top 72%" },
+          });
+
+          /* ---------- Boutons magnétiques ---------- */
+          if (window.matchMedia("(hover: hover) and (pointer: fine)").matches) {
+            document.querySelectorAll(".magnetic").forEach(function (btn) {
+              var bx = gsap.quickTo(btn, "x", { duration: 0.4, ease: "power3" });
+              var by = gsap.quickTo(btn, "y", { duration: 0.4, ease: "power3" });
+              btn.addEventListener("mousemove", function (e) {
+                var r = btn.getBoundingClientRect();
+                bx((e.clientX - r.left - r.width / 2) * 0.28);
+                by((e.clientY - r.top - r.height / 2) * 0.38);
+              });
+              btn.addEventListener("mouseleave", function () {
+                bx(0);
+                by(0);
+              });
+            });
+          }
+
+          /* ---------- Révélations génériques ---------- */
+          gsap.utils.toArray("[data-reveal]").forEach(function (el) {
+            gsap.from(el, {
+              autoAlpha: 0,
+              y: 34,
+              duration: 1,
+              ease: "power3.out",
+              scrollTrigger: { trigger: el, start: "top 88%" },
+            });
+          });
+
+          /* ---------- Recalcul après chargement des images ---------- */
+          window.addEventListener("load", function () {
+            ScrollTrigger.refresh();
+          });
+          } catch (err) {
+            /* Une erreur d'animation ne doit jamais casser la page :
+               le contenu reste visible, les sélecteurs restent actifs. */
+            if (window.console && console.error) console.error(err);
+            var pl = document.getElementById("preloader");
+            if (pl) pl.style.display = "none";
+          }
+        }
+      })();
+
+      /* ============ Boutique : catalogue, fiche produit, paiement ============ */
+      (function () {
+        "use strict";
+        var WA_NUMBER = "218913442640";
+        var lang = document.documentElement.lang === "ar" ? "ar" : "fr";
+
+        var S = (lang === "ar"
+          ? {
+              cat_watch: "ساعة",
+              cat_jewel: "مجوهرات وقطع",
+              view: "عرض التفاصيل",
+              badge_new: "جديد",
+              badge_excl: "حصري",
+              qty_label: "الكمية",
+            }
+          : {
+              cat_watch: "Montre",
+              cat_jewel: "Bijou & objet",
+              view: "Voir les détails",
+              badge_new: "Nouveau",
+              badge_excl: "Exclusif",
+              qty_label: "Quantité",
+            });
+
+        var PRODUCTS = [
+          {
+            id: "MC-01",
+            img: "watch-hero.jpg",
+            price: 8900,
+            badge: "excl",
+            cat: "watch",
+            fr: {
+              name: "Héritage Blue Gold",
+              desc: "Cadran bleu nuit soleillé, index en or jaune, bracelet acier et or. La pièce signature de la maison.",
+              specs: ["Automatique — 42 h", "100 m", "Acier 316L & or 18K", "5 ans"],
+            },
+            ar: {
+              name: "إرث أزرق وذهبي",
+              desc: "ميناء أزرق ليلي بتأثير شمسي، مؤشرات ذهبية، سوار من الفولاذ والذهب. القطعة المميزة للدار.",
+              specs: ["أوتوماتيكي — 42 ساعة", "100 متر", "فولاذ 316L وذهب 18 قيراط", "5 سنوات"],
+            },
+          },
+          {
+            id: "MC-02",
+            img: "watch-blue.jpg",
+            price: 6800,
+            badge: "new",
+            cat: "watch",
+            fr: {
+              name: "Le Chronographe",
+              desc: "Chronographe sport-élégant au cadran bleu nuit, poussoirs polis, acier 316L.",
+              specs: ["Chronographe automatique", "200 m", "Acier 316L poli", "5 ans"],
+            },
+            ar: {
+              name: "الكرونوغراف",
+              desc: "كرونوغراف رياضي أنيق بميناء أزرق ليلي، مكابس مصقولة، فولاذ 316L.",
+              specs: ["كرونوغراف أوتوماتيكي", "200 متر", "فولاذ 316L مصقول", "5 سنوات"],
+            },
+          },
+          {
+            id: "MC-03",
+            img: "watch-gold.jpg",
+            price: 12400,
+            badge: "excl",
+            cat: "watch",
+            fr: {
+              name: "L'Or Royal",
+              desc: "Or jaune 18 carats intégral, cadran champagne soleillé, mouvement manufacture.",
+              specs: ["Automatique manufacture", "50 m", "Or jaune 18K", "5 ans"],
+            },
+            ar: {
+              name: "الذهب الملكي",
+              desc: "ذهب أصفر 18 قيراط بالكامل، ميناء ذهبي بتأثير شمسي، حركة مصنّعة.",
+              specs: ["أوتوماتيكي مصنّع", "50 متر", "ذهب أصفر 18 قيراط", "5 سنوات"],
+            },
+          },
+          {
+            id: "MC-04",
+            img: "watch-diver.jpg",
+            price: 5200,
+            badge: "new",
+            cat: "watch",
+            fr: {
+              name: "Le Plongeur 300",
+              desc: "Bézel rotatif bleu, index luminescents, étanche 300 mètres — née pour l'océan.",
+              specs: ["Automatique — 38 h", "300 m", "Acier 316L", "5 ans"],
+            },
+            ar: {
+              name: "الغوّاص 300",
+              desc: "إطار دوّار أزرق، مؤشرات مضيئة، مقاوم للماء حتى 300 متر — وُلدت للمحيط.",
+              specs: ["أوتوماتيكي — 38 ساعة", "300 متر", "فولاذ 316L", "5 سنوات"],
+            },
+          },
+          {
+            id: "MC-05",
+            img: "watch-skeleton.jpg",
+            price: 9600,
+            badge: "excl",
+            cat: "watch",
+            fr: {
+              name: "Le Squelette",
+              desc: "Cadran squeletté révélant rouages or et vis bleuies, saphir bombé double face.",
+              specs: ["Squelette manuel — 72 h", "30 m", "Acier & or 18K", "5 ans"],
+            },
+            ar: {
+              name: "الهيكل",
+              desc: "ميناء مكشوف يكشف التروس الذهبية والمسامير الزرقاء، زجاج ياقوتي مزدوج.",
+              specs: ["هيكل يدوي — 72 ساعة", "30 متر", "فولاذ وذهب 18 قيراط", "5 سنوات"],
+            },
+          },
+          {
+            id: "MC-06",
+            img: "silver.jpg",
+            price: 3200,
+            badge: null,
+            cat: "jewel",
+            fr: {
+              name: "Ensemble Argent & Saphir",
+              desc: "Boutons de manchette, chaîne et bague en argent massif gravés main, saphir taille coussin.",
+              specs: ["—", "—", "Argent 925 & saphir", "2 ans"],
+            },
+            ar: {
+              name: "طقم فضة وياقوت",
+              desc: "أزرار أكمام وسلسلة وخاتم من الفضة الخالصة محفورة يدويًا، مع ياقوت.",
+              specs: ["—", "—", "فضة 925 وياقوت", "سنتان"],
+            },
+          },
+          {
+            id: "MC-07",
+            img: "gold.jpg",
+            price: 7800,
+            badge: null,
+            cat: "jewel",
+            fr: {
+              name: "La Collection Or",
+              desc: "Bagues, chaîne et stylo-plume en or jaune — pour elle et pour lui, dans un écrin signé.",
+              specs: ["—", "—", "Or jaune 18K", "2 ans"],
+            },
+            ar: {
+              name: "مجموعة الذهب",
+              desc: "خواتم وسلسلة وقلم حبر من الذهب الأصفر — لها وله، في صندوق موقّع.",
+              specs: ["—", "—", "ذهب أصفر 18 قيراط", "سنتان"],
+            },
+          },
+        ];
+
+        var grid = document.getElementById("shopGrid");
+        var modal = document.getElementById("productModal");
+        var current = null;
+        var qty = 1;
+
+        function fmtPrice(p) {
+          return "$" + Number(p).toLocaleString("en-US");
+        }
+        function specLabels() {
+          return lang === "ar"
+            ? ["الحركة", "مقاومة الماء", "الخامات", "الضمان"]
+            : ["Mouvement", "Étanchéité", "Matériaux", "Garantie"];
+        }
+        function waHref(p) {
+          var msg =
+            lang === "ar"
+              ? "مرحبًا ساعتي، يهمني «" + p.ar.name + "» (" + fmtPrice(p.price * qty) + ") — المرجع: " + p.id + " — " + S.qty_label + ": " + qty + "."
+              : "Bonjour My Clock, je suis intéressé(e) par « " + p.fr.name + " » (" + fmtPrice(p.price * qty) + ") — Référence : " + p.id + " — " + S.qty_label + " : " + qty + ".";
+          return "https://wa.me/" + WA_NUMBER + "?text=" + encodeURIComponent(msg);
+        }
+
+        function renderCards() {
+          if (!grid) return;
+          grid.innerHTML = "";
+          PRODUCTS.forEach(function (p, idx) {
+            var d = p[lang];
+            var card = document.createElement("article");
+            card.className = "pcard";
+            card.innerHTML =
+              '<div class="pcard__media"><img src="./images/' + p.img + '" alt="" loading="lazy" />' +
+              (p.badge ? '<span class="pcard__badge">' + (p.badge === "new" ? S.badge_new : S.badge_excl) + "</span>" : "") +
+              "</div>" +
+              '<div class="pcard__body">' +
+              '<p class="pcard__cat">' + (p.cat === "watch" ? S.cat_watch : S.cat_jewel) + "</p>" +
+              '<h3 class="pcard__name">' + d.name + "</h3>" +
+              '<div class="pcard__row"><span class="pcard__price">' + fmtPrice(p.price) + '</span><span class="pcard__cta">' + S.view + " →</span></div>" +
+              "</div>";
+            card.addEventListener("click", function () { openModal(idx); });
+            grid.appendChild(card);
+          });
+          if (window.gsap && window.ScrollTrigger) {
+            gsap.registerPlugin(ScrollTrigger);
+            gsap.from(".pcard", {
+              autoAlpha: 0,
+              y: 40,
+              duration: 0.9,
+              stagger: 0.1,
+              ease: "power3.out",
+              scrollTrigger: { trigger: "#shopGrid", start: "top 88%" },
+            });
+          }
+        }
+
+        function openModal(idx) {
+          current = PRODUCTS[idx];
+          qty = 1;
+          var d = current[lang];
+          document.getElementById("modalImg").src = "./images/" + current.img;
+          document.getElementById("modalCat").textContent = current.cat === "watch" ? S.cat_watch : S.cat_jewel;
+          document.getElementById("modalName").textContent = d.name;
+          document.getElementById("modalPrice").textContent = fmtPrice(current.price);
+          document.getElementById("modalDesc").textContent = d.desc;
+          var labels = specLabels();
+          document.getElementById("modalSpecs").innerHTML = d.specs
+            .map(function (v, i) { return "<li><span>" + labels[i] + "</span><span>" + v + "</span></li>"; })
+            .join("");
+          document.getElementById("qtyVal").textContent = "1";
+          document.getElementById("modalWa").href = waHref(current);
+          document.getElementById("paySuccess").classList.remove("is-on");
+          document.getElementById("payFields").style.display = "";
+          document.getElementById("payConfirm").style.display = "";
+          modal.classList.add("is-open");
+          modal.setAttribute("aria-hidden", "false");
+          if (window.__lenis) window.__lenis.stop();
+          else document.body.style.overflow = "hidden";
+        }
+
+        function closeModal() {
+          modal.classList.remove("is-open");
+          modal.setAttribute("aria-hidden", "true");
+          if (window.__lenis) window.__lenis.start();
+          else document.body.style.overflow = "";
+        }
+
+        function refreshQty() {
+          document.getElementById("qtyVal").textContent = String(qty);
+          document.getElementById("modalPrice").textContent = fmtPrice(current.price * qty);
+          document.getElementById("modalWa").href = waHref(current);
+        }
+
+        /* Cartes */
+        renderCards();
+
+        /* Modale : fermeture */
+        modal.querySelectorAll("[data-close]").forEach(function (el) {
+          el.addEventListener("click", closeModal);
+        });
+        document.addEventListener("keydown", function (e) {
+          if (e.key === "Escape" && modal.classList.contains("is-open")) closeModal();
+        });
+
+        /* Quantité */
+        document.getElementById("qtyMinus").addEventListener("click", function () {
+          if (qty > 1) { qty--; refreshQty(); }
+        });
+        document.getElementById("qtyPlus").addEventListener("click", function () {
+          if (qty < 9) { qty++; refreshQty(); }
+        });
+
+        /* Moyens de paiement */
+        var chips = modal.querySelectorAll(".chip");
+        chips.forEach(function (chip) {
+          chip.addEventListener("click", function () {
+            chips.forEach(function (c) { c.classList.remove("is-active"); });
+            chip.classList.add("is-active");
+            var method = chip.getAttribute("data-pay");
+            /* Carte : champs visibles. Autres moyens : paiement à la commande. */
+            var showFields = method === "card" || method === "cib" || method === "edahabia";
+            document.getElementById("payFields").style.display = showFields ? "" : "none";
+          });
+        });
+
+        /* Confirmation (démo) */
+        document.getElementById("payConfirm").addEventListener("click", function () {
+          document.getElementById("payFields").style.display = "none";
+          this.style.display = "none";
+          var ok = document.getElementById("paySuccess");
+          ok.classList.add("is-on");
+          ok.scrollIntoView({ behavior: "smooth", block: "nearest" });
+        });
+
+        /* WhatsApp flottant : message général */
+        var fab = document.getElementById("waFab");
+        if (fab) {
+          fab.href =
+            "https://wa.me/" + WA_NUMBER + "?text=" +
+            encodeURIComponent(
+              lang === "ar"
+                ? "مرحبًا ساعتي، أريد الاستفسار عن المجموعة."
+                : "Bonjour My Clock, je souhaite des informations sur la collection."
+            );
+        }
+      })();
+    </script>
+  </body>
+</html>
