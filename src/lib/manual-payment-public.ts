@@ -23,6 +23,8 @@ export interface PublicManualPaymentOption {
   rate: number | null;
   feePercent: number;
   instructions: string;
+  /** Image QR code personnalisée (facultative, sinon QR généré localement pour les méthodes crypto). */
+  qrImage?: string;
 }
 
 /**
@@ -51,6 +53,7 @@ export function publicManualPaymentOptions(
       rate: pegged ? 1 : settings.rate,
       feePercent: settings.feePercent,
       instructions: settings.instructions,
+      ...(settings.qrImage ? { qrImage: settings.qrImage } : {}),
     });
   }
   return options;

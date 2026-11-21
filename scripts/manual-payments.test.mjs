@@ -21,11 +21,14 @@ import {
   availableManualPaymentMethods,
   calculateManualPaymentQuote,
   formatManualPaymentAmount,
+  isCryptoManualPaymentMethod,
+  isDirectCryptoWalletMethod,
   manualPaymentDeliveryRoute,
   manualPaymentMethodReady,
   manualPaymentPublicNotice,
   manualPaymentQuoteMatches,
   normalizeManualPaymentMethod,
+  normalizeManualPaymentQrImage,
   normalizeManualPaymentsConfig,
   validateManualPaymentInput,
 } from "../src/lib/manual-payment-core.ts";
@@ -227,7 +230,73 @@ test("le schéma Zod accepte un objet partiel historique et les nouvelles devise
     assert.equal(legacyParsed.data.binance_pay.enabled, false);
     assert.equal(legacyParsed.data.binance_pay.currency, "USDT");
     assert.equal(legacyParsed.data.usdt_bep20.currency, "USDT");
+    assert.equal(legacyParsed.data.binance_pay.qrImage, "");
   }
+
+  const validQr = manualPaymentsConfigSchema.safeParse({
+    binance_pay: {
+      ...SKRILL,
+      account: "123456789",
+      currency: "USDT",
+      qrImage: "/api/media/qr-binance.png",
+    },
+  });
+  assert.equal(validQr.success, true);
+
+  const unsafeQr = manualPaymentsConfigSchema.safeParse({
+    binance_pay: {
+      ...SKRILL,
+      account: "123456789",
+      currency: "USDT",
+      qrImage: "javascript:alert(1)",
+    },
+  });
+  assert.equal(unsafeQr.success, false);
+});
+
+test("QR code crypto : détection des méthodes, assainissement d'image et câblage UI", () => {
+  assert.equal(isCryptoManualPaymentMethod("binance_pay"), true);
+  assert.equal(isCryptoManualPaymentMethod("usdt_trc20"), true);
+  assert.equal(isCryptoManualPaymentMethod("skrill"), false);
+  assert.equal(isDirectCryptoWalletMethod("usdt_bep20"), true);
+  assert.equal(isDirectCryptoWalletMethod("binance_pay"), false);
+
+  assert.equal(normalizeManualPaymentQrImage("/api/media/qr.png"), "/api/media/qr.png");
+  assert.equal(normalizeManualPaymentQrImage("https://cdn.example.com/qr.png"), "https://cdn.example.com/qr.png");
+  assert.equal(normalizeManualPaymentQrImage("javascript:alert(1)"), "");
+  assert.equal(normalizeManualPaymentQrImage("http://insecure.example.com/qr.png"), "");
+  assert.equal(normalizeManualPaymentQrImage("//evil.example.com/qr.png"), "");
+
+  const options = publicManualPaymentOptions({
+    binance_pay: {
+      ...SKRILL,
+      account: "99887766",
+      currency: "USDT",
+      qrImage: "/api/media/binance-qr.png",
+      enabled: true,
+    },
+    usdt_trc20: {
+      ...SKRILL,
+      account: "TXyz123456",
+      currency: "USDT",
+      qrImage: "javascript:alert(1)",
+      enabled: true,
+    },
+  });
+  const binance = options.find((item) => item.method === "binance_pay");
+  const trc20 = options.find((item) => item.method === "usdt_trc20");
+  assert.equal(binance?.qrImage, "/api/media/binance-qr.png");
+  assert.equal(trc20?.qrImage, undefined);
+
+  const formCode = code(read("src/components/manual-payment-form.tsx"));
+  assert.match(formCode, /CryptoQrCode/);
+  assert.match(formCode, /isCryptoManualPaymentMethod/);
+  const qrComponent = code(read("src/components/crypto-qr-code.tsx"));
+  assert.match(qrComponent, /QRCode\.create/);
+  assert.match(qrComponent, /buildQrSvgData/);
+  const settingsCode = code(read("src/app/admin/(panel)/settings/manual-payments-settings.tsx"));
+  assert.match(settingsCode, /\/api\/admin\/media/);
+  assert.match(settingsCode, /qrImage/);
 });
 
 test("le montant à envoyer est calculé depuis le réglage, jamais codé en dur", () => {
