@@ -1,4 +1,4 @@
-# Démo « Cinematic Scroll » — MIRA (horlogerie & objets de luxe, FR/AR)
+# Démo « Cinematic Scroll » — My Clock (horlogerie & objets de luxe, FR/AR)
 
 Démo **client** d'un site d'horlogerie et d'objets précieux avec **scroll
 cinématique**, dans le style des démos virales « Higgsfield + Claude /
@@ -27,7 +27,7 @@ ChatGPT » — réalisée **sans aucun service payant**.
 index.html          ← le site complet (HTML + CSS + JS inline, dictionnaire i18n)
 favicon.svg
 fonts/              ← Cairo variable (OFL)
-images/             ← 6 visuels IA (watch-hero, watch-blue, watch-gold, silver, gold, movement)
+images/             ← 6 visuels IA (watch-hero, watch-diver, watch-skeleton, watch-blue, watch-gold, silver, gold, movement)
 vendor/             ← gsap.min.js, ScrollTrigger.min.js, SplitText.min.js, lenis.min.js
 ```
 

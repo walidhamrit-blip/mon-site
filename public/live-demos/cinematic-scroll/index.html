@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>MIRA — Le temps, sculpté</title>
+    <title>My Clock — Le temps, sculpté</title>
     <meta
       name="description"
       content="Démo client : site d'horlogerie et d'objets de luxe bilingue (français/arabe) avec scroll cinématique et thème clair/sombre. Construite 100 % gratuitement avec GSAP + Lenis et des visuels IA."
@@ -305,8 +305,10 @@
         width: 100%; height: 118%;
         object-fit: cover;
         transform: scale(1.05);
-        will-change: transform;
+        will-change: transform, opacity;
       }
+      /* Séquence photo du hero : les frames 2-3 apparaissent au scroll. */
+      .hero__frame + .hero__frame { opacity: 0; }
       .hero__content {
         position: absolute;
         inset-inline-start: clamp(24px, 7vw, 96px);
@@ -556,14 +558,14 @@
 
     <div class="preloader" id="preloader">
       <div class="preloader__inner">
-        <div class="preloader__brand">MIRA</div>
+        <div class="preloader__brand" data-i18n="brand">My Clock</div>
         <div class="preloader__count" id="preloaderCount">0</div>
       </div>
       <div class="preloader__bar"><span id="preloaderBar"></span></div>
     </div>
 
     <header class="header" id="header">
-      <a class="header__logo" href="#hero">MIRA</a>
+      <a class="header__logo" href="#hero" data-i18n="brand">My Clock</a>
       <nav class="header__nav">
         <a href="#manifeste" data-i18n="nav_manifeste">Manifeste</a>
         <a href="#espaces" data-i18n="nav_espaces">Pièces</a>
@@ -584,7 +586,20 @@
       <section class="hero" id="hero">
         <div class="hero__media">
           <img
+            class="hero__frame"
             src="./images/watch-hero.jpg"
+            alt=""
+            loading="eager"
+          />
+          <img
+            class="hero__frame"
+            src="./images/watch-diver.jpg"
+            alt=""
+            loading="eager"
+          />
+          <img
+            class="hero__frame"
+            src="./images/watch-skeleton.jpg"
             alt=""
             loading="eager"
           />
@@ -656,6 +671,26 @@
                 <p data-i18n="card4_s">Chaînes, bagues et stylos en or</p>
               </div>
             </article>
+            <article class="card">
+              <div class="card__media">
+                <img src="./images/watch-diver.jpg" alt="" loading="lazy" />
+              </div>
+              <div class="card__caption">
+                <span class="card__index">05</span>
+                <h3 data-i18n="card5_t">Le Plongeur</h3>
+                <p data-i18n="card5_s">Bézel rotatif, étanche 300 m</p>
+              </div>
+            </article>
+            <article class="card">
+              <div class="card__media">
+                <img src="./images/watch-skeleton.jpg" alt="" loading="lazy" />
+              </div>
+              <div class="card__caption">
+                <span class="card__index">06</span>
+                <h3 data-i18n="card6_t">Le Squelette</h3>
+                <p data-i18n="card6_s">Mouvement apparent, or et acier</p>
+              </div>
+            </article>
           </div>
         </div>
       </section>
@@ -699,7 +734,7 @@
     </main>
 
     <footer class="footer">
-      <div class="footer__brand">MIRA</div>
+      <div class="footer__brand" data-i18n="brand">My Clock</div>
       <p class="footer__note" data-i18n="footer_note">
         Démo d'expérience cinématique — horlogerie & objets de luxe, bilingue
         français / arabe, thème clair et sombre. GSAP + Lenis (gratuits),
@@ -748,6 +783,7 @@
         /* =================== Bilinguisme (FR / AR) =================== */
         var I18N = {
           fr: {
+            brand: "My Clock",
             nav_manifeste: "Manifeste",
             nav_espaces: "Pièces",
             nav_matiere: "Savoir-faire",
@@ -767,6 +803,10 @@
             card3_s: "Bijoux d'argent massif gravés main, saphir",
             card4_t: "Les Trésors",
             card4_s: "Chaînes, bagues et stylos en or",
+            card5_t: "Le Plongeur",
+            card5_s: "Bézel rotatif, étanche 300 m",
+            card6_t: "Le Squelette",
+            card6_s: "Mouvement apparent, or et acier",
             feat_kicker: "02 — Le savoir-faire",
             feat_title: "La patience<br>comme matière",
             feat_text: "Chaque pièce naît de cent heures d'atelier : guillochage, anglage, polissage noir. Nos maîtres horlogers signent chaque mouvement, puis le laissent au temps.",
@@ -781,6 +821,7 @@
             footer_copy: "© 2026 · La qualité « Awwwards » n'exige pas d'outils payants.",
           },
           ar: {
+            brand: "ساعتي",
             nav_manifeste: "الرؤية",
             nav_espaces: "القطع",
             nav_matiere: "الحرفة",
@@ -800,6 +841,10 @@
             card3_s: "مجوهرات من الفضة الخالصة محفورة يدويًا، مع ياقوت",
             card4_t: "الكنوز",
             card4_s: "سلاسل وخواتم وأقلام من الذهب",
+            card5_t: "الغوّاص",
+            card5_s: "إطار دوّار، مقاوم للماء حتى 300 متر",
+            card6_t: "الهيكل",
+            card6_s: "حركة ظاهرة، ذهب وفولاذ",
             feat_kicker: "02 — الحرفة",
             feat_title: "الصبر<br>كمادة",
             feat_text: "كل قطعة تولد من مئة ساعة عمل في المشغل: النقش والتدريج والتلميع الأسود. يوقّع حرفيونا كل حركة، ثم يتركونها للزمن.",
@@ -835,7 +880,7 @@
           var label = document.getElementById("langLabel");
           if (label) label.textContent = LANG === "ar" ? "FR" : "ع";
           document.title =
-            LANG === "ar" ? "MIRA — الزمن منحوت" : "MIRA — Le temps, sculpté";
+            LANG === "ar" ? "ساعتي — الزمن منحوت" : "My Clock — Le temps, sculpté";
         }
         applyLang();
 
@@ -1052,39 +1097,54 @@
             intro.add(heroReveal(0), "-=0.5");
           }
 
-          /* ---------- Hero : parallaxe liée au scroll ---------- */
-          gsap.to(".hero__media img", {
-            yPercent: 14,
-            scale: 1.14,
-            ease: "none",
+          /* ---------- Hero : séquence photo scrubbée au scroll ----------
+             Effet « vidéo pilotée par la souris » : les trois photos se
+             succèdent en fondu enchaîné avec zoom continu — le principe des
+             démos Higgsfield, ici en images. */
+          var heroFrames = gsap.utils.toArray(".hero__frame");
+          heroFrames.forEach(function (frame, i) {
+            gsap.set(frame, { autoAlpha: i === 0 ? 1 : 0, scale: 1.06 });
+          });
+          var heroTl = gsap.timeline({
             scrollTrigger: {
               trigger: ".hero",
               start: "top top",
-              end: "bottom top",
-              scrub: true,
+              end: "+=170%",
+              pin: true,
+              scrub: 0.7,
             },
           });
-          gsap.to(".hero__content", {
-            yPercent: -32,
-            autoAlpha: 0.25,
-            ease: "none",
-            scrollTrigger: {
-              trigger: ".hero",
-              start: "top top",
-              end: "bottom top",
-              scrub: true,
-            },
+          heroFrames.forEach(function (frame, i) {
+            heroTl.to(
+              frame,
+              { scale: 1.18, ease: "none", duration: heroFrames.length },
+              0
+            );
+            if (i > 0) {
+              heroTl.to(
+                frame,
+                { autoAlpha: 1, ease: "none", duration: 0.5 },
+                i - 0.25
+              );
+            }
+            if (i < heroFrames.length - 1) {
+              heroTl.to(
+                frame,
+                { autoAlpha: 0, ease: "none", duration: 0.5 },
+                i + 0.75
+              );
+            }
           });
-          gsap.to(".hero__scroll", {
-            autoAlpha: 0,
-            ease: "none",
-            scrollTrigger: {
-              trigger: ".hero",
-              start: "top top",
-              end: "25% top",
-              scrub: true,
-            },
-          });
+          heroTl.to(
+            ".hero__scroll",
+            { autoAlpha: 0, ease: "none", duration: 0.3 },
+            0.05
+          );
+          heroTl.to(
+            ".hero__content",
+            { yPercent: -14, autoAlpha: 0, ease: "none", duration: 0.9 },
+            heroFrames.length - 1.1
+          );
 
           /* ---------- Manifeste : mots illuminés au scroll ---------- */
           var mSplit = new SplitText(".manifesto__text", {
