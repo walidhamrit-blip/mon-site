@@ -42,6 +42,7 @@
         --muted: #5a6472;
         --accent: #21499c;
         --line: rgba(11, 16, 23, 0.15);
+        --header-bg: rgba(245, 247, 250, 0.78);
         --font-display: Didot, "Bodoni MT", "Playfair Display",
           "Cormorant Garamond", Georgia, "Times New Roman", serif;
         --font-ui: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI",
@@ -56,6 +57,7 @@
         --muted: #97a2b3;
         --accent: #7ba1f0;
         --line: rgba(238, 242, 248, 0.15);
+        --header-bg: rgba(10, 14, 21, 0.78);
       }
       html[lang="ar"] {
         --font-display: "Cairo", "Geeza Pro", "Segoe UI", Tahoma, sans-serif;
@@ -272,14 +274,17 @@
       .header {
         position: fixed;
         top: 0; left: 0; right: 0;
-        z-index: 8000;
+        z-index:8000;
         display: flex;
         align-items: center;
         justify-content: space-between;
-        padding: 22px clamp(20px, 5vw, 64px);
-        transition: transform 0.55s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.55s ease;
+        padding: 15px clamp(20px, 5vw, 64px);
+        /* Fond givré : la barre et les sélecteurs restent toujours lisibles,
+           y compris au-dessus de la photo du hero, et ne se masquent jamais. */
+        background: var(--header-bg);
+        -webkit-backdrop-filter: blur(14px);
+        backdrop-filter: blur(14px);
       }
-      .header.is-hidden { transform: translateY(-115%); opacity: 0; }
       .header__logo {
         font-family: var(--font-display);
         font-size: 15px;
@@ -937,6 +942,7 @@
         }
 
         function init() {
+          try {
           gsap.registerPlugin(ScrollTrigger, SplitText);
 
           /* ---------- Défilement fluide (Lenis) ---------- */
@@ -980,8 +986,6 @@
 
           /* ---------- Progression + en-tête ---------- */
           var bar = document.querySelector(".progress__bar");
-          var header = document.getElementById("header");
-          var lastY = 0;
           window.addEventListener(
             "scroll",
             function () {
@@ -990,9 +994,6 @@
                 document.documentElement.scrollHeight - window.innerHeight;
               bar.style.transform =
                 "scaleX(" + (max > 0 ? Math.min(1, y / max) : 0) + ")";
-              if (y > 140 && y > lastY) header.classList.add("is-hidden");
-              else header.classList.remove("is-hidden");
-              lastY = y;
             },
             { passive: true }
           );
@@ -1349,6 +1350,13 @@
           window.addEventListener("load", function () {
             ScrollTrigger.refresh();
           });
+          } catch (err) {
+            /* Une erreur d'animation ne doit jamais casser la page :
+               le contenu reste visible, les sélecteurs restent actifs. */
+            if (window.console && console.error) console.error(err);
+            var pl = document.getElementById("preloader");
+            if (pl) pl.style.display = "none";
+          }
         }
       })();
     </script>
