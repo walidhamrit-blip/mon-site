@@ -3,9 +3,11 @@
 import { useMemo } from "react";
 import { Copy, Info } from "lucide-react";
 import {
+  MANUAL_PAYMENT_METHOD_KIND,
   MANUAL_PAYMENT_METHOD_LABELS,
   calculateManualPaymentQuote,
   formatManualPaymentAmount,
+  isDollarPeggedManualCurrency,
   type ManualPaymentCurrency,
   type ManualPaymentMethod,
   type ManualPaymentQuote,
@@ -14,7 +16,7 @@ import type { PublicManualPaymentOption } from "@/lib/manual-payment-public";
 
 /**
  * Champs de preuve de paiement pour un virement manuel
- * (Skrill, Neteller, Airtm, D17, Volet, WebMoney et Kashy).
+ * (Binance Pay, OKX, Bybit, RedotPay, USDT direct, Skrill, Neteller, Airtm, D17, Volet, WebMoney et Kashy).
  *
  * Rendu partagé par les trois tunnels (boutique de codes, création de sites,
  * abonnements) : la consigne, le montant exact et les trois champs sont donc
@@ -80,6 +82,52 @@ export function ManualPaymentForm({
   const quote = option ? manualQuoteForOption(option, amountUsd) : null;
 
   if (!option) return null;
+
+  const isCryptoDirect = option.method.startsWith("usdt_");
+  const isCryptoPayId =
+    option.method === "binance_pay" ||
+    option.method === "okx_pay" ||
+    option.method === "bybit_pay" ||
+    option.method === "redotpay";
+  const methodKind = MANUAL_PAYMENT_METHOD_KIND[option.method];
+
+  const senderAccountLabel = isCryptoDirect
+    ? ar
+      ? "عنوان المحفظة المُرسِلة *"
+      : "Sender wallet address *"
+    : isCryptoPayId
+      ? ar
+        ? "معرّف حساب المُرسِل (UID / Pay ID / البريد) *"
+        : "Sender ID (UID / Pay ID / Email) *"
+      : ar
+        ? "حساب المُرسِل *"
+        : "Sender account *";
+
+  const senderAccountPlaceholder = isCryptoDirect
+    ? "0x... / T... / UQ..."
+    : isCryptoPayId
+      ? ar
+        ? "UID أو Pay ID أو البريد"
+        : "UID, Pay ID or email"
+      : methodKind === "phone"
+        ? ar
+          ? "رقم الهاتف"
+          : "Phone number"
+        : ar
+          ? "بريد أو محفظة أو هاتف"
+          : "E-mail, wallet or phone";
+
+  const txRefLabel = isCryptoDirect
+    ? ar
+      ? "هاش المعاملة (TxHash / TxID) *"
+      : "Transaction hash (TxHash) *"
+    : isCryptoPayId
+      ? ar
+        ? "معرّف العملية (Order ID / TxID) *"
+        : "Order ID / Transaction reference *"
+      : ar
+        ? "معرّف العملية (المرجع) *"
+        : "Transaction ID / reference *";
 
   const set = (patch: Partial<ManualPaymentDraft>) => onDraftChange({ ...draft, ...patch });
   const quoteKey = quote
@@ -167,7 +215,7 @@ export function ManualPaymentForm({
             <Copy className="h-3.5 w-3.5" />
           </button>
         </div>
-        {quote && (quote.payCurrency !== "USD" || quote.feePercent > 0) && (
+        {quote && (!isDollarPeggedManualCurrency(quote.payCurrency) || quote.feePercent > 0) && (
           <p className="mt-2 border-t border-[var(--accent)]/20 pt-2 text-[11px] leading-5 text-[var(--muted-foreground)]" dir="ltr">
             {quote.amountUsd.toFixed(2)} USD × {quote.payRate}{" "}
             {quote.payCurrency as ManualPaymentCurrency}
@@ -197,14 +245,14 @@ export function ManualPaymentForm({
         </label>
         <label className="block">
           <span className={LABEL_CLS}>
-            {ar ? "حساب المُرسِل *" : "Sender account *"}
+            {senderAccountLabel}
           </span>
           <input
             value={draft.senderAccount}
             onChange={(event) => set({ senderAccount: event.target.value })}
             maxLength={120}
             dir="ltr"
-            placeholder={ar ? "بريد أو محفظة أو هاتف" : "E-mail, wallet or phone"}
+            placeholder={senderAccountPlaceholder}
             className={INPUT_CLS}
           />
         </label>
@@ -212,7 +260,7 @@ export function ManualPaymentForm({
 
       <label className="block">
         <span className={LABEL_CLS}>
-          {ar ? "معرّف العملية (المرجع) *" : "Transaction ID / reference *"}
+          {txRefLabel}
         </span>
         <input
           value={draft.transactionRef}

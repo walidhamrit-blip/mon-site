@@ -3,10 +3,12 @@
 import { DecimalInput } from "@/components/decimal-input";
 import type { ManualPaymentsConfigData, ManualPaymentMethodConfigData } from "@/lib/site-types";
 import {
+  MANUAL_PAYMENT_LIMITS,
   MANUAL_PAYMENT_METHOD_CURRENCIES,
   MANUAL_PAYMENT_METHOD_DEFAULT_CURRENCY,
   MANUAL_PAYMENT_METHOD_LABELS,
   MANUAL_PAYMENT_METHODS,
+  isDollarPeggedManualCurrency,
   manualPaymentMethodReady,
   type ManualPaymentCurrency,
   type ManualPaymentMethod,
@@ -20,6 +22,15 @@ const METHOD_HINTS: Record<ManualPaymentMethod, string> = {
   advcash: "Identifiant Volet / AdvCash qui reçoit les fonds (USD uniquement).",
   webmoney: "Identifiant WebMoney qui reçoit les fonds (devise WMZ : indiquez le taux).",
   kashy: "Numéro de téléphone / identifiant Kashy qui reçoit les fonds (TND uniquement).",
+  binance_pay: "Binance Pay ID ou Binance UID qui reçoit le transfert interne (0 frais).",
+  okx_pay: "OKX UID / identifiant interne OKX Pay qui reçoit les fonds.",
+  bybit_pay: "Bybit UID / identifiant interne Bybit Pay qui reçoit les fonds.",
+  redotpay: "RedotPay ID / UID qui reçoit le transfert interne RedotPay.",
+  usdt_bep20: "Adresse de dépôt USDT sur réseau BNB Smart Chain (BEP20, commence par 0x…).",
+  usdt_trc20: "Adresse de dépôt USDT sur réseau Tron (TRC20, commence par T…).",
+  usdt_ton: "Adresse de dépôt USDT sur réseau TON (UQ… / EQ… ; ajoutez le Memo en consigne si nécessaire).",
+  usdt_polygon: "Adresse de dépôt USDT sur réseau Polygon (commence par 0x…).",
+  usdt_sol: "Adresse de dépôt USDT sur réseau Solana.",
 };
 
 /**
@@ -62,18 +73,18 @@ export function ManualPaymentsSettings({
           Paiements manuels · sans passerelle
         </span>
         <h2 className="mt-1 text-lg font-extrabold text-stone-900">
-          Skrill, Neteller, Airtm, D17, Volet, WebMoney et Kashy
+          Binance Pay, OKX, Bybit, RedotPay, USDT direct, Skrill, Neteller, Airtm, D17, Volet, WebMoney et Kashy
         </h2>
         <p className="mt-1 max-w-3xl text-xs leading-relaxed text-stone-500 sm:text-sm">
-          Le client transfère lui-même l’argent sur le compte indiqué, puis
-          déclare le compte expéditeur et l’identifiant de transaction. Rien
+          Le client transfère lui-même l’argent sur le compte, UID ou adresse indiqué, puis
+          déclare le compte/adresse expéditeur et l’identifiant de transaction (Order ID / TxHash). Rien
           n’est livré avant votre acceptation dans la file « Paiements manuels ».
           Montant demandé ={" "}
           <strong className="text-stone-800">
             total USD × taux × (1 + majoration %)
           </strong>
           . Un moyen n’est proposé que s’il est activé et que son compte est rempli
-          (et, hors USD, que son taux est positif).
+          (et, hors USD/USDT, que son taux est positif).
         </p>
       </div>
 
@@ -124,7 +135,7 @@ export function ManualPaymentsSettings({
                     value={settings.account}
                     onChange={(event) => update(method, { account: event.target.value })}
                     dir="ltr"
-                    maxLength={120}
+                    maxLength={MANUAL_PAYMENT_LIMITS.account}
                     placeholder={METHOD_HINTS[method]}
                     className="h-10 w-full rounded-lg border border-stone-300 bg-white px-3 text-[12.5px] outline-none focus:border-[#8A6D2F]"
                   />
@@ -137,7 +148,7 @@ export function ManualPaymentsSettings({
                   <input
                     value={settings.beneficiary}
                     onChange={(event) => update(method, { beneficiary: event.target.value })}
-                    maxLength={120}
+                    maxLength={MANUAL_PAYMENT_LIMITS.beneficiary}
                     className="h-10 w-full rounded-lg border border-stone-300 bg-white px-3 text-[12.5px] outline-none focus:border-[#8A6D2F]"
                   />
                 </label>
@@ -156,7 +167,7 @@ export function ManualPaymentsSettings({
                       update(method, {
                         currency,
                         rate:
-                          currency === "USD" || currency !== settings.currency
+                          isDollarPeggedManualCurrency(currency) || currency !== settings.currency
                             ? null
                             : settings.rate,
                       });
@@ -176,13 +187,13 @@ export function ManualPaymentsSettings({
                     Taux : 1 USD = ? {settings.currency}
                   </span>
                   <DecimalInput
-                    value={settings.currency === "USD" ? 1 : settings.rate}
+                    value={isDollarPeggedManualCurrency(settings.currency) ? 1 : settings.rate}
                     onChange={(rate) =>
                       update(method, {
-                        rate: settings.currency === "USD" ? null : rate,
+                        rate: isDollarPeggedManualCurrency(settings.currency) ? null : rate,
                       })
                     }
-                    disabled={settings.currency === "USD"}
+                    disabled={isDollarPeggedManualCurrency(settings.currency)}
                     decimals={2}
                     placeholder={settings.currency === "WMZ" ? "À renseigner" : "Ex. 3.10"}
                     className="h-10 w-full rounded-lg border border-stone-300 bg-white px-3 text-[12.5px] outline-none focus:border-[#8A6D2F] disabled:bg-stone-100 disabled:text-stone-400"
@@ -226,7 +237,7 @@ export function ManualPaymentsSettings({
               {settings.enabled && !complete && (
                 <p className="mt-2 rounded-lg border border-amber-200 bg-amber-50 px-2.5 py-1.5 text-[11.5px] font-semibold text-amber-800">
                   Ce moyen reste fermé aux clients : renseignez le compte
-                  {settings.currency !== "USD" ? " et un taux positif" : ""}.
+                  {!isDollarPeggedManualCurrency(settings.currency) ? " et un taux positif" : ""}.
                 </p>
               )}
             </div>

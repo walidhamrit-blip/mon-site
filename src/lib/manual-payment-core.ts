@@ -1,5 +1,6 @@
 // Noyau PUR des moyens de paiement manuels sans passerelle :
-// Skrill, Neteller, Airtm, D17, Volet (AdvCash), WebMoney et Kashy (TND).
+// Skrill, Neteller, Airtm, D17, Volet (AdvCash), WebMoney, Kashy (TND),
+// Binance Pay, OKX Pay, Bybit Pay, RedotPay et USDT direct (BEP20, TRC20, TON, Polygon, Solana).
 //
 // Principe identique aux cartes de recharge téléphonique : le client envoie
 // l'argent LUI-MÊME sur le compte de l'agence, puis déclare sa preuve
@@ -19,13 +20,27 @@ export const MANUAL_PAYMENT_METHODS = [
   "advcash",
   "webmoney",
   "kashy",
+  "binance_pay",
+  "okx_pay",
+  "bybit_pay",
+  "redotpay",
+  "usdt_bep20",
+  "usdt_trc20",
+  "usdt_ton",
+  "usdt_polygon",
+  "usdt_sol",
 ] as const;
 export type ManualPaymentMethod = (typeof MANUAL_PAYMENT_METHODS)[number];
 
 const FIAT_MANUAL_PAYMENT_CURRENCIES = ["USD", "LYD", "EUR", "TND"] as const;
 /** Devises dans lesquelles le client peut régler, selon le réglage admin. */
-export const MANUAL_PAYMENT_CURRENCIES = [...FIAT_MANUAL_PAYMENT_CURRENCIES, "WMZ"] as const;
+export const MANUAL_PAYMENT_CURRENCIES = [...FIAT_MANUAL_PAYMENT_CURRENCIES, "WMZ", "USDT"] as const;
 export type ManualPaymentCurrency = (typeof MANUAL_PAYMENT_CURRENCIES)[number];
+
+/** Devises indexées 1:1 sur le dollar (aucun taux de conversion à saisir). */
+export function isDollarPeggedManualCurrency(currency: ManualPaymentCurrency): boolean {
+  return currency === "USD" || currency === "USDT";
+}
 
 /** Devises réellement autorisées pour chaque moyen (configuration manuelle). */
 export const MANUAL_PAYMENT_METHOD_CURRENCIES: Record<
@@ -41,6 +56,15 @@ export const MANUAL_PAYMENT_METHOD_CURRENCIES: Record<
   // the same currency. The rate is therefore always required.
   webmoney: ["WMZ", "LYD", "EUR", "TND"],
   kashy: ["TND"],
+  binance_pay: ["USDT", "USD"],
+  okx_pay: ["USDT", "USD"],
+  bybit_pay: ["USDT", "USD"],
+  redotpay: ["USDT", "USD"],
+  usdt_bep20: ["USDT"],
+  usdt_trc20: ["USDT"],
+  usdt_ton: ["USDT"],
+  usdt_polygon: ["USDT"],
+  usdt_sol: ["USDT"],
 };
 
 export const MANUAL_PAYMENT_METHOD_DEFAULT_CURRENCY: Record<ManualPaymentMethod, ManualPaymentCurrency> = {
@@ -51,6 +75,15 @@ export const MANUAL_PAYMENT_METHOD_DEFAULT_CURRENCY: Record<ManualPaymentMethod,
   advcash: "USD",
   webmoney: "WMZ",
   kashy: "TND",
+  binance_pay: "USDT",
+  okx_pay: "USDT",
+  bybit_pay: "USDT",
+  redotpay: "USDT",
+  usdt_bep20: "USDT",
+  usdt_trc20: "USDT",
+  usdt_ton: "USDT",
+  usdt_polygon: "USDT",
+  usdt_sol: "USDT",
 };
 
 export const MANUAL_PAYMENT_REVIEW_STATUSES = ["pending", "approved", "rejected"] as const;
@@ -74,6 +107,15 @@ export const MANUAL_PAYMENT_METHOD_LABELS: Record<ManualPaymentMethod, string> =
   advcash: "Volet (AdvCash)",
   webmoney: "WebMoney (WMZ)",
   kashy: "Kashy (TND)",
+  binance_pay: "Binance Pay (ID)",
+  okx_pay: "OKX Pay (UID)",
+  bybit_pay: "Bybit Pay (UID)",
+  redotpay: "RedotPay (ID)",
+  usdt_bep20: "USDT Direct · BEP20",
+  usdt_trc20: "USDT Direct · TRC20",
+  usdt_ton: "USDT Direct · TON",
+  usdt_polygon: "USDT Direct · Polygon",
+  usdt_sol: "USDT Direct · Solana",
 };
 
 /**
@@ -92,6 +134,15 @@ export const MANUAL_PAYMENT_METHOD_KIND: Record<
   advcash: "id",
   webmoney: "id",
   kashy: "phone",
+  binance_pay: "id",
+  okx_pay: "id",
+  bybit_pay: "id",
+  redotpay: "id",
+  usdt_bep20: "wallet",
+  usdt_trc20: "wallet",
+  usdt_ton: "wallet",
+  usdt_polygon: "wallet",
+  usdt_sol: "wallet",
 };
 
 export const MANUAL_PAYMENT_CURRENCY_LABELS: Record<ManualPaymentCurrency, string> = {
@@ -100,6 +151,7 @@ export const MANUAL_PAYMENT_CURRENCY_LABELS: Record<ManualPaymentCurrency, strin
   EUR: "EUR €",
   TND: "TND د.ت",
   WMZ: "WMZ — WebMoney",
+  USDT: "USDT ₮",
 };
 
 export interface ManualPaymentMethodSettings {
@@ -173,19 +225,20 @@ export function normalizeManualPaymentsConfig(input: unknown): ManualPaymentsCon
       .trim()
       .slice(0, MANUAL_PAYMENT_LIMITS.note);
     const allowedCurrencies = MANUAL_PAYMENT_METHOD_CURRENCIES[method];
-    const normalizedCurrency = normalizeManualPaymentCurrency(raw.currency);
+    const defaultCurrency = MANUAL_PAYMENT_METHOD_DEFAULT_CURRENCY[method];
+    const normalizedCurrency = normalizeManualPaymentCurrency(raw.currency, defaultCurrency);
     const currency = allowedCurrencies.includes(normalizedCurrency)
       ? normalizedCurrency
-      : allowedCurrencies[0];
+      : defaultCurrency;
     const rate = normalizeManualPaymentRate(raw.rate);
     result[method] = {
       // Une seule notion d'ouverture : cochée, compte présent, et taux
-      // disponible hors USD. Aucun appelant ne peut ainsi proposer un moyen
-      // dont le montant ne serait pas calculable.
+      // disponible hors USD/USDT. Aucun appelant ne peut ainsi proposer un
+      // moyen dont le montant ne serait pas calculable.
       enabled:
         raw.enabled === true &&
         account.length > 0 &&
-        (currency === "USD" || rate != null),
+        (isDollarPeggedManualCurrency(currency) || rate != null),
       account,
       beneficiary,
       currency,
@@ -218,11 +271,14 @@ export function normalizeManualPaymentMethod(value: unknown): ManualPaymentMetho
   return isManualPaymentMethod(raw) ? raw : null;
 }
 
-export function normalizeManualPaymentCurrency(value: unknown): ManualPaymentCurrency {
+export function normalizeManualPaymentCurrency(
+  value: unknown,
+  fallback: ManualPaymentCurrency = "USD",
+): ManualPaymentCurrency {
   const raw = String(value ?? "").trim().toUpperCase();
   return (MANUAL_PAYMENT_CURRENCIES as readonly string[]).includes(raw)
     ? (raw as ManualPaymentCurrency)
-    : "USD";
+    : fallback;
 }
 
 export function normalizeManualPaymentReviewStatus(value: unknown): ManualPaymentReviewStatus {
@@ -300,7 +356,7 @@ export function manualPaymentMethodReady(
   const account = String(settings.account ?? "").trim();
   if (!account) return false;
   const currency = normalizeManualPaymentCurrency(settings.currency);
-  if (currency === "USD") return true;
+  if (isDollarPeggedManualCurrency(currency)) return true;
   return normalizeManualPaymentRate(settings.rate) != null;
 }
 
@@ -309,7 +365,7 @@ export function manualPaymentCurrencyAndRate(
   settings: Partial<ManualPaymentMethodSettings> | null | undefined,
 ): { currency: ManualPaymentCurrency; rate: number } | null {
   const currency = normalizeManualPaymentCurrency(settings?.currency);
-  if (currency === "USD") return { currency, rate: 1 };
+  if (isDollarPeggedManualCurrency(currency)) return { currency, rate: 1 };
   const rate = normalizeManualPaymentRate(settings?.rate);
   return rate == null ? null : { currency, rate };
 }
@@ -450,8 +506,8 @@ export function validateManualPaymentInput(
 
 export function manualPaymentUnavailableNotice(locale: "ar" | "en"): string {
   return locale === "ar"
-    ? "الدفع اليدوي (Skrill / Neteller / Airtm / D17 / Volet / WebMoney / Kashy) متوقف مؤقتاً لأن التحقق اليدوي غير متاح. لا تُحوّل أي مبلغ؛ يمكنك اختيار الدفع بالعملات الرقمية. الطلبات السابقة تبقى قابلة للمعالجة."
-    : "Manual payment (Skrill / Neteller / Airtm / D17 / Volet / WebMoney / Kashy) is temporarily paused because manual verification is unavailable. Do not transfer any money; crypto payment remains available. Existing orders can still be processed.";
+    ? "الدفع اليدوي (Binance Pay / OKX / Bybit / RedotPay / USDT المباشر / Skrill / Neteller / Airtm / D17 / Volet / WebMoney / Kashy) متوقف مؤقتاً لأن التحقق اليدوي غير متاح. لا تُحوّل أي مبلغ؛ يمكنك اختيار الدفع الآلي بالعملات الرقمية. الطلبات السابقة تبقى قابلة للمعالجة."
+    : "Manual payment (Binance Pay / OKX / Bybit / RedotPay / Direct USDT / Skrill / Neteller / Airtm / D17 / Volet / WebMoney / Kashy) is temporarily paused because manual verification is unavailable. Do not transfer any money; automated crypto payment remains available. Existing orders can still be processed.";
 }
 
 export function manualPaymentUnavailableShort(locale: "ar" | "en"): string {
