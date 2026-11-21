@@ -529,6 +529,301 @@
         color: var(--faint);
       }
 
+      /* ---- Boutique : catalogue & fiches produit ---- */
+      .shop__head { padding: 0 clamp(24px, 6vw, 96px); max-width: 900px; }
+      .shop__head .title { margin: 16px 0 18px; }
+      .shop__sub {
+        font-size: clamp(14px, 1.25vw, 17px);
+        line-height: 1.8;
+        color: var(--muted);
+      }
+      .shop__grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: clamp(18px, 2.4vw, 36px);
+        padding: 6vh clamp(24px, 6vw, 96px) 10vh;
+      }
+      .pcard {
+        position: relative;
+        background: var(--bg-soft);
+        border: 1px solid var(--line);
+        cursor: pointer;
+        transition: transform 0.5s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.5s ease;
+      }
+      .pcard:hover {
+        transform: translateY(-8px);
+        box-shadow: 0 30px 60px rgba(6, 10, 18, 0.18);
+      }
+      .pcard__media { position: relative; aspect-ratio: 4 / 3; overflow: hidden; }
+      .pcard__media img {
+        width: 100%; height: 100%;
+        object-fit: cover;
+        transition: transform 0.8s cubic-bezier(0.22, 1, 0.36, 1);
+      }
+      .pcard:hover .pcard__media img { transform: scale(1.08); }
+      .pcard__badge {
+        position: absolute;
+        top: 14px; inset-inline-start: 14px;
+        padding: 6px 12px;
+        background: rgba(6, 10, 18, 0.72);
+        color: #f3f6fb;
+        font-size: 10px;
+        letter-spacing: 0.22em;
+        text-transform: uppercase;
+        border-radius: 999px;
+      }
+      html[lang="ar"] .pcard__badge,
+      html[lang="ar"] .pcard__cat,
+      html[lang="ar"] .pcard__cta {
+        letter-spacing: normal;
+        text-transform: none;
+      }
+      .pcard__body { padding: 22px 22px 26px; }
+      .pcard__cat {
+        font-size: 10px;
+        letter-spacing: 0.28em;
+        text-transform: uppercase;
+        color: var(--accent);
+      }
+      .pcard__name {
+        font-family: var(--font-display);
+        font-weight: 400;
+        font-size: clamp(19px, 1.7vw, 24px);
+        margin: 10px 0 12px;
+      }
+      html[lang="ar"] .pcard__name { font-weight: 600; }
+      .pcard__row {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 12px;
+      }
+      .pcard__price { font-family: var(--font-display); font-size: 20px; }
+      .pcard__cta {
+        font-size: 10.5px;
+        letter-spacing: 0.22em;
+        text-transform: uppercase;
+        color: var(--accent);
+      }
+
+      /* ---- Fiche produit (modale) ---- */
+      .modal {
+        position: fixed; inset: 0;
+        z-index: 11500;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        padding: 24px;
+      }
+      .modal.is-open { display: flex; }
+      .modal__backdrop {
+        position: absolute; inset: 0;
+        background: rgba(6, 10, 18, 0.62);
+        -webkit-backdrop-filter: blur(8px);
+        backdrop-filter: blur(8px);
+      }
+      .modal__panel {
+        position: relative;
+        width: min(1080px, 100%);
+        max-height: 88vh;
+        overflow: auto;
+        display: grid;
+        grid-template-columns: 1.05fr 1fr;
+        background: var(--bg);
+        border: 1px solid var(--line);
+        box-shadow: 0 40px 120px rgba(6, 10, 18, 0.45);
+      }
+      .modal__close {
+        position: absolute;
+        top: 14px; inset-inline-end: 14px;
+        z-index: 2;
+        width: 42px; height: 42px;
+        border-radius: 50%;
+        border: 1px solid var(--line);
+        background: var(--bg);
+        color: var(--ink);
+        font-size: 20px;
+        line-height: 1;
+        cursor: pointer;
+      }
+      .modal__media { position: relative; min-height: 320px; background: var(--bg-soft); }
+      .modal__media img {
+        position: absolute; inset: 0;
+        width: 100%; height: 100%;
+        object-fit: cover;
+      }
+      .modal__body { padding: clamp(24px, 3.2vw, 46px); }
+      .modal__title {
+        font-family: var(--font-display);
+        font-weight: 400;
+        font-size: clamp(26px, 2.6vw, 38px);
+        margin: 12px 0 10px;
+      }
+      html[lang="ar"] .modal__title { font-weight: 600; }
+      .modal__price {
+        font-family: var(--font-display);
+        font-size: 26px;
+        color: var(--accent);
+        margin-bottom: 16px;
+      }
+      .modal__desc {
+        font-size: 14.5px;
+        line-height: 1.85;
+        color: var(--muted);
+        margin-bottom: 22px;
+      }
+      .specs { list-style: none; border-top: 1px solid var(--line); margin-bottom: 24px; }
+      .specs li {
+        display: flex;
+        justify-content: space-between;
+        gap: 16px;
+        padding: 11px 0;
+        border-bottom: 1px solid var(--line);
+        font-size: 13px;
+      }
+      .specs li span:first-child { color: var(--muted); }
+      .qty {
+        display: inline-flex;
+        align-items: center;
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        overflow: hidden;
+        margin-bottom: 20px;
+      }
+      .qty button {
+        width: 42px; height: 42px;
+        border: 0;
+        background: transparent;
+        color: var(--ink);
+        font-size: 18px;
+        cursor: pointer;
+      }
+      .qty button:hover { background: var(--bg-soft); }
+      .qty span { min-width: 46px; text-align: center; font-size: 15px; }
+      .btn--wa {
+        width: 100%;
+        justify-content: center;
+        background: #1fa855;
+        border-color: #1fa855;
+        color: #fff;
+      }
+      .btn--wa:hover { background: #178f46; border-color: #178f46; color: #fff; }
+
+      /* ---- Paiement ---- */
+      .pay { margin-top: 28px; padding-top: 22px; border-top: 1px solid var(--line); }
+      .pay h4 {
+        font-size: 11px;
+        letter-spacing: 0.28em;
+        text-transform: uppercase;
+        margin-bottom: 14px;
+      }
+      html[lang="ar"] .pay h4 { letter-spacing: normal; text-transform: none; font-size: 13px; }
+      .pay__chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
+      .chip {
+        padding: 9px 15px;
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        background: transparent;
+        color: var(--ink-soft);
+        font-family: var(--font-ui);
+        font-size: 11.5px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+      }
+      .chip:hover { border-color: var(--accent); color: var(--ink); }
+      .chip.is-active { background: var(--accent); border-color: var(--accent); color: var(--bg); }
+      .pay__fields { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }
+      .pay__fields input {
+        padding: 13px 16px;
+        border: 1px solid var(--line);
+        background: transparent;
+        color: var(--ink);
+        font-family: var(--font-ui);
+        font-size: 13.5px;
+      }
+      .pay__fields input::placeholder { color: var(--faint); }
+      .pay__fields input:focus { outline: none; border-color: var(--accent); }
+      .pay__fields input:first-child { grid-column: 1 / -1; }
+      .btn--pay {
+        width: 100%;
+        justify-content: center;
+        background: var(--ink);
+        border-color: var(--ink);
+        color: var(--bg);
+      }
+      .btn--pay:hover { opacity: 0.88; }
+      .pay__success {
+        display: none;
+        margin-top: 16px;
+        padding: 18px;
+        border: 1px solid #1fa855;
+        background: rgba(31, 168, 85, 0.1);
+        font-size: 13.5px;
+        line-height: 1.75;
+      }
+      .pay__success.is-on { display: block; }
+      .pay__success strong { display: block; margin-bottom: 6px; color: #1fa855; }
+
+      /* ---- WhatsApp flottant ---- */
+      .wa-fab {
+        position: fixed;
+        bottom: 26px; inset-inline-end: 26px;
+        z-index: 9500;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        text-decoration: none;
+      }
+      .wa-fab__btn {
+        position: relative;
+        width: 60px; height: 60px;
+        border-radius: 50%;
+        background: #1fa855;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 14px 34px rgba(31, 168, 85, 0.45);
+        transition: transform 0.35s ease;
+      }
+      .wa-fab:hover .wa-fab__btn { transform: scale(1.08); }
+      .wa-fab__btn::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        border-radius: 50%;
+        border: 2px solid rgba(31, 168, 85, 0.55);
+        animation: waPulse 2.4s ease-out infinite;
+      }
+      @keyframes waPulse {
+        0% { transform: scale(1); opacity: 1; }
+        80%, 100% { transform: scale(1.75); opacity: 0; }
+      }
+      .wa-fab__label {
+        padding: 11px 18px;
+        background: var(--bg);
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        font-size: 11.5px;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: var(--ink);
+        box-shadow: 0 12px 30px rgba(6, 10, 18, 0.18);
+      }
+      html[lang="ar"] .wa-fab__label { letter-spacing: normal; text-transform: none; font-size: 12.5px; }
+      @media (max-width: 700px) { .wa-fab__label { display: none; } }
+
+      /* ---- Responsive boutique ---- */
+      @media (max-width: 1000px) {
+        .shop__grid { grid-template-columns: repeat(2, 1fr); }
+        .modal__panel { grid-template-columns: 1fr; }
+        .modal__media { aspect-ratio: 16 / 10; min-height: 0; }
+      }
+      @media (max-width: 620px) {
+        .shop__grid { grid-template-columns: 1fr; }
+        .pay__fields { grid-template-columns: 1fr; }
+        .pay__fields input:first-child { grid-column: auto; }
+      }
+
       /* ---- Responsive ---- */
       @media (max-width: 900px) {
         .header__nav a:not(.btn) { display: none; }
@@ -575,6 +870,7 @@
         <a href="#manifeste" data-i18n="nav_manifeste">Manifeste</a>
         <a href="#espaces" data-i18n="nav_espaces">Pièces</a>
         <a href="#matiere" data-i18n="nav_matiere">Savoir-faire</a>
+        <a href="#boutique" data-i18n="nav_boutique">Boutique</a>
         <a class="btn btn--ghost" href="#visite" data-i18n="nav_visite">Rendez-vous</a>
         <span class="header__toggles">
           <button class="toggle-pill" id="themeToggle" type="button" aria-label="Changer de thème">
@@ -716,6 +1012,18 @@
         </div>
       </section>
 
+      <section class="shop" id="boutique">
+        <div class="shop__head">
+          <p class="kicker" data-reveal data-i18n="shop_kicker">03 — La boutique</p>
+          <h2 class="title" data-reveal data-i18n-html="shop_title">La collection,<br />disponible en ligne</h2>
+          <p class="shop__sub" data-reveal data-i18n="shop_sub">
+            Commande directe via WhatsApp, paiement sécurisé par carte,
+            CIB / Edahabia ou espèces à la livraison.
+          </p>
+        </div>
+        <div class="shop__grid" id="shopGrid"></div>
+      </section>
+
       <section class="stats">
         <div class="stat">
           <div class="stat__num" data-count="250">250</div>
@@ -747,6 +1055,56 @@
       </p>
       <p class="footer__copy" data-i18n="footer_copy">© 2026 · La qualité « Awwwards » n'exige pas d'outils payants.</p>
     </footer>
+
+    <div class="modal" id="productModal" aria-hidden="true">
+      <div class="modal__backdrop" data-close></div>
+      <div class="modal__panel" role="dialog" aria-modal="true" aria-labelledby="modalName">
+        <button class="modal__close" type="button" data-close aria-label="Fermer">×</button>
+        <div class="modal__media"><img id="modalImg" src="" alt="" /></div>
+        <div class="modal__body">
+          <p class="kicker" id="modalCat"></p>
+          <h3 class="modal__title" id="modalName"></h3>
+          <div class="modal__price" id="modalPrice"></div>
+          <p class="modal__desc" id="modalDesc"></p>
+          <ul class="specs" id="modalSpecs"></ul>
+          <div class="qty">
+            <button type="button" id="qtyMinus" aria-label="−">−</button>
+            <span id="qtyVal">1</span>
+            <button type="button" id="qtyPlus" aria-label="+">+</button>
+          </div>
+          <br />
+          <a class="btn btn--wa" id="modalWa" href="https://wa.me/218913442640" target="_blank" rel="noopener" data-i18n="m_order_wa">Commander via WhatsApp</a>
+          <div class="pay">
+            <h4 data-i18n="m_pay_title">Paiement sécurisé</h4>
+            <div class="pay__chips" id="payChips">
+              <button type="button" class="chip is-active" data-pay="card" data-i18n="m_pay_card">Carte bancaire</button>
+              <button type="button" class="chip" data-pay="cib" data-i18n="m_pay_cib">CIB</button>
+              <button type="button" class="chip" data-pay="edahabia" data-i18n="m_pay_edahabia">Edahabia</button>
+              <button type="button" class="chip" data-pay="cash" data-i18n="m_pay_cash">Espèces à la livraison</button>
+              <button type="button" class="chip" data-pay="crypto" data-i18n="m_pay_crypto">Crypto (USDT)</button>
+            </div>
+            <div class="pay__fields" id="payFields">
+              <input type="text" id="cardName" data-i18n-ph="m_card_name" placeholder="Nom sur la carte" autocomplete="cc-name" />
+              <input type="text" id="cardNumber" data-i18n-ph="m_card_number" placeholder="Numéro de carte" inputmode="numeric" autocomplete="cc-number" />
+              <input type="text" id="cardExp" data-i18n-ph="m_card_exp" placeholder="MM/AA" inputmode="numeric" autocomplete="cc-exp" />
+              <input type="text" id="cardCvc" data-i18n-ph="m_card_cvc" placeholder="CVC" inputmode="numeric" autocomplete="cc-csc" />
+            </div>
+            <button type="button" class="btn btn--pay" id="payConfirm" data-i18n="m_confirm">Confirmer la commande</button>
+            <div class="pay__success" id="paySuccess">
+              <strong data-i18n="m_success">Commande confirmée !</strong>
+              <span data-i18n="m_success_text">Ceci est une démonstration — aucun paiement réel n'a été effectué. Notre équipe vous contacte pour la livraison.</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <a class="wa-fab" id="waFab" href="https://wa.me/218913442640" target="_blank" rel="noopener">
+      <span class="wa-fab__label" data-i18n="wa_tooltip">Commander sur WhatsApp</span>
+      <span class="wa-fab__btn" aria-label="WhatsApp">
+        <svg width="30" height="30" viewBox="0 0 24 24" fill="#fff" aria-hidden="true"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+      </span>
+    </a>
 
     <script src="./vendor/gsap.min.js"></script>
     <script src="./vendor/ScrollTrigger.min.js"></script>
@@ -816,6 +1174,34 @@
             feat_title: "La patience<br>comme matière",
             feat_text: "Chaque pièce naît de cent heures d'atelier : guillochage, anglage, polissage noir. Nos maîtres horlogers signent chaque mouvement, puis le laissent au temps.",
             feat_btn: "Découvrir la collection",
+            nav_boutique: "Boutique",
+            shop_kicker: "03 — La boutique",
+            shop_title: "La collection,<br>disponible en ligne",
+            shop_sub: "Commande directe via WhatsApp, paiement sécurisé par carte, CIB / Edahabia ou espèces à la livraison.",
+            badge_new: "Nouveau",
+            badge_excl: "Exclusif",
+            m_specs: "Caractéristiques",
+            m_movement: "Mouvement",
+            m_water: "Étanchéité",
+            m_materials: "Matériaux",
+            m_warranty: "Garantie",
+            m_qty: "Quantité",
+            m_order_wa: "Commander via WhatsApp",
+            m_pay_title: "Paiement sécurisé",
+            m_pay_card: "Carte bancaire",
+            m_pay_cib: "CIB",
+            m_pay_edahabia: "Edahabia",
+            m_pay_cash: "Espèces à la livraison",
+            m_pay_crypto: "Crypto (USDT)",
+            m_card_name: "Nom sur la carte",
+            m_card_number: "Numéro de carte",
+            m_card_exp: "MM/AA",
+            m_card_cvc: "CVC",
+            m_confirm: "Confirmer la commande",
+            m_success: "Commande confirmée !",
+            m_success_text: "Ceci est une démonstration — aucun paiement réel n'a été effectué. Notre équipe vous contacte pour la livraison.",
+            m_close: "Fermer",
+            wa_tooltip: "Commander sur WhatsApp",
             stat1_l: "composants par mouvement",
             stat2_l: "heures d'atelier",
             stat3_l: "ans de garantie",
@@ -854,6 +1240,34 @@
             feat_title: "الصبر<br>كمادة",
             feat_text: "كل قطعة تولد من مئة ساعة عمل في المشغل: النقش والتدريج والتلميع الأسود. يوقّع حرفيونا كل حركة، ثم يتركونها للزمن.",
             feat_btn: "اكتشف المجموعة",
+            nav_boutique: "المتجر",
+            shop_kicker: "03 — المتجر",
+            shop_title: "المجموعة،<br>متاحة عبر الإنترنت",
+            shop_sub: "اطلب مباشرة عبر واتساب، مع دفع آمن بالبطاقة أو CIB / الذهبية أو عند التسليم.",
+            badge_new: "جديد",
+            badge_excl: "حصري",
+            m_specs: "المواصفات",
+            m_movement: "الحركة",
+            m_water: "مقاومة الماء",
+            m_materials: "الخامات",
+            m_warranty: "الضمان",
+            m_qty: "الكمية",
+            m_order_wa: "اطلب عبر واتساب",
+            m_pay_title: "دفع آمن",
+            m_pay_card: "بطاقة مصرفية",
+            m_pay_cib: "CIB",
+            m_pay_edahabia: "الذهبية",
+            m_pay_cash: "الدفع عند التسليم",
+            m_pay_crypto: "عملات رقمية (USDT)",
+            m_card_name: "الاسم على البطاقة",
+            m_card_number: "رقم البطاقة",
+            m_card_exp: "شهر/سنة",
+            m_card_cvc: "الرمز",
+            m_confirm: "تأكيد الطلب",
+            m_success: "تم تأكيد الطلب!",
+            m_success_text: "هذا عرض توضيحي — لم تتم أي عملية دفع حقيقية. سيتواصل فريقنا معك للتسليم.",
+            m_close: "إغلاق",
+            wa_tooltip: "اطلب عبر واتساب",
             stat1_l: "قطعة في كل حركة",
             stat2_l: "ساعة عمل",
             stat3_l: "سنوات ضمان",
@@ -881,6 +1295,10 @@
           document.querySelectorAll("[data-i18n-html]").forEach(function (el) {
             var k = el.getAttribute("data-i18n-html");
             if (dict[k]) el.innerHTML = dict[k];
+          });
+          document.querySelectorAll("[data-i18n-ph]").forEach(function (el) {
+            var k = el.getAttribute("data-i18n-ph");
+            if (dict[k]) el.setAttribute("placeholder", dict[k]);
           });
           var label = document.getElementById("langLabel");
           if (label) label.textContent = LANG === "ar" ? "FR" : "ع";
@@ -956,6 +1374,7 @@
             lenis.raf(time * 1000);
           });
           gsap.ticker.lagSmoothing(0);
+          window.__lenis = lenis;
 
           document.querySelectorAll('a[href^="#"]').forEach(function (a) {
             a.addEventListener("click", function (e) {
@@ -1357,6 +1776,296 @@
             var pl = document.getElementById("preloader");
             if (pl) pl.style.display = "none";
           }
+        }
+      })();
+
+      /* ============ Boutique : catalogue, fiche produit, paiement ============ */
+      (function () {
+        "use strict";
+        var WA_NUMBER = "218913442640";
+        var lang = document.documentElement.lang === "ar" ? "ar" : "fr";
+
+        var S = (lang === "ar"
+          ? {
+              cat_watch: "ساعة",
+              cat_jewel: "مجوهرات وقطع",
+              view: "عرض التفاصيل",
+              badge_new: "جديد",
+              badge_excl: "حصري",
+              qty_label: "الكمية",
+            }
+          : {
+              cat_watch: "Montre",
+              cat_jewel: "Bijou & objet",
+              view: "Voir les détails",
+              badge_new: "Nouveau",
+              badge_excl: "Exclusif",
+              qty_label: "Quantité",
+            });
+
+        var PRODUCTS = [
+          {
+            id: "MC-01",
+            img: "watch-hero.jpg",
+            price: 8900,
+            badge: "excl",
+            cat: "watch",
+            fr: {
+              name: "Héritage Blue Gold",
+              desc: "Cadran bleu nuit soleillé, index en or jaune, bracelet acier et or. La pièce signature de la maison.",
+              specs: ["Automatique — 42 h", "100 m", "Acier 316L & or 18K", "5 ans"],
+            },
+            ar: {
+              name: "إرث أزرق وذهبي",
+              desc: "ميناء أزرق ليلي بتأثير شمسي، مؤشرات ذهبية، سوار من الفولاذ والذهب. القطعة المميزة للدار.",
+              specs: ["أوتوماتيكي — 42 ساعة", "100 متر", "فولاذ 316L وذهب 18 قيراط", "5 سنوات"],
+            },
+          },
+          {
+            id: "MC-02",
+            img: "watch-blue.jpg",
+            price: 6800,
+            badge: "new",
+            cat: "watch",
+            fr: {
+              name: "Le Chronographe",
+              desc: "Chronographe sport-élégant au cadran bleu nuit, poussoirs polis, acier 316L.",
+              specs: ["Chronographe automatique", "200 m", "Acier 316L poli", "5 ans"],
+            },
+            ar: {
+              name: "الكرونوغراف",
+              desc: "كرونوغراف رياضي أنيق بميناء أزرق ليلي، مكابس مصقولة، فولاذ 316L.",
+              specs: ["كرونوغراف أوتوماتيكي", "200 متر", "فولاذ 316L مصقول", "5 سنوات"],
+            },
+          },
+          {
+            id: "MC-03",
+            img: "watch-gold.jpg",
+            price: 12400,
+            badge: "excl",
+            cat: "watch",
+            fr: {
+              name: "L'Or Royal",
+              desc: "Or jaune 18 carats intégral, cadran champagne soleillé, mouvement manufacture.",
+              specs: ["Automatique manufacture", "50 m", "Or jaune 18K", "5 ans"],
+            },
+            ar: {
+              name: "الذهب الملكي",
+              desc: "ذهب أصفر 18 قيراط بالكامل، ميناء ذهبي بتأثير شمسي، حركة مصنّعة.",
+              specs: ["أوتوماتيكي مصنّع", "50 متر", "ذهب أصفر 18 قيراط", "5 سنوات"],
+            },
+          },
+          {
+            id: "MC-04",
+            img: "watch-diver.jpg",
+            price: 5200,
+            badge: "new",
+            cat: "watch",
+            fr: {
+              name: "Le Plongeur 300",
+              desc: "Bézel rotatif bleu, index luminescents, étanche 300 mètres — née pour l'océan.",
+              specs: ["Automatique — 38 h", "300 m", "Acier 316L", "5 ans"],
+            },
+            ar: {
+              name: "الغوّاص 300",
+              desc: "إطار دوّار أزرق، مؤشرات مضيئة، مقاوم للماء حتى 300 متر — وُلدت للمحيط.",
+              specs: ["أوتوماتيكي — 38 ساعة", "300 متر", "فولاذ 316L", "5 سنوات"],
+            },
+          },
+          {
+            id: "MC-05",
+            img: "watch-skeleton.jpg",
+            price: 9600,
+            badge: "excl",
+            cat: "watch",
+            fr: {
+              name: "Le Squelette",
+              desc: "Cadran squeletté révélant rouages or et vis bleuies, saphir bombé double face.",
+              specs: ["Squelette manuel — 72 h", "30 m", "Acier & or 18K", "5 ans"],
+            },
+            ar: {
+              name: "الهيكل",
+              desc: "ميناء مكشوف يكشف التروس الذهبية والمسامير الزرقاء، زجاج ياقوتي مزدوج.",
+              specs: ["هيكل يدوي — 72 ساعة", "30 متر", "فولاذ وذهب 18 قيراط", "5 سنوات"],
+            },
+          },
+          {
+            id: "MC-06",
+            img: "silver.jpg",
+            price: 3200,
+            badge: null,
+            cat: "jewel",
+            fr: {
+              name: "Ensemble Argent & Saphir",
+              desc: "Boutons de manchette, chaîne et bague en argent massif gravés main, saphir taille coussin.",
+              specs: ["—", "—", "Argent 925 & saphir", "2 ans"],
+            },
+            ar: {
+              name: "طقم فضة وياقوت",
+              desc: "أزرار أكمام وسلسلة وخاتم من الفضة الخالصة محفورة يدويًا، مع ياقوت.",
+              specs: ["—", "—", "فضة 925 وياقوت", "سنتان"],
+            },
+          },
+          {
+            id: "MC-07",
+            img: "gold.jpg",
+            price: 7800,
+            badge: null,
+            cat: "jewel",
+            fr: {
+              name: "La Collection Or",
+              desc: "Bagues, chaîne et stylo-plume en or jaune — pour elle et pour lui, dans un écrin signé.",
+              specs: ["—", "—", "Or jaune 18K", "2 ans"],
+            },
+            ar: {
+              name: "مجموعة الذهب",
+              desc: "خواتم وسلسلة وقلم حبر من الذهب الأصفر — لها وله، في صندوق موقّع.",
+              specs: ["—", "—", "ذهب أصفر 18 قيراط", "سنتان"],
+            },
+          },
+        ];
+
+        var grid = document.getElementById("shopGrid");
+        var modal = document.getElementById("productModal");
+        var current = null;
+        var qty = 1;
+
+        function fmtPrice(p) {
+          return "$" + Number(p).toLocaleString("en-US");
+        }
+        function specLabels() {
+          return lang === "ar"
+            ? ["الحركة", "مقاومة الماء", "الخامات", "الضمان"]
+            : ["Mouvement", "Étanchéité", "Matériaux", "Garantie"];
+        }
+        function waHref(p) {
+          var msg =
+            lang === "ar"
+              ? "مرحبًا ساعتي، يهمني «" + p.ar.name + "» (" + fmtPrice(p.price * qty) + ") — المرجع: " + p.id + " — " + S.qty_label + ": " + qty + "."
+              : "Bonjour My Clock, je suis intéressé(e) par « " + p.fr.name + " » (" + fmtPrice(p.price * qty) + ") — Référence : " + p.id + " — " + S.qty_label + " : " + qty + ".";
+          return "https://wa.me/" + WA_NUMBER + "?text=" + encodeURIComponent(msg);
+        }
+
+        function renderCards() {
+          if (!grid) return;
+          grid.innerHTML = "";
+          PRODUCTS.forEach(function (p, idx) {
+            var d = p[lang];
+            var card = document.createElement("article");
+            card.className = "pcard";
+            card.innerHTML =
+              '<div class="pcard__media"><img src="./images/' + p.img + '" alt="" loading="lazy" />' +
+              (p.badge ? '<span class="pcard__badge">' + (p.badge === "new" ? S.badge_new : S.badge_excl) + "</span>" : "") +
+              "</div>" +
+              '<div class="pcard__body">' +
+              '<p class="pcard__cat">' + (p.cat === "watch" ? S.cat_watch : S.cat_jewel) + "</p>" +
+              '<h3 class="pcard__name">' + d.name + "</h3>" +
+              '<div class="pcard__row"><span class="pcard__price">' + fmtPrice(p.price) + '</span><span class="pcard__cta">' + S.view + " →</span></div>" +
+              "</div>";
+            card.addEventListener("click", function () { openModal(idx); });
+            grid.appendChild(card);
+          });
+          if (window.gsap && window.ScrollTrigger) {
+            gsap.registerPlugin(ScrollTrigger);
+            gsap.from(".pcard", {
+              autoAlpha: 0,
+              y: 40,
+              duration: 0.9,
+              stagger: 0.1,
+              ease: "power3.out",
+              scrollTrigger: { trigger: "#shopGrid", start: "top 88%" },
+            });
+          }
+        }
+
+        function openModal(idx) {
+          current = PRODUCTS[idx];
+          qty = 1;
+          var d = current[lang];
+          document.getElementById("modalImg").src = "./images/" + current.img;
+          document.getElementById("modalCat").textContent = current.cat === "watch" ? S.cat_watch : S.cat_jewel;
+          document.getElementById("modalName").textContent = d.name;
+          document.getElementById("modalPrice").textContent = fmtPrice(current.price);
+          document.getElementById("modalDesc").textContent = d.desc;
+          var labels = specLabels();
+          document.getElementById("modalSpecs").innerHTML = d.specs
+            .map(function (v, i) { return "<li><span>" + labels[i] + "</span><span>" + v + "</span></li>"; })
+            .join("");
+          document.getElementById("qtyVal").textContent = "1";
+          document.getElementById("modalWa").href = waHref(current);
+          document.getElementById("paySuccess").classList.remove("is-on");
+          document.getElementById("payFields").style.display = "";
+          document.getElementById("payConfirm").style.display = "";
+          modal.classList.add("is-open");
+          modal.setAttribute("aria-hidden", "false");
+          if (window.__lenis) window.__lenis.stop();
+          else document.body.style.overflow = "hidden";
+        }
+
+        function closeModal() {
+          modal.classList.remove("is-open");
+          modal.setAttribute("aria-hidden", "true");
+          if (window.__lenis) window.__lenis.start();
+          else document.body.style.overflow = "";
+        }
+
+        function refreshQty() {
+          document.getElementById("qtyVal").textContent = String(qty);
+          document.getElementById("modalPrice").textContent = fmtPrice(current.price * qty);
+          document.getElementById("modalWa").href = waHref(current);
+        }
+
+        /* Cartes */
+        renderCards();
+
+        /* Modale : fermeture */
+        modal.querySelectorAll("[data-close]").forEach(function (el) {
+          el.addEventListener("click", closeModal);
+        });
+        document.addEventListener("keydown", function (e) {
+          if (e.key === "Escape" && modal.classList.contains("is-open")) closeModal();
+        });
+
+        /* Quantité */
+        document.getElementById("qtyMinus").addEventListener("click", function () {
+          if (qty > 1) { qty--; refreshQty(); }
+        });
+        document.getElementById("qtyPlus").addEventListener("click", function () {
+          if (qty < 9) { qty++; refreshQty(); }
+        });
+
+        /* Moyens de paiement */
+        var chips = modal.querySelectorAll(".chip");
+        chips.forEach(function (chip) {
+          chip.addEventListener("click", function () {
+            chips.forEach(function (c) { c.classList.remove("is-active"); });
+            chip.classList.add("is-active");
+            var method = chip.getAttribute("data-pay");
+            /* Carte : champs visibles. Autres moyens : paiement à la commande. */
+            var showFields = method === "card" || method === "cib" || method === "edahabia";
+            document.getElementById("payFields").style.display = showFields ? "" : "none";
+          });
+        });
+
+        /* Confirmation (démo) */
+        document.getElementById("payConfirm").addEventListener("click", function () {
+          document.getElementById("payFields").style.display = "none";
+          this.style.display = "none";
+          var ok = document.getElementById("paySuccess");
+          ok.classList.add("is-on");
+          ok.scrollIntoView({ behavior: "smooth", block: "nearest" });
+        });
+
+        /* WhatsApp flottant : message général */
+        var fab = document.getElementById("waFab");
+        if (fab) {
+          fab.href =
+            "https://wa.me/" + WA_NUMBER + "?text=" +
+            encodeURIComponent(
+              lang === "ar"
+                ? "مرحبًا ساعتي، أريد الاستفسار عن المجموعة."
+                : "Bonjour My Clock, je souhaite des informations sur la collection."
+            );
         }
       })();
     </script>
