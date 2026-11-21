@@ -43,6 +43,22 @@ const manualPaymentMethodBaseSchema = (
       .max(100, "La majoration ne peut pas dépasser 100 %.")
       .default(0),
     instructions: z.string().trim().max(MANUAL_PAYMENT_LIMITS.note).default(""),
+    qrImage: z
+      .string()
+      .trim()
+      .max(MANUAL_PAYMENT_LIMITS.qrImage)
+      .refine((value) => {
+        if (value === "") return true;
+        if (value.startsWith("/")) {
+          return !value.startsWith("//") && !/[\\\u0000-\u001f]/.test(value);
+        }
+        try {
+          return new URL(value).protocol === "https:";
+        } catch {
+          return false;
+        }
+      }, "Utilisez un chemin local (/…) ou une URL HTTPS")
+      .default(""),
   });
 
 export const manualPaymentMethodSchema = manualPaymentMethodBaseSchema;
@@ -75,7 +91,7 @@ export const manualPaymentsConfigSchema = z.object(
 
 export function defaultManualPaymentConfig(
   currency: ManualPaymentMethodSettings["currency"] = "USD",
-): ManualPaymentMethodSettings {
+): ManualPaymentMethodSettings & { qrImage: string } {
   return {
     enabled: false,
     account: "",
@@ -84,6 +100,7 @@ export function defaultManualPaymentConfig(
     rate: null,
     feePercent: 0,
     instructions: "",
+    qrImage: "",
   };
 }
 
@@ -658,7 +675,7 @@ export const siteConfigSchema = z.object({
       method,
       defaultManualPaymentConfig(MANUAL_PAYMENT_METHOD_DEFAULT_CURRENCY[method]),
     ]),
-  ) as Record<(typeof MANUAL_PAYMENT_METHODS)[number], ManualPaymentMethodSettings>),
+  ) as Record<(typeof MANUAL_PAYMENT_METHODS)[number], ManualPaymentMethodSettings & { qrImage: string }>),
   /**
    * Profils d'avis + demandes d'avis. `.default()` est indispensable : les
    * configurations déjà enregistrées en base n'ont pas ce bloc, et un

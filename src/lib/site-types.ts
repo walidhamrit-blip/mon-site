@@ -169,6 +169,8 @@ export interface ManualPaymentMethodConfigData {
   feePercent: number;
   /** Consigne libre affichée au client avant son transfert. */
   instructions: string;
+  /** Image QR code personnalisée (chemin local ou URL HTTPS), facultative. */
+  qrImage?: string;
 }
 
 export type ManualPaymentsConfigData = Record<

@@ -1,18 +1,20 @@
 "use client";
 
-import { useMemo } from "react";
-import { Copy, Info } from "lucide-react";
+import { useMemo, useState } from "react";
+import { Check, Copy, Info } from "lucide-react";
 import {
   MANUAL_PAYMENT_METHOD_KIND,
   MANUAL_PAYMENT_METHOD_LABELS,
   calculateManualPaymentQuote,
   formatManualPaymentAmount,
+  isCryptoManualPaymentMethod,
   isDollarPeggedManualCurrency,
   type ManualPaymentCurrency,
   type ManualPaymentMethod,
   type ManualPaymentQuote,
 } from "@/lib/manual-payment-core";
 import type { PublicManualPaymentOption } from "@/lib/manual-payment-public";
+import { CryptoQrCode } from "@/components/crypto-qr-code";
 
 /**
  * Champs de preuve de paiement pour un virement manuel
@@ -75,6 +77,7 @@ export function ManualPaymentForm({
   locale: "ar" | "en";
 }) {
   const ar = locale === "ar";
+  const [copied, setCopied] = useState(false);
   const option = useMemo(
     () => options.find((item) => item.method === draft.method) ?? options[0] ?? null,
     [options, draft.method],
@@ -83,6 +86,7 @@ export function ManualPaymentForm({
 
   if (!option) return null;
 
+  const isCrypto = isCryptoManualPaymentMethod(option.method);
   const isCryptoDirect = option.method.startsWith("usdt_");
   const isCryptoPayId =
     option.method === "binance_pay" ||
@@ -137,6 +141,8 @@ export function ManualPaymentForm({
   const copyTarget = async () => {
     try {
       await navigator.clipboard.writeText(option.account);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
     } catch {
       // Presse-papiers indisponible : le compte reste lisible à l'écran.
     }
@@ -212,9 +218,17 @@ export function ManualPaymentForm({
             aria-label={ar ? "نسخ الحساب" : "Copy the account"}
             className="grid h-9 w-9 shrink-0 place-items-center rounded-lg border border-[var(--border)] bg-[var(--background)] hover:border-[var(--accent)]"
           >
-            <Copy className="h-3.5 w-3.5" />
+            {copied ? <Check className="h-3.5 w-3.5 text-emerald-600" /> : <Copy className="h-3.5 w-3.5" />}
           </button>
         </div>
+        {isCrypto && (
+          <CryptoQrCode
+            method={option.method}
+            value={option.account}
+            customImageUrl={option.qrImage}
+            locale={locale}
+          />
+        )}
         {quote && (!isDollarPeggedManualCurrency(quote.payCurrency) || quote.feePercent > 0) && (
           <p className="mt-2 border-t border-[var(--accent)]/20 pt-2 text-[11px] leading-5 text-[var(--muted-foreground)]" dir="ltr">
             {quote.amountUsd.toFixed(2)} USD × {quote.payRate}{" "}

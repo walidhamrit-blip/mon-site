@@ -89,6 +89,27 @@ export const MANUAL_PAYMENT_METHOD_DEFAULT_CURRENCY: Record<ManualPaymentMethod,
 export const MANUAL_PAYMENT_REVIEW_STATUSES = ["pending", "approved", "rejected"] as const;
 export type ManualPaymentReviewStatus = (typeof MANUAL_PAYMENT_REVIEW_STATUSES)[number];
 
+/** Moyens crypto (Pay ID / UID et wallets USDT directs) pouvant afficher un QR code. */
+export const CRYPTO_MANUAL_PAYMENT_METHODS = [
+  "binance_pay",
+  "okx_pay",
+  "bybit_pay",
+  "redotpay",
+  "usdt_bep20",
+  "usdt_trc20",
+  "usdt_ton",
+  "usdt_polygon",
+  "usdt_sol",
+] as const;
+
+export function isCryptoManualPaymentMethod(method: ManualPaymentMethod): boolean {
+  return (CRYPTO_MANUAL_PAYMENT_METHODS as readonly string[]).includes(method);
+}
+
+export function isDirectCryptoWalletMethod(method: ManualPaymentMethod): boolean {
+  return method.startsWith("usdt_");
+}
+
 /** Longueurs maximales partagées entre le formulaire et la validation serveur. */
 export const MANUAL_PAYMENT_LIMITS = {
   senderName: 120,
@@ -97,6 +118,7 @@ export const MANUAL_PAYMENT_LIMITS = {
   note: 300,
   account: 160,
   beneficiary: 120,
+  qrImage: 1000,
 } as const;
 
 export const MANUAL_PAYMENT_METHOD_LABELS: Record<ManualPaymentMethod, string> = {
@@ -169,6 +191,8 @@ export interface ManualPaymentMethodSettings {
   feePercent: number;
   /** Consigne libre affichée au client avant son transfert. */
   instructions: string;
+  /** Image QR code personnalisée (chemin `/api/media/...` ou URL HTTPS), facultative. */
+  qrImage?: string;
 }
 
 export type ManualPaymentsConfig = Record<ManualPaymentMethod, ManualPaymentMethodSettings>;
@@ -181,6 +205,7 @@ export const DEFAULT_MANUAL_PAYMENT_SETTINGS: ManualPaymentMethodSettings = {
   rate: null,
   feePercent: 0,
   instructions: "",
+  qrImage: "",
 };
 
 export function defaultManualPaymentsConfig(): ManualPaymentsConfig {
@@ -231,6 +256,7 @@ export function normalizeManualPaymentsConfig(input: unknown): ManualPaymentsCon
       ? normalizedCurrency
       : defaultCurrency;
     const rate = normalizeManualPaymentRate(raw.rate);
+    const qrImage = normalizeManualPaymentQrImage(raw.qrImage);
     result[method] = {
       // Une seule notion d'ouverture : cochée, compte présent, et taux
       // disponible hors USD/USDT. Aucun appelant ne peut ainsi proposer un
@@ -245,9 +271,24 @@ export function normalizeManualPaymentsConfig(input: unknown): ManualPaymentsCon
       rate,
       feePercent: normalizeManualPaymentFee(raw.feePercent),
       instructions,
+      qrImage,
     };
   }
   return result;
+}
+
+export function normalizeManualPaymentQrImage(value: unknown): string {
+  const raw = String(value ?? "").trim().slice(0, MANUAL_PAYMENT_LIMITS.qrImage);
+  if (!raw) return "";
+  if (raw.startsWith("/")) {
+    return !raw.startsWith("//") && !/[\\\u0000-\u001f]/.test(raw) ? raw : "";
+  }
+  try {
+    const parsed = new URL(raw);
+    return parsed.protocol === "https:" ? raw : "";
+  } catch {
+    return "";
+  }
 }
 
 /** Méthodes réellement proposables au client, dans l'ordre du catalogue. */
