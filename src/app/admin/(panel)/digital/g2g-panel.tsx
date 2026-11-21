@@ -857,10 +857,11 @@ export function G2gPanel() {
               <span
                 className={`font-mono font-semibold ${data.autoDeliveryEnabled ? "text-emerald-700" : "text-amber-700"}`}
               >
-                {data.autoDeliveryEnabled ? "ARMÉ (achats possibles)" : "désarmé (aucun achat)"}
+                {data.autoDeliveryEnabled ? "ARMÉ (vente bloquée : livraison non vérifiée)" : "désarmé (aucun achat)"}
               </span>{' '}
               . Passez à <code className="font-mono">1</code> dans les variables Vercel pour autoriser les achats.
             </p>
+            <p className="mt-1 text-[11px] font-semibold text-red-700">Activation via cet écran bloquée : format des codes et livraison non vérifiés. Gardez tous les stocks G2G à zéro.</p>
             <p className="mt-1 text-[11px] text-stone-600">
               Passer une offre en <code className="font-mono">api_qty = 1</code> la rend achetable sur G2G : un
               client peut payer et déclencher un webhook{' '}

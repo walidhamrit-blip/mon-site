@@ -10,3 +10,13 @@ export function pilotQuantityAllowed(offerId: string, quantity: number, configur
   const pilot = pilotOfferId(configuredId);
   return pilot !== null && offerId === pilot;
 }
+
+/** Bloqué en code jusqu'à validation du contrat de livraison de bout en bout. */
+export function automaticDeliveryVerified(): boolean {
+  return false;
+}
+
+/** Les événements du bouton de diagnostic ne doivent jamais acheter. */
+export function isSyntheticDelivery(deliveryId: string, orderId: string): boolean {
+  return /^TESTD\d+$/.test(deliveryId) || /^TEST-ORDER-\d+$/.test(orderId);
+}

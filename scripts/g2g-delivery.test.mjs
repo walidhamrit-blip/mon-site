@@ -28,15 +28,9 @@ const SRC = read("src/lib/g2g-delivery.ts");
 const WEBHOOK = read("src/app/api/webhooks/g2g/route.ts");
 const CRON = read("src/app/api/cron/g2g-delivery/route.ts");
 
-test("aucun code produit ne sort dans les logs", () => {
-  // L'extracteur scanne le payload mais ne journalise que les chemins de clés.
-  assert.match(SRC, /clés du payload scannées/);
-  // La fonction extractCodesFromPayload ne journalise jamais les valeurs
-  // de code : seuls les chemins de clés (keyLog) passent dans console.info.
-  const consoleInfo = SRC.indexOf("clés du payload scannées");
-  const block = SRC.slice(consoleInfo - 200, consoleInfo + 100);
-  assert.doesNotMatch(block, /content:/);
-  assert.doesNotMatch(block, /codes\.push/);
+test("un format inconnu exige une livraison manuelle", () => {
+  assert.match(SRC, /kind: "manual_review"/);
+  assert.doesNotMatch(SRC, /extractCodesFromPayload|g2gDeliverCodes\(/);
 });
 
 test("la prise de possession est atomique et inclut le bail de reprise", () => {
@@ -89,11 +83,10 @@ test("le cron est configuré dans vercel.json à la minute", () => {
   assert.match(vercel, /"\* \* \* \* \*"/);
 });
 
-test("le webhook tente la livraison synchrone après achat", () => {
-  assert.match(WEBHOOK, /deliveredSync/);
-  assert.match(WEBHOOK, /attemptG2gDelivery\(delivery\)/);
-  assert.match(WEBHOOK, /setTimeout\(resolve, 2000\)/);
-  assert.match(WEBHOOK, /status: "delivered"/);
+test("le webhook ne livre pas en concurrence avec le cron", () => {
+  assert.doesNotMatch(WEBHOOK, /attemptG2gDelivery\(/);
+  assert.match(SRC, /for \(const delivery of claimedRows\)/);
+  assert.match(SRC, /\.returning\(\)/);
 });
 
 test("le webhook n'alerte « À LIVRER À LA MAIN » que si pas livré en synchrone", () => {
@@ -115,4 +108,46 @@ test("ensureSchema crée les nouvelles colonnes si absentes", () => {
 
 test("le cron a maxDuration = 30", () => {
   assert.match(CRON, /export const maxDuration = 30;/);
+});
+
+test("les tests synthétiques et la livraison non vérifiée ne peuvent pas acheter", () => {
+  assert.match(WEBHOOK, /const isSyntheticTest =/);
+  assert.match(WEBHOOK, /!isSyntheticTest && automaticDeliveryVerified\(\)/);
+  assert.match(read("src/lib/g2g-pilot.ts"), /function automaticDeliveryVerified\(\): boolean \{\s*return false;/);
+  const qty = read("src/app/api/admin/g2g/offer-qty/route.ts");
+  assert.match(qty, /apiQty > 0 && !automaticDeliveryVerified\(\)/);
+  assert.match(qty, /error: "delivery_not_verified"/);
+});
+
+test("expiration des tentatives sans codes mène à une escalade", () => {
+  const start = SRC.indexOf('case "awaiting_codes":');
+  const end = SRC.indexOf('case "manual_review":', start);
+  const block = SRC.slice(start, end);
+  assert.match(block, /attempts >= G2G_DELIVERY_MAX_ATTEMPTS/);
+  assert.match(block, /await escalateDelivery/);
+  assert.match(block, /nextAttemptAt: null/);
+});
+
+test("le webhook lit le prix fournisseur courant avant la décision", () => {
+  assert.match(WEBHOOK, /await fazercardsGiftCardCards\(mapping.categoryId\)/);
+  assert.match(WEBHOOK, /supplierCostUsd = Number\(sku.price_usd\)/);
+  assert.doesNotMatch(WEBHOOK, /Number\(mapping.supplierPriceUsd/);
+});
+
+test("reprise prudente : les planned abandonnés sont signalés sans achat", () => {
+  assert.match(SRC, /abandonedFloor = new Date\(now.getTime\(\) - 10 \* 60_000\)/);
+  assert.match(SRC, /eq\(g2gDeliveries.status, "planned"\), lte\(g2gDeliveries.updatedAt, abandonedFloor\)/);
+  assert.match(SRC, /for \(const delivery of claimedRows\)/);
+  assert.match(SRC, /eq\(g2gDeliveries.deliveryClaimedAt, now\)/);
+  assert.doesNotMatch(SRC, /fazercardsGiftCardOrder\(/);
+});
+
+test("une panne après réservation laisse une trace pour la revue manuelle", () => {
+  const transaction = WEBHOOK.indexOf("db.transaction(async (tx)");
+  const event = WEBHOOK.indexOf("tx.insert(webhookEvents)", transaction);
+  const delivery = WEBHOOK.indexOf("tx.insert(g2gDeliveries)", event);
+  assert.ok(transaction > 0 && event > transaction && delivery > event);
+  assert.match(WEBHOOK, /decision: "pending_review", status: "planned"/);
+  assert.match(WEBHOOK, /error: "delivery_log_unavailable"/);
+  assert.match(WEBHOOK, /error: "idempotency_unavailable"/);
 });

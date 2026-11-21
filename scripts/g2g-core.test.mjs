@@ -225,7 +225,9 @@ test("le webhook vérifie la signature AVANT de lire le corps", () => {
   const route = read("src/app/api/webhooks/g2g/route.ts");
   assert.ok(route.indexOf("verifyG2gWebhookSignature") < route.indexOf("JSON.parse(rawBody)"));
   assert.match(route, /invalid_signature/);
-  assert.match(route, /reserveWebhookEvent/);
+  assert.match(route, /db\.transaction/);
+  assert.match(route, /tx\.insert\(webhookEvents\)/);
+  assert.match(route, /tx\.insert\(g2gDeliveries\)/);
   assert.match(route, /provider: "g2g"/);
   // Phase 1 : aucun achat fournisseur, aucune livraison G2G.
   assert.doesNotMatch(route, /fazercardsGiftCardOrder|fazercardsGameKeyOrder|g2gDeliverCodes/);

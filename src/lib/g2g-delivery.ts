@@ -1,27 +1,14 @@
 /**
- * File de livraison G2G (phase 2, brique 2).
- *
- * Après l'achat juste-à-temps (brique 1), une ligne `g2g_deliveries` se
- * trouve en statut `purchased` avec une `supplier_order_ref`. Cette brique
- * :
- *
- *   1. Sonde la commande chez FazerCards jusqu'à ce que les codes soient
- *      disponibles ;
- *   2. Livre chaque code à G2G via `POST /v2/orders/{id}/delivery` ;
- *   3. Marque la livraison `delivered` ou reprogramme une tentative avec
- *      backoff exponentiel ;
- *   4. Escalade vers l'humain (Telegram) après épuisement des tentatives.
- *
- * Aucun code produit n'est jamais journalisé ni stocké en clair : seuls les
- * noms de clés du payload fournisseur sont consignés, pour diagnostic.
+ * Surveillance des livraisons G2G : la livraison automatique reste bloquée
+ * tant que le format fournisseur n'est pas vérifié. Les commandes achetées
+ * ou au résultat incertain sont orientées vers une intervention humaine.
+ * Aucun code produit n'est lu, journalisé ou envoyé par cette version.
  */
 
 import { and, eq, inArray, lte, or, sql } from "drizzle-orm";
 
 import { db, ensureSchema } from "@/db";
 import { g2gDeliveries, type G2gDelivery } from "@/db/schema";
-import { fazercardsOrder } from "@/lib/fazercards";
-import { g2gDeliverCodes } from "@/lib/g2g";
 import { notifyTelegramAdmin } from "@/lib/telegram";
 
 /** Nombre max de tentatives de livraison avant escalade humaine. */
@@ -45,53 +32,8 @@ export type G2gDeliveryResult =
   | { kind: "delivered"; codes: number }
   | { kind: "awaiting_codes"; reason: string }
   | { kind: "no_order_ref" }
+  | { kind: "manual_review"; reason: string }
   | { kind: "failed"; reason: string };
-
-/**
- * Extrait les codes cadeaux d'une réponse FazerCards.
- *
- * La structure exacte de `payload` n'est pas documentée de façon fiable, donc
- * on explore l'objet de façon défensive : toute valeur chaîne qui ressemble
- * à un code cadeau (alphanumérique majuscule, 8–32 caractères) est candidate.
- *
- * ⚠️ Jamais de valeur de code dans les journaux : seuls les chemins de clés
- * sont consignés, pour diagnostic.
- */
-function extractCodesFromPayload(
-  payload: unknown,
-): { content: string; reference_id: string }[] {
-  const codes: { content: string; reference_id: string }[] = [];
-  const seen = new Set<string>();
-  const keyLog: string[] = [];
-
-  function walk(value: unknown, path: string): void {
-    if (typeof value === "string") {
-      keyLog.push(path);
-      if (/^[A-Z0-9]{8,32}$/.test(value) && !seen.has(value)) {
-        seen.add(value);
-        codes.push({ content: value, reference_id: `payload:${path}` });
-      }
-      return;
-    }
-    if (Array.isArray(value)) {
-      value.forEach((v, i) => walk(v, `${path}[${i}]`));
-      return;
-    }
-    if (value && typeof value === "object") {
-      for (const [key, val] of Object.entries(
-        value as Record<string, unknown>,
-      )) {
-        walk(val, `${path}.${key}`);
-      }
-    }
-  }
-
-  walk(payload, "root");
-  console.info(
-    `[g2g][delivery] clés du payload scannées: ${keyLog.join(", ") || "(aucune)"}`,
-  );
-  return codes;
-}
 
 /** Délai avant la prochaine tentative, avec backoff borné. */
 function nextDeliveryDelayMs(attempts: number): number {
@@ -100,12 +42,8 @@ function nextDeliveryDelayMs(attempts: number): number {
 }
 
 /**
- * Tente de livrer une commande déjà achetée (statut `purchased` ou
- * `purchasing`). Fonction pure : aucune écriture en base.
- *
- * Le statut `purchasing` signifie qu'un achat a pu partir mais que le
- * processus est mort avant de confirmer : on sonde tout de même le
- * fournisseur au cas où la commande existe déjà.
+ * Évalue une livraison : sans format fournisseur vérifié, ne rien livrer
+ * automatiquement et demander un rapprochement ou une livraison manuelle.
  */
 export async function attemptG2gDelivery(
   delivery: G2gDelivery,
@@ -115,49 +53,9 @@ export async function attemptG2gDelivery(
     return { kind: "no_order_ref" };
   }
 
-  // Sonde le fournisseur pour voir si les codes sont disponibles.
-  let orderPayload: Record<string, unknown> | undefined;
-  try {
-    const detail = await fazercardsOrder(supplierOrderRef);
-    orderPayload = detail.order?.payload as
-      | Record<string, unknown>
-      | undefined;
-  } catch (error) {
-    return {
-      kind: "awaiting_codes",
-      reason: `Fournisseur illisible : ${error instanceof Error ? error.message : String(error)}`,
-    };
-  }
-
-  const codes = orderPayload
-    ? extractCodesFromPayload(orderPayload)
-    : [];
-
-  if (codes.length === 0) {
-    return {
-      kind: "awaiting_codes",
-      reason: `Aucun code trouvé dans le détail de la commande ${supplierOrderRef}.`,
-    };
-  }
-
-  // Livre chaque code à G2G.
-  try {
-    await g2gDeliverCodes({
-      orderId: delivery.orderId,
-      deliveryId: delivery.deliveryId,
-      codes: codes.map((c, i) => ({
-        content: c.content,
-        // reference_id stable : commande fournisseur + rang du code.
-        reference_id: `${supplierOrderRef}:${i + 1}`,
-      })),
-    });
-    return { kind: "delivered", codes: codes.length };
-  } catch (error) {
-    return {
-      kind: "failed",
-      reason: `Échec de livraison chez G2G : ${error instanceof Error ? error.message : String(error)}`,
-    };
-  }
+  // Le schéma exact du code fournisseur n'est pas vérifié. Ne jamais
+  // deviner ni transmettre une chaîne arbitraire : intervention humaine.
+  return { kind: "manual_review", reason: "Format des codes fournisseur non vérifié : livraison manuelle requise." };
 }
 
 /**
@@ -180,24 +78,28 @@ export async function processG2gDeliveryQueue(limit = 20): Promise<{
   await ensureSchema();
   const now = new Date();
   const leaseFloor = new Date(now.getTime() - G2G_DELIVERY_LEASE_MS);
+  // Une ligne planned abandonnée peut être une commande client non traitée.
+  // Attendre 10 minutes évite de perturber une exécution webhook en cours.
+  const abandonedFloor = new Date(now.getTime() - 10 * 60_000);
+  const eligible = or(
+    and(eq(g2gDeliveries.status, "planned"), lte(g2gDeliveries.updatedAt, abandonedFloor)),
+    and(
+      sql`${g2gDeliveries.nextAttemptAt} IS NOT NULL AND ${g2gDeliveries.nextAttemptAt} <= now()`,
+      or(
+        inArray(g2gDeliveries.status, ["purchasing", "purchased", "failed"]),
+        and(eq(g2gDeliveries.status, "delivery_processing"), lte(g2gDeliveries.deliveryClaimedAt, leaseFloor)),
+      ),
+    ),
+  );
 
-  // Réclame atomiquement les livraisons dues.
+  // Le candidat est réévalué au moment de la prise de possession.
   const due = await db
     .select()
     .from(g2gDeliveries)
-    .where(
-      and(
-        sql`${g2gDeliveries.deliveryAttempts} < ${G2G_DELIVERY_MAX_ATTEMPTS}`,
-        sql`${g2gDeliveries.nextAttemptAt} IS NOT NULL AND ${g2gDeliveries.nextAttemptAt} <= now()`,
-        or(
-          inArray(g2gDeliveries.status, ["purchasing", "purchased", "failed"]),
-          and(
-            eq(g2gDeliveries.status, "delivery_processing"),
-            lte(g2gDeliveries.deliveryClaimedAt, leaseFloor),
-          ),
-        ),
-      ),
-    )
+    .where(and(
+      sql`${g2gDeliveries.deliveryAttempts} < ${G2G_DELIVERY_MAX_ATTEMPTS}`,
+      eligible,
+    ))
     .orderBy(sql`${g2gDeliveries.nextAttemptAt} ASC`, sql`${g2gDeliveries.createdAt} ASC`)
     .limit(limit);
 
@@ -207,25 +109,18 @@ export async function processG2gDeliveryQueue(limit = 20): Promise<{
 
   // Prise de possession : marque `delivery_processing` + bail. Deux crons
   // concurrents ne peuvent pas traiter la même livraison.
-  await db
+  const claimedRows = await db
     .update(g2gDeliveries)
     .set({
       status: "delivery_processing",
       deliveryClaimedAt: now,
       updatedAt: now,
     })
-    .where(
-      and(
-        inArray(g2gDeliveries.id, ids),
-        or(
-          inArray(g2gDeliveries.status, ["purchasing", "purchased", "failed"]),
-          and(
-            eq(g2gDeliveries.status, "delivery_processing"),
-            lte(g2gDeliveries.deliveryClaimedAt, leaseFloor),
-          ),
-        ),
-      ),
-    );
+    .where(and(
+      inArray(g2gDeliveries.id, ids),
+      sql`${g2gDeliveries.deliveryAttempts} < ${G2G_DELIVERY_MAX_ATTEMPTS}`,
+      eligible,
+    )).returning();
 
   const results: {
     deliveryId: string;
@@ -234,7 +129,13 @@ export async function processG2gDeliveryQueue(limit = 20): Promise<{
     reason?: string;
   }[] = [];
 
-  for (const delivery of due) {
+  for (const delivery of claimedRows) {
+    // Un worker dont le bail a été repris ne doit pas écraser son successeur.
+    const owned = and(
+      eq(g2gDeliveries.id, delivery.id),
+      eq(g2gDeliveries.status, "delivery_processing"),
+      eq(g2gDeliveries.deliveryClaimedAt, now),
+    );
     const attempts = Number(delivery.deliveryAttempts ?? 0) + 1;
 
     let result: G2gDeliveryResult;
@@ -259,7 +160,7 @@ export async function processG2gDeliveryQueue(limit = 20): Promise<{
             detail: `Livré : ${result.codes} code(s) transmis à G2G.`,
             updatedAt: new Date(),
           })
-          .where(eq(g2gDeliveries.deliveryId, delivery.deliveryId));
+          .where(owned);
         results.push({
           deliveryId: delivery.deliveryId,
           kind: "delivered",
@@ -269,6 +170,12 @@ export async function processG2gDeliveryQueue(limit = 20): Promise<{
       }
 
       case "awaiting_codes": {
+        if (attempts >= G2G_DELIVERY_MAX_ATTEMPTS) {
+          await db.update(g2gDeliveries).set({ status: "failed", deliveryAttempts: attempts, nextAttemptAt: null, deliveryClaimedAt: null, detail: `Codes indisponibles : ${result.reason}`, updatedAt: new Date() }).where(owned);
+          await escalateDelivery(delivery, result.reason, attempts);
+          results.push({ deliveryId: delivery.deliveryId, kind: "failed", attempts, reason: result.reason });
+          break;
+        }
         const nextAttemptAt = new Date(
           Date.now() + nextDeliveryDelayMs(attempts),
         );
@@ -282,13 +189,20 @@ export async function processG2gDeliveryQueue(limit = 20): Promise<{
             detail: `En attente des codes (tentative ${attempts}) : ${result.reason}`,
             updatedAt: new Date(),
           })
-          .where(eq(g2gDeliveries.deliveryId, delivery.deliveryId));
+          .where(owned);
         results.push({
           deliveryId: delivery.deliveryId,
           kind: "awaiting_codes",
           attempts,
           reason: result.reason,
         });
+        break;
+      }
+
+      case "manual_review": {
+        await db.update(g2gDeliveries).set({ status: "failed", deliveryAttempts: attempts, nextAttemptAt: null, deliveryClaimedAt: null, detail: result.reason, updatedAt: new Date() }).where(owned);
+        await escalateDelivery(delivery, result.reason, attempts);
+        results.push({ deliveryId: delivery.deliveryId, kind: "manual_review", attempts, reason: result.reason });
         break;
       }
 
@@ -301,10 +215,10 @@ export async function processG2gDeliveryQueue(limit = 20): Promise<{
             nextAttemptAt: null,
             deliveryClaimedAt: null,
             detail:
-              "Aucune référence fournisseur : achat à vérifier manuellement.",
+              "Aucune référence fournisseur : commande et achat éventuel à vérifier manuellement avant toute action.",
             updatedAt: new Date(),
           })
-          .where(eq(g2gDeliveries.deliveryId, delivery.deliveryId));
+          .where(owned);
         await escalateDelivery(delivery, "Aucune référence fournisseur.");
         results.push({
           deliveryId: delivery.deliveryId,
@@ -327,7 +241,7 @@ export async function processG2gDeliveryQueue(limit = 20): Promise<{
               detail: `Échec définitif de livraison : ${result.reason}`,
               updatedAt: new Date(),
             })
-            .where(eq(g2gDeliveries.deliveryId, delivery.deliveryId));
+            .where(owned);
           await escalateDelivery(delivery, result.reason, attempts);
         } else {
           const nextAttemptAt = new Date(
@@ -343,7 +257,7 @@ export async function processG2gDeliveryQueue(limit = 20): Promise<{
               detail: `Échec de livraison (tentative ${attempts}) : ${result.reason}`,
               updatedAt: new Date(),
             })
-            .where(eq(g2gDeliveries.deliveryId, delivery.deliveryId));
+            .where(owned);
         }
         results.push({
           deliveryId: delivery.deliveryId,
@@ -356,7 +270,7 @@ export async function processG2gDeliveryQueue(limit = 20): Promise<{
     }
   }
 
-  return { claimed: due.length, results };
+  return { claimed: claimedRows.length, results };
 }
 
 /** Alerte Telegram pour une livraison en échec définitif. */
@@ -366,7 +280,7 @@ async function escalateDelivery(
   attempts?: number,
 ): Promise<void> {
   try {
-    await notifyTelegramAdmin(
+    const notification = await notifyTelegramAdmin(
       [
         "🚨 G2G — LIVRAISON EN ÉCHEC DÉFINITIF",
         `Commande : ${delivery.orderId}`,
@@ -375,11 +289,12 @@ async function escalateDelivery(
         `Référence fournisseur : ${delivery.supplierOrderRef ?? "aucune"}`,
         `Tentatives : ${attempts ?? delivery.deliveryAttempts}`,
         `Dernière erreur : ${reason}`,
-        "Action : livrer le code manuellement à l'acheteur ou rembourser.",
+        "Action : vérifier d'abord la commande et tout achat éventuel ; traiter ou rembourser manuellement. Ne pas racheter sans rapprochement.",
       ]
         .filter((line): line is string => Boolean(line))
         .join("\n"),
     );
+    if (!notification.ok) console.warn("[g2g][delivery] alerte Telegram refusée ; vérifier les livraisons en échec.");
   } catch (error) {
     console.warn(
       "[g2g][delivery] alerte Telegram impossible :",
