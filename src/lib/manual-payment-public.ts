@@ -8,7 +8,9 @@
 
 import {
   MANUAL_PAYMENT_METHODS,
+  isDollarPeggedManualCurrency,
   normalizeManualPaymentsConfig,
+  type ManualPaymentCurrency,
   type ManualPaymentMethod,
 } from "@/lib/manual-payment-core";
 
@@ -17,7 +19,7 @@ export interface PublicManualPaymentOption {
   /** Compte à créditer tel qu'affiché au client (jamais un compte vide). */
   account: string;
   beneficiary: string;
-  currency: "USD" | "LYD" | "EUR" | "TND" | "WMZ";
+  currency: ManualPaymentCurrency;
   rate: number | null;
   feePercent: number;
   instructions: string;
@@ -27,7 +29,7 @@ export interface PublicManualPaymentOption {
  * Méthodes à afficher dans un tunnel de paiement.
  *
  * Une méthode n'apparaît que si elle est cochée ET utilisable (compte présent,
- * taux renseigné hors USD). Un réglage incomplet disparaît de l'interface au
+ * taux renseigné hors USD/USDT). Un réglage incomplet disparaît de l'interface au
  * lieu de produire un bouton qui échouerait au moment de payer.
  */
 export function publicManualPaymentOptions(
@@ -39,13 +41,14 @@ export function publicManualPaymentOptions(
     const settings = normalized[method];
     if (!settings.enabled) continue;
     if (!settings.account.trim()) continue;
-    if (settings.currency !== "USD" && !(Number(settings.rate) > 0)) continue;
+    const pegged = isDollarPeggedManualCurrency(settings.currency);
+    if (!pegged && !(Number(settings.rate) > 0)) continue;
     options.push({
       method,
       account: settings.account,
       beneficiary: settings.beneficiary,
       currency: settings.currency,
-      rate: settings.currency === "USD" ? 1 : settings.rate,
+      rate: pegged ? 1 : settings.rate,
       feePercent: settings.feePercent,
       instructions: settings.instructions,
     });

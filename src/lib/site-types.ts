@@ -1,6 +1,8 @@
 // Types partagés entre le site public, le stockage (base de données)
 // et le panneau d'administration. Aucune dépendance serveur ici.
 
+import type { ManualPaymentCurrency, ManualPaymentMethod } from "@/lib/manual-payment-core";
+
 export interface Demo {
   slug: string;
   sector: string;
@@ -160,8 +162,8 @@ export interface ManualPaymentMethodConfigData {
   /** Titulaire du compte (affiché au client pour éviter les erreurs). */
   beneficiary: string;
   /** Devise que le client doit envoyer. */
-  currency: "USD" | "LYD" | "EUR" | "TND" | "WMZ";
-  /** 1 USD = X devise. Ignoré pour la devise USD ; requis sinon. */
+  currency: ManualPaymentCurrency;
+  /** 1 USD = X devise. Ignoré pour USD / USDT ; requis sinon. */
   rate: number | null;
   /** Majoration appliquée au montant envoyé (frais, perte de change). */
   feePercent: number;
@@ -169,15 +171,10 @@ export interface ManualPaymentMethodConfigData {
   instructions: string;
 }
 
-export type ManualPaymentsConfigData = {
-  skrill: ManualPaymentMethodConfigData;
-  neteller: ManualPaymentMethodConfigData;
-  airtm: ManualPaymentMethodConfigData;
-  d17: ManualPaymentMethodConfigData;
-  advcash: ManualPaymentMethodConfigData;
-  webmoney: ManualPaymentMethodConfigData;
-  kashy: ManualPaymentMethodConfigData;
-};
+export type ManualPaymentsConfigData = Record<
+  ManualPaymentMethod,
+  ManualPaymentMethodConfigData
+>;
 
 export interface SiteConfigData {
   name: string;

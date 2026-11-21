@@ -37,6 +37,15 @@ const root = fileURLToPath(new URL("..", import.meta.url));
 mkdirSync(join(root, ".scratch"), { recursive: true });
 const bundleDir = mkdtempSync(join(root, ".scratch/manual-payments-"));
 process.on("exit", () => rmSync(bundleDir, { recursive: true, force: true }));
+const aliasPlugin = {
+  name: "alias",
+  setup(builder) {
+    builder.onResolve({ filter: /^@\// }, (args) => ({
+      // esbuild ne résout pas les extensions TS ici : on les ajoute.
+      path: join(root, "src", `${args.path.slice(2)}.ts`),
+    }));
+  },
+};
 const publicOut = join(bundleDir, "public.mjs");
 await build({
   entryPoints: [join(root, "src/lib/manual-payment-public.ts")],
@@ -45,20 +54,22 @@ await build({
   format: "esm",
   platform: "node",
   packages: "external",
-  plugins: [
-    {
-      name: "alias",
-      setup(builder) {
-        builder.onResolve({ filter: /^@\// }, (args) => ({
-          // esbuild ne résout pas les extensions TS ici : on les ajoute.
-          path: join(root, "src", `${args.path.slice(2)}.ts`),
-        }));
-      },
-    },
-  ],
+  plugins: [aliasPlugin],
+  logLevel: "silent",
+});
+const validationOut = join(bundleDir, "validation.mjs");
+await build({
+  entryPoints: [join(root, "src/lib/validation.ts")],
+  outfile: validationOut,
+  bundle: true,
+  format: "esm",
+  platform: "node",
+  packages: "external",
+  plugins: [aliasPlugin],
   logLevel: "silent",
 });
 const { publicManualPaymentOptions } = await import(pathToFileURL(publicOut).href);
+const { manualPaymentsConfigSchema } = await import(pathToFileURL(validationOut).href);
 const read = (path) => readFileSync(new URL(path, `file://${root}`), "utf8");
 
 /** Retire commentaires et espaces pour tester du code, pas des commentaires. */
@@ -75,19 +86,47 @@ const SKRILL = {
   instructions: "",
 };
 
-test("les sept moyens demandés existent, avec leurs devises", () => {
+test("les moyens manuels demandés existent, avec leurs devises", () => {
   assert.deepEqual(
     [...MANUAL_PAYMENT_METHODS],
-    ["skrill", "neteller", "airtm", "d17", "advcash", "webmoney", "kashy"],
+    [
+      "skrill",
+      "neteller",
+      "airtm",
+      "d17",
+      "advcash",
+      "webmoney",
+      "kashy",
+      "binance_pay",
+      "okx_pay",
+      "bybit_pay",
+      "redotpay",
+      "usdt_bep20",
+      "usdt_trc20",
+      "usdt_ton",
+      "usdt_polygon",
+      "usdt_sol",
+    ],
   );
   assert.deepEqual([...MANUAL_PAYMENT_METHOD_CURRENCIES.advcash], ["USD"]);
   assert.deepEqual([...MANUAL_PAYMENT_METHOD_CURRENCIES.webmoney], ["WMZ", "LYD", "EUR", "TND"]);
   assert.deepEqual([...MANUAL_PAYMENT_METHOD_CURRENCIES.kashy], ["TND"]);
+  assert.deepEqual([...MANUAL_PAYMENT_METHOD_CURRENCIES.binance_pay], ["USDT", "USD"]);
+  assert.deepEqual([...MANUAL_PAYMENT_METHOD_CURRENCIES.okx_pay], ["USDT", "USD"]);
+  assert.deepEqual([...MANUAL_PAYMENT_METHOD_CURRENCIES.bybit_pay], ["USDT", "USD"]);
+  assert.deepEqual([...MANUAL_PAYMENT_METHOD_CURRENCIES.redotpay], ["USDT", "USD"]);
+  assert.deepEqual([...MANUAL_PAYMENT_METHOD_CURRENCIES.usdt_bep20], ["USDT"]);
+  assert.deepEqual([...MANUAL_PAYMENT_METHOD_CURRENCIES.usdt_trc20], ["USDT"]);
   assert.equal(MANUAL_PAYMENT_METHOD_DEFAULT_CURRENCY.webmoney, "WMZ");
   assert.equal(MANUAL_PAYMENT_METHOD_DEFAULT_CURRENCY.kashy, "TND");
-  assert.deepEqual([...MANUAL_PAYMENT_CURRENCIES].sort(), ["EUR", "LYD", "TND", "USD", "WMZ"]);
+  assert.equal(MANUAL_PAYMENT_METHOD_DEFAULT_CURRENCY.binance_pay, "USDT");
+  assert.equal(MANUAL_PAYMENT_METHOD_DEFAULT_CURRENCY.redotpay, "USDT");
+  assert.equal(MANUAL_PAYMENT_METHOD_DEFAULT_CURRENCY.usdt_bep20, "USDT");
+  assert.deepEqual([...MANUAL_PAYMENT_CURRENCIES].sort(), ["EUR", "LYD", "TND", "USD", "USDT", "WMZ"]);
   assert.equal(normalizeManualPaymentMethod(" Skrill "), "skrill");
   assert.equal(normalizeManualPaymentMethod("D17"), "d17");
+  assert.equal(normalizeManualPaymentMethod("binance_pay"), "binance_pay");
+  assert.equal(normalizeManualPaymentMethod("USDT_BEP20"), "usdt_bep20");
   assert.equal(normalizeManualPaymentMethod("paypal"), null);
   assert.equal(normalizeManualPaymentMethod(null), null);
 });
@@ -156,12 +195,66 @@ test("les nouveaux moyens sont normalisés et configurés séparément", () => {
     manualPaymentMethodReady({ ...SKRILL, currency: "WMZ", rate: 0.995 }),
     true,
   );
+
+  // Crypto Pay ID & USDT direct : devise USDT 1:1 par défaut, prête sans taux manuel.
+  assert.equal(defaults.binance_pay.currency, "USDT");
+  assert.equal(defaults.binance_pay.enabled, false);
+  assert.equal(defaults.usdt_bep20.currency, "USDT");
+  assert.equal(
+    manualPaymentMethodReady({ ...SKRILL, account: "123456789", currency: "USDT", rate: null }),
+    true,
+  );
+  const cryptoConfigured = normalizeManualPaymentsConfig({
+    binance_pay: { ...SKRILL, account: "987654321", currency: "USDT", rate: null, enabled: true },
+    usdt_bep20: { ...SKRILL, account: "0xAbCdEf123456", currency: "EUR", rate: 0.92, enabled: true },
+    redotpay: { ...SKRILL, account: "RD-100200", currency: "USDT", feePercent: 1, enabled: true },
+  });
+  assert.equal(cryptoConfigured.binance_pay.enabled, true);
+  assert.equal(cryptoConfigured.binance_pay.currency, "USDT");
+  // USDT BEP20 reste forcé en USDT même si une autre devise a été soumise.
+  assert.equal(cryptoConfigured.usdt_bep20.currency, "USDT");
+  assert.equal(cryptoConfigured.usdt_bep20.enabled, true);
+  assert.equal(cryptoConfigured.redotpay.enabled, true);
+});
+
+test("le schéma Zod accepte un objet partiel historique et les nouvelles devises USDT", () => {
+  const legacyParsed = manualPaymentsConfigSchema.safeParse({
+    skrill: SKRILL,
+  });
+  assert.equal(legacyParsed.success, true);
+  if (legacyParsed.success) {
+    assert.equal(legacyParsed.data.skrill.enabled, true);
+    assert.equal(legacyParsed.data.binance_pay.enabled, false);
+    assert.equal(legacyParsed.data.binance_pay.currency, "USDT");
+    assert.equal(legacyParsed.data.usdt_bep20.currency, "USDT");
+  }
 });
 
 test("le montant à envoyer est calculé depuis le réglage, jamais codé en dur", () => {
   const usd = calculateManualPaymentQuote(100, "skrill", SKRILL);
   assert.equal(usd?.payAmount, 100);
   assert.equal(usd?.payCurrency, "USD");
+
+  const usdt = calculateManualPaymentQuote(25, "binance_pay", {
+    ...SKRILL,
+    account: "987654321",
+    currency: "USDT",
+    rate: null,
+    feePercent: 0,
+  });
+  assert.equal(usdt?.payCurrency, "USDT");
+  assert.equal(usdt?.payRate, 1);
+  assert.equal(usdt?.payAmount, 25);
+
+  const usdtWithFee = calculateManualPaymentQuote(100, "usdt_trc20", {
+    ...SKRILL,
+    account: "TXyz123456",
+    currency: "USDT",
+    rate: null,
+    feePercent: 1,
+  });
+  assert.equal(usdtWithFee?.payCurrency, "USDT");
+  assert.equal(usdtWithFee?.payAmount, 101);
 
   // 1 USD = 5,4 LYD + 8 % → 100 USD = 583,20 LYD (pas « 1 USD = 1 USD »).
   const lyd = calculateManualPaymentQuote(100, "d17", {
@@ -304,11 +397,16 @@ test("la route d'options ne divulgue que les moyens réellement proposables", ()
     advcash: { ...SKRILL, account: "volet-id", enabled: true },
     webmoney: { ...SKRILL, account: "WMID-123", currency: "EUR", rate: 0.92, enabled: true },
     kashy: { ...SKRILL, account: "+21600000000", currency: "TND", rate: 3.1, enabled: true },
+    binance_pay: { ...SKRILL, account: "99887766", currency: "USDT", rate: null, enabled: true },
+    usdt_bep20: { ...SKRILL, account: "0x1234abcd", currency: "USDT", rate: null, enabled: true },
   });
   assert.deepEqual(
     options.map((option) => option.method),
-    ["skrill", "d17", "advcash", "webmoney", "kashy"],
+    ["skrill", "d17", "advcash", "webmoney", "kashy", "binance_pay", "usdt_bep20"],
   );
+  const binance = options.find((option) => option.method === "binance_pay");
+  assert.equal(binance?.currency, "USDT");
+  assert.equal(binance?.rate, 1);
   // Un compte fermé ne fuit pas dans le navigateur.
   assert.equal(JSON.stringify(options).includes("agence@example.com"), true);
   const d17 = options.find((option) => option.method === "d17");

@@ -61,8 +61,16 @@ const methodSchema = (method: (typeof MANUAL_PAYMENT_METHODS)[number]) =>
 
 export const manualPaymentsConfigSchema = z.object(
   Object.fromEntries(
-    MANUAL_PAYMENT_METHODS.map((method) => [method, methodSchema(method)]),
-  ) as Record<(typeof MANUAL_PAYMENT_METHODS)[number], ReturnType<typeof methodSchema>>,
+    MANUAL_PAYMENT_METHODS.map((method) => [
+      method,
+      methodSchema(method).default(() =>
+        defaultManualPaymentConfig(MANUAL_PAYMENT_METHOD_DEFAULT_CURRENCY[method]),
+      ),
+    ]),
+  ) as Record<
+    (typeof MANUAL_PAYMENT_METHODS)[number],
+    z.ZodDefault<ReturnType<typeof methodSchema>>
+  >,
 );
 
 export function defaultManualPaymentConfig(

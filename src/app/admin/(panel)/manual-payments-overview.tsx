@@ -10,6 +10,7 @@ import {
   MANUAL_PAYMENT_CURRENCY_LABELS,
   MANUAL_PAYMENT_METHOD_LABELS,
   MANUAL_PAYMENT_METHODS,
+  isDollarPeggedManualCurrency,
   manualPaymentMethodReady,
   type ManualPaymentMethod,
 } from "@/lib/manual-payment-core";
@@ -109,8 +110,8 @@ export function ManualPaymentsOverview({
           const complete = manualPaymentMethodReady(settings);
           const enabled = settings.enabled === true && complete;
           const busy = pendingMethod === method;
-          const rateLabel = settings.currency === "USD"
-            ? "1 USD = 1 USD"
+          const rateLabel = isDollarPeggedManualCurrency(settings.currency)
+            ? `1 USD = 1 ${settings.currency}`
             : settings.rate != null
               ? `1 USD = ${settings.rate.toFixed(2)} ${settings.currency}`
               : "Taux manquant";
