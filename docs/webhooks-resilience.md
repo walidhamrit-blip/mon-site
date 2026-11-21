@@ -126,14 +126,18 @@ l'identique, simplement sans notification.
 | Cron `/api/cron/digital-orders` | planifié par `vercel.json` | dépend du plan |
 | Bouton admin « Relancer » | action humaine | immédiate (hors file) |
 
-⚠️ **Plan Vercel Hobby** : un cron ne peut pas être plus fréquent que
-quotidien (le déploiement échoue sinon). Le cron quotidien reste alors un
-filet ; la latence réelle vient de l'IPN et du sondage. Sur **Pro**, planifier
-une exécution toutes les 5 minutes :
+**Plan Vercel Pro (ce projet)** : le cron tourne toutes les 5 minutes, soit une
+reprise en minutes au lieu d'un filet quotidien :
 
 ```json
 { "path": "/api/cron/digital-orders", "schedule": "*/5 * * * *" }
 ```
+
+Chaque passage réclame jusqu'à 5 jobs : au plus 12 jobs/min tous passages
+confondus, très en dessous du rythme d'une commande payée. Sur un plan
+**Hobby** (une exécution par jour maximum — le déploiement échoue sinon), il
+faudrait revenir à `20 4 * * *` : la latence réelle vient alors de l'IPN et
+du sondage client.
 
 Diagnostic sans achat :
 

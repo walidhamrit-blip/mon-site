@@ -1124,8 +1124,8 @@ async function reconcileDigitalOrderOnPoll(order: DigitalOrder): Promise<Digital
     ) {
       // La file fait foi : elle relit le job (retry programmé, bail expiré,
       // job déjà terminé) au lieu de relancer un achat direct. Le sondage
-      // client devient ainsi un worker de secours — utile sur Vercel Hobby
-      // où le cron est quotidien.
+      // client devient ainsi un second worker, qui sert aussi de secours si
+      // le cron (toutes les 5 min en Pro) est en retard ou désactivé.
       const { runDeliveryQueue } = await import("@/lib/delivery-queue");
       await runDeliveryQueue({ limit: 1 });
       return (await loadDigitalOrder(order.id)) ?? order;

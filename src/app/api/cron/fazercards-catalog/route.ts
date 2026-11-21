@@ -15,8 +15,15 @@ import { fazercardsConfigured } from "@/lib/fazercards";
  * est persisté en base : toutes les instances lisent ensuite la même copie
  * en une requête.
  *
- * Déclenchée par `vercel.json` (toutes les 10 minutes) et protégée par
+ * Déclenchée par `vercel.json` **une fois par jour** et protégée par
  * `CRON_SECRET` si la variable est définie.
+ *
+ * ⚠️ Pourquoi pas plus souvent, alors que le plan Pro le permettrait : une
+ * synchro complète coûte un appel HTTP par catégorie (~123) plus les détails,
+ * soit plusieurs dizaines de secondes de fonction. Le rafraîchissement utile
+ * est déjà assuré après chaque réponse (`after()` dans le rendu) et par le
+ * TTL du cache ; multiplier le cron ne ferait qu'empiler des synchros
+ * concurrentes et de la facture d'invocations.
  */
 
 export const runtime = "nodejs";

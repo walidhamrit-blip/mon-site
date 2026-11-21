@@ -963,10 +963,10 @@ function refreshFazercardsCatalog(): Promise<FazercardsSyncResult> {
 /**
  * Planifie une synchronisation APRÈS la réponse HTTP.
  *
- * Le plan Vercel Hobby n'autorise qu'un cron par jour : sans cela, les prix
- * et le stock resteraient figés jusqu'au lendemain. `after()` exécute la
- * tâche dans la même invocation, une fois la réponse envoyée — l'utilisateur
- * n'attend jamais la synchronisation.
+ * Le cron catalogue est quotidien : sans cela, les prix et le stock
+ * resteraient figés jusqu'au lendemain. `after()` exécute la tâche dans la
+ * même invocation, une fois la réponse envoyée — l'utilisateur n'attend
+ * jamais la synchronisation.
  *
  * Best effort : hors contexte de requête Next (script, test), `after` lève —
  * on ignore simplement.
@@ -1078,7 +1078,8 @@ export async function getFazercardsCatalog(
     // Rendu de page : on sert TOUT DE SUITE la copie existante, puis on
     // planifie le rafraîchissement APRÈS l'envoi de la réponse (`after`).
     // Synchroniser ici ferait expirer la requête ; ne rien planifier
-    // figerait le catalogue entre deux crons (une fois par jour sur Hobby).
+    // figerait le catalogue entre deux passages du cron (quotidien, même en
+    // Pro : une synchro complète coûte un appel par catégorie).
     if (options.noSync) {
       scheduleBackgroundRefresh(ttlMs);
       return snapshot(cache, { cached: true, stale: true });
