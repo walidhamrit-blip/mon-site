@@ -242,12 +242,26 @@ test("le cron solde est protégé par CRON_SECRET et ne fait aucun achat", () =>
   assert.doesNotMatch(route, /payments\/create|fazercardsPaymentCreate/);
 });
 
-test("le cron est déclaré dans vercel.json (une fois par jour)", () => {
+test("le cron solde tourne toutes les heures (plan Pro)", () => {
   const vercel = JSON.parse(read("vercel.json"));
   const entry = vercel.crons.find((cron) => cron.path === "/api/cron/fazercards-balance");
   assert.ok(entry, "cron solde absent de vercel.json");
-  // Plan Hobby : jamais plus d'une exécution par jour (sinon déploiement refusé).
-  assert.match(entry.schedule, /^\d+ \d+ \* \* \*$/);
+  // Plan Pro : une heure entre deux lectures. L'ancien `0 5 * * *` laissait
+  // jusqu'à 24 h sans contrôle du solde après une vente au plafond.
+  assert.match(entry.schedule, /^0 \* \* \* \*$/);
+  // Un solde illisible ou bas ne doit pas rester 24 h sans nouvelle lecture.
+  const status = read("src/lib/fazercards-balance.ts");
+  assert.match(status, /BALANCE_CACHE_TTL_MS = 5 \* 60 \* 1000/);
+});
+
+test("le cron solde ne meurt plus quand la clé est absente", () => {
+  const route = read("src/app/api/cron/fazercards-balance/route.ts");
+  // Avant : `supplier_not_configured` + 503, donc AUCUN e-mail — l'incident
+  // le plus grave était le seul à ne rien signaler.
+  assert.doesNotMatch(route, /supplier_not_configured/);
+  assert.doesNotMatch(route, /fazercardsConfigured\(\)\)\s*\{\s*return NextResponse\.json\(\s*\{\s*ok: false/);
+  // Le diagnostic reste honnête : la réponse expose `configured`.
+  assert.match(route, /configured,\s*\.\.\.report/);
 });
 
 test("l'administration affiche la couverture du solde", () => {
