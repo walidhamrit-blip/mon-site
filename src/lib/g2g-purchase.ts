@@ -4,7 +4,6 @@ import { db, ensureSchema } from "@/db";
 import { g2gDeliveries } from "@/db/schema";
 import { fazercardsBalance, fazercardsGiftCardOrder } from "@/lib/fazercards";
 import {
-  g2gIdempotencyKey,
   shouldPurchaseNow,
   type G2gFulfilmentPlan,
 } from "@/lib/g2g-fulfilment-core";
@@ -20,9 +19,7 @@ import {
  *
  *   1. `shouldPurchaseNow()` — la porte. Elle croise le verdict du moteur
  *      avec l'état RÉEL du coupe-circuit.
- *   2. Une clé d'idempotence dérivée du `delivery_id` — le fournisseur ne
- *      prélève qu'une fois, même si l'événement est rejoué.
- *   3. Une prise de possession atomique en base — deux webhooks concurrents
+ *   2. Une prise de possession atomique en base — deux webhooks concurrents
  *      ne peuvent pas acheter tous les deux.
  *
  * Le journal est écrit AVANT l'appel réseau (`status = 'purchasing'`). Si le
@@ -48,8 +45,6 @@ export type G2gPurchaseOutcome =
   | { outcome: "not_eligible"; reason: string }
   /** Identifiants fournisseur manquants : on n'achète pas à l'aveugle. */
   | { outcome: "missing_sku" }
-  /** Pas de clé d'idempotence exploitable : un rejeu coûterait double. */
-  | { outcome: "invalid_key" }
   /** Solde fournisseur insuffisant — souvent transitoire, donc réessayable. */
   | { outcome: "insufficient_balance"; balanceUsd: number; neededUsd: number }
   /** Solde illisible : on ne commande pas à l'aveugle. */
@@ -66,9 +61,7 @@ function safeReason(error: unknown): string {
 }
 
 /**
- * Une minute : délai avant qu'une reprise soit tentée. Volontairement court
- * — l'acheteur attend son code — mais suffisant pour qu'un incident
- * transitoire se résorbe.
+ * Une minute : délai avant rapprochement manuel en cas d'issue incertaine.
  */
 const RETRY_DELAY_MS = 60_000;
 
@@ -96,13 +89,6 @@ export async function purchaseG2gDelivery(
     return { outcome: "missing_sku" };
   }
 
-  // 3. Clé d'idempotence : sans elle, un événement rejoué achèterait deux
-  //    fois. On préfère ne pas acheter du tout.
-  const idempotencyKey = g2gIdempotencyKey(input.deliveryId);
-  if (!idempotencyKey) {
-    return { outcome: "invalid_key" };
-  }
-
   await ensureSchema();
 
   /**
@@ -112,10 +98,9 @@ export async function purchaseG2gDelivery(
    * négatif — dans les deux cas une commande payée qu'on ne peut pas
    * honorer. On vérifie donc AVANT de dépenser.
    *
-   * Volontairement placé avant la prise de possession : un solde vide est
-   * généralement transitoire (rechargement en cours). La ligne reste donc
-   * `planned` et sera reprise plus tard, au lieu d'être marquée `failed`
-   * pour un incident réparable.
+   * Placé avant la prise de possession. Si le solde est indisponible ou
+   * insuffisant, le traitement s'arrête pour intervention manuelle ; il n'y
+   * a pas de reprise automatique d'achat.
    */
   const neededUsd = Number(input.plan?.totalCostUsd ?? 0);
   let balanceUsd: number;
@@ -128,7 +113,8 @@ export async function purchaseG2gDelivery(
     await db
       .update(g2gDeliveries)
       .set({
-        nextAttemptAt: new Date(Date.now() + RETRY_DELAY_MS),
+        status: "failed",
+        nextAttemptAt: null,
         detail: `Solde fournisseur illisible : ${safeReason(error)}`,
         updatedAt: new Date(),
       })
@@ -145,7 +131,8 @@ export async function purchaseG2gDelivery(
     await db
       .update(g2gDeliveries)
       .set({
-        nextAttemptAt: new Date(Date.now() + RETRY_DELAY_MS),
+        status: "failed",
+        nextAttemptAt: null,
         detail: `Solde insuffisant : ${balanceUsd} $ disponibles pour ${neededUsd} $ nécessaires.`,
         updatedAt: new Date(),
       })
@@ -174,9 +161,9 @@ export async function purchaseG2gDelivery(
     .set({
       status: "purchasing",
       attempts: sql`${g2gDeliveries.attempts} + 1`,
-      // Reprise possible si cet appel ne revient jamais.
+      // Résultat incertain : la file déclenchera un rapprochement manuel.
       nextAttemptAt: new Date(Date.now() + RETRY_DELAY_MS),
-      detail: `Achat en cours (clé ${idempotencyKey}).`,
+      detail: "Achat en cours ; résultat incertain à vérifier manuellement en cas de panne.",
       updatedAt: new Date(),
     })
     .where(
@@ -198,7 +185,6 @@ export async function purchaseG2gDelivery(
       category_id: categoryId,
       card_id: cardId,
       quantity: input.requestedQty,
-      idempotencyKey,
     });
 
     const supplierOrderRef = response.order?.id ?? "";

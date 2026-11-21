@@ -251,12 +251,12 @@ test("l'achat est verrouillé derrière trois portes avant tout appel réseau", 
   // — toutes avant le premier appel au fournisseur.
   const firstCall = src.indexOf("fazercardsGiftCardOrder(");
   assert.ok(firstCall > 0, "appel fournisseur introuvable");
-  for (const gate of ["shouldPurchaseNow(", "missing_sku", "invalid_key"]) {
+  for (const gate of ["shouldPurchaseNow(", "missing_sku"]) {
     const at = src.indexOf(gate);
     assert.ok(at > 0 && at < firstCall, `${gate} doit précéder l'appel`);
   }
   // La clé d'idempotence est bien transmise.
-  assert.match(src, /idempotencyKey,/);
+  assert.doesNotMatch(src, /idempotencyKey,/);
 });
 
 test("le solde est vérifié avant de dépenser, sans condamner la ligne", () => {
@@ -296,9 +296,9 @@ test("la prise de possession est atomique et écrite avant l'appel", () => {
 test("le webhook n'achète que sur décision « proceed », jamais en amont", () => {
   const route = read("src/app/api/webhooks/g2g/route.ts");
   // L'appel est conditionné, et placé APRÈS la journalisation.
-  assert.match(route, /if \(decision === "proceed"\)/);
-  const guard = route.indexOf('if (decision === "proceed")');
-  const journal = route.indexOf("db\n      .insert(g2gDeliveries)");
+  assert.match(route, /if \(decision === "proceed" && !isSyntheticTest && automaticDeliveryVerified\(\)\)/);
+  const guard = route.indexOf('if (decision === "proceed" && !isSyntheticTest && automaticDeliveryVerified())');
+  const journal = route.indexOf("tx.insert(g2gDeliveries)");
   const purchase = route.indexOf("purchaseG2gDelivery({");
   assert.ok(journal > 0 && purchase > 0, "ordre journal/achat introuvable");
   assert.ok(journal < guard, "le journal doit précéder l'achat");

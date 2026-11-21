@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { eq } from "drizzle-orm";
 import { db, ensureSchema } from "@/db";
 import { g2gOfferMappings } from "@/db/schema";
-import { pilotQuantityAllowed } from "@/lib/g2g-pilot";
+import { automaticDeliveryVerified, pilotQuantityAllowed } from "@/lib/g2g-pilot";
 import { isAdminAuthenticated } from "@/lib/auth";
 import { g2gConfigured, g2gErrorMessage, g2gGetOffer, g2gPatchOffer } from "@/lib/g2g";
 
@@ -74,6 +74,10 @@ export async function PATCH(req: Request) {
 
   if (apiQty > 0 && process.env.G2G_AUTO_DELIVERY !== "1") {
     return noStoreJson({ ok: false, error: "auto_delivery_disabled", message: "Activation refusée : G2G_AUTO_DELIVERY n'est pas armé." }, 403);
+  }
+
+  if (apiQty > 0 && !automaticDeliveryVerified()) {
+    return noStoreJson({ ok: false, error: "delivery_not_verified", message: "Activation bloquée : le format des codes fournisseur et la livraison automatique doivent être vérifiés de bout en bout." }, 503);
   }
 
   // Si on active (api_qty > 0), le mapping doit exister et être activé :
