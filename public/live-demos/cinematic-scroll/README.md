@@ -1,8 +1,8 @@
-# Démo « Cinematic Scroll » — MIRA (immobilier de luxe, FR/AR)
+# Démo « Cinematic Scroll » — MIRA (horlogerie & objets de luxe, FR/AR)
 
-Démo **client** d'un site web immobilier de luxe avec **scroll cinématique**,
-dans le style des démos virales « Higgsfield + Claude / ChatGPT » — réalisée
-**sans aucun service payant**.
+Démo **client** d'un site d'horlogerie et d'objets précieux avec **scroll
+cinématique**, dans le style des démos virales « Higgsfield + Claude /
+ChatGPT » — réalisée **sans aucun service payant**.
 
 - **Ambiance** : thème clair minimaliste luxe (ivoire / bronze), grain papier
 - **Bilingue** : français ⇄ arabe (RTL complet), sélecteur dans l'en-tête
@@ -17,7 +17,7 @@ dans le style des démos virales « Higgsfield + Claude / ChatGPT » — réalis
 | Animations & scroll | GSAP 3.15 + ScrollTrigger + SplitText (locaux) | 0 $ | Gratuits pour usage commercial depuis GSAP 3.13 (Webflow) |
 | Défilement fluide | Lenis 1.3 (local) | 0 $ | MIT |
 | Police arabe | Cairo (auto-hébergée) | 0 $ | SIL OFL (voir `fonts/OFL-Cairo.txt`) |
-| Visuels | 5 images générées par IA | 0 $ | Propres à ce projet |
+| Visuels | 6 images générées par IA (montre, cadran, objets, cuir, mouvement, atelier) | 0 $ | Propres à ce projet |
 | Hébergement | Tout fichier statique (Vercel/Netlify/GitHub Pages) | 0 $ | — |
 
 ## Structure
@@ -26,7 +26,7 @@ dans le style des démos virales « Higgsfield + Claude / ChatGPT » — réalis
 index.html          ← le site complet (HTML + CSS + JS inline, dictionnaire i18n)
 favicon.svg
 fonts/              ← Cairo variable (OFL)
-images/             ← 5 visuels IA (hero, intérieur, aérien, terrasse, pierre)
+images/             ← 6 visuels IA (hero, cadran, trésors, bracelet, mouvement, atelier)
 vendor/             ← gsap.min.js, ScrollTrigger.min.js, SplitText.min.js, lenis.min.js
 ```
 

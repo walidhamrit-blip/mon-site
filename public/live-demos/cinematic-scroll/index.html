@@ -3,10 +3,10 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>MIRA — Habiter l'horizon</title>
+    <title>MIRA — Le temps, sculpté</title>
     <meta
       name="description"
-      content="Démo client : site immobilier de luxe bilingue (français/arabe) avec scroll cinématique. Construite 100 % gratuitement avec GSAP + Lenis et des visuels IA."
+      content="Démo client : site d'horlogerie et d'objets de luxe bilingue (français/arabe) avec scroll cinématique. Construite 100 % gratuitement avec GSAP + Lenis et des visuels IA."
     />
     <!--
       Démo technique autonome (voir src/components/live-site-frames.tsx).
@@ -20,7 +20,7 @@
     <noscript><style>.preloader { display: none; }</style></noscript>
     <style>
       /* ============ MIRA — expérience cinématique (thème clair) ============
-         Démo client bilingue FR/AR (RTL) — immobilier de luxe.
+         Démo client bilingue FR/AR (RTL) — haute horlogerie & objets précieux.
          100 % gratuit : GSAP + ScrollTrigger + SplitText + Lenis (locaux),
          police Cairo auto-hébergée (OFL), visuels IA. CSP : 'self' uniquement. */
 
@@ -392,7 +392,7 @@
         color: var(--muted);
       }
 
-      /* ---- Section matière ---- */
+      /* ---- Section savoir-faire ---- */
       .feature {
         display: grid;
         grid-template-columns: 1.05fr 1fr;
@@ -413,7 +413,7 @@
         top: -10%; left: 0;
         width: 100%; height: 120%;
         object-fit: cover;
-        object-position: 50% 80%;
+        object-position: 50% 70%;
       }
       .feature__content { max-width: 540px; }
       .feature__title { margin: 18px 0 26px; }
@@ -529,9 +529,9 @@
       <a class="header__logo" href="#hero">MIRA</a>
       <nav class="header__nav">
         <a href="#manifeste" data-i18n="nav_manifeste">Manifeste</a>
-        <a href="#espaces" data-i18n="nav_espaces">Espaces</a>
-        <a href="#matiere" data-i18n="nav_matiere">Matière</a>
-        <a class="btn btn--ghost" href="#visite" data-i18n="nav_visite">Visite privée</a>
+        <a href="#espaces" data-i18n="nav_espaces">Pièces</a>
+        <a href="#matiere" data-i18n="nav_matiere">Savoir-faire</a>
+        <a class="btn btn--ghost" href="#visite" data-i18n="nav_visite">Rendez-vous</a>
         <button class="lang-toggle" id="langToggle" type="button" aria-label="Changer de langue">
           <span id="langLabel">ع</span>
         </button>
@@ -548,10 +548,10 @@
           />
         </div>
         <div class="hero__content">
-          <p class="kicker hero__kicker" data-i18n="hero_kicker">Collection 2026 · Résidences d'exception</p>
-          <h1 class="hero__title" data-i18n-html="hero_title">Habiter<br />l'horizon</h1>
+          <p class="kicker hero__kicker" data-i18n="hero_kicker">Collection 2026 · Haute horlogerie & objets précieux</p>
+          <h1 class="hero__title" data-i18n-html="hero_title">Le temps,<br />sculpté.</h1>
           <p class="hero__sub" data-i18n-html="hero_sub">
-            Quinze villas suspendues entre mer et ciel,<br />où la lumière devient une adresse.
+            Des pièces d'exception façonnées à la main,<br />où chaque seconde devient une œuvre.
           </p>
         </div>
         <div class="hero__scroll"><span data-i18n="scroll">Défiler</span><i></i></div>
@@ -560,58 +560,58 @@
       <section class="manifesto" id="manifeste">
         <div class="manifesto__inner">
           <p class="manifesto__text" data-i18n="manifesto">
-            Nous ne vendons pas des villas. Nous composons des lieux où la
-            lumière, la pierre et le silence deviennent le cadre de vos plus
-            beaux jours.
+            Nous ne mesurons pas le temps. Nous le sculptons — dans l'or,
+            l'acier et le saphir, jusqu'à ce que chaque battement devienne un
+            silence parfait.
           </p>
         </div>
       </section>
 
       <section class="gallery" id="espaces">
         <div class="gallery__head">
-          <p class="kicker" data-reveal data-i18n="gal_kicker">01 — Les espaces</p>
-          <h2 class="title" data-reveal data-i18n-html="gal_title">Conçus pour disparaître<br />dans le paysage</h2>
+          <p class="kicker" data-reveal data-i18n="gal_kicker">01 — Les pièces</p>
+          <h2 class="title" data-reveal data-i18n-html="gal_title">Façonnées pour<br />traverser le temps</h2>
         </div>
         <div class="gallery__viewport">
           <div class="gallery__track" id="galleryTrack">
             <article class="card">
               <div class="card__media">
-                <img src="./images/interior.jpg" alt="" loading="lazy" />
+                <img src="./images/dial.jpg" alt="" loading="lazy" />
               </div>
               <div class="card__caption">
                 <span class="card__index">01</span>
-                <h3 data-i18n="card1_t">Le Belvédère</h3>
-                <p data-i18n="card1_s">Salon ouvert sur la vallée</p>
+                <h3 data-i18n="card1_t">Le Cadran</h3>
+                <p data-i18n="card1_s">Guillochage à la main, index en or</p>
               </div>
             </article>
             <article class="card">
               <div class="card__media">
-                <img src="./images/aerial.jpg" alt="" loading="lazy" />
+                <img src="./images/objects.jpg" alt="" loading="lazy" />
               </div>
               <div class="card__caption">
                 <span class="card__index">02</span>
-                <h3 data-i18n="card2_t">Le Promontoire</h3>
-                <p data-i18n="card2_s">Posée sur la roche, jamais sur le paysage</p>
+                <h3 data-i18n="card2_t">Les Trésors</h3>
+                <p data-i18n="card2_s">Bagues, flacons et pièces de famille</p>
               </div>
             </article>
             <article class="card">
               <div class="card__media">
-                <img src="./images/terrace.jpg" alt="" loading="lazy" />
+                <img src="./images/leather.jpg" alt="" loading="lazy" />
               </div>
               <div class="card__caption">
                 <span class="card__index">03</span>
-                <h3 data-i18n="card3_t">L'Horizon</h3>
-                <p data-i18n="card3_s">Piscine à débordement et brume</p>
+                <h3 data-i18n="card3_t">Le Bracelet</h3>
+                <p data-i18n="card3_s">Cuir d'alligator cousu main, boucle en or</p>
               </div>
             </article>
             <article class="card">
               <div class="card__media">
-                <img src="./images/stone.jpg" alt="" loading="lazy" />
+                <img src="./images/movement.jpg" alt="" loading="lazy" />
               </div>
               <div class="card__caption">
                 <span class="card__index">04</span>
-                <h3 data-i18n="card4_t">La Pierre</h3>
-                <p data-i18n="card4_s">Matières brutes, gestes précis</p>
+                <h3 data-i18n="card4_t">La Mécanique</h3>
+                <p data-i18n="card4_s">Mouvement à la main, 250 composants</p>
               </div>
             </article>
           </div>
@@ -620,15 +620,15 @@
 
       <section class="feature" id="matiere">
         <div class="feature__media">
-          <img src="./images/hero.jpg" alt="" loading="lazy" />
+          <img src="./images/atelier.jpg" alt="" loading="lazy" />
         </div>
         <div class="feature__content">
-          <p class="kicker" data-i18n="feat_kicker">02 — La matière</p>
-          <h2 class="title feature__title" data-i18n-html="feat_title">La lumière<br />comme matériau</h2>
+          <p class="kicker" data-i18n="feat_kicker">02 — Le savoir-faire</p>
+          <h2 class="title feature__title" data-i18n-html="feat_title">La patience<br />comme matière</h2>
           <p class="feature__text" data-i18n="feat_text">
-            Chaque villa est orientée au degré près pour capter la première et
-            la dernière lumière du jour. La pierre locale absorbe la chaleur,
-            le verre la restitue, et l'ombre dessine les heures.
+            Chaque pièce naît de cent heures d'atelier : guillochage, anglage,
+            polissage noir. Nos maîtres horlogers signent chaque mouvement,
+            puis le laissent au temps.
           </p>
           <a class="btn magnetic" href="#visite" data-i18n="feat_btn">Découvrir la collection</a>
         </div>
@@ -636,31 +636,31 @@
 
       <section class="stats">
         <div class="stat">
-          <div class="stat__num" data-count="15">15</div>
-          <p data-i18n="stat1_l">villas</p>
+          <div class="stat__num" data-count="250">250</div>
+          <p data-i18n="stat1_l">composants par mouvement</p>
         </div>
         <div class="stat">
-          <div class="stat__num" data-count="480">480</div>
-          <p data-i18n="stat2_l">mètres d'altitude</p>
+          <div class="stat__num" data-count="120">120</div>
+          <p data-i18n="stat2_l">heures d'atelier</p>
         </div>
         <div class="stat">
-          <div class="stat__num" data-count="360">360</div>
-          <p data-i18n="stat3_l">degrés d'horizon</p>
+          <div class="stat__num" data-count="5">5</div>
+          <p data-i18n="stat3_l">ans de garantie</p>
         </div>
       </section>
 
       <section class="cta" id="visite">
-        <p class="kicker" data-i18n="cta_kicker">Visite privée</p>
-        <h2 class="cta__title" data-i18n-html="cta_title">Votre horizon<br />vous attend.</h2>
-        <a class="btn btn--big magnetic" href="#hero" data-i18n="cta_btn">Réserver une visite</a>
+        <p class="kicker" data-i18n="cta_kicker">Rendez-vous privé</p>
+        <h2 class="cta__title" data-i18n-html="cta_title">Le temps<br />vous attend.</h2>
+        <a class="btn btn--big magnetic" href="#hero" data-i18n="cta_btn">Prendre rendez-vous</a>
       </section>
     </main>
 
     <footer class="footer">
       <div class="footer__brand">MIRA</div>
       <p class="footer__note" data-i18n="footer_note">
-        Démo d'expérience cinématique conçue pour un client — GSAP + Lenis
-        (gratuits), visuels générés par IA, deux langues (français / arabe).
+        Démo d'expérience cinématique — horlogerie & objets de luxe, bilingue
+        français / arabe. GSAP + Lenis (gratuits), visuels générés par IA.
         Aucun abonnement, aucun service payant.
       </p>
       <p class="footer__copy" data-i18n="footer_copy">© 2026 · La qualité « Awwwards » n'exige pas d'outils payants.</p>
@@ -678,68 +678,68 @@
         var I18N = {
           fr: {
             nav_manifeste: "Manifeste",
-            nav_espaces: "Espaces",
-            nav_matiere: "Matière",
-            nav_visite: "Visite privée",
-            hero_kicker: "Collection 2026 · Résidences d'exception",
-            hero_title: "Habiter<br>l'horizon",
-            hero_sub: "Quinze villas suspendues entre mer et ciel,<br>où la lumière devient une adresse.",
+            nav_espaces: "Pièces",
+            nav_matiere: "Savoir-faire",
+            nav_visite: "Rendez-vous",
+            hero_kicker: "Collection 2026 · Haute horlogerie & objets précieux",
+            hero_title: "Le temps,<br>sculpté.",
+            hero_sub: "Des pièces d'exception façonnées à la main,<br>où chaque seconde devient une œuvre.",
             scroll: "Défiler",
-            manifesto: "Nous ne vendons pas des villas. Nous composons des lieux où la lumière, la pierre et le silence deviennent le cadre de vos plus beaux jours.",
-            gal_kicker: "01 — Les espaces",
-            gal_title: "Conçus pour disparaître<br>dans le paysage",
-            card1_t: "Le Belvédère",
-            card1_s: "Salon ouvert sur la vallée",
-            card2_t: "Le Promontoire",
-            card2_s: "Posée sur la roche, jamais sur le paysage",
-            card3_t: "L'Horizon",
-            card3_s: "Piscine à débordement et brume",
-            card4_t: "La Pierre",
-            card4_s: "Matières brutes, gestes précis",
-            feat_kicker: "02 — La matière",
-            feat_title: "La lumière<br>comme matériau",
-            feat_text: "Chaque villa est orientée au degré près pour capter la première et la dernière lumière du jour. La pierre locale absorbe la chaleur, le verre la restitue, et l'ombre dessine les heures.",
+            manifesto: "Nous ne mesurons pas le temps. Nous le sculptons — dans l'or, l'acier et le saphir, jusqu'à ce que chaque battement devienne un silence parfait.",
+            gal_kicker: "01 — Les pièces",
+            gal_title: "Façonnées pour<br>traverser le temps",
+            card1_t: "Le Cadran",
+            card1_s: "Guillochage à la main, index en or",
+            card2_t: "Les Trésors",
+            card2_s: "Bagues, flacons et pièces de famille",
+            card3_t: "Le Bracelet",
+            card3_s: "Cuir d'alligator cousu main, boucle en or",
+            card4_t: "La Mécanique",
+            card4_s: "Mouvement à la main, 250 composants",
+            feat_kicker: "02 — Le savoir-faire",
+            feat_title: "La patience<br>comme matière",
+            feat_text: "Chaque pièce naît de cent heures d'atelier : guillochage, anglage, polissage noir. Nos maîtres horlogers signent chaque mouvement, puis le laissent au temps.",
             feat_btn: "Découvrir la collection",
-            stat1_l: "villas",
-            stat2_l: "mètres d'altitude",
-            stat3_l: "degrés d'horizon",
-            cta_kicker: "Visite privée",
-            cta_title: "Votre horizon<br>vous attend.",
-            cta_btn: "Réserver une visite",
-            footer_note: "Démo d'expérience cinématique conçue pour un client — GSAP + Lenis (gratuits), visuels générés par IA, deux langues (français / arabe). Aucun abonnement, aucun service payant.",
+            stat1_l: "composants par mouvement",
+            stat2_l: "heures d'atelier",
+            stat3_l: "ans de garantie",
+            cta_kicker: "Rendez-vous privé",
+            cta_title: "Le temps<br>vous attend.",
+            cta_btn: "Prendre rendez-vous",
+            footer_note: "Démo d'expérience cinématique — horlogerie & objets de luxe, bilingue français / arabe. GSAP + Lenis (gratuits), visuels générés par IA. Aucun abonnement, aucun service payant.",
             footer_copy: "© 2026 · La qualité « Awwwards » n'exige pas d'outils payants.",
           },
           ar: {
             nav_manifeste: "الرؤية",
-            nav_espaces: "المساحات",
-            nav_matiere: "المادة",
-            nav_visite: "زيارة خاصة",
-            hero_kicker: "المجموعة 2026 · إقامات استثنائية",
-            hero_title: "العيشُ<br>على الأفق",
-            hero_sub: "خمس عشرة فيلا معلّقة بين البحر والسماء،<br>حيث يصبح الضوء عنوانًا.",
+            nav_espaces: "القطع",
+            nav_matiere: "الحرفة",
+            nav_visite: "موعد خاص",
+            hero_kicker: "المجموعة 2026 · ساعات ومجوهرات فاخرة",
+            hero_title: "الزمنُ<br>منحوتٌ.",
+            hero_sub: "قطعٌ استثنائية مصنوعةٌ يدويًا،<br>حيث تصبح كل ثانيةٍ عملًا فنيًا.",
             scroll: "مرّر",
-            manifesto: "نحن لا نبيع فيلا. بل نصمّم موضعًا يصبح فيه الضوء والصخر والصمت إطارًا لأجمل أيامك.",
-            gal_kicker: "01 — المساحات",
-            gal_title: "مصمّمة لتذوب<br>في المشهد",
-            card1_t: "الشرفة المطلّة",
-            card1_s: "صالة مفتوحة على الوادي",
-            card2_t: "الرأس الصخري",
-            card2_s: "بُنيت على الصخر، لا على المشهد",
-            card3_t: "الأفق",
-            card3_s: "مسبح لا نهائيّ وضباب",
-            card4_t: "الحجر",
-            card4_s: "خاماتٌ صافية، وتفاصيلٌ دقيقة",
-            feat_kicker: "02 — المادة",
-            feat_title: "الضوء<br>كمادةٍّ بنائية",
-            feat_text: "كل فيلا موجَّهة بدقة الدرجة لتلتقط أول الضوء وآخره. الحجرُ المحليّ يمتصّ الدفأ، والزجاجُ يعيدُه، والظلُّ يرسمُ الساعات.",
+            manifesto: "نحن لا نقيس الزمن، بل ننحته — في الذهب والفولاذ والياقوت، حتى يصبح كل نبضٍ صمتًا مثاليًا.",
+            gal_kicker: "01 — القطع",
+            gal_title: "مصنوعة لتعبر<br>الزمن",
+            card1_t: "الميناء",
+            card1_s: "نقشٌ يدويّ، ومؤشراتٌ من الذهب",
+            card2_t: "الكنوز",
+            card2_s: "خواتم وقوارير وقطعٌ عائلية",
+            card3_t: "السوار",
+            card3_s: "جلد تمّساح مخيطٌ يدويًا، وإبزيمٌ ذهبيّ",
+            card4_t: "الآليّة",
+            card4_s: "حركةٌ يدوية، 250 قطعة",
+            feat_kicker: "02 — الحرفة",
+            feat_title: "الصبرُ<br>كمادةٍّ",
+            feat_text: "كل قطعة تولد من مئة ساعة عملٍ في المشغل: النقش، والتدريج، والتلميع الأسود. يوقّع حرفيّونا كل حركةٍ، ثم يتركونها للزمن.",
             feat_btn: "اكتشف المجموعة",
-            stat1_l: "فيلا",
-            stat2_l: "مترًا ارتفاعًا",
-            stat3_l: "درجة من الأفق",
-            cta_kicker: "زيارة خاصة",
-            cta_title: "أفقُك<br>ينتظرك.",
-            cta_btn: "احجز زيارة",
-            footer_note: "نموذج تجربة سينمائية مُصمَّمة للعملاء — GSAP + Lenis (مجانيان)، صور مولّدة بالذكاء الاصطناعي، لغتان (العربية / الفرنسية). بلا اشتراكات ولا خدمات مدفوعة.",
+            stat1_l: "قطعة في كل حركة",
+            stat2_l: "ساعة عملٍ",
+            stat3_l: "سنوات ضمان",
+            cta_kicker: "موعد خاص",
+            cta_title: "الزمنُ<br>ينتظرك.",
+            cta_btn: "احجز موعدًا",
+            footer_note: "نموذج تجربة سينمائية — ساعات وقطع فاخرة، ثنائي اللغة (العربية / الفرنسية). GSAP + Lenis (مجانيان)، صور مولّدة بالذكاء الاصطناعي. بلا اشتراكات ولا خدمات مدفوعة.",
             footer_copy: "© 2026 · جودة عالمية دون أدوات مدفوعة.",
           },
         };
@@ -764,7 +764,7 @@
           var label = document.getElementById("langLabel");
           if (label) label.textContent = LANG === "ar" ? "FR" : "ع";
           document.title =
-            LANG === "ar" ? "MIRA — العيش على الأفق" : "MIRA — Habiter l'horizon";
+            LANG === "ar" ? "MIRA — الزمنُ منحوتٌ" : "MIRA — Le temps, sculpté";
         }
         applyLang();
 
@@ -1084,7 +1084,7 @@
             });
           });
 
-          /* ---------- Matière : révélation par volet ---------- */
+          /* ---------- Savoir-faire : révélation par volet ---------- */
           gsap.fromTo(
             ".feature__media",
             { clipPath: "inset(0% 100% 0% 0%)" },
