@@ -1,12 +1,12 @@
 <!doctype html>
-<html lang="fr">
+<html lang="fr" data-theme="light">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>MIRA — Le temps, sculpté</title>
     <meta
       name="description"
-      content="Démo client : site d'horlogerie et d'objets de luxe bilingue (français/arabe) avec scroll cinématique. Construite 100 % gratuitement avec GSAP + Lenis et des visuels IA."
+      content="Démo client : site d'horlogerie et d'objets de luxe bilingue (français/arabe) avec scroll cinématique et thème clair/sombre. Construite 100 % gratuitement avec GSAP + Lenis et des visuels IA."
     />
     <!--
       Démo technique autonome (voir src/components/live-site-frames.tsx).
@@ -14,13 +14,14 @@
       éditoriale. Même convention que /live-demos/tulin-magazin.
     -->
     <meta name="robots" content="noindex, follow" />
-    <meta name="theme-color" content="#f2efe8" />
+    <meta name="theme-color" content="#f5f7fa" />
     <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
     <link rel="stylesheet" href="./vendor/lenis.css" />
     <noscript><style>.preloader { display: none; }</style></noscript>
     <style>
-      /* ============ MIRA — expérience cinématique (thème clair) ============
-         Démo client bilingue FR/AR (RTL) — haute horlogerie & objets précieux.
+      /* ============ MIRA — expérience cinématique ============
+         Démo client bilingue FR/AR (RTL) — horlogerie & objets de luxe.
+         Palette : bleu / blanc / noir, avec sélecteur clair ↔ sombre.
          100 % gratuit : GSAP + ScrollTrigger + SplitText + Lenis (locaux),
          police Cairo auto-hébergée (OFL), visuels IA. CSP : 'self' uniquement. */
 
@@ -33,16 +34,28 @@
       }
 
       :root {
-        --bg: #f2efe8;
-        --bg-soft: #e9e4da;
-        --ink: #1c1812;
-        --muted: #6e6759;
-        --accent: #8c6a3f;
-        --line: rgba(28, 24, 18, 0.16);
+        --bg: #f5f7fa;
+        --bg-soft: #e8ecf2;
+        --ink: #0b1017;
+        --ink-soft: rgba(11, 16, 23, 0.66);
+        --faint: rgba(11, 16, 23, 0.42);
+        --muted: #5a6472;
+        --accent: #21499c;
+        --line: rgba(11, 16, 23, 0.15);
         --font-display: Didot, "Bodoni MT", "Playfair Display",
           "Cormorant Garamond", Georgia, "Times New Roman", serif;
         --font-ui: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI",
           Roboto, Helvetica, Arial, sans-serif;
+      }
+      [data-theme="dark"] {
+        --bg: #0a0e15;
+        --bg-soft: #121a26;
+        --ink: #eef2f8;
+        --ink-soft: rgba(238, 242, 248, 0.66);
+        --faint: rgba(238, 242, 248, 0.4);
+        --muted: #97a2b3;
+        --accent: #7ba1f0;
+        --line: rgba(238, 242, 248, 0.15);
       }
       html[lang="ar"] {
         --font-display: "Cairo", "Geeza Pro", "Segoe UI", Tahoma, sans-serif;
@@ -58,7 +71,7 @@
       }
       img { display: block; }
       a { color: inherit; text-decoration: none; }
-      ::selection { background: var(--accent); color: #f2efe8; }
+      ::selection { background: var(--accent); color: var(--bg); }
 
       .kicker {
         font-size: 11px;
@@ -84,7 +97,7 @@
       html[lang="ar"] .stat p,
       html[lang="ar"] .footer__brand,
       html[lang="ar"] .preloader__brand,
-      html[lang="ar"] .lang-toggle {
+      html[lang="ar"] .toggle-pill {
         letter-spacing: normal;
         text-transform: none;
       }
@@ -112,8 +125,8 @@
       .btn--big { padding: 22px 46px; font-size: 13px; }
       .btn--ghost { padding: 11px 22px; font-size: 10.5px; }
 
-      /* ---- Sélecteur de langue ---- */
-      .lang-toggle {
+      /* ---- Pastilles (langue / thème) ---- */
+      .toggle-pill {
         display: inline-flex;
         align-items: center;
         justify-content: center;
@@ -125,12 +138,12 @@
         background: transparent;
         color: var(--ink);
         font-family: var(--font-ui);
-        font-size: 12px;
+        font-size: 13px;
         letter-spacing: 0.12em;
         cursor: pointer;
         transition: background 0.35s ease, color 0.35s ease;
       }
-      .lang-toggle:hover { background: var(--ink); color: var(--bg); }
+      .toggle-pill:hover { background: var(--ink); color: var(--bg); }
 
       /* ---- Overlays : grain papier + vignette douce ---- */
       .grain {
@@ -157,7 +170,7 @@
         pointer-events: none;
         z-index: 9998;
         background: radial-gradient(125% 95% at 50% 45%,
-          transparent 55%, rgba(28, 24, 18, 0.07) 82%, rgba(28, 24, 18, 0.16) 100%);
+          transparent 55%, rgba(6, 10, 18, 0.07) 82%, rgba(6, 10, 18, 0.18) 100%);
       }
 
       /* ---- Curseur ---- */
@@ -249,15 +262,16 @@
         font-size: 15px;
         letter-spacing: 0.5em;
       }
-      .header__nav { display: flex; align-items: center; gap: clamp(16px, 2.4vw, 36px); }
+      .header__nav { display: flex; align-items: center; gap: clamp(12px, 1.8vw, 28px); }
       .header__nav a:not(.btn) {
         font-size: 11px;
         letter-spacing: 0.22em;
         text-transform: uppercase;
-        color: rgba(28, 24, 18, 0.66);
+        color: var(--ink-soft);
         transition: color 0.3s ease;
       }
       .header__nav a:not(.btn):hover { color: var(--ink); }
+      .header__toggles { display: flex; align-items: center; gap: 10px; }
 
       /* ---- Hero ---- */
       .hero { position: relative; height: 100vh; height: 100svh; overflow: hidden; }
@@ -285,15 +299,15 @@
         font-size: clamp(54px, 11vw, 148px);
         line-height: 0.94;
         margin: 26px 0 30px;
-        color: #f4f1ea;
-        text-shadow: 0 2px 40px rgba(10, 10, 10, 0.35);
+        color: #f3f6fb;
+        text-shadow: 0 2px 40px rgba(6, 10, 18, 0.45);
       }
-      .hero__kicker { color: #e2c894; }
+      .hero__kicker { color: #a9c3ff; }
       .hero__sub {
         font-size: clamp(14px, 1.35vw, 19px);
         line-height: 1.75;
-        color: rgba(244, 241, 234, 0.86);
-        text-shadow: 0 1px 24px rgba(10, 10, 10, 0.4);
+        color: rgba(243, 246, 251, 0.88);
+        text-shadow: 0 1px 24px rgba(6, 10, 18, 0.5);
       }
       .hero__scroll {
         position: absolute;
@@ -303,11 +317,11 @@
         font-size: 10px;
         letter-spacing: 0.34em;
         text-transform: uppercase;
-        color: rgba(244, 241, 234, 0.75);
+        color: rgba(243, 246, 251, 0.78);
       }
       .hero__scroll i {
         width: 1px; height: 56px;
-        background: linear-gradient(to bottom, #e2c894, transparent);
+        background: linear-gradient(to bottom, #a9c3ff, transparent);
         position: relative;
         overflow: hidden;
       }
@@ -316,7 +330,7 @@
         position: absolute;
         top: -20px; left: 0;
         width: 100%; height: 20px;
-        background: #f4f1ea;
+        background: #f3f6fb;
         animation: scrollDrop 2.2s cubic-bezier(0.65, 0, 0.35, 1) infinite;
       }
       @keyframes scrollDrop {
@@ -413,7 +427,7 @@
         top: -10%; left: 0;
         width: 100%; height: 120%;
         object-fit: cover;
-        object-position: 50% 70%;
+        object-position: 50% 60%;
       }
       .feature__content { max-width: 540px; }
       .feature__title { margin: 18px 0 26px; }
@@ -482,7 +496,7 @@
       }
       .footer__copy {
         font-size: 11px;
-        color: rgba(28, 24, 18, 0.42);
+        color: var(--faint);
       }
 
       /* ---- Responsive ---- */
@@ -532,9 +546,14 @@
         <a href="#espaces" data-i18n="nav_espaces">Pièces</a>
         <a href="#matiere" data-i18n="nav_matiere">Savoir-faire</a>
         <a class="btn btn--ghost" href="#visite" data-i18n="nav_visite">Rendez-vous</a>
-        <button class="lang-toggle" id="langToggle" type="button" aria-label="Changer de langue">
-          <span id="langLabel">ع</span>
-        </button>
+        <span class="header__toggles">
+          <button class="toggle-pill" id="themeToggle" type="button" aria-label="Changer de thème">
+            <span id="themeLabel">☾</span>
+          </button>
+          <button class="toggle-pill" id="langToggle" type="button" aria-label="Changer de langue">
+            <span id="langLabel">ع</span>
+          </button>
+        </span>
       </nav>
     </header>
 
@@ -548,7 +567,7 @@
           />
         </div>
         <div class="hero__content">
-          <p class="kicker hero__kicker" data-i18n="hero_kicker">Collection 2026 · Haute horlogerie & objets précieux</p>
+          <p class="kicker hero__kicker" data-i18n="hero_kicker">Collection 2026 · Montres & objets de luxe</p>
           <h1 class="hero__title" data-i18n-html="hero_title">Le temps,<br />sculpté.</h1>
           <p class="hero__sub" data-i18n-html="hero_sub">
             Des pièces d'exception façonnées à la main,<br />où chaque seconde devient une œuvre.
@@ -561,8 +580,8 @@
         <div class="manifesto__inner">
           <p class="manifesto__text" data-i18n="manifesto">
             Nous ne mesurons pas le temps. Nous le sculptons — dans l'or,
-            l'acier et le saphir, jusqu'à ce que chaque battement devienne un
-            silence parfait.
+            l'argent, l'acier et le saphir, jusqu'à ce que chaque battement
+            devienne un silence parfait.
           </p>
         </div>
       </section>
@@ -576,42 +595,42 @@
           <div class="gallery__track" id="galleryTrack">
             <article class="card">
               <div class="card__media">
-                <img src="./images/dial.jpg" alt="" loading="lazy" />
+                <img src="./images/watch-blue.jpg" alt="" loading="lazy" />
               </div>
               <div class="card__caption">
                 <span class="card__index">01</span>
-                <h3 data-i18n="card1_t">Le Cadran</h3>
-                <p data-i18n="card1_s">Guillochage à la main, index en or</p>
+                <h3 data-i18n="card1_t">Le Chronographe</h3>
+                <p data-i18n="card1_s">Acier poli, cadran bleu nuit</p>
               </div>
             </article>
             <article class="card">
               <div class="card__media">
-                <img src="./images/objects.jpg" alt="" loading="lazy" />
+                <img src="./images/watch-gold.jpg" alt="" loading="lazy" />
               </div>
               <div class="card__caption">
                 <span class="card__index">02</span>
-                <h3 data-i18n="card2_t">Les Trésors</h3>
-                <p data-i18n="card2_s">Bagues, flacons et pièces de famille</p>
+                <h3 data-i18n="card2_t">L'Or</h3>
+                <p data-i18n="card2_s">Or jaune 18 carats, mouvement automatique</p>
               </div>
             </article>
             <article class="card">
               <div class="card__media">
-                <img src="./images/leather.jpg" alt="" loading="lazy" />
+                <img src="./images/silver.jpg" alt="" loading="lazy" />
               </div>
               <div class="card__caption">
                 <span class="card__index">03</span>
-                <h3 data-i18n="card3_t">Le Bracelet</h3>
-                <p data-i18n="card3_s">Cuir d'alligator cousu main, boucle en or</p>
+                <h3 data-i18n="card3_t">L'Argent</h3>
+                <p data-i18n="card3_s">Bijoux d'argent massif gravés main, saphir</p>
               </div>
             </article>
             <article class="card">
               <div class="card__media">
-                <img src="./images/movement.jpg" alt="" loading="lazy" />
+                <img src="./images/gold.jpg" alt="" loading="lazy" />
               </div>
               <div class="card__caption">
                 <span class="card__index">04</span>
-                <h3 data-i18n="card4_t">La Mécanique</h3>
-                <p data-i18n="card4_s">Mouvement à la main, 250 composants</p>
+                <h3 data-i18n="card4_t">Les Trésors</h3>
+                <p data-i18n="card4_s">Chaînes, bagues et stylos en or</p>
               </div>
             </article>
           </div>
@@ -620,7 +639,7 @@
 
       <section class="feature" id="matiere">
         <div class="feature__media">
-          <img src="./images/atelier.jpg" alt="" loading="lazy" />
+          <img src="./images/movement.jpg" alt="" loading="lazy" />
         </div>
         <div class="feature__content">
           <p class="kicker" data-i18n="feat_kicker">02 — Le savoir-faire</p>
@@ -660,8 +679,8 @@
       <div class="footer__brand">MIRA</div>
       <p class="footer__note" data-i18n="footer_note">
         Démo d'expérience cinématique — horlogerie & objets de luxe, bilingue
-        français / arabe. GSAP + Lenis (gratuits), visuels générés par IA.
-        Aucun abonnement, aucun service payant.
+        français / arabe, thème clair et sombre. GSAP + Lenis (gratuits),
+        visuels générés par IA. Aucun abonnement, aucun service payant.
       </p>
       <p class="footer__copy" data-i18n="footer_copy">© 2026 · La qualité « Awwwards » n'exige pas d'outils payants.</p>
     </footer>
@@ -674,6 +693,35 @@
       (function () {
         "use strict";
 
+        /* =================== Thème clair / sombre =================== */
+        var THEME = null;
+        try {
+          THEME = localStorage.getItem("mira-theme");
+        } catch (e) {}
+        if (THEME !== "dark" && THEME !== "light") {
+          THEME =
+            window.matchMedia &&
+            window.matchMedia("(prefers-color-scheme: dark)").matches
+              ? "dark"
+              : "light";
+        }
+        function applyTheme() {
+          document.documentElement.setAttribute("data-theme", THEME);
+          var label = document.getElementById("themeLabel");
+          if (label) label.textContent = THEME === "dark" ? "☀" : "☾";
+          var meta = document.querySelector('meta[name="theme-color"]');
+          if (meta)
+            meta.setAttribute("content", THEME === "dark" ? "#0a0e15" : "#f5f7fa");
+        }
+        applyTheme();
+        document.getElementById("themeToggle").addEventListener("click", function () {
+          THEME = THEME === "dark" ? "light" : "dark";
+          try {
+            localStorage.setItem("mira-theme", THEME);
+          } catch (e) {}
+          applyTheme();
+        });
+
         /* =================== Bilinguisme (FR / AR) =================== */
         var I18N = {
           fr: {
@@ -681,21 +729,21 @@
             nav_espaces: "Pièces",
             nav_matiere: "Savoir-faire",
             nav_visite: "Rendez-vous",
-            hero_kicker: "Collection 2026 · Haute horlogerie & objets précieux",
+            hero_kicker: "Collection 2026 · Montres & objets de luxe",
             hero_title: "Le temps,<br>sculpté.",
             hero_sub: "Des pièces d'exception façonnées à la main,<br>où chaque seconde devient une œuvre.",
             scroll: "Défiler",
-            manifesto: "Nous ne mesurons pas le temps. Nous le sculptons — dans l'or, l'acier et le saphir, jusqu'à ce que chaque battement devienne un silence parfait.",
+            manifesto: "Nous ne mesurons pas le temps. Nous le sculptons — dans l'or, l'argent, l'acier et le saphir, jusqu'à ce que chaque battement devienne un silence parfait.",
             gal_kicker: "01 — Les pièces",
             gal_title: "Façonnées pour<br>traverser le temps",
-            card1_t: "Le Cadran",
-            card1_s: "Guillochage à la main, index en or",
-            card2_t: "Les Trésors",
-            card2_s: "Bagues, flacons et pièces de famille",
-            card3_t: "Le Bracelet",
-            card3_s: "Cuir d'alligator cousu main, boucle en or",
-            card4_t: "La Mécanique",
-            card4_s: "Mouvement à la main, 250 composants",
+            card1_t: "Le Chronographe",
+            card1_s: "Acier poli, cadran bleu nuit",
+            card2_t: "L'Or",
+            card2_s: "Or jaune 18 carats, mouvement automatique",
+            card3_t: "L'Argent",
+            card3_s: "Bijoux d'argent massif gravés main, saphir",
+            card4_t: "Les Trésors",
+            card4_s: "Chaînes, bagues et stylos en or",
             feat_kicker: "02 — Le savoir-faire",
             feat_title: "La patience<br>comme matière",
             feat_text: "Chaque pièce naît de cent heures d'atelier : guillochage, anglage, polissage noir. Nos maîtres horlogers signent chaque mouvement, puis le laissent au temps.",
@@ -706,7 +754,7 @@
             cta_kicker: "Rendez-vous privé",
             cta_title: "Le temps<br>vous attend.",
             cta_btn: "Prendre rendez-vous",
-            footer_note: "Démo d'expérience cinématique — horlogerie & objets de luxe, bilingue français / arabe. GSAP + Lenis (gratuits), visuels générés par IA. Aucun abonnement, aucun service payant.",
+            footer_note: "Démo d'expérience cinématique — horlogerie & objets de luxe, bilingue français / arabe, thème clair et sombre. GSAP + Lenis (gratuits), visuels générés par IA. Aucun abonnement, aucun service payant.",
             footer_copy: "© 2026 · La qualité « Awwwards » n'exige pas d'outils payants.",
           },
           ar: {
@@ -714,21 +762,21 @@
             nav_espaces: "القطع",
             nav_matiere: "الحرفة",
             nav_visite: "موعد خاص",
-            hero_kicker: "المجموعة 2026 · ساعات ومجوهرات فاخرة",
+            hero_kicker: "المجموعة 2026 · ساعات وقطع فاخرة",
             hero_title: "الزمنُ<br>منحوتٌ.",
             hero_sub: "قطعٌ استثنائية مصنوعةٌ يدويًا،<br>حيث تصبح كل ثانيةٍ عملًا فنيًا.",
             scroll: "مرّر",
-            manifesto: "نحن لا نقيس الزمن، بل ننحته — في الذهب والفولاذ والياقوت، حتى يصبح كل نبضٍ صمتًا مثاليًا.",
+            manifesto: "نحن لا نقيس الزمن، بل ننحته — في الذهب والفضة والفولاذ والياقوت، حتى يصبح كل نبضٍ صمتًا مثاليًا.",
             gal_kicker: "01 — القطع",
             gal_title: "مصنوعة لتعبر<br>الزمن",
-            card1_t: "الميناء",
-            card1_s: "نقشٌ يدويّ، ومؤشراتٌ من الذهب",
-            card2_t: "الكنوز",
-            card2_s: "خواتم وقوارير وقطعٌ عائلية",
-            card3_t: "السوار",
-            card3_s: "جلد تمّساح مخيطٌ يدويًا، وإبزيمٌ ذهبيّ",
-            card4_t: "الآليّة",
-            card4_s: "حركةٌ يدوية، 250 قطعة",
+            card1_t: "الكرونوغراف",
+            card1_s: "صقلٌ فولاذيّ، وميناءٌ أزرقُ الليل",
+            card2_t: "الذهب",
+            card2_s: "ذهبٌ أصفر 18 قيراطًا، بحركةٍ أوتوماتيكية",
+            card3_t: "الفضة",
+            card3_s: "مجوهراتٌ من الفضة الخالصة محفورةٌ يدويًا، مع ياقوت",
+            card4_t: "الكنوز",
+            card4_s: "سلاسل وخواتم وأقلامٌ من الذهب",
             feat_kicker: "02 — الحرفة",
             feat_title: "الصبرُ<br>كمادةٍّ",
             feat_text: "كل قطعة تولد من مئة ساعة عملٍ في المشغل: النقش، والتدريج، والتلميع الأسود. يوقّع حرفيّونا كل حركةٍ، ثم يتركونها للزمن.",
@@ -739,7 +787,7 @@
             cta_kicker: "موعد خاص",
             cta_title: "الزمنُ<br>ينتظرك.",
             cta_btn: "احجز موعدًا",
-            footer_note: "نموذج تجربة سينمائية — ساعات وقطع فاخرة، ثنائي اللغة (العربية / الفرنسية). GSAP + Lenis (مجانيان)، صور مولّدة بالذكاء الاصطناعي. بلا اشتراكات ولا خدمات مدفوعة.",
+            footer_note: "نموذج تجربة سينمائية — ساعات وقطع فاخرة، ثنائي اللغة (العربية / الفرنسية)، بثيمٍ فاتح وداكن. GSAP + Lenis (مجانيان)، صور مولّدة بالذكاء الاصطناعي. بلا اشتراكات ولا خدمات مدفوعة.",
             footer_copy: "© 2026 · جودة عالمية دون أدوات مدفوعة.",
           },
         };
