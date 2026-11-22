@@ -1350,12 +1350,21 @@ export async function restoreBoutiqueProductAction(
 
 export interface CreateDeliveryResult extends ActionResult {
   delivery?: { ref: string; token: string; url: string };
+  /** true si le lien a été envoyé automatiquement à la création du dossier. */
+  emailSent?: boolean;
+  /** Erreur de l'envoi automatique — non bloquant pour la création. */
+  emailError?: string | null;
 }
 
 /**
- * Crée le dossier de livraison et renvoie le lien de validation à transmettre
- * au client. Le jeton n'existe que dans cette réponse et dans l'URL : la base
- * ne conserve que son empreinte.
+ * Crée le dossier de livraison et transmet le lien de validation au client :
+ * l'envoi se déclenche automatiquement dès la création (e-mail client
+ * présent) — la livraison d'une demande client est censée être immédiate.
+ * Le jeton n'existe que dans cette réponse et dans l'URL : la base ne
+ * conserve que son empreinte.
+ *
+ * L'envoi est « au mieux » : une panne d'e-mail ne rate jamais la création
+ * du dossier, elle est signalée dans `emailError` pour l'admin.
  */
 export async function createDeliveryAction(input: unknown): Promise<CreateDeliveryResult> {
   await requireAdmin();
@@ -1382,7 +1391,39 @@ export async function createDeliveryAction(input: unknown): Promise<CreateDelive
     );
     revalidatePath("/admin/livraisons");
     revalidatePath("/admin");
-    return { ok: true, message: `Dossier ${ref} créé.`, delivery: { ref, token, url } };
+
+    // Livraison automatique : le lien arrive au client dès la création du
+    // dossier. Sans e-mail client, le dossier se transmet par WhatsApp.
+    let emailSent = false;
+    let emailError: string | null = null;
+    const clientEmail = data.email?.trim();
+    if (clientEmail) {
+      try {
+        const row = await findDeliveryByRef(ref);
+        if (!row) {
+          emailError = "dossier introuvable après création";
+        } else {
+          const result = await sendDeliveryLinkEmail(row, config, url);
+          if (result?.ok) emailSent = true;
+          else emailError = result?.error ?? "fournisseur indisponible";
+        }
+      } catch (error) {
+        emailError = error instanceof Error ? error.message : String(error);
+      }
+    }
+
+    const emailPart = emailSent
+      ? ` — lien envoyé à ${clientEmail}.`
+      : clientEmail
+        ? " — envoi impossible ; transmettez le lien (WhatsApp)."
+        : " — transmettez le lien au client (WhatsApp).";
+    return {
+      ok: true,
+      message: `Dossier ${ref} créé${emailPart}`,
+      delivery: { ref, token, url },
+      emailSent,
+      emailError,
+    };
   } catch (error) {
     return { ok: false, error: dbIssue(error) };
   }
