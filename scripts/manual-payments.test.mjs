@@ -13,6 +13,7 @@ import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync } from "node:f
 import { join } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { build } from "esbuild";
+import { manualPaymentsClosedAt } from "../src/lib/manual-payment-hours.ts";
 import {
   MANUAL_PAYMENT_CURRENCIES,
   MANUAL_PAYMENT_METHODS,
@@ -24,6 +25,7 @@ import {
   isCryptoManualPaymentMethod,
   isDirectCryptoWalletMethod,
   manualPaymentDeliveryRoute,
+  resolveManualPaymentGate,
   manualPaymentMethodReady,
   manualPaymentPublicNotice,
   manualPaymentQuoteMatches,
@@ -612,4 +614,56 @@ test("la preuve n'est jamais publiée dans une réponse publique", () => {
 test("les pratiques commerciales sont décrites dans les conditions", () => {
   const conditions = read("src/app/(site)/conditions/conditions-client.tsx");
   assert.match(conditions, /Skrill|Neteller|Airtm|D17/);
+});
+
+
+test("un paiement manuel incomplet ou non approuvé bloque même si la commande est payée", () => {
+  for (const reviewStatus of ["pending", "rejected", null, "invalid"]) {
+    const gate = resolveManualPaymentGate({ orderExists: true, paymentMethod: "skrill", recordExists: true, recordMethod: "skrill", reviewStatus });
+    assert.equal(manualPaymentDeliveryRoute({ ...gate, autoDeliver: true }), "blocked");
+  }
+  for (const data of [
+    { orderExists: true, paymentMethod: "skrill", recordExists: false, recordMethod: null, reviewStatus: null },
+    { orderExists: true, paymentMethod: "skrill", recordExists: true, recordMethod: "", reviewStatus: "approved" },
+    { orderExists: true, paymentMethod: "skrill", recordExists: true, recordMethod: "neteller", reviewStatus: "approved" },
+    { orderExists: false, paymentMethod: null, recordExists: false, recordMethod: null, reviewStatus: null },
+    { orderExists: true, paymentMethod: "nowpayments", recordExists: true, recordMethod: "skrill", reviewStatus: "approved" },
+  ]) assert.equal(manualPaymentDeliveryRoute({ ...resolveManualPaymentGate(data), autoDeliver: true }), "blocked");
+  const approved = resolveManualPaymentGate({ orderExists: true, paymentMethod: "skrill", recordExists: true, recordMethod: "skrill", reviewStatus: "approved" });
+  assert.equal(manualPaymentDeliveryRoute({ ...approved, autoDeliver: true }), "supplier");
+  const crypto = resolveManualPaymentGate({ orderExists: true, paymentMethod: "nowpayments", recordExists: false, recordMethod: null, reviewStatus: null });
+  assert.equal(manualPaymentDeliveryRoute({ ...crypto, autoDeliver: false }), "supplier");
+});
+
+test("FazerCards contrôle le paiement manuel avant de placer une commande", () => {
+  const src = readFileSync(join(root, "src/lib/fazercards-orders.ts"), "utf8");
+  const guard = src.indexOf("manualPaymentDeliveryGate(loaded.ref)");
+  const purchase = src.indexOf("placeFazercardsOrder(loaded)");
+  assert.ok(guard > 0 && guard < purchase);
+  assert.match(src, /manualPaymentApproved: options.manualPaymentApproved === true|autoDeliver: options.manualPaymentApproved === true/);
+});
+
+
+test("fermeture quotidienne 00 h à 09 h, heure de Tripoli, avec bornes exactes", () => {
+  for (const [stamp, closed] of [
+    ["2026-11-20T21:59:59Z", false],
+    ["2026-11-20T22:00:00Z", true],
+    ["2026-11-21T06:59:59Z", true],
+    ["2026-11-21T07:00:00Z", false],
+    ["2026-06-01T22:00:00Z", true],
+    ["2026-06-02T07:00:00Z", false],
+  ]) assert.equal(manualPaymentsClosedAt(new Date(stamp)), closed, stamp);
+  assert.equal(manualPaymentsClosedAt(new Date("invalid")), true);
+});
+
+test("la disponibilité générale est contrôlée côté serveur pour les tunnels et l'affichage", () => {
+  const manual = readFileSync(join(root, "src/lib/manual-payments.ts"), "utf8");
+  const shop = readFileSync(join(root, "src/lib/fazercards-orders.ts"), "utf8");
+  const phone = readFileSync(join(root, "src/lib/phone-card-availability.ts"), "utf8");
+  const options = readFileSync(join(root, "src/app/api/manual-payments/options/route.ts"), "utf8");
+  assert.ok((manual.match(/await assertManualPaymentsAvailable\((?:locale)?\)/g) ?? []).length >= 2);
+  assert.ok((shop.match(/await assertManualPaymentsAvailable\(locale\)/g) ?? []).length >= 2);
+  assert.match(phone, /readManualPaymentsAvailability\(\)/);
+  assert.match(options, /availability.status !== "enabled"/);
+  assert.match(options, /options: \[\]/);
 });

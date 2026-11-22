@@ -22,6 +22,7 @@ import {
 import { db, ensureSchema } from "@/db";
 import { leads, orders } from "@/db/schema";
 import { getSiteData } from "@/lib/store";
+import { readManualPaymentsAvailability } from "@/lib/manual-payment-availability";
 import {
   LEAD_STATUSES,
   collectAllDemos,
@@ -64,6 +65,7 @@ export default async function AdminDashboardPage() {
   let recent: (typeof leads.$inferSelect)[] = [];
 
   const { config, content } = await getSiteData();
+  const manualAvailability = await readManualPaymentsAvailability();
 
   try {
     await ensureSchema();
@@ -265,6 +267,7 @@ export default async function AdminDashboardPage() {
 
       <ManualPaymentsOverview
         phoneCardEnabled={config.fazercards.phoneCardPaymentsEnabled !== false}
+        masterEnabled={manualAvailability.masterEnabled}
         manualPayments={config.manualPayments}
       />
 

@@ -6,6 +6,7 @@ import { eq } from "drizzle-orm";
 import { db, ensureSchema } from "@/db";
 import { settings } from "@/db/schema";
 import { normalizePhoneCardPaymentsEnabled } from "@/lib/phone-card-core";
+import { readManualPaymentsAvailability } from "@/lib/manual-payment-availability";
 import { SETTINGS_KEYS } from "@/lib/store";
 
 export type PhoneCardAvailability = "enabled" | "disabled" | "unavailable";
@@ -13,6 +14,9 @@ export type PhoneCardAvailability = "enabled" | "disabled" | "unavailable";
 /** Lit la clé dédiée à chaque contrôle, indépendamment des caches de pages. */
 export async function readPhoneCardAvailability(): Promise<PhoneCardAvailability> {
   try {
+    const global = await readManualPaymentsAvailability();
+    if (global.status === "unavailable") return "unavailable";
+    if (global.status !== "enabled") return "disabled";
     await ensureSchema();
     const rows = await db
       .select({ value: settings.value })

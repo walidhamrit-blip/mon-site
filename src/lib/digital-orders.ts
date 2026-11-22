@@ -648,7 +648,7 @@ export async function deliverPaidDigitalOrder(
   const manualRoute = manualPaymentDeliveryRoute({
     isManual: manualGate.isManual,
     status: manualGate.status,
-    autoDeliver: options.phoneCardApproved === true || options.manualPaymentApproved === true,
+    autoDeliver: options.manualPaymentApproved === true,
   });
   if (manualRoute === "blocked") {
     return {
@@ -671,6 +671,7 @@ export async function deliverPaidDigitalOrder(
   if (digitalOrderSupplier(loaded) === "fazercards") {
     const routed = await deliverPaidFazercardsOrder(loaded.id, {
       phoneCardApproved: options.phoneCardApproved === true,
+      manualPaymentApproved: options.manualPaymentApproved === true,
     });
     return {
       outcome: routed.outcome,

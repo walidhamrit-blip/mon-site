@@ -12,6 +12,7 @@
 
 import { and, desc, eq, ne } from "drizzle-orm";
 import { db, ensureSchema } from "@/db";
+import { readManualPaymentsAvailability } from "@/lib/manual-payment-availability";
 import {
   digitalOrders,
   manualPayments,
@@ -28,6 +29,7 @@ import {
   MANUAL_PAYMENT_METHOD_LABELS,
   normalizeManualPaymentMethod,
   normalizeManualPaymentReviewStatus,
+  resolveManualPaymentGate,
   manualPaymentQuoteMatches,
   validateManualPaymentInput,
   type ManualPaymentInput,
@@ -110,12 +112,24 @@ export function prepareManualPayment(
   };
 }
 
+/** Un formulaire déjà ouvert ne peut pas contourner la fermeture. */
+export async function assertManualPaymentsAvailable(locale: "ar" | "en" = "en"): Promise<void> {
+  const availability = await readManualPaymentsAvailability();
+  if (availability.status !== "enabled") {
+    throw new ManualPaymentError("manual_payment_unavailable", 503,
+      locale === "ar"
+        ? "الدفع اليدوي متوقف مؤقتاً. لا ترسل أي تحويل؛ إذا دفعت بالفعل، تواصل معنا مع مرجع العملية."
+        : "Manual payments are temporarily unavailable. Do not transfer money; if you already paid, contact us with your transaction reference.");
+  }
+}
+
 /** Enregistre la preuve déclarée, une seule fois par commande. */
 export async function insertPreparedManualPayment(
   orderRef: string,
   prepared: PreparedManualPayment,
   options: { subscriptionId?: number } = {},
 ): Promise<void> {
+  await assertManualPaymentsAvailable();
   await ensureSchema();
   await db.insert(manualPayments).values({
     orderRef,
@@ -151,6 +165,7 @@ export async function prepareManualPaymentForSite(
   amountUsd: number,
   locale: "ar" | "en" = "ar",
 ): Promise<PreparedManualPayment> {
+  await assertManualPaymentsAvailable(locale);
   const method = normalizeManualPaymentMethod(input?.method);
   if (!method) {
     throw new ManualPaymentError(
@@ -217,24 +232,17 @@ export interface ManualPaymentDeliveryGate {
 export async function manualPaymentDeliveryGate(ref: string): Promise<ManualPaymentDeliveryGate> {
   await ensureSchema();
   const rows = await db
-    .select({
-      method: manualPayments.method,
-      status: manualPayments.status,
-    })
-    .from(manualPayments)
-    .where(eq(manualPayments.orderRef, ref))
+    .select({ paymentMethod: orders.paymentMethod, id: manualPayments.id,
+      method: manualPayments.method, status: manualPayments.status })
+    .from(orders)
+    .leftJoin(manualPayments, eq(manualPayments.orderRef, orders.ref))
+    .where(eq(orders.ref, ref))
     .limit(1);
-  // Une ligne sans méthode exploitable n'est pas une preuve valide : mieux
-  // vaut ne pas verrouiller la livraison sur une donnée incomplète que
-  // bloquer indéfiniment une commande légitime.
-  if (!rows[0] || !String(rows[0].method ?? "").trim()) {
-    return { isManual: false, method: null, status: "pending" };
-  }
-  return {
-    isManual: true,
-    method: rows[0].method,
-    status: normalizeManualPaymentReviewStatus(rows[0].status),
-  };
+  const row = rows[0];
+  return resolveManualPaymentGate({
+    orderExists: Boolean(row), paymentMethod: row?.paymentMethod,
+    recordExists: row?.id != null, recordMethod: row?.method, reviewStatus: row?.status,
+  });
 }
 
 export async function getManualPaymentReviewStatus(

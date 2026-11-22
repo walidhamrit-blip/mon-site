@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { getSiteData } from "@/lib/store";
 import { siteConfig } from "@/lib/config";
 import { publicManualPaymentOptions } from "@/lib/manual-payment-public";
+import { readManualPaymentsAvailability } from "@/lib/manual-payment-availability";
+import { readPhoneCardAvailability } from "@/lib/phone-card-availability";
 import { checkRateLimit } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
@@ -31,10 +33,15 @@ export async function GET(req: Request) {
     );
   }
 
+  const availability = await readManualPaymentsAvailability();
+  const phoneCardAvailable = (await readPhoneCardAvailability()) === "enabled";
+  if (availability.status !== "enabled") {
+    return NextResponse.json({ ok: true, options: [], phoneCardAvailable: false }, { headers: { "Cache-Control": "no-store" } });
+  }
   try {
     const { config } = await getSiteData();
     return NextResponse.json(
-      { ok: true, options: publicManualPaymentOptions(config.manualPayments) },
+      { ok: true, options: publicManualPaymentOptions(config.manualPayments), phoneCardAvailable },
       { headers: { "Cache-Control": "no-store" } },
     );
   } catch (error) {
@@ -46,7 +53,7 @@ export async function GET(req: Request) {
       error instanceof Error ? error.message : error,
     );
     return NextResponse.json(
-      { ok: true, options: publicManualPaymentOptions(siteConfig.manualPayments) },
+      { ok: true, options: publicManualPaymentOptions(siteConfig.manualPayments), phoneCardAvailable },
       { headers: { "Cache-Control": "no-store" } },
     );
   }

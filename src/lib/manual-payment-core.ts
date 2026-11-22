@@ -603,6 +603,30 @@ export function manualPaymentPublicNotice(
 
 /* --------------------------- Garde-fous de livraison ---------------------- */
 
+/** Classification prudente : une preuve absente ou incohérente ne valide jamais un paiement manuel. */
+export function resolveManualPaymentGate(input: {
+  orderExists: boolean;
+  paymentMethod: unknown;
+  recordExists: boolean;
+  recordMethod: unknown;
+  reviewStatus: unknown;
+}): { isManual: boolean; method: string | null; status: ManualPaymentReviewStatus } {
+  const channel = String(input.paymentMethod ?? "").trim().toLowerCase();
+  const recordMethod = normalizeManualPaymentMethod(input.recordMethod);
+  const knownNonManual = channel === "nowpayments" || channel === "phone_card";
+  if (input.orderExists && knownNonManual && !input.recordExists) {
+    return { isManual: false, method: null, status: "pending" };
+  }
+  const channelMethod = normalizeManualPaymentMethod(channel);
+  const matching = input.orderExists && input.recordExists && recordMethod !== null &&
+    (channel === "manual" || channelMethod === recordMethod);
+  return {
+    isManual: true,
+    method: recordMethod ?? channelMethod,
+    status: matching ? normalizeManualPaymentReviewStatus(input.reviewStatus) : "pending",
+  };
+}
+
 /** Seul un paiement explicitement accepté débloque la livraison. */
 export function manualPaymentDeliveryAllowed(status: unknown): boolean {
   return normalizeManualPaymentReviewStatus(status) === "approved";
