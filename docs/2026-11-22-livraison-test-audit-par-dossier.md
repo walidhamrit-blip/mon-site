@@ -92,17 +92,27 @@ Le formulaire appelle `createDeliveryAction` :
 - la page `/livraison/<ref>?t=<jeton>` est créée immédiatement, `noindex`,
   absents du sitemap.
 
-Copiez le lien affiché (« Copier le lien » ou `Lien` dans la liste) — c'est
-le lien à transmettre au client. Ne pas l'envoyer par e-mail « en vrac » :
-aux e-mails de recette sont déjà datés/horodatés et un reçu est envoyé à la
-première acceptation.
+**L'envoi est automatique** : dès la création du dossier, le lien part au
+client par e-mail (`sendDeliveryLinkEmail`, au mieux — l'échec de l'envoi
+ne bloque jamais la création, il est signalé dans l'interface). Sans e-mail
+client, le lien reste à transmettre manuellement par WhatsApp.
 
-### Étape 5 — Transmettre au client
+Le message de retour de l'action confirme l'envoi :
+« Dossier LIV-… créé — lien envoyé à <email> », ou
+« … — envoi impossible ; transmettez le lien (WhatsApp) ».
 
-- **Option A (e-mail)** : bouton `Envoyer` dans la liste des dossiers
-  → `sendDeliveryLinkAction` envoie le lien par e-mail au client. Aucun
-  mot de passe ou secret n'est dans l'e-mail.
-- **Option B (WhatsApp)** : copiez le lien et envoyez-le en WhatsApp.
+Ne pas l'envoyer par e-mail « en vrac » par un autre canal : les e-mails
+de recette sont déjà datés/horodatés, et un reçu part à la première
+acceptation.
+
+### Étape 5 — Première transmission au client
+
+- **Par défaut** : e-mail automatique envoyé à la création du dossier.
+- **Fallback** : copiez le lien affiché (« Copier le lien » ou `Lien` dans
+  la liste) et transmettez-le par WhatsApp.
+- **Renvoi manuel** : bouton `Envoyer` dans la liste des dossiers
+  → `sendDeliveryLinkAction` (pour relancer un envoi raté). Aucun
+  mot de passe ou secret n'est jamais ajouté dans un e-mail.
 
 ### Étape 6 — Acceptation client
 

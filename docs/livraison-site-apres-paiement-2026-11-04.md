@@ -202,6 +202,6 @@ Sécurité appliquée :
 
 ## 12. Ce qui reste à industrialiser
 
-1. **E-mail automatique du kit complet** : aujourd'hui l'admin crée le dossier puis transmet le lien (copié ou envoyé par e-mail) ; les identifiants restent à envoyer par un canal séparé, volontairement.
+1. **Envoi automatique au moment de la livraison** : dès la création du dossier, le lien de validation est envoyé au client par e-mail (`sendDeliveryLinkEmail`, au mieux — la création ne peut pas échouer à cause de l'e-mail). Les identifiants restent à envoyer par un canal séparé, volontairement : ils ne figurent jamais dans un e-mail.
 2. **Relances de solde automatiques** (J+2, J+5, J+7) depuis la table des commandes, sur le modèle du cron `src/app/api/cron/digital-orders`.
 3. **Espace client projet** : avancement, documents, factures, tickets de support — le meilleur argument contre « vous avez disparu après le paiement ».

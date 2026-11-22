@@ -54,7 +54,12 @@ export function DeliveriesManager({ rows }: { rows: DeliveryRow[] }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [feedback, setFeedback] = useState<{ tone: "ok" | "err"; text: string } | null>(null);
-  const [created, setCreated] = useState<{ ref: string; url: string } | null>(null);
+  const [created, setCreated] = useState<{
+    ref: string;
+    url: string;
+    emailSent: boolean;
+    emailError: string | null;
+  } | null>(null);
 
   // Formulaire de création
   const [clientName, setClientName] = useState("");
@@ -96,7 +101,12 @@ export function DeliveriesManager({ rows }: { rows: DeliveryRow[] }) {
         flash("err", result.error ?? "Création impossible.");
         return;
       }
-      setCreated({ ref: result.delivery.ref, url: result.delivery.url });
+      setCreated({
+        ref: result.delivery.ref,
+        url: result.delivery.url,
+        emailSent: Boolean(result.emailSent),
+        emailError: result.emailError ?? null,
+      });
       setClientName("");
       setProjectTitle("");
       setEmail("");
@@ -105,7 +115,7 @@ export function DeliveriesManager({ rows }: { rows: DeliveryRow[] }) {
       setNotes("");
       setLinks([{ label: LINK_PRESETS[0], url: "" }, { label: LINK_PRESETS[1], url: "" }]);
       setItems([{ label: "" }]);
-      flash("ok", `Dossier ${result.delivery.ref} créé — transmettez le lien au client.`);
+      flash("ok", result.message ?? `Dossier ${result.delivery.ref} créé.`);
       router.refresh();
     });
   }
@@ -162,6 +172,19 @@ export function DeliveriesManager({ rows }: { rows: DeliveryRow[] }) {
         <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4 space-y-3">
           <p className="text-sm font-semibold text-emerald-900">
             Lien de validation du dossier {created.ref}
+          </p>
+          <p className="text-xs">
+            {created.emailSent ? (
+              "✅ Le lien vient d'être envoyé au client par e-mail."
+            ) : created.emailError ? (
+              <>
+                ⚠️ Envoi automatique impossible
+                {created.emailError ? ` (${created.emailError})` : ""} — transmettez le lien
+                ci-dessous (WhatsApp).
+              </>
+            ) : (
+              "📧 Aucun e-mail client sur le dossier — transmettez le lien par WhatsApp."
+            )}
           </p>
           <code className="block break-all rounded-lg bg-white px-3 py-2 text-xs text-stone-700">
             {created.url}
