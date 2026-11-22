@@ -89,6 +89,8 @@ import {
 } from "@/lib/phone-card-pricing-core";
 import {
   insertPreparedManualPayment,
+  assertManualPaymentsAvailable,
+  manualPaymentDeliveryGate,
   isManualPaymentDuplicateError,
   ManualPaymentError,
   prepareManualPayment,
@@ -96,6 +98,7 @@ import {
 } from "@/lib/manual-payments";
 import {
   manualPaymentQuoteMatches,
+  manualPaymentDeliveryRoute,
   normalizeManualPaymentMethod,
   type ManualPaymentInput,
 } from "@/lib/manual-payment-core";
@@ -354,6 +357,10 @@ export async function createFazercardsCheckout(
   // et on valide la preuve AVANT toute création de commande, pour ne jamais
   // enregistrer une déclaration inexploitable.
   if (usesManualPayment) {
+    try { await assertManualPaymentsAvailable(locale); } catch (error) {
+      if (error instanceof ManualPaymentError) throw new FazercardsOrderError(error.code, error.status, error.message);
+      throw error;
+    }
     const method = normalizeManualPaymentMethod(input.manualPayment?.method);
     const { config } = await getSiteData();
     const settings = method ? config.manualPayments?.[method] : null;
@@ -607,6 +614,10 @@ export async function createFazercardsCheckout(
   // plutôt que de faire payer un montant différent de celui affiché.
   let preparedManualPayment: PreparedManualPayment | null = null;
   if (usesManualPayment) {
+    try { await assertManualPaymentsAvailable(locale); } catch (error) {
+      if (error instanceof ManualPaymentError) throw new FazercardsOrderError(error.code, error.status, error.message);
+      throw error;
+    }
     const method = normalizeManualPaymentMethod(input.manualPayment?.method);
     if (!method) {
       throw new FazercardsOrderError(
@@ -790,6 +801,7 @@ export async function createFazercardsCheckout(
     } catch (error) {
       await db.delete(orders).where(eq(orders.ref, ref)).catch(() => null);
       await db.delete(digitalOrders).where(eq(digitalOrders.ref, ref)).catch(() => null);
+      if (error instanceof ManualPaymentError) throw new FazercardsOrderError(error.code, error.status, error.message);
       if (isManualPaymentDuplicateError(error)) {
         throw new FazercardsOrderError(
           "manual_payment_already_used",
@@ -889,7 +901,7 @@ function sleep(ms: number): Promise<void> {
  */
 export async function deliverPaidFazercardsOrder(
   idOrRef: number | string,
-  options: { force?: boolean; phoneCardApproved?: boolean } = {},
+  options: { force?: boolean; phoneCardApproved?: boolean; manualPaymentApproved?: boolean } = {},
 ): Promise<FazercardsDeliveryResult> {
   const loaded = await loadFazercardsOrder(idOrRef);
   if (!loaded) return { outcome: "not_found", ref: String(idOrRef) };
@@ -921,6 +933,19 @@ export async function deliverPaidFazercardsOrder(
       ref: loaded.ref,
       message: "Carte téléphonique acceptée : livraison manuelle requise, aucun achat fournisseur déclenché.",
     };
+  }
+
+  // Défense en profondeur, même si cet appel contourne le routeur générique.
+  const manualGate = await manualPaymentDeliveryGate(loaded.ref);
+  const manualRoute = manualPaymentDeliveryRoute({
+    isManual: manualGate.isManual, status: manualGate.status,
+    autoDeliver: options.manualPaymentApproved === true,
+  });
+  if (manualRoute === "blocked") {
+    return { outcome: "not_paid", ref: loaded.ref, message: "Paiement manuel non vérifié : aucun achat fournisseur déclenché." };
+  }
+  if (manualRoute === "manual") {
+    return { outcome: "manual", ref: loaded.ref, message: "Paiement manuel accepté : livraison manuelle requise." };
   }
 
   // Garde-fou absolu : jamais d'achat sans paiement confirmé.

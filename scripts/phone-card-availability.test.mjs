@@ -180,10 +180,11 @@ test("caisse publique : option désactivée et explication AR/EN, crypto conserv
       const text = html.replace(/<[^>]*>/g, " ");
       assert.match(text, locale === "ar" ? /عملات رقمية/ : /Crypto/);
       if (enabled) {
-        assert.doesNotMatch(html, /id="phone-card-paused-notice"/);
+        // La disponibilité générale est chargée côté client : le rendu initial
+        // reste fermé tant que la réponse fraîche du serveur n'est pas connue.
         const phoneButton = html.match(/<button[^>]*>[\s\S]*?<\/button>/g)?.find((button) => button.includes('lucide-smartphone'));
         assert.ok(phoneButton);
-        assert.doesNotMatch(phoneButton, /disabled=""/);
+        assert.match(phoneButton, /disabled=""/);
       } else {
         assert.match(html, /id="phone-card-paused-notice"/);
         const phoneButton = html.match(/<button[^>]*>[\s\S]*?<\/button>/g)?.find((button) => button.includes('lucide-smartphone'));
@@ -218,4 +219,36 @@ test("assistant : il annonce la pause et ne promet pas de date de retour", async
   const reply = assistant.answerLocally(knowledge, "Can I pay with a Libyana phone card?", "en");
   assert.match(reply.text, /temporarily paused/i);
   assert.match(reply.text, /Crypto remains available/i);
+});
+
+
+test("interrupteur général : lecture fraîche, horaire et erreur en fail-closed", async () => {
+  globalThis.__masterRows = [];
+  globalThis.__masterFailure = false;
+  globalThis.__masterClosed = false;
+  const stubs = { name: "master-stubs", setup(builder) {
+    builder.onResolve({ filter: /^@\/db$/ }, () => ({ path: "db", namespace: "master" }));
+    builder.onResolve({ filter: /^@\/db\/schema$/ }, () => ({ path: "schema", namespace: "master" }));
+    builder.onResolve({ filter: /^@\/lib\/manual-payment-hours$/ }, () => ({ path: "hours", namespace: "master" }));
+    builder.onLoad({ filter: /^db$/, namespace: "master" }, () => ({ loader: "js", contents: `
+      export async function ensureSchema() { if (globalThis.__masterFailure) throw Error("database down"); }
+      export const db = { select() { return { from() { return { where() { return { limit: async () => globalThis.__masterRows }; } }; } }; } };
+    ` }));
+    builder.onLoad({ filter: /^schema$/, namespace: "master" }, () => ({ loader: "js", contents: "export const settings = { key: 'key', value: 'value' };" }));
+    builder.onLoad({ filter: /^hours$/, namespace: "master" }, () => ({ loader: "js", contents: "export const manualPaymentsClosedAt = () => globalThis.__masterClosed;" }));
+  } };
+  const { readManualPaymentsAvailability: readMaster } = await compile("src/lib/manual-payment-availability.ts", "master-availability.mjs", [stubs, aliasPlugin]);
+  assert.deepEqual(await readMaster(), { masterEnabled: true, status: "enabled" });
+  globalThis.__masterClosed = true;
+  assert.deepEqual(await readMaster(), { masterEnabled: true, status: "closed" });
+  globalThis.__masterRows = [{ value: false }];
+  globalThis.__masterClosed = false;
+  assert.deepEqual(await readMaster(), { masterEnabled: false, status: "disabled" });
+  globalThis.__masterRows = [{ value: true }];
+  assert.deepEqual(await readMaster(), { masterEnabled: true, status: "enabled" });
+  globalThis.__masterRows = [{ value: "true" }];
+  assert.deepEqual(await readMaster(), { masterEnabled: null, status: "unavailable" });
+  globalThis.__masterFailure = true;
+  assert.deepEqual(await readMaster(), { masterEnabled: null, status: "unavailable" });
+  delete globalThis.__masterRows; delete globalThis.__masterFailure; delete globalThis.__masterClosed;
 });

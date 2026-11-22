@@ -107,7 +107,7 @@ test("la livraison route les commandes fzr-… vers FazerCards", () => {
   // c'est lui, et lui seul, qui autorise un achat pour une carte téléphonique.
   assert.match(
     body,
-    /deliverPaidFazercardsOrder\(\s*loaded\.id,\s*\{\s*phoneCardApproved:\s*options\.phoneCardApproved === true,?\s*\}/,
+    /deliverPaidFazercardsOrder\(\s*loaded\.id,\s*\{\s*phoneCardApproved:\s*options\.phoneCardApproved === true,\s*manualPaymentApproved:\s*options\.manualPaymentApproved === true,?\s*\}/,
   );
   // Le routage doit précéder les contrôles Reloadly (config, produit relié).
   assert.ok(

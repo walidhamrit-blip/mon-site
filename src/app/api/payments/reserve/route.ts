@@ -274,6 +274,7 @@ export async function POST(req: Request) {
       await insertPreparedManualPayment(ref, prepared);
     } catch (error) {
       await db.delete(orders).where(eq(orders.id, orderId)).catch(() => null);
+      if (error instanceof ManualPaymentError) return errorResponse(error.code, error.status, { source: "input", status: null, message: error.message });
       if (isManualPaymentDuplicateError(error)) {
         return errorResponse("manual_payment_already_used", 409, {
           source: "input",

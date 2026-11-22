@@ -66,7 +66,7 @@ export function DigitalBuyDialog({ product, denominationId, onClose }: Props) {
   const [email, setEmail] = useState("");
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
-  const [phoneCardDisabled, setPhoneCardDisabled] = useState(false);
+  const [phoneCardDisabled, setPhoneCardDisabled] = useState(true);
   const phoneCardEnabled = siteConfig.fazercards?.phoneCardPaymentsEnabled !== false && !phoneCardDisabled;
   const [selectedPaymentMethod, setPaymentMethod] = useState<
     "nowpayments" | "phone_card" | "manual"
@@ -221,8 +221,10 @@ export function DigitalBuyDialog({ product, denominationId, onClose }: Props) {
         const data = (await response.json().catch(() => ({}))) as {
           ok?: boolean;
           options?: PublicManualPaymentOption[];
+          phoneCardAvailable?: boolean;
         };
         if (cancelled) return;
+        setPhoneCardDisabled(!response.ok || !data.ok || data.phoneCardAvailable !== true);
         const list = response.ok && data.ok && Array.isArray(data.options) ? data.options : [];
         setManualOptions(list);
         if (list.length > 0) {
@@ -551,6 +553,7 @@ export function DigitalBuyDialog({ product, denominationId, onClose }: Props) {
           ? phoneCardUnavailableNotice(ar ? "ar" : "en")
           : data.message || (ar ? "تعذر إنشاء الطلب. حاول مرة أخرى." : "Could not create the order. Please retry."));
         if (
+          data.error === "manual_payment_unavailable" ||
           data.error === "manual_payment_quote_changed" ||
           data.error === "manual_payment_rate_unavailable" ||
           data.error === "manual_payment_method_unavailable"

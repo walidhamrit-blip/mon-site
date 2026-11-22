@@ -310,6 +310,7 @@ async function attachManualPayment(
   try {
     await insertPreparedManualPayment(orderRef, prepared);
   } catch (error) {
+    if (error instanceof ManualPaymentError) return errorResponse(error.code, error.status, { source: "input", status: null, message: error.message });
     if (isManualPaymentDuplicateError(error)) {
       return errorResponse("manual_payment_already_used", 409, {
         source: "input",
