@@ -37,7 +37,7 @@ export function ManualPaymentsOverview({
   const router = useRouter();
   const titleId = useId();
   const descriptionId = useId();
-  const [master, setMaster] = useState(masterEnabled);
+  const master = masterEnabled;
   const [closedNow, setClosedNow] = useState(true);
   const [masterBusy, setMasterBusy] = useState(false);
   useEffect(() => {
@@ -46,7 +46,6 @@ export function ManualPaymentsOverview({
     const timer = window.setInterval(update, 30_000);
     return () => window.clearInterval(timer);
   }, []);
-  useEffect(() => setMaster(masterEnabled), [masterEnabled]);
   const [pendingMethod, setPendingMethod] = useState<ManualPaymentMethod | null>(null);
   const [feedback, setFeedback] = useState<{ ok: boolean; text: string } | null>(null);
   const [transitionPending, startTransition] = useTransition();
@@ -62,7 +61,7 @@ export function ManualPaymentsOverview({
       try {
         const result = await setAllManualPaymentsEnabled(next);
         setFeedback({ ok: result.ok, text: result.message ?? result.error ?? "Réponse inattendue." });
-        if (result.ok) { setMaster(next); router.refresh(); }
+        if (result.ok) router.refresh();
       } catch {
         setFeedback({ ok: false, text: "Enregistrement impossible. Réessayez." });
       } finally { setMasterBusy(false); }
