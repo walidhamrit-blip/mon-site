@@ -881,6 +881,10 @@ export const g2gDeliveries = pgTable("g2g_deliveries", {
   netMarginPercent: text("net_margin_percent"),
   /** Référence de commande fournisseur (jamais le code lui-même). */
   supplierOrderRef: text("supplier_order_ref"),
+  /** Intention d'achat immuable, écrite avant tout POST fournisseur. */
+  supplierIdempotencyKey: text("supplier_idempotency_key"),
+  supplierPurchasePayload: text("supplier_purchase_payload"),
+  supplierPurchaseStartedAt: timestamp("supplier_purchase_started_at", { withTimezone: true }),
   attempts: integer("attempts").notNull().default(0),
   nextAttemptAt: timestamp("next_attempt_at", { withTimezone: true }),
   /** Message lisible, sans code ni secret. */
