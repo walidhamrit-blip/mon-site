@@ -725,6 +725,11 @@ export function ensureSchema(): Promise<void> {
       await pool.query(
         "CREATE INDEX IF NOT EXISTS g2g_deliveries_next_attempt_idx ON g2g_deliveries (next_attempt_at)",
       );
+      // Achat G2G : les anciennes lignes restent NULL et ne sont jamais
+      // considérées comme couvertes rétroactivement par une clé fournisseur.
+      await pool.query("ALTER TABLE g2g_deliveries ADD COLUMN IF NOT EXISTS supplier_idempotency_key text");
+      await pool.query("ALTER TABLE g2g_deliveries ADD COLUMN IF NOT EXISTS supplier_purchase_payload text");
+      await pool.query("ALTER TABLE g2g_deliveries ADD COLUMN IF NOT EXISTS supplier_purchase_started_at timestamptz");
       // Colonnes de la file de livraison (brique 2) : tentatives de livraison
       // distinctes des tentatives d'achat, et bail de reprise pour le cron.
       await pool.query(

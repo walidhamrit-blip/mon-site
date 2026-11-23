@@ -1,7 +1,8 @@
 > **Sécurisation en cours :** les indications d'activation dans les sections
 > historiques ci-dessous ne doivent pas être appliquées. Les achats et la
-> livraison automatiques sont bloqués dans la version en préparation ; garder
-> `G2G_AUTO_DELIVERY` désarmé et tous les stocks G2G à 0.
+> livraison automatiques restent bloqués ; garder `G2G_AUTO_DELIVERY` désarmé
+> et tous les stocks G2G à 0. Voir l'[audit de reprise](g2g-audit-reprise.md)
+> pour les réponses des fournisseurs, les limites actuelles et les prérequis.
 >
 # Pilote G2G OpenAPI v2 — procédure de branchement
 
@@ -620,7 +621,7 @@ sont bloqués dans cette version, même si le coupe-circuit est armé. Maintenir
 `G2G_AUTO_DELIVERY` désarmé et tous les stocks à 0 sur G2G : un changement
 manuel sur G2G contourne l'admin et pourrait laisser une commande payée sans
 livraison. Ne pas relancer un achat au résultat incertain sans rapprochement
-manuel ; aucune prise en charge de l'idempotence fournisseur n'est présumée.
+manuel. Une préparation locale de clé d'idempotence ne permet pas de reprendre automatiquement un achat ambigu et ne couvre pas les achats historiques.
 
 Cette version n'est pas une livraison automatisée opérationnelle. Avant le
 pilote il faut valider le contrat réel des codes, sécuriser les reprises et

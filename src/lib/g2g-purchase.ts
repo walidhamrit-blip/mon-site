@@ -1,8 +1,10 @@
-import { and, eq, inArray, sql } from "drizzle-orm";
+import { randomUUID } from "node:crypto";
+import { and, eq, inArray, isNull, sql } from "drizzle-orm";
 
 import { db, ensureSchema } from "@/db";
 import { g2gDeliveries } from "@/db/schema";
 import { fazercardsBalance, fazercardsGiftCardOrder } from "@/lib/fazercards";
+import { automaticDeliveryVerified } from "@/lib/g2g-pilot";
 import {
   shouldPurchaseNow,
   type G2gFulfilmentPlan,
@@ -76,6 +78,9 @@ export async function purchaseG2gDelivery(
    *    on exige que la décision RÉELLE, coupe-circuit appliqué, soit
    *    `proceed`. C'est ce qui rend le coupe-circuit effectif.
    */
+  if (!automaticDeliveryVerified()) {
+    return { outcome: "not_eligible", reason: "delivery_not_verified" };
+  }
   if (!shouldPurchaseNow(input.plan, input.autoDeliveryEnabled)) {
     return { outcome: "not_eligible", reason: input.plan?.decision ?? "no_plan" };
   }
@@ -87,6 +92,9 @@ export async function purchaseG2gDelivery(
   const cardId = (input.cardId ?? "").trim();
   if (!categoryId || !cardId) {
     return { outcome: "missing_sku" };
+  }
+  if (!Number.isInteger(input.requestedQty) || input.requestedQty < 1 || input.requestedQty > 100) {
+    return { outcome: "not_eligible", reason: "invalid_quantity" };
   }
 
   await ensureSchema();
@@ -156,10 +164,19 @@ export async function purchaseG2gDelivery(
    * C'est aussi l'écriture anticipée : `purchasing` signifie « de l'argent
    * a pu partir ».
    */
+  // Chaque intention reçoit une clé aléatoire ; elle et le corps exact sont
+  // persistés dans le même UPDATE que la prise de possession. Aucune reprise
+  // automatique n'est activée, même avec la garantie annoncée de 7 jours.
+  const idempotencyKey = `g2g-fzr-${randomUUID()}`;
+  const purchasePayload = JSON.stringify({ category_id: categoryId, card_id: cardId, quantity: input.requestedQty });
+  const purchaseStartedAt = new Date();
   const claimed = await db
     .update(g2gDeliveries)
     .set({
       status: "purchasing",
+      supplierIdempotencyKey: idempotencyKey,
+      supplierPurchasePayload: purchasePayload,
+      supplierPurchaseStartedAt: purchaseStartedAt,
       attempts: sql`${g2gDeliveries.attempts} + 1`,
       // Résultat incertain : la file déclenchera un rapprochement manuel.
       nextAttemptAt: new Date(Date.now() + RETRY_DELAY_MS),
@@ -169,14 +186,26 @@ export async function purchaseG2gDelivery(
     .where(
       and(
         eq(g2gDeliveries.deliveryId, input.deliveryId),
+        eq(g2gDeliveries.orderId, input.orderId),
+        eq(g2gDeliveries.offerId, input.offerId),
+        eq(g2gDeliveries.requestedQty, input.requestedQty),
+        eq(g2gDeliveries.attempts, 0),
+        isNull(g2gDeliveries.supplierIdempotencyKey),
+        isNull(g2gDeliveries.supplierPurchasePayload),
+        isNull(g2gDeliveries.supplierPurchaseStartedAt),
         inArray(g2gDeliveries.status, ["planned"]),
       ),
     )
-    .returning({ id: g2gDeliveries.id });
+    .returning({ id: g2gDeliveries.id, supplierIdempotencyKey: g2gDeliveries.supplierIdempotencyKey, supplierPurchasePayload: g2gDeliveries.supplierPurchasePayload });
 
   if (claimed.length === 0) {
     // Soit un autre traitement l'a déjà pris, soit l'état est terminal.
     return { outcome: "already_handled" };
+  }
+
+  // Toute incohérence laisse l'intention en revue manuelle, jamais de POST.
+  if (claimed[0].supplierIdempotencyKey !== idempotencyKey || claimed[0].supplierPurchasePayload !== purchasePayload) {
+    return { outcome: "failed", reason: "Intention d'achat incohérente : rapprochement manuel requis." };
   }
 
   // 6. L'appel qui coûte de l'argent.
@@ -185,6 +214,7 @@ export async function purchaseG2gDelivery(
       category_id: categoryId,
       card_id: cardId,
       quantity: input.requestedQty,
+      idempotencyKey,
     });
 
     const supplierOrderRef = response.order?.id ?? "";

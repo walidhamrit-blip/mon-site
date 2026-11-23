@@ -255,8 +255,11 @@ test("l'achat est verrouillé derrière trois portes avant tout appel réseau", 
     const at = src.indexOf(gate);
     assert.ok(at > 0 && at < firstCall, `${gate} doit précéder l'appel`);
   }
-  // La clé d'idempotence est bien transmise.
-  assert.doesNotMatch(src, /idempotencyKey,/);
+  // La clé et le corps sont persistés avant le POST et réutilisés tels quels.
+  assert.match(src, /supplierIdempotencyKey: idempotencyKey/);
+  assert.match(src, /supplierPurchasePayload: purchasePayload/);
+  assert.ok(src.indexOf("supplierIdempotencyKey: idempotencyKey") < firstCall);
+  assert.match(src.slice(firstCall), /idempotencyKey,/);
 });
 
 test("le solde est vérifié avant de dépenser, sans condamner la ligne", () => {
