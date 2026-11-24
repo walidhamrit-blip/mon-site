@@ -221,15 +221,13 @@ test("the public journey now promises a step 06: handover & warranty", () => {
 
 test("the step-06 promise matches what the delivery page actually gives", () => {
   const content = readFileSync("src/lib/content.ts", "utf8");
-  // La garantie annoncée (30-90 jours selon la formule) couvre la garantie
-  // par défaut saisie dans un dossier de livraison : jamais plus, jamais
-  // une promesse que la page ne peut pas tenir.
-  assert.match(content, /30-90 يوماً حسب الباقة/);
-  assert.match(content, /30-90 days by plan/);
-  assert.ok(
-    DELIVERY_WARRANTY_DAYS >= 30 && DELIVERY_WARRANTY_DAYS <= 90,
-    `garantie par défaut hors de la fourchette annoncée : ${DELIVERY_WARRANTY_DAYS}`,
-  );
+  // Admin access must not be promised with the static base offer.
+  assert.match(content, /Admin access is included only with purchased management modules/);
+  assert.match(content, /maintenance is separate/);
+  assert.doesNotMatch(content, /30-90 days by plan/);
+  // The existing delivery-folder warranty mechanism remains available.
+  assert.ok(DELIVERY_WARRANTY_DAYS > 0);
+
 });
 
 test("the process timeline adapts to the number of steps", () => {

@@ -160,8 +160,8 @@ export function DemoViewer({ demo, allDemos }: { demo: Demo; allDemos: Demo[] })
                     <div className="mb-3">
                       <div className="text-[10px] font-bold uppercase tracking-wider opacity-70">
                         {locale === "ar"
-                          ? `الفئة ${classification.tier}`
-                          : `Category ${classification.tier}`}
+                          ? "العرض الأساسي"
+                          : "Base offer"}
                       </div>
                       <div className="font-black">
                         {locale === "ar" ? classification.name : classification.nameEn}
@@ -183,8 +183,8 @@ export function DemoViewer({ demo, allDemos }: { demo: Demo; allDemos: Demo[] })
                     />
                     <p className="mt-2 text-[10px] opacity-70 leading-relaxed">
                       {locale === "ar"
-                        ? `عربون ${formatUsd(depositUsd)} $ يُخصم من الإجمالي النهائي بعد اعتماد التخصيص.`
-                        : `$${formatUsd(depositUsd)} deposit is deducted from the final total once customization is approved.`}
+                        ? `عربون ${formatUsd(depositUsd)} $ يُخصم من سعر الموقع الأساسي.`
+                        : `$${formatUsd(depositUsd)} deposit is deducted from the base website price.`}
                     </p>
                   </div>
                 )}

@@ -11,7 +11,6 @@ import {
   type DemoClassification,
   type PlanPriceBreakdown,
 } from "@/lib/classification";
-import { Price } from "@/components/price";
 import { ModelPriceBreakdown } from "@/components/model-price-breakdown";
 import { ModelPurchaseButton } from "@/components/model-purchase-button";
 import { ProjectPreview } from "@/components/project-preview";
@@ -40,13 +39,7 @@ interface Group {
   entries: Entry[];
 }
 
-/**
- * Galerie classée par CATÉGORIE TARIFAIRE (et non par secteur) :
- * une section par formule, avec son prix, puis les sites de la catégorie.
- * Sous chaque site : prix du modèle, frais de personnalisation et total (ou devis).
- * Le filtre par secteur a été retiré pour garder une lecture simple ;
- * seule la recherche reste disponible.
- */
+/** One catalog, no design-based price categories. */
 export function DemosClient() {
   const siteContent = useSiteContent();
   const demos = collectAllDemos(siteContent);
@@ -54,7 +47,6 @@ export function DemosClient() {
   const { locale } = useI18n();
   const ar = locale === "ar";
   const [q, setQ] = useState("");
-  const [tier, setTier] = useState<number | "all">("all");
 
   const entries = useMemo<Entry[]>(
     () =>
@@ -101,7 +93,7 @@ export function DemosClient() {
     .map((group) => ({
       ...group,
       entries: group.entries.filter(
-        (entry) => (tier === "all" || group.tier === tier) && matches(entry),
+        (entry) => matches(entry),
       ),
     }))
     .filter((group) => group.entries.length > 0);
@@ -116,17 +108,17 @@ export function DemosClient() {
           <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-5">
             <div>
               <h1 className="text-[32px] lg:text-[44px] font-black tracking-tight leading-none">
-                {ar ? "مواقعنا حسب الفئة السعرية" : "Our sites by price category"}
+                {ar ? "اختر تصميم موقعك" : "Choose your website design"}
               </h1>
               <p className="mt-2.5 text-sm sm:text-base opacity-60 max-w-[58ch]">
                 {ar
-                  ? "اعرف سعر نموذج الموقع أولاً، ثم تكلفة تخصيصه لهويتك. يظهر الإجمالي قبل الدفع؛ وإذا لم يُحدد السعر بعد، نرسل لك عرضاً مكتوباً للموافقة."
-                  : "See each website model price and its separate brand-customization fee. The full total appears before checkout; if a fee is not set yet, request a written quote first."}
+                  ? "كل النماذج بنفس السعر الأساسي مع تخصيص المحتوى المقدم عند التسليم الأول. أضف الوظائف حسب حاجتك."
+                  : "Every model has the same base price, with initial personalization of your supplied content included. Add functions as needed."}
               </p>
               <p className="mt-2 inline-flex items-center gap-2 rounded-full border border-[#0B6B3A]/35 bg-[#0B6B3A]/10 px-4 py-1.5 text-xs font-bold text-[#0B6B3A]">
                 {ar
-                  ? "كل النماذج هنا يمكن أن تكون تصميم أي باقة من الباقات الثلاث — ما يتغير هو التفعيل الديناميكي وقاعدة البيانات، لا التصميم."
-                  : "Every model here can be the design of any of the 3 plans — what changes is the dynamization & database, not the design."}
+                  ? "لغة واحدة وبدون قاعدة بيانات. وظائف الحجز والمتجر في المعاينة تحتاج إلى تفعيل وحداتها الإضافية."
+                  : "One language, no database. Booking and store functions shown in previews require their additional modules."}
               </p>
             </div>
 
@@ -152,54 +144,7 @@ export function DemosClient() {
             </div>
           </div>
 
-          {/* Accès direct aux catégories (avec leur prix). */}
-          <div className="mt-5 flex flex-wrap items-center gap-2">
-            <button
-              type="button"
-              onClick={() => setTier("all")}
-              aria-pressed={tier === "all"}
-              className={`h-9 px-4 rounded-full text-xs sm:text-sm font-bold border transition-colors cursor-pointer ${
-                tier === "all"
-                  ? "bg-[var(--primary)] text-[var(--primary-foreground)] border-[var(--primary)]"
-                  : "bg-[var(--card)] border-[var(--border)] hover:border-[var(--accent)]/60"
-              }`}
-            >
-              {ar ? "كل الفئات" : "All categories"}
-            </button>
-            {groups.map((group) => {
-              const active = tier === group.tier;
-              return (
-                <button
-                  key={group.tier}
-                  type="button"
-                  onClick={() => setTier(group.tier)}
-                  aria-pressed={active}
-                  className={`h-9 px-4 rounded-full text-xs sm:text-sm font-bold border transition-colors cursor-pointer ${
-                    active
-                      ? "bg-[var(--accent)] text-[var(--accent-foreground)] border-[var(--accent)]"
-                      : "bg-[var(--card)] border-[var(--border)] hover:border-[var(--accent)]/60"
-                  }`}
-                >
-                  {ar ? group.name : group.nameEn}
-                  {group.priceUsd != null && (
-                    <span className="ms-1.5 opacity-70" dir="ltr">
-                      {group.breakdown.totalPriceUsd != null ? (
-                        <Price usd={group.breakdown.totalPriceUsd} />
-                      ) : (
-                        <>
-                          {ar ? "النموذج" : "model"}{" "}
-                          <Price usd={group.priceUsd} />
-                        </>
-                      )}
-                    </span>
-                  )}
-                </button>
-              );
-            })}
-            <span className="ms-auto text-xs opacity-50">
-              {ar ? `${totalVisible} موقع` : `${totalVisible} sites`}
-            </span>
-          </div>
+          <p className="mt-5 text-xs text-[var(--muted-foreground)]">{ar ? `${totalVisible} نموذج — نفس السعر الأساسي` : `${totalVisible} models — the same base price`}</p>
         </div>
       </section>
 
@@ -213,12 +158,9 @@ export function DemosClient() {
           >
             <div className="mb-5 flex flex-wrap items-end justify-between gap-x-6 gap-y-3 border-b border-[var(--border)] pb-4">
               <div className="flex items-center gap-3">
-                <span className="grid h-10 w-10 sm:h-11 sm:w-11 shrink-0 place-items-center rounded-full bg-[var(--accent)]/15 text-[var(--accent)] text-sm font-black">
-                  {group.tier}
-                </span>
                 <div>
                   <div className="text-[10px] font-black uppercase tracking-[0.16em] opacity-45">
-                    {ar ? `الفئة ${group.tier}` : `Category ${group.tier}`}
+                    {ar ? "كل التصاميم، نفس العرض" : "Every design, one offer"}
                   </div>
                   <h2
                     id={`tier-${group.tier}`}

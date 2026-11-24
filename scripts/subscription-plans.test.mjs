@@ -374,13 +374,21 @@ test("gabarit HTML : données échappées", () => {
   assert.ok(mail.html.includes("&lt;script&gt;"));
 });
 
-test("A03 : la page abonnements ne promet pas un paiement unique « sans renouvellement »", () => {
-  // Audit SEO/GEO 2026-11-01 (A03) : l'hébergement n'est inclus que la
-  // première année ; aucune page ne doit nier le renouvellement annuel.
+test("l’offre statique ne promet pas un hébergement gratuit illimité ni un renouvellement obligatoire", () => {
   const page = readFileSync(join(srcRoot, "app/(site)/abonnements/page.tsx"), "utf8");
-  assert.ok(!page.includes("بلا تجديد"), "la page abonnements ne doit pas nier le renouvellement");
   assert.ok(!/no annual renewal|nothing to renew/i.test(page));
-  // La nuance correcte doit être présente : hébergement 1 an inclus puis renouvellement.
-  assert.ok(page.includes("سنة استضافة أولى مشمولة"), "préciser l'hébergement 1 an inclus (AR)");
-  assert.ok(/first year of hosting included/i.test(page), "préciser l'hébergement 1 an inclus (EN)");
+  assert.match(page, /Vercel deployment depends on plan eligibility and limits/);
+  assert.match(page, /external recurring costs are separate/);
+  assert.match(page, /Existing subscriptions retain their agreed terms/);
+  assert.match(page, /وفق أهلية وحدود الخطة/);
+});
+
+test("maintenance presentation reuses canonical existing prices without bundling creation", () => {
+  for (const tier of mod.maintenanceTiers()) {
+    assert.equal(tier.monthly, mod.getSubscriptionPlan(`${tier.tier}-monthly`));
+    assert.equal(tier.annual, mod.getSubscriptionPlan(`${tier.tier}-annual`));
+    assert.match(tier.nameEn, /Maintenance/);
+    assert.match(tier.noteEn, /existing/);
+    assert.match(tier.noteEn, /not included/);
+  }
 });

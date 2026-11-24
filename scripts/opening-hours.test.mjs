@@ -14,12 +14,12 @@ import {
   FALLBACK_OPENING_HOURS,
 } from "../src/lib/opening-hours.ts";
 
-test("parse la config actuelle : Sat - Thu, 9:00 AM - 11:00 PM", () => {
-  const spec = parseOpeningHoursEn("Sat - Thu: 9:00 AM - 11:00 PM");
+test("parse la config actuelle : Sat - Thu, 9:00 AM - 10:00 PM", () => {
+  const spec = parseOpeningHoursEn("Sat - Thu: 9:00 AM - 10:00 PM");
   assert.deepEqual(spec, {
     dayOfWeek: ["Saturday", "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday"],
     opens: "09:00",
-    closes: "23:00",
+    closes: "22:00",
   });
 });
 
@@ -48,9 +48,10 @@ test("texte illisible → null, et openingHoursFromConfig retombe sur le repli e
   assert.equal(parseOpeningHoursEn("sur rendez-vous uniquement"), null);
   assert.equal(parseOpeningHoursEn("Sat - Thu: 9h"), null); // une seule heure
   assert.deepEqual(openingHoursFromConfig("texte illisible"), FALLBACK_OPENING_HOURS);
+  assert.equal(FALLBACK_OPENING_HOURS.closes, "22:00");
   // …et la config réelle donne bien la spec parsée (pas le repli).
-  const spec = openingHoursFromConfig("Sat - Thu: 9:00 AM - 11:00 PM");
-  assert.equal(spec.closes, "23:00");
+  const spec = openingHoursFromConfig("Sat - Thu: 9:00 AM - 10:00 PM");
+  assert.equal(spec.closes, "22:00");
   assert.equal(spec.opens, "09:00");
   assert.equal(spec.dayOfWeek.length, 6);
 });

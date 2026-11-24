@@ -1,3 +1,4 @@
+import { websiteOfferSummary, paymentAvailabilityNote, websiteDepositNote, websiteDemoNote } from "@/lib/website-offer";
 // Moteur de connaissance de l'assistant du site.
 //
 // Objectif : permettre à l'assistant (bulle « Einstein » en bas de page) de
@@ -18,7 +19,7 @@
 // Le module est pur (aucun accès base/réseau) : le catalogue digital et les
 // données du site lui sont injectés — il est donc testable avec esbuild.
 
-import { resolvePlanPriceBreakdown } from "@/lib/classification";
+import { resolveDemoClassification, resolvePlanPriceBreakdown } from "@/lib/classification";
 import type { siteConfig } from "@/lib/config";
 import type { SiteContent, Demo, Faq } from "@/lib/site-types";
 import { collectAllDemos } from "@/lib/site-types";
@@ -300,14 +301,9 @@ function planDocs(config: AssistantConfig): KnowledgeDoc[] {
     section: "pricing",
     path: "/pricing",
     title: { ar: "أسعار تصميم المواقع", en: "Website pricing" },
-    body: {
-      ar:
-        `جميع الأسعار بالدولار الأمريكي (1 دولار = 1 USDT عند الدفع). السعر = سعر النموذج + تكلفة التخصيص، ويُعرض الإجمالي قبل الدفع:\n${lines.map((l) => l.ar).join("\n")}\n\nالسعر يشمل سنة استضافة (Vercel) وربط الدومين؛ الدومين نفسه (~12 $/سنة) تشتريه باسمك. يمكنك عرض الأسعار بعملات أخرى (USDT, USD, EUR, SAR, AED, EGP) للمعلومة فقط — الدفع بالدولار/USDT.`,
-      en:
-        `All prices are in US dollars (1 USD = 1 USDT at checkout). Price = model price + customization fee; the full total is shown before payment:\n${lines.map((l) => l.en).join("\n")}\n\nIncludes 1 year of hosting (Vercel) and domain connection; the domain itself (~$12/year) is bought in your name. Prices can be displayed in other currencies (USDT, USD, EUR, SAR, AED, EGP) for information only — payment is in USD/USDT.`,
-    },
+    body: { ar: websiteOfferSummary("ar"), en: websiteOfferSummary("en") },
     keywords: kw("price", "prices", "pricing", "cost", "prix", "tarif", "tarifs", "سعر", "اسعار", "بكم", "تكلفة", "plan", "plans", "formule", "باقة", "باقات", "فئة", "فئات", "website", "site", "موقع", "customization", "تخصيص", "personnalisation", "hosting", "استضافة", "vercel", "currency", "devise", "عملة"),
-    weight: 1.4,
+    weight: 1.9,
   };
 
   const perPlan: KnowledgeDoc[] = lines.map(({ plan, ar, en }) => ({
@@ -352,8 +348,8 @@ function paymentDocs(config: AssistantConfig): KnowledgeDoc[] {
       path: CRYPTO_GUIDE_PATH,
       title: { ar: "طريقة الدفع (كريبتو / USDT)", en: "How to pay (crypto / USDT)" },
       body: {
-        ar: `كل الأسعار بالدولار الأمريكي وتُدفع بنفس القيمة بـ USDT (1 دولار = 1 USDT) أو بأكثر من 300 عملة رقمية عبر بوابة NOWPayments — دفعة واحدة أو على 2–3 أقساط. لا نخزّن بيانات محفظتك ولا نطلب أبداً كلمات مرور أو عبارات استرداد. خطوات الدفع: اختر الموقع/الباقة ← «ادفع بالكريبتو» ← اختر USDT ← انسخ العنوان والمبلغ الدقيق (نفس الشبكة، TRC20 غالباً الأرخص) ← بعد تأكيد الشبكة يصلك إيصال بالبريد. الدليل المصوّر الكامل في المدونة.`,
-        en: `All prices are in US dollars and paid at the same value in USDT (1 USD = 1 USDT) or 300+ coins via the NOWPayments gateway — in one payment or 2–3 installments. We never store wallet data and never ask for passwords or recovery phrases. Steps: pick a site/plan → "Pay with crypto" → choose USDT → copy the exact address and amount (same network, TRC20 is usually cheapest) → after network confirmation you receive an email receipt. The full photo guide is on the blog.`,
+        ar: paymentAvailabilityNote("ar") + " لا نطلب كلمات مرور أو عبارات استرداد. تفاصيل التحويل اليدوي تحفظ للتحقق.",
+        en: paymentAvailabilityNote("en") + " We never ask for passwords or recovery phrases. Manual transfer details are stored for verification.",
       },
       keywords: kw("payment", "pay", "paiement", "payer", "دفع", "ادفع", "أدفع", "كيف أدفع", "عملات رقمية", "العملات الرقمية", "عملة رقمية", "crypto", "usdt", "tether", "nowpayments", "wallet", "محفظة", "trc20", "network", "شبكة", "installments", "أقساط", "تقسيط", "tranches", "bitcoin", "btc", "eth", "binance", "guide", "دليل", "cash", "card", "visa", "paypal", "بطاقة بنكية", "كاش"),
       weight: 1.3,
@@ -364,8 +360,8 @@ function paymentDocs(config: AssistantConfig): KnowledgeDoc[] {
       path: "/demos",
       title: { ar: "حجز مكان بعربون", en: "Reserve a slot with a deposit" },
       body: {
-        ar: `احجز مكانك في جدول العمل بعربون ${fmtUsd(deposit)} فقط — يُخصم من سعر المشروع ويمنحك أولوية التنفيذ. من صفحة المواقع اختر النموذج الذي أعجبك واضغط «احجز». العربون لا يُسترد بعد بدء العمل إلا إذا كان الخطأ من نخبة.`,
-        en: `Reserve your place in our queue with a ${fmtUsd(deposit)} deposit — deducted from the project price and giving you priority. From the showcase pick the model you like and press "Reserve". The deposit is not refunded once work has started, unless Nukhba is clearly at fault.`,
+        ar: `عربون الأولوية ${fmtUsd(deposit)}. ` + websiteDepositNote("ar"),
+        en: `Priority deposit: ${fmtUsd(deposit)}. ` + websiteDepositNote("en"),
       },
       keywords: kw("reserve", "reservation", "réserver", "deposit", "acompte", "حجز", "احجز", "عربون", "slot", "priority", "أولوية"),
     },
@@ -398,10 +394,10 @@ function subscriptionDocs(): KnowledgeDoc[] {
       id: "subscriptions",
       section: "subscriptions",
       path: "/abonnements",
-      title: { ar: "الاشتراكات (استضافة وصيانة)", en: "Subscriptions (hosting & maintenance)" },
+      title: { ar: "اشتراكات صيانة اختيارية", en: "Optional maintenance subscriptions" },
       body: {
-        ar: `اشتراكات اختيارية بعد السنة الأولى لتجديد الاستضافة والصيانة، بالدولار وتُدفع بالكريبتو:\n${lines.map((l) => l.ar).join("\n")}\nالشهري يتجدد كل 30 يوماً والسنوي كل 365 يوماً. يصلك رابط دفع التجديد بالبريد مع تذكير قبل 3 أيام. فترة سماح بعد الاستحقاق بحد أقصى ${SUBSCRIPTION_GRACE_DAYS} أيام، ثم يُعلَّق الاشتراك ويمكن الاشتراك مجدداً في أي وقت.`,
-        en: `Optional subscriptions after the first year to renew hosting and maintenance, priced in USD and paid in crypto:\n${lines.map((l) => l.en).join("\n")}\nMonthly renews every 30 days, annual every 365 days. A renewal payment link is emailed with a reminder 3 days before. Grace period after the due date is at most ${SUBSCRIPTION_GRACE_DAYS} days, then the subscription is suspended and you can subscribe again anytime.`,
+        ar: `اشتراكات صيانة اختيارية منفصلة، وليست تجديداً إلزامياً للعرض الأساسي، ولا تشمل الإنشاء أو الوظائف الجديدة، بالدولار وتُدفع بالكريبتو:\n${lines.map((l) => l.ar).join("\n")}\nالشهري يتجدد كل 30 يوماً والسنوي كل 365 يوماً. يصلك رابط دفع التجديد بالبريد مع تذكير قبل 3 أيام. فترة سماح بعد الاستحقاق بحد أقصى ${SUBSCRIPTION_GRACE_DAYS} أيام، ثم يُعلَّق الاشتراك ويمكن الاشتراك مجدداً في أي وقت.`,
+        en: `Separate optional maintenance subscriptions (not automatically required after the base offer; creation and new modules excluded), priced in USD and paid in crypto:\n${lines.map((l) => l.en).join("\n")}\nMonthly renews every 30 days, annual every 365 days. A renewal payment link is emailed with a reminder 3 days before. Grace period after the due date is at most ${SUBSCRIPTION_GRACE_DAYS} days, then the subscription is suspended and you can subscribe again anytime.`,
       },
       keywords: kw("subscription", "subscriptions", "abonnement", "abonnements", "اشتراك", "اشتراكات", "renew", "renewal", "renouvellement", "تجديد", "monthly", "annual", "mensuel", "annuel", "شهري", "سنوي", "hosting", "hébergement", "استضافة", "maintenance", "صيانة", "grace", "سماح", "suspend"),
       weight: 1.3,
@@ -553,8 +549,8 @@ function demoDocs(content: SiteContent, config: AssistantConfig): KnowledgeDoc[]
     weight: 1.2,
   };
   const details: KnowledgeDoc[] = demos.map((demo) => {
-    const plan = config.pricing.plans.find((p) => p.id === demo.planId);
-    const b = plan ? resolvePlanPriceBreakdown(plan, demo.priceUsd ?? plan.priceUsd) : null;
+    const b = resolveDemoClassification(demo, config.pricing.plans);
+    const plan = config.pricing.plans.find((p) => p.id === b?.planId);
     const priceAr = b?.totalPriceUsd != null ? `السعر: نموذج ${fmtUsd(b.modelPriceUsd)} + تخصيص ${fmtUsd(b.customizationUsd)} = ${fmtUsd(b.totalPriceUsd)}.` : "";
     const priceEn = b?.totalPriceUsd != null ? `Price: model ${fmtUsd(b.modelPriceUsd)} + customization ${fmtUsd(b.customizationUsd)} = ${fmtUsd(b.totalPriceUsd)}.` : "";
     return {
@@ -563,8 +559,8 @@ function demoDocs(content: SiteContent, config: AssistantConfig): KnowledgeDoc[]
       path: `/demos/${demo.slug}`,
       title: { ar: demo.title, en: demo.titleEn },
       body: {
-        ar: `${demo.description}\nالقطاع: ${demo.sectorAr}${plan ? ` — الفئة: ${plan.name}` : ""}. ${priceAr}\nالمميزات: ${demo.features.join("، ")}.`,
-        en: `${demo.descriptionEn}\nSector: ${demo.sectorEn}${plan ? ` — Category: ${plan.nameEn}` : ""}. ${priceEn}\nFeatures: ${demo.featuresEn.join(", ")}.`,
+        ar: `${demo.description}\nالقطاع: ${demo.sectorAr}${plan ? ` — العرض: ${plan.name}` : ""}. ${priceAr}\nمميزات المعاينة: ${demo.features.join("، ")}. الوظائف المتصلة تحتاج شراء وحداتها ولا تشملها القاعدة الثابتة.`,
+        en: `${demo.descriptionEn}\nSector: ${demo.sectorEn}${plan ? ` — Base offer: ${plan.nameEn}` : ""}. ${priceEn}\nDemo features: ${demo.featuresEn.join(", ")}. Connected functions require their purchased module; they are not included in the static base.`,
       },
       keywords: kw(demo.slug.replace(/-/g, " "), demo.title, demo.titleEn, demo.sectorAr, demo.sectorEn),
       weight: 0.9,
@@ -593,8 +589,8 @@ function sectorDocs(): KnowledgeDoc[] {
     path: `/sectors/${sector.id}`,
     title: { ar: sector.h1Ar, en: sector.h1En },
     body: {
-      ar: `${sector.heroSubtitleAr}\n${joinFaqs(sector.faqsAr, "ar")}`,
-      en: `${sector.heroSubtitleEn}\n${joinFaqs(sector.faqsAr, "en")}`,
+      ar: `${websiteDemoNote("ar")}\n${sector.heroSubtitleAr}\n${joinFaqs(sector.faqsAr, "ar")}`,
+      en: `${websiteDemoNote("en")}\n${sector.heroSubtitleEn}\n${joinFaqs(sector.faqsAr, "en")}`,
     },
     keywords: kw(sector.id, sector.labelAr, sector.labelEn, sector.keywordsAr, sector.keywordsEn),
   }));
@@ -707,8 +703,8 @@ function generalDocs(config: AssistantConfig, content: SiteContent): KnowledgeDo
       path: "/creation-sites",
       title: { ar: `من نحن — ${config.nameAr} ${config.name}`, en: `About — ${config.nameAr} ${config.name}` },
       body: {
-        ar: `${config.nameAr} (${config.name}) وكالة مواقع فاخرة مقرها ${market.cityAr}، ${market.countryAr}، وتخدم عملاء من كل العالم عن بُعد. ${content.hero.subtitleAr}\nلماذا نخبة؟\n${content.whyUs.map((w) => `• ${w.titleAr}: ${w.descAr}`).join("\n")}\nكل موقع ثنائي اللغة (عربي + إنجليزي)، متجاوب، محسّن لجوجل والمساعدات الذكية، مع ثيمات ألوان ووضع داكن/فاتح.`,
-        en: `${config.nameAr} (${config.name}) is a premium web agency based in ${market.cityEn}, ${market.countryEn}, serving clients worldwide remotely. ${content.hero.subtitleEn}\nWhy Nukhba?\n${content.whyUs.map((w) => `• ${w.titleEn}: ${w.descEn}`).join("\n")}\nEvery website is bilingual (Arabic + English), responsive, optimized for Google and AI assistants, with color themes and dark/light mode.`,
+        ar: `${config.nameAr} (${config.name}) وكالة مواقع فاخرة مقرها ${market.cityAr}، ${market.countryAr}، وتخدم عملاء من كل العالم عن بُعد. ${content.hero.subtitleAr}\nلماذا نخبة؟\n${content.whyUs.map((w) => `• ${w.titleAr}: ${w.descAr}`).join("\n")}\nالموقع الأساسي بلغة واحدة؛ اللغة الإضافية 10 دولارات بترجمة يقدمها العميل.`,
+        en: `${config.nameAr} (${config.name}) is a premium web agency based in ${market.cityEn}, ${market.countryEn}, serving clients worldwide remotely. ${content.hero.subtitleEn}\nWhy Nukhba?\n${content.whyUs.map((w) => `• ${w.titleEn}: ${w.descEn}`).join("\n")}\nThe base website includes one language. Each additional language costs $10 with client-supplied translation.`,
       },
       keywords: kw("about", "who", "qui", "من انتم", "من أنتم", "نخبة", "nukhba", "agency", "agence", "وكالة", "why", "pourquoi", "لماذا", "website creation", "création de site", "إنشاء موقع", "تصميم موقع", "create", "créer", "build", "design", "language", "langue", "bilingual", "arabic", "english", "عربي", "انجليزي", "theme", "dark", "داكن", "ثيم", "responsive", "mobile"),
       weight: 1.1,
@@ -719,8 +715,8 @@ function generalDocs(config: AssistantConfig, content: SiteContent): KnowledgeDo
       path: "/creation-sites",
       title: { ar: "خطوات العمل والتسليم", en: "Process & delivery timeline" },
       body: {
-        ar: `${steps.map((s) => `${s.num}. ${s.titleAr} (${s.durationAr}): ${s.descAr}`).join("\n")}\nالمدة الإجمالية: الواجهة ~7 أيام، الواجهة بلس ~10 أيام، المتجر/الحجز 14–21 يوماً. نبدأ فور تأكيد العربون ونرسل معاينة قابلة للتصفح خلال المشروع، مع جولتي مراجعة مشمولتين. بعد التسليم: دعم مجاني 30–90 يوماً حسب الباقة، ثم صيانة اختيارية عبر الاشتراكات.`,
-        en: `${steps.map((s) => `${s.num}. ${s.titleEn} (${s.durationEn}): ${s.descEn}`).join("\n")}\nTotal: Vitrine ~7 days, Vitrine+ ~10 days, Boutique/Booking 14–21 days. We start as soon as the deposit is confirmed and share a browsable preview during the project, with 2 revision rounds included. After delivery: free support 30–90 days by plan, then optional maintenance via subscriptions.`,
+        ar: `${steps.map(s => `${s.num}. ${s.titleAr}: ${s.descAr}`).join("\n")}\n${websiteOfferSummary("ar")}`,
+        en: `${steps.map(s => `${s.num}. ${s.titleEn}: ${s.descEn}`).join("\n")}\n${websiteOfferSummary("en")}`,
       },
       keywords: kw("process", "steps", "étapes", "خطوات", "مراحل", "how long", "delivery time", "délai", "durée", "مدة", "تسليم", "كم يستغرق", "days", "jours", "أيام", "revision", "révision", "مراجعة", "support", "دعم", "training", "تدريب", "edit", "modifier", "تعديل", "dashboard", "لوحة"),
       weight: 1.2,
@@ -752,8 +748,8 @@ function generalDocs(config: AssistantConfig, content: SiteContent): KnowledgeDo
       path: "/conditions",
       title: { ar: "الشروط والأحكام", en: "Terms & conditions of sale" },
       body: {
-        ar: "الأسعار بالدولار وتُدفع بالكريبتو عبر NOWPayments (1 دولار = 1 USDT). يُؤكَّد الطلب عند استلام العربون أو أول دفعة اشتراك. العربون يُخصم من الإجمالي ولا يُسترد بعد بدء العمل إلا بخطأ واضح من نخبة. الاشتراك الشهري كل 30 يوماً والسنوي كل 365 يوماً، تذكير قبل 3 أيام، سماح 5 أيام كحد أقصى، إلغاء في أي وقت. ملكية الموقع تنتقل للعميل بعد سداد كامل المبلغ (قبل ذلك تحتفظ نخبة بالحقوق)، ويجوز لنخبة عرض المشروع في معرض أعمالها ما لم يُتفق كتابياً على خلاف ذلك. يُعتبر الموقع مقبولاً إذا لم يرسل العميل ملاحظات خلال 7 أيام من مشاركة النسخة التجريبية. المسؤولية محدودة بالمبلغ المدفوع. البيانات الشخصية تُستخدم للخدمة فقط ولا تُباع. القانون الليبي ومحاكم طرابلس هي المرجع.",
-        en: "Prices in USD, paid in crypto via NOWPayments (1 USD = 1 USDT). An order is confirmed once the deposit or first subscription payment is received. The deposit is deducted from the total and not refunded once work has started unless Nukhba is clearly at fault. Monthly subscriptions renew every 30 days, annual every 365 days, reminder 3 days before, grace period at most 5 days, cancel anytime. Website ownership passes to the client once all amounts are paid in full (until then Nukhba keeps the rights); Nukhba may show the project in its portfolio unless agreed otherwise in writing. The website is deemed accepted if no feedback is sent within 7 days of the test version. Liability is limited to the amount paid. Personal data is used only to provide the service and never sold. Libyan law applies, courts of Tripoli.",
+        ar: "الأسعار بالدولار وتُدفع بالكريبتو عبر NOWPayments (1 دولار = 1 USDT). يُؤكَّد الطلب عند استلام العربون أو أول دفعة اشتراك. العربون يُحتسب في فاتورة رصيد مؤكدة، وليس تلقائياً في الدفع المباشر، ولا يُسترد بعد بدء العمل إلا بخطأ واضح من نخبة. الاشتراك الشهري كل 30 يوماً والسنوي كل 365 يوماً، تذكير قبل 3 أيام، سماح 5 أيام كحد أقصى، إلغاء في أي وقت. ملكية الموقع تنتقل للعميل بعد سداد كامل المبلغ (قبل ذلك تحتفظ نخبة بالحقوق)، ويجوز لنخبة عرض المشروع في معرض أعمالها ما لم يُتفق كتابياً على خلاف ذلك. يُعتبر الموقع مقبولاً إذا لم يرسل العميل ملاحظات خلال 7 أيام من مشاركة النسخة التجريبية. المسؤولية محدودة بالمبلغ المدفوع. البيانات الشخصية تُستخدم للخدمة فقط ولا تُباع. القانون الليبي ومحاكم طرابلس هي المرجع.",
+        en: "Prices in USD, paid in crypto via NOWPayments (1 USD = 1 USDT). An order is confirmed once the deposit or first subscription payment is received. The deposit is credited on a confirmed balance invoice, not automatically in full-price checkout, and not refunded once work has started unless Nukhba is clearly at fault. Monthly subscriptions renew every 30 days, annual every 365 days, reminder 3 days before, grace period at most 5 days, cancel anytime. Website ownership passes to the client once all amounts are paid in full (until then Nukhba keeps the rights); Nukhba may show the project in its portfolio unless agreed otherwise in writing. The website is deemed accepted if no feedback is sent within 7 days of the test version. Liability is limited to the amount paid. Personal data is used only to provide the service and never sold. Libyan law applies, courts of Tripoli.",
       },
       keywords: kw("terms", "conditions", "cgv", "شروط", "أحكام", "legal", "légal", "قانوني", "law", "loi", "قانون", "ownership", "owns", "own", "owner", "who owns", "qui est propriétaire", "من يملك", "ملكية الموقع", "propriété", "propriétaire", "ملكية", "مالك", "يملك", "intellectual", "copyright", "حقوق", "data", "données", "بيانات", "privacy", "خصوصية", "liability", "responsabilité", "مسؤولية", "acceptance", "قبول"),
     },
@@ -800,10 +796,6 @@ function generalDocs(config: AssistantConfig, content: SiteContent): KnowledgeDo
 
 function buildCore(input: KnowledgeInput, docs: KnowledgeDoc[], productCount: number): string {
   const { config, content, degraded } = input;
-  const plans = config.pricing.plans.map((plan) => {
-    const b = resolvePlanPriceBreakdown(plan);
-    return `${plan.nameEn} (${plan.id}): model ${fmtUsd(b.modelPriceUsd)} + ${b.customizationPercent ?? "?"}% customization ${fmtUsd(b.customizationUsd)} = total ${fmtUsd(b.totalPriceUsd)}${b.totalPriceUsd == null ? " (customization quoted)" : ""}`;
-  });
   const subs = (["vitrine", "vitrine-plus", "boutique"] as const).map((tier) => {
     const m = SUBSCRIPTION_PLANS.find((p) => p.tier === tier && p.cycle === "monthly");
     const a = SUBSCRIPTION_PLANS.find((p) => p.tier === tier && p.cycle === "annual");
@@ -813,8 +805,8 @@ function buildCore(input: KnowledgeInput, docs: KnowledgeDoc[], productCount: nu
   return [
     `SITE: ${config.nameAr} / ${config.name} — ${config.tagline}. Premium web agency in ${config.market.cityEn}, ${config.market.countryEn}; serves clients worldwide remotely. Site URL: ${config.url}. Languages served: Arabic + English.`,
     `CONTACT: phone/WhatsApp ${config.phone} (${whatsappLink(config.whatsapp)}), email ${config.email}, address ${config.addressEn}. Hours: ${config.hoursEn} (${config.market.timezone}). Never claim 24/7 human support, client counts, ratings or any statistic not listed here.`,
-    `WEBSITE PLANS (USD, 1 USD = 1 USDT; /pricing, /creation-sites): ${plans.join(" | ")}. Includes 1st-year Vercel hosting + domain connection (domain ~$12/yr bought by the client). Delivery: Vitrine ~7 days, Vitrine+ ~10, Boutique 14–21. 2 revision rounds. Free support 30–90 days by plan. Reservation deposit ${fmtUsd(config.reservation?.depositUsd ?? 1)} deducted from the price (pick a model on /demos). Flexible payment ${fmtUsd(config.flexiblePayment.minUsd)}–${fmtUsd(config.flexiblePayment.maxUsd)}. Installments: 1, 2 or 3. Payment only in crypto via NOWPayments (USDT or 300+ coins) — no cards/PayPal/cash. Photo guide: ${CRYPTO_GUIDE_PATH}.`,
-    `SUBSCRIPTIONS (/abonnements, optional renewal of hosting/maintenance): ${subs.join(" | ")}. Monthly = 30 days, annual = 365 days; renewal link by email, reminder 3 days before; grace period max ${SUBSCRIPTION_GRACE_DAYS} days; cancel anytime on /abonnements/suivi (link with ref + t); current period non-refundable.`,
+    `WEBSITE OFFER (/pricing, /creation-sites): ${websiteOfferSummary("en")} Direct checkout is for the base offer only; options are quoted and billed separately. USD = USDT. Flexible payment ${fmtUsd(config.flexiblePayment.minUsd)}–${fmtUsd(config.flexiblePayment.maxUsd)}. Installments: 1, 2 or 3. Guide: ${CRYPTO_GUIDE_PATH}.`,
+    `SUBSCRIPTIONS (/abonnements, optional maintenance for existing sites, not website creation or new modules; existing contracts retain their terms): ${subs.join(" | ")}. Monthly = 30 days, annual = 365 days; renewal link by email, reminder 3 days before; grace period max ${SUBSCRIPTION_GRACE_DAYS} days; cancel anytime on /abonnements/suivi (link with ref + t); current period non-refundable.`,
     `OPEN SERVICES (/services/<id>): ${config.standaloneServices.map((s) => `${s.titleEn} [${s.id}] from ${fmtUsd(s.priceFromUsd)}`).join("; ")}.`,
     `DIGITAL CODES STORE (/codes, /codes/<slug>, /codes/category/<kind>, tracking /codes/commande): ${degraded ? "TEMPORARILY UNAVAILABLE — catalog unreachable; do NOT quote product prices or stock; offer WhatsApp." : `${productCount} products live`}. Kinds: gift_card, game_topup (credited directly to the game via Player ID — no code emailed), software_key, subscription_code (code shown on /codes/commande and emailed after payment confirmation and delivery). Payment: crypto via NOWPayments; Libyana/Al Madar phone recharge card / mobile balance is ${config.fazercards?.phoneCardPaymentsEnabled !== false ? "ENABLED, with mandatory manual verification — never instant acceptance" : "TEMPORARILY PAUSED — do not ask for recharge codes; crypto remains available and existing orders remain processable; no return date announced"}. Max ${fmtUsd(MAX_DIGITAL_ORDER_USD)} per order, gift cards ≤ ${fmtUsd(MAX_GIFT_CARD_PRICE_USD)}. Region-locked; non-refundable once delivered; invalid code → replacement within 48h with screenshot. Codes come from the official distributor on demand. Never ask for passwords/seed phrases.`,
     `PORTFOLIO (/demos/<slug>): ${demos.length} live demos — ${demos.map((d) => `${d.titleEn} (${d.slug}, ${d.sectorEn})`).join("; ")}.`,
@@ -1063,7 +1055,7 @@ export function buildSystemPrompt(
     "RULES:",
     `- Answer in ${LANG_NAME[lang]} (the visitor's language). Be concise, warm and precise; use short paragraphs or bullets. Plain text only (no Markdown headings, no tables).`,
     "- Use ONLY the facts below. Quote exact prices, delays, limits and policies from them. If something is not covered, say you don't have that information on the site and suggest WhatsApp or the Contact page — never invent numbers, statistics, client counts, ratings, '24/7 support' or new offers.",
-    "- Website plans and subscriptions are paid in crypto (USDT = USD) via NOWPayments; never suggest bank cards, PayPal or cash for them.",
+    "- Website plans and subscriptions are paid in crypto (USDT = USD) via NOWPayments, or an enabled manual transfer method actually displayed at checkout. Bank card payment is available only where checkout explicitly offers it, subject to the displayed minimum and fees. Never invent card, PayPal or cash availability. Manual transfers need verification. Display currency conversions are indicative, not billing currencies. Never claim that full-price checkout automatically credits a reservation deposit; contact the team for a balance invoice.",
     knowledge.phoneCardPaymentsEnabled
       ? "- Digital codes also accept Libyana/Al Madar phone recharge cards through checkout. The indicative LYD quote is order total USDT × current parallel-market USD/LYD rate × 1.20, with source/time displayed and explicit customer agreement. Never invent a live rate. The customer submits the code once; staff verify it manually before delivery. Never claim instant acceptance."
       : "- Phone card / mobile balance payments are TEMPORARILY PAUSED. Tell visitors not to submit recharge codes; crypto remains available and existing orders can still be processed. Do not invent a return date or bypass the pause.",

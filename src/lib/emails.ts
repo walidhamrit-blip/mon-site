@@ -308,18 +308,18 @@ export function buildLeadReceipt(
 
   const copy = rtl
     ? {
-        preheader: `طلبك رقم ${reference} — نرد خلال ساعتين`,
+        preheader: `طلبك رقم ${reference} — نرد خلال أوقات العمل`,
         brandLine: `${ctx.siteNameAr} — نخبة`,
         brandSub: "وكالة ويب بطرابلس",
         title: "شكراً لتواصلك معنا",
-        intro: `مرحباً ${data.name}، استلمنا طلبك بخصوص «${data.business}» وسنرد عليك خلال ساعتين كحد أقصى.`,
+        intro: `مرحباً ${data.name}، استلمنا طلبك بخصوص «${data.business}» وسنرد عليك خلال أوقات العمل.`,
         reference: `رقم الطلب: ${reference}`,
         recapTitle: "ملخص طلبك",
         nextTitle: "ماذا بعد؟",
         next: [
           "ندرس طلبك ونجهّز عرض سعر شفافاً بلا التزام.",
-          "نتواصل معك عبر واتساب أو الهاتف خلال ساعتين.",
-          "عند الموافقة، سلّم موقعك خلال 7 إلى 14 يوماً.",
+          "نتواصل معك عبر واتساب أو الهاتف خلال أوقات العمل.",
+          "نؤكد موعد التسليم حسب النطاق وتوفر المحتوى قبل بدء العمل.",
         ],
         whatsapp: "تواصل عبر واتساب",
         call: "اتصل بنا",
@@ -327,18 +327,18 @@ export function buildLeadReceipt(
         footerNote: "وصلتك هذه الرسالة لأنك استعملت نموذج الطلب في موقعنا.",
       }
     : {
-        preheader: `Request ${reference} — we reply within 2 hours`,
+        preheader: `Request ${reference} — we reply during opening hours`,
         brandLine: `${ctx.siteName} — Nukhba`,
         brandSub: "Premium Web Agency · Tripoli",
         title: "Thanks for reaching out",
-        intro: `Hello ${data.name}, we received your request about “${data.business}” and will get back to you within 2 hours.`,
+        intro: `Hello ${data.name}, we received your request about “${data.business}” and will get back to you during opening hours.`,
         reference: `Request reference: ${reference}`,
         recapTitle: "Your request",
         nextTitle: "What happens next",
         next: [
           "We review your request and prepare a transparent quote, with no commitment.",
-          "We contact you on WhatsApp or by phone within 2 hours.",
-          "Once you approve, your site goes live in 7 to 14 days.",
+          "We contact you on WhatsApp or by phone during opening hours.",
+          "We confirm delivery according to scope and content availability before work starts.",
         ],
         whatsapp: "Chat on WhatsApp",
         call: "Call us",

@@ -1,3 +1,4 @@
+import { websiteBasePlan } from "@/lib/website-offer";
 import { DEFAULT_SITE_DOMAIN, DEFAULT_SITE_ORIGIN } from "@/lib/site-identity";
 import { DEFAULT_PAYGATE_CONFIG, type PayGateConfigData } from "@/lib/paygate-core";
 import type { LegalConfigData, TrustConfigData } from "@/lib/site-types";
@@ -15,8 +16,8 @@ export const siteConfig = {
   whatsapp: "218913442640", // sans +
   address: "شارع الجمهورية، طرابلس، ليبيا",
   addressEn: "Al Jumhouriya Street, Tripoli, Libya",
-  hours: "السبت - الخميس: 9:00 - 23:00",
-  hoursEn: "Sat - Thu: 9:00 AM - 11:00 PM",
+  hours: "السبت - الخميس: 9:00 - 22:00",
+  hoursEn: "Sat - Thu: 9:00 AM - 10:00 PM",
 
   /**
    * Marché de référence du site.
@@ -102,119 +103,14 @@ export const siteConfig = {
     primaryLocale: "auto",
   },
 
-  // Prix modifiables ici — source unique.
+  // Offre sites centralisée dans website-offer.ts ; toutes les anciennes catégories sont remplacées.
   // Devise UNIQUE du site : le dollar américain (USD), dans toutes les
   // langues. Au paiement crypto, 1 USD = 1 USDT : le client règle le
   // montant affiché, sans conversion ni équivalent local.
   pricing: {
     currency: "$",
     currencyEn: "$",
-    plans: [
-      {
-        id: "vitrine",
-        name: "الواجهة",
-        nameEn: "Vitrine",
-        // Prix du modèle hors personnalisation, facturé en USD.
-        priceUsd: 300,
-        // Frais de personnalisation calculés en pourcentage du prix modèle.
-        customizationPercent: 20,
-        period: "/ مرة واحدة",
-        periodEn: "/ one-time",
-        description: "مثالي للانطلاقة الاحترافية",
-        descriptionEn: "Perfect for a professional launch",
-        featured: false,
-        cta: "ابدأ الآن",
-        ctaEn: "Start now",
-        features: [
-          "تصميم حصري على الهوية",
-          "5 صفحات مصممة بإتقان",
-          "متجاوب 100% — موبايل أولاً",
-          "تحسين SEO أساسي",
-          "نموذج تواصل + واتساب",
-          "تسليم في 7 أيام",
-          "دعم 30 يوم",
-        ],
-        featuresEn: [
-          "Exclusive design on brand",
-          "5 crafted pages",
-          "100% responsive — mobile first",
-          "Essential SEO setup",
-          "Contact form + WhatsApp",
-          "Delivery in 7 days",
-          "30 days support",
-        ],
-      },
-      {
-        id: "vitrine-plus",
-        name: "الواجهة بلس",
-        nameEn: "Vitrine+",
-        priceUsd: 510,
-        customizationPercent: 20,
-        period: "/ مرة واحدة",
-        periodEn: "/ one-time",
-        description: "الأكثر طلباً — توازن مثالي",
-        descriptionEn: "Most popular — perfect balance",
-        featured: true,
-        badge: "الأكثر اختياراً",
-        badgeEn: "Most chosen",
-        cta: "اختر هذه الباقة",
-        ctaEn: "Choose this plan",
-        features: [
-          "كل مزايا الواجهة +",
-          "حتى 10 صفحات + مدونة",
-          "حجز مواعيد / طاولات",
-          "ربط Google Maps & Analytics",
-          "تحسين سرعة متقدم (90+ Lighthouse)",
-          "لغتين (عربي/إنجليزي)",
-          "تسليم في 10 أيام",
-          "دعم 60 يوم + تدريب",
-        ],
-        featuresEn: [
-          "All Vitrine features +",
-          "Up to 10 pages + blog",
-          "Booking / reservation",
-          "Google Maps & Analytics",
-          "Advanced speed (90+ Lighthouse)",
-          "Bilingual (AR/EN)",
-          "Delivery in 10 days",
-          "60 days support + training",
-        ],
-      },
-      {
-        id: "boutique",
-        name: "المتجر / الحجز",
-        nameEn: "Boutique",
-        priceUsd: 880,
-        customizationPercent: 20,
-        period: "/ مرة واحدة",
-        periodEn: "/ one-time",
-        description: "للبيع والحجز عبر الإنترنت",
-        descriptionEn: "For selling & booking online",
-        featured: false,
-        cta: "تحدث معنا",
-        ctaEn: "Talk to us",
-        features: [
-          "متجر إلكتروني / نظام حجز كامل",
-          "دفع عند الاستلام + تحويل",
-          "إدارة منتجات / غرف / خدمات",
-          "لوحة تحكم سهلة",
-          "إشعارات واتساب تلقائية",
-          "تحسين SEO متقدم",
-          "تسليم في 14-21 يوم",
-          "دعم 90 يوم + صيانة",
-        ],
-        featuresEn: [
-          "Full e-commerce / booking",
-          "Cash on delivery + transfer",
-          "Products / rooms / services",
-          "Easy dashboard",
-          "Auto WhatsApp notifications",
-          "Advanced SEO",
-          "Delivery in 14-21 days",
-          "90 days support + maintenance",
-        ],
-      },
-    ],
+    plans: [websiteBasePlan],
   },
 
   // Couleurs — changez en une ligne
@@ -240,8 +136,8 @@ export const siteConfig = {
   // formules (pricing), le portfolio publié (/demos), les témoignages
   // affichés tels quels et les horaires de contact (hours/hoursEn).
   stats: {
-    delivery: "7 أيام",
-    deliveryEn: "7 days",
+    delivery: "حسب النطاق المتفق عليه",
+    deliveryEn: "By agreed scope",
   },
 
   // Réservation prioritaire — petit acompte pour prendre une place

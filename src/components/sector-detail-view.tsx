@@ -1,4 +1,6 @@
 "use client";
+import { websiteDemoNote } from "@/lib/website-offer";
+
 
 import { LocalizedLink as Link } from "@/components/localized-link";
 import Image from "next/image";
@@ -101,6 +103,7 @@ export function SectorDetailView({
             </Link>
           </div>
 
+          <p className="my-5 rounded-xl border border-[var(--accent)]/30 bg-[var(--accent)]/5 p-4 text-sm leading-7">{websiteDemoNote(locale)}</p>
           <div className="mt-6 flex flex-wrap gap-2 text-xs">
             {(ar ? sector.keywordsAr : sector.keywordsEn).map((kw) => (
               <span
@@ -185,7 +188,7 @@ export function SectorDetailView({
                       {cls && (
                         <div className="mt-3 rounded-xl bg-[var(--secondary)]/60 p-3 text-xs">
                           <div className="mb-2 inline-flex rounded-full border border-[var(--border)] px-2 py-0.5 font-bold">
-                            {pick(s.tierAr, s.tierEn)} {cls.tier} · {cls.nameEn}
+                            {cls.nameEn}
                           </div>
                           <div className="flex justify-between gap-2">
                             <span className="opacity-60">

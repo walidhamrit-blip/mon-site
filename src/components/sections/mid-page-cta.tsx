@@ -48,8 +48,8 @@ export function MidPageCta() {
               </span>
               <h2 className="mt-4 text-[clamp(1.6rem,1.1rem+1.8vw,2.4rem)] font-black leading-[1.1] tracking-[-0.025em]">
                 {ar
-                  ? "موقعك الاحترافي في 7 أيام — بسعر واضح بالدولار."
-                  : "Your professional site in 7 days — one clear USD price."}
+                  ? "موقع ثابت من 35 دولاراً — والوظائف الإضافية حسب حاجتك."
+                  : "A static website from $35 — extra functions as needed."}
               </h2>
               <p className="mt-3 text-[14px] leading-7 opacity-70">
                 {ar

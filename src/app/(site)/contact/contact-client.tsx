@@ -148,7 +148,7 @@ export function ContactClient() {
             <div className="h-[300px] rounded-[var(--radius-lg)] border border-[var(--border)] bg-[var(--card)] p-2 shadow-[var(--shadow-sm)] sm:h-[360px]">
               <MapPanel
                 label={marketText.place}
-                sublabel={ar ? "مفتوح الآن · رد سريع" : "Open now · fast reply"}
+                sublabel={ar ? "الرد خلال أوقات العمل المنشورة" : "Replies during published opening hours"}
                 address={siteConfig.addressEn}
               />
             </div>

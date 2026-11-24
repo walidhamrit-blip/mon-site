@@ -133,6 +133,7 @@ export function ServicesHubView({
             </p>
           )}
 
+              <p className="mt-4 rounded-xl border border-[var(--accent)]/30 p-4 text-sm leading-7">{ar ? "هذه خدمات مستقلة بنطاق خاص، وليست رسوماً إلزامية لتخصيص المحتوى الأولي المشمول في عرض الموقع الأساسي. إنشاء نصوص أو صفحات أو تصميم جديد يختلف عن إدخال محتواك في نموذج موجود." : "These are separate scoped services, not mandatory fees for the initial content personalization included in the base website offer. Creating copy, pages or a new design is different from inserting your content into an existing model."}</p>
           <div
             id="services-answer"
             className="mt-7 max-w-[70ch] rounded-[var(--radius-md)] border border-[var(--border)] bg-[var(--card)] p-5 shadow-[var(--shadow-xs)]"

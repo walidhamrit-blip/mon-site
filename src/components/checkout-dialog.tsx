@@ -1,4 +1,5 @@
 "use client";
+import { websiteDepositNote } from "@/lib/website-offer";
 
 import { useEffect, useState } from "react";
 import {
@@ -518,6 +519,8 @@ export function CheckoutDialog({
                   </span>
                 )}
               </div>
+              {!flexMode && <p className="mt-3 text-xs leading-6 opacity-75">{ar ? "الموقع الأساسي فقط: لغة واحدة، دون قاعدة بيانات أو إدارة. تخصيص المحتوى المقدم عند التسليم الأول مشمول. نشر vercel.app وفق أهلية وحدود Vercel؛ الدومين الخاص غير مشمول. اللغات والوظائف الإضافية والتكاليف الخارجية تؤكد وتفوتر بشكل منفصل قبل الموافقة." : "Base website only: one language, no database or admin. Initial personalization with your supplied content is included. Deployment to vercel.app is subject to Vercel eligibility and limits; custom domain excluded. Extra languages, modules and external costs are confirmed and billed separately with your approval."}</p>}
+              {!flexMode && <p className="mt-3 rounded-xl border border-amber-500/40 bg-amber-500/10 p-3 text-xs leading-6">{websiteDepositNote(locale)} <Link href="/contact" className="font-bold underline">{ar ? "تواصل معنا" : "Contact us"}</Link></p>}
               {!flexMode && planBreakdown && (
                 <div className="mt-2 border-t border-[var(--border)]/70 pt-2 space-y-1 text-xs">
                   <div className="flex items-center justify-between gap-3">
@@ -528,11 +531,7 @@ export function CheckoutDialog({
                   </div>
                   <div className="flex items-center justify-between gap-3">
                     <span className="opacity-60">
-                      {planBreakdown.customizationPercent == null
-                        ? (ar ? "تكلفة التخصيص" : "Customization")
-                        : ar
-                          ? `التخصيص (${planBreakdown.customizationPercent}٪)`
-                          : `Customization (${planBreakdown.customizationPercent}%)`}
+                      {ar ? "تخصيص المحتوى الأولي — مشمول" : "Initial content personalization — included"}
                     </span>
                     <strong>
                       <Price usd={planBreakdown.customizationUsd ?? 0} />
