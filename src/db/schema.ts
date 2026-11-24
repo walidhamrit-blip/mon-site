@@ -235,6 +235,48 @@ export const manualPayments = pgTable("manual_payments", {
 export type ManualPayment = typeof manualPayments.$inferSelect;
 export type NewManualPayment = typeof manualPayments.$inferInsert;
 
+/**
+ * Sessions de paiement par Carte Bancaire → USDC Polygon (PayGate.to).
+ *
+ * Chaque commande réglée par carte reçoit une adresse temporaire Polygon unique
+ * (`polygon_address_in`) et une URL de callback signée (`callback_url`). On les
+ * conserve ici pour vérifier cryptographiquement (RSA-SHA256 + HMAC) que le
+ * callback reçu provient bien de PayGate.to et correspond exactement à cette
+ * commande et à notre portefeuille marchand (`merchant_wallet`).
+ */
+export const paygatePayments = pgTable("paygate_payments", {
+  id: serial("id").primaryKey(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  orderRef: text("order_ref")
+    .notNull()
+    .unique()
+    .references(() => orders.ref, { onDelete: "cascade" }),
+  merchantWallet: text("merchant_wallet").notNull(),
+  addressIn: text("address_in").notNull(),
+  polygonAddressIn: text("polygon_address_in").notNull(),
+  ipnToken: text("ipn_token").notNull(),
+  callbackUrl: text("callback_url").notNull(),
+  checkoutUrl: text("checkout_url").notNull(),
+  baseAmountUsd: text("base_amount_usd").notNull(),
+  feePercent: text("fee_percent").notNull().default("0"),
+  billedAmountUsd: text("billed_amount_usd").notNull(),
+  minAcceptableUsd: text("min_acceptable_usd").notNull(),
+  provider: text("provider"),
+  /** pending | paid | underpaid | failed */
+  status: text("status").notNull().default("pending"),
+  valueCoin: text("value_coin"),
+  valueForwardedCoin: text("value_forwarded_coin"),
+  coin: text("coin"),
+  txidIn: text("txid_in"),
+  txidOut: text("txid_out"),
+  paidAt: timestamp("paid_at", { withTimezone: true }),
+  lastDetail: text("last_detail"),
+});
+
+export type PayGatePayment = typeof paygatePayments.$inferSelect;
+export type NewPayGatePayment = typeof paygatePayments.$inferInsert;
+
 // Plans d'abonnement (mensuel / annuel), synchronisés avec NOWPayments.
 export const subscriptionPlans = pgTable("subscription_plans", {
   /** Identifiant local stable, ex. `vitrine-monthly`. */

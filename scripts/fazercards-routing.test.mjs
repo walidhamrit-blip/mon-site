@@ -386,11 +386,11 @@ test("la caisse refuse une facture sous le minimum crypto", () => {
   const dialogFlat = code(dialog);
   assert.match(dialogFlat, /MIN_CRYPTO_INVOICE_USD/);
   assert.match(dialogFlat, /belowMinimum/);
-  // Le bouton reste bloqué pendant le contrôle d'identifiant et, pour une
-  // carte téléphonique, tant que son devis LYD n'est pas disponible.
+  // Le bouton reste bloqué pendant le contrôle d'identifiant, sous le minimum
+  // (crypto ou carte bancaire PayGate), et tant que le devis LYD carte n'est pas disponible.
   assert.match(
     dialogFlat,
-    /disabled=\{busy \|\| !selected \|\| belowMinimum \|\| aboveLimit \|\| idGate === "pending" \|\| \(paymentMethod === "phone_card" && phoneQuotePending\)\}/,
+    /disabled=\{\s*busy \|\| !selected \|\| belowMinimum \|\| belowCardMinimum \|\| aboveLimit \|\| idGate === "pending" \|\| \(paymentMethod === "phone_card" && phoneQuotePending\)\s*\}/,
   );
 });
 
@@ -405,7 +405,7 @@ test("le plafond d'achat est refusé AVANT l'encaissement", () => {
   );
   const dialogFlat = code(dialog);
   assert.match(dialogFlat, /aboveLimit/);
-  assert.match(dialogFlat, /!selected \|\| belowMinimum \|\| aboveLimit/);
+  assert.match(dialogFlat, /!selected \|\| belowMinimum \|\| belowCardMinimum \|\| aboveLimit/);
 });
 
 /* ------------- Catalogue persisté (rendu de page sans synchro) ---------- */

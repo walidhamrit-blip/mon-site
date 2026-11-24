@@ -14,6 +14,8 @@ import {
 import { fazercardsCatalogStatusLive } from "@/lib/fazercards-catalog";
 import { databaseConfigured } from "@/lib/digital-store";
 import { resolveFazercardsMaxOrderUsd } from "@/lib/store";
+import { resolveLivePayGateConfig } from "@/lib/paygate";
+import { isValidPayGateWallet, resolveEffectiveCloakMode } from "@/lib/paygate-core";
 import { digitalCodesKeyStatus } from "@/lib/digital-codes";
 import { healthAccess } from "@/lib/health-access";
 import {
@@ -369,9 +371,20 @@ export async function GET(req: Request) {
     );
   }
 
+  const paygateCfg = await resolveLivePayGateConfig();
+  const effectiveCloakMode = resolveEffectiveCloakMode(paygateCfg);
+  const paygate = {
+    enabled: paygateCfg.enabled,
+    walletConfigured: isValidPayGateWallet(paygateCfg.usdcPolygonWallet),
+    antiBlockMode: effectiveCloakMode,
+    antivirusSafe: effectiveCloakMode !== "direct",
+    minOrderUsd: paygateCfg.minOrderUsd,
+    feePercent: paygateCfg.feePercent,
+  };
+
   // `ok` n'est vrai que si un paiement peut réellement être créé :
-  // base connectée ET clé acceptée (pas seulement présente/joignable).
-  const ok = database.connected && nowpayments.apiKeyValid === true;
+  // base connectée ET au moins une passerelle (NOWPayments ou PayGate) prête.
+  const ok = database.connected && (nowpayments.apiKeyValid === true || paygate.enabled);
 
   return Response.json(
     {
@@ -391,6 +404,7 @@ export async function GET(req: Request) {
       },
       database,
       nowpayments,
+      paygate,
       /*
        * État du trousseau qui chiffre les codes livrés :
        *   keySource           « dedicated » | « session » | « none »

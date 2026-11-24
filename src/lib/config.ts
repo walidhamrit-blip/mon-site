@@ -1,4 +1,5 @@
 import { DEFAULT_SITE_DOMAIN, DEFAULT_SITE_ORIGIN } from "@/lib/site-identity";
+import { DEFAULT_PAYGATE_CONFIG, type PayGateConfigData } from "@/lib/paygate-core";
 import type { LegalConfigData, TrustConfigData } from "@/lib/site-types";
 
 export const siteConfig = {
@@ -436,6 +437,17 @@ export const siteConfig = {
       instructions: "",
     },
   },
+
+  /**
+   * Passerelle Carte Bancaire → USDC Polygon (PayGate.to).
+   *
+   * Permet aux clients de payer par Visa, Mastercard, Apple Pay, Google Pay ou
+   * SEPA en monnaie fiduciaire tandis que l'agence encaisse instantanément en
+   * USDC (Polygon) sur son propre portefeuille non-custodial (0x…), sans KYB
+   * ni compte marchand bancaire. Fermé par défaut tant qu'aucun wallet 0x
+   * n'est configuré dans `/admin/settings` (ou via `PAYGATE_USDC_POLYGON_WALLET`).
+   */
+  paygate: { ...DEFAULT_PAYGATE_CONFIG } as PayGateConfigData,
 
   /**
    * Avis clients — profils publics et demandes d'avis.
