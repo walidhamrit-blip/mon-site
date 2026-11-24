@@ -104,33 +104,22 @@ function ManualPaymentLogos({ methods }: { methods: string[] }) {
 }
 
 function PaymentRibbonContent({
-  heading,
   manualMethods,
   phoneCardEnabled,
 }: {
-  heading: string;
   manualMethods: string[];
   phoneCardEnabled: boolean;
 }) {
   return (
     <div className="payment-ribbon-content">
-      <span className="payment-ribbon-heading">
-        <span className="payment-ribbon-dot" aria-hidden="true" />
-        {heading}
-      </span>
       <PaymentBrandLogos />
-      <span className="payment-ribbon-separator" aria-hidden="true" />
       <CryptoPaymentLogos />
-      {manualMethods.length > 0 && <span className="payment-ribbon-separator" aria-hidden="true" />}
       <ManualPaymentLogos methods={manualMethods} />
       {phoneCardEnabled && (
-        <>
-          <span className="payment-ribbon-separator" aria-hidden="true" />
-          <div className="flex items-center gap-2" role="img" aria-label="Libyana and Al Madar phone recharge cards, digital store only">
-            <span className="payment-brand payment-brand-manual">Libyana</span>
-            <span className="payment-brand payment-brand-manual">Al Madar</span>
-          </div>
-        </>
+        <div className="flex items-center gap-2" role="img" aria-label="Libyana and Al Madar phone recharge cards, digital store only">
+          <span className="payment-brand payment-brand-manual">Libyana</span>
+          <span className="payment-brand payment-brand-manual">Al Madar</span>
+        </div>
       )}
     </div>
   );
@@ -158,7 +147,7 @@ export function PaymentMethodsRibbon({
               className="payment-ribbon-group"
               aria-hidden={copy === 0 ? undefined : "true"}
             >
-              <PaymentRibbonContent heading={heading} manualMethods={manualMethods} phoneCardEnabled={phoneCardEnabled} />
+              <PaymentRibbonContent manualMethods={manualMethods} phoneCardEnabled={phoneCardEnabled} />
             </div>
           ))}
         </div>
