@@ -7,6 +7,7 @@ import {
   Check,
   Clock,
   Copy,
+  CreditCard,
   ExternalLink,
   Loader2,
   Search,
@@ -60,7 +61,8 @@ interface PublicDigitalOrder {
   deliveredAt: string | null;
   reloadlyStatus: string | null;
   codes: DigitalCode[];
-  paymentMethod: "nowpayments" | "phone_card" | "manual";
+  paymentMethod: "nowpayments" | "paygate" | "phone_card" | "manual";
+  paymentUrl?: string | null;
   phoneCardStatus: "pending" | "approved" | "rejected" | null;
   manualPaymentMethod?: string | null;
   manualPaymentStatus?: "pending" | "approved" | "rejected" | null;
@@ -592,6 +594,28 @@ export function DigitalOrderStatus({
                 hintOn={progress.tone === "alert" || progress.tone === "failed" ? null : progress.steps.find((step) => step.state === "current")?.id ?? null}
               />
             )}
+
+            {order.status === "pending" &&
+              order.paymentMethod === "paygate" &&
+              order.paymentUrl && (
+                <div className="rounded-xl border border-[var(--accent)]/40 bg-[var(--accent)]/5 p-4">
+                  <p className="text-[12.5px] leading-5 text-[var(--foreground)]">
+                    {ar
+                      ? "لم يكتمل الدفع بالبطاقة بعد؟ يمكنك فتح صفحة الدفع الآمنة (Visa / Mastercard / Apple Pay / Google Pay) أدناه — ستتحدّث هذه الصفحة تلقائياً فور تأكيد العملية."
+                      : "Haven't finished paying by card yet? Open the secure card checkout below — this page updates automatically as soon as your payment is confirmed."}
+                  </p>
+                  <a
+                    href={order.paymentUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="mt-3 inline-flex h-11 items-center justify-center gap-2 rounded-full bg-[var(--accent)] px-5 text-[13px] font-black text-[var(--accent-foreground)] transition-colors hover:bg-[var(--accent-hover)]"
+                  >
+                    <CreditCard className="h-4 w-4" />
+                    {ar ? "فتح صفحة الدفع بالبطاقة" : "Open secure card checkout"}
+                    <ExternalLink className="h-3.5 w-3.5" />
+                  </a>
+                </div>
+              )}
 
             {order.notice && (
               <p className="rounded-lg border border-[var(--border)] bg-[var(--secondary)]/40 px-3.5 py-3 text-[12.5px] leading-6 text-[var(--muted-foreground)]">

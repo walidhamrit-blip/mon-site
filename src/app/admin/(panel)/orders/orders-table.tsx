@@ -94,7 +94,9 @@ export function OrdersTable({ rows }: { rows: OrderRow[] }) {
                         : order.paymentMethod === "manual" ||
                             isManualPaymentMethod(order.paymentMethod)
                           ? "Virement manuel — vérification manuelle"
-                          : "Crypto — NOWPayments"
+                          : order.paymentMethod === "paygate"
+                            ? "Carte bancaire → USDC Polygon (PayGate.to)"
+                            : "Crypto — NOWPayments"
                     }
                   />
                   <Detail label="Formule" value={order.planName} />
@@ -127,7 +129,14 @@ export function OrdersTable({ rows }: { rows: OrderRow[] }) {
                   <Detail label="Client" value={order.clientName || "—"} />
                   <Detail label="Téléphone" value={order.phone || "—"} />
                   <Detail label="Email" value={order.email || "—"} />
-                  <Detail label="ID NOWPayments" value={order.paymentId || "—"} />
+                  <Detail
+                    label={
+                      order.paymentMethod === "paygate"
+                        ? "TxID blockchain (Polygon)"
+                        : "ID NOWPayments"
+                    }
+                    value={order.paymentId || "—"}
+                  />
                   <Detail label="Statut IPN" value={order.ipnStatus || "—"} />
                   {order.locale && <Detail label="Langue" value={order.locale} />}
                   {order.utm && <Detail label="Origine (UTM)" value={order.utm} />}
@@ -152,7 +161,10 @@ export function OrdersTable({ rows }: { rows: OrderRow[] }) {
                       rel="noopener"
                       className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-xl bg-[#C6A664]/20 text-[#7A5D20] border border-[#C6A664]/45 text-xs font-semibold hover:bg-[#C6A664]/30"
                     >
-                      <ExternalLink className="h-3.5 w-3.5" /> Page NOWPayments
+                      <ExternalLink className="h-3.5 w-3.5" />{" "}
+                      {order.paymentMethod === "paygate"
+                        ? "Page carte PayGate"
+                        : "Page NOWPayments"}
                     </a>
                   )}
                   <TrackingLinkButton kind="order" reference={order.ref} label="Lien de suivi" />

@@ -4,6 +4,8 @@ import { siteConfig } from "@/lib/config";
 import { publicManualPaymentOptions } from "@/lib/manual-payment-public";
 import { readManualPaymentsAvailability } from "@/lib/manual-payment-availability";
 import { readPhoneCardAvailability } from "@/lib/phone-card-availability";
+import { getPublicPayGateOption, mergePayGateConfigWithEnv } from "@/lib/paygate";
+import { publicPayGateOption } from "@/lib/paygate-core";
 import { checkRateLimit } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
@@ -36,12 +38,22 @@ export async function GET(req: Request) {
   const availability = await readManualPaymentsAvailability();
   const phoneCardAvailable = (await readPhoneCardAvailability()) === "enabled";
   if (availability.status !== "enabled") {
-    return NextResponse.json({ ok: true, options: [], phoneCardAvailable: false }, { headers: { "Cache-Control": "no-store" } });
+    const cardGateway = await getPublicPayGateOption().catch(() => null);
+    return NextResponse.json(
+      { ok: true, options: [], phoneCardAvailable: false, cardGateway },
+      { headers: { "Cache-Control": "no-store" } },
+    );
   }
   try {
     const { config } = await getSiteData();
+    const cardGateway = publicPayGateOption(mergePayGateConfigWithEnv(config.paygate));
     return NextResponse.json(
-      { ok: true, options: publicManualPaymentOptions(config.manualPayments), phoneCardAvailable },
+      {
+        ok: true,
+        options: publicManualPaymentOptions(config.manualPayments),
+        phoneCardAvailable,
+        cardGateway,
+      },
       { headers: { "Cache-Control": "no-store" } },
     );
   } catch (error) {
@@ -52,8 +64,14 @@ export async function GET(req: Request) {
       "[manual-payment] configuration illisible, repli sur les valeurs par défaut :",
       error instanceof Error ? error.message : error,
     );
+    const cardGateway = publicPayGateOption(mergePayGateConfigWithEnv(siteConfig.paygate));
     return NextResponse.json(
-      { ok: true, options: publicManualPaymentOptions(siteConfig.manualPayments), phoneCardAvailable },
+      {
+        ok: true,
+        options: publicManualPaymentOptions(siteConfig.manualPayments),
+        phoneCardAvailable,
+        cardGateway,
+      },
       { headers: { "Cache-Control": "no-store" } },
     );
   }

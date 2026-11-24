@@ -2,6 +2,7 @@
 // et le panneau d'administration. Aucune dépendance serveur ici.
 
 import type { ManualPaymentCurrency, ManualPaymentMethod } from "@/lib/manual-payment-core";
+import type { PayGateConfigData } from "@/lib/paygate-core";
 
 export interface Demo {
   slug: string;
@@ -250,6 +251,8 @@ export interface SiteConfigData {
    * saisi par l'administrateur, et une méthode sans compte reste fermée.
    */
   manualPayments: ManualPaymentsConfigData;
+  /** Passerelle Carte Bancaire → USDC Polygon sans KYC/KYB (PayGate.to). */
+  paygate: PayGateConfigData;
   /** Profils d'avis (Trustpilot, Google, Scamadviser) + demandes d'avis. */
   trust: TrustConfigData;
   /** Identité légale publiée sur /mentions-legales. */
@@ -628,7 +631,7 @@ export interface OrderRow {
   payCurrency: string | null;
   payAmount: string | null;
   paymentUrl: string | null;
-  paymentMethod: "nowpayments" | "phone_card" | "manual";
+  paymentMethod: "nowpayments" | "paygate" | "phone_card" | "manual";
   status: OrderStatus;
   ipnStatus: string | null;
   utm: string | null;
