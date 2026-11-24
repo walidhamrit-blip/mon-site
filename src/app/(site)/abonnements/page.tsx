@@ -9,6 +9,7 @@ import { JsonLd } from "@/components/json-ld";
 import {
   SUBSCRIPTION_GRACE_DAYS,
   SUBSCRIPTION_PLANS,
+  maintenanceTiers,
 } from "@/lib/subscription-plans";
 import { AbonnementsClient } from "./abonnements-client";
 
@@ -20,12 +21,11 @@ export async function generateMetadata({ searchParams }: LocalePageProps): Promi
     path: "/abonnements",
     title:
       locale === "ar"
-        ? "اشتراكات شهرية وسنوية للمواقع — نخبة"
-        : "Monthly & Yearly Website Subscriptions — Nukhba",
-    description:
-      locale === "ar"
-        ? "اشترك شهرياً أو سنوياً في باقات الواجهة والمتجر، وادفع بالعملات الرقمية عبر NOWPayments. تُجدَّد الاشتراكات تلقائياً عبر رابط دفع يصلك بالبريد الإلكتروني."
-        : "Subscribe monthly or yearly to Vitrine and Boutique plans and pay in crypto via NOWPayments. Renewals are automatic via a payment link sent by email.",
+        ? "اشتراكات صيانة مواقع اختيارية — نخبة"
+        : "Optional Website Maintenance Subscriptions — Nukhba",
+    description: locale === "ar"
+      ? "اشتراكات صيانة اختيارية لموقع موجود. إنشاء الموقع والوظائف الإضافية منفصلة. يتطلب التجديد دفع الفاتورة؛ لا يوجد خصم تلقائي من محفظتك."
+      : "Optional maintenance for an existing website. Website creation and new modules are separate. Renewal requires paying the invoice; no automatic wallet debit.",
     keywords: [
       "اشتراك موقع شهري",
       "دفع بالعملات الرقمية",
@@ -56,47 +56,27 @@ export default async function AbonnementsPage({ searchParams }: LocalePageProps)
     intervalDay: plan.intervalDay,
   }));
 
-  const tiers = [
-    {
-      name: ar ? "الواجهة" : "Vitrine",
-      monthly: 10,
-      annual: 69,
-      note: ar
-        ? "موقع واجهة من 5 صفحات، نموذج تواصل وواتساب."
-        : "5-page showcase site, contact form and WhatsApp.",
-    },
-    {
-      name: ar ? "الواجهة بلس" : "Vitrine+",
-      monthly: 12,
-      annual: 89,
-      note: ar
-        ? "حتى 10 صفحات، مدونة، حجز أو حجز مواعيد وخرائط."
-        : "Up to 10 pages, blog, booking and maps.",
-    },
-    {
-      name: ar ? "المتجر / الحجز" : "Boutique",
-      monthly: 25,
-      annual: 199,
-      note: ar
-        ? "متجر أو نظام حجز كامل مع لوحة إدارة وإشعارات."
-        : "Full store or booking system with dashboard and notifications.",
-    },
-  ];
+  const tiers = maintenanceTiers().map(tier => ({
+    name: ar ? tier.name : tier.nameEn,
+    monthly: tier.monthly.priceUsd,
+    annual: tier.annual.priceUsd,
+    note: ar ? tier.noteAr : tier.noteEn,
+  }));
 
   const faqs = ar
     ? [
         {
           q: "ما الفرق بين الاشتراك والدفعة الواحدة؟",
-          a: "الاشتراك يوزّع تكلفة الموقع والاستضافة والصيانة على دفعات شهرية أو سنوية؛ الدفعة الواحدة تشتري النموذج والتخصيص نهائياً مع سنة استضافة أولى مشمولة، ثم تجديد سنوي للاستضافة فقط. الاشتراك مناسب من يريد بداية أخفّ والتزاماً شهرياً، والدفعة الواحدة لمن يفضّل تملكاً كاملاً.",
+          a: "اشتراكات الصيانة خدمات اختيارية منفصلة وليست فئات لتسعير التصميم. الموقع الثابت بسعر 35 دولاراً يشمل لغة واحدة وتخصيص المحتوى الأولي. نشر Vercel وفق أهلية وحدود الخطة؛ الدومين والتكاليف الخارجية منفصلة. الاشتراكات القائمة تحتفظ بشروطها المتفق عليها.",
 
         },
         {
           q: "كيف يتم التجديد؟",
-          a: `يُرسل رابط دفع جديد قبل انتهاء الدورة، ويُجدَّد الاشتراك تلقائياً بعد الدفع. إذا تعذّر الدفع، يبقى الموقع عاملاً مدة سماح ${SUBSCRIPTION_GRACE_DAYS} أيام قبل التعليق.`,
+          a: `يُرسل رابط دفع جديد قبل انتهاء الدورة، ويُجدَّد الاشتراك بعد الدفع؛ لا يوجد خصم تلقائي من المحفظة. إذا تعذّر الدفع، تستمر خدمات الصيانة لفترة سماح ${SUBSCRIPTION_GRACE_DAYS} أيام قبل تعليقها وفق الاتفاق؛ لا تتغير ملكية ملفات الموقع.`,
         },
         {
           q: "هل يمكن إلغاء الاشتراك؟",
-          a: "نعم، يمكنك إيقاف التجديد في أي وقت قبل تاريخ الاستحقاق. يبقى الموقع عاملاً حتى نهاية الدورة المدفوعة، دون غرامة إلغاء.",
+          a: "نعم، يمكنك إيقاف التجديد في أي وقت قبل تاريخ الاستحقاق. تستمر خدمات الصيانة حتى نهاية الدورة المدفوعة، دون غرامة إلغاء؛ الاستضافة تخضع لشروطها المنفصلة.",
         },
         {
           q: "هل الأسعار بالدولار؟",
@@ -104,21 +84,21 @@ export default async function AbonnementsPage({ searchParams }: LocalePageProps)
         },
         {
           q: "هل يشمل الاشتراك الاستضافة والدومين؟",
-          a: "الاشتراك يشمل الاستضافة السريعة وشهادة SSL والتحديثات الأمنية. الدومين يبقى باسمك، ونساعدك في ربطه مجاناً.",
+          a: "الصيانة تخص موقعاً موجوداً وفق نطاق مكتوب. الاستضافة والتكاليف الخارجية وربط الدومين تحدد قبل الاشتراك؛ شراء الدومين ليس مشمولاً تلقائياً. الاتفاقات القائمة تحتفظ بشروطها.",
         },
       ]
     : [
         {
           q: "How is a subscription different from a one-off payment?",
-          a: "A subscription spreads the website, hosting and maintenance cost over monthly or yearly payments. A one-off payment buys the model and customization outright, with the first year of hosting included (then an annual hosting renewal only). Choose the subscription for a lighter start with a monthly commitment.",
+          a: "Maintenance subscriptions are separate optional services, not website price categories. The $35 static website includes one language and initial personalization. Vercel deployment depends on plan eligibility and limits; custom domains and external recurring costs are separate. Existing subscriptions retain their agreed terms.",
         },
         {
           q: "How does renewal work?",
-          a: `We send a new payment link before the period ends and renew automatically once paid. If payment fails, the site keeps running for a ${SUBSCRIPTION_GRACE_DAYS}-day grace period before suspension.`,
+          a: `We send a new payment link before the period ends and renew once paid; there is no automatic wallet debit. If payment fails, maintenance continues for a ${SUBSCRIPTION_GRACE_DAYS}-day grace period before those services are suspended according to the agreement; ownership of website files is unchanged.`,
         },
         {
           q: "Can I cancel?",
-          a: "Yes — you can stop auto-renewal at any time before the renewal date. The site keeps running until the end of the paid period, with no cancellation fee.",
+          a: "Yes — you can stop renewal at any time before the renewal date. Maintenance continues until the end of the paid period, with no cancellation fee; hosting retains its separate terms.",
         },
         {
           q: "Are prices in USD?",
@@ -126,7 +106,7 @@ export default async function AbonnementsPage({ searchParams }: LocalePageProps)
         },
         {
           q: "Does the subscription include hosting and the domain?",
-          a: "It includes fast hosting, SSL and security updates. The domain stays in your name and we connect it for free.",
+          a: "Maintenance covers an existing site within a written scope. Hosting, external costs and domain setup are confirmed before subscribing; domain purchase is not automatically included. Existing agreements retain their terms.",
         },
       ];
 
@@ -155,8 +135,8 @@ export default async function AbonnementsPage({ searchParams }: LocalePageProps)
             </h2>
             <p className="mt-2 max-w-[70ch] text-[14px] leading-7 text-[var(--muted-foreground)]">
               {ar
-                ? "الأسعار بالدولار الأمريكي وتُدفع بنفس المبلغ بـ USDT عبر NOWPayments. الاشتراك السنوي يوفّر نحو شهرين مقارنة بالدفع الشهري."
-                : "Prices are in US dollars and paid 1:1 in USDT via NOWPayments. The yearly plan saves about two months compared with paying monthly."}
+                ? "الأسعار بالدولار الأمريكي وتُدفع بنفس المبلغ بـ USDT عبر NOWPayments. قارن المبلغ السنوي الكامل بالمبلغ الشهري؛ التوفير يختلف حسب خطة الصيانة."
+                : "Prices are in US dollars and paid 1:1 in USDT via NOWPayments. Compare the full annual charge with the monthly charge; savings vary by maintenance plan."}
             </p>
             <div className="mt-6 overflow-x-auto">
               <table className="w-full min-w-[520px] border-collapse text-[14px]">
@@ -166,10 +146,10 @@ export default async function AbonnementsPage({ searchParams }: LocalePageProps)
                       {ar ? "الباقة" : "Plan"}
                     </th>
                     <th className="border-b border-[var(--border)] px-3 py-2 text-start">
-                      {ar ? "شهرياً" : "Monthly"}
+                      {ar ? "شهرياً (30 يوماً)" : "Monthly (30 days)"}
                     </th>
                     <th className="border-b border-[var(--border)] px-3 py-2 text-start">
-                      {ar ? "سنوياً" : "Yearly"}
+                      {ar ? "سنوياً (365 يوماً)" : "Yearly (365 days)"}
                     </th>
                     <th className="border-b border-[var(--border)] px-3 py-2 text-start">
                       {ar ? "ما تشمله" : "What it includes"}
@@ -219,7 +199,7 @@ export default async function AbonnementsPage({ searchParams }: LocalePageProps)
               <Link href="/contact" className="font-bold text-[var(--accent)] hover:underline">
                 {ar ? "تواصل معنا" : "Talk to us"}
               </Link>
-              {ar ? " — أو قارن الباقات الكاملة في " : " — or compare the full plans on "}
+              {ar ? " — أو شاهد عرض الموقع الأساسي في " : " — or see the base website offer on "}
               <Link href="/pricing" className="font-bold text-[var(--accent)] hover:underline">
                 {ar ? "صفحة الأسعار" : "the pricing page"}
               </Link>

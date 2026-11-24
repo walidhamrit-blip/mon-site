@@ -1,4 +1,5 @@
 "use client";
+import { websiteDepositNote } from "@/lib/website-offer";
 
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
@@ -146,8 +147,8 @@ export function ReservationDialog({
 
   const whatsappNumber = config.whatsapp.replace(/\D/g, "");
   const whatsappText = ar
-    ? `أريد حجز أولوية لموقع « ${demo.title} » — الفئة ${classification?.tier ?? "؟"}. العربون ${formatUsd(depositUsd)} $ (= ${formatUsd(depositUsd)} USDT).`
-    : `I'd like to reserve a priority slot for "${demo.titleEn}" — category ${classification?.tier ?? "?"}. Deposit $${formatUsd(depositUsd)} (= ${formatUsd(depositUsd)} USDT).`;
+    ? `أريد حجز أولوية لموقع « ${demo.title} » — العرض الأساسي. العربون ${formatUsd(depositUsd)} $ (= ${formatUsd(depositUsd)} USDT).`
+    : `I'd like to reserve a priority slot for "${demo.titleEn}" — base website offer. Deposit $${formatUsd(depositUsd)} (= ${formatUsd(depositUsd)} USDT).`;
   const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(whatsappText)}`;
 
   const failureHint = (): string => {
@@ -259,8 +260,8 @@ export function ReservationDialog({
                   </div>
                   <div className="text-[10px] opacity-60">
                     {ar
-                      ? "يُخصم من الإجمالي النهائي بعد اعتماد عرض التخصيص"
-                      : "Deducted from the approved final total after the customization quote"}
+                      ? "يُحتسب في فاتورة رصيد مؤكدة، وليس تلقائياً في الدفع المباشر"
+                      : "Credited on a separately confirmed balance invoice — not automatically at checkout"}
                   </div>
                 </div>
                 <div className="text-end">
@@ -317,8 +318,8 @@ export function ReservationDialog({
             <p className="flex items-center justify-center gap-1.5 text-center text-[11px] opacity-50">
               <ShieldCheck className="h-3.5 w-3.5" />
               {ar
-                ? "دفع آمن عبر NOWPayments — لن نخزن أي بيانات دفع"
-                : "Secure payment via NOWPayments — we never store payment data"}
+                ? "دفع عبر NOWPayments — لا ترسل مفاتيح المحفظة أو عبارة الاسترداد"
+                : "Payment via NOWPayments — never share private keys or recovery phrases"}
             </p>
           </form>
         )}
@@ -365,12 +366,13 @@ export function ReservationDialog({
 
             <p className="text-[11px] opacity-50 leading-relaxed">
               {ar
-                ? "بعد تأكيد الدفع، تُحجز لك أولوية في جدولنا ويُخصم العربون من سعر المشروع. سنتواصل معك خلال ساعتين."
-                : "Once the payment is confirmed, your priority slot is reserved and the deposit is deducted from the project price. We'll contact you within 2 hours."}
+                ? "بعد تأكيد الدفع، تُحجز لك أولوية في جدولنا ويُخصم العربون من سعر المشروع. سنتواصل معك خلال أوقات العمل."
+                : "Once the payment is confirmed, your priority slot is reserved and the deposit is deducted from the project price. We'll contact you during opening hours."}
             </p>
           </div>
         )}
 
+        <p className="mt-4 rounded-xl border border-amber-500/40 p-3 text-xs leading-6">{websiteDepositNote(locale)}</p>
         {step === "error" && (
           <div className="mt-6 space-y-4 text-center">
             <p className="text-sm font-semibold text-red-300">

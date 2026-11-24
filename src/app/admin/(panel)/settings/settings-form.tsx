@@ -28,7 +28,6 @@ const SERVICE_ICON_IDS = [
   "Sparkles",
 ] as const;
 import type {
-  PricingPlanData,
   SiteConfigData,
   StandaloneService,
 } from "@/lib/site-types";
@@ -149,12 +148,6 @@ export function SettingsForm({ initial, initialTab }: Props) {
         flash(res.error ?? "Erreur.", "err");
       }
     });
-  };
-
-  const updatePlan = (idx: number, next: Partial<PricingPlanData>) => {
-    const copy = [...form.pricing.plans];
-    copy[idx] = { ...copy[idx], ...next };
-    patch({ pricing: { ...form.pricing, plans: copy } });
   };
 
   const updateService = (idx: number, next: Partial<StandaloneService>) => {
@@ -1066,230 +1059,12 @@ export function SettingsForm({ initial, initialTab }: Props) {
             </div>
           </div>
 
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <div>
-              <h2 className="text-sm font-black text-stone-900">
-                Modèle + personnalisation ({form.pricing.plans.length} formules)
-              </h2>
-              <p className="mt-1 text-xs text-stone-500">
-                La personnalisation est calculée en pourcentage du prix du modèle (20 % par défaut). Champ vide = devis final requis avant tout paiement.
-              </p>
-            </div>
-            <button
-              type="button"
-              onClick={() => {
-                const n = form.pricing.plans.length + 1;
-                patch({
-                  pricing: {
-                    ...form.pricing,
-                    plans: [
-                      ...form.pricing.plans,
-                      {
-                        id: `formule-${n}`,
-                        name: "باقة جديدة",
-                        nameEn: "New Package",
-                        priceUsd: 290,
-                        customizationPercent: 20,
-                        period: "دفعة واحدة",
-                        periodEn: "one-time",
-                        description: "وصف مختصر للباقة",
-                        descriptionEn: "Short package description",
-                        featured: false,
-                        cta: "اختر الباقة",
-                        ctaEn: "Choose plan",
-                        features: ["تصميم متجاوب"],
-                        featuresEn: ["Responsive design"],
-                      },
-                    ],
-                  },
-                });
-              }}
-              className="h-9 px-3.5 rounded-xl bg-stone-900 text-white text-xs font-bold inline-flex items-center gap-1.5 cursor-pointer"
-            >
-              <Plus className="h-3.5 w-3.5" /> Ajouter une formule
-            </button>
+          <div className="rounded-2xl border border-stone-200 bg-white p-5 text-sm leading-7">
+            <h2 className="font-black">Offre unique : 35 $ — tous les modèles</h2>
+            <p>Code statique, une langue, personnalisation du contenu fourni à la livraison initiale et mise en ligne vercel.app selon l’éligibilité Vercel. Sans base de données ni administration.</p>
+            <p>Langue supplémentaire : 10 $ (traduction fournie). Gestion du contenu : à partir de 10 $, socle inclus. Réservations, boutique et paiement : sur devis. Aucun supplément automatique de 20 %.</p>
+            <p className="text-stone-500">Ces tarifs sont centralisés dans src/lib/website-offer.ts. Les anciennes catégories et prix propres aux modèles ne s’appliquent plus aux nouvelles commandes. Les commandes et abonnements existants conservent leurs montants.</p>
           </div>
-
-          {form.pricing.plans.map((plan, idx) => (
-            <div
-              key={plan.id}
-              className="rounded-2xl border border-stone-200 bg-white p-5 space-y-4 shadow-2xs"
-            >
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <div className="flex items-center gap-2">
-                  <span className="px-2.5 py-0.5 rounded-full bg-stone-100 text-stone-700 text-xs font-bold">
-                    Catégorie {idx + 1}
-                  </span>
-                  <span className="text-sm font-black text-stone-900">
-                    {plan.nameEn} — {plan.name}
-                  </span>
-                </div>
-                <div className="flex items-center gap-1">
-                  <label className="inline-flex items-center gap-1.5 text-xs font-semibold text-stone-700 mr-2 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={plan.featured}
-                      onChange={(e) =>
-                        updatePlan(idx, { featured: e.target.checked })
-                      }
-                      className="h-4 w-4 accent-stone-900"
-                    />
-                    Mise en avant
-                  </label>
-                  <button
-                    type="button"
-                    disabled={idx === 0}
-                    onClick={() => {
-                      const copy = [...form.pricing.plans];
-                      [copy[idx - 1], copy[idx]] = [copy[idx], copy[idx - 1]];
-                      patch({ pricing: { ...form.pricing, plans: copy } });
-                    }}
-                    className="h-8 w-8 rounded-lg border border-stone-200 bg-stone-50 grid place-items-center disabled:opacity-30 cursor-pointer"
-                  >
-                    <ArrowUp className="h-3.5 w-3.5" />
-                  </button>
-                  <button
-                    type="button"
-                    disabled={idx === form.pricing.plans.length - 1}
-                    onClick={() => {
-                      const copy = [...form.pricing.plans];
-                      [copy[idx + 1], copy[idx]] = [copy[idx], copy[idx + 1]];
-                      patch({ pricing: { ...form.pricing, plans: copy } });
-                    }}
-                    className="h-8 w-8 rounded-lg border border-stone-200 bg-stone-50 grid place-items-center disabled:opacity-30 cursor-pointer"
-                  >
-                    <ArrowDown className="h-3.5 w-3.5" />
-                  </button>
-                  {form.pricing.plans.length > 1 && (
-                    <button
-                      type="button"
-                      onClick={() =>
-                        patch({
-                          pricing: {
-                            ...form.pricing,
-                            plans: form.pricing.plans.filter(
-                              (_, i) => i !== idx,
-                            ),
-                          },
-                        })
-                      }
-                      className="h-8 px-2.5 rounded-lg border border-red-200 bg-red-50 text-red-600 text-xs font-semibold cursor-pointer"
-                    >
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </button>
-                  )}
-                </div>
-              </div>
-
-              <div className="grid sm:grid-cols-2 lg:grid-cols-5 gap-3.5">
-                <Field label="Nom (arabe)">
-                  <input
-                    dir="rtl"
-                    value={plan.name}
-                    onChange={(e) => updatePlan(idx, { name: e.target.value })}
-                    className={ADMIN_INPUT_CLS}
-                  />
-                </Field>
-                <Field label="Nom (anglais)">
-                  <input
-                    value={plan.nameEn}
-                    onChange={(e) =>
-                      updatePlan(idx, { nameEn: e.target.value })
-                    }
-                    className={ADMIN_INPUT_CLS}
-                  />
-                </Field>
-                <Field label="Prix du modèle USD ($ — vide = sur devis)">
-                  <input
-                    type="number"
-                    min={0}
-                    value={plan.priceUsd ?? ""}
-                    onChange={(e) =>
-                      updatePlan(idx, {
-                        priceUsd:
-                          e.target.value.trim() === ""
-                            ? null
-                            : Number(e.target.value),
-                      })
-                    }
-                    className={ADMIN_INPUT_CLS}
-                  />
-                </Field>
-                <Field label="Personnalisation (% du modèle — vide = devis)">
-                  <input
-                    type="number"
-                    step="0.1"
-                    min={0}
-                    max={100}
-                    value={plan.customizationPercent ?? ""}
-                    onChange={(e) =>
-                      updatePlan(idx, {
-                        customizationPercent:
-                          e.target.value.trim() === ""
-                            ? null
-                            : Number(e.target.value),
-                      })
-                    }
-                    placeholder="20 %"
-                    className={ADMIN_INPUT_CLS}
-                  />
-                </Field>
-              </div>
-
-              <div className="grid sm:grid-cols-2 gap-3.5">
-                <Field label="Description (arabe)">
-                  <input
-                    dir="rtl"
-                    value={plan.description}
-                    onChange={(e) =>
-                      updatePlan(idx, { description: e.target.value })
-                    }
-                    className={ADMIN_INPUT_CLS}
-                  />
-                </Field>
-                <Field label="Description (anglais)">
-                  <input
-                    value={plan.descriptionEn}
-                    onChange={(e) =>
-                      updatePlan(idx, { descriptionEn: e.target.value })
-                    }
-                    className={ADMIN_INPUT_CLS}
-                  />
-                </Field>
-                <Field label="Inclus (arabe — une ligne par avantage)">
-                  <textarea
-                    dir="rtl"
-                    rows={4}
-                    value={plan.features.join("\n")}
-                    onChange={(e) =>
-                      updatePlan(idx, {
-                        features: e.target.value
-                          .split("\n")
-                          .map((s) => s.trim())
-                          .filter(Boolean),
-                      })
-                    }
-                    className={ADMIN_TEXTAREA_CLS}
-                  />
-                </Field>
-                <Field label="Inclus (anglais — une ligne par avantage)">
-                  <textarea
-                    rows={4}
-                    value={plan.featuresEn.join("\n")}
-                    onChange={(e) =>
-                      updatePlan(idx, {
-                        featuresEn: e.target.value
-                          .split("\n")
-                          .map((s) => s.trim())
-                          .filter(Boolean),
-                      })
-                    }
-                    className={ADMIN_TEXTAREA_CLS}
-                  />
-                </Field>
-              </div>
-            </div>
-          ))}
         </div>
       )}
 

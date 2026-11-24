@@ -1,15 +1,8 @@
-// Classification d'un site du portfolio : chaque projet est rattaché à
-// une formule tarifaire (« vitrine », « vitrine-plus », « boutique »…)
-// qui détermine son modèle, son prix de personnalisation et son total.
-//
-// Devise unique du site : le dollar américain (USD), réglable en USDT
-// au paiement crypto (1 USD = 1 USDT). Aucun équivalent en devise
-// locale n'est calculé ni affiché — l'affichage est international.
-//
-// Le propriétaire peut modifier ces informations projet par projet dans
-// /admin/content, et les tarifs des catégories dans /admin/settings.
-// Ce module est volontairement sans dépendance serveur : il est utilisé
-// par les pages publiques, le panneau admin et les composants clients.
+import { WEBSITE_BASE_PLAN_ID } from "@/lib/website-offer";
+// Shared website pricing for public pages, checkout, structured data and admin.
+// The unified offer ignores legacy per-demo tiers/prices. The legacy calculation
+// remains available for historical configurations and tests, never for new catalog pricing.
+// Currency: USD, payable at the same nominal amount in USDT.
 
 import type { Demo } from "@/lib/site-types";
 
@@ -35,7 +28,7 @@ export interface PlanPriceBreakdown {
 }
 
 export interface DemoClassification extends PlanPriceBreakdown {
-  /** Numéro affiché : « Catégorie 3 ». */
+  /** Legacy tier; always 1 for the unified offer (not shown to customers). */
   tier: number;
   planId: string;
   name: string;
@@ -98,6 +91,18 @@ export function resolveDemoClassification(
   plans: readonly ClassificationPlan[],
 ): DemoClassification | null {
   if (plans.length === 0) return null;
+
+  // Portfolio metadata from the old tiers must never change the unified price.
+  const unified = plans.find((plan) => plan.id === WEBSITE_BASE_PLAN_ID);
+  if (unified) {
+    const breakdown = resolvePlanPriceBreakdown(unified);
+    return {
+      tier: 1, planId: unified.id, name: unified.name, nameEn: unified.nameEn,
+      categoryPriceUsd: breakdown.modelPriceUsd, priceUsd: breakdown.modelPriceUsd,
+      customPrice: false, ...breakdown,
+    };
+  }
+
 
   let index = -1;
   if (demo.planId) {

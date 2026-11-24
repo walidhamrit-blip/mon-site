@@ -21,6 +21,10 @@ const SECTOR: Record<string, Labels> = {
 };
 
 const NEED: Record<string, Labels> = {
+  "static-site": { ar: "موقع ثابت — 35 $", en: "Static website — $35" },
+  content: { ar: "موقع + إدارة المحتوى", en: "Website + content management" },
+  booking: { ar: "موقع + إدارة الحجوزات", en: "Website + booking management" },
+  language: { ar: "لغة إضافية", en: "Additional language" },
   vitrine: { ar: "موقع واجهة", en: "Vitrine site" },
   "vitrine-plus": { ar: "واجهة بلس + حجز", en: "Vitrine+ with booking" },
   shop: { ar: "متجر / حجز كامل", en: "Full shop / booking" },
@@ -28,6 +32,10 @@ const NEED: Record<string, Labels> = {
 };
 
 const BUDGET: Record<string, Labels> = {
+  "35-50": { ar: "35–50 $", en: "$35–50" },
+  "50-100": { ar: "50–100 $", en: "$50–100" },
+  "100+": { ar: "100 $ أو أكثر", en: "$100+" },
+  quote: { ar: "أحتاج عرض سعر", en: "I need a quote" },
   "under-300": { ar: "أقل من 300 $", en: "Under $300" },
   "300-600": { ar: "300–600 $", en: "$300–600" },
   "600-1000": { ar: "600–1000 $", en: "$600–1,000" },

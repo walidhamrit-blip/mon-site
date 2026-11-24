@@ -89,8 +89,8 @@ export function BlogClient({ articles }: { articles: BlogCardLite[] }) {
               <span className="section-eyebrow">{ar ? "باختصار" : "In short"}</span>
               <p className="mt-2 text-[13.5px] leading-7 text-[var(--foreground)]/80">
                 {ar
-                  ? `تجمع المدونة ${articles.length} أدلة مجانية — في مقدّمتها دليل الدفع بـ USDT خطوة بخطوة وبالصور (1 دولار = 1 USDT)، ثم تكلفة المواقع من 300 $، اختيار الوكالة، وإطلاق متجر إلكتروني — كلها مبنية على أسعار ومواعيد تسليم حقيقية.`
-                  : `The blog collects ${articles.length} free guides — led by the step-by-step USDT photo payment guide (1 USD = 1 USDT), then website costs from $300, choosing an agency, and launching an online store — all built on real prices and delivery times.`}
+                  ? `تجمع المدونة ${articles.length} أدلة مجانية — في مقدّمتها دليل الدفع بـ USDT خطوة بخطوة وبالصور (1 دولار = 1 USDT)، ثم تكلفة الموقع الثابت من 35 $، اختيار الوكالة، وإطلاق متجر إلكتروني — كلها مبنية على أسعار ومواعيد تسليم حقيقية.`
+                  : `The blog collects ${articles.length} free guides — led by the step-by-step USDT photo payment guide (1 USD = 1 USDT), then static website costs from $35, choosing an agency, and launching an online store — all built on real prices and delivery times.`}
               </p>
               <Link
                 href={CRYPTO_GUIDE_PATH}

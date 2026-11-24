@@ -42,11 +42,9 @@ export function ModelPriceBreakdown({
         </div>
         <div className={row}>
           <dt className={muted}>
-            {breakdown.customizationPercent == null
-              ? (ar ? "تخصيص الهوية" : "Brand customization")
-              : ar
-                ? `تخصيص الهوية (${breakdown.customizationPercent}٪)`
-                : `Brand customization (${breakdown.customizationPercent}%)`}
+            {breakdown.customizationUsd === 0
+              ? (ar ? "تخصيص المحتوى عند التسليم الأول — مشمول" : "Initial content personalization — included")
+              : (ar ? "التخصيص" : "Customization")}
           </dt>
           <dd>
             {breakdown.customizationUsd == null
@@ -55,7 +53,7 @@ export function ModelPriceBreakdown({
           </dd>
         </div>
         <div className={`${row} border-t border-[var(--border)]/70 pt-1.5 font-black`}>
-          <dt>{ar ? "الإجمالي النهائي" : "Final project total"}</dt>
+          <dt>{ar ? "إجمالي الموقع الأساسي" : "Base website total"}</dt>
           <dd className="text-[var(--accent)]">
             {breakdown.totalPriceUsd == null
               ? <span className="text-end text-[12px] font-semibold">{ar ? "بعد اعتماد عرض السعر" : "Confirmed in your quote"}</span>

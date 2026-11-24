@@ -214,7 +214,7 @@ export function SiteItemEditor({
               )}
               {classification && (
                 <span className="px-2 py-0.5 rounded-full bg-[#FAF6EC] text-[#7A5D20] border border-[#C6A664]/40 text-[10px] font-bold">
-                  Cat. {classification.tier}
+                  Offre unique
                   {classification.priceUsd != null
                     ? ` · modèle ${classification.priceUsd} ${currency}`
                     : ""}
@@ -330,45 +330,7 @@ export function SiteItemEditor({
               </div>
             </Field>
 
-            <Field label="Catégorie / Formule associée">
-              <select
-                value={demo.planId ?? plans[0]?.id ?? ""}
-                onChange={(e) => {
-                  const idx = plans.findIndex((p) => p.id === e.target.value);
-                  onChange({
-                    ...demo,
-                    planId: e.target.value,
-                    categoryTier: idx >= 0 ? idx + 1 : 1,
-                  });
-                }}
-                className={ADMIN_INPUT_CLS}
-              >
-                {plans.map((p, i) => (
-                  <option key={p.id} value={p.id}>
-                    Catégorie {i + 1} — {p.nameEn}
-                    {p.priceUsd != null ? ` (${p.priceUsd} ${currency})` : ""}
-                  </option>
-                ))}
-              </select>
-            </Field>
-
-            <Field label={`Prix du modèle propre au site (${currency} — vide = prix catégorie)`}>
-              <input
-                type="number"
-                min={0}
-                value={demo.priceUsd ?? ""}
-                onChange={(e) => {
-                  const raw = e.target.value.trim();
-                  onChange({ ...demo, priceUsd: raw === "" ? null : Number(raw) });
-                }}
-                placeholder={
-                  classification?.priceUsd != null
-                    ? `${classification.priceUsd}`
-                    : "Sur devis"
-                }
-                className={ADMIN_INPUT_CLS}
-              />
-            </Field>
+            <p className="text-xs leading-6 text-stone-500">Offre unique pour tous les designs : 35 $, personnalisation initiale incluse. Aucun prix propre au modèle ; les modules de gestion sont chiffrés séparément.</p>
 
             <Field label="URL du site en direct (https://... ou #)">
               <input

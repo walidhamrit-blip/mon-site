@@ -741,7 +741,7 @@ export async function buildComparisonOgImage(
             opacity: 0.75,
           }}
         >
-          <span>One-time price · owned asset · 7-day delivery</span>
+          <span>One-time base · optional modules · timing by scope</span>
           <span style={{ color: "#D4B978", fontWeight: 700 }}>{domain}</span>
         </div>
       </div>

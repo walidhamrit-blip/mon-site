@@ -1,3 +1,6 @@
+import { MAX_DIGITAL_ORDER_USD, MAX_GIFT_CARD_PRICE_USD } from "@/lib/digital-sales-policy";
+import { maintenanceTiers } from "@/lib/subscription-plans";
+import { websiteOfferSummary, paymentAvailabilityNote, websiteDepositNote } from "@/lib/website-offer";
 // Petit moteur de conversation pour l'assistant du site (sans IA externe,
 // sans clé API). Chaque nœud = une question proposée + sa réponse + les
 // questions de suivi pertinentes. Les réponses sont construites à partir
@@ -81,11 +84,7 @@ export function buildChatNodes(ctx: ChatContext): Record<string, ChatNode> {
     {
       id: "prices",
       label: ar ? "كم سعر الموقع؟" : "How much is a website?",
-      answer:
-        (ar
-          ? "أسعارنا 3 فئات واضحة، كلها بالدولار (1 دولار = 1 USDT عند الدفع):\n"
-          : "We have 3 clear categories, all in USD (1 USD = 1 USDT at checkout):\n") +
-        plans.map((p) => planLine(p, ctx)).join("\n"),
+      answer: websiteOfferSummary(ctx.locale),
       followUps: ["plans-diff", "payment", "reservation", "human"],
       keywords: [
         "prix",
@@ -102,27 +101,15 @@ export function buildChatNodes(ctx: ChatContext): Record<string, ChatNode> {
     },
     {
       id: "plans-diff",
-      label: ar ? "ما الفرق بين الفئات؟" : "What's the difference?",
-      answer: ar
-        ? "الفرق الأساسي في حجم المشروع:\n" +
-          plans
-            .map((p, i) => `${i + 1}. ${p.name}: ${p.description}`)
-            .join("\n") +
-          "\n\nيظهر سعر النموذج والتخصيص كبندين منفصلين؛ ويُعرض الإجمالي النهائي قبل الدفع."
-        : "The main difference is project size:\n" +
-          plans
-            .map((p, i) => `${i + 1}. ${p.nameEn}: ${p.descriptionEn}`)
-            .join("\n") +
-          "\n\nThe model and customization are priced separately; the full total is shown before checkout.",
+      label: ar ? "ما الفرق بين الموقع الثابت ووحدات الإدارة؟" : "What's the difference?",
+      answer: websiteOfferSummary(ctx.locale),
       followUps: ["prices", "delivery", "custom", "reservation"],
       keywords: ["différence", "فرق", "difference", "فئات", "categories"],
     },
     {
       id: "delivery",
       label: ar ? "كم يستغرق التنفيذ؟" : "How long does it take?",
-      answer: ar
-        ? "مدة التسليم حسب الفئة:\n• الواجهة: 7 أيام\n• الواجهة بلس: 10 أيام\n• المتجر / الحجز: 14–21 يومًا\n\nنبدأ فور تأكيد العربون، ونرسل لك معاينة قابلة للتصفح خلال المشروع."
-        : "Delivery depends on the category:\n• Vitrine: 7 days\n• Vitrine+: 10 days\n• Boutique / Booking: 14–21 days\n\nWe start as soon as the deposit is confirmed and share a browsable preview during the project.",
+      answer: ar ? "نؤكد موعد التسليم حسب النطاق والمحتوى والوظائف المختارة قبل الطلب." : "We confirm your delivery timeline before ordering according to scope, content availability and selected functions.",
       followUps: ["prices", "reservation", "custom", "human"],
       keywords: [
         "délai",
@@ -139,9 +126,7 @@ export function buildChatNodes(ctx: ChatContext): Record<string, ChatNode> {
     {
       id: "custom",
       label: ar ? "كم تكلفة تخصيص الموقع؟" : "How much does customization cost?",
-      answer: ar
-        ? "السعر يتكوّن من جزأين: سعر نموذج الموقع حسب الفئة، ثم تكلفة التخصيص حسب الهوية والمحتوى المطلوب. نعرض الإجمالي النهائي أو نرسل عرضاً مكتوباً للموافقة قبل أي دفعة نهائية. إذا كان سعر التخصيص مضبوطاً للباقة، يمكنك دفع الإجمالي مباشرة من صفحة الأسعار؛ وإلا اطلب عرض السعر عبر واتساب.\n\n" + plans.map((plan) => planLine(plan, ctx)).join("\n")
-        : "The price has two parts: the website model price for the chosen category, then a separate customization fee based on your brand and requested content. We show the final total or send a written quote for approval before any final payment. If the fee is configured for a plan, you can pay its total online; otherwise request a quote on WhatsApp.\n\n" + plans.map((plan) => planLine(plan, ctx)).join("\n"),
+      answer: websiteOfferSummary(ctx.locale),
       followUps: ["prices", "reservation", "payment", "human"],
       keywords: [
         "تخصيص",
@@ -156,9 +141,9 @@ export function buildChatNodes(ctx: ChatContext): Record<string, ChatNode> {
     {
       id: "payment",
       label: ar ? "كيف يتم الدفع؟" : "How do I pay?",
-      answer: ar
-        ? "كل أسعارنا بالدولار الأمريكي، وتدفع نفس المبلغ بـ USDT (1 دولار = 1 USDT) أو بأكثر من 300 عملة عبر NOWPayments:\n• دفعة واحدة، أو\n• 2–3 أقساط.\n\nالعربون 1$ فقط لحجز مكانك، ويُخصم من السعر النهائي. لا نخزّن بيانات محفظتك.\n\nأول مرة؟ افتح دليل الدفع المصوّر خطوة بخطوة من الزر بالأسفل."
-        : "All our prices are in US dollars, and you pay the same amount in USDT (1 USD = 1 USDT) or 300+ coins via NOWPayments:\n• one payment, or\n• 2–3 installments.\n\nThe priority deposit is only $1 and it is deducted from the final price. We never store your wallet data.\n\nFirst time? Open the step-by-step photo guide from the button below.",
+      answer: paymentAvailabilityNote(ctx.locale) + "\n\n" +
+        (ar ? `عربون الأولوية ${price(ctx.reservationUsd, ctx)}. لا نطلب مفاتيح خاصة أو عبارات استرداد. تفاصيل التحويل اليدوي تحفظ للتحقق.` : `Priority deposit: ${price(ctx.reservationUsd, ctx)}. We never ask for private keys or recovery phrases. Manual transfer details are stored for verification.`) +
+        "\n\n" + websiteDepositNote(ctx.locale),
       followUps: ["crypto-guide", "reservation", "prices", "human"],
       keywords: ["دفع", "pay", "paiement", "crypto", "عملات", "أقساط", "usdt", "tether"],
       action: {
@@ -182,9 +167,7 @@ export function buildChatNodes(ctx: ChatContext): Record<string, ChatNode> {
     {
       id: "reservation",
       label: ar ? "أريد حجز مكان" : "I want to reserve a slot",
-      answer: ar
-        ? `احجز مكانك في جدول العمل بعربون ${price(ctx.reservationUsd, ctx)} فقط — يُخصم من سعر المشروع ويمنحك أولوية في التنفيذ.\n\nافتح صفحة المواقع، اختر الموقع الذي أعجبك واضغط «احجز».`
-        : `Reserve your place in our queue with a ${price(ctx.reservationUsd, ctx)} deposit — deducted from the project price and giving you priority.\n\nOpen the showcase, pick the site you like and press “Reserve”.`,
+      answer: (ar ? `احجز الأولوية بعربون ${price(ctx.reservationUsd, ctx)} من صفحة النموذج. ` : `Reserve priority from the model page with a ${price(ctx.reservationUsd, ctx)} deposit. `) + websiteDepositNote(ctx.locale),
       followUps: ["prices", "delivery", "payment", "human"],
       keywords: ["حجز", "احجز", "reserve", "réservation", "booking"],
       action: {
@@ -195,9 +178,9 @@ export function buildChatNodes(ctx: ChatContext): Record<string, ChatNode> {
     {
       id: "subscriptions",
       label: ar ? "ما هي الاشتراكات؟" : "What are the subscriptions?",
-      answer: ar
-        ? "اشتراكات اختيارية بعد السنة الأولى لتجديد الاستضافة والصيانة (بالدولار، تُدفع بالكريبتو):\n• الواجهة: 10 $/شهر أو 69 $/سنة\n• الواجهة بلس: 12 $/شهر أو 89 $/سنة\n• المتجر / الحجز: 25 $/شهر أو 199 $/سنة\n\nيصلك رابط التجديد بالبريد مع تذكير قبل 3 أيام، وفترة سماح 5 أيام كحد أقصى. يمكنك المتابعة أو الإلغاء في أي وقت من صفحة المتابعة (الرابط في بريدك)؛ لا تُسترد الفترة الحالية."
-        : "Optional subscriptions after the first year to renew hosting and maintenance (USD, paid in crypto):\n• Vitrine: $10/month or $69/year\n• Vitrine+: $12/month or $89/year\n• Boutique: $25/month or $199/year\n\nA renewal link is emailed with a reminder 3 days before, and the grace period is at most 5 days. Track or cancel anytime from the tracking page (link in your email); the current period is not refunded.",
+      answer: (ar ? "صيانة اختيارية لموقع موجود، لا تشمل إنشاء موقع أو شراء وظائف جديدة.\n" : "Optional maintenance for an existing site, not website creation or new functions.\n") +
+        maintenanceTiers().map(tier => ar ? `${tier.name}: $${tier.monthly.priceUsd} / 30 يوماً أو $${tier.annual.priceUsd} / 365 يوماً` : `${tier.nameEn}: $${tier.monthly.priceUsd} / 30 days or $${tier.annual.priceUsd} / 365 days`).join("\n") +
+        (ar ? "\nالتجديد يتطلب دفع الفاتورة، ولا يوجد خصم تلقائي من المحفظة. عند الانتهاء تتوقف خدمات الصيانة وفق الاتفاق، وليس ملكيتك لملفات الموقع. الاتفاقات السابقة تحتفظ بشروطها." : "\nRenewal requires invoice payment; no automatic wallet debit. On expiry, maintenance services end according to the agreement, not ownership of your website files. Existing agreements retain their terms."),
       followUps: ["payment", "refund", "prices", "human"],
       keywords: ["اشتراك", "اشتراكات", "تجديد", "صيانة", "استضافة", "subscription", "abonnement", "renew", "renouvellement", "hosting", "maintenance", "hébergement", "annuler", "cancel", "إلغاء"],
       action: { label: ar ? "صفحة الاشتراكات" : "Subscriptions page", href: "/abonnements" },
@@ -206,8 +189,8 @@ export function buildChatNodes(ctx: ChatContext): Record<string, ChatNode> {
       id: "codes",
       label: ar ? "كيف أشتري بطاقة هدايا أو كود؟" : "How do I buy a gift card or code?",
       answer: ar
-        ? "متجر الأكواد الرقمية يضم بطاقات هدايا (Steam, PlayStation, Xbox, Google Play…)، شحن ألعاب عبر معرّف اللاعب، مفاتيح برامج وأكواد اشتراكات.\n\nاختر المنتج والقيمة والمنطقة ثم ادفع بالدولار/USDT عبر NOWPayments، أو اختر «بطاقة هاتف» وأدخل بطاقة Libyana أو Al Madar. في الحالة الثانية يظهر لك أولاً السعر التقديري بالدينار: إجمالي USDT × سعر السوق الموازي × 120%، مع مصدر السعر ووقته وخانة الموافقة. نتحقق من البطاقة يدوياً أولاً ثم نسلّم طلبك يدوياً؛ إرسال الرمز لا يعني قبوله. الحد الأقصى للطلب 50 $، وبطاقات الهدايا حتى 100 $. تحقّق من منطقة حسابك قبل الشراء — الأكواد لا تُسترد بعد التسليم (استبدال خلال 48 ساعة إذا كان الكود غير صالح مع لقطة شاشة)."
-        : "The digital codes store offers gift cards (Steam, PlayStation, Xbox, Google Play…), game top-ups via Player ID, software keys and subscription codes.\n\nPick the product, amount and region, then pay in USD/USDT via NOWPayments, or choose Phone card and submit a Libyana or Al Madar recharge card. Phone cards first show an indicative LYD quote: total USDT × parallel-market rate × 120%, with its source, timestamp and a confirmation box. Cards are verified manually first and orders are then delivered manually; submitting a code does not mean it is accepted. Max $50 per order, gift cards up to $100. Check your account region before buying — codes are non-refundable once delivered (replacement within 48h if invalid, with a screenshot).",
+        ? `متجر الأكواد الرقمية يضم بطاقات هدايا (Steam, PlayStation, Xbox, Google Play…)، شحن ألعاب عبر معرّف اللاعب، مفاتيح برامج وأكواد اشتراكات.\n\nاختر المنتج والقيمة والمنطقة ثم ادفع بالدولار/USDT عبر NOWPayments، أو اختر «بطاقة هاتف» وأدخل بطاقة Libyana أو Al Madar. في الحالة الثانية يظهر لك أولاً السعر التقديري بالدينار: إجمالي USDT × سعر السوق الموازي × 120%، مع مصدر السعر ووقته وخانة الموافقة. نتحقق من البطاقة يدوياً أولاً ثم نسلّم طلبك يدوياً؛ إرسال الرمز لا يعني قبوله. الحد الأقصى للطلب ${MAX_DIGITAL_ORDER_USD} $، وبطاقات الهدايا حتى ${MAX_GIFT_CARD_PRICE_USD} $. تحقّق من منطقة حسابك قبل الشراء — الأكواد لا تُسترد بعد التسليم (استبدال خلال 48 ساعة إذا كان الكود غير صالح مع لقطة شاشة).`
+        : `The digital codes store offers gift cards (Steam, PlayStation, Xbox, Google Play…), game top-ups via Player ID, software keys and subscription codes.\n\nPick the product, amount and region, then pay in USD/USDT via NOWPayments, or choose Phone card and submit a Libyana or Al Madar recharge card. Phone cards first show an indicative LYD quote: total USDT × parallel-market rate × 120%, with its source, timestamp and a confirmation box. Cards are verified manually first and orders are then delivered manually; submitting a code does not mean it is accepted. Max $${MAX_DIGITAL_ORDER_USD} per order, gift cards up to $${MAX_GIFT_CARD_PRICE_USD}. Check your account region before buying — codes are non-refundable once delivered (replacement within 48h if invalid, with a screenshot).`,
       followUps: ["order", "payment", "refund", "human"],
       keywords: ["كود", "اكواد", "أكواد", "بطاقة", "بطاقات", "هدايا", "شحن", "مفتاح", "لعبة", "العاب", "ألعاب", "code", "codes", "gift", "card", "carte", "cadeau", "top-up", "topup", "recharge", "key", "clé", "steam", "playstation", "xbox", "google play", "pubg", "free fire", "roblox", "jeu", "game"],
       action: { label: ar ? "افتح متجر الأكواد" : "Open the codes store", href: "/codes" },

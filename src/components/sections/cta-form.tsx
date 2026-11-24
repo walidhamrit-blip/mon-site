@@ -59,7 +59,7 @@ export function CTAForm() {
 
   const { register, handleSubmit, watch, trigger, formState: { errors } } = useForm<FormData>({
     resolver: zodResolver(schema),
-    defaultValues: { sector: "restaurant", need: "vitrine", budget: "300-600", deadline: "7-14" },
+    defaultValues: { sector: "restaurant", need: "static-site", budget: "35-50", deadline: "flexible" },
   });
 
   const onSubmit = async (data: FormData) => {
@@ -119,7 +119,7 @@ export function CTAForm() {
 
               <div className="mt-7 space-y-2.5">
                 {[
-                  { icon: Clock, title: locale === "ar" ? "رد خلال ساعتين" : "Reply in 2 hours", desc: locale === "ar" ? "حتى في المساء وعطلة نهاية الأسبوع" : "Even evenings & weekends" },
+                  { icon: Clock, title: locale === "ar" ? "رد في أوقات العمل" : "Replies during opening hours", desc: locale === "ar" ? "حسب الأوقات المنشورة في الموقع" : "See the opening hours published on the site" },
                   { icon: ShieldCheck, title: locale === "ar" ? "بدون التزام" : "No commitment", desc: locale === "ar" ? "عرض سعر مجاني وشفاف" : "Free & transparent quote" },
                   { icon: Headset, title: locale === "ar" ? "دعم واتساب مباشر" : "Direct WhatsApp", desc: siteConfig.phone },
                 ].map((item) => (
@@ -188,9 +188,11 @@ export function CTAForm() {
                       <div>
                         <label htmlFor="lead-need" className="text-sm font-semibold">{locale === "ar" ? "ماذا تحتاج؟" : "What do you need?"} *</label>
                         <select id="lead-need" {...register("need")} aria-invalid={!!errors.need} aria-describedby={errors.need ? "lead-need-error" : undefined} className="mt-2 h-11 w-full rounded-full border border-[var(--border)] bg-[var(--secondary)]/50 px-4 outline-none transition-colors focus:border-[var(--accent)]">
-                          <option value="vitrine">{locale === "ar" ? "موقع واجهة" : "Vitrine site"}</option>
-                          <option value="vitrine-plus">{locale === "ar" ? "واجهة بلس + حجز" : "Vitrine+ + booking"}</option>
-                          <option value="shop">{locale === "ar" ? "متجر / حجز كامل" : "Full shop / booking"}</option>
+                          <option value="static-site">{ar ? "موقع ثابت — 35 $" : "Static website — $35"}</option>
+                          <option value="content">{ar ? "موقع + إدارة المحتوى" : "Website + content management"}</option>
+                          <option value="booking">{ar ? "موقع + إدارة الحجوزات" : "Website + booking management"}</option>
+                          <option value="shop">{ar ? "موقع + متجر إلكتروني" : "Website + online store"}</option>
+                          <option value="language">{ar ? "إضافة لغة" : "Add a language"}</option>
                           <option value="redesign">{locale === "ar" ? "إعادة تصميم" : "Redesign"}</option>
                         </select>
                         {errors.need && <p id="lead-need-error" role="alert" className="mt-1 text-xs font-semibold text-red-600 dark:text-red-400">{fieldError(errors.need.message)}</p>}
@@ -199,10 +201,10 @@ export function CTAForm() {
                         <div>
                           <label htmlFor="lead-budget" className="text-sm font-semibold">{locale === "ar" ? "الميزانية" : "Budget"} *</label>
                           <select id="lead-budget" {...register("budget")} aria-invalid={!!errors.budget} aria-describedby={errors.budget ? "lead-budget-error" : undefined} className="mt-2 h-11 w-full rounded-full border border-[var(--border)] bg-[var(--secondary)]/50 px-4 outline-none transition-colors focus:border-[var(--accent)]">
-                            <option value="under-300">{locale === "ar" ? "أقل من 300 $" : "Under $300"}</option>
-                            <option value="300-600">$300–600</option>
-                            <option value="600-1000">$600–1,000</option>
-                            <option value="1000+">{locale === "ar" ? "أكثر من 1000 $" : "$1,000+"}</option>
+                            <option value="35-50">$35–50</option>
+                            <option value="50-100">$50–100</option>
+                            <option value="100+">{ar ? "100 $ أو أكثر — حسب الوظائف" : "$100+ — depending on functions"}</option>
+                            <option value="quote">{ar ? "أحتاج عرض سعر" : "I need a quote"}</option>
                           </select>
                           {errors.budget && <p id="lead-budget-error" role="alert" className="mt-1 text-xs font-semibold text-red-600 dark:text-red-400">{fieldError(errors.budget.message)}</p>}
                         </div>
@@ -291,7 +293,7 @@ export function CTAForm() {
                 </div>
                 <h3 className="mt-4 text-xl font-black">{locale === "ar" ? "تم الإرسال بنجاح!" : "Sent successfully!"}</h3>
                 <p className="mt-2 text-sm text-[var(--muted-foreground)] max-w-[32ch] mx-auto">
-                  {locale === "ar" ? "سنرد عليك عبر واتساب خلال ساعتين. شكراً لثقتك بنخبة." : "We'll reply on WhatsApp within 2 hours. Thanks for trusting Nukhba."}
+                  {locale === "ar" ? "سنرد عليك عبر واتساب خلال أوقات العمل. شكراً لثقتك بنخبة." : "We'll reply on WhatsApp during opening hours. Thanks for trusting Nukhba."}
                 </p>
                 <a href={whatsappLink(siteConfig.whatsapp, whatsappMsg)} target="_blank" className="mt-6 inline-flex h-10 px-5 rounded-full bg-[#0B6B3A] text-white font-bold items-center gap-2">
                   {locale === "ar" ? "متابعة على واتساب" : "Continue on WhatsApp"}

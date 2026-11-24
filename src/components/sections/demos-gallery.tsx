@@ -150,8 +150,8 @@ function InteractiveShowcase({
                         <div className="absolute bottom-3 start-3 flex items-center gap-1.5">
                           <span className="px-2.5 py-1 rounded-full bg-[var(--accent)] text-[var(--accent-foreground)] text-xs font-black">
                             {locale === "ar"
-                              ? `الفئة ${dClassification.tier}`
-                              : `Category ${dClassification.tier}`}
+                              ? "العرض الأساسي"
+                              : "Base offer"}
                           </span>
                         </div>
                       )}
@@ -457,8 +457,8 @@ function InteractiveShowcase({
                     <div className="mb-2 flex flex-wrap items-center gap-2 text-xs">
                       <span className="px-2 py-0.5 rounded-full bg-[var(--accent)]/15 text-[var(--accent)] font-black">
                         {locale === "ar"
-                          ? `الفئة ${activeClassification.tier}`
-                          : `Category ${activeClassification.tier}`}
+                          ? "العرض الأساسي"
+                          : "Base offer"}
                       </span>
                       <span className="opacity-70">
                         {locale === "ar" ? activeClassification.name : activeClassification.nameEn}
@@ -549,7 +549,7 @@ function InteractiveShowcase({
                       </span>
                       {dClassification && (
                         <span className="shrink-0 rounded-full bg-[var(--accent)] px-2 py-0.5 text-[10px] font-black text-[var(--accent-foreground)]">
-                          {locale === "ar" ? `فئة ${dClassification.tier}` : `Cat. ${dClassification.tier}`}
+                          {locale === "ar" ? "العرض الأساسي" : "Base offer"}
                         </span>
                       )}
                     </div>

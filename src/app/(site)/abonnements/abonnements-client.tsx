@@ -260,12 +260,12 @@ export function AbonnementsClient({
     <div className="space-y-8">
       <header className="space-y-3 text-center">
         <h1 className="text-3xl sm:text-4xl font-black">
-          {ar ? "اشتراكات شهرية وسنوية" : "Monthly & annual subscriptions"}
+          {ar ? "اشتراكات صيانة اختيارية" : "Optional maintenance subscriptions"}
         </h1>
         <p className="text-[var(--muted-foreground)]">
           {ar
-            ? "ادفع بالعملات الرقمية عبر NOWPayments. اختر الباقة والدورة."
-            : "Pay with crypto through NOWPayments. Choose a plan and a billing cycle."}
+            ? "لموقع موجود، وليس لشراء موقع أو تفعيل وظائف جديدة. اختر خطة الصيانة ودورة الدفع؛ التجديد يحتاج دفع الفاتورة ولا يخصم من محفظتك تلقائياً."
+            : "For an existing website, not for website creation or new modules. Choose maintenance and a billing cycle; renewal requires payment, not an automatic wallet debit."}
         </p>
         <div className="inline-flex rounded-2xl border border-[var(--border)] p-1" role="tablist">
           {(["annual", "monthly"] as const).map((value) => (
@@ -325,7 +325,7 @@ export function AbonnementsClient({
               )}
               {cycle === "annual" && saving > 0 && (
                 <div className="mt-1 text-sm font-bold text-[var(--accent)]">
-                  {ar ? `توفير $${saving} في السنة` : `You save $${saving} per year`}
+                  {ar ? `توفير $${saving} مقارنة بـ 12 دفعة شهرية` : `Save $${saving} versus 12 monthly payments`}
                 </div>
               )}
             </button>

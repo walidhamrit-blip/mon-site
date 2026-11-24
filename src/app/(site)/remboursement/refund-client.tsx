@@ -7,7 +7,7 @@ import { ProfessionalContact } from "@/components/professional-contact";
 const content = {
   ar: {
     title: "سياسة الاسترداد",
-    updated: "آخر تحديث: 26 أكتوبر 2026",
+    updated: "آخر تحديث: 23 نوفمبر 2026",
     intro: "توضح هذه السياسة قواعد استرداد المدفوعات لدى نخبة، وتُقرأ مع الشروط العامة للبيع والاتفاق الكتابي الخاص بطلبك.",
     sections: [
       ["الحجز والعربون", "يُخصم العربون من إجمالي سعر المشروع. لا يُسترد بعد بدء العمل، إلا في حال تقصير ثابت من نخبة."],
@@ -19,7 +19,7 @@ const content = {
   },
   en: {
     title: "Refund policy",
-    updated: "Last updated: October 26, 2026",
+    updated: "Last updated: November 23, 2026",
     intro: "This policy explains Nukhba’s existing refund rules. Read it alongside our terms and conditions of sale and the written agreement for your order.",
     sections: [
       ["Bookings and deposits", "Your deposit is deducted from the total project price. It is not refundable once work has started, unless Nukhba is clearly at fault."],

@@ -271,7 +271,7 @@ export function FullscreenLiveViewer({
               title={locale === "ar" ? "فئة الموقع وسعره" : "Site category & price"}
             >
               <Tag className="h-3.5 w-3.5 text-[var(--accent)]" />
-              {locale === "ar" ? "الفئة" : "Cat."} {classification.tier}
+              {locale === "ar" ? "العرض الأساسي" : "Base offer"}
               <span className="text-white/30">·</span>
               {classification.totalPriceUsd != null ? (
                 <Price usd={classification.totalPriceUsd} />
@@ -385,7 +385,7 @@ export function FullscreenLiveViewer({
           <div className="flex items-start justify-between gap-3">
             <span className="inline-flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wider text-[var(--accent)]">
               <Sparkles className="h-3 w-3" />
-              {locale === "ar" ? "سعر الموقع والتخصيص" : "Model + customization"}
+              {locale === "ar" ? "عرض الموقع الأساسي" : "Base website offer"}
             </span>
             <button
               type="button"
@@ -400,7 +400,6 @@ export function FullscreenLiveViewer({
           {classification && (
             <div className="mt-2 rounded-xl bg-white/5 p-3">
               <div className="mb-2 text-[10px] uppercase tracking-wider text-zinc-500">
-                {locale === "ar" ? `الفئة ${classification.tier} · ` : `Category ${classification.tier} · `}
                 {locale === "ar" ? classification.name : classification.nameEn}
               </div>
               <ModelPriceBreakdown
@@ -426,8 +425,8 @@ export function FullscreenLiveViewer({
               />
               <p className="mt-2 text-[10px] text-zinc-500 leading-relaxed">
                 {locale === "ar"
-                  ? `العربون ${formatUsd(depositUsd)} $ (= ${formatUsd(depositUsd)} USDT) يُخصم من الإجمالي بعد اعتماد التخصيص.`
-                  : `$${formatUsd(depositUsd)} deposit (= ${formatUsd(depositUsd)} USDT) is deducted from the final total after customization is approved.`}
+                  ? `العربون ${formatUsd(depositUsd)} $ (= ${formatUsd(depositUsd)} USDT) يُخصم من سعر الموقع الأساسي.`
+                  : `$${formatUsd(depositUsd)} deposit (= ${formatUsd(depositUsd)} USDT) is deducted from the base website price.`}
               </p>
             </>
           )}
@@ -462,7 +461,7 @@ export function FullscreenLiveViewer({
             <p>
               {demo.sectorAr} ({demo.sectorEn})
               {classification
-                ? ` — الفئة ${classification.tier}: ${classification.name} (${classification.nameEn}) · نموذج الموقع: ${classification.priceUsd != null ? `$${formatUsd(classification.priceUsd)} USD (= USDT)` : "حسب الطلب"} · التخصيص${classification.customizationPercent != null ? ` (${classification.customizationPercent}٪)` : ""}: ${classification.customizationUsd != null ? `$${formatUsd(classification.customizationUsd)} USD` : "عرض سعر مكتوب قبل الدفع"} · الإجمالي: ${classification.totalPriceUsd != null ? `$${formatUsd(classification.totalPriceUsd)} USD (= USDT)` : "يُحدد ويُعتمد قبل الدفع النهائي"}`
+                ? ` — العرض الأساسي: ${classification.name} (${classification.nameEn}) · نموذج الموقع: ${classification.priceUsd != null ? `$${formatUsd(classification.priceUsd)} USD (= USDT)` : "حسب الطلب"} · التخصيص${classification.customizationPercent != null ? ` (${classification.customizationPercent}٪)` : ""}: ${classification.customizationUsd != null ? `$${formatUsd(classification.customizationUsd)} USD` : "عرض سعر مكتوب قبل الدفع"} · الإجمالي: ${classification.totalPriceUsd != null ? `$${formatUsd(classification.totalPriceUsd)} USD (= USDT)` : "يُحدد ويُعتمد قبل الدفع النهائي"}`
                 : ""}
             </p>
           </section>

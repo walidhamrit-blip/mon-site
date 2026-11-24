@@ -1,3 +1,4 @@
+import { websiteOfferSummary } from "@/lib/website-offer";
 import type { BlogArticle } from "./blog";
 
 /**
@@ -71,11 +72,11 @@ export const blogArticles: BlogArticle[] = [
         headingAr: "1. ما هو USDT ولماذا الأسعار بالدولار؟",
         headingEn: "1. What Is USDT, and Why Are Prices in USD?",
         paragraphsAr: [
-          "USDT (تيثر) عملة رقمية «مستقرة» مربوطة بالدولار الأمريكي: قيمتها تبقى 1 دولار تقريباً دائماً، بخلاف بيتكوين المتقلبة. لهذا نعرض كل أسعارنا بالدولار فقط — سعر 360 $ يعني أنك ترسل 360 USDT، بدون أي حسابات تحويل وبدون مفاجآت في يوم الدفع.",
+          "USDT (تيثر) عملة رقمية «مستقرة» مربوطة بالدولار الأمريكي: قيمتها تبقى 1 دولار تقريباً دائماً، بخلاف بيتكوين المتقلبة. لهذا نعرض كل أسعارنا بالدولار فقط — سعر 35 $ يعني أنك ترسل 35 USDT، بدون أي حسابات تحويل وبدون مفاجآت في يوم الدفع.",
           "تحتاج فقط إلى محفظة أو حساب منصة فيه رصيد USDT (مثل تطبيق محفظة على هاتفك أو حساب منصة تداول). إن لم يكن لديك USDT بعد، اشترِ مبلغاً يغطي الفاتورة زائد نحو 1–2 USDT لرسوم الشبكة. لا تحتاج بطاقة بنكية دولية ولا حساباً بنكياً أجنبياً.",
         ],
         paragraphsEn: [
-          "USDT (Tether) is a «stablecoin» pegged to the US dollar: its value stays at roughly $1 at all times, unlike volatile Bitcoin. That is why all our prices are in USD only — a $360 price means you send 360 USDT, with no conversion maths and no surprises on payment day.",
+          "USDT (Tether) is a «stablecoin» pegged to the US dollar: its value stays at roughly $1 at all times, unlike volatile Bitcoin. That is why all our prices are in USD only — a $35 price means you send 35 USDT, with no conversion maths and no surprises on payment day.",
           "You only need a wallet or an exchange account holding USDT (a wallet app on your phone, or an exchange account). If you do not hold USDT yet, buy enough to cover the invoice plus about 1–2 USDT for network fees. No international bank card or foreign bank account is required.",
         ],
         bulletsAr: [
@@ -250,22 +251,16 @@ export const blogArticles: BlogArticle[] = [
     titleEn: "How Much Does a Website Cost in 2026? Real Prices in USD",
     h1Ar: "كم تكلفة تصميم موقع إلكتروني في 2026؟",
     h1En: "What Does a Website Really Cost in 2026?",
-    descriptionAr:
-      "أسعار تصميم المواقع في 2026 بالدولار: من 300 $ لموقع الواجهة إلى 880 $ للمتجر الإلكتروني الكامل — ما يشمله السعر، وما يرفعه، وكيف تتفادى التكاليف الخفية.",
-    descriptionEn:
-      "Website pricing in 2026 in USD: from $300 for a showcase site to $880 for a full e-commerce store — what the price includes, what pushes it up, and how to avoid hidden costs.",
-    excerptAr:
-      "جدول أسعار واضح لثلاث فئات من المواقع بالدولار، مع ما يشمله كل سعر فعلاً وما يرفعه — بدون مبالغة ولا أسعار مخفية.",
-    excerptEn:
-      "A clear USD price grid for three website tiers, what each price really includes, and what pushes it up — no inflation, no hidden costs.",
-    answerAr:
-      "في 2026 تتراوح تكلفة موقع إلكتروني احترافي لدينا بين 300 دولار لموقع واجهة من 5 صفحات، و510 دولاراً لموقع مع حجز مواعيد ومدونة، و880 دولاراً لمتجر إلكتروني كامل بنظام دفع وإدارة. السعر يشمل التصميم والتطوير والاستضافة للسنة الأولى، ويُسلَّم في 7 إلى 21 يوماً.",
-    answerEn:
-      "In 2026 a professional website with us costs between $300 for a five-page showcase site, $510 for a site with booking and a blog, and $880 for a full e-commerce store with payments and an admin panel. The price includes design, development and first-year hosting, with delivery in 7 to 21 days.",
+    descriptionAr: "موقع ثابت من 35 دولاراً مع تخصيص المحتوى الأولي. لغة إضافية 10 دولارات وإدارة المحتوى من 10 دولارات؛ الحجز والمتجر بعرض سعر.",
+    descriptionEn: "Static websites from $35 with initial personalization. Extra languages $10; content management from $10. Booking and store modules are quoted.",
+    excerptAr: "عرض أساسي واحد لكل التصاميم، ثم لغات ووظائف إضافية حسب حاجتك.",
+    excerptEn: "One base offer for every design, then extra languages and functions as needed.",
+    answerAr: websiteOfferSummary("ar"),
+    answerEn: websiteOfferSummary("en"),
     categoryAr: "أسعار وميزانيات",
     categoryEn: "Pricing & Budgets",
     publishedAt: "2026-10-20",
-    updatedAt: "2026-10-20",
+    updatedAt: "2026-11-23",
     readingMinutes: 7,
     authorAr: "فريق نخبة",
     authorEn: "Nukhba team",
@@ -282,127 +277,30 @@ export const blogArticles: BlogArticle[] = [
       "how much does a website cost 2026",
     ],
     keyFacts: [
-      { labelAr: "موقع واجهة (5 صفحات)", labelEn: "Showcase site (5 pages)", valueAr: "$300 = 300 USDT", valueEn: "$300 = 300 USDT" },
-      { labelAr: "موقع + حجز ومدونة", labelEn: "Site + booking + blog", valueAr: "$510 = 510 USDT", valueEn: "$510 = 510 USDT" },
-      { labelAr: "متجر إلكتروني كامل", labelEn: "Full e-commerce store", valueAr: "$880 = 880 USDT", valueEn: "$880 = 880 USDT" },
-      { labelAr: "مدة التسليم", labelEn: "Delivery time", valueAr: "7 – 21 يوماً", valueEn: "7 – 21 days" },
-      { labelAr: "الاستضافة السنة الأولى", labelEn: "First-year hosting", valueAr: "مشمولة", valueEn: "Included" },
+      { labelAr: "الموقع الثابت", labelEn: "Static website", valueAr: "35 $", valueEn: "$35" },
+      { labelAr: "التخصيص الأولي", labelEn: "Initial personalization", valueAr: "مشمول", valueEn: "Included" },
+      { labelAr: "لغة إضافية", labelEn: "Additional language", valueAr: "10 $ / لغة", valueEn: "$10 / language" },
+      { labelAr: "إدارة المحتوى", labelEn: "Content management", valueAr: "من 10 $ إضافية", valueEn: "From an extra $10" },
+      { labelAr: "الحجوزات والمتجر", labelEn: "Bookings and store", valueAr: "بعرض سعر", valueEn: "On quote" },
     ],
     sections: [
-      {
-        id: "ce-qui-determine-le-prix",
-        headingAr: "ما الذي يحدد السعر فعلاً؟",
-        headingEn: "What Actually Drives the Price?",
-        paragraphsAr: [
-          "السعر لا يُحدَّد بعدد الصفحات فقط، بل بثلاثة عوامل: حجم المحتوى الذي يجب كتابته وتصويره، عدد الوظائف التفاعلية (حجز، سلة، دفع، لوحة تحكم)، ومستوى التخصيص البصري المطلوب. موقع من 5 صفحات بمحتوى جاهز أرخص بكثير من موقع من 5 صفحات نكتب له المحتوى ونصوّر المنتجات.",
-          "العامل الثاني هو التقنية: قالب جاهز معدّل يبدأ من 150 دولاراً، لكنه يبقى بطيئاً ومقيداً؛ بينما الموقع المبني على Next.js مع تحسين SEO وسرعة 90+ يكلّف أكثر في البداية وأقل بكثير على المدى الطويل (لا تحديثات أمنية شهرية، ولا إضافات مدفوعة).",
-        ],
-        paragraphsEn: [
-          "Price is not driven by page count alone but by three factors: how much content must be written and photographed, how many interactive features are needed (booking, cart, payments, admin panel), and how much visual customisation is required. A five-page site with ready content costs far less than the same five pages where we write the copy and shoot the products.",
-          "The second factor is technology: a modified off-the-shelf template starts at $150, but stays slow and constrained; a Next.js build with technical SEO and 90+ speed costs more upfront and much less over time (no monthly security patches, no paid plugins).",
-        ],
-        bulletsAr: [
-          "محتوى جاهز (نصوص + صور) = أرخص وأسرع",
-          "حجز، سلة، دفع، لوحة تحكم = كل وظيفة تضيف 100–200 $",
-          "تصميم فريد من الصفر = أغلى من تعديل قالب، لكنه يبني علامة",
-          "الاستضافة والدومين للسنة الأولى: عادةً مشمولة",
-        ],
-        bulletsEn: [
-          "Ready content (copy + photos) = cheaper and faster",
-          "Booking, cart, payments, admin panel = each feature adds $100–200",
-          "Unique design from scratch = pricier than a template, but builds a brand",
-          "Hosting and domain for year one: usually included",
-        ],
-        calloutAr:
-          "قاعدة عملية: كل وظيفة تفاعلية جديدة تضيف ما بين 100 و200 دولار. اكتب قائمة الوظائف قبل طلب السعر، لا بعد التصميم.",
-        calloutEn:
-          "Practical rule: every new interactive feature adds $100–200. Write your feature list before requesting a quote, not after design starts.",
-      },
-      {
-        id: "trois-niveaux",
-        headingAr: "ثلاث فئات من المواقع… وثلاث ميزانيات",
-        headingEn: "Three Website Tiers, Three Budgets",
-        paragraphsAr: [
-          "الفئة الأولى — الواجهة: 5 صفحات مصممة على هويتك، نموذج تواصل مربوط بواتساب، تحسين SEO أساسي وتسليم في 7 أيام. مناسبة للشركات التي تحتاج حضوراً مهنياً سريعاً.",
-          "الفئة الثانية — الواجهة بلس: حتى 10 صفحات مع مدونة وحجز مواعيد أو طاولات، ربط Google Maps وAnalytics، لغتين (عربي/إنجليزي)، سرعة 90+ وتسليم في 10 أيام.",
-          "الفئة الثالثة — المتجر أو نظام الحجز: منتجات أو خدمات غير محدودة، سلة، دفع عند الاستلام أو تحويل، لوحة تحكم، إشعارات واتساب تلقائية وSEO متقدم — تسليم 14 إلى 21 يوماً.",
-        ],
-        paragraphsEn: [
-          "Tier one — Vitrine: five pages designed around your brand, a contact form wired to WhatsApp, essential SEO and seven-day delivery. Right for businesses that need a professional presence fast.",
-          "Tier two — Vitrine+: up to ten pages with a blog and booking or table reservations, Google Maps and Analytics, bilingual (Arabic/English), 90+ speed and ten-day delivery.",
-          "Tier three — Store or booking system: unlimited products or services, cart, cash-on-delivery or transfer, admin panel, automatic WhatsApp notifications and advanced SEO — delivered in 14 to 21 days.",
-        ],
-        calloutAr:
-          "لا تدفع مقابل الفئة الثالثة إن كنت تبيع أقل من 20 منتجاً شهرياً وعبر واتساب فقط: الفئة الثانية + كتالوج PDF غالباً كافية.",
-        calloutEn:
-          "Do not pay for tier three if you sell fewer than 20 items a month and only via WhatsApp: tier two plus a PDF catalogue is usually enough.",
-      },
-      {
-        id: "couts-caches",
-        headingAr: "التكاليف الخفية التي يجب أن تسأل عنها",
-        headingEn: "Hidden Costs You Must Ask About",
-        paragraphsAr: [
-          "أغلب المفاجآت تأتي بعد التسليم: تجديد الاستضافة، شهادة SSL، نسخ احتياطي، تحديثات أمنية، تعديلات بسيطة، أو نقل الموقع إلى مستضيف آخر. اطلب كتابياً قائمة ما سيُدفع سنوياً قبل توقيع العرض، ومن يملك الدومين والاستضافة باسم من.",
-          "في نخبة، الاستضافة للسنة الأولى مشمولة، والدومين يُسجَّل باسم العميل، والملفات المصدرية تُسلَّم كاملة — لا احتكار تقني.",
-        ],
-        paragraphsEn: [
-          "Most surprises arrive after delivery: hosting renewal, SSL certificate, backups, security updates, small edits, or migrating the site to another host. Ask in writing for the annual cost list before signing, and clarify who owns the domain and the hosting account.",
-          "At Nukhba, first-year hosting is included, the domain is registered in the client's name, and all source files are handed over — no technical lock-in.",
-        ],
-        bulletsAr: [
-          "من يملك حساب الاستضافة والدومين؟ يجب أن يكون باسمك",
-          "هل التعديلات بعد التسليم مدفوعة؟ وما سعرها؟",
-          "هل تُسلَّم الملفات المصدرية والوصول الكامل؟",
-          "ما تكلفة التجديد السنوي بالدولار؟",
-        ],
-        bulletsEn: [
-          "Who owns the hosting and domain accounts? It must be your name",
-          "Are post-delivery edits paid? At what rate?",
-          "Are source files and full access handed over?",
-          "What is the annual renewal cost in USD?",
-        ],
-      },
-      {
-        id: "comment-economiser",
-        headingAr: "أربع طرق لتخفيض الفاتورة دون خفض الجودة",
-        headingEn: "Four Ways to Cut the Bill Without Cutting Quality",
-        paragraphsAr: [
-          "أولاً: جهّز المحتوى بنفسك (نصوص، صور، شعار) — يوفّر 15 إلى 25% من التكلفة. ثانياً: ابدأ بالفئة الأولى وأضف الوظائف لاحقاً عبر خدمة «إضافة قسم» بدل بناء كل شيء مرة واحدة. ثالثاً: احسم القرارات مبكراً؛ كل جولة مراجعة إضافية تستهلك وقتاً مدفوعاً. رابعاً: استفد من الدفع على دفعتين أو ثلاث عبر العملات الرقمية إن كان السيولة مؤجلة.",
-        ],
-        paragraphsEn: [
-          "First: prepare your own content (copy, photos, logo) — it saves 15–25% of the cost. Second: start with tier one and add features later through the add-a-section service instead of building everything at once. Third: decide early; every extra revision round consumes paid time. Fourth: use two- or three-instalment crypto payment if cash flow is deferred.",
-        ],
-        calloutAr:
-          "أرخص مشروع هو الذي تُحسم قراراته قبل بدء التصميم. أغلى مشروع هو الذي يُعاد تصميمه مرتين.",
-        calloutEn:
-          "The cheapest project is the one whose decisions are settled before design starts. The most expensive is the one redesigned twice.",
-      },
+      { id: "ce-qui-determine-le-prix", headingAr: "ما الذي يحدد السعر؟", headingEn: "What Determines the Price?",
+        paragraphsAr: ["كل التصاميم بنفس السعر الأساسي: 35 دولاراً. التخصيص الأولي للمحتوى الذي تقدمه ضمن صفحات وأقسام النموذج مشمول. إنشاء محتوى أو صفحات جديدة أو تغيير الهيكل خدمات منفصلة.", "السعر يتغير حسب اللغات والوظائف المطلوبة، لا حسب القطاع أو مظهر التصميم."],
+        paragraphsEn: ["Every design has the same $35 base price. Initial personalization with your supplied content within the model’s pages and sections is included. Creating content, new pages or structural changes are separate services.", "Languages and requested functions change the price, not the industry or visual style."] },
+      { id: "trois-niveaux", headingAr: "بدون قاعدة بيانات أو مع وحدات إدارة", headingEn: "Without a Database, or With Management Modules",
+        paragraphsAr: ["الموقع الأساسي ثابت، بلغة واحدة وبدون لوحة إدارة. طلبات واتساب تعالج يدوياً.", "إدارة المحتوى تبدأ من 10 دولارات إضافية، وتشمل قاعدة البيانات ولوحة الإدارة اللازمة ضمن نطاق متفق عليه. وحدات الحجز والمتجر بعرض سعر وتشمل شاشات إدارتها، دون احتساب البنية الأساسية مرتين."],
+        paragraphsEn: ["The base site is static, with one language and no admin panel. WhatsApp requests are handled manually.", "Content management starts at an extra $10, including the required database and admin panel for an agreed scope. Booking and store modules are quoted with their own management screens, without charging for the foundation twice."] },
+      { id: "couts-caches", headingAr: "التكاليف الخارجية", headingEn: "External Costs",
+        paragraphsAr: ["النشر على vercel.app وفق أهلية وحدود Vercel، وليس ضمان استضافة مجانية مدى الحياة. الدومين المخصص غير مشمول. أي تكاليف متكررة للاستضافة وقاعدة البيانات والإرسال والدفع تؤكد قبل الموافقة."],
+        paragraphsEn: ["Deployment to vercel.app is subject to Vercel eligibility and limits, not a lifetime free-hosting guarantee. Custom domains are excluded. Any recurring hosting, database, messaging or payment costs are confirmed before approval."] },
+      { id: "reduire-la-facture", headingAr: "ابدأ بما تحتاجه", headingEn: "Start With What You Need",
+        paragraphsAr: ["اختر النموذج وجهز المحتوى، ثم أضف الوظائف الضرورية فقط. الدفع المباشر يخص العرض الأساسي؛ تؤكد الخيارات كتابياً قبل فوترتها منفصلة."],
+        paragraphsEn: ["Choose a model, prepare your content and add only the functions you need. Direct checkout covers the base offer; options are confirmed in writing before separate billing."] },
     ],
     faqs: [
-      {
-        qAr: "هل الأسعار ثابتة أم قابلة للتفاوض؟",
-        qEn: "Are these prices fixed or negotiable?",
-        aAr: "الأسعار المعلنة هي نقطة البداية لنطاق محدد بوضوح. أي إضافة (صفحات، وظائف، محتوى) تُسعَّر كتابياً قبل البدء، والسعر النهائي لا يتغير بعد الموافقة.",
-        aEn: "Published prices are the starting point for a clearly defined scope. Any addition (pages, features, content) is quoted in writing before work starts, and the final price never changes after approval.",
-      },
-      {
-        qAr: "هل يجب دفع المبلغ كاملاً مقدماً؟",
-        qEn: "Do I have to pay the full amount upfront?",
-        aAr: "لا — دفعة مقدمة 50% للبدء والباقي عند التسليم. يمكن أيضاً التقسيم على ثلاث دفعات عبر NOWPayments، أو حجز أولوية بـ 1 دولار يُخصم من السعر النهائي.",
-        aEn: "No — a 50% deposit to start and the balance on delivery. You can also split into three instalments via NOWPayments, or book priority for $1 deducted from the final price.",
-      },
-      {
-        qAr: "ماذا لو احتجت تعديلات بعد التسليم؟",
-        qEn: "What if I need changes after delivery?",
-        aAr: "التعديلات البسيطة على النصوص والصور مجانية خلال 14 يوماً بعد التسليم. التعديلات الهيكلية لاحقاً تُسعَّر حسب الخدمة المطلوبة وفق الأسعار المنشورة.",
-        aEn: "Minor text and image edits are free for 14 days after delivery. Later structural changes are quoted per service at our published prices.",
-      },
-      {
-        qAr: "هل يوجد أرخص من ذلك في السوق الليبي؟",
-        qEn: "Is there anything cheaper on the market?",
-        aAr: "نعم، قوالب جاهزة من 100 إلى 150 دولاراً، لكنها غالباً بطيئة، غير محسّنة لمحركات البحث، وبدون دعم أو لوحة تحكم. احسب تكلفة إعادة بنائها بعد سنة قبل المقارنة.",
-        aEn: "Yes, ready-made templates from $100–150, but they are usually slow, not search-optimised, and come without support or an admin panel. Count the cost of rebuilding in a year before comparing.",
-      },
+      { qAr: "هل كل التصاميم بنفس السعر؟", qEn: "Does every design cost the same?", aAr: "نعم، السعر الأساسي 35 دولاراً لكل التصاميم. اللغات ووظائف الإدارة إضافات منفصلة.", aEn: "Yes. Every design has a $35 base price. Extra languages and management functions are separate additions." },
+      { qAr: "هل قاعدة البيانات مشمولة في العرض الأساسي؟", qEn: "Does the base offer include a database?", aAr: "لا، العرض الأساسي ثابت وبلغة واحدة. إدارة المحتوى تبدأ من 10 دولارات إضافية مع قاعدة البيانات والإدارة اللازمة ضمن النطاق المتفق عليه.", aEn: "No. The base offer is static and includes one language. Content management starts at an extra $10, including the required database and admin tools for an agreed scope." },
+      { qAr: "هل التعديلات بعد التسليم مشمولة؟", qEn: "Are later changes included?", aAr: "التخصيص المجاني للمحتوى المقدم قبل التسليم الأول فقط. التعديلات اللاحقة خدمات منفصلة؛ تصحيح عيب يخالف النطاق المتفق عليه يختلف عن طلب جديد.", aEn: "Free personalization covers supplied content before initial delivery only. Later changes are separate services; correcting a defect against the agreed scope is different from a new request." },
     ],
     includePricing: true,
     relatedServices: ["restyle", "landing"],
@@ -450,8 +348,8 @@ export const blogArticles: BlogArticle[] = [
     keyFacts: [
       { labelAr: "أعمال حية يمكن تجربتها", labelEn: "Live, testable work", valueAr: "12 موقعاً", valueEn: "12 live sites" },
       { labelAr: "ملكية الدومين", labelEn: "Domain ownership", valueAr: "باسم العميل", valueEn: "Client's name" },
-      { labelAr: "مدة أول رد", labelEn: "First reply time", valueAr: "≤ ساعتين", valueEn: "≤ 2 hours" },
-      { labelAr: "دعم بعد التسليم", labelEn: "After-delivery support", valueAr: "30 – 90 يوماً", valueEn: "30 – 90 days" },
+      { labelAr: "مدة أول رد", labelEn: "First reply time", valueAr: "خلال أوقات العمل", valueEn: "During opening hours" },
+      { labelAr: "دعم بعد التسليم", labelEn: "After-delivery support", valueAr: "حسب الاتفاق المكتوب؛ الصيانة منفصلة", valueEn: "By written agreement; maintenance separate" },
     ],
     sections: [
       {
@@ -538,11 +436,11 @@ export const blogArticles: BlogArticle[] = [
         headingEn: "5. After-Delivery Support Is the Real Test",
         paragraphsAr: [
           "الموقع ليس منتجاً يُسلَّم مرة واحدة. اسأل: من يرد إن تعطّل النموذج يوم الجمعة؟ كم يوماً من الدعم مشمولة؟ هل هناك تكلفة سنوية للتحديثات؟ الوكالة التي تختفي بعد التسليم تكلّفك أضعاف ما وفّرته.",
-          "في نخبة، الدعم يتراوح بين 30 و90 يوماً حسب الفئة، وكل موقع يأتي مع شرح فيديو لتعديل النصوص بنفسك — لا تعتمد على أحد لتغيير سطر.",
+          "في نخبة، التخصيص الأولي للمحتوى المقدم مشمول. الإدارة الذاتية تبدأ من 10 دولارات إضافية ضمن نطاق متفق عليه، والصيانة اللاحقة خدمة منفصلة.",
         ],
         paragraphsEn: [
           "A website is not a one-off delivery. Ask: who answers if the form breaks on Friday? How many support days are included? Is there an annual update cost? An agency that disappears after delivery costs you several times what you saved.",
-          "At Nukhba support runs 30 to 90 days depending on tier, and every site ships with a video walkthrough so you can edit text yourself — never depend on someone to change a line.",
+          "At Nukhba initial personalization of supplied content is included. Self-service content management starts at an extra $10 for an agreed scope; later maintenance is separate.",
         ],
       },
     ],
@@ -578,21 +476,19 @@ export const blogArticles: BlogArticle[] = [
     h1Ar: "كيف تطلق متجراً إلكترونياً يبيع فعلاً؟",
     h1En: "How to Launch an Online Store That Actually Sells",
     descriptionAr:
-      "دليل عملي لإطلاق متجر إلكتروني: الدفع بالكريبتو وعند الاستلام، الطلب عبر واتساب، التوصيل، التصوير، والتكلفة من 880 $ — مع أخطاء شائعة يجب تجنبها.",
+      "دليل عملي لإطلاق متجر إلكتروني: الدفع بالكريبتو وعند الاستلام، الطلب عبر واتساب، التوصيل، التصوير، والتكلفة بعرض سعر للمتجر الكامل — مع أخطاء شائعة يجب تجنبها.",
     descriptionEn:
-      "A practical guide to launching an online store: crypto and cash-on-delivery payments, WhatsApp ordering, shipping, product photography and costs from $880.",
+      "Launch an online store: WhatsApp orders, shipping, photography and payment options. Start with a $35 static site; database-backed store functions are quoted separately.",
     excerptAr:
       "من اختيار المنتجات إلى أول 100 طلب: البنية التي تعمل فعلاً في السوق الليبي، بأرقام وتكاليف واقعية.",
     excerptEn:
       "From picking products to your first 100 orders: the setup that actually works today, with realistic numbers and USD costs.",
-    answerAr:
-      "إطلاق متجر إلكتروني يبدأ باختيار 20 إلى 50 منتجاً سريع الدوران، ثم بناء متجر بـ 880 دولاراً يشمل السلة والدفع عند الاستلام وربط واتساب ولوحة تحكم، خلال 14 إلى 21 يوماً. النقطة الحاسمة ليست التصميم بل الثقة: صور واضحة، سعر شامل للتوصيل، وسياسة إرجاع مكتوبة.",
-    answerEn:
-      "Launching an online store starts with 20 to 50 fast-moving products, then building a store for $880 including cart, cash-on-delivery, WhatsApp ordering and an admin panel, in 14 to 21 days. The decisive factor is not design but trust: clear photos, a price that includes delivery, and a written return policy.",
+    answerAr: websiteOfferSummary("ar"),
+    answerEn: websiteOfferSummary("en"),
     categoryAr: "تجارة إلكترونية",
     categoryEn: "E-commerce",
     publishedAt: "2026-10-20",
-    updatedAt: "2026-10-20",
+    updatedAt: "2026-11-23",
     readingMinutes: 8,
     authorAr: "فريق نخبة",
     authorEn: "Nukhba team",
@@ -609,10 +505,10 @@ export const blogArticles: BlogArticle[] = [
       "e-commerce website cost",
     ],
     keyFacts: [
-      { labelAr: "تكلفة المتجر الكامل", labelEn: "Full store cost", valueAr: "$880 = 880 USDT", valueEn: "$880 = 880 USDT" },
+      { labelAr: "تكلفة المتجر الكامل", labelEn: "Full store cost", valueAr: "بعرض سعر", valueEn: "On quote" },
       { labelAr: "عدد المنتجات للانطلاق", labelEn: "Products to start", valueAr: "20 – 50 منتجاً", valueEn: "20 – 50 products" },
       { labelAr: "نسبة الإرجاع المتوقعة", labelEn: "Expected return rate", valueAr: "10 – 20%", valueEn: "10 – 20%" },
-      { labelAr: "مدة البناء", labelEn: "Build time", valueAr: "14 – 21 يوماً", valueEn: "14 – 21 days" },
+      { labelAr: "مدة البناء", labelEn: "Build time", valueAr: "حسب النطاق", valueEn: "Confirmed by scope" },
     ],
     sections: [
       {
@@ -701,8 +597,8 @@ export const blogArticles: BlogArticle[] = [
       {
         qAr: "كم أحتاج من المال لإطلاق متجر؟",
         qEn: "How much money do I need to launch a store?",
-        aAr: "المتجر الكامل يبدأ من 880 دولاراً. أضف ميزانية تصوير 100–200 دولار، ومخزوناً أولياً، وميزانية إعلانات تجريبية 100 دولار للشهر الأول.",
-        aEn: "A full store starts at $880. Add a $100–200 photography budget, initial stock, and a $100 test-ads budget for month one.",
+        aAr: "الموقع الثابت 35 دولاراً؛ المتجر الكامل بقاعدة بيانات ولوحة إدارة بعرض سعر. أضف ميزانية تصوير 100–200 دولار، ومخزوناً أولياً، وميزانية إعلانات تجريبية 100 دولار للشهر الأول.",
+        aEn: "The static site is $35; a full database-backed store with administration is quoted separately. Add a $100–200 photography budget, initial stock, and a $100 test-ads budget for month one.",
       },
       {
         qAr: "هل أحتاج شركة شحن أم أوصّل بنفسي؟",
@@ -819,11 +715,11 @@ export const blogArticles: BlogArticle[] = [
         headingAr: "2. المحتوى الذي يُقتبس: إجابة أولاً، ثم تفصيل",
         headingEn: "2. Content That Gets Quoted: Answer First, Detail After",
         paragraphsAr: [
-          "لكل صفحة مهمة، ابدأ بجملة تُجيب على السؤال مباشرة، ثم اشرح. هذا هو نمط «answer-first» الذي يعمل مع Google AI Overviews ومع ChatGPT على السواء. اكتب أرقاماً: «من 300 دولار» أفضل من «بأسعار تنافسية».",
+          "لكل صفحة مهمة، ابدأ بجملة تُجيب على السؤال مباشرة، ثم اشرح. هذا هو نمط «answer-first» الذي يعمل مع Google AI Overviews ومع ChatGPT على السواء. اكتب أرقاماً: «من 35 دولاراً» أفضل من «بأسعار تنافسية».",
           "أنشئ صفحة لكل خدمة ولكل قطاع ولكل سؤال متكرر. الصفحة المتخصصة تُقتبس أسرع من الصفحة العامة، وتستهدف عبارة واحدة بوضوح.",
         ],
         paragraphsEn: [
-          "For every important page, start with a sentence that answers the question directly, then explain. That answer-first pattern works with both Google AI Overviews and ChatGPT. Use numbers: 'from $300' beats 'competitive prices'.",
+          "For every important page, start with a sentence that answers the question directly, then explain. That answer-first pattern works with both Google AI Overviews and ChatGPT. Use numbers: 'from $35' beats 'competitive prices'.",
           "Create a page for each service, each sector and each recurring question. A focused page gets cited faster than a general one and targets a single phrase clearly.",
         ],
       },
@@ -888,21 +784,19 @@ export const blogArticles: BlogArticle[] = [
     h1Ar: "موقع عيادة: كيف يزيد الحجوزات فعلاً؟",
     h1En: "A Clinic Website: What Actually Increases Bookings",
     descriptionAr:
-      "ما يحتاجه موقع العيادة الناجح: حجز 24/7، ملف الطبيب، الخدمات والأسعار، ثقة المرضى، وظهور في جوجل وخرائط — بتكلفة من 510 $ وتسليم 10 أيام.",
+      "ما يحتاجه موقع العيادة الناجح: حجز 24/7، ملف الطبيب، الخدمات والأسعار، ثقة المرضى، وظهور في جوجل وخرائط — بعرض سعر للحجز المتصل.",
     descriptionEn:
-      "What a successful clinic website needs: 24/7 booking, doctor profile, services and prices, patient trust, and visibility on Google and Maps — from $510, delivered in 10 days.",
+      "A clinic website needs doctor profiles, services, prices and clear contact details. Connected booking adds a database and admin panel, quoted separately.",
     excerptAr:
       "لماذا يفقد كثير من العيادات مرضى جدداً قبل أن يصلوا إلى الهاتف — وكيف يحل الموقع هذه المشكلة.",
     excerptEn:
       "Why many clinics lose new patients before they even call — and how a website solves it.",
-    answerAr:
-      "موقع العيادة في طرابلس يزيد الحجوزات عندما يجيب على ثلاثة أسئلة فوراً: من الطبيب؟ ما الخدمات والأسعار؟ كيف أحجز الآن؟ الحجز الذاتي 24/7 مع تأكيد واتساب، وصفحة تعريف بالطبيب، وتقييمات مرضى ظاهرة، ترفع الحجوزات عادةً بين 20 و40% خلال ثلاثة أشهر. التكلفة تبدأ من 510 دولاراً مع تسليم في 10 أيام.",
-    answerEn:
-      "A clinic website in Tripoli increases bookings when it answers three questions immediately: who is the doctor? what are the services and prices? how do I book now? 24/7 self-booking with WhatsApp confirmation, a doctor profile page and visible patient reviews typically raise bookings by 20–40% within three months. Costs start at $510 with ten-day delivery.",
+    answerAr: websiteOfferSummary("ar"),
+    answerEn: websiteOfferSummary("en"),
     categoryAr: "قطاع طبي",
     categoryEn: "Healthcare",
     publishedAt: "2026-10-20",
-    updatedAt: "2026-10-20",
+    updatedAt: "2026-11-23",
     readingMinutes: 6,
     authorAr: "فريق نخبة",
     authorEn: "Nukhba team",
@@ -919,10 +813,10 @@ export const blogArticles: BlogArticle[] = [
       "clinic marketing Libya",
     ],
     keyFacts: [
-      { labelAr: "تكلفة موقع العيادة", labelEn: "Clinic website cost", valueAr: "من $510 = 510 USDT", valueEn: "from $510 = 510 USDT" },
+      { labelAr: "تكلفة موقع العيادة", labelEn: "Clinic website cost", valueAr: "35 $ أساسي؛ الحجز بعرض سعر", valueEn: "$35 base; connected booking on quote" },
       { labelAr: "زيادة الحجوزات المتوقعة", labelEn: "Expected booking lift", valueAr: "+20% إلى +40%", valueEn: "+20% to +40%" },
       { labelAr: "الحجز متاح", labelEn: "Booking availability", valueAr: "24/7", valueEn: "24/7" },
-      { labelAr: "مدة التسليم", labelEn: "Delivery", valueAr: "7 – 10 أيام", valueEn: "7 – 10 days" },
+      { labelAr: "مدة التسليم", labelEn: "Delivery", valueAr: "حسب النطاق", valueEn: "Confirmed by scope" },
     ],
     sections: [
       {

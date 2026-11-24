@@ -1,3 +1,4 @@
+import { websiteOfferSummary, websiteTimelineNote, paymentAvailabilityNote } from "@/lib/website-offer";
 import type { Faq } from "./site-types";
 import { absoluteUrl, applyMarketTokens } from "./seo";
 import { resolveMarket } from "./market";
@@ -125,10 +126,8 @@ export const comparisons: Record<string, ComparisonSeo> = {
       "الإعلان يجعلك تدفع لتزورك. الموقع يجعل الزوار يأتون إليك مرة واحدة. إليك المقارنة خطاً بخط، بلا مبالغة.",
     subtitleEn:
       "Ads make you pay for every visit. A website makes visitors come to you once. Here is the line-by-line comparison — no exaggeration.",
-    answerAr:
-      "إعلانات جوجل تشتري زيارات مؤقتة: تدفع عن كل نقرة، وتوقف الزيارات لحظة تتوقف عن الدفع، بينما موقع نخبة يُبنى مرة واحدة ويُسجَّل في جوجل لكلمة مفتاحية — فتصل إليك الطلبات حتى بعد إيقاف أي حملة. التكلفة النموذجية للإعلانات $500 إلى $2,000 شهرياً، في مقابل دفعة واحدة تبدأ من $300 لموقع كامل مع تحسين SEO وبيانات منظمة جاهزة للبحث بالذكاء الاصطناعي.",
-    answerEn:
-      "Google Ads buys temporary visits: you pay for every click and traffic stops the moment you stop paying. A Nukhba website is paid for once and gets indexed on Google for the keywords that matter, so enquiries keep coming after every campaign is switched off. Ads typically run $500–$2,000 per month, against a one-time $300 starting price for a complete site with technical SEO and AI-search structured data.",
+    answerAr: websiteOfferSummary("ar"),
+    answerEn: websiteOfferSummary("en"),
     keywordsAr: ["إعلانات جوجل", "قارن إعلانات جوجل بالموقع", "تكلفة إعلانات جوجل", "تسويق عبر جوجل"],
     keywordsEn: ["google ads vs website", "google ads cost", "website vs ads", "should I run google ads"],
     themPoints: [
@@ -141,18 +140,18 @@ export const comparisons: Record<string, ComparisonSeo> = {
     ],
     usPoints: [
       { textAr: "يجدك من يبحث عن خدمتك بالاسم", textEn: "People who search for your service find you by name" },
-      { textAr: "صفحات مكتوبة بالعربية والإنجليزية", textEn: "Pages written in Arabic and English" },
-      { textAr: "يرسل من نطاقك أنت", textEn: "Sends from your own domain" },
-      { textAr: "يستقبل الطلبات والمكالمات 24/7", textEn: "Books the calls and orders 24/7" },
-      { textAr: "موقع مباشر في 7 أيام، لا بعد أشهر", textEn: "Live in 7 days, not after months of testing" },
-      { textAr: "بلا عقود: تدفع مرة واحدة واملك الموقع", textEn: "No contracts: pay once and keep the site" },
+      { textAr: "لغة واحدة مشمولة؛ اللغات الأخرى اختيارية", textEn: "One language included; extra languages are optional" },
+      { textAr: "عنوان vercel.app؛ الدومين الخاص منفصل", textEn: "vercel.app address; a custom domain is separate" },
+      { textAr: "روابط تواصل؛ الحجز والطلبات الآلية تحتاج وحدات إضافية", textEn: "Contact links; automated booking and orders require modules" },
+      { textAr: websiteTimelineNote("ar"), textEn: websiteTimelineNote("en") },
+      { textAr: "سعر أساسي مرة واحدة مع نطاق مكتوب", textEn: "One-time base price and a written scope" },
     ],
     criteria: [
       {
         labelAr: "التكلفة الشهرية",
         labelEn: "Monthly cost",
-        usAr: "دفعة واحدة: موقع من $300، بلا اشتراك شهري",
-        usEn: "One-time: website from $300, no monthly fee",
+        usAr: "موقع ثابت 35 $ مرة واحدة؛ التكاليف الخارجية المتكررة منفصلة",
+        usEn: "Static website $35 once; external recurring costs separate",
         themAr: "عادةً $500 – $2,000+ شهرياً حسب السوق والمنافسة",
         themEn: "Typically $500–$2,000+/month depending on market and competition",
         winner: "us",
@@ -160,8 +159,8 @@ export const comparisons: Record<string, ComparisonSeo> = {
       {
         labelAr: "ملكية الزوار",
         labelEn: "Who owns the visitors",
-        usAr: "بيانات العملاء تبقى عندك: نموذج يوصلك مباشرة",
-        usEn: "Your leads stay with you: the form lands in your inbox and WhatsApp",
+        usAr: "روابط التواصل الخاصة بك؛ النماذج المتصلة حسب نطاق إضافي",
+        usEn: "Your contact links; connected forms are scoped separately",
         themAr: "الزيارات تعود للمعلِن ما لم تُجدَّد الحملة",
         themEn: "Traffic goes back to the advertiser unless the campaign is renewed",
         winner: "us",
@@ -169,8 +168,8 @@ export const comparisons: Record<string, ComparisonSeo> = {
       {
         labelAr: "سرعة أول عميل",
         labelEn: "Time to first customer",
-        usAr: "الموقع مباشر خلال 7 أيام، وSEO يعمل بعدها تراكمياً",
-        usEn: "Site live within 7 days, then SEO compounds month after month",
+        usAr: websiteTimelineNote("ar"),
+        usEn: websiteTimelineNote("en"),
         themAr: "أسابيع من إعداد الحملة واختبار الجمهور قبل أول نتيجة",
         themEn: "Weeks of campaign setup and audience testing before the first result",
         winner: "us",
@@ -227,14 +226,14 @@ export const comparisons: Record<string, ComparisonSeo> = {
       {
         qAr: "أيّهما يعطي نتائج أسرع: إعلانات جوجل أم الموقع؟",
         qEn: "Which delivers results faster: Google Ads or a website?",
-        aAr: "الإعلان أسرع في الأيام الأولى: تظهر الصفحة خلال ساعات. أما الموقع فيحتاج 7 أيام للظهور ثم يبدأ SEO بالعمل التراكمي، ويستمر أثره سنوات بعد أن يتوقف أي إنفاق إعلاني. أغلب عملائنا يجمعون الاثنين: موقع كحاضرة دائمة، وحملة إعلانية قصيرة مؤقتة عند الحاجة.",
-        aEn: "Ads are faster in the first days: the page appears within hours. A website goes live in 7 days and then SEO compounds, lasting for years after ad spend stops. Most of our clients combine both: a site as a permanent reference, plus a short ad campaign when a promotion needs immediate reach.",
+        aAr: "الإعلانات والموقع يؤديان دورين مختلفين. موعد نشر الموقع يؤكد حسب النطاق؛ الفهرسة والنتائج يقررها محرك البحث ولا نضمن ترتيباً أو عدداً من الطلبات.",
+        aEn: "Ads and a website serve different roles. Website deployment is confirmed by scope; search engines determine indexing and results. No ranking or enquiry count is guaranteed.",
       },
       {
         qAr: "كم يكلّف الموقع مقارنة بالحملة الإعلانية؟",
         qEn: "How much does a website cost compared with an ad campaign?",
-        aAr: "موقع نخبة يبدأ من 300 دولار لمرة واحدة، والخدمات السريعة بأسعار منشورة على صفحة الخدمات. الحملة الإعلانية النموذجية في هذا المجال 500 إلى 2000 دولار شهرياً — أي ما يعادل تكلفة موقع كامل خلال شهر أو شهرين، ثم تسقط التكلفة إلى صفر.",
-        aEn: "A Nukhba website starts at $300 one-time, and standalone services are priced on the services page. A typical campaign in this market runs $500–$2,000 per month — the cost of a complete website within one or two months, after which the running cost drops to zero.",
+        aAr: websiteOfferSummary("ar"),
+        aEn: websiteOfferSummary("en"),
       },
       {
         qAr: "هل أحتاج إلى الإعلان بعد إطلاق الموقع؟",
@@ -245,8 +244,8 @@ export const comparisons: Record<string, ComparisonSeo> = {
       {
         qAr: "ماذا لو كان عندي موقع قديم بالفعل؟",
         qEn: "What if I already have an old website?",
-        aAr: "نبدأ من الموقع القائم: نعيد تصميمه على هويتك مع الحفاظ على روابطك وتحويلات 301، أو نضيف له قسماً واحداً من 19 دولاراً. المهم أن تبقى القيمة التي بنيتها سابقاً، وتُضاف إليها سرعة 90+ وSEO جاهز للذكاء الاصطناعي.",
-        aEn: "We start from what you have: we redesign it on your brand while preserving your URLs and 301 redirects, or add a single section from $19. The point is to keep the value you already built and add 90+ speed and AI-ready SEO on top.",
+        aAr: "نبدأ من الموقع القائم: نعيد تصميمه على هويتك مع الحفاظ على روابطك وتحويلات 301، أو نضيف له قسماً واحداً من 19 دولاراً. المهم أن تبقى القيمة التي بنيتها سابقاً، وتُضاف إليها أسس أداء تقنية وSEO جاهز للذكاء الاصطناعي.",
+        aEn: "We start from what you have: we redesign it on your brand while preserving your URLs and 301 redirects, or add a single section from $19. The point is to keep the value you already built and add technical performance foundations and AI-ready SEO on top.",
       },
     ],
     relatedServices: ["landing", "restyle", "fix-optimize"],
@@ -278,10 +277,8 @@ export const comparisons: Record<string, ComparisonSeo> = {
       "الإعلان يعرض منشوراً ليوم واحد. الموقع يشرح عرضك بالتفصيل ويبقيه متاحاً دائماً في جوجل — كل يوم، بلا ميزانية إعلانية.",
     subtitleEn:
       "An ad shows one post for a day. A website explains your offer in full and keeps it available on Google — every day, with no ad budget.",
-    answerAr:
-      "إعلانات فيسبوك وإنستغرام مناسبة لاختبار سريع أو لعرض مؤقت يحتاج نتائج فورية، لكنها تعمل بنظام مزاد: تتغير التكلفة والوصول بين يوم وآخر، ولا يبني لك المنشور أي أصل دائم. موقع نخبة يكلّف دفعة واحدة تبدأ من 300 دولار، ويشرح عرضك بصفحات عربية وإنجليزية، ويجمع الطلبات في نموذج متصل بواتساب والبريد، ثم يظهر في نتائج جوجل والبحث بالذكاء الاصطناعي دون توقف.",
-    answerEn:
-      "Facebook and Instagram ads suit quick tests or time-boxed promotions that need instant results, but they run on an auction: cost and reach change from day to day, and a post builds no permanent asset. A Nukhba website costs one payment starting at $300, explains your offer in Arabic and English pages, funnels every enquiry into a form wired to WhatsApp and email, and then shows up in Google and AI search results without stopping.",
+    answerAr: websiteOfferSummary("ar"),
+    answerEn: websiteOfferSummary("en"),
     keywordsAr: ["إعلانات فيسبوك", "فيسبوك مقابل موقع", "تسويق فيسبوك ليبيا", "مقارنة إعلانات"],
     keywordsEn: ["facebook ads vs website", "instagram ads cost", "social media marketing libya"],
     themPoints: [
@@ -297,15 +294,15 @@ export const comparisons: Record<string, ComparisonSeo> = {
       { textAr: "محتوى بلغتك وبأسلوب عملائك", textEn: "Content in your customers' language" },
       { textAr: "نموذج طلب يوصلك على واتساب وبريدك", textEn: "A lead form that lands on WhatsApp and email" },
       { textAr: "يبقى أثرها في جوجل بعد انتهاء الحملة", textEn: "Its effect stays on Google after the campaign ends" },
-      { textAr: "تسليم في 7 أيام بدل أسابيع من التجريب", textEn: "Live in 7 days instead of weeks of ad testing" },
+      { textAr: websiteTimelineNote("ar"), textEn: websiteTimelineNote("en") },
       { textAr: "تكلفة لمرة واحدة", textEn: "A one-time cost" },
     ],
     criteria: [
       {
         labelAr: "التكلفة",
         labelEn: "Cost",
-        usAr: "دفعة واحدة من $300 (خدمات بأسعار منشورة)",
-        usEn: "One payment from $300 (services at published prices)",
+        usAr: "دفعة واحدة من $35 (خدمات بأسعار منشورة)",
+        usEn: "One payment from $35 (services at published prices)",
         themAr: "متوسط $500 – $2,000 شهرياً لتغطية الجمهور",
         themEn: "On average $500–$2,000/month to cover the audience",
         winner: "us",
@@ -431,10 +428,8 @@ export const comparisons: Record<string, ComparisonSeo> = {
       "القوالب الجاهزة سريعة، لكنها تبقى قوالب. الموقع المصمّم لك وحدك يُبنى على هويتك، وبسرعة أعلى وبتكلفة تدفعها مرة واحدة.",
     subtitleEn:
       "Templates are fast, but they stay templates. A site built for you alone runs on your brand, loads faster and costs you once.",
-    answerAr:
-      "منشئات المواقع مثل Wix مناسبة لقالب بسيط وسريع، لكنها تفرض اشتراكاً شهرياً متكرراً، وتبقى الملفات داخل المنصة، وتحدّ من التحكم بالسرعة وSEO وبنية الصفحات. موقع نخبة يُبنى بـ Next.js على نطاقك أنت: دفعة واحدة تبدأ من 300 دولار، سرعة 90+ على Lighthouse، بنية SEO تقنية وبيانات منظمة مهيّأة للبحث بالذكاء الاصطناعي، ولوحة تحكم بسيطة لتحديث محتواك بنفسك.",
-    answerEn:
-      "Builders like Wix are fine for a simple template that goes up quickly, but they impose a recurring monthly fee, keep your files inside the platform, and limit control over speed, SEO and page structure. A Nukhba site is built with Next.js on your own domain: a single payment starting at $300, 90+ Lighthouse performance, technical SEO with structured data for AI search, and a simple dashboard so you can update content yourself.",
+    answerAr: websiteOfferSummary("ar"),
+    answerEn: websiteOfferSummary("en"),
     keywordsAr: ["ووكس", "منشئ مواقع", "ووكس مقابل موقع مخصص", "تكلفة ووكس"],
     keywordsEn: ["wix alternative", "wix vs custom website", "website builder cost", "custom website libya"],
     themPoints: [
@@ -449,18 +444,18 @@ export const comparisons: Record<string, ComparisonSeo> = {
       { textAr: "تصميم حصري على هويتك", textEn: "A design built only for your brand" },
       // A03 : ne jamais nier le renouvellement — l'hébergement n'est inclus
       // que la première année (voir la section tarifs), puis il se renouvelle.
-      { textAr: "دفعة واحدة من 300$ + سنة استضافة أولى مشمولة، ثم تجديد سنوي للاستضافة", textEn: "One payment from $300 + first year of hosting included, then an annual hosting renewal" },
-      { textAr: "سرعة 90+ على Lighthouse", textEn: "90+ Lighthouse performance" },
+      { textAr: "موقع ثابت 35 $؛ نشر vercel.app وفق أهلية وحدود Vercel", textEn: "Static site $35; vercel.app deployment subject to Vercel eligibility and limits" },
+      { textAr: "قياس الأداء حسب النطاق المتفق عليه", textEn: "Performance measured for the agreed scope" },
       { textAr: "SEO و بحث الذكاء الاصطناعي جاهز", textEn: "SEO and AI-search ready" },
-      { textAr: "لوحة تحكم بسيطة مع تدريب", textEn: "A simple dashboard plus training" },
+      { textAr: "إدارة محتوى اختيارية من 10 $ إضافية", textEn: "Optional content management from an extra $10" },
       { textAr: "ملكية كاملة للملفات والكود", textEn: "Full ownership of files and code" },
     ],
     criteria: [
       {
         labelAr: "التكلفة على 3 سنوات",
         labelEn: "Cost over 3 years",
-        usAr: "دفعة واحدة (من $300) + استضافة سنة أولى مشمولة، ثم تجديد سنوي",
-        usEn: "One payment (from $300) + first-year hosting included, then annual renewal",
+        usAr: "موقع ثابت من 35 $؛ التكاليف الخارجية المتكررة منفصلة",
+        usEn: "Static site from $35; external recurring costs disclosed separately",
         themAr: "اشتراك شهري يتكرر 36 مرة",
         themEn: "A monthly fee repeated 36 times",
         winner: "us",
@@ -468,8 +463,8 @@ export const comparisons: Record<string, ComparisonSeo> = {
       {
         labelAr: "التصميم",
         labelEn: "Design",
-        usAr: "مصمم من الصفر على ألوانك وخطوطك",
-        usEn: "Designed from scratch on your colours and type",
+        usAr: "نموذج تختاره مع تخصيص المحتوى الأولي",
+        usEn: "Your choice of model with initial content personalization",
         themAr: "قالب جاهز يشاركك فيه آلاف المواقع",
         themEn: "A ready template shared by thousands of sites",
         winner: "us",
@@ -477,8 +472,8 @@ export const comparisons: Record<string, ComparisonSeo> = {
       {
         labelAr: "السرعة",
         labelEn: "Speed",
-        usAr: "90+ Lighthouse، صور محسّنة وتحميل فوري",
-        usEn: "90+ Lighthouse, optimized images and instant loading",
+        usAr: "نموذج متجاوب؛ الأداء حسب المحتوى والتكاملات",
+        usEn: "Responsive model; performance depends on content and integrations",
         themAr: "أبطأ نسبياً بسبب مكتبة المنصة وبنية القوالب",
         themEn: "Slower in practice due to the platform bundle and template weight",
         winner: "us",
@@ -535,8 +530,8 @@ export const comparisons: Record<string, ComparisonSeo> = {
       {
         qAr: "هل Wix أرخص فعلاً على المدى الطويل؟",
         qEn: "Is Wix really cheaper in the long run?",
-        aAr: "اشتراك Wix يبدأ تقريباً من 20 إلى 50 دولاراً شهرياً حسب الباقة، أي 720 إلى 1800 دولار على 3 سنوات. موقع نخبة يبدأ من 300 دولار لمرة واحدة مع تخصيص واستضافة أول سنة ودعم — أي أرخص غالباً من السنة الأولى نفسها.",
-        aEn: "Wix plans start around $20–$50 per month depending on the tier, i.e. $720–$1,800 over three years. A Nukhba site starts at $300 one-time, including customization, the first year of hosting and support — usually cheaper from the very first year.",
+        aAr: websiteOfferSummary("ar"),
+        aEn: websiteOfferSummary("en"),
       },
       {
         qAr: "هل أستطيع نقل موقع ووكس إلى نخبة لاحقاً؟",
@@ -547,14 +542,14 @@ export const comparisons: Record<string, ComparisonSeo> = {
       {
         qAr: "ما الذي يجعل موقعكم أسرع؟",
         qEn: "What makes your site faster?",
-        aAr: "نبنيها بـ Next.js: ترميز HTML على الخادم، تقسيم الكود، تحميل الصور كـ WebP مع أبعاد محددة، وخطوط مستضافة محلياً ومضغوطة. النتيجة درجة 90+ على Lighthouse في اختبار سرعة الموبايل، وهو عامل ترتيب مباشر في بحث جوجل، خصوصاً على الموبايل.",
-        aEn: "We build with Next.js: server-side rendering, code splitting, WebP images with explicit dimensions, and self-hosted compressed fonts. The result is a 90+ Lighthouse score, which is a direct ranking factor on Google — especially on mobile.",
+        aAr: "نستخدم أسس النموذج التقنية ونقيس الأداء حسب المحتوى والتكاملات. لا نضمن درجة Lighthouse ثابتة أو ترتيباً محدداً في جوجل.",
+        aEn: "We use the model’s technical foundations and assess performance against its content and integrations. No fixed Lighthouse score or Google ranking is guaranteed.",
       },
       {
         qAr: "هل يمكنني تعديل المحتوى بنفسي بعد التسليم؟",
         qEn: "Can I edit the content myself after delivery?",
-        aAr: "نعم — بحسب المشروع نجهّز لوحة تحكم بسيطة أو نسلّم ملفات Markdown/Notion مهيّأة للنشر، مع تدريب قصير بالفيديو. إن أردت تغييراً كبيراً لاحقاً، نتكفّل به ضمن الدعم المضمون.",
-        aEn: "Yes — depending on the project we set up a simple dashboard or hand over Markdown/Notion files ready to publish, with a short video walkthrough. For bigger changes later, we handle them within the guaranteed support.",
+        aAr: "الموقع الأساسي ثابت، ولا يشمل لوحة إدارة. إدارة المحتوى تبدأ من 10 دولارات إضافية وتشمل قاعدة البيانات والإدارة اللازمة ضمن نطاق محدد. التعديلات الكبيرة والصيانة اللاحقة منفصلة.",
+        aEn: "The base website is static with no admin panel. Content management starts at an extra $10, including the required database and admin tools for an agreed scope. Structural changes and later maintenance are separate.",
       },
     ],
     relatedServices: ["restyle", "landing", "fix-optimize"],
@@ -586,10 +581,8 @@ export const comparisons: Record<string, ComparisonSeo> = {
       "الفرق ليس في السعر فقط: الفرق في الموعد المضمون، والدعم بعد التسليم، ومن يملك الملفات حين تنتهي الحكاية.",
     subtitleEn:
       "The difference is not only price: it is the guaranteed date, the support after delivery, and who owns the files at the end.",
-    answerAr:
-      "العمل مع مستقل غالباً أرخص في البداية لكنه غير مضمون: لا عقد، لا موعد تسليم، لا دعم بعد التسليم، والجودة تختلف بين مشروع وآخر. نخبة تلتزم بعرض سعر مكتوب، وموعد تسليم من 7 إلى 14 يوماً، ومراجعتين مجانيتين، ودعم من 30 إلى 90 يوماً بعد الإطلاق، مع ملكية كاملة للملفات والشيفرة. إن كان مشروعك مهماً — علامة تجارية، متجر، نظام حجز — فالفرق في الموثوقية أهم من الفرق البسيط في السعر.",
-    answerEn:
-      "Working with a freelancer is often cheaper at the start but never guaranteed: no contract, no delivery date, no support after handover, and quality varies from project to project. Nukhba commits to a written quote, a 7–14 day delivery date, two free revision rounds and 30–90 days of support after launch, with full ownership of the files and code. When the project matters — a brand, a store, a booking system — reliability is worth more than a small price gap.",
+    answerAr: websiteOfferSummary("ar"),
+    answerEn: websiteOfferSummary("en"),
     keywordsAr: ["توظيف مصمم مواقع", "توظيف مستقل", "فريلانسر تصميم مواقع", "وكالة مقابل مستقل"],
     keywordsEn: ["hire a web designer", "freelancer vs agency", "freelance web developer libya"],
     themPoints: [
@@ -602,18 +595,18 @@ export const comparisons: Record<string, ComparisonSeo> = {
     ],
     usPoints: [
       { textAr: "عرض سعر وعقد مكتوب قبل البدء", textEn: "A written quote and contract before we start" },
-      { textAr: "تسليم مضمون من 7 إلى 14 يوماً", textEn: "Guaranteed delivery in 7–14 days" },
-      { textAr: "مراجعتان مجانيتان مشمولتان", textEn: "Two free revision rounds included" },
-      { textAr: "دعم بعد الإطلاق من 30 إلى 90 يوماً", textEn: "30–90 days of support after launch" },
+      { textAr: websiteTimelineNote("ar"), textEn: websiteTimelineNote("en") },
+      { textAr: "تخصيص المحتوى الأولي ضمن النموذج المختار", textEn: "Initial content personalization within the chosen model" },
+      { textAr: "صيانة اختيارية بعرض سعر منفصل", textEn: "Optional maintenance quoted separately" },
       { textAr: "فريق تصميم وتطوير و SEO في مكان واحد", textEn: "Design, development and SEO in one team" },
-      { textAr: "دفعات آمنة عبر USDT أو البنك مع فاتورة", textEn: "Secure instalments via USDT or bank transfer, with an invoice" },
+      { textAr: "وسائل الدفع المعروضة في صفحة الدفع مع فاتورة", textEn: "Payment methods shown at checkout, with an invoice" },
     ],
     criteria: [
       {
         labelAr: "ضمان الموعد",
         labelEn: "Guaranteed date",
-        usAr: "من 7 إلى 14 يوماً، مكتوب في العرض",
-        usEn: "7–14 days, written into the quote",
+        usAr: websiteTimelineNote("ar"),
+        usEn: websiteTimelineNote("en"),
         themAr: "تقديري، ومخالفته غالباً بلا تعويض",
         themEn: "An estimate, usually with no compensation if it slips",
         winner: "us",
@@ -621,8 +614,8 @@ export const comparisons: Record<string, ComparisonSeo> = {
       {
         labelAr: "الدعم بعد التسليم",
         labelEn: "Support after delivery",
-        usAr: "30–90 يوماً حسب الباقة",
-        usEn: "30–90 days depending on the plan",
+        usAr: "صيانة منفصلة حسب الاتفاق",
+        usEn: "Separate maintenance, according to agreement",
         themAr: "دفعات منفصلة أو بلا دعم",
         themEn: "Separate hourly fees, or nothing at all",
         winner: "us",
@@ -648,8 +641,8 @@ export const comparisons: Record<string, ComparisonSeo> = {
       {
         labelAr: "الفردية في الأسلوب",
         labelEn: "One-of-a-kind style",
-        usAr: "تصميم حصري على هويتك في كل مشروع",
-        usEn: "A bespoke design on your brand for every project",
+        usAr: "كل النماذج بنفس السعر الأساسي",
+        usEn: "Every model at the same base price",
         themAr: "قوالب جاهزة يتكرر استخدامها",
         themEn: "The same templates reused across clients",
         winner: "us",
@@ -694,26 +687,26 @@ export const comparisons: Record<string, ComparisonSeo> = {
       {
         qAr: "كم يستغرق المشروع؟",
         qEn: "How long does a project take?",
-        aAr: "الخدمات السريعة من 24 إلى 72 ساعة، والمواقع الكاملة من 7 إلى 14 يوماً حسب عدد الصفحات والحاجيات (متجر، حجز، لغات). الموعد يُثبَّت في العرض قبل أي دفعة.",
-        aEn: "Standalone services take 24–72 hours; complete sites take 7–14 days depending on page count and features (store, booking, languages). The date is fixed in the quote before any payment.",
+        aAr: websiteTimelineNote("ar"),
+        aEn: websiteTimelineNote("en"),
       },
       {
         qAr: "ماذا لو لم تعجبني النتيجة؟",
         qEn: "What if I don't like the result?",
-        aAr: "كل مشروع يشمل مراجعتين مجانيتين ضمن النطاق المتفق عليه، ونعرض تقريراً قبل/بعد بأرقام السرعة. إن لم نصل إلى الاتفاق، نعيد العمل — عربون الحجز 1 دولار فقط يُخصم من السعر النهائي.",
-        aEn: "Every project includes two free revision rounds within the agreed scope, plus a before/after report with performance figures. If we still cannot agree, we redo the work — the $1 priority reservation deposit is deducted from the final price.",
+        aAr: "تخصيص المحتوى الأولي ضمن النموذج مشمول. نراجع النتيجة وفق النطاق المكتوب؛ الطلبات الجديدة والتغيير الهيكلي يحتاجان اتفاقاً منفصلاً.",
+        aEn: "Initial content personalization within the model is included. Delivery is reviewed against the written scope; new requests and structural changes need a separate agreement.",
       },
       {
         qAr: "هل أستطيع الدفع بالتدريج؟",
         qEn: "Can I pay in instalments?",
-        aAr: "نعم — دفعة مقدمة 50% لبدء العمل والباقي عند التسليم، أو تقسيط على دفعتين/ثلاث عبر NOWPayments (ودفعات بـ USDT). كل دفعة لها فاتورة وإيصال وتاريخ استحقاق واضح.",
-        aEn: "Yes — a 50% deposit starts the work and the balance falls due on delivery, or you can split it into 2–3 instalments through NOWPayments (USDT recommended). Every payment comes with an invoice, a receipt and a deadline.",
+        aAr: paymentAvailabilityNote("ar"),
+        aEn: paymentAvailabilityNote("en"),
       },
     ],
     relatedServices: ["restyle", "landing", "fix-optimize"],
     related: ["wix", "seo-agency"],
-    ctaAr: "اطلب عرض سعر مكتوباً خلال ساعتين",
-    ctaEn: "Get a written quote within two hours",
+    ctaAr: "اطلب عرض سعر مكتوباً خلال أوقات العمل",
+    ctaEn: "Get a written quote during opening hours",
   },
 
   "seo-agency": {
@@ -739,10 +732,8 @@ export const comparisons: Record<string, ComparisonSeo> = {
       "اشتراك SEO يشتري وقت الفريق. الموقع الجاهز للبحث يشتري نتيجة تبقى بعد انتهاء الاشتراك.",
     subtitleEn:
       "An SEO retainer buys the agency's time. An SEO-ready website buys a result that stays after the retainer ends.",
-    answerAr:
-      "وكالات SEO الجيدة تستحق الاشتراك حين يكون لديك موقع قائم يحتاج محتوى وبناء روابط مستمراً. أما مشروع جديد، فالأسرع والأوفر بناء الموقع أصلاً: بنية تقنية صحيحة، سرعة 90+، عناوين ووصفات محسّنة، بيانات منظمة، وllms.txt لمحركات الذكاء الاصطناعي. كلفة الاشتراك النموذجية 1000 دولار شهرياً، أي 12000 دولار سنوياً، مقابل دفعة واحدة من 300 دولار لموقع يبقى يعمل بعد انتهاء العقد.",
-    answerEn:
-      "Good SEO agencies earn their retainer when you already have a site that needs continuous content and link building. For a new project, the fastest and cheapest route is to build the site with SEO from the start: correct technical structure, 90+ speed, optimised titles and descriptions, structured data and llms.txt for AI crawlers. A typical retainer runs $1,000 per month — $12,000 a year — against a single $300 payment for a site that keeps working after the contract ends.",
+    answerAr: websiteOfferSummary("ar"),
+    answerEn: websiteOfferSummary("en"),
     keywordsAr: ["اشتراك seo", "وكالة seo", "تحسين محركات البحث", "seo مقابل موقع"],
     keywordsEn: ["seo retainer", "seo agency cost", "seo vs website redesign", "technical seo libya"],
     themPoints: [
@@ -756,17 +747,17 @@ export const comparisons: Record<string, ComparisonSeo> = {
     usPoints: [
       { textAr: "SEO تقني مدمج من اليوم الأول", textEn: "Technical SEO built in from day one" },
       { textAr: "بنية جاهزة للبحث بالذكاء الاصطناعي", textEn: "Structured for AI search (llms.txt, JSON-LD)" },
-      { textAr: "سرعة 90+ — عامل ترتيب مباشر", textEn: "90+ speed — a direct ranking factor" },
+      { textAr: "أسس أداء تقنية، وليست ضمان ترتيب", textEn: "Technical performance foundations, not a ranking guarantee" },
       { textAr: "دفعة واحدة بدل 12 دفعة", textEn: "One payment instead of twelve" },
-      { textAr: "تسليم في 7 أيام", textEn: "Delivered in 7 days" },
+      { textAr: websiteTimelineNote("ar"), textEn: websiteTimelineNote("en") },
       { textAr: "توثيق كامل والملفات عندك", textEn: "Full documentation, and the files are yours" },
     ],
     criteria: [
       {
         labelAr: "الكلفة السنوية",
         labelEn: "Yearly cost",
-        usAr: "دفعة واحدة (من $300) للسنة الأولى",
-        usEn: "One payment (from $300) for year one",
+        usAr: "قاعدة ثابتة من 35 $ مرة واحدة؛ التكاليف الخارجية منفصلة",
+        usEn: "One-time static base from $35; external costs separate",
         themAr: "12 × اشتراك شهري (من $1,000) = $12,000+",
         themEn: "12 × monthly retainer (from $1,000) = $12,000+",
         winner: "us",
@@ -774,8 +765,8 @@ export const comparisons: Record<string, ComparisonSeo> = {
       {
         labelAr: "سرعة النتيجة",
         labelEn: "Time to result",
-        usAr: "موقع مباشر في 7 أيام + أساس تقني جاهز للترقية",
-        usEn: "Site live in 7 days with a technical base ready to grow",
+        usAr: websiteTimelineNote("ar"),
+        usEn: websiteTimelineNote("en"),
         themAr: "3 إلى 6 أشهر قبل نتيجة تُذكر",
         themEn: "3–6 months before a result worth reporting",
         winner: "us",
@@ -847,14 +838,14 @@ export const comparisons: Record<string, ComparisonSeo> = {
       {
         qAr: "ماذا يتضمّن الـ SEO عندكم؟",
         qEn: "What does your SEO include?",
-        aAr: "أساس تقني كامل: سرعة 90+، بنية عناوين ووصفات، روابط داخلية، بيانات منظمة (Service, LocalBusiness, FAQPage, BreadcrumbList)، صور وسوم بديلة، خريطة موقع، وllms.txt لمحركات الذكاء الاصطناعي، إضافة إلى فحص الفهرسة في Search Console بعد الإطلاق.",
-        aEn: "A complete technical foundation: 90+ speed, a title and description architecture, internal linking, structured data (Service, LocalBusiness, FAQPage, BreadcrumbList), images and alt tags, a sitemap, and llms.txt for AI crawlers — plus an indexing check in Search Console after launch.",
+        aAr: "أساس تقني كامل: أسس أداء تقنية، بنية عناوين ووصفات، روابط داخلية، بيانات منظمة (Service, LocalBusiness, FAQPage, BreadcrumbList)، صور وسوم بديلة، خريطة موقع، وllms.txt لمحركات الذكاء الاصطناعي، إضافة إلى فحص الفهرسة في Search Console بعد الإطلاق.",
+        aEn: "A complete technical foundation: technical performance foundations, a title and description architecture, internal linking, structured data (Service, LocalBusiness, FAQPage, BreadcrumbList), images and alt tags, a sitemap, and llms.txt for AI crawlers — plus an indexing check in Search Console after launch.",
       },
       {
         qAr: "كم يستغرق ظهور الموقع في جوجل؟",
         qEn: "How long until the site shows on Google?",
-        aAr: "الفهرسة نفسها تستغرق من أيام إلى أسبوعين بعد الإطلاق. أما الترتيب على الكلمات التجارية فبين 1 و3 أشهر حسب المنافسة في سوقك. الوعد الذي نلتزم به هو الأساس الصحيح خلال 7 أيام، لا مركزًا في الصفحة خلال أسبوع.",
-        aEn: "Indexing itself takes from a few days to two weeks after launch. Ranking for commercial keywords takes between one and three months depending on competition in your market. What we commit to is a correct foundation in 7 days — not page one in a week.",
+        aAr: "موعد التسليم يؤكد حسب النطاق. الفهرسة والترتيب يقررهما محرك البحث، وقد يختلفان حسب المحتوى والمنافسة؛ لا نضمن مهلة أو مركزاً محدداً.",
+        aEn: "Delivery is confirmed according to scope. Search engines determine indexing and ranking; timing varies by content and competition. No indexing deadline or search position is guaranteed.",
       },
       {
         qAr: "هل يمكن شراء خدمة SEO فقط دون موقع؟",
@@ -1150,7 +1141,7 @@ export const comparisonsHubFaqs: Faq[] = [
   {
     qAr: "هل تقبلون مشروعاً واحداً فقط؟",
     qEn: "Do you take on single projects?",
-    aAr: "بالتأكيد. الخدمات السريعة تُسعَّر وفق الأسعار المنشورة وبعرض سعر مكتوب، ونقبل المشاريع الصغيرة كما نقبل المواقع الكاملة. الاستشارة الأولى مجانية وتستغرق ساعتين.",
-    aEn: "Absolutely. Standalone services are quoted from our published prices, and we take small projects as seriously as full sites. The first consultation is free and takes about two hours.",
+    aAr: "بالتأكيد. الخدمات السريعة تُسعَّر وفق الأسعار المنشورة وبعرض سعر مكتوب، ونقبل المشاريع الصغيرة كما نقبل المواقع الكاملة. الاستشارة الأولى مجانية؛ الرد خلال أوقات العمل.",
+    aEn: "Absolutely. Standalone services are quoted from our published prices, and we take small projects as seriously as full sites. The initial consultation is free; replies are handled during opening hours.",
   },
 ];
