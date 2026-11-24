@@ -29,6 +29,7 @@ import {
   type PublicPayGateOption,
 } from "@/lib/paygate-core";
 import { trackEvent } from "@/lib/analytics";
+import { PaymentBrandLogos } from "@/components/payment-methods";
 
 const MAX_QUANTITY = 10;
 /** Mémorise la dernière commande du visiteur pour préremplir le suivi. */
@@ -908,7 +909,7 @@ export function DigitalBuyDialog({ product, denominationId, onClose }: Props) {
                   }`}
                 >
                   <CreditCard className="h-4 w-4 shrink-0" />
-                  <span>{ar ? "بطاقة بنكية / Apple Pay" : "Card / Apple Pay"}</span>
+                  <span>{ar ? "بطاقة ومحافظ رقمية" : "Cards / wallets"}</span>
                 </button>
               )}
               <button
@@ -1039,9 +1040,10 @@ export function DigitalBuyDialog({ product, denominationId, onClose }: Props) {
             {paymentMethod === "paygate" && cardGateway && cardQuote && !belowCardMinimum && (
               <div className="mt-2.5 rounded-xl border border-[var(--accent)]/40 bg-[var(--accent)]/5 px-3.5 py-2.5 text-[12px] leading-5">
                 <div className="flex flex-wrap items-center justify-between gap-2 font-black text-[var(--foreground)]">
-                  <span>{ar ? "Visa · Mastercard · Apple Pay · Google Pay" : "Visa · Mastercard · Apple Pay · Google Pay"}</span>
+                  <span>{ar ? "الدفع بالبطاقة أو المحفظة الرقمية" : "Pay by card or digital wallet"}</span>
                   <span dir="ltr">${cardQuote.billedUsd.toFixed(2)} USD</span>
                 </div>
+                <PaymentBrandLogos className="mt-2" />
                 <p className="mt-1 text-[11px] text-[var(--muted-foreground)]">
                   {cardGateway.feePercent > 0
                     ? ar

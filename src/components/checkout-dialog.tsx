@@ -44,6 +44,7 @@ import {
   type InstallmentCount,
 } from "@/lib/installments";
 import { PaymentGuarantee } from "@/components/payment-guarantee";
+import { PaymentBrandLogos } from "@/components/payment-methods";
 import { trackEvent } from "@/lib/analytics";
 
 interface CreatePaymentResponse {
@@ -669,7 +670,7 @@ export function CheckoutDialog({
                       }`}
                     >
                       <CreditCard className="h-4 w-4 shrink-0" />
-                      <span>{ar ? "بطاقة بنكية" : "Card / Apple Pay"}</span>
+                      <span>{ar ? "بطاقة ومحافظ رقمية" : "Cards / wallets"}</span>
                     </button>
                   )}
                   <button
@@ -711,9 +712,10 @@ export function CheckoutDialog({
                 {cardMode && cardGateway && cardQuote && (
                   <div className="rounded-lg border border-[var(--accent)]/40 bg-[var(--accent)]/5 px-3 py-2 text-[11.5px] leading-5">
                     <div className="flex items-center justify-between font-black">
-                      <span>Visa · Mastercard · Apple Pay · Google Pay</span>
+                      <span>{ar ? "بطاقة أو محفظة رقمية" : "Card or digital wallet"}</span>
                       <span dir="ltr">${cardQuote.billedUsd.toFixed(2)} USD</span>
                     </div>
+                    <PaymentBrandLogos className="mt-2" />
                     {cardGateway.feePercent > 0 && (
                       <p className="mt-0.5 text-[11px] opacity-75">
                         {ar
