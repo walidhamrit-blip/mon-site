@@ -38,3 +38,12 @@ L'utilisateur a confirmé le choix **Google Play Turquie 25 TRY** : offre G2G `G
 5. Implémenter et tester la livraison G2G et sa confirmation : statut, quantités, échecs partiels, expiration, annulation, crash, double webhook, timeout et reprise. Si résultat ambigu, vérifier le statut G2G avant tout nouvel envoi ; escalader manuellement si l'état reste incertain.
 6. Vérifier marge, solde fournisseur, alertes et procédure manuelle, y compris conservation sécurisée des justificatifs. Tester sans achats et sans secrets exposés.
 7. Seulement après revue, tests de bout en bout sans dépense et accord explicite : envisager un pilote unique à quantité maximale 1, avec surveillance humaine et procédure d'arrêt. Ne pas interpréter cette liste comme une autorisation d'activation.
+
+
+## Nouvelle offre et travaux en préparation locale
+
+D'après la capture transmise par l'utilisateur, la nouvelle offre Google Play TR 25 TRY semble être `G1795521210943KM` ; elle affichait prix 1 USD et stock 0. Il faut confirmer son identifiant et ses valeurs par lecture directe de l'API avant toute configuration. L'ancien identifiant `G1795076410074VF` correspond à l'offre antérieure retirée ; ne pas le réutiliser comme pilote. Le coût fournisseur de 0,49 USD est déclaré par l'utilisateur et reste à vérifier au moment du pilote.
+
+Un diagnostic admin local en lecture seule permet d'afficher les champs d'une offre (notamment `code_label`, `delivery_type`, quantités et prix), sans créer de mapping ni modifier le stock. Il n'a pas été exécuté contre l'API réelle dans cet environnement. L'écran d'ajout manuel de codes vu par l'utilisateur comporte un champ Code ; cela ne prouve pas à lui seul le format de livraison API.
+
+Un prototype de validation pure dans `src/lib/g2g-delivery-assessment.ts` teste des formes fictives `order.code` et `order.codes` uniquement après `completed`, ainsi que la confirmation du statut et des quantités G2G. **Il n'est pas raccordé à la file ni à un appel réseau** : le schéma exact de la réponse fournisseur et le format de l'offre n'ont pas été confirmés, aucune chaîne n'est prête à être envoyée, et aucun statut de livraison ne doit être avancé en production par ce prototype. Les erreurs, états ambigus et livraisons partielles exigent une intervention humaine. La livraison, les achats et l'activation de stock restent bloqués ; les tests simulés ne valident pas la concurrence PostgreSQL ni une livraison réelle.

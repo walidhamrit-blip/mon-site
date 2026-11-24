@@ -12,6 +12,12 @@ import {
   Trash2,
 } from "lucide-react";
 
+interface OfferInspection {
+  offerId: string; title: string | null; status: string | null; currency: string | null;
+  unitPrice: number | null; apiQty: number | null; availableQty: number | null;
+  minimumQty: number | null; codeLabel: string | null; deliveryTypes: string[] | null;
+}
+
 interface ConfigStatus {
   apiKey: boolean;
   secretKey: boolean;
@@ -235,6 +241,22 @@ export function G2gPanel() {
     busy: false,
     result: null,
   });
+
+  const [inspectId, setInspectId] = useState("");
+  const [inspection, setInspection] = useState<OfferInspection | null>(null);
+  const [inspectError, setInspectError] = useState("");
+  const [inspectBusy, setInspectBusy] = useState(false);
+  const inspectOffer = async () => {
+    setInspectBusy(true); setInspectError(""); setInspection(null);
+    try {
+      const response = await fetch(`/api/admin/g2g/offer-inspection?offer_id=${encodeURIComponent(inspectId.trim())}`, { cache: "no-store" });
+      const result = await response.json() as { ok?: boolean; offer?: OfferInspection; error?: string };
+      if (!response.ok || !result.ok || !result.offer) throw new Error(result.error ?? "offer_read_failed");
+      setInspection(result.offer);
+    } catch (cause) {
+      setInspectError(cause instanceof Error ? cause.message : "offer_read_failed");
+    } finally { setInspectBusy(false); }
+  };
 
   const [deliveries, setDeliveries] = useState<{
     rows: G2gDeliveryRow[];
@@ -523,6 +545,25 @@ export function G2gPanel() {
           déploiement de la phase 2. Ne collez jamais vos clés dans un chat ou un ticket :
           uniquement dans les variables d&apos;environnement Vercel.
         </p>
+      </div>
+
+      <div className="mt-4 rounded-lg border border-stone-200 bg-stone-50 p-3">
+        <h3 className="text-xs font-bold text-stone-800">Vérifier une offre G2G en lecture seule</h3>
+        <p className="mt-1 text-[11px] text-stone-600">N’ajoute aucun stock, ne modifie aucun mapping et ne déclenche aucun achat. Vérifiez séparément l’inventaire sur G2G.</p>
+        <div className="mt-2 flex flex-wrap items-end gap-2">
+          <label className="min-w-48 flex-1"><span className={labelClass}>Identifiant de l’offre</span><input className={inputClass} value={inspectId} onChange={e => setInspectId(e.target.value.toUpperCase())} placeholder="G1795521210943KM" /></label>
+          <button type="button" onClick={() => void inspectOffer()} disabled={inspectBusy || !inspectId.trim()} className="rounded-lg border border-stone-300 bg-white px-3 py-2 text-xs font-bold disabled:opacity-50">{inspectBusy ? "Lecture…" : "Lire l’offre"}</button>
+        </div>
+        {inspectError && <p role="alert" className="mt-2 text-xs text-red-700">Lecture impossible ({inspectError}). Aucune modification effectuée.</p>}
+        {inspection && <dl className="mt-3 grid gap-1 text-xs text-stone-700 sm:grid-cols-2">
+          <div><dt className="inline font-bold">Offre : </dt><dd className="inline">{inspection.offerId} · {inspection.title ?? "non indiqué"}</dd></div>
+          <div><dt className="inline font-bold">Statut : </dt><dd className="inline">{inspection.status ?? "non indiqué"}</dd></div>
+          <div><dt className="inline font-bold">Prix : </dt><dd className="inline">{inspection.unitPrice ?? "inconnu"} {inspection.currency ?? ""}</dd></div>
+          <div><dt className="inline font-bold">api_qty / stock disponible : </dt><dd className="inline">{inspection.apiQty ?? "inconnu"} / {inspection.availableQty ?? "inconnu"}</dd></div>
+          <div><dt className="inline font-bold">Quantité minimum : </dt><dd className="inline">{inspection.minimumQty ?? "inconnue"}</dd></div>
+          <div><dt className="inline font-bold">Modes de livraison : </dt><dd className="inline">{inspection.deliveryTypes?.join(", ") || "non indiqués"}</dd></div>
+          <div className="sm:col-span-2"><dt className="inline font-bold">Format demandé (code_label) : </dt><dd className="inline">{inspection.codeLabel || "non indiqué — ne pas activer"}</dd></div>
+        </dl>}
       </div>
 
       {error ? (
@@ -859,7 +900,7 @@ export function G2gPanel() {
               >
                 {data.autoDeliveryEnabled ? "ARMÉ (vente bloquée : livraison non vérifiée)" : "désarmé (aucun achat)"}
               </span>{' '}
-              . Passez à <code className="font-mono">1</code> dans les variables Vercel pour autoriser les achats.
+              . Laissez ce coupe-circuit désarmé tant que la livraison n&apos;est pas validée de bout en bout.
             </p>
             <p className="mt-1 text-[11px] font-semibold text-red-700">Activation via cet écran bloquée : format des codes et livraison non vérifiés. Gardez tous les stocks G2G à zéro.</p>
             <p className="mt-1 text-[11px] text-stone-600">
