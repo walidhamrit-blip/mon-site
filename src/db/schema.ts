@@ -110,6 +110,13 @@ export const orders = pgTable("orders", {
   clientName: text("client_name"),
   email: text("email"),
   phone: text("phone"),
+  /**
+   * Identité Telegram du client quand la commande vient du bot
+   * (`/api/telegram-webhook`) : le suivi et la livraison manuelle savent
+   * alors « parler » au bon chat (`src/lib/telegram-delivery.ts`).
+   */
+  telegramChatId: text("telegram_chat_id"),
+  telegramUsername: text("telegram_username"),
   /** Identifiant du paiement chez NOWPayments. */
   paymentId: text("payment_id").unique(),
   payAddress: text("pay_address"),
@@ -486,6 +493,9 @@ export const digitalOrders = pgTable("digital_orders", {
   recipientName: text("recipient_name"),
   recipientPhone: text("recipient_phone"),
   locale: text("locale").notNull().default("ar"),
+  /** Identité Telegram du client (commandes créées depuis le bot). */
+  telegramChatId: text("telegram_chat_id"),
+  telegramUsername: text("telegram_username"),
 
   /** pending | paid | manual | delivered | failed */
   status: text("status").notNull().default("pending"),
@@ -718,6 +728,18 @@ export const telegramSubscribers = pgTable("telegram_subscribers", {
   optedInAt: timestamp("opted_in_at", { withTimezone: true }),
   /** Dernier message reçu du client (support), pour l'admin. */
   lastMessage: text("last_message"),
+  /**
+   * Dernier e-mail utilisé à la caisse du bot : proposé en préremplissage
+   * (le code part toujours sur un e-mail réel, jamais une adresse inventée).
+   */
+  checkoutEmail: text("checkout_email"),
+  /**
+   * État éphémère de navigation dans la boutique inline (produits de la
+   * page courante, montant choisi, caisse en attente d'e-mail). jsonb :
+   * les callback Telegram n'ont que 64 octets, les slugs complets restent
+   * donc côté serveur.
+   */
+  shopState: jsonb("shop_state"),
 });
 
 export type TelegramSubscriber = typeof telegramSubscribers.$inferSelect;

@@ -156,6 +156,8 @@ function toRow(
     recipientEmail: order.recipientEmail,
     recipientName: order.recipientName,
     recipientPhone: order.recipientPhone,
+    telegramChatId: order.telegramChatId,
+    telegramUsername: order.telegramUsername,
     status: order.normalizedStatus,
     paymentMethod: phoneCard ? "phone_card" : "nowpayments",
     phoneCardStatus: phoneCard?.status ?? null,

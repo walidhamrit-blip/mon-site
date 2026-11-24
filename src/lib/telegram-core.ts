@@ -119,6 +119,8 @@ export function detectTelegramLocale(
 
 export interface TelegramCopy {
   welcome: string;
+  /** Message d'accueil aux nouveaux arrivants : choix de la langue. */
+  welcomeChoice: string;
   menuTitle: string;
   catalog: string;
   catalogButton: string;
@@ -145,6 +147,7 @@ export interface TelegramCopy {
   langSaved: string;
   langPrompt: string;
   buttons: {
+    shop: string;
     catalog: string;
     orders: string;
     offers: string;
@@ -163,6 +166,8 @@ const COPY: Record<TelegramLocale, TelegramCopy> = {
   fr: {
     welcome:
       "Bienvenue chez {site} 👋\n\nJe suis votre assistant Telegram : je vous aide à trouver un produit, à suivre une commande et à recevoir les offres.\n\nQue voulez-vous faire ?",
+    welcomeChoice:
+      "Bienvenue chez {site} 👋\n\nChoose your language / اختر لغتك :",
     menuTitle: "Que souhaitez-vous faire ?",
     catalog: "Le catalogue complet est ici — codes, cartes cadeaux et abonnements :\n{store}",
     catalogButton: "Ouvrir la boutique",
@@ -188,13 +193,14 @@ const COPY: Record<TelegramLocale, TelegramCopy> = {
       "Un humain peut vous répondre :\n\n💬 WhatsApp : {whatsapp}\n✉️ {email}\n\nVotre message vient d'être transmis à l'équipe.",
     forwarded: "Message transmis à l'équipe ✅ Nous revenons vers vous rapidement.",
     help:
-      "Voici ce que je sais faire :\n\n/start — menu principal\n/codes — catalogue et boutique\n/commande RÉFÉRENCE — statut d'une commande\n/prevenir RÉFÉRENCE — recevoir le code ici\n/offres — recevoir nos offres\n/stop — ne plus recevoir les offres\n/aide — cette aide\n\nUne question ? Écrivez-la simplement ici.",
+      "Voici ce que je sais faire :\n\n/start — menu principal\n/shop — acheter dans la boutique\n/codes — catalogue et boutique\n/commande RÉFÉRENCE — statut d'une commande\n/prevenir RÉFÉRENCE — recevoir le code ici\n/offres — recevoir nos offres\n/stop — ne plus recevoir les offres\n/aide — cette aide\n\nUne question ? Écrivez-la simplement ici.",
     unsubscribed: "Vous ne recevrez plus d'offres. Tapez /start pour rouvrir le menu.",
     fallback:
       "Je n'ai pas compris cette demande. Choisissez une option ci-dessous, ou écrivez « humain » pour joindre l'équipe.",
     langSaved: "Langue enregistrée : français 🇫🇷",
     langPrompt: "Choisissez votre langue :",
     buttons: {
+      shop: "🛒 Boutique",
       catalog: "🛍️ Catalogue",
       orders: "📦 Suivre une commande",
       offers: "🎁 Offres & promos",
@@ -221,6 +227,8 @@ const COPY: Record<TelegramLocale, TelegramCopy> = {
   ar: {
     welcome:
       "مرحباً بك في {site} 👋\n\nأنا مساعدك على تيليجرام: أساعدك على إيجاد منتج، متابعة طلب، واستلام العروض.\n\nماذا تريد أن تفعل؟",
+    welcomeChoice:
+      "مرحباً بك في {site} 👋\n\nChoose your language / اختر لغتك :",
     menuTitle: "ماذا تريد أن تفعل؟",
     catalog: "الكتالوج الكامل هنا — أكواد، بطاقات هدايا واشتراكات:\n{store}",
     catalogButton: "فتح المتجر",
@@ -246,13 +254,14 @@ const COPY: Record<TelegramLocale, TelegramCopy> = {
       "يمكن لأحد أعضاء الفريق الرد عليك:\n\n💬 واتساب: {whatsapp}\n✉️ {email}\n\nتم تحويل رسالتك إلى الفريق.",
     forwarded: "تم تحويل رسالتك إلى الفريق ✅ سنعود إليك قريباً.",
     help:
-      "هذه هي أوامري:\n\n/start — القائمة الرئيسية\n/codes — الكتالوج والمتجر\n/commande رقم الطلب — حالة الطلب\n/prevenir رقم الطلب — استلام الكود هنا\n/offres — استلام العروض\n/stop — إلغاء اشتراك العروض\n/aide — المساعدة\n\nلديك سؤال؟ اكتبه هنا مباشرة.",
+      "هذه هي أوامري:\n\n/start — القائمة الرئيسية\n/shop — الشراء من المتجر\n/codes — الكتالوج والمتجر\n/commande رقم الطلب — حالة الطلب\n/prevenir رقم الطلب — استلام الكود هنا\n/offres — استلام العروض\n/stop — إلغاء اشتراك العروض\n/aide — المساعدة\n\nلديك سؤال؟ اكتبه هنا مباشرة.",
     unsubscribed: "لن تستلم عروضاً بعد الآن. اكتب /start لإعادة فتح القائمة.",
     fallback:
       "لم أفهم هذا الطلب. اختر أحد الخيارات أدناه، أو اكتب «humain» للتواصل مع الفريق.",
     langSaved: "تم حفظ اللغة: العربية 🇱🇾",
     langPrompt: "اختر لغتك:",
     buttons: {
+      shop: "🛒 المتجر",
       catalog: "🛍️ الكتالوج",
       orders: "📦 متابعة طلب",
       offers: "🎁 العروض",
@@ -279,6 +288,8 @@ const COPY: Record<TelegramLocale, TelegramCopy> = {
   en: {
     welcome:
       "Welcome to {site} 👋\n\nI'm your Telegram assistant: find a product, track an order, and get our offers.\n\nWhat would you like to do?",
+    welcomeChoice:
+      "Welcome to {site} 👋\n\nChoose your language / اختر لغتك :",
     menuTitle: "What would you like to do?",
     catalog: "The full catalogue — codes, gift cards and subscriptions:\n{store}",
     catalogButton: "Open the store",
@@ -304,13 +315,14 @@ const COPY: Record<TelegramLocale, TelegramCopy> = {
       "A human can reply:\n\n💬 WhatsApp: {whatsapp}\n✉️ {email}\n\nYour message has been forwarded to the team.",
     forwarded: "Message forwarded to the team ✅ We'll get back to you shortly.",
     help:
-      "Here's what I can do:\n\n/start — main menu\n/codes — catalogue & store\n/commande REFERENCE — order status\n/prevenir REFERENCE — get the code here\n/offres — get our offers\n/stop — stop offers\n/aide — this help\n\nAny question? Just type it here.",
+      "Here's what I can do:\n\n/start — main menu\n/shop — buy from the shop\n/codes — catalogue & store\n/commande REFERENCE — order status\n/prevenir REFERENCE — get the code here\n/offres — get our offers\n/stop — stop offers\n/aide — this help\n\nAny question? Just type it here.",
     unsubscribed: "You won't receive offers anymore. Type /start to reopen the menu.",
     fallback:
       "I didn't get that. Pick an option below, or type “human” to reach the team.",
     langSaved: "Language saved: English 🇬🇧",
     langPrompt: "Choose your language:",
     buttons: {
+      shop: "🛒 Shop",
       catalog: "🛍️ Catalogue",
       orders: "📦 Track an order",
       offers: "🎁 Offers",
@@ -369,27 +381,32 @@ export function mainMenuKeyboard(
   const copy = botCopy(lang);
   return [
     [
+      { text: copy.buttons.shop, callback_data: "shop" },
       { text: copy.buttons.catalog, url: links.store },
+    ],
+    [
       { text: copy.buttons.orders, callback_data: "menu:orders" },
-    ],
-    [
       { text: copy.buttons.offers, callback_data: "menu:offers" },
-      { text: copy.buttons.human, url: links.whatsapp },
     ],
     [
+      { text: copy.buttons.human, url: links.whatsapp },
       { text: copy.buttons.language, callback_data: "menu:lang" },
-      { text: copy.buttons.site, url: links.site },
     ],
   ];
 }
 
+/**
+ * Choix de langue — bilingue, comme le site (ar / en).
+ * Affichée dès `/start` aux nouveaux arrivants et via le bouton 🌍.
+ * Les abonnés « fr » historiques restent servis (le clavier ne propose
+ * plus que les deux langues du site) ; leurs textes existants ne changent pas.
+ */
 export function languageKeyboard(): TelegramButton[][] {
   return [
     [
-      { text: "العربية", callback_data: "lang:ar" },
-      { text: "Français", callback_data: "lang:fr" },
+      { text: "🇬🇧 English", callback_data: "lang:en" },
+      { text: "🇱🇾 العربية", callback_data: "lang:ar" },
     ],
-    [{ text: "English", callback_data: "lang:en" }],
   ];
 }
 
@@ -408,6 +425,7 @@ export function offersKeyboard(lang: TelegramLocale): TelegramButton[][] {
 export function botCommandList(): { command: string; description: string }[] {
   return [
     { command: "start", description: "Menu principal / Main menu / القائمة" },
+    { command: "shop", description: "Buy codes & gift cards / شراء الأكواد والبطاقات" },
     { command: "codes", description: "Catalogue & boutique / الكتالوج" },
     { command: "commande", description: "Statut d'une commande (ex. /commande DGC-…)" },
     {

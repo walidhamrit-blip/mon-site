@@ -169,6 +169,16 @@ export interface CreateDigitalCheckoutInput {
   name?: string;
   phone?: string;
   locale?: "ar" | "en";
+  /**
+   * Identité Telegram quand la commande vient du bot : stockée sur les
+   * deux tables pour le suivi et la livraison (l'équipe retrouve le chat,
+   * les codes peuvent être poussés dans Telegram avec consentement).
+   */
+  telegram?: {
+    chatId: string;
+    username?: string | null;
+    firstName?: string | null;
+  };
 }
 
 export interface DigitalCheckoutResult {
@@ -188,7 +198,7 @@ export interface DigitalCheckoutResult {
  */
 export async function createDigitalCheckout(
   input: CreateDigitalCheckoutInput,
-  req: Request,
+  req?: Request,
 ): Promise<DigitalCheckoutResult> {
   if (LEGACY_SUPPLIER_RETIRED) {
     throw new DigitalOrderError("supplier_retired", 410, RETIRED_SUPPLIER_MESSAGE);
@@ -273,6 +283,8 @@ export async function createDigitalCheckout(
       recipientName: input.name?.trim() || null,
       recipientPhone: input.phone?.trim() || null,
       locale,
+      telegramChatId: input.telegram?.chatId?.trim() || null,
+      telegramUsername: input.telegram?.username?.trim() || null,
       status: "pending",
       fulfillment,
       reloadlyProductId: product.reloadlyProductId ?? null,
@@ -296,10 +308,12 @@ export async function createDigitalCheckout(
       currency: "usd",
       installments: 1,
       installmentIndex: 1,
-      clientName: input.name?.trim() || null,
+      clientName: input.name?.trim() || input.telegram?.firstName?.trim() || null,
       email: input.email,
       phone: input.phone?.trim() || null,
       locale,
+      telegramChatId: input.telegram?.chatId?.trim() || null,
+      telegramUsername: input.telegram?.username?.trim() || null,
       digitalOrderId: digitalOrderId ?? null,
     });
   } catch (error) {

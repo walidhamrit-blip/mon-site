@@ -1,0 +1,360 @@
+#!/usr/bin/env node
+/**
+ * Boutique inline du bot Telegram — garde-fous du noyau PUR
+ * (`src/lib/telegram-shop-core.ts`), sans réseau ni base.
+ *
+ * Ce que ces tests protègent :
+ *   1. les callback_data tiennent dans les 64 octets de Telegram et se
+ *      décodent à l'identique (aller-retour) ;
+ *   2. la navigation rend des claviers cohérents : catégories → produits
+ *      (avec prix) → montants → détails & paiement, avec pagination ;
+ *   3. le clavier ne transporte JAMAIS de slug complet (les index courts
+ *      sont résolus dans l'état serveur) ;
+ *   4. le HTML dynamique est échappé (titres produits / libellés hostiles) ;
+ *   5. un produit à champs acheteur (identifiant joueur) ne propose PAS de
+ *      bouton « Acheter » en chat, seulement la fiche web ;
+ *   6. la vue paiement expose le lien facture + le consentement « recevoir
+ *      le code ici » et efface la caisse en attente ;
+ *   7. l'e-mail de livraison est validé (la caisse du site l'exige) ;
+ *   8. les deux langues (ar / en) exposent exactement les mêmes clés.
+ */
+
+import { after, test } from "node:test";
+import assert from "node:assert/strict";
+import { existsSync, mkdtempSync, rmSync, statSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { fileURLToPath, pathToFileURL } from "node:url";
+import { build } from "esbuild";
+
+const root = fileURLToPath(new URL("..", import.meta.url));
+const srcRoot = join(root, "src");
+const outDir = mkdtempSync(join(tmpdir(), "telegram-shop-"));
+after(() => rmSync(outDir, { recursive: true, force: true }));
+
+const aliasPlugin = {
+  name: "alias-at-src",
+  setup(builder) {
+    builder.onResolve({ filter: /^@\// }, (args) => {
+      const base = join(srcRoot, args.path.slice(2));
+      const candidates = [base, `${base}.ts`, `${base}.tsx`, join(base, "index.ts")];
+      const found = candidates.find(
+        (candidate) => existsSync(candidate) && statSync(candidate).isFile(),
+      );
+      return { path: found ?? base };
+    });
+  },
+};
+
+async function compile(entry, name) {
+  const outfile = join(outDir, `${name}.mjs`);
+  await build({
+    entryPoints: [join(srcRoot, entry)],
+    outfile,
+    bundle: true,
+    format: "esm",
+    platform: "node",
+    target: "node22",
+    plugins: [aliasPlugin],
+    logLevel: "silent",
+  });
+  return import(`${pathToFileURL(outfile).href}?t=${Date.now()}`);
+}
+
+const shop = await compile("lib/telegram-shop-core.ts", "telegram-shop-core");
+const {
+  EMPTY_SHOP_STATE,
+  fillShopTemplate,
+  formatShopUsd,
+  isPlausibleEmail,
+  pageCountOf,
+  pageSlice,
+  parseShopCallback,
+  shopCallback,
+  shopCallbackFits,
+  shopCategoriesView,
+  shopCategoryView,
+  shopCopy,
+  shopDenominationView,
+  shopEmailPromptView,
+  shopPaymentView,
+  shopProductView,
+  shopProductsOfKind,
+  shopFromPrice,
+  SHOP_CALLBACK_PREFIX,
+} = shop;
+
+const LINKS = { site: "https://nokhba.net.ly", store: "https://nokhba.net.ly/codes" };
+
+/** Fiche de test, structurellement identique à `DigitalProduct`. */
+function fakeProduct(overrides = {}) {
+  return {
+    slug: "playstation-store-us",
+    kind: "gift_card",
+    status: "available",
+    platform: "PlayStation",
+    regions: ["US"],
+    titleAr: "بطاقة بلايستيشن أمريكية",
+    titleEn: "PlayStation Store (US)",
+    descriptionAr: "شحن محفظة بلايستيشن الأمريكية فوراً.",
+    descriptionEn: "Top up your US PlayStation wallet instantly.",
+    deliveryNoteAr: "الكود يصل بالبريد خلال دقائق.",
+    deliveryNoteEn: "Code by email within minutes.",
+    denominations: [
+      { id: "psn-10", label: "$10", faceValue: "10 USD", priceUsd: 11.5, available: true },
+      { id: "psn-25", label: "$25", faceValue: "25 USD", priceUsd: 27.9, available: true },
+      { id: "psn-50", label: "$50", faceValue: "50 USD", priceUsd: 0, available: true }, // prix non configuré
+      { id: "psn-100", label: "$100", faceValue: "100 USD", priceUsd: 109, available: false }, // épuisé
+    ],
+    ...overrides,
+  };
+}
+
+/* ------------------------------ Callback data ----------------------------- */
+
+test("les callbacks boutique tiennent dans 64 octets et bouclent", () => {
+  const cases = [
+    { view: "root" },
+    { view: "category", kind: "subscription_code", page: 12 },
+    { view: "product", index: 7 },
+    { view: "productPage", page: 3 },
+    { view: "denomination", index: 9 },
+    { view: "quantity", delta: 1 },
+    { view: "quantity", delta: -1 },
+    { view: "buy" },
+    { view: "email" },
+    { view: "cancel" },
+    { view: "pay" },
+    { view: "watch", ref: "DGC-1A2B3C4D5E6F" },
+  ];
+  for (const callback of cases) {
+    const data = shopCallback(callback);
+    assert.ok(data.length <= 64, `callback trop longue : ${data}`);
+    assert.ok(shopCallbackFits(callback), `shopCallbackFits : ${data}`);
+    const decoded = parseShopCallback(data);
+    assert.deepEqual(decoded, callback, data);
+  }
+  assert.equal(shopCallback({ view: "root" }), SHOP_CALLBACK_PREFIX);
+});
+
+test("les callbacks inconnues ou mal formées sont rejetées", () => {
+  assert.equal(parseShopCallback(""), null);
+  assert.equal(parseShopCallback(null), null);
+  assert.equal(parseShopCallback("menu:home"), null);
+  assert.equal(parseShopCallback("shop:unknown:1"), null);
+  assert.equal(parseShopCallback("shop:p:-3"), null);
+  assert.equal(parseShopCallback("shop:w:"), null);
+  assert.equal(parseShopCallback("shop:c:"), null);
+  // Le préfixe boutique n'engloutit pas les autres modules du bot.
+  assert.equal(parseShopCallback("shopkeeper"), null);
+});
+
+/* ------------------------------- Navigation ------------------------------- */
+
+const CATALOG = [
+  fakeProduct(),
+  fakeProduct({ slug: "steam-wallet", kind: "game_topup", titleEn: "Steam Wallet", titleAr: "محفظة ستيم" }),
+  fakeProduct({ slug: "not-for-sale", status: "coming_soon" }),
+  fakeProduct({ slug: "no-denoms", denominations: [] }),
+];
+
+test("les catégories affichent le nombre de produits vendables", () => {
+  for (const locale of ["ar", "en"]) {
+    const view = shopCategoriesView(CATALOG, locale, LINKS);
+    assert.match(view.text, /🛒/);
+    // 4 familles du site + retour menu.
+    const callbacks = view.keyboard.flat().map((b) => b.callback_data);
+    assert.equal(callbacks.filter((data) => data?.startsWith("shop:c:")).length, 4);
+    assert.ok(callbacks.includes("shop:c:gift_card:1"));
+    assert.ok(callbacks.includes("shop:c:subscription_code:1"));
+    assert.ok(callbacks.includes("menu:home"));
+    // Le compteur n'expose pas les fiches hors vente (coming_soon, sans montants).
+    const giftCardRow = view.keyboard.flat().find((b) => b.callback_data === "shop:c:gift_card:1");
+    assert.match(giftCardRow.text, /\(1\)/);
+  }
+});
+
+test("la page produits liste des prix et ne transporte que des index", () => {
+  const view = shopCategoryView(CATALOG, "gift_card", 1, "en", LINKS);
+  assert.match(view.text, /1 product\(s\)/);
+  const buttons = view.keyboard.flat().filter((b) => b.callback_data?.startsWith("shop:p:"));
+  assert.equal(buttons.length, 1);
+  assert.equal(buttons[0].callback_data, "shop:p:0");
+  assert.match(buttons[0].text, /PlayStation Store \(US\)/);
+  // « Produits (avec prix) » : le prix minimum figure sur le bouton.
+  assert.match(buttons[0].text, /from \$11\.50/);
+  // État : la page résout l'index → slug côté serveur uniquement.
+  assert.deepEqual(view.state.products, ["playstation-store-us"]);
+  assert.equal(view.state.kind, "gift_card");
+  assert.equal(view.state.page, 1);
+});
+
+test("la pagination des produits borne les pages et découpe par 8", () => {
+  assert.equal(pageCountOf(8, 8), 1);
+  assert.equal(pageCountOf(9, 8), 2);
+  assert.equal(pageCountOf(0, 8), 1);
+  const many = Array.from({ length: 18 }, (_, i) =>
+    fakeProduct({ slug: `product-${i}`, kind: "software_key" }),
+  );
+  assert.equal(shopProductsOfKind(many, "software_key").length, 18);
+  const page2 = shopCategoryView(many, "software_key", 9, "en", LINKS);
+  // Page hors bornes → dernière page réelle.
+  assert.deepEqual(page2.state.products.length, 2);
+  assert.equal(page2.state.page, 3);
+  const nav = page2.keyboard.flat().map((b) => b.callback_data);
+  assert.ok(nav.includes("shop:c:software_key:2")); // ◀️
+  assert.ok(nav.includes("shop:c:software_key:3")); // position courante
+  const first = shopCategoryView(many, "software_key", 1, "en", LINKS);
+  assert.ok(
+    first.keyboard.flat().some((b) => b.callback_data === "shop:c:software_key:2"),
+  );
+});
+
+test("une famille vide reste utilisable (message + retour)", () => {
+  const view = shopCategoryView(CATALOG, "subscription_code", 1, "en", LINKS);
+  assert.match(view.text, /Nothing on sale/);
+  assert.ok(
+    view.keyboard.flat().some((b) => b.callback_data === "shop"),
+  );
+});
+
+/* --------------------------- Produit & montants --------------------------- */
+
+test("la fiche produit échappe le HTML hostile et liste les montants vendus", () => {
+  const hostile = fakeProduct({
+    titleEn: '<script>alert("x")</script>',
+    descriptionEn: "Prix <b>gros</b> & taxes",
+  });
+  const view = shopProductView(hostile, 1, "en", LINKS);
+  assert.doesNotMatch(view.text, /<script>/);
+  assert.match(view.text, /&lt;script&gt;/);
+  assert.match(view.text, /&lt;b&gt;/);
+  // Seuls les montants disponibles avec un prix sont cliquables.
+  const denoms = view.keyboard.flat().filter((b) => b.callback_data?.startsWith("shop:d:"));
+  assert.deepEqual(denoms.map((b) => b.callback_data), ["shop:d:0", "shop:d:1"]);
+  assert.match(denoms[0].text, /\$10 · \$11\.50/);
+  // L'état enregistre les identifiants de montants affichés.
+  assert.deepEqual(view.state.denoms, ["psn-10", "psn-25"]);
+});
+
+test("les détails calculent le total et bornent la quantité", () => {
+  const product = fakeProduct({
+    denominations: [
+      { id: "psn-10", label: "$10", faceValue: "10 USD", priceUsd: 11.5, available: true, maxQuantity: 3 },
+    ],
+  });
+  const view = shopDenominationView(product, product.denominations[0], 5, 1, "en", LINKS);
+  assert.match(view.text, /Quantity: <b>3<\/b>/);
+  assert.match(view.text, /Total: <b>\$34\.50<\/b>/);
+  const plus = view.keyboard.flat().filter((b) => b.callback_data === "shop:q:+");
+  assert.equal(plus.length, 2); // ➕ et le compteur
+  assert.ok(view.state.qty === 3);
+  const below = shopDenominationView(product, product.denominations[0], 0, 1, "en", LINKS);
+  assert.match(below.text, /Quantity: <b>1<\/b>/);
+});
+
+test("un produit à champs acheteur n'offre pas d'achat en chat", () => {
+  const withFields = fakeProduct({
+    kind: "game_topup",
+    slug: "roblox-robux",
+    denominations: [
+      {
+        id: "rbx-800",
+        label: "800 Robux",
+        faceValue: "800 Robux",
+        priceUsd: 12.4,
+        available: true,
+        fields: [{ key: "user_id", label: "Roblox user ID", type: "text" }],
+      },
+    ],
+  });
+  const view = shopDenominationView(withFields, withFields.denominations[0], 1, 1, "en", LINKS);
+  const callbacks = view.keyboard.flat().map((b) => b.callback_data ?? "");
+  assert.ok(!callbacks.includes("shop:buy"));
+  const webUrl = view.keyboard.flat().find((b) => b.url?.includes("/codes/roblox-robux"));
+  assert.ok(webUrl, "le bouton renvoie vers la fiche web");
+});
+
+/* --------------------------------- Paiement -------------------------------- */
+
+test("la vue paiement expose facture, autres moyens et consentement", () => {
+  const view = shopPaymentView({
+    ref: "DGC-1A2B3C4D5E6F",
+    title: "PlayStation Store (US)",
+    label: "$25",
+    qty: 2,
+    totalUsd: "$55.80",
+    paymentUrl: "https://nowpayments.io/invoice/abc",
+    slug: "playstation-store-us",
+    email: "client@example.com",
+    locale: "en",
+    links: LINKS,
+  });
+  assert.match(view.text, /DGC-1A2B3C4D5E6F/);
+  assert.match(view.text, /client@example\.com/);
+  assert.match(view.text, /\$55\.80/);
+  const flat = view.keyboard.flat();
+  assert.deepEqual(
+    flat.filter((b) => b.callback_data?.startsWith("shop:w:")).map((b) => b.callback_data),
+    ["shop:w:DGC-1A2B3C4D5E6F"],
+  );
+  const pay = flat.find((b) => b.text.includes("Pay now"));
+  assert.equal(pay.url, "https://nowpayments.io/invoice/abc");
+  const other = flat.find((b) => b.text.includes("Card / Skrill"));
+  assert.equal(other.url, "https://nokhba.net.ly/codes/playstation-store-us");
+  // La caisse en attente est effacée, la dernière commande conservée.
+  assert.equal(view.state.pending, null);
+  assert.equal(view.state.lastOrder.ref, "DGC-1A2B3C4D5E6F");
+  assert.equal(view.state.lastOrder.paymentUrl, "https://nowpayments.io/invoice/abc");
+  assert.equal(view.state.lastOrder.qty, 2);
+});
+
+test("la demande d'e-mail montre la commande et une sortie", () => {
+  const view = shopEmailPromptView(
+    { title: "PlayStation Store (US)", label: "$25", totalUsd: "27.90" },
+    "en",
+  );
+  assert.match(view.text, /Which email address/);
+  assert.match(view.text, /name@example\.com/);
+  assert.match(view.text, /\$27\.90/);
+  assert.ok(view.keyboard.flat().some((b) => b.callback_data === "shop:cancel"));
+});
+
+/* --------------------------------- E-mail --------------------------------- */
+
+test("l'e-mail de livraison est validé avant la caisse", () => {
+  assert.equal(isPlausibleEmail("name@example.com"), true);
+  assert.equal(isPlausibleEmail("NAME+tag@sub.example.co"), true);
+  assert.equal(isPlausibleEmail("  spaced@example.com  "), true);
+  assert.equal(isPlausibleEmail("not-an-email"), false);
+  assert.equal(isPlausibleEmail("a@b"), false);
+  assert.equal(isPlausibleEmail("@example.com"), false);
+  assert.equal(isPlausibleEmail("name@"), false);
+  assert.equal(isPlausibleEmail(""), false);
+  assert.equal(isPlausibleEmail(null), false);
+  assert.equal(isPlausibleEmail("name@example.com.<script>"), false);
+});
+
+/* --------------------------------- Textes --------------------------------- */
+
+test("les deux langues exposent exactement les mêmes clés boutique", () => {
+  const reference = Object.keys(shopCopy("en")).sort();
+  assert.deepEqual(Object.keys(shopCopy("ar")).sort(), reference);
+  for (const key of reference) {
+    const value = shopCopy("ar")[key];
+    if (typeof value === "string") assert.ok(value.length > 0, `ar : ${key} vide`);
+  }
+  assert.match(shopCopy("ar").emailPrompt, /اختر|البريد|أرسل/);
+});
+
+test("le format monétaire reste lisible et stable", () => {
+  assert.equal(formatShopUsd(11.5), "$11.50");
+  assert.equal(formatShopUsd(12), "$12");
+  assert.equal(formatShopUsd(12.001), "$12");
+  assert.equal(fillShopTemplate("{ref} — {total}", { ref: "DGC-1", total: "$5" }), "DGC-1 — $5");
+  assert.equal(fillShopTemplate("{inconnu}", { ref: "x" }), "{inconnu}");
+});
+
+test("l'état vide est un objet sans surprise", () => {
+  assert.deepEqual(EMPTY_SHOP_STATE, {});
+});
