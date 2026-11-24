@@ -894,9 +894,18 @@ html[data-chatbot="open"] .back-to-top {
   .payment-ribbon-group { padding-inline-end: .7rem; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .payment-ribbon-track { animation: none; width: max-content; }
+  .payment-ribbon-track { animation: none; width: 100%; justify-content: center; }
   .payment-ribbon-group[aria-hidden="true"] { display: none; }
-  .payment-ribbon-window { overflow-x: auto; }
+  .payment-ribbon-group:not([aria-hidden="true"]) {
+    width: 100%;
+    justify-content: center;
+    padding-inline: .75rem;
+  }
+  .payment-ribbon-content,
+  .payment-ribbon-content > div { flex-wrap: wrap; justify-content: center; }
+  .payment-ribbon-content { width: 100%; }
+  .payment-ribbon-content > div { flex: 1 1 auto; min-width: 0; }
+  .payment-ribbon-window { overflow: visible; }
 }
 .payment-ribbon-content,
 .payment-ribbon-content > div {
