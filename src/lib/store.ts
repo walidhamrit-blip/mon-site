@@ -6,6 +6,7 @@ import { settings } from "@/db/schema";
 import { siteConfig } from "@/lib/config";
 import { normalizePhoneCardPaymentsEnabled } from "@/lib/phone-card-core";
 import { normalizeManualPaymentsConfig } from "@/lib/manual-payment-core";
+import { normalizePayGateConfig } from "@/lib/paygate-core";
 import { fazercardsMaxOrderUsd } from "@/lib/fazercards";
 import { ensureDemoSeoFields } from "@/lib/ai/seo-generator";
 import {
@@ -181,6 +182,7 @@ export function mergeConfig(override: unknown, phoneCardPaymentsEnabled?: unknow
   // ancienne (bloc absent) retombe sur « tout désactivé, tout vide » — aucune
   // méthode n'est jamais supposée configurée.
   merged.manualPayments = normalizeManualPaymentsConfig(merged.manualPayments);
+  merged.paygate = normalizePayGateConfig(merged.paygate);
   return merged as unknown as typeof siteConfig;
 }
 

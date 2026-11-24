@@ -505,6 +505,39 @@ export function ensureSchema(): Promise<void> {
         "CREATE INDEX IF NOT EXISTS manual_payments_status_idx ON manual_payments (status, created_at DESC)",
       );
 
+      // Passerelle Carte Bancaire → USDC Polygon (PayGate.to) : journal des
+      // sessions d'encaissement non-custodial et preuves de callback RSA-SHA256.
+      await pool.query(`
+        CREATE TABLE IF NOT EXISTS paygate_payments (
+          id serial PRIMARY KEY,
+          created_at timestamptz NOT NULL DEFAULT now(),
+          updated_at timestamptz NOT NULL DEFAULT now(),
+          order_ref text NOT NULL UNIQUE REFERENCES orders(ref) ON DELETE CASCADE,
+          merchant_wallet text NOT NULL,
+          address_in text NOT NULL,
+          polygon_address_in text NOT NULL,
+          ipn_token text NOT NULL,
+          callback_url text NOT NULL,
+          checkout_url text NOT NULL,
+          base_amount_usd text NOT NULL,
+          fee_percent text NOT NULL DEFAULT '0',
+          billed_amount_usd text NOT NULL,
+          min_acceptable_usd text NOT NULL,
+          provider text,
+          status text NOT NULL DEFAULT 'pending',
+          value_coin text,
+          value_forwarded_coin text,
+          coin text,
+          txid_in text,
+          txid_out text,
+          paid_at timestamptz,
+          last_detail text
+        )
+      `);
+      await pool.query(
+        "CREATE INDEX IF NOT EXISTS paygate_payments_status_idx ON paygate_payments (status, created_at DESC)",
+      );
+
       // Livraison des projets web : récapitulatif remis au client + validation
       // de recette horodatée (page publique /livraison/<ref>?t=<jeton>).
       await pool.query(`

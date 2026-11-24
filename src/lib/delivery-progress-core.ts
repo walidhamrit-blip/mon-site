@@ -84,11 +84,22 @@ const MANUAL_PAYMENT_LABELS: Record<DeliveryLocale, string> = {
   ar: "التحقق من الدفع",
 };
 
-/** Variante d'affichage d'une commande : crypto, carte ou virement manuel. */
-export type DeliveryVariant = "nowpayments" | "phone_card" | "manual_payment";
+const CARD_GATEWAY_LABELS: Record<DeliveryLocale, string> = {
+  fr: "Confirmation carte",
+  en: "Card confirmation",
+  ar: "تأكيد البطاقة",
+};
+
+/** Variante d'affichage d'une commande : crypto, carte bancaire, carte tél. ou virement manuel. */
+export type DeliveryVariant =
+  | "nowpayments"
+  | "card_gateway"
+  | "phone_card"
+  | "manual_payment";
 
 export function deliveryVariantFor(paymentMethod: string | null | undefined): DeliveryVariant {
   const value = (paymentMethod ?? "").trim().toLowerCase();
+  if (value === "paygate") return "card_gateway";
   if (value === "phone_card") return "phone_card";
   if (value === "manual" || isManualPaymentMethod(value)) {
     return "manual_payment";
@@ -125,6 +136,9 @@ export function deliveryStepLabel(
   }
   if (step === "confirmation" && variant === "manual_payment") {
     return MANUAL_PAYMENT_LABELS[locale] ?? MANUAL_PAYMENT_LABELS.en;
+  }
+  if (step === "confirmation" && variant === "card_gateway") {
+    return CARD_GATEWAY_LABELS[locale] ?? CARD_GATEWAY_LABELS.en;
   }
   return STEP_LABELS[locale]?.[step] ?? STEP_LABELS.en[step];
 }
@@ -200,6 +214,8 @@ const CONFIRMATION_ETA_SECONDS: Record<string, number> = {
   usdterc20: 300,
   usdtbsc: 60,
   usdtpolygon: 60,
+  usdcpolygon: 45,
+  usdc: 60,
   usdtsol: 60,
   usdtton: 60,
   ltc: 600,

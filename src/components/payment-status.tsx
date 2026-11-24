@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { BadgeCheck, Clock, Loader2, XCircle } from "lucide-react";
+import { BadgeCheck, Clock, CreditCard, ExternalLink, Loader2, XCircle } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import { formatUsd } from "@/lib/installments";
 import {
@@ -26,6 +26,7 @@ interface OrderStatus {
   emailMasked: string | null;
   payCurrency: string | null;
   payAmount: string | null;
+  paymentMethod?: string | null;
   status: "pending" | "paid" | "failed" | "expired";
   ipnStatus: string | null;
   createdAt: string;
@@ -374,6 +375,29 @@ export function PaymentStatus({
           )}
         </dl>
       )}
+
+      {tranches.length === 1 &&
+        status === "pending" &&
+        order?.paymentMethod === "paygate" &&
+        tranches[0]?.paymentUrl && (
+          <div className="mt-4 rounded-2xl border border-[var(--accent)]/40 bg-[var(--accent)]/5 p-4 text-start">
+            <p className="text-xs leading-5 opacity-80">
+              {ar
+                ? "صفحة الدفع الآمنة بالبطاقة جاهزة. بعد إتمام الدفع، ستتحدّث هذه الصفحة تلقائياً."
+                : "Your secure card checkout is ready. Once paid, this page updates automatically."}
+            </p>
+            <a
+              href={tranches[0].paymentUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-3 inline-flex h-11 w-full items-center justify-center gap-2 rounded-full bg-[var(--accent)] px-4 text-xs font-black text-[var(--accent-foreground)] transition-colors hover:bg-[var(--accent-hover)]"
+            >
+              <CreditCard className="h-4 w-4" />
+              {ar ? "فتح صفحة الدفع بالبطاقة" : "Open secure card checkout"}
+              <ExternalLink className="h-3.5 w-3.5" />
+            </a>
+          </div>
+        )}
 
       {tranches.length > 1 && (
         <div className="mt-4 rounded-2xl border border-[var(--border)] bg-[var(--secondary)]/40 p-4 text-start">

@@ -84,6 +84,6 @@ export function websiteDepositNote(locale: string): string {
 
 export function paymentAvailabilityNote(locale: string): string {
   return locale === "ar"
-    ? "استخدم وسائل الدفع المتاحة فعلياً في صفحة الدفع: العملات الرقمية عبر NOWPayments أو التحويل اليدوي إذا كان مفعلاً. التحويل اليدوي يحتاج قبولاً بعد التحقق، وليس فورياً. سعر الفوترة بالدولار؛ التحويلات المعروضة بعملات أخرى تقديرية، ويظهر المبلغ النهائي وأي رسوم قبل الموافقة."
-    : "Use the methods actually available at checkout: crypto through NOWPayments, or manual transfer when enabled. Manual transfers require verification and acceptance, not instant approval. Billing is in USD; display conversions are indicative, and the final amount and any fees are shown before approval.";
+    ? "استخدم وسائل الدفع المتاحة فعلياً في صفحة الدفع: العملات الرقمية عبر NOWPayments أو البطاقة البنكية إذا ظهرت كخيار مفعل، أو التحويل اليدوي إذا كان مفعلاً. التحويل اليدوي يحتاج قبولاً بعد التحقق، وليس فورياً. سعر الفوترة بالدولار؛ التحويلات المعروضة بعملات أخرى تقديرية، ويظهر المبلغ النهائي وأي رسوم قبل الموافقة."
+    : "Use the methods actually available at checkout: crypto through NOWPayments, bank card if offered as an enabled option, or manual transfer when enabled. Manual transfers require verification and acceptance, not instant approval. Billing is in USD; display conversions are indicative, and the final amount and any fees are shown before approval.";
 }
