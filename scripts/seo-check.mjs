@@ -451,7 +451,7 @@ function checkPage(entry, html) {
     if (collection?.mainEntity?.["@type"] !== "ItemList") {
       record(page, "error", "ItemList absent du rayon");
     }
-    if (!/href=["']\/codes["']/.test(html)) {
+    if (!/href=["']\/codes(?:\?[^"']*)?["']/.test(html)) {
       record(page, "error", "aucun lien de retour vers /codes depuis le rayon");
     }
   }

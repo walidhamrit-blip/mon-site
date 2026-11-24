@@ -662,5 +662,5 @@ test("A08 : le proxy nettoie l'en-tête de langue interne et le recalcule depuis
   assert.match(proxy, /requestHeaders\.set\(LOCALE_HEADER, urlLocale \?\? LOCALE_DEFAULT_SIGNAL\)/);
   const layout = readFileSync(join(root, "src/app/layout.tsx"), "utf8");
   assert.match(layout, /requestLocale\(siteLocale\(config\)\)/);
-  assert.match(layout, /<I18nProvider defaultLocale=\{defaultLocale\} urlLocale=\{urlLocale \?\? \(isPublic \? defaultLocale : null\)\}>/);
+  assert.match(layout, /<I18nProvider defaultLocale=\{primaryLocale\} urlLocale=\{urlLocale \?\? \(isPublic \? defaultLocale : null\)\}>/);
 });

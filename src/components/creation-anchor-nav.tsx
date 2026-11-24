@@ -4,10 +4,11 @@ import { LocalizedLink as Link } from "@/components/localized-link";
 import { useI18n } from "@/lib/i18n";
 
 const STEPS = [
-  { href: "#pricing", ar: "١. العروض", en: "1. Offers" },
-  { href: "#demos", ar: "٢. النماذج", en: "2. Examples" },
-  { href: "#website-process", ar: "٣. الخطوات", en: "3. Process" },
-  { href: "#lead-form", ar: "٤. طلب عرض", en: "4. Get a quote" },
+  { href: "#website-guide", ar: "١. دليل الاختيار", en: "1. Choice guide" },
+  { href: "#pricing", ar: "٢. العروض", en: "2. Offers" },
+  { href: "#demos", ar: "٣. النماذج", en: "3. Examples" },
+  { href: "#website-process", ar: "٤. الخطوات", en: "4. Process" },
+  { href: "#lead-form", ar: "٥. طلب عرض", en: "5. Get a quote" },
 ] as const;
 
 /**

@@ -318,7 +318,17 @@ function planDocs(config: AssistantConfig): KnowledgeDoc[] {
     keywords: kw(plan.id, plan.name, plan.nameEn, plan.nameEn.replace("+", " plus"), "boutique", "shop", "store", "متجر", "vitrine", "واجهة", "showcase"),
   }));
 
-  return [overview, ...perPlan];
+  const guide: KnowledgeDoc = {
+    id: "website-choice-guide", section: "pricing", path: "/pricing#website-guide",
+    title: { ar: "دليل اختيار الموقع وتقدير الميزانية", en: "Website choice guide & budget estimate" },
+    body: {
+      ar: "في صفحة الأسعار دليل تفاعلي لاختيار اللغات والإدارة والحجز والمتجر والدفع. يعرض الجزء المعروف أو سعراً يبدأ من، وليس عرضاً نهائياً. الوظائف غير المسعرة تحتاج تواصلاً مباشراً مع ملخص الاختيارات، والبنية المشتركة لا تحتسب مرتين. يمكنك وصف طلب غير موجود وإرساله للفريق عبر واتساب أو نسخ الملخص. لا ينشئ الدليل طلب دفع.",
+      en: "The pricing page has an interactive guide for languages, admin tools, booking, store and payments. It shows the known portion or a starting price, not a final quote. Unpriced functions require direct contact with a summary of choices; the shared foundation is not counted twice. Describe an unlisted request and send the summary to our team through WhatsApp or copy it. The guide does not create a payment order.",
+    },
+    keywords: kw("guide", "estimate", "estimator", "budget calculator", "configurator", "help me choose", "estimation", "configurateur", "choisir", "دليل", "تقدير", "اختيار", "ميزانية"),
+    weight: 1.5,
+  };
+  return [overview, guide, ...perPlan];
 }
 
 function paymentDocs(config: AssistantConfig): KnowledgeDoc[] {
