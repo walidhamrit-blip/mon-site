@@ -5,12 +5,17 @@ import { Navbar } from "@/components/navbar";
 import { Footer } from "@/components/footer";
 import { FloatingWidgets } from "@/components/floating-widgets";
 import { PaymentMethodsRibbon } from "@/components/payment-methods";
+import { getSiteDataCachedShared } from "@/lib/catalog-cache";
+import { publicManualPaymentOptions } from "@/lib/manual-payment-public";
 
 // Layout des pages publiques du site (groupe de routes `(site)`).
 // Le panneau d'administration /admin n'est PAS dans ce groupe :
 // il n'affiche donc ni navbar, ni pied de page, ni bouton WhatsApp du site,
 // et n'envoie aucune donnée à Vercel Web Analytics ni à Vercel Speed Insights.
-export default function SiteLayout({ children }: { children: ReactNode }) {
+export default async function SiteLayout({ children }: { children: ReactNode }) {
+  const { config } = await getSiteDataCachedShared();
+  const manualMethods = publicManualPaymentOptions(config.manualPayments).map(({ method }) => method);
+
   return (
     <>
       <div className="public-shell">
@@ -18,7 +23,10 @@ export default function SiteLayout({ children }: { children: ReactNode }) {
       <main className="site-main min-h-screen">
         {children}
       </main>
-      <PaymentMethodsRibbon />
+      <PaymentMethodsRibbon
+        manualMethods={manualMethods}
+        phoneCardEnabled={config.fazercards.phoneCardPaymentsEnabled}
+      />
       {/* @username du bot Telegram, lu côté serveur : aucun préfixe
           NEXT_PUBLIC_ n'est nécessaire (et un jeton ne doit jamais y être). */}
       <Footer telegramBot={process.env.TELEGRAM_BOT_USERNAME} />

@@ -897,3 +897,57 @@ html[data-chatbot="open"] .back-to-top {
   .payment-ribbon-group[aria-hidden="true"] { display: none; }
   .payment-ribbon-window { overflow-x: auto; mask-image: none; }
 }
+.payment-ribbon-content,
+.payment-ribbon-content > div {
+  display: flex;
+  flex: 0 0 auto;
+  flex-wrap: nowrap;
+  align-items: center;
+}
+.payment-ribbon-content { gap: 1rem; }
+.payment-ribbon-content > div { gap: .5rem; }
+.payment-ribbon-separator {
+  width: 1px;
+  height: 23px;
+  flex: 0 0 1px;
+  background: var(--border);
+}
+.payment-brand-nowpayments { color: #202634; font-size: 11px; letter-spacing: -.035em; }
+.payment-now-mark { display: inline-flex; align-items: center; gap: 2px; }
+.payment-now-mark i {
+  display: block;
+  width: 5px;
+  height: 15px;
+  border-radius: 3px;
+  background: #3769ef;
+  transform: skew(-16deg);
+}
+.payment-now-mark i:nth-child(2) { height: 11px; background: #20bfa9; }
+.payment-now-mark i:nth-child(3) { height: 7px; background: #8ac93e; }
+.payment-brand-coin { gap: .3rem; }
+.payment-coin {
+  display: inline-grid;
+  width: 17px;
+  height: 17px;
+  place-items: center;
+  border-radius: 50%;
+  color: white;
+  font-size: 11px;
+  font-weight: 900;
+  line-height: 1;
+}
+.payment-coin-btc { background: #f7931a; }
+.payment-coin-eth { background: #627eea; font-size: 9px; }
+.payment-coin-usdt { background: #26a17b; }
+.payment-coin-usdc { background: #2775ca; }
+.payment-coin-bnb { background: #f3ba2f; color: #fff; }
+.payment-coin-sol { background: #111; color: #80f2d2; }
+.payment-coin-ton { background: #0098ea; }
+.payment-coin-ltc { background: #345d9d; }
+.payment-coin-xrp { background: #23292f; }
+.payment-brand-many-crypto { background: #eff6ff; color: #1949a7; }
+.payment-brand-manual { background: #f8fafc; }
+@media (prefers-reduced-motion: reduce) {
+  .payment-ribbon-content,
+  .payment-ribbon-content > div { flex-wrap: wrap; }
+}
