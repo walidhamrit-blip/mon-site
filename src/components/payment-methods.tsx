@@ -104,14 +104,20 @@ function ManualPaymentLogos({ methods }: { methods: string[] }) {
 }
 
 function PaymentRibbonContent({
+  heading,
   manualMethods,
   phoneCardEnabled,
 }: {
+  heading: string;
   manualMethods: string[];
   phoneCardEnabled: boolean;
 }) {
   return (
     <div className="payment-ribbon-content">
+      <span className="payment-ribbon-heading">
+        <span className="payment-ribbon-dot" aria-hidden="true" />
+        {heading}
+      </span>
       <PaymentBrandLogos />
       <span className="payment-ribbon-separator" aria-hidden="true" />
       <CryptoPaymentLogos />
@@ -144,19 +150,15 @@ export function PaymentMethodsRibbon({
 
   return (
     <section className="payment-ribbon" aria-label={heading}>
-      <div className="payment-ribbon-heading">
-        <span className="payment-ribbon-dot" aria-hidden="true" />
-        {heading}
-      </div>
       <div className="payment-ribbon-window" aria-label={ar ? "البطاقات والمحافظ والعملات الرقمية ووسائل الدفع الإضافية" : "Cards, wallets, crypto and other payment methods"}>
         <div className="payment-ribbon-track">
-          {[0, 1].map((copy) => (
+          {[0, 1, 2, 3].map((copy) => (
             <div
               key={copy}
               className="payment-ribbon-group"
-              aria-hidden={copy === 1 ? "true" : undefined}
+              aria-hidden={copy === 0 ? undefined : "true"}
             >
-              <PaymentRibbonContent manualMethods={manualMethods} phoneCardEnabled={phoneCardEnabled} />
+              <PaymentRibbonContent heading={heading} manualMethods={manualMethods} phoneCardEnabled={phoneCardEnabled} />
             </div>
           ))}
         </div>
