@@ -786,29 +786,12 @@ html[data-chatbot="open"] .back-to-top {
   border-block: 1px solid color-mix(in srgb, var(--border) 80%, transparent);
   background: color-mix(in srgb, var(--card) 94%, var(--accent) 6%);
 }
-.payment-ribbon-heading {
-  display: flex;
-  flex: 0 0 auto;
-  align-items: center;
-  gap: .55rem;
-  color: var(--muted-foreground);
-  font-size: .72rem;
-  font-weight: 800;
-  letter-spacing: .04em;
-  text-transform: uppercase;
-  white-space: nowrap;
-}
-.payment-ribbon-dot {
-  width: .45rem;
-  height: .45rem;
-  border-radius: 999px;
-  background: #20a66a;
-  box-shadow: 0 0 0 4px rgb(32 166 106 / 12%);
-}
 .payment-ribbon-window {
   width: 100%;
   min-width: 0;
   overflow: hidden;
+  -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 56px, #000 calc(100% - 56px), transparent 100%);
+  mask-image: linear-gradient(90deg, transparent 0, #000 56px, #000 calc(100% - 56px), transparent 100%);
 }
 .payment-ribbon-track {
   display: flex;
@@ -824,10 +807,18 @@ html[data-chatbot="open"] .back-to-top {
   display: flex;
   flex: 0 0 auto;
   align-items: center;
-  padding-inline-end: 1rem;
+  padding-inline-end: .6rem;
 }
 @keyframes payment-ribbon-scroll {
-  to { transform: translateX(-25%); }
+  to { transform: translateX(-50%); }
+}
+/* RTL starts at the right edge; move toward the right so the track keeps
+   replenishing the viewport instead of exposing an empty strip. */
+@keyframes payment-ribbon-scroll-rtl {
+  to { transform: translateX(50%); }
+}
+html[dir="rtl"] .payment-ribbon-track {
+  animation-name: payment-ribbon-scroll-rtl;
 }
 .payment-brand {
   display: inline-flex;
@@ -889,12 +880,16 @@ html[data-chatbot="open"] .back-to-top {
 .payment-google-word { font-weight: 500; letter-spacing: -.04em; }
 @media (max-width: 640px) {
   .payment-ribbon { min-height: 58px; padding-block: .65rem; }
-  .payment-ribbon-heading { font-size: .62rem; line-height: 1.2; }
-  .payment-ribbon-content { gap: .7rem; }
-  .payment-ribbon-group { padding-inline-end: .7rem; }
+  .payment-ribbon-window {
+    -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 28px, #000 calc(100% - 28px), transparent 100%);
+    mask-image: linear-gradient(90deg, transparent 0, #000 28px, #000 calc(100% - 28px), transparent 100%);
+  }
+  .payment-ribbon-content { gap: .45rem; }
+  .payment-ribbon-group { padding-inline-end: .45rem; }
 }
 @media (prefers-reduced-motion: reduce) {
   .payment-ribbon-track { animation: none; width: 100%; justify-content: center; }
+  html[dir="rtl"] .payment-ribbon-track { animation: none !important; }
   .payment-ribbon-group[aria-hidden="true"] { display: none; }
   .payment-ribbon-group:not([aria-hidden="true"]) {
     width: 100%;
@@ -905,7 +900,11 @@ html[data-chatbot="open"] .back-to-top {
   .payment-ribbon-content > div { flex-wrap: wrap; justify-content: center; }
   .payment-ribbon-content { width: 100%; }
   .payment-ribbon-content > div { flex: 1 1 auto; min-width: 0; }
-  .payment-ribbon-window { overflow: visible; }
+  .payment-ribbon-window {
+    overflow: visible;
+    -webkit-mask-image: none;
+    mask-image: none;
+  }
 }
 .payment-ribbon-content,
 .payment-ribbon-content > div {
@@ -914,14 +913,8 @@ html[data-chatbot="open"] .back-to-top {
   flex-wrap: nowrap;
   align-items: center;
 }
-.payment-ribbon-content { gap: 1rem; }
+.payment-ribbon-content { gap: .6rem; }
 .payment-ribbon-content > div { gap: .5rem; }
-.payment-ribbon-separator {
-  width: 1px;
-  height: 23px;
-  flex: 0 0 1px;
-  background: var(--border);
-}
 .payment-brand-nowpayments { color: #202634; font-size: 11px; letter-spacing: -.035em; }
 .payment-now-mark { display: inline-flex; align-items: center; gap: 2px; }
 .payment-now-mark i {
@@ -957,3 +950,13 @@ html[data-chatbot="open"] .back-to-top {
 .payment-coin-xrp { background: #23292f; }
 .payment-brand-many-crypto { background: #eff6ff; color: #1949a7; }
 .payment-brand-manual { background: #f8fafc; }
+@media (prefers-reduced-motion: reduce) {
+  .payment-ribbon-content { flex-wrap: wrap; width: 100%; justify-content: center; }
+  .payment-ribbon-content > div {
+    flex: 1 1 100%;
+    width: 100%;
+    min-width: 0;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+}
