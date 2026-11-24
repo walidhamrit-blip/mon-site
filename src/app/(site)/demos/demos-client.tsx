@@ -122,6 +122,8 @@ export function DemosClient() {
               </p>
             </div>
 
+            <Link href="/pricing#website-guide" className="inline-flex min-h-11 items-center gap-2 text-sm font-bold text-[var(--accent)] underline underline-offset-4">{ar ? "ساعدني في اختيار الوظائف وتقدير الميزانية" : "Help me choose functions & estimate my budget"}<ArrowUpRight className="h-4 w-4 shrink-0" aria-hidden="true" /></Link>
+
             <div className="relative w-full lg:w-[280px] shrink-0">
               <Search className="absolute start-3 top-1/2 -translate-y-1/2 h-4 w-4 opacity-40" />
               <input

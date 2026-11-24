@@ -1,5 +1,6 @@
 "use client";
 
+import { WebsiteChoiceGuide } from "@/components/website-choice-guide";
 import { Check, Code2, Database, ArrowUpRight } from "lucide-react";
 import { LocalizedLink as Link } from "@/components/localized-link";
 import { useSiteConfig } from "@/components/site-provider";
@@ -18,7 +19,7 @@ export function Pricing() {
   const plan = config.pricing.plans[0];
   if (!plan) return null;
 
-  return <section id="pricing" className="section section-muted">
+  return <><WebsiteChoiceGuide /><section id="pricing" className="section section-muted">
     <div className="site-container px-4 sm:px-6 lg:px-8">
       <header className="mx-auto max-w-3xl text-center">
         <p className="section-eyebrow justify-center">{ar ? "عرض واحد، خيارات حسب حاجتك" : "One base offer. Only the options you need."}</p>
@@ -56,5 +57,5 @@ export function Pricing() {
         <p className="mt-2">{ar ? "الدومين المخصص غير مشمول. عنوان vercel.app ليس دوميناً خاصاً. مجانية النشر تخضع لأهلية وحدود Vercel، وليست ضمان استضافة مجانية مدى الحياة. أي تكاليف خارجية أو متكررة للاستضافة وقاعدة البيانات والتخزين والإرسال والدفع توضّح قبل الموافقة." : "A custom domain is not included. A vercel.app address is not a custom domain. Free deployment depends on Vercel eligibility and plan limits, not a lifetime hosting guarantee. Any external or recurring hosting, database, storage, messaging and payment costs are disclosed before approval."}</p>
       </aside>
     </div>
-  </section>;
+  </section></>;
 }

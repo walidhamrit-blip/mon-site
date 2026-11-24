@@ -173,7 +173,8 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
   };
   // Même résolution que les métadonnées : HTML, `<html lang>` et contenu
   // initial ne peuvent pas diverger.
-  const { locale: defaultLocale, urlLocale, isPublic } = await requestLocale(siteLocale(config));
+  const primaryLocale = siteLocale(config);
+  const { locale: defaultLocale, urlLocale, isPublic } = await requestLocale(primaryLocale);
   const defaultMode: ThemeMode = appearance.mode === "dark" ? "dark" : "light";
   const defaultPalette = resolveThemeId(appearance.themeId) ?? DEFAULT_THEME_ID;
 
@@ -233,7 +234,7 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
         style={{ fontFamily: "var(--font-cairo), var(--font-plex-ar), system-ui" }}
       >
         <ThemeProvider defaultMode={defaultMode} defaultPalette={defaultPalette}>
-          <I18nProvider defaultLocale={defaultLocale} urlLocale={urlLocale ?? (isPublic ? defaultLocale : null)}>
+          <I18nProvider defaultLocale={primaryLocale} urlLocale={urlLocale ?? (isPublic ? defaultLocale : null)}>
             <SiteProvider config={config} content={content}>
               <CurrencyProvider
                 rates={config.currency?.rates ?? siteConfig.currency.rates}

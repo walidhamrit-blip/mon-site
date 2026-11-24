@@ -98,6 +98,7 @@ export function buildLlmsTxt({
   );
   lines.push("");
   lines.push("## Main pages & AI resources");
+  lines.push(`- [Website choice guide & indicative estimate](${cleanUrl(base, "/pricing")}#website-guide): select extra languages, content management and quoted functions. Shows the known portion or starting price, not a final quote. Send choices to the team for custom requests; no checkout or payment is created.`);
   lines.push("");
   lines.push(
     `- [Homepage](${cleanUrl(base, "/")}): orientation page with two paths: website creation or digital shopping; category links and a short FAQ`,
