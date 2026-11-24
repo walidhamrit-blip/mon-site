@@ -1,5 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import fs from "node:fs";
 import { generateKeyPairSync, sign as rsaSign } from "node:crypto";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -372,4 +373,20 @@ test("Anti-blocage antivirus : séparation de domaine des jetons, URL first-part
   });
   assert.match(workerCode, /"pay\.nokhba\.net\.ly"/);
   assert.match(workerCode, /PGTO-IPCountry/);
+});
+
+test("UX Caisse : le clic sur Carte bancaire ne modifie jamais la quantité en silence et demande confirmation sous le minimum (15 $)", () => {
+  const dialogSrc = fs.readFileSync(
+    path.resolve(repoRoot, "src/components/digital-buy-dialog.tsx"),
+    "utf8",
+  );
+  // Le clic sur l'onglet paygate ne doit PAS appeler setQuantity automatiquement
+  assert.match(
+    dialogSrc,
+    /setPaymentMethod\("paygate"\);\s*setError\(""\);/,
+  );
+  // Un encart de confirmation explicite informe le client du seuil (ex. 15 $) avant de modifier la quantité
+  assert.match(dialogSrc, /Confirmation required — Card payment can only be processed from \$/);
+  assert.match(dialogSrc, /تأكيد مطلوب — الدفع بالبطاقة البنكية لا يُنفّذ إلا ابتداءً من/);
+  assert.match(dialogSrc, /setQuantity\(minCardQuantity\)/);
 });

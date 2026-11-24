@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { CheckCircle2, Coins, CreditCard, ExternalLink, Loader2, Lock, Minus, Plus, ShieldCheck, Smartphone, Wallet, X, Zap } from "lucide-react";
+import { AlertTriangle, CheckCircle2, Coins, CreditCard, ExternalLink, Loader2, Lock, Minus, Plus, ShieldCheck, Smartphone, Wallet, X, Zap } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import { useSiteConfig } from "@/components/site-provider";
 import { Price } from "@/components/price";
@@ -186,11 +186,11 @@ export function DigitalBuyDialog({ product, denominationId, onClose }: Props) {
         })
       : null;
   const effectiveMinQuantity =
-    paymentMethod === "phone_card" || paymentMethod === "manual"
+    paymentMethod === "phone_card" ||
+    paymentMethod === "manual" ||
+    paymentMethod === "paygate"
       ? 1
-      : paymentMethod === "paygate"
-        ? Math.min(maxQuantity, minCardQuantity)
-        : minQuantity;
+      : minQuantity;
   // Plafond d'achat automatique : au-delà, la commande basculerait en
   // livraison manuelle après paiement. Le navigateur reflète la règle
   // serveur (modifiable dans /admin/settings) pour éviter d'encaisser pour rien.
@@ -202,6 +202,17 @@ export function DigitalBuyDialog({ product, denominationId, onClose }: Props) {
     : MAX_DIGITAL_ORDER_USD;
   const aboveLimit =
     selected != null && Math.round(total * 100) / 100 > maxOrderLimitUsd;
+  const minCardTotal = Math.round((selected?.priceUsd ?? 0) * minCardQuantity * 100) / 100;
+  const canBumpToCardMin =
+    minCardQuantity <= maxQuantity && minCardTotal <= maxOrderLimitUsd;
+  const minEligibleCardDenom =
+    cardGateway != null
+      ? (available.find(
+          (item) =>
+            item.priceUsd + 1e-6 >= cardGateway.minOrderUsd &&
+            item.priceUsd <= maxOrderLimitUsd,
+        ) ?? null)
+      : null;
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
@@ -888,9 +899,6 @@ export function DigitalBuyDialog({ product, denominationId, onClose }: Props) {
                   type="button"
                   onClick={() => {
                     setPaymentMethod("paygate");
-                    setQuantity((value) =>
-                      Math.min(maxQuantity, Math.max(minCardQuantity, value)),
-                    );
                     setError("");
                   }}
                   className={`flex min-h-12 items-center justify-center gap-2 rounded-xl border px-3 py-2 text-[12.5px] font-black ${
@@ -954,7 +962,81 @@ export function DigitalBuyDialog({ product, denominationId, onClose }: Props) {
                 </button>
               )}
             </div>
-            {paymentMethod === "paygate" && cardGateway && cardQuote && (
+            {paymentMethod === "paygate" && cardGateway && selected && belowCardMinimum && (
+              <div
+                role="region"
+                aria-live="polite"
+                className="mt-2.5 rounded-xl border border-amber-400/70 bg-amber-50/90 dark:bg-amber-950/35 px-3.5 py-3 text-[12px] leading-5 text-amber-950 dark:text-amber-100 space-y-2.5"
+              >
+                <div className="flex items-start gap-2">
+                  <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400" />
+                  <div>
+                    <p className="font-black">
+                      {ar
+                        ? `تأكيد مطلوب — الدفع بالبطاقة البنكية لا يُنفّذ إلا ابتداءً من ${cardGateway.minOrderUsd.toFixed(2)} $`
+                        : `Confirmation required — Card payment can only be processed from $${cardGateway.minOrderUsd.toFixed(2)}`}
+                    </p>
+                    <p className="mt-1 text-[11.5px] opacity-90">
+                      {canBumpToCardMin
+                        ? ar
+                          ? `مبلغ طلبك الحالي هو ${total.toFixed(2)} $ (الكمية: ${quantity}). للدفع بالبطاقة، هل توافق على رفع الكمية إلى ${minCardQuantity} وحدات (الإجمالي الأساسي ${minCardTotal.toFixed(2)} $)؟`
+                          : `Your current selection is $${total.toFixed(2)} (quantity: ${quantity}). To pay by card, please confirm increasing the quantity to ${minCardQuantity} units ($${minCardTotal.toFixed(2)} base total).`
+                        : ar
+                          ? `مبلغ طلبك الحالي هو ${total.toFixed(2)} $ وهو أقل من الحد الأدنى للبطاقة (${cardGateway.minOrderUsd.toFixed(2)} $). اختر فئة بقيمة ${cardGateway.minOrderUsd.toFixed(2)} $ فأكثر أو استخدم وسيلة دفع أخرى.`
+                          : `Your current selection ($${total.toFixed(2)}) is below the $${cardGateway.minOrderUsd.toFixed(2)} card minimum. Please select a $${cardGateway.minOrderUsd.toFixed(2)}+ denomination or choose another payment method.`}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex flex-wrap gap-2 pt-0.5">
+                  {canBumpToCardMin && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setQuantity(minCardQuantity);
+                        setError("");
+                      }}
+                      className="inline-flex min-h-9 flex-1 items-center justify-center gap-1.5 rounded-lg bg-amber-600 px-3 py-1.5 text-[11.5px] font-black text-white transition-colors hover:bg-amber-700 cursor-pointer"
+                    >
+                      <CheckCircle2 className="h-3.5 w-3.5 shrink-0" />
+                      {ar
+                        ? `تأكيد رفع الكمية إلى ${minCardQuantity} (${minCardTotal.toFixed(2)} $)`
+                        : `Confirm ${minCardQuantity} units ($${minCardTotal.toFixed(2)})`}
+                    </button>
+                  )}
+                  {!canBumpToCardMin && minEligibleCardDenom && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedId(minEligibleCardDenom.id);
+                        setQuantity(1);
+                        setError("");
+                      }}
+                      className="inline-flex min-h-9 flex-1 items-center justify-center gap-1.5 rounded-lg bg-amber-600 px-3 py-1.5 text-[11.5px] font-black text-white transition-colors hover:bg-amber-700 cursor-pointer"
+                    >
+                      <CheckCircle2 className="h-3.5 w-3.5 shrink-0" />
+                      {ar
+                        ? `اختيار فئة ${denominationLabel(minEligibleCardDenom, locale)} (${minEligibleCardDenom.priceUsd.toFixed(2)} $)`
+                        : `Select ${denominationLabel(minEligibleCardDenom, locale)} ($${minEligibleCardDenom.priceUsd.toFixed(2)})`}
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setPaymentMethod("nowpayments");
+                      setQuantity((value) => Math.max(minQuantity, value));
+                      setError("");
+                    }}
+                    className="inline-flex min-h-9 items-center justify-center rounded-lg border border-amber-500/50 bg-white/80 dark:bg-black/25 px-3 py-1.5 text-[11.5px] font-bold text-amber-950 dark:text-amber-100 transition-colors hover:bg-white cursor-pointer"
+                  >
+                    {ar
+                      ? `الإبقاء على الكمية (${quantity}) والدفع بالعملات الرقمية`
+                      : `Keep qty (${quantity}) & pay with Crypto`}
+                  </button>
+                </div>
+              </div>
+            )}
+            {paymentMethod === "paygate" && cardGateway && cardQuote && !belowCardMinimum && (
               <div className="mt-2.5 rounded-xl border border-[var(--accent)]/40 bg-[var(--accent)]/5 px-3.5 py-2.5 text-[12px] leading-5">
                 <div className="flex flex-wrap items-center justify-between gap-2 font-black text-[var(--foreground)]">
                   <span>{ar ? "Visa · Mastercard · Apple Pay · Google Pay" : "Visa · Mastercard · Apple Pay · Google Pay"}</span>
