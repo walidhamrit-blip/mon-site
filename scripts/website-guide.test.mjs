@@ -142,3 +142,12 @@ test("locale provider keeps the site default separate from the URL language for 
   assert.match(source, /const primaryLocale = siteLocale\(config\)/);
   assert.match(source, /<I18nProvider defaultLocale=\{primaryLocale\}/);
 });
+
+test("SEO category backlink guard accepts the localized codes hub but not product links", () => {
+  const source = readFileSync("scripts/seo-check.mjs", "utf8");
+  const guard = source.match(/if \(!(.+)\.test\(html\)\) \{\s*record\(page, "error", "aucun lien de retour vers \/codes depuis le rayon"/);
+  assert.ok(guard, "category backlink guard exists");
+  const regex = new RegExp(guard[1].slice(1, -1));
+  for (const href of ["/codes", "/codes?lang=en", "/codes?lang=ar"]) assert.ok(regex.test(`<a href="${href}">Codes</a>`), href);
+  for (const href of ["/codes/example", "/codes/category/gift_card", "/codes-other"]) assert.equal(regex.test(`<a href="${href}">Other</a>`), false, href);
+});
