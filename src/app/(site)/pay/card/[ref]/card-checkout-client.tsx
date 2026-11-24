@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import type { PayGateProviderOption } from "@/lib/paygate-core";
+import { PaymentBrandLogos } from "@/components/payment-methods";
 
 interface CardCheckoutClientProps {
   orderRef: string;
@@ -127,13 +128,11 @@ export function CardCheckoutClient({
           <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[var(--accent)]/15 text-[var(--accent)]">
             <CreditCard className="h-5 w-5" />
           </div>
-          <div>
+          <div className="min-w-0">
             <h1 className="text-base sm:text-lg font-black text-[var(--foreground)]">
               {ar ? "بوابة الدفع الآمن بالبطاقة" : "Secure Card Checkout"}
             </h1>
-            <p className="text-xs text-[var(--muted-foreground)]">
-              Visa · Mastercard · Apple Pay · Google Pay
-            </p>
+            <PaymentBrandLogos className="mt-1.5 gap-1.5" />
           </div>
         </div>
         <div className="rounded-xl border border-[var(--accent)]/35 bg-[var(--accent)]/10 px-3 py-1.5 text-end" dir="ltr">

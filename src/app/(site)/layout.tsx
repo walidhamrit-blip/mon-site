@@ -4,6 +4,7 @@ import { SpeedInsights } from "@vercel/speed-insights/next";
 import { Navbar } from "@/components/navbar";
 import { Footer } from "@/components/footer";
 import { FloatingWidgets } from "@/components/floating-widgets";
+import { PaymentMethodsRibbon } from "@/components/payment-methods";
 
 // Layout des pages publiques du site (groupe de routes `(site)`).
 // Le panneau d'administration /admin n'est PAS dans ce groupe :
@@ -17,6 +18,7 @@ export default function SiteLayout({ children }: { children: ReactNode }) {
       <main className="site-main min-h-screen">
         {children}
       </main>
+      <PaymentMethodsRibbon />
       {/* @username du bot Telegram, lu côté serveur : aucun préfixe
           NEXT_PUBLIC_ n'est nécessaire (et un jeton ne doit jamais y être). */}
       <Footer telegramBot={process.env.TELEGRAM_BOT_USERNAME} />
