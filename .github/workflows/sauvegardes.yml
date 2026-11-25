@@ -1,0 +1,65 @@
+name: Sauvegardes
+on:
+  pull_request:
+  push:
+    branches: [main]
+jobs:
+  aller-retour:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+      - name: Installation des dépendances
+        run: npm ci --ignore-scripts
+      - name: Préparer une table leads
+        run: |
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -c "CREATE TABLE leads (
+            id serial PRIMARY KEY,
+            created_at timestamptz NOT NULL DEFAULT now(),
+            name text NOT NULL, business text NOT NULL, phone text NOT NULL,
+            email text, sector text NOT NULL, need text NOT NULL,
+            budget text NOT NULL, deadline text NOT NULL, message text,
+            utm text, locale text, status text NOT NULL DEFAULT 'new', notes text);"
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -c "INSERT INTO leads (name,business,phone,sector,need,budget,deadline)
+            VALUES ('A','B','+218','s','n','b','d'),('C','D','+218','s','n','b','d'),('E','F','+218','s','n','b','d');"
+      - name: Sauvegarder
+        run: node scripts/backup-leads.mjs --out /tmp/sauvegardes
+      - name: Vider puis restaurer
+        run: |
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -c "DELETE FROM leads;"
+          file=$(ls /tmp/sauvegardes/leads-*.json)
+          node scripts/restore-leads.mjs --file "$file" --confirm
+          count=$(psql "$DATABASE_URL" -tAc "SELECT count(*) FROM leads")
+          test "$count" = "3" || { echo "attendu 3, obtenu $count"; exit 1; }
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -c "INSERT INTO leads (name,business,phone,sector,need,budget,deadline)
+            VALUES ('G','H','+218','s','n','b','d');"
+          next=$(psql "$DATABASE_URL" -tAc "SELECT max(id) FROM leads")
+          test "$next" = "4" || { echo "séquence non réavancée : $next"; exit 1; }
+          echo "Aller-retour OK : 3 lignes restaurées, identifiants préservés, séquence à jour."
+      - name: Garde-fous
+        run: |
+          node scripts/restore-leads.mjs --file /tmp/sauvegardes/absent.json || true
+          if DATABASE_URL= node scripts/backup-leads.mjs --out /tmp/x; then
+            echo "une sauvegarde sans DATABASE_URL aurait dû échouer"; exit 1
+          fi
+          if node scripts/restore-leads.mjs --file /tmp/sauvegardes/absent.json; then
+            echo "une restauration depuis un fichier absent aurait dû échouer"; exit 1
+          fi
