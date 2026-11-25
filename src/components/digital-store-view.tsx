@@ -1,7 +1,9 @@
 "use client";
 
 import { useCallback, useEffect, useState, type ReactNode } from "react";
+import { ChevronDown } from "lucide-react";
 import { LocalizedLink as Link } from "@/components/localized-link";
+import { Price } from "@/components/price";
 import { useI18n } from "@/lib/i18n";
 import { useSiteConfig } from "./site-provider";
 import { EditorialVisual } from "./editorial-visual";
@@ -65,7 +67,7 @@ export function DigitalStoreView({ products, degraded, initialKind, trustBadge }
           <div className="flex flex-col gap-3 pb-5 pt-6 sm:flex-row sm:items-end sm:justify-between">
             <div className="max-w-[52rem]">
               <div className="inline-flex items-center gap-2 rounded-full border border-[var(--border)] bg-[var(--card)] px-3 py-1 text-[11px] font-black shadow-[var(--shadow-xs)]">
-                <span className="h-2 w-2 animate-pulse rounded-full bg-[var(--accent)]" />
+                <span aria-hidden="true" className="h-2 w-2 animate-pulse rounded-full bg-[var(--accent)]" />
                 <span className="text-[var(--accent)]">
                   {ar
                     ? "متجر رقمي عالمي — تسليم فوري"
@@ -106,13 +108,16 @@ export function DigitalStoreView({ products, degraded, initialKind, trustBadge }
               */}
               {!degraded && (
                 <span className="chip">
-                  {ar
-                    ? cheapest != null
-                      ? `تبدأ من ${cheapest.toFixed(2)} $`
-                      : "أسعار بالدولار"
-                    : cheapest != null
-                      ? `From $${cheapest.toFixed(2)}`
-                      : "USD pricing"}
+                  {/* Prix « à partir de » dans la devise choisie par le visiteur. */}
+                  {cheapest != null ? (
+                    <>
+                      {ar ? "تبدأ من" : "From"} <Price usd={cheapest} />
+                    </>
+                  ) : ar ? (
+                    "أسعار بالدولار"
+                  ) : (
+                    "USD pricing"
+                  )}
                 </span>
               )}
             </div>
@@ -132,7 +137,13 @@ export function DigitalStoreView({ products, degraded, initialKind, trustBadge }
         le sitemap) le 29/10/2026.
       */}
       <nav aria-label={ar ? "فئات المتجر" : "Store categories"} className="site-container flex flex-wrap gap-2 px-4 py-6 sm:px-6 lg:px-8">
-        {storeCategories.map((category) => <Link key={category.kind} href={category.kind === "all" ? "/codes" : `/codes?kind=${category.kind}`} onClick={(event) => { event.preventDefault(); selectKind(category.kind); }} aria-current={kind === category.kind ? "page" : undefined} className={`rounded-full border px-4 py-2 text-sm font-bold ${kind === category.kind ? "border-[var(--accent)] bg-[var(--accent)] text-[var(--accent-foreground)]" : "border-[var(--border)] bg-[var(--card)]"}`}>{ar ? category.ar : category.en}</Link>)}
+        {storeCategories.map((category) => <Link key={category.kind} href={category.kind === "all" ? "/codes" : `/codes?kind=${category.kind}`} onClick={(event) => {
+          // Ctrl/Cmd/Maj + clic ou clic du milieu : ouverture normale dans un
+          // nouvel onglet. Seul le clic simple filtre sur place.
+          if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+          event.preventDefault();
+          selectKind(category.kind);
+        }} aria-current={kind === category.kind ? "page" : undefined} className={`inline-flex min-h-11 items-center rounded-full border px-4 py-2 text-sm font-bold transition-colors ${kind === category.kind ? "border-[var(--accent)] bg-[var(--accent)] text-[var(--accent-foreground)]" : "border-[var(--border)] bg-[var(--card)] hover:border-[var(--accent)]"}`}>{ar ? category.ar : category.en}</Link>)}
       </nav>
       {!degraded && <DigitalCatalog products={products} kind={kind} onKindChange={selectKind} />}
 
@@ -186,8 +197,10 @@ export function DigitalStoreView({ products, degraded, initialKind, trustBadge }
             <div className="mt-5 divide-y divide-[var(--border)] rounded-[var(--radius-lg)] border border-[var(--border)] bg-[var(--card)]">
               {faqs.map((faq) => (
                 <details key={faq.q} className="group p-4">
-                  <summary className="cursor-pointer list-none text-[14px] font-black leading-6 marker:hidden">
+                  <summary className="flex cursor-pointer list-none items-start justify-between gap-3 text-[14px] font-black leading-6 marker:hidden [&::-webkit-details-marker]:hidden">
                     {faq.q}
+                    {/* Repère visuel « dépliable » (le marqueur natif est masqué). */}
+                    <ChevronDown aria-hidden="true" className="mt-1 h-4 w-4 shrink-0 opacity-60 transition-transform group-open:rotate-180" />
                   </summary>
                   <p className="mt-2 text-[13px] leading-7 text-[var(--muted-foreground)]">
                     {faq.a}

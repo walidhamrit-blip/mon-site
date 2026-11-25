@@ -317,7 +317,7 @@ function InteractiveShowcase({
                 <div className="ms-2 flex items-center gap-2 px-3 py-1 rounded-full bg-[var(--secondary)] border border-[var(--border)] text-xs min-w-0 max-w-full">
                   {hasLiveUrl ? (
                     <span className="inline-flex items-center gap-1.5 text-emerald-700 dark:text-emerald-400 font-bold flex-shrink-0">
-                      <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+                      <span aria-hidden="true" className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
                       {locale === "ar" ? "موقع حقيقي حي" : "LIVE SITE"}
                     </span>
                   ) : (
@@ -336,14 +336,15 @@ function InteractiveShowcase({
                       type="button"
                       onClick={reloadIframe}
                       title={locale === "ar" ? "إعادة تحميل الموقع" : "Reload website"}
-                      className="h-8 w-8 rounded-full bg-[var(--secondary)] border border-[var(--border)] grid place-items-center hover:border-[var(--accent)] transition-colors cursor-pointer"
+                      aria-label={locale === "ar" ? "إعادة تحميل الموقع" : "Reload website"}
+                      className="h-11 w-11 rounded-full bg-[var(--secondary)] border border-[var(--border)] grid place-items-center hover:border-[var(--accent)] transition-colors cursor-pointer"
                     >
                       <RotateCw className="h-3.5 w-3.5" />
                     </button>
                     <button
                       type="button"
                       onClick={() => setFullscreenDemo(activeDemo)}
-                      className="h-8 px-3.5 rounded-full bg-[var(--accent)] text-[var(--accent-foreground)] inline-flex items-center gap-1.5 text-xs font-black hover:bg-[var(--accent-hover)] transition-colors cursor-pointer shadow-sm"
+                      className="min-h-11 px-3.5 rounded-full bg-[var(--accent)] text-[var(--accent-foreground)] inline-flex items-center gap-1.5 text-xs font-black hover:bg-[var(--accent-hover)] transition-colors cursor-pointer shadow-sm"
                     >
                       <Maximize2 className="h-3.5 w-3.5" />
                       <span>
@@ -363,7 +364,7 @@ function InteractiveShowcase({
             {/* Device Frame */}
             <div
               dir="ltr"
-              className={`mx-auto w-full bg-zinc-950 rounded-[18px] p-2 sm:p-3 shadow-xl transition-all duration-300 ${
+              className={`mx-auto w-full bg-zinc-950 rounded-[18px] p-2 sm:p-3 shadow-xl transition-[max-width] duration-300 ${
                 mode === "mobile" ? "max-w-[320px]" : "max-w-full"
               }`}
             >
@@ -535,7 +536,7 @@ function InteractiveShowcase({
                   type="button"
                   onClick={() => setActive(d.slug)}
                   aria-pressed={activeDemo.slug === d.slug}
-                  className={`group overflow-hidden rounded-[var(--radius-md)] border bg-[var(--card)] text-start transition-all cursor-pointer ${
+                  className={`group overflow-hidden rounded-[var(--radius-md)] border bg-[var(--card)] text-start transition-[border-color,box-shadow] cursor-pointer ${
                     activeDemo.slug === d.slug
                       ? "border-[var(--accent)] shadow-[var(--shadow-md)] ring-1 ring-[var(--accent)]/30"
                       : "border-[var(--border)] hover:border-[var(--accent)]/45 hover:shadow-[var(--shadow-sm)]"
