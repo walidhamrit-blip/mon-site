@@ -1,9 +1,11 @@
 "use client";
 
+import { useState } from "react";
 import Image from "next/image";
 import { imageOptimizationProps } from "@/lib/image-source";
 import { useI18n } from "@/lib/i18n";
 import { useSiteContent } from "@/components/site-provider";
+import { MarqueePauseButton } from "@/components/marquee-pause-button";
 
 /**
  * Bannière d'accueil DÉFILANTE : les visuels défilent en boucle horizontale
@@ -20,12 +22,14 @@ export function Hero() {
   const { locale } = useI18n();
   const { visuals } = useSiteContent();
   const ar = locale === "ar";
+  const [paused, setPaused] = useState(false);
+  const label = ar ? "شريط صور نخبة" : "Nukhba visuals marquee";
   // homeHero en tête, puis les autres visuels de bannière, sans doublon de src.
   const ordered = [visuals.homeHero, ...Object.values(visuals).filter((v) => v.src !== visuals.homeHero.src)];
   const items = ordered.filter((visual, index, all) => all.findIndex((v) => v.src === visual.src) === index);
   return (
-    <section className="panoramic-hero" aria-label={ar ? "شريط صور نخبة" : "Nukhba visuals marquee"}>
-
+    <section className="panoramic-hero" aria-label={label} data-paused={paused || undefined}>
+      <MarqueePauseButton paused={paused} onToggle={() => setPaused((value) => !value)} ar={ar} label={label} className="hero-marquee-pause" />
       <div className="hero-marquee-window" dir="ltr">
         <div className="hero-marquee-track" style={{ animationDirection: ar ? "reverse" : "normal" }}>
           {[0, 1].map((copy) => (

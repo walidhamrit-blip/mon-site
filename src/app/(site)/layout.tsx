@@ -5,6 +5,7 @@ import { Navbar } from "@/components/navbar";
 import { Footer } from "@/components/footer";
 import { FloatingWidgets } from "@/components/floating-widgets";
 import { PaymentMethodsRibbon } from "@/components/payment-methods";
+import { SkipLink } from "@/components/skip-link";
 import { getSiteDataCachedShared } from "@/lib/catalog-cache";
 import { publicManualPaymentOptions } from "@/lib/manual-payment-public";
 
@@ -19,8 +20,10 @@ export default async function SiteLayout({ children }: { children: ReactNode }) 
   return (
     <>
       <div className="public-shell">
+      <SkipLink />
       <Navbar />
-      <main className="site-main min-h-screen">
+      {/* tabIndex -1 : le lien d'évitement y place réellement le focus. */}
+      <main id="main-content" tabIndex={-1} className="site-main min-h-screen focus:outline-none">
         {children}
       </main>
       <PaymentMethodsRibbon
@@ -29,7 +32,9 @@ export default async function SiteLayout({ children }: { children: ReactNode }) 
       />
       {/* @username du bot Telegram, lu côté serveur : aucun préfixe
           NEXT_PUBLIC_ n'est nécessaire (et un jeton ne doit jamais y être). */}
-      <Footer telegramBot={process.env.TELEGRAM_BOT_USERNAME} />
+      {/* Année calculée côté serveur : le pied de page client hydrate alors
+          le même texte que le HTML mis en cache (pas de décalage au 1er janvier). */}
+      <Footer telegramBot={process.env.TELEGRAM_BOT_USERNAME} year={new Date().getFullYear()} />
       </div>
       <FloatingWidgets />
       <Analytics />
