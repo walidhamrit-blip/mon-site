@@ -67,6 +67,12 @@ export const demos = [
     previewUrl: "https://al-manhaj-company.vercel.app/",
     planId: "boutique",
     categoryTier: 3,
+    metaTitle: "شركة المنهج للقرطاسية والتقنية طرابلس — متجر جملة وتجزئة",
+    metaTitleEn: "Al-Manhaj Stationery & Tech Tripoli — B2B & Retail Store",
+    metaDescription:
+      "موقع ومتجر شركة المنهج للقرطاسية والتقنية في طرابلس ليبيا — تسوق تجزئة وحاسبة خصومات الجملة للمدارس والشركات مع تتبع فوري للطلبات.",
+    metaDescriptionEn:
+      "Al-Manhaj Stationery & Tech online store in Tripoli, Libya — retail & B2B wholesale pricing calculator for schools and offices with live order tracking.",
   },
   {
     slug: "tripo-teck-outillage",
@@ -200,6 +206,12 @@ export const demos = [
     previewUrl: "https://demo-jouets.vercel.app/",
     planId: "boutique",
     categoryTier: 3,
+    metaTitle: "توي ستور طرابلس (Toy Store) — متجر ألعاب وهدايا أطفال",
+    metaTitleEn: "Toy Store Tripoli — Kids Toys, LEGO & Scooters in Libya",
+    metaDescription:
+      "متجر توي ستور طرابلس لألعاب وهدايا الأطفال في ليبيا — ليغو، باربي، سكوترات كهربائية وألعاب تعليمية مع فروع طرابلس والدفع عند الاستلام.",
+    metaDescriptionEn:
+      "Toy Store Tripoli kids & toys mega-store in Libya — LEGO, Barbie, electric scooters, bikes & educational games with Cash on Delivery across Tripoli.",
   },
   {
     slug: "al-bay-family-restaurant",

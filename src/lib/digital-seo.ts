@@ -275,6 +275,15 @@ export function productFaqs(product: DigitalProduct, locale: Locale): DigitalFaq
         ? `معرّف اللاعب (Player ID) أو معرّف الحساب في ${platform}، مع المنطقة/السيرفر إذا كان مطلوباً. البريد الإلكتروني لا يُستخدم للشحن.`
         : `Your ${platform} player ID (and region/server if required). An email address cannot be used for a top-up.`,
     });
+  } else if (product.kind === "subscription_code" || /spotify|netflix|plus|game\s*pass/i.test(platform)) {
+    faqs.splice(1, 0, {
+      q: ar
+        ? `كيف أفعّل اشتراك ${platform} في ليبيا بدون بطاقة مصرفية دولية؟`
+        : `How do I activate a ${platform} subscription in Libya without an international bank card?`,
+      a: ar
+        ? `اشترِ كود ${platform} بالدولار أو USDT (أو وسائل الدفع المحلية المتاحة)، واستلم رمز التفعيل فوراً لتمديد اشتراكك مباشرة من صفحة Redeem الرسمية دون الحاجة لبطاقة فيزا أو ماستركارد.`
+        : `Buy a ${platform} code in USD or USDT and redeem it directly on the official ${platform} redeem page — your subscription activates immediately with no international Visa or Mastercard required.`,
+    });
   }
   return faqs;
 }
@@ -419,6 +428,8 @@ export function productSeoKeywords(product: DigitalProduct): string[] {
     `${product.platform} code`,
     `${product.platform} gift card`,
     `${product.platform} ليبيا`,
+    `اشتراك ${product.platform} ليبيا`,
+    `كود اشتراك ${product.platform}`,
     `شراء ${product.titleAr}`,
     `buy ${product.titleEn} USDT`,
   ];
