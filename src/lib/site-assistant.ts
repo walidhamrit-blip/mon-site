@@ -49,6 +49,8 @@ export interface KnowledgeDoc {
     | "services"
     | "digital"
     | "product"
+    | "gift_card"
+    | "game_key"
     | "demos"
     | "sectors"
     | "compare"
@@ -510,6 +512,47 @@ function digitalDocs(products: DigitalProduct[], degraded: boolean): KnowledgeDo
       },
       keywords: kw("invalid", "not working", "ne marche pas", "لا يعمل", "غير صالح", "damaged", "used", "مستخدم", "replace", "replacement", "استبدال", "refund code", "استرداد"),
     },
+    {
+      id: "digital-gift-cards",
+      section: "gift_card",
+      path: "/codes/category/gift_card",
+      title: { ar: "بطاقات الهدايا الرقمية", en: "Digital gift cards" },
+      body: {
+        ar: `متجر بطاقات الهدايا الرقمية: Steam، PlayStation، Xbox، Google Play، Apple… اختر البطاقة والقيمة والمنطقة ثم ادفع بالدولار/USDT عبر NOWPayments، ويصلك كود الاسترداد على بريدك فور تأكيد الدفع — عادة خلال دقائق.
+
+تحقق دائماً من منطقة حسابك قبل الشراء: البطاقات مرتبطة بالمنطقة ولا تُسترد بعد التسليم. الحد الأقصى لبطاقة الهدايا ${fmtUsd(MAX_GIFT_CARD_PRICE_USD)}، والحد الأقصى للطلب ${fmtUsd(MAX_DIGITAL_ORDER_USD)}. إذا كان الكود غير صالح، أخبرنا خلال 48 ساعة مع لقطة شاشة للاستبدال.`,
+        en: `The digital gift cards store covers Steam, PlayStation, Xbox, Google Play, Apple… Pick the card, denomination and region, pay in USD/USDT via NOWPayments, and your redemption code is emailed right after payment confirmation — usually within minutes.
+
+Always check your account region before buying: cards are region-locked and non-refundable once delivered. Gift cards are capped at ${fmtUsd(MAX_GIFT_CARD_PRICE_USD)}, orders at ${fmtUsd(MAX_DIGITAL_ORDER_USD)}. If a code is invalid, report it within 48 hours with a screenshot for a replacement.`,
+      },
+      keywords: kw(
+        "gift card", "gift cards", "carte cadeau", "carte de cadeau", "cartes cadeaux", "carte cadeaux",
+        "بطاقات هدايا", "بطاقة هدايا", "هدايا", "كود هدية", "voucher", "réduction", "reduction",
+        "redeem", "استرداد الكود", "steam wallet", "playstation", "psn", "xbox", "google play", "apple",
+        "itunes", "wallet", "محفظة", "region", "منطقة", "région",
+      ),
+      weight: 1.5,
+    },
+    {
+      id: "digital-game-keys",
+      section: "game_key",
+      path: "/codes/category/software_key",
+      title: { ar: "مفاتيح الألعاب والبرامج", en: "Game & software keys" },
+      body: {
+        ar: `مفاتيح تفعيل الألعاب والبرامج الأصلية: اختر اللعبة أو البرنامج والمنصة والمنطقة، ثم ادفع بالدولار/USDT عبر NOWPayments. يصلك مفتاح التفعيل الفريد على بريدك فور تأكيد الدفع، مع خطوات التفعيل داخل البرنامج أو منصة الناشر الرسمية.
+
+تحقق من إصدار البرنامج وعدد الأجهزة والمنطقة في صفحة المنتج قبل الشراء. المفاتيح لا تُسترد بعد التسليم؛ إذا ظهر خطأ أثناء التفعيل، أخبرنا خلال 48 ساعة مع لقطة شاشة للتحقق والاستبدال. الحد الأقصى للطلب ${fmtUsd(MAX_DIGITAL_ORDER_USD)}.`,
+        en: `Genuine game & software activation keys: choose the title, platform and region, then pay in USD/USDT via NOWPayments. Your unique activation key is emailed right after payment confirmation, along with activation steps inside the publisher's official platform.
+
+Check the software edition, number of covered devices and region on the product page before buying. Keys are non-refundable once delivered; if an activation error appears, report it within 48 hours with a screenshot for verification and replacement. Max ${fmtUsd(MAX_DIGITAL_ORDER_USD)} per order.`,
+      },
+      keywords: kw(
+        "game key", "game keys", "key de jeu", "clé de jeu", "clé d'activation", "activation key",
+        "activation", "license", "licence", "مفتاح", "مفاتيح", "كود تفعيل", "ترخيص", "تفعيل",
+        "game", "jeu", "ألعاب", "العاب", "pc", "windows", "software key", "مفتاح برنامج",
+      ),
+      weight: 1.5,
+    },
   ];
 
   if (!degraded) {
@@ -911,7 +954,7 @@ const THANKS_RE = /^(thanks|thank you|merci|شكرا|شكراً|يعطيك ال�
 
 const UI = {
   ar: {
-    greeting: "مرحبًا 👋 أنا مساعد نخبة. أجيبك عن كل ما في الموقع: تصميم المواقع وأسعارها، الدفع بالكريبتو، الاشتراكات، الخدمات المفتوحة، متجر الأكواد الرقمية، معرض الأعمال، القطاعات، المقارنات، المدونة، الشروط والاسترداد. ما سؤالك؟",
+    greeting: "مرحبًا 👋 أنا مساعد نخبة. أجيبك عن كل ما في الموقع: تصميم المواقع وأسعارها، الدفع بالكريبتو، الاشتراكات، الخدمات المفتوحة، متجر الأكواد الرقمية، بطاقات الهدايا، مفاتيح الألعاب والبرامج، معرض الأعمال، القطاعات، المقارنات، المدونة، الشروط والاسترداد. ما سؤالك؟",
     thanks: "على الرحب والسعة 🌟 إن احتجت أي شيء آخر فأنا هنا، أو راسلنا على واتساب.",
     unknown: "لم أجد إجابة دقيقة لهذا السؤال في محتوى الموقع. يمكنك إعادة صياغته، أو اختيار أحد المواضيع أدناه، أو التحدث مباشرة مع فريقنا على واتساب.",
     more: "تفاصيل ذات صلة",
@@ -920,7 +963,7 @@ const UI = {
     degraded: "ملاحظة: متجر الأكواد غير متاح مؤقتاً، لذا لا يمكنني تأكيد الأسعار أو التوفر الآن.",
   },
   en: {
-    greeting: "Hi 👋 I'm the Nukhba assistant. I can answer anything on this site: website design & pricing, crypto payment, subscriptions, open services, the digital codes store, portfolio, sectors, comparisons, blog, terms and refunds. What would you like to know?",
+    greeting: "Hi 👋 I'm the Nukhba assistant. I can answer anything on this site: website design & pricing, crypto payment, subscriptions, open services, the digital codes store, gift cards, game & software keys, portfolio, sectors, comparisons, blog, terms and refunds. What would you like to know?",
     thanks: "You're welcome 🌟 I'm here if you need anything else, or message us on WhatsApp.",
     unknown: "I couldn't find a precise answer to that in the site content. Try rephrasing, pick one of the topics below, or talk directly to our team on WhatsApp.",
     more: "Related details",
@@ -929,7 +972,7 @@ const UI = {
     degraded: "Note: the codes store is temporarily unavailable, so I can't confirm prices or stock right now.",
   },
   fr: {
-    greeting: "Bonjour 👋 Je suis l'assistant Nukhba. Je réponds à tout ce qui concerne le site : création de sites et tarifs, paiement crypto, abonnements, services à la carte, boutique de codes digitaux, portfolio, secteurs, comparatifs, blog, conditions et remboursements. Que souhaitez-vous savoir ?",
+    greeting: "Bonjour 👋 Je suis l'assistant Nukhba. Je réponds à tout ce qui concerne le site : création de sites et tarifs, paiement crypto, abonnements, services à la carte, boutique de codes digitaux, cartes cadeaux, clés de jeu et de logiciels, portfolio, secteurs, comparatifs, blog, conditions et remboursements. Que souhaitez-vous savoir ?",
     thanks: "Avec plaisir 🌟 Je reste disponible, ou écrivez-nous sur WhatsApp.",
     unknown: "Je n'ai pas trouvé de réponse précise dans le contenu du site. Reformulez votre question, choisissez un sujet ci-dessous, ou parlez directement à notre équipe sur WhatsApp.",
     more: "Détails liés (contenu du site en anglais)",
@@ -942,12 +985,12 @@ const UI = {
 /** Sujets de départ (puces) dans la langue demandée. */
 export function starterSuggestions(lang: AssistantLang): string[] {
   if (lang === "ar") {
-    return ["كم سعر الموقع؟", "كيف أدفع بـ USDT؟", "ما هي الاشتراكات؟", "كيف أشتري بطاقة هدايا؟", "أين طلبي؟", "ما خدماتكم المفتوحة؟", "سياسة الاسترداد", "أريد التحدث مع إنسان"];
+    return ["كم سعر الموقع؟", "كيف أدفع بـ USDT؟", "ما هي الاشتراكات؟", "كيف أشتري بطاقة هدايا؟", "كيف أشتري مفتاح لعبة؟", "أين طلبي؟", "ما خدماتكم المفتوحة؟", "سياسة الاسترداد", "أريد التحدث مع إنسان"];
   }
   if (lang === "fr") {
-    return ["Combien coûte un site ?", "Comment payer en USDT ?", "Quels abonnements ?", "Acheter une carte cadeau", "Où est ma commande ?", "Vos services à la carte", "Politique de remboursement", "Parler à un humain"];
+    return ["Combien coûte un site ?", "Comment payer en USDT ?", "Quels abonnements ?", "Acheter une carte cadeau", "Acheter une clé de jeu", "Où est ma commande ?", "Vos services à la carte", "Politique de remboursement", "Parler à un humain"];
   }
-  return ["How much is a website?", "How do I pay with USDT?", "What are the subscriptions?", "Buy a gift card", "Where is my order?", "Your open services", "Refund policy", "Talk to a human"];
+  return ["How much is a website?", "How do I pay with USDT?", "What are the subscriptions?", "Buy a gift card", "Buy a game key", "Where is my order?", "Your open services", "Refund policy", "Talk to a human"];
 }
 
 function docTitle(doc: KnowledgeDoc, lang: AssistantLang): string {

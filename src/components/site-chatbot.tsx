@@ -105,10 +105,10 @@ function ChatShell() {
     {
       key: 0,
       role: "bot",
-      text:
-        locale === "ar"
-          ? "مرحبًا 👋 أنا مساعد نخبة. اسألني أي شيء عن الموقع: الأسعار، الدفع، الاشتراكات، الخدمات، متجر الأكواد، معرض الأعمال، الشروط… أو اختر سؤالًا."
-          : "Hi 👋 I'm the Nukhba assistant. Ask me anything about the site: pricing, payment, subscriptions, services, the codes store, portfolio, terms… or pick a question.",
+        text:
+          locale === "ar"
+            ? "مرحبًا 👋 أنا مساعد نخبة. اسألني أي شيء عن الموقع: الأسعار، الدفع، الاشتراكات، الخدمات، متجر الأكواد، بطاقات الهدايا، مفاتيح الألعاب والبرامج، معرض الأعمال، الشروط… أو اختر سؤالًا."
+            : "Hi 👋 I'm the Nukhba assistant. Ask me anything about the site: pricing, payment, subscriptions, services, the codes store, gift cards, game & software keys, portfolio, terms… or pick a question.",
     },
   ]);
   const [online, setOnline] = useState(true);
