@@ -431,7 +431,7 @@ export function DigitalCatalog({ products, kind, onKindChange }: { products: Dig
             href={whatsappLink(siteConfig.whatsapp, requestMessage)}
             target="_blank"
             rel="noopener noreferrer"
-            className="mt-2.5 inline-flex h-8 items-center gap-1.5 rounded-full bg-[var(--accent)] px-3 text-[11.5px] font-black text-[var(--accent-foreground)] transition-colors hover:bg-[var(--accent-hover)]"
+            className="mt-2.5 inline-flex min-h-10 items-center gap-1.5 rounded-full bg-[var(--accent)] px-3.5 text-[11.5px] font-black text-[var(--accent-foreground)] transition-colors hover:bg-[var(--accent-hover)]"
           >
             {ar ? "اطلبها عبر واتساب" : "Request on WhatsApp"}
           </a>
@@ -462,9 +462,9 @@ export function DigitalCatalog({ products, kind, onKindChange }: { products: Dig
                   type="button"
                   onClick={() => setQuery("")}
                   aria-label={ar ? "مسح البحث" : "Clear search"}
-                  className="absolute end-3 top-1/2 grid h-5 w-5 -translate-y-1/2 cursor-pointer place-items-center rounded-full bg-[var(--secondary)] text-[var(--muted-foreground)] hover:text-[var(--foreground)]"
+                  className="absolute end-1.5 top-1/2 grid h-9 w-9 -translate-y-1/2 cursor-pointer place-items-center rounded-full bg-[var(--secondary)] text-[var(--muted-foreground)] hover:text-[var(--foreground)]"
                 >
-                  <X className="h-3 w-3" />
+                  <X className="h-3.5 w-3.5" />
                 </button>
               )}
             </div>
@@ -557,8 +557,17 @@ export function DigitalCatalog({ products, kind, onKindChange }: { products: Dig
                   </button>
                 )}
               </div>
-              <div className="max-h-[60vh] overflow-y-auto lg:max-h-[calc(100vh-13rem)]">
+              <div className="max-h-[60dvh] overflow-y-auto lg:max-h-[calc(100vh-13rem)]">
                 {railSections}
+              </div>
+              <div className="border-t border-[var(--border)]/70 p-3 lg:hidden">
+                <button
+                  type="button"
+                  onClick={() => setFiltersOpen(false)}
+                  className="inline-flex h-11 w-full cursor-pointer items-center justify-center rounded-full bg-[var(--primary)] px-4 text-[12.5px] font-black text-[var(--primary-foreground)]"
+                >
+                  {ar ? `عرض النتائج (${filtered.length})` : `Show results (${filtered.length})`}
+                </button>
               </div>
             </div>
           </aside>
@@ -613,7 +622,7 @@ export function DigitalCatalog({ products, kind, onKindChange }: { products: Dig
                   value={sort}
                   onChange={(event) => setSort(event.target.value as SortId)}
                   aria-label={ar ? "ترتيب" : "Sort"}
-                  className="h-9 cursor-pointer rounded-full border border-[var(--border)] bg-[var(--card)] px-3 text-[12px] font-bold outline-none"
+                  className="h-11 cursor-pointer rounded-full border border-[var(--border)] bg-[var(--card)] px-3.5 text-[12.5px] font-bold outline-none"
                 >
                   <option value="popular">{ar ? "الأكثر طلباً" : "Popular"}</option>
                   <option value="price-asc">{ar ? "الأقل سعراً" : "Price ↑"}</option>

@@ -63,10 +63,14 @@ async function compile(entry, name) {
 
 const shop = await compile("lib/telegram-shop-core.ts", "telegram-shop-core");
 const {
+  classifyShopCheckoutError,
   EMPTY_SHOP_STATE,
   fillShopTemplate,
+  formatShopCheckoutFailureAlert,
   formatShopUsd,
+  isCancelShopInput,
   isPlausibleEmail,
+  maskShopEmail,
   pageCountOf,
   pageSlice,
   parseShopCallback,
@@ -74,19 +78,26 @@ const {
   shopCallbackFits,
   shopCategoriesView,
   shopCategoryView,
+  shopCheckoutErrorView,
   shopBelowMinimumView,
   shopCopy,
   shopDenominationView,
   shopEmailPromptView,
+  shopInitialQuantity,
   shopPaymentView,
   shopProductView,
   shopProductsOfKind,
   shopCardSwitchUrl,
   shopFromPrice,
+  shopWhatsappUrl,
   SHOP_CALLBACK_PREFIX,
 } = shop;
 
-const LINKS = { site: "https://nokhba.net.ly", store: "https://nokhba.net.ly/codes" };
+const LINKS = {
+  site: "https://nokhba.net.ly",
+  store: "https://nokhba.net.ly/codes",
+  whatsapp: "https://wa.me/218913442640",
+};
 
 /** Fiche de test, structurellement identique à `DigitalProduct`. */
 function fakeProduct(overrides = {}) {
@@ -444,3 +455,172 @@ test("le format monétaire reste lisible et stable", () => {
 test("l'état vide est un objet sans surprise", () => {
   assert.deepEqual(EMPTY_SHOP_STATE, {});
 });
+
+/* ----------- Améliorations UX, BiDi, minimum auto & diagnostic ------------ */
+
+test("la callback d'achat à quantité minimale boucle dans les bornes", () => {
+  const encoded = shopCallback({ view: "buyMin", qty: 2 });
+  assert.equal(encoded, "shop:bm:2");
+  assert.ok(shopCallbackFits({ view: "buyMin", qty: 2 }));
+  assert.deepEqual(parseShopCallback(encoded), { view: "buyMin", qty: 2 });
+  assert.equal(parseShopCallback("shop:bm:0"), null);
+  assert.equal(parseShopCallback("shop:bm:99"), null);
+});
+
+test("la quantité initiale se cale sur le plancher crypto quand c'est atteignable", () => {
+  // Cas exact de la capture : Amazon (AE) 1 AED à 1,18 $ avec plancher 1,50 $.
+  assert.deepEqual(shopInitialQuantity({ priceUsd: 1.18 }, 1.5), {
+    qty: 2,
+    autoAdjusted: true,
+    minQty: 2,
+  });
+  // Montant déjà au-dessus du plancher : reste à 1 sans note.
+  assert.deepEqual(shopInitialQuantity({ priceUsd: 11.5 }, 1.5), {
+    qty: 1,
+    autoAdjusted: false,
+    minQty: 1,
+  });
+  // Plafond maxQuantity trop bas pour atteindre le plancher : reste à 1.
+  assert.deepEqual(shopInitialQuantity({ priceUsd: 0.2, maxQuantity: 3 }, 1.5), {
+    qty: 1,
+    autoAdjusted: false,
+    minQty: 8,
+  });
+});
+
+test("la vue montant affiche l'e-mail mémorisé, le bouton changer et la note plancher", () => {
+  const cheap = fakeProduct({
+    slug: "amazon-ae",
+    titleAr: "بطاقة هدايا — Amazon (AE)",
+    titleEn: "Amazon (AE)",
+    denominations: [{ id: "aed-1", label: "Instant use — 1 AED", faceValue: "1 AED", priceUsd: 1.18, available: true }],
+  });
+  const view = shopDenominationView(
+    cheap,
+    cheap.denominations[0],
+    2,
+    1,
+    "ar",
+    LINKS,
+    {
+      checkoutEmail: "walidhamrit@gmail.com",
+      minOrderUsd: 1.5,
+      autoAdjustedMin: true,
+    },
+  );
+  assert.match(view.text, /<code>walidhamrit@gmail\.com<\/code>/);
+  assert.match(view.text, /\$1\.50/);
+  assert.match(view.text, /×2/);
+  const callbacks = view.keyboard.flat().map((b) => b.callback_data);
+  assert.ok(callbacks.includes("shop:email"), "bouton changer d'e-mail présent");
+  assert.equal(view.state.pending, null);
+});
+
+test("aucune fuite de français dans les vues arabes et séparation BiDi propre", () => {
+  const cheap = fakeProduct({
+    slug: "amazon-ae",
+    titleAr: "بطاقة هدايا — Amazon (AE)",
+    denominations: [{ id: "aed-1", label: "Instant use — 1 AED", faceValue: "1 AED", priceUsd: 1.18, available: true }],
+  });
+  const prodAr = shopProductView(cheap, 1, "ar", LINKS, 3);
+  const denomAr = shopDenominationView(cheap, cheap.denominations[0], 2, 1, "ar", LINKS);
+  const minAr = shopBelowMinimumView(cheap, cheap.denominations[0], 1.5, "ar", LINKS, 1);
+  for (const view of [prodAr, denomAr, minAr]) {
+    assert.doesNotMatch(view.text, /Fiche web|Ce montant/i);
+    for (const btn of view.keyboard.flat()) {
+      assert.doesNotMatch(btn.text, /Fiche web/i);
+    }
+  }
+  // Retour fidèle vers la page 3 de la catégorie.
+  assert.ok(prodAr.keyboard.flat().some((b) => b.callback_data === "shop:c:gift_card:3"));
+  // Bouton 1-clic d'achat ×2 directement sur la vue plancher.
+  assert.ok(minAr.keyboard.flat().some((b) => b.callback_data === "shop:bm:2"));
+
+  // L'invite d'e-mail sépare le titre arabe+latin du libellé anglais sur deux lignes.
+  const promptAr = shopEmailPromptView(
+    { title: "بطاقة هدايا — Amazon (AE)", label: "Instant use — 1 AED", totalUsd: "2.36", qty: 2 },
+    "ar",
+  );
+  assert.match(promptAr.text, /📦 <b>بطاقة هدايا — Amazon \(AE\)<\/b>\n💳 Instant use — 1 AED · ×2/);
+});
+
+test("toutes les vues de navigation réinitialisent pending à null", () => {
+  const p = fakeProduct();
+  assert.equal(shopCategoriesView(CATALOG, "ar", LINKS).state.pending, null);
+  assert.equal(shopCategoryView(CATALOG, "gift_card", 1, "ar", LINKS).state.pending, null);
+  assert.equal(shopProductView(p, 1, "ar", LINKS).state.pending, null);
+  assert.equal(shopDenominationView(p, p.denominations[0], 1, 1, "ar", LINKS).state.pending, null);
+});
+
+test("classification des erreurs de caisse et vue d'erreur avec bouton WhatsApp", () => {
+  assert.deepEqual(classifyShopCheckoutError({ errorCode: "below_minimum" }), {
+    reason: "below_minimum",
+    alertAdmin: false,
+  });
+  assert.deepEqual(classifyShopCheckoutError({ errorCode: "above_limit" }), {
+    reason: "above_limit",
+    alertAdmin: false,
+  });
+  assert.deepEqual(classifyShopCheckoutError({ errorCode: "product_not_found" }), {
+    reason: "not_found",
+    alertAdmin: false,
+  });
+  assert.deepEqual(classifyShopCheckoutError({ errorCode: "supplier_balance_insufficient" }), {
+    reason: "supplier_balance_insufficient",
+    alertAdmin: true,
+  });
+  assert.deepEqual(classifyShopCheckoutError({ isNowPayments: true }), {
+    reason: "payment_gateway_error",
+    alertAdmin: true,
+  });
+
+  const errView = shopCheckoutErrorView({
+    reason: "supplier_balance_insufficient",
+    locale: "ar",
+    links: LINKS,
+    pending: {
+      slug: "amazon-ae",
+      title: "بطاقة هدايا — Amazon (AE)",
+      label: "Instant use — 1 AED",
+      qty: 2,
+      totalUsd: "2.36",
+    },
+  });
+  assert.equal(errView.state.pending, null);
+  const waBtn = errView.keyboard.flat().find((b) => b.url?.startsWith("https://wa.me/218913442640?text="));
+  assert.ok(waBtn, "bouton WhatsApp pré-rempli présent");
+  assert.match(decodeURIComponent(waBtn.url), /Amazon \(AE\)/);
+  assert.ok(errView.keyboard.flat().some((b) => b.url?.includes("/codes/amazon-ae")));
+
+  const alertHtml = formatShopCheckoutFailureAlert({
+    siteName: "Nukhba",
+    reason: "supplier_balance_insufficient",
+    title: "Amazon <AE>",
+    label: "1 AED",
+    qty: 2,
+    totalUsd: "2.36",
+    actorLabel: "Walid · @walid",
+    maskedEmail: maskShopEmail("walidhamrit@gmail.com"),
+    detail: "Solde < coût",
+  });
+  assert.match(alertHtml, /Solde fournisseur insuffisant/);
+  assert.match(alertHtml, /wa\*\*\*@gmail\.com/);
+  assert.doesNotMatch(alertHtml, /walidhamrit@gmail\.com/);
+  assert.doesNotMatch(alertHtml, /<AE>/);
+});
+
+test("annulation texte, masquage d'e-mail et normalisation WhatsApp", () => {
+  assert.equal(isCancelShopInput("إلغاء"), true);
+  assert.equal(isCancelShopInput("الغاء"), true);
+  assert.equal(isCancelShopInput("  Cancel "), true);
+  assert.equal(isCancelShopInput("annuler"), true);
+  assert.equal(isCancelShopInput("walid@gmail.com"), false);
+  assert.equal(maskShopEmail("walidhamrit@gmail.com"), "wa***@gmail.com");
+  assert.equal(maskShopEmail(""), "—");
+  assert.equal(
+    shopWhatsappUrl("+218 91-344-2640", "Bonjour"),
+    "https://wa.me/218913442640?text=Bonjour",
+  );
+  assert.equal(shopWhatsappUrl(""), null);
+});
+

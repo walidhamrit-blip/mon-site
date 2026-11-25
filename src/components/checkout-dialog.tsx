@@ -2,6 +2,7 @@
 import { websiteDepositNote } from "@/lib/website-offer";
 
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import {
   BadgeCheck,
   Bitcoin,
@@ -189,14 +190,21 @@ export function CheckoutDialog({
     };
   }, [step, cardMode, payment]);
 
-  // Échap pour fermer.
+  // Échap pour fermer + verrouillage du défilement arrière-plan + masquage des flotteurs.
   useEffect(() => {
     if (!plan && !flex) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    document.documentElement.setAttribute("data-dialog", "open");
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
     };
     window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      document.documentElement.removeAttribute("data-dialog");
+      window.removeEventListener("keydown", onKey);
+    };
   }, [plan, flex, onClose]);
 
   // Moyens manuels réellement proposables (aucun si tout est fermé).
@@ -447,27 +455,27 @@ export function CheckoutDialog({
   };
 
   const inputCls =
-    "w-full h-11 px-4 rounded-xl border border-[var(--border)] bg-black/30 text-sm outline-none focus:border-[var(--accent)] transition-colors";
+    "w-full h-11 px-4 rounded-xl border border-[var(--border)] bg-[var(--background)] text-[var(--foreground)] text-sm outline-none focus:border-[var(--accent)] transition-colors";
 
-  return (
+  const dialogNode = (
     <div
-      className="fixed inset-0 z-[100] grid place-items-center bg-black/75 backdrop-blur-sm p-4"
+      className="fixed inset-0 z-[10000] flex items-end justify-center bg-black/75 p-0 backdrop-blur-sm sm:grid sm:place-items-center sm:p-4"
       onClick={onClose}
       role="dialog"
       aria-modal="true"
       dir={ar ? "rtl" : "ltr"}
     >
       <div
-        className="w-full max-w-md rounded-[24px] border border-[var(--border)] bg-[var(--card)] p-6 shadow-2xl"
+        className="w-full max-w-md max-h-[92dvh] overflow-y-auto rounded-t-3xl border border-[var(--border)] bg-[var(--card)] p-5 pb-[max(1.5rem,env(safe-area-inset-bottom))] shadow-2xl sm:rounded-[24px] sm:p-6"
         onClick={(e) => e.stopPropagation()}
       >
         {/* En-tête */}
         <div className="flex items-start justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <span className="grid h-10 w-10 place-items-center rounded-2xl bg-[var(--accent)] text-[var(--accent-foreground)]">
+          <div className="flex min-w-0 items-center gap-3">
+            <span className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-[var(--accent)] text-[var(--accent-foreground)]">
               <Bitcoin className="h-5 w-5" />
             </span>
-            <div>
+            <div className="min-w-0">
               <h2 className="text-lg font-black">
                 {ar
                   ? t.checkout.titleAr
@@ -483,8 +491,8 @@ export function CheckoutDialog({
           <button
             type="button"
             onClick={onClose}
-            className="grid h-8 w-8 place-items-center rounded-full opacity-60 hover:opacity-100 cursor-pointer"
-            aria-label="Fermer"
+            className="grid h-11 w-11 shrink-0 place-items-center rounded-full border border-[var(--border)] text-[var(--muted-foreground)] transition-colors hover:border-[var(--accent)] hover:text-[var(--foreground)] cursor-pointer"
+            aria-label={ar ? "إغلاق" : "Close"}
           >
             <X className="h-4 w-4" />
           </button>
@@ -562,7 +570,7 @@ export function CheckoutDialog({
               <div className="mb-1.5 text-[11px] font-semibold uppercase tracking-wider opacity-50">
                 {ar ? t.checkout.modeAr : t.checkout.modeEn}
               </div>
-              <div className="grid grid-cols-3 gap-2">
+              <div className="grid grid-cols-1 gap-2 min-[360px]:grid-cols-3">
                 {INSTALLMENT_COUNTS.map((count) => {
                   const per = splitAmount(totalUsd, count)[0] ?? totalUsd;
                   const active = installments === count;
@@ -572,7 +580,7 @@ export function CheckoutDialog({
                       type="button"
                       onClick={() => setInstallments(count)}
                       aria-pressed={active}
-                      className={`rounded-xl border px-2 py-2.5 text-center transition-colors cursor-pointer ${
+                      className={`min-h-11 rounded-xl border px-2 py-2.5 text-center transition-colors cursor-pointer ${
                         active
                           ? "border-[var(--accent)] bg-[var(--accent)]/15"
                           : "border-[var(--border)] hover:border-[var(--accent)]/60"
@@ -651,8 +659,8 @@ export function CheckoutDialog({
                 <div
                   className={`grid gap-2 ${
                     cardGateway?.enabled && manualOptions.length > 0
-                      ? "grid-cols-3"
-                      : "grid-cols-2"
+                      ? "grid-cols-1 min-[420px]:grid-cols-3"
+                      : "grid-cols-1 min-[340px]:grid-cols-2"
                   }`}
                 >
                   {cardGateway?.enabled && (
@@ -724,7 +732,7 @@ export function CheckoutDialog({
                       </p>
                     )}
                     {belowCardMinimum && (
-                      <p className="mt-1 font-bold text-amber-400">
+                      <p className="mt-1 font-bold text-amber-700 dark:text-amber-300">
                         {ar
                           ? `الحد الأدنى للدفع بالبطاقة ${cardGateway.minOrderUsd.toFixed(2)} $.`
                           : `Minimum card payment is $${cardGateway.minOrderUsd.toFixed(2)}.`}
@@ -748,7 +756,7 @@ export function CheckoutDialog({
             )}
 
             {error && (
-              <p className="text-xs font-semibold text-red-400">{error}</p>
+              <p className="text-xs font-semibold text-red-600 dark:text-red-400">{error}</p>
             )}
 
             {/* Garantie du service — rassure avant le paiement via la passerelle */}
@@ -813,21 +821,21 @@ export function CheckoutDialog({
         {step === "ready" && payment && (
           <div className="mt-5 space-y-4">
             <div className="flex items-start gap-3 rounded-2xl border border-emerald-500/30 bg-emerald-500/10 p-4">
-              <BadgeCheck className="mt-0.5 h-5 w-5 text-emerald-400 flex-shrink-0" />
+              <BadgeCheck className="mt-0.5 h-5 w-5 text-emerald-600 dark:text-emerald-400 flex-shrink-0" />
               {payment.manualPayment ? (
-                <p className="text-sm font-semibold text-emerald-300">
+                <p className="text-sm font-semibold text-emerald-800 dark:text-emerald-200">
                   {ar
                     ? `${t.checkout.manualPendingAr} (${payment.manualPayment.payAmount} ${payment.manualPayment.payCurrency})`
                     : `${t.checkout.manualPendingEn} (${payment.manualPayment.payAmount} ${payment.manualPayment.payCurrency})`}
                 </p>
               ) : cardMode ? (
-                <p className="text-sm font-semibold text-emerald-300">
+                <p className="text-sm font-semibold text-emerald-800 dark:text-emerald-200">
                   {ar
                     ? "جلسة الدفع بالبطاقة جاهزة. افتح صفحة الدفع الآمنة لإتمام العملية؛ ستتحدّث هذه الصفحة تلقائياً فور تأكيد الدفع."
                     : "Your secure card session is ready. Open the hosted payment page to complete payment; this tab updates automatically once confirmed."}
                 </p>
               ) : (
-                <p className="text-sm font-semibold text-emerald-300">
+                <p className="text-sm font-semibold text-emerald-800 dark:text-emerald-200">
                   {ar ? t.checkout.readyAr : t.checkout.readyEn}{" "}
                   <strong>{countdown}</strong>
                 </p>
@@ -905,9 +913,9 @@ export function CheckoutDialog({
                         payment.payAmount &&
                         copy(String(payment.payAmount), "amount")
                       }
-                      className="text-xs opacity-70 hover:opacity-100 inline-flex items-center gap-1 cursor-pointer"
+                      className="inline-flex min-h-10 items-center gap-1 rounded-lg border border-[var(--border)] px-2.5 text-xs font-semibold opacity-80 hover:border-[var(--accent)] hover:opacity-100 cursor-pointer"
                     >
-                      <Copy className="h-3 w-3" />
+                      <Copy className="h-3.5 w-3.5" />
                       {copied === "amount"
                         ? ar
                           ? t.checkout.copiedAr
@@ -929,9 +937,9 @@ export function CheckoutDialog({
                     <button
                       type="button"
                       onClick={() => copy(payment.payAddress ?? "", "address")}
-                      className="text-xs opacity-70 hover:opacity-100 inline-flex items-center gap-1 flex-shrink-0 cursor-pointer"
+                      className="inline-flex min-h-10 flex-shrink-0 items-center gap-1 rounded-lg border border-[var(--border)] px-2.5 text-xs font-semibold opacity-80 hover:border-[var(--accent)] hover:opacity-100 cursor-pointer"
                     >
-                      <Copy className="h-3 w-3" />
+                      <Copy className="h-3.5 w-3.5" />
                       {copied === "address"
                         ? ar
                           ? t.checkout.copiedAr
@@ -959,7 +967,7 @@ export function CheckoutDialog({
 
         {step === "error" && (
           <div className="mt-6 space-y-4 text-center">
-            <p className="text-sm text-red-300 font-semibold">
+            <p className="text-sm text-red-600 dark:text-red-300 font-semibold">
               {ar ? t.checkout.errorAr : t.checkout.errorEn}
             </p>
             <p className="text-xs opacity-80 leading-relaxed">{failureHint()}</p>
@@ -977,7 +985,7 @@ export function CheckoutDialog({
                 <button
                   type="button"
                   onClick={onClose}
-                  className="h-9 px-4 rounded-full border border-[var(--accent)]/50 text-xs font-bold hover:bg-[var(--accent)]/10 cursor-pointer"
+                  className="min-h-11 px-4 rounded-full border border-[var(--accent)]/50 text-xs font-bold hover:bg-[var(--accent)]/10 cursor-pointer"
                 >
                   {ar ? "العودة لاختيار المبلغ" : "Back to amount selection"}
                 </button>
@@ -987,9 +995,9 @@ export function CheckoutDialog({
             {failure && (
               <div
                 dir="ltr"
-                className="rounded-xl border border-red-400/30 bg-black/40 p-3 text-left"
+                className="rounded-xl border border-red-400/30 bg-red-950 p-3 text-left text-red-100"
               >
-                <p className="text-[10px] uppercase tracking-wider opacity-60">
+                <p className="text-[10px] uppercase tracking-wider opacity-70">
                   {ar ? t.checkout.diagTitleAr : t.checkout.diagTitleEn}
                 </p>
                 <p className="mt-1 font-mono text-[11px] text-red-200 break-all">
@@ -997,7 +1005,7 @@ export function CheckoutDialog({
                   {failure.status != null ? ` · HTTP ${failure.status}` : ""}
                 </p>
                 {failure.message && (
-                  <p className="mt-1 font-mono text-[10px] opacity-70 break-all">
+                  <p className="mt-1 font-mono text-[10px] opacity-80 break-all">
                     {failure.message}
                   </p>
                 )}
@@ -1013,7 +1021,7 @@ export function CheckoutDialog({
               {ar ? t.checkout.healthLinkAr : t.checkout.healthLinkEn}
             </a>
 
-            <div className="flex gap-2 justify-center">
+            <div className="flex flex-wrap gap-2 justify-center">
               <button
                 type="button"
                 onClick={() => setStep("form")}
@@ -1034,4 +1042,7 @@ export function CheckoutDialog({
       </div>
     </div>
   );
+
+  if (typeof document === "undefined") return dialogNode;
+  return createPortal(dialogNode, document.body);
 }

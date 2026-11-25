@@ -28,9 +28,10 @@ import {
   openTelegramShop,
   type ShopBotContext,
 } from "@/lib/telegram-shop";
-import { shopLocale } from "@/lib/telegram-shop-core";
+import { shopLocale, shopWhatsappUrl } from "@/lib/telegram-shop-core";
 
 import {
+  clearTelegramPendingCheckout,
   findOrderForBot,
   getTelegramSubscriber,
   notifyTelegramAdmin,
@@ -207,6 +208,12 @@ async function handleMessage(message: TelegramMessage): Promise<void> {
     source: command === "start" ? sanitizeStartPayload(args) || null : stored ? undefined : "telegram",
   });
 
+  // Toute commande explicite (`/start`, `/aide`, `/commande`…) sort d'une
+  // éventuelle attente d'e-mail pour éviter un état « pending » fantôme.
+  if (command && command !== "shop" && command !== "codes" && command !== "catalogue" && command !== "catalog") {
+    await clearTelegramPendingCheckout(chatId);
+  }
+
   switch (command) {
     case "start": {
       // `/start order-dgc-…` : le client arrive depuis la page de suivi
@@ -342,6 +349,7 @@ async function handleCallback(query: TelegramCallbackQuery): Promise<void> {
   }
 
   if (data === "menu:home") {
+    await clearTelegramPendingCheckout(chatId);
     await replyOrEdit(chatId, messageId, copy.menuTitle, {
       keyboard: mainMenuKeyboard(language, links(ctx)),
     });
@@ -537,6 +545,8 @@ async function forwardToTeam(
       language,
       text: message.text ?? "",
     }),
+    undefined,
+    { parseMode: "HTML" },
   );
 }
 
@@ -573,20 +583,26 @@ function wantsHuman(text: string): boolean {
 async function botContext(): Promise<BotContext> {
   const site = await getSiteDataCached().catch(() => null);
   const config = site?.config;
+  const whatsappUrl =
+    shopWhatsappUrl(config?.social?.whatsapp) ??
+    shopWhatsappUrl(config?.whatsapp) ??
+    config?.social?.whatsapp ??
+    "";
   return {
     siteName: config?.name ?? "Nukhba",
     siteUrl: siteBaseUrl().replace(/\/+$/, ""),
     email: config?.email ?? "",
-    whatsapp: config?.social?.whatsapp ?? "",
+    whatsapp: whatsappUrl,
   };
 }
 
-/** Contexte attendu par la boutique inline (site + boutique web). */
+/** Contexte attendu par la boutique inline (site + boutique web + WhatsApp). */
 function shopCtx(ctx: BotContext): ShopBotContext {
   return {
     siteName: ctx.siteName,
     siteUrl: ctx.siteUrl,
     storeUrl: `${ctx.siteUrl}/codes`,
+    whatsapp: ctx.whatsapp,
   };
 }
 

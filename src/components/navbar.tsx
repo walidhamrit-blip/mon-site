@@ -133,13 +133,13 @@ export function Navbar() {
       <header ref={headerRef} className="public-header sticky top-0 z-50 border-b border-[var(--border)] bg-[var(--background)]/95 py-3 backdrop-blur-md">
         <div className="site-container px-4 sm:px-6">
           <div className="flex items-center justify-between gap-3 px-1 py-2 sm:px-4">
-            <Link href="/" className="group flex min-h-11 shrink-0 items-center gap-2.5">
-              <span className="gaming-brand grid h-9 w-9 place-items-center bg-[var(--primary)] text-sm font-black text-[var(--primary-foreground)] transition-transform group-hover:scale-105">
+            <Link href="/" className="group flex min-h-11 min-w-0 items-center gap-2.5">
+              <span className="gaming-brand grid h-9 w-9 shrink-0 place-items-center bg-[var(--primary)] text-sm font-black text-[var(--primary-foreground)] transition-transform group-hover:scale-105">
                 {ar ? "ن" : "N"}
               </span>
-              <span className="leading-none">
+              <span className="min-w-0 leading-none">
                 <span className="flex items-center gap-1.5 text-[16px] font-black tracking-tight">
-                  {siteConfig.name}
+                  <span className="truncate">{siteConfig.name}</span>
                   <span className="hidden text-[10px] font-normal tracking-[0.2em] text-[var(--muted-foreground)] sm:inline">
                     {ar ? "نخبة" : "NUKHBA"}
                   </span>
@@ -250,7 +250,7 @@ export function Navbar() {
               </button>
             </div>
 
-            <div className="site-container flex-1 overflow-y-auto px-4 py-4 sm:px-6">
+            <div className="site-container flex-1 overflow-y-auto px-4 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-4 sm:px-6">
               <div className="rounded-[var(--radius-lg)] border border-[var(--border)] bg-[var(--card)] p-4 shadow-[var(--shadow-lg)] sm:p-6">
                 <nav aria-label={ar ? "قائمة الجوال" : "Mobile menu"} className="flex flex-col gap-1">
                   {links.map((link) => (

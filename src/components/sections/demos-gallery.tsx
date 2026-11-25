@@ -111,7 +111,7 @@ function InteractiveShowcase({
             showAllDemosButton ? (
               <Link
                 href="/demos"
-                className="inline-flex h-10 items-center gap-1.5 rounded-full bg-[var(--accent)] px-5 text-sm font-bold text-[var(--accent-foreground)] transition-colors hover:bg-[var(--accent-hover)]"
+                className="inline-flex min-h-11 items-center gap-1.5 rounded-full bg-[var(--accent)] px-5 text-sm font-bold text-[var(--accent-foreground)] transition-colors hover:bg-[var(--accent-hover)]"
               >
                 {t.demos.all} <ArrowUpRight className="h-3.5 w-3.5" />
               </Link>
@@ -192,7 +192,7 @@ function InteractiveShowcase({
                       <ModelPurchaseButton
                         plan={siteConfig.pricing.plans.find((plan) => plan.id === dClassification.planId)!}
                         demo={d}
-                        className="inline-flex min-h-9 w-full flex-wrap items-center justify-center gap-1.5 rounded-full border border-[var(--accent)]/50 bg-[var(--accent)]/10 px-3 py-2 text-center text-[11px] font-black hover:bg-[var(--accent)]/20 transition-colors"
+                        className="inline-flex min-h-11 w-full flex-wrap items-center justify-center gap-1.5 rounded-full border border-[var(--accent)]/50 bg-[var(--accent)]/10 px-3 py-2 text-center text-[11.5px] font-black hover:bg-[var(--accent)]/20 transition-colors"
                       />
                     )}
                     <ReservationButton
@@ -202,13 +202,13 @@ function InteractiveShowcase({
                           ? `احجز — ${formatUsd(depositUsd)} $`
                           : `Reserve — $${formatUsd(depositUsd)}`
                       }
-                      className="h-9 px-4 rounded-full bg-[var(--accent)] text-[var(--accent-foreground)] inline-flex items-center gap-1.5 text-xs font-black hover:bg-[var(--accent-hover)] transition-colors cursor-pointer"
+                      className="min-h-11 px-4 rounded-full bg-[var(--accent)] text-[var(--accent-foreground)] inline-flex items-center gap-1.5 text-xs font-black hover:bg-[var(--accent-hover)] transition-colors cursor-pointer"
                     />
                     {dIsLive && (
                       <button
                         type="button"
                         onClick={() => setFullscreenDemo(d)}
-                        className="h-9 px-3.5 rounded-full bg-[var(--primary)] text-[var(--primary-foreground)] inline-flex items-center gap-1.5 text-xs font-bold hover:opacity-90 transition-opacity cursor-pointer"
+                        className="min-h-11 px-3.5 rounded-full bg-[var(--primary)] text-[var(--primary-foreground)] inline-flex items-center gap-1.5 text-xs font-bold hover:opacity-90 transition-opacity cursor-pointer"
                       >
                         <Maximize2 className="h-3.5 w-3.5" />
                         {locale === "ar" ? "معاينة حية" : "Live View"}
@@ -216,7 +216,7 @@ function InteractiveShowcase({
                     )}
                     <Link
                       href={`/demos/${d.slug}`}
-                      className="h-9 px-3.5 rounded-full border border-[var(--border)] bg-[var(--card)] inline-flex items-center gap-1 text-xs font-semibold hover:border-[var(--accent)] ms-auto"
+                      className="min-h-11 px-3.5 rounded-full border border-[var(--border)] bg-[var(--card)] inline-flex items-center gap-1 text-xs font-semibold hover:border-[var(--accent)] ms-auto"
                     >
                       {t.demos.viewDemo} <ArrowUpRight className="h-3.5 w-3.5" />
                     </Link>
@@ -252,7 +252,7 @@ function InteractiveShowcase({
               <button
                 type="button"
                 onClick={() => setMode("desktop")}
-                className={`h-8 px-4 rounded-full text-sm font-medium flex items-center gap-1.5 transition-colors cursor-pointer ${
+                className={`min-h-10 px-4 rounded-full text-sm font-medium flex items-center gap-1.5 transition-colors cursor-pointer ${
                   mode === "desktop"
                     ? "bg-[var(--primary)] text-[var(--primary-foreground)]"
                     : "hover:bg-[var(--card)]"
@@ -263,7 +263,7 @@ function InteractiveShowcase({
               <button
                 type="button"
                 onClick={() => setMode("mobile")}
-                className={`h-8 px-4 rounded-full text-sm font-medium flex items-center gap-1.5 transition-colors cursor-pointer ${
+                className={`min-h-10 px-4 rounded-full text-sm font-medium flex items-center gap-1.5 transition-colors cursor-pointer ${
                   mode === "mobile"
                     ? "bg-[var(--primary)] text-[var(--primary-foreground)]"
                     : "hover:bg-[var(--card)]"
@@ -275,7 +275,7 @@ function InteractiveShowcase({
             {showAllDemosButton && (
               <Link
                 href="/demos"
-                className="h-9 px-5 rounded-full bg-[var(--accent)] text-[var(--accent-foreground)] inline-flex items-center gap-1.5 text-sm font-bold hover:bg-[var(--accent-hover)]"
+                className="min-h-11 px-5 rounded-full bg-[var(--accent)] text-[var(--accent-foreground)] inline-flex items-center gap-1.5 text-sm font-bold hover:bg-[var(--accent-hover)]"
               >
                 {t.demos.all} <ArrowUpRight className="h-3.5 w-3.5" />
               </Link>
@@ -477,7 +477,7 @@ function InteractiveShowcase({
                   <ModelPurchaseButton
                     plan={activePlan}
                     demo={activeDemo}
-                    className="h-9 px-3.5 rounded-full bg-[var(--accent)] text-[var(--accent-foreground)] inline-flex items-center justify-center gap-1.5 whitespace-nowrap text-xs font-black hover:bg-[var(--accent-hover)] transition-colors cursor-pointer"
+                    className="min-h-10 px-3.5 rounded-full bg-[var(--accent)] text-[var(--accent-foreground)] inline-flex items-center justify-center gap-1.5 whitespace-nowrap text-xs font-black hover:bg-[var(--accent-hover)] transition-colors cursor-pointer"
                   />
                 )}
                 <ReservationButton
@@ -487,14 +487,14 @@ function InteractiveShowcase({
                       ? `احجز مكانك — ${formatUsd(depositUsd)} $`
                       : `Reserve — $${formatUsd(depositUsd)}`
                   }
-                  className="h-9 px-4 rounded-full bg-[var(--accent)] text-[var(--accent-foreground)] inline-flex items-center gap-1.5 whitespace-nowrap text-xs sm:text-sm font-black hover:bg-[var(--accent-hover)] transition-colors shadow-sm cursor-pointer"
+                  className="min-h-10 px-4 rounded-full bg-[var(--accent)] text-[var(--accent-foreground)] inline-flex items-center gap-1.5 whitespace-nowrap text-xs sm:text-sm font-black hover:bg-[var(--accent-hover)] transition-colors shadow-sm cursor-pointer"
                 />
                 {hasLiveUrl ? (
                   <>
                     <button
                       type="button"
                       onClick={() => setFullscreenDemo(activeDemo)}
-                      className="h-9 px-4 rounded-full bg-[var(--primary)] text-[var(--primary-foreground)] inline-flex items-center gap-1.5 whitespace-nowrap text-xs sm:text-sm font-bold hover:opacity-90 transition-opacity cursor-pointer"
+                      className="min-h-10 px-4 rounded-full bg-[var(--primary)] text-[var(--primary-foreground)] inline-flex items-center gap-1.5 whitespace-nowrap text-xs sm:text-sm font-bold hover:opacity-90 transition-opacity cursor-pointer"
                     >
                       <Maximize2 className="h-3.5 w-3.5" />
                       {locale === "ar" ? "فتح بملء الشاشة (2 عرض)" : "Fullscreen (2 Views)"}
@@ -503,7 +503,7 @@ function InteractiveShowcase({
                       href={activeDemo.previewUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="h-9 px-4 rounded-full border border-[var(--border)] bg-[var(--card)] text-[var(--foreground)] inline-flex items-center gap-1.5 whitespace-nowrap text-xs sm:text-sm font-bold hover:border-[var(--accent)] transition-colors shadow-sm"
+                      className="min-h-10 px-4 rounded-full border border-[var(--border)] bg-[var(--card)] text-[var(--foreground)] inline-flex items-center gap-1.5 whitespace-nowrap text-xs sm:text-sm font-bold hover:border-[var(--accent)] transition-colors shadow-sm"
                     >
                       {locale === "ar" ? "زيارة الموقع الكامل" : "Visit Real Website"}
                       <ExternalLink className="h-3.5 w-3.5" />
@@ -512,7 +512,7 @@ function InteractiveShowcase({
                 ) : (
                   <Link
                     href={`/demos/${activeDemo.slug}`}
-                    className="h-9 px-4 rounded-full bg-[var(--primary)] text-[var(--primary-foreground)] inline-flex items-center gap-1 text-xs sm:text-sm font-semibold hover:opacity-90 transition-opacity"
+                    className="min-h-10 px-4 rounded-full bg-[var(--primary)] text-[var(--primary-foreground)] inline-flex items-center gap-1 text-xs sm:text-sm font-semibold hover:opacity-90 transition-opacity"
                   >
                     {t.demos.viewDemo} <ArrowUpRight className="h-3.5 w-3.5" />
                   </Link>
@@ -522,7 +522,7 @@ function InteractiveShowcase({
           </div>
 
           {/* Grid */}
-          <div className="grid grid-cols-2 gap-4 auto-rows-max">
+          <div className="grid grid-cols-1 gap-3 min-[380px]:grid-cols-2 sm:gap-4 auto-rows-max">
             {filtered.map((d) => {
               const dIsLive = isRealUrl(d.previewUrl);
               const dClassification = resolveDemoClassification(

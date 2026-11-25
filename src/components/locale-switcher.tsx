@@ -122,7 +122,7 @@ export function LocaleSwitcher({ variant = "compact" }: { variant?: "compact" | 
       {open && (
         <div
           role="listbox"
-          className="absolute end-0 top-11 z-50 w-52 rounded-[var(--radius-md)] border border-[var(--border)] bg-[var(--card)] p-2 shadow-[var(--shadow-lg)]"
+          className="absolute end-0 top-11 z-50 w-52 max-w-[calc(100vw-6.5rem)] rounded-[var(--radius-md)] border border-[var(--border)] bg-[var(--card)] p-2 shadow-[var(--shadow-lg)]"
         >
           <div className="flex items-center justify-between px-1.5 pb-1.5">
             <span className="text-[10.5px] font-black uppercase tracking-[0.14em] text-[var(--muted-foreground)]">
@@ -132,9 +132,9 @@ export function LocaleSwitcher({ variant = "compact" }: { variant?: "compact" | 
               type="button"
               onClick={() => setOpen(false)}
               aria-label={ar ? "إغلاق" : "Close"}
-              className="grid h-9 w-9 cursor-pointer place-items-center rounded-full bg-[var(--secondary)] hover:bg-[var(--muted)]"
+              className="grid h-11 w-11 cursor-pointer place-items-center rounded-full bg-[var(--secondary)] hover:bg-[var(--muted)]"
             >
-              <X className="h-2.5 w-2.5" />
+              <X className="h-3.5 w-3.5" />
             </button>
           </div>
           {options}

@@ -145,9 +145,25 @@ Points clés :
   la boutique web vend — mêmes fiches (fournisseur actif uniquement, les
   fiches de l'ancien fournisseur retiré sont exclues), prix recalculés côté
   serveur via `createFazercardsCheckout`, facture crypto NOWPayments.
-- **E-mail de livraison exigé** : à la première commande, le bot demande
-  l'e-mail (les codes partent par e-mail comme sur le site), le mémorise
-  et le propose ensuite en préremplissage. Jamais d'adresse inventée.
+- **E-mail de livraison exigé et modifiable** : à la première commande, le
+  bot demande l'e-mail, le mémorise dès validation (même si un garde-fou
+  bloque la facture), l'affiche sur l'écran du montant et permet de le
+  changer en un clic (`✉️`). Jamais d'adresse inventée.
+- **Plancher & plafond gérés avant l'e-mail** : si un petit montant unitaire
+  (ex. `1 AED` à `1,18 $`) est sous le plancher crypto (`1,50 $`), la
+  quantité initiale se cale automatiquement sur `×2` avec explication et
+  bouton d'achat direct ; au-dessus du plafond automatique (`maxOrderUsd`),
+  un bouton WhatsApp pré-rempli est proposé immédiatement.
+- **Sortie propre en cas d'indisponibilité** : si le solde fournisseur ou la
+  passerelle NOWPayments bloque, l'état `pending` est nettoyé (le client
+  n'est jamais bloqué en mode saisie d'e-mail), et le message offre un
+  bouton WhatsApp pré-rempli avec le produit exact + le lien vers la fiche
+  web (autres moyens de paiement).
+- **Diagnostic dans `/admin/telegram` + alerte admin** : les 25 derniers
+  refus/incidents de caisse sont journalisés dans `/admin/telegram` avec la
+  cause exacte (`below_minimum`, `above_limit`,
+  `supplier_balance_insufficient`, `payment_gateway_error`…), et tout
+  incident d'exploitation envoie une alerte immédiate sur `TELEGRAM_ADMIN_CHAT_ID`.
 - **Identité Telegram sur la commande** : chaque commande créée depuis le
   bot enregistre le `chat_id` et le `@username` du client sur les tables
   `orders` et `digital_orders` (visibles dans `/admin/digital/orders`) —

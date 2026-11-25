@@ -197,7 +197,7 @@ export function CTAForm() {
                         </select>
                         {errors.need && <p id="lead-need-error" role="alert" className="mt-1 text-xs font-semibold text-red-600 dark:text-red-400">{fieldError(errors.need.message)}</p>}
                       </div>
-                      <div className="grid grid-cols-2 gap-3">
+                      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                         <div>
                           <label htmlFor="lead-budget" className="text-sm font-semibold">{locale === "ar" ? "الميزانية" : "Budget"} *</label>
                           <select id="lead-budget" {...register("budget")} aria-invalid={!!errors.budget} aria-describedby={errors.budget ? "lead-budget-error" : undefined} className="mt-2 h-11 w-full rounded-full border border-[var(--border)] bg-[var(--secondary)]/50 px-4 outline-none transition-colors focus:border-[var(--accent)]">
