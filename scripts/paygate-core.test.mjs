@@ -390,3 +390,47 @@ test("UX Caisse : le clic sur Carte bancaire ne modifie jamais la quantité en s
   assert.match(dialogSrc, /تأكيد مطلوب — الدفع بالبطاقة البنكية لا يُنفّذ إلا ابتداءً من/);
   assert.match(dialogSrc, /setQuantity\(minCardQuantity\)/);
 });
+
+test("Filtrage intelligent des processeurs & affichage épuré sur /pay/card/[ref]", () => {
+  // "auto", "multi" et "hosted" désignent tous le routage multi-fournisseurs automatique
+  assert.equal(core.normalizePayGateProvider("auto"), "");
+  assert.equal(core.normalizePayGateProvider("hosted"), "");
+  assert.equal(core.normalizePayGateProvider("wert"), "wert");
+
+  const noisyUpstream = [
+    { id: "banxa", provider_name: "Banxa", status: "active", minimum_currency: "USD", minimum_amount: 20 },
+    { id: "topper", provider_name: "Topper", status: "active", minimum_currency: "USD", minimum_amount: 10 },
+    { id: "robinhood", provider_name: "Robinhood (USA)", status: "active", minimum_currency: "USD", minimum_amount: 5 },
+    { id: "cashapp", provider_name: "Cash App (USA)", status: "active", minimum_currency: "USD", minimum_amount: 5 },
+    { id: "paypal", provider_name: "PayPal (USA)", status: "active", minimum_currency: "USD", minimum_amount: 10 },
+    { id: "venmo", provider_name: "Venmo (USA)", status: "active", minimum_currency: "USD", minimum_amount: 10 },
+    { id: "applepay", provider_name: "Apple Pay", status: "active", minimum_currency: "USD", minimum_amount: 10 },
+    { id: "googlepay", provider_name: "Google Pay", status: "active", minimum_currency: "USD", minimum_amount: 10 },
+    { id: "coinbase", provider_name: "Coinbase Pay", status: "active", minimum_currency: "USD", minimum_amount: 10 },
+    { id: "binance", provider_name: "Binance Connect", status: "active", minimum_currency: "USD", minimum_amount: 15 },
+    { id: "blockchain", provider_name: "Blockchain.com", status: "active", minimum_currency: "USD", minimum_amount: 15 },
+    { id: "stripe", provider_name: "Stripe (US/EU)", status: "active", minimum_currency: "USD", minimum_amount: 5 },
+    { id: "wert", provider_name: "Wert", status: "active", minimum_currency: "USD", minimum_amount: 5 },
+  ];
+
+  // Pour un acheteur hors USA (ex. LY / FR / défaut), aucun rail USA ni wallet exchange/doublon ne doit apparaître
+  const intl = core.normalizePayGateProviders(noisyUpstream, 22.97, { buyerCountry: "LY" });
+  const intlIds = intl.map((p) => p.id);
+  assert.deepEqual(intlIds, ["wert", "topper", "banxa", "stripe"]);
+
+  // Mention petits caractères nettoyée des suffixes régionaux "(US/EU)"
+  const summary = core.formatPayGateProcessorSummary(intl, 4);
+  assert.equal(summary, "Wert · Topper · Banxa · Stripe");
+
+  // La page client affiche Carte bancaire / Apple Pay / Google Pay en premier plan,
+  // route en "auto" par défaut et garde les passerelles alternatives repliées
+  const clientSrc = fs.readFileSync(
+    path.resolve(repoRoot, "src/app/(site)/pay/card/[ref]/card-checkout-client.tsx"),
+    "utf8",
+  );
+  assert.match(clientSrc, /Bank Card · Apple Pay · Google Pay/);
+  assert.match(clientSrc, /بطاقة بنكية · Apple Pay · Google Pay/);
+  assert.match(clientSrc, /return "auto";/);
+  assert.match(clientSrc, /formatPayGateProcessorSummary/);
+  assert.match(clientSrc, /showFallbackGateways/);
+});
