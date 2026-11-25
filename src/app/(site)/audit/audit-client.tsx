@@ -6,7 +6,7 @@ import { AuditRequestForm } from "@/components/audit-request-form";
 import { AUDIT_CATEGORIES, AUDIT_ITEM_COUNT } from "@/lib/audit-checklist";
 import { useI18n } from "@/lib/i18n";
 
-/** Mesures réelles — Lighthouse 12 mobile, 3 runs, médiane, 20/11/2026. */
+/** Mesures réelles — Lighthouse 12 mobile, 3 runs, médiane, 18/11/2026. */
 const BEFORE = { performance: 82, accessibility: 96, bestPractices: 75, seo: 100 };
 /**
  * « Après » = même page en production, après déploiement du correctif, même
@@ -261,8 +261,8 @@ export function AuditClient() {
           <h2 className="text-2xl font-black sm:text-3xl">{t("تقرير مثال حقيقي", "A real sample report")}</h2>
           <p className="mt-2 max-w-3xl text-sm leading-6 opacity-65">
             {t(
-              "تدقيق موقع العرض «تولين ماغازين» (موقعنا التجريبي، لا عميل). القياسات مسجّلة في 20/11/2026 بـ Lighthouse 12 للهاتف، 3 تشغيلات والمتوسط.",
-              "Audit of the “Tulin Magazin” demo (our own demo, not a client). Measured on 20/11/2026 with mobile Lighthouse 12, 3 runs, median.",
+              "تدقيق موقع العرض «تولين ماغازين» (موقعنا التجريبي، لا عميل). القياسات مسجّلة في 18/11/2026 بـ Lighthouse 12 للهاتف، 3 تشغيلات والمتوسط.",
+              "Audit of the “Tulin Magazin” demo (our own demo, not a client). Measured on 18/11/2026 with mobile Lighthouse 12, 3 runs, median.",
             )}
           </p>
 
@@ -283,8 +283,8 @@ export function AuditClient() {
           </ul>
           <p className="mt-2 text-[11px] opacity-55">
             {t(
-              "أرقام «قبل» من الإنتاج في 20/11/2026. أرقام «بعد» من نفس الصفحة في الإنتاج بعد نشر الإصلاح، بنفس الأداة وثلاث تشغيلات. الأداء تراوح بين 67 و90 في التشغيلات الثلاثة: الفرق 82 ← 85 داخل التباين، لذلك لا ندّعي تحسناً في السرعة. الوصولية 100 ظهرت في التشغيلات الثلاثة كلها.",
-              "The “before” figures are production, 20/11/2026. The “after” figures are the same page in production after the fix was deployed, same tool, three runs. Performance ranged from 67 to 90 across those runs: the 82 → 85 difference is within noise, so no speed improvement is claimed. Accessibility 100 appeared in all three runs.",
+              "أرقام «قبل» من الإنتاج في 18/11/2026. أرقام «بعد» من نفس الصفحة في الإنتاج بعد نشر الإصلاح، بنفس الأداة وثلاث تشغيلات. الأداء تراوح بين 67 و90 في التشغيلات الثلاثة: الفرق 82 ← 85 داخل التباين، لذلك لا ندّعي تحسناً في السرعة. الوصولية 100 ظهرت في التشغيلات الثلاثة كلها.",
+              "The “before” figures are production, 18/11/2026. The “after” figures are the same page in production after the fix was deployed, same tool, three runs. Performance ranged from 67 to 90 across those runs: the 82 → 85 difference is within noise, so no speed improvement is claimed. Accessibility 100 appeared in all three runs.",
             )}
           </p>
 
