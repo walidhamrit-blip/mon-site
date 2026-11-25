@@ -15,16 +15,18 @@ export async function generateMetadata({ searchParams }: LocalePageProps): Promi
     path: "/contact",
     title:
       locale === "ar"
-        ? "تواصل مع نخبة — وكالة ويب في {city}"
-        : "Contact Nukhba — Web Agency in {cityEn}",
+        ? "تواصل مع نخبة في {city} — واتساب وعرض سعر مجاني"
+        : "Contact Nukhba ({cityEn}) — Free Quote & WhatsApp",
     description:
       locale === "ar"
-        ? "تواصل مع نخبة في {city}: واتساب، هاتف أو بريد إلكتروني. استشارة مجانية لموقعك أو متجرك الإلكتروني — رد سريع خلال ساعتين في أوقات العمل."
-        : "Contact Nukhba in {cityEn}: WhatsApp, phone or email. Free consultation for your website, e-commerce store or digital code order — fast reply, no commitment.",
+        ? "تواصل مباشرة عبر واتساب أو الهاتف أو البريد في {city}: عرض سعر مجاني لتصميم موقعك أو متجرك بـ35$ ودعم فوري لطلبات البطاقات والأكواد الرقمية."
+        : "Message Nukhba in {cityEn} on WhatsApp, phone or email: get a free quote for your $35 website or online store and fast support for digital code orders.",
     keywords: [
       "تواصل وكالة تصميم مواقع {city}",
       "شركة ويب {country} واتساب",
+      "طلب عرض سعر موقع إلكتروني {country}",
       "web agency {cityEn} contact",
+      "web design quote {cityEn} WhatsApp",
     ],
   });
 }

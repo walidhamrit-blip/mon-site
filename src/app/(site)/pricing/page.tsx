@@ -1,4 +1,8 @@
-import { websiteOfferSummary } from "@/lib/website-offer";
+import {
+  WEBSITE_BASE_PRICE_USD,
+  WEBSITE_CONTENT_FROM_USD,
+  WEBSITE_LANGUAGE_PRICE_USD,
+} from "@/lib/website-offer";
 import type { Metadata } from "next";
 import { pageLocale } from "@/lib/locale-server";
 import type { LocalePageProps } from "@/lib/locale";
@@ -7,7 +11,6 @@ import {
   breadcrumbJsonLd,
   faqJsonLd,
   pageMetadata,
-  siteLocale,
 } from "@/lib/seo";
 import { JsonLd } from "@/components/json-ld";
 import { PricingClient } from "./pricing-client";
@@ -20,9 +23,12 @@ export async function generateMetadata({ searchParams }: LocalePageProps): Promi
     path: "/pricing",
     title:
       locale === "ar"
-        ? "أسعار تصميم المواقع والمتاجر بالدولار"
-        : "Website & Store Pricing in USD — No Surprises",
-    description: websiteOfferSummary(locale),
+        ? `أسعار تصميم المواقع في {country} — عرض موحد ${WEBSITE_BASE_PRICE_USD}$`
+        : `Website & Store Pricing from $${WEBSITE_BASE_PRICE_USD} (USD/USDT)`,
+    description:
+      locale === "ar"
+        ? `موقع مخصص بسعر موحد ${WEBSITE_BASE_PRICE_USD}$ يشمل الكود وتخصيص محتواك الأول مجاناً، مع إضافات واضحة (لغة +${WEBSITE_LANGUAGE_PRICE_USD}$، إدارة محتوى من ${WEBSITE_CONTENT_FROM_USD}$، متجر أو حجز بعرض سعر) ودفع USD أو USDT.`
+        : `Custom website base at $${WEBSITE_BASE_PRICE_USD} with source code & free initial setup. Clear add-ons (+$${WEBSITE_LANGUAGE_PRICE_USD} language, CMS from $${WEBSITE_CONTENT_FROM_USD}, store or booking quoted) in USD/USDT.`,
     keywords: [
       "website pricing USD",
       "e-commerce website price",
@@ -30,6 +36,7 @@ export async function generateMetadata({ searchParams }: LocalePageProps): Promi
       "باقات تصميم مواقع بالدولار",
       "website pricing {countryEn}",
       "أسعار تصميم المواقع {country}",
+      "أسعار تصميم المواقع في {city}",
       "تكلفة متجر إلكتروني {city}",
       "باقات تصميم مواقع",
       "website pricing Libya",

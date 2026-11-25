@@ -73,6 +73,8 @@ export const demos = [
       "موقع ومتجر شركة المنهج للقرطاسية والتقنية في طرابلس ليبيا — تسوق تجزئة وحاسبة خصومات الجملة للمدارس والشركات مع تتبع فوري للطلبات.",
     metaDescriptionEn:
       "Al-Manhaj Stationery & Tech online store in Tripoli, Libya — retail & B2B wholesale pricing calculator for schools and offices with live order tracking.",
+    imageAltAr: "واجهة متجر شركة المنهج للقرطاسية والتقنية في طرابلس لتجارة الجملة والتجزئة",
+    imageAltEn: "Al-Manhaj Stationery & Tech B2B and retail online store in Tripoli, Libya",
   },
   {
     slug: "tripo-teck-outillage",
@@ -130,6 +132,14 @@ export const demos = [
     previewUrl: "https://pizzeria-demo1.vercel.app/",
     planId: "boutique",
     categoryTier: 3,
+    metaTitle: "بيتزا فورنو طرابلس — منيو بيتزا على الحطب وطلب توصيل",
+    metaTitleEn: "Pizza Forno Tripoli — Wood-Fired Pizza & Delivery",
+    metaDescription:
+      "معاينة موقع مطعم بيتزا فورنو الإيطالي في حي الأندلس طرابلس — منيو تفاعلي، استوديو تخصيص البيتزا على الحطب، باقات عائلية وسلة توصيل سريع.",
+    metaDescriptionEn:
+      "Live Pizza Forno Italian restaurant website in Hay Al-Andalus, Tripoli — wood-fired menu, custom Pizza Studio builder, family deals & fast delivery cart.",
+    imageAltAr: "واجهة موقع مطعم بيتزا فورنو الإيطالي على الحطب في حي الأندلس طرابلس مع منيو وطلب توصيل",
+    imageAltEn: "Pizza Forno wood-fired Italian pizzeria website in Tripoli with interactive menu and delivery cart",
   },
   {
     slug: "maison-tripoli-meubles",
@@ -212,6 +222,8 @@ export const demos = [
       "متجر توي ستور طرابلس لألعاب وهدايا الأطفال في ليبيا — ليغو، باربي، سكوترات كهربائية وألعاب تعليمية مع فروع طرابلس والدفع عند الاستلام.",
     metaDescriptionEn:
       "Toy Store Tripoli kids & toys mega-store in Libya — LEGO, Barbie, electric scooters, bikes & educational games with Cash on Delivery across Tripoli.",
+    imageAltAr: "واجهة متجر توي ستور طرابلس لألعاب وهدايا الأطفال وليغو والسكوترات في ليبيا",
+    imageAltEn: "Toy Store Tripoli kids toys, LEGO and electric scooters online store in Libya",
   },
   {
     slug: "al-bay-family-restaurant",
