@@ -552,6 +552,7 @@ const PROVIDER_CACHE_TTL_MS = 5 * 60 * 1000;
 export async function fetchPayGateActiveProviders(
   billedUsd: number,
   config?: PayGateConfigData,
+  buyerCountry?: string | null,
 ): Promise<PayGateProviderOption[]> {
   const cfg = config ?? (await resolveLivePayGateConfig());
   const now = Date.now();
@@ -582,10 +583,10 @@ export async function fetchPayGateActiveProviders(
   }
 
   const sourceRows = cachedRawProviders?.rows ?? FALLBACK_PAYGATE_RAW_PROVIDERS;
-  const normalized = normalizePayGateProviders(sourceRows, billedUsd);
+  const normalized = normalizePayGateProviders(sourceRows, billedUsd, { buyerCountry });
   return normalized.length > 0
     ? normalized
-    : normalizePayGateProviders(FALLBACK_PAYGATE_RAW_PROVIDERS, billedUsd);
+    : normalizePayGateProviders(FALLBACK_PAYGATE_RAW_PROVIDERS, billedUsd, { buyerCountry });
 }
 
 async function resolveSingleProviderHop(input: {
@@ -728,10 +729,10 @@ export async function resolvePayGateProcessorRedirect(input: {
 
   // Mode "self" (zéro config DNS) : résolution serveur -> redirection directe
   // vers le domaine officiel du processeur (wert.io, moonpay.com, guardarian.com…).
-  const explicitProvider =
-    input.requestedProvider && input.requestedProvider !== "auto"
-      ? normalizePayGateProvider(input.requestedProvider)
-      : "";
+  const country = (input.buyerCountry ?? "XX").trim().toUpperCase().slice(0, 2) || "XX";
+  const ip = (input.buyerIp ?? "").split(",")[0]?.trim() ?? "";
+
+  const explicitProvider = normalizePayGateProvider(input.requestedProvider);
 
   let candidates: string[];
   if (explicitProvider) {
@@ -739,13 +740,10 @@ export async function resolvePayGateProcessorRedirect(input: {
   } else if (config.provider) {
     candidates = [config.provider];
   } else {
-    const active = await fetchPayGateActiveProviders(billedUsd, config);
+    const active = await fetchPayGateActiveProviders(billedUsd, config, country);
     const eligibleIds = active.filter((p) => p.eligible).map((p) => p.id);
-    candidates = (eligibleIds.length > 0 ? eligibleIds : active.map((p) => p.id)).slice(0, 4);
+    candidates = (eligibleIds.length > 0 ? eligibleIds : active.map((p) => p.id)).slice(0, 6);
   }
-
-  const country = (input.buyerCountry ?? "XX").trim().toUpperCase().slice(0, 2) || "XX";
-  const ip = (input.buyerIp ?? "").split(",")[0]?.trim() ?? "";
 
   for (const providerId of candidates) {
     const redirectUrl = await resolveSingleProviderHop({
