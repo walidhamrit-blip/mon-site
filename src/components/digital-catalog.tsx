@@ -449,6 +449,11 @@ export function DigitalCatalog({ products, kind, onKindChange }: { products: Dig
             <div className="relative min-w-0 flex-1">
               <Search className="pointer-events-none absolute start-3.5 top-1/2 h-4 w-4 -translate-y-1/2 opacity-40" />
               <input
+                type="search"
+                name="q"
+                autoComplete="off"
+                spellCheck={false}
+                enterKeyHint="search"
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
                 placeholder={
@@ -491,6 +496,7 @@ export function DigitalCatalog({ products, kind, onKindChange }: { products: Dig
               type="button"
               onClick={() => setFiltersOpen((open) => !open)}
               aria-expanded={filtersOpen}
+              aria-controls="catalog-filters"
               className="inline-flex h-11 cursor-pointer items-center gap-2 rounded-full border border-[var(--border)] bg-[var(--card)] px-4 text-[12.5px] font-bold lg:hidden"
             >
               <SlidersHorizontal className="h-4 w-4" />
@@ -537,6 +543,7 @@ export function DigitalCatalog({ products, kind, onKindChange }: { products: Dig
         <div className="lg:grid lg:grid-cols-[250px_minmax(0,1fr)] lg:items-start lg:gap-7">
           {/* Rail vertical : premier dans le DOM → gauche en LTR, droite en RTL */}
           <aside
+            id="catalog-filters"
             className={`${
               filtersOpen ? "block" : "hidden"
             } mb-5 lg:sticky lg:top-[calc(var(--public-header-height,4.25rem)+7.5rem)] lg:mb-0 lg:block`}
@@ -557,7 +564,7 @@ export function DigitalCatalog({ products, kind, onKindChange }: { products: Dig
                   </button>
                 )}
               </div>
-              <div className="max-h-[60dvh] overflow-y-auto lg:max-h-[calc(100vh-13rem)]">
+              <div className="max-h-[60dvh] overflow-y-auto overscroll-contain lg:max-h-[calc(100vh-13rem)]">
                 {railSections}
               </div>
               <div className="border-t border-[var(--border)]/70 p-3 lg:hidden">
@@ -576,7 +583,8 @@ export function DigitalCatalog({ products, kind, onKindChange }: { products: Dig
           <div className="min-w-0">
             <h2 className="sr-only">{ar ? "المنتجات" : "Products"}</h2>
             <div className="mb-4 flex flex-wrap items-center gap-x-3 gap-y-2">
-              <p className="text-[12.5px] font-bold text-[var(--muted-foreground)]">
+              {/* Annoncé par les lecteurs d'écran à chaque changement de filtre. */}
+              <p role="status" aria-live="polite" className="text-[12.5px] font-bold tabular-nums text-[var(--muted-foreground)]">
                 {ar
                   ? `${filtered.length} منتج من ${products.length}`
                   : `${filtered.length} of ${products.length} products`}
@@ -678,8 +686,12 @@ export function DigitalCatalog({ products, kind, onKindChange }: { products: Dig
                   return (
                     <CardShell key={product.id} index={index}>
                       {/* Jaquette */}
+                      {/* Doublon du lien « Détails » : retiré du parcours clavier
+                          et des lecteurs d'écran (un seul arrêt par carte). */}
                       <Link
                         href={`/codes/${product.slug}`}
+                        tabIndex={-1}
+                        aria-hidden="true"
                         className="relative block aspect-[2/3] overflow-hidden bg-[#0b1220]"
                       >
                         {visual ? (
@@ -1013,10 +1025,12 @@ function FamilyChip({
 
 /** Filtre actif retirable (ligne de résultats). */
 function ActiveChip({ label, onRemove }: { label: string; onRemove: () => void }) {
+  const { locale } = useI18n();
   return (
     <button
       type="button"
       onClick={onRemove}
+      aria-label={locale === "ar" ? `إزالة الفلتر: ${label}` : `Remove filter: ${label}`}
       className="inline-flex min-h-9 cursor-pointer items-center gap-1 rounded-full border border-[var(--accent)]/40 bg-[var(--accent)]/12 px-2.5 py-0.5 text-[12px] font-bold text-[var(--foreground)] transition-colors hover:bg-[var(--accent)]/20"
     >
       {label}

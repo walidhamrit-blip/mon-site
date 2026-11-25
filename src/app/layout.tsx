@@ -6,6 +6,7 @@ import { I18nProvider } from "@/lib/i18n";
 import { ThemeProvider, type ThemeMode } from "@/components/theme-provider";
 import { SiteProvider } from "@/components/site-provider";
 import { CurrencyProvider } from "@/components/currency-provider";
+import { MotionProvider } from "@/components/motion-provider";
 import { getSiteDataCached } from "@/lib/store";
 import { siteConfig } from "@/lib/config";
 import { resolveThemeId, DEFAULT_THEME_ID, themeBootScript, themeCss } from "@/lib/themes";
@@ -209,7 +210,7 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
                 rates={config.currency?.rates ?? siteConfig.currency.rates}
                 enabled={[...(config.currency?.enabled ?? siteConfig.currency.enabled)]}
               >
-                {children}
+                <MotionProvider>{children}</MotionProvider>
               </CurrencyProvider>
             </SiteProvider>
           </I18nProvider>

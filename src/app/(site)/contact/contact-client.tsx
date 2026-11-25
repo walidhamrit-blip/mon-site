@@ -56,7 +56,7 @@ function MapPanel({
 
       <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
         <span className="relative flex h-12 w-12 items-center justify-center">
-          <span className="absolute h-12 w-12 animate-ping rounded-full bg-[var(--accent)]/25" />
+          <span aria-hidden="true" className="absolute h-12 w-12 animate-ping rounded-full bg-[var(--accent)]/25" />
           <span className="relative grid h-10 w-10 place-items-center rounded-full bg-[var(--accent)] text-[var(--accent-foreground)] shadow-[var(--shadow-md)]">
             <MapPin className="h-5 w-5" />
           </span>
@@ -72,7 +72,8 @@ function MapPanel({
           href={`https://www.google.com/maps/search/?api=1&query=${query}`}
           target="_blank"
           rel="noopener noreferrer"
-          className="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-full bg-[var(--primary)] px-3.5 text-[12px] font-bold text-[var(--primary-foreground)] transition-opacity hover:opacity-90"
+          aria-label={`Google Maps — ${label}`}
+          className="inline-flex h-11 shrink-0 items-center gap-1.5 rounded-full bg-[var(--primary)] px-3.5 text-[12px] font-bold text-[var(--primary-foreground)] transition-opacity hover:opacity-90"
         >
           Maps
           <ArrowUpRight className="h-3.5 w-3.5" />
@@ -88,10 +89,11 @@ export function ContactClient() {
   const marketText = marketLabels(resolveMarket(siteConfig.market), locale);
   const ar = locale === "ar";
 
-  const details = [
+  // Téléphone et e-mail cliquables (appel / messagerie en un geste).
+  const details: { icon: typeof MapPin; label: string; ltr?: boolean; href?: string }[] = [
     { icon: MapPin, label: ar ? siteConfig.address : siteConfig.addressEn },
-    { icon: Phone, label: siteConfig.phone, ltr: true },
-    { icon: Mail, label: siteConfig.email, ltr: true },
+    { icon: Phone, label: siteConfig.phone, ltr: true, href: `tel:${siteConfig.phone.replace(/\s/g, "")}` },
+    { icon: Mail, label: siteConfig.email, ltr: true, href: `mailto:${siteConfig.email}` },
     { icon: Clock, label: ar ? siteConfig.hours : siteConfig.hoursEn },
   ];
 
@@ -108,22 +110,33 @@ export function ContactClient() {
               <div className="mt-6 space-y-4"><ProfessionalContact /><LegalLinks /></div>
 
               <div className="mt-7 grid gap-2.5 sm:grid-cols-2">
-                {details.map(({ icon: Icon, label, ltr }) => (
-                  <div
-                    key={label}
-                    className="flex items-center gap-3 rounded-[var(--radius-sm)] border border-[var(--border)] bg-[var(--card)] p-3.5"
-                  >
-                    <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-[var(--accent)]/12 text-[var(--accent)]">
-                      <Icon className="h-4 w-4" />
-                    </span>
-                    <span
-                      className="truncate text-[12.5px] font-semibold"
-                      dir={ltr ? "ltr" : undefined}
-                    >
-                      {label}
-                    </span>
-                  </div>
-                ))}
+                {details.map(({ icon: Icon, label, ltr, href }) => {
+                  const content = (
+                    <>
+                      <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-[var(--accent)]/12 text-[var(--accent)]">
+                        <Icon className="h-4 w-4" />
+                      </span>
+                      {/* Pas de troncature : une adresse ou un e-mail long
+                          passe à la ligne au lieu d'être coupé. */}
+                      <span
+                        className="min-w-0 break-words text-[12.5px] font-semibold"
+                        dir={ltr ? "ltr" : undefined}
+                      >
+                        {label}
+                      </span>
+                    </>
+                  );
+                  const className = "flex items-center gap-3 rounded-[var(--radius-sm)] border border-[var(--border)] bg-[var(--card)] p-3.5";
+                  return href ? (
+                    <a key={label} href={href} className={`${className} transition-colors hover:border-[var(--accent)]`}>
+                      {content}
+                    </a>
+                  ) : (
+                    <div key={label} className={className}>
+                      {content}
+                    </div>
+                  );
+                })}
               </div>
 
               <div className="mt-6 flex flex-wrap items-center gap-2.5">
