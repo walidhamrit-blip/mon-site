@@ -2,7 +2,11 @@ import { DigitalStoreView } from "@/components/digital-store-view";
 import { pageLocale } from "@/lib/locale-server";
 import type { LocalePageProps } from "@/lib/locale";
 import { localizedAbsoluteUrl } from "@/lib/locale";
-import { storeCategories } from "@/lib/site-hierarchy";
+import {
+  parseCatalogFilters,
+  validPlatformsFromProducts,
+  validRegionsFromProducts,
+} from "@/lib/catalog-filters";
 import type { Metadata } from "next";
 import { digitalCatalogStatus, getDigitalCatalog } from "@/lib/digital-store";
 import {
@@ -78,9 +82,8 @@ export const dynamic = "force-dynamic";
  */
 export const maxDuration = 60;
 
-export default async function CodesPage({ searchParams }: { searchParams: Promise<{ kind?: string }> }) {
-  const { kind } = await searchParams;
-  const initialKind = storeCategories.find((category) => category.kind === kind)?.kind ?? "all";
+export default async function CodesPage({ searchParams }: LocalePageProps) {
+  const params = await searchParams;
   const { config } = await getSiteDataCached();
   /**
    * Ordre commercial dès le serveur : les fiches les plus demandées (recharges
@@ -101,6 +104,16 @@ export default async function CodesPage({ searchParams }: { searchParams: Promis
    */
   const snapshot = await getPublicCatalogCached();
   const products = sortByDemand(snapshot.products);
+  /**
+   * Filtres initiaux lus dans l'adresse (`?kind=&platform=&region=&price=&sort=&q=`),
+   * validés contre le catalogue : un lien partagé ouvre la vitrine déjà
+   * filtrée, une valeur inconnue retombe sur le défaut (voir
+   * `@/lib/catalog-filters`).
+   */
+  const initialFilters = parseCatalogFilters(params, {
+    platforms: validPlatformsFromProducts(products),
+    regions: validRegionsFromProducts(products),
+  });
   /**
    * Panne de la base : le catalogue affiché n'est plus le vrai (repli sur les
    * fiches de démonstration) et aucune commande ne pourrait être enregistrée.
@@ -210,7 +223,7 @@ export default async function CodesPage({ searchParams }: { searchParams: Promis
       <DigitalStoreView
         products={products}
         degraded={degraded}
-        initialKind={initialKind}
+        initialFilters={initialFilters}
         trustBadge={<TrustpilotBadge config={config} locale={locale} height="24px" />}
       />
     </>

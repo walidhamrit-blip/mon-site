@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { ChevronDown } from "lucide-react";
 import { LocalizedLink as Link } from "@/components/localized-link";
 import { Price } from "@/components/price";
@@ -12,12 +12,24 @@ import { StoreUnavailableNotice } from "./store-status-notice";
 import { storeCategories } from "@/lib/site-hierarchy";
 import { storeFaqs } from "@/lib/digital-seo";
 import { lowestPriceUsd, type DigitalKind, type DigitalProduct } from "@/lib/digital-types";
+import {
+  applyCatalogFiltersToUrl,
+  parseCatalogFilters,
+  validPlatformsFromProducts,
+  validRegionsFromProducts,
+  type CatalogFilters,
+  type PriceRangeId,
+  type SortId,
+} from "@/lib/catalog-filters";
+
+/** Délai avant que la recherche tapée apparaisse dans l'adresse. */
+const QUERY_URL_DELAY_MS = 300;
 
 /** All visible shop copy follows the live locale, including maintenance. */
-export function DigitalStoreView({ products, degraded, initialKind, trustBadge }: {
+export function DigitalStoreView({ products, degraded, initialFilters, trustBadge }: {
   products: DigitalProduct[];
   degraded: boolean;
-  initialKind: DigitalKind | "all";
+  initialFilters: CatalogFilters;
   /** Badge Trustpilot rendu côté serveur (absent tant qu'il n'y a pas d'avis). */
   trustBadge?: ReactNode;
 }) {
@@ -25,29 +37,112 @@ export function DigitalStoreView({ products, degraded, initialKind, trustBadge }
   const { locale } = useI18n();
   const ar = locale === "ar";
   const faqs = storeFaqs(locale);
-  // Une seule source de vérité pour la famille active : l'URL `?kind=`.
-  // Les pastilles, le rail et la nav SEO partagent cet état.
-  const [kind, setKind] = useState<DigitalKind | "all">(initialKind);
-  const [syncedInitialKind, setSyncedInitialKind] = useState(initialKind);
-  if (syncedInitialKind !== initialKind) {
-    setSyncedInitialKind(initialKind);
-    setKind(initialKind);
+  // Une seule source de vérité pour les filtres : l'adresse de la page
+  // (`?kind=&platform=&region=&price=&sort=&q=`). Les pastilles, le rail, la
+  // barre de filtres et la nav SEO partagent cet état ; le serveur l'a déjà
+  // lu dans la requête, le client le relit à chaque `popstate`.
+  const [kind, setKind] = useState<DigitalKind | "all">(initialFilters.kind);
+  const [platform, setPlatform] = useState(initialFilters.platform);
+  const [region, setRegion] = useState(initialFilters.region);
+  const [price, setPrice] = useState<PriceRangeId>(initialFilters.price);
+  const [sort, setSort] = useState<SortId>(initialFilters.sort);
+  const [query, setQuery] = useState(initialFilters.q);
+  const [syncedInitialFilters, setSyncedInitialFilters] = useState(initialFilters);
+  if (syncedInitialFilters !== initialFilters) {
+    setSyncedInitialFilters(initialFilters);
+    setKind(initialFilters.kind);
+    setPlatform(initialFilters.platform);
+    setRegion(initialFilters.region);
+    setPrice(initialFilters.price);
+    setSort(initialFilters.sort);
+    setQuery(initialFilters.q);
   }
+  const validPlatforms = useMemo(() => validPlatformsFromProducts(products), [products]);
+  const validRegions = useMemo(() => validRegionsFromProducts(products), [products]);
+
+  const queryTimer = useRef<number | null>(null);
+  const cancelQueryTimer = useCallback(() => {
+    if (queryTimer.current != null) {
+      window.clearTimeout(queryTimer.current);
+      queryTimer.current = null;
+    }
+  }, []);
+  useEffect(() => cancelQueryTimer, [cancelQueryTimer]);
+
+  const writeUrl = useCallback((next: CatalogFilters, mode: "push" | "replace") => {
+    const url = applyCatalogFiltersToUrl(new URL(window.location.href), next);
+    if (mode === "push") window.history.pushState(null, "", url);
+    else window.history.replaceState(null, "", url);
+  }, []);
+
+  // Changement discret (pastille, facette, tri) : une entrée d'historique,
+  // pour que le bouton retour restaure l'état précédent. La recherche en
+  // cours est incluse telle quelle et son minuteur est annulé.
   const selectKind = useCallback((next: DigitalKind | "all") => {
     setKind(next);
-    const url = new URL(window.location.href);
-    if (next === "all") url.searchParams.delete("kind");
-    else url.searchParams.set("kind", next);
-    window.history.replaceState(null, "", url);
-  }, []);
+    cancelQueryTimer();
+    writeUrl({ kind: next, platform, region, price, sort, q: query }, "push");
+  }, [platform, region, price, sort, query, cancelQueryTimer, writeUrl]);
+  const selectPlatform = useCallback((next: string) => {
+    setPlatform(next);
+    cancelQueryTimer();
+    writeUrl({ kind, platform: next, region, price, sort, q: query }, "push");
+  }, [kind, region, price, sort, query, cancelQueryTimer, writeUrl]);
+  const selectRegion = useCallback((next: string) => {
+    setRegion(next);
+    cancelQueryTimer();
+    writeUrl({ kind, platform, region: next, price, sort, q: query }, "push");
+  }, [kind, platform, price, sort, query, cancelQueryTimer, writeUrl]);
+  const selectPrice = useCallback((next: PriceRangeId) => {
+    setPrice(next);
+    cancelQueryTimer();
+    writeUrl({ kind, platform, region, price: next, sort, q: query }, "push");
+  }, [kind, platform, region, sort, query, cancelQueryTimer, writeUrl]);
+  const selectSort = useCallback((next: SortId) => {
+    setSort(next);
+    cancelQueryTimer();
+    writeUrl({ kind, platform, region, price, sort: next, q: query }, "push");
+  }, [kind, platform, region, price, query, cancelQueryTimer, writeUrl]);
+
+  // Recherche : l'état suit la frappe immédiatement, l'adresse suit après
+  // ~300 ms sans créer d'entrée d'historique (sinon chaque lettre serait un
+  // pas en arrière).
+  const selectQuery = useCallback((next: string) => {
+    setQuery(next);
+    cancelQueryTimer();
+    queryTimer.current = window.setTimeout(() => {
+      queryTimer.current = null;
+      writeUrl({ kind, platform, region, price, sort, q: next }, "replace");
+    }, QUERY_URL_DELAY_MS);
+  }, [kind, platform, region, price, sort, cancelQueryTimer, writeUrl]);
+
+  const resetFilters = useCallback(() => {
+    setKind("all");
+    setPlatform("all");
+    setRegion("all");
+    setPrice("all");
+    setQuery("");
+    cancelQueryTimer();
+    writeUrl({ kind: "all", platform: "all", region: "all", price: "all", sort, q: "" }, "push");
+  }, [sort, cancelQueryTimer, writeUrl]);
+
   useEffect(() => {
     const onPopState = () => {
-      const value = new URL(window.location.href).searchParams.get("kind");
-      setKind(storeCategories.some((category) => category.kind === value) ? (value as DigitalKind) : "all");
+      cancelQueryTimer();
+      const parsed = parseCatalogFilters(new URL(window.location.href).searchParams, {
+        platforms: validPlatforms,
+        regions: validRegions,
+      });
+      setKind(parsed.kind);
+      setPlatform(parsed.platform);
+      setRegion(parsed.region);
+      setPrice(parsed.price);
+      setSort(parsed.sort);
+      setQuery(parsed.q);
     };
     window.addEventListener("popstate", onPopState);
     return () => window.removeEventListener("popstate", onPopState);
-  }, []);
+  }, [validPlatforms, validRegions, cancelQueryTimer]);
   const prices = products.map(lowestPriceUsd).filter((price): price is number => price != null);
   const cheapest = prices.length ? Math.min(...prices) : null;
   return <>
@@ -145,7 +240,24 @@ export function DigitalStoreView({ products, degraded, initialKind, trustBadge }
           selectKind(category.kind);
         }} aria-current={kind === category.kind ? "page" : undefined} className={`inline-flex min-h-11 items-center rounded-full border px-4 py-2 text-sm font-bold transition-colors ${kind === category.kind ? "border-[var(--accent)] bg-[var(--accent)] text-[var(--accent-foreground)]" : "border-[var(--border)] bg-[var(--card)] hover:border-[var(--accent)]"}`}>{ar ? category.ar : category.en}</Link>)}
       </nav>
-      {!degraded && <DigitalCatalog products={products} kind={kind} onKindChange={selectKind} />}
+      {!degraded && (
+        <DigitalCatalog
+          products={products}
+          kind={kind}
+          onKindChange={selectKind}
+          query={query}
+          onQueryChange={selectQuery}
+          platform={platform}
+          onPlatformChange={selectPlatform}
+          region={region}
+          onRegionChange={selectRegion}
+          priceRange={price}
+          onPriceRangeChange={selectPrice}
+          sort={sort}
+          onSortChange={selectSort}
+          onResetFilters={resetFilters}
+        />
+      )}
 
       {/*
         Contenu de rayon : ces sections répondent aux questions réellement

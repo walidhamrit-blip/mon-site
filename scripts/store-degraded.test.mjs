@@ -125,14 +125,14 @@ test("la boutique affiche un bandeau au lieu d'un faux catalogue", () => {
   // plus un badge Trustpilot rendu côté serveur).
   assert.match(
     flat,
-    /<DigitalStoreView[\s\S]*?products=\{products\}[\s\S]*?degraded=\{degraded\}[\s\S]*?initialKind=\{initialKind\}/,
+    /<DigitalStoreView[\s\S]*?products=\{products\}[\s\S]*?degraded=\{degraded\}[\s\S]*?initialFilters=\{initialFilters\}/,
   );
   assert.match(flat, /const status = digitalCatalogStatus\(\);/);
   // L'état de panne vient du snapshot mis en cache ET de l'état courant.
   assert.match(flat, /const degraded = snapshot\.degraded \|\| status\.degraded;/);
   assert.match(view, /\{degraded && \( <StoreUnavailableNotice ar=\{ar\} phone=\{config\.phone\} \/> \)\}/);
   // La grille n'est pas rendue : elle contiendrait les fiches de démonstration.
-  assert.match(view, /\{!degraded && <DigitalCatalog products=\{products\} kind=\{kind\} onKindChange=\{selectKind\} \/>\}/);
+  assert.match(view, /\{!degraded && \([\s\S]*?<DigitalCatalog[\s\S]*?products=\{products\}[\s\S]*?kind=\{kind\}[\s\S]*?onKindChange=\{selectKind\}/);
   // Et le balisage n'annonce pas ces fiches comme le catalogue.
   assert.match(flat, /const itemList = degraded \? null :/);
   assert.match(flat, /\.\.\.\(itemList \? \{ mainEntity: itemList \} : \{\}\)/);

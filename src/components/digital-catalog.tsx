@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useDeferredValue, useMemo, useState } from "react";
 import Image from "next/image";
 import { LocalizedLink as Link } from "@/components/localized-link";
 import { motion } from "framer-motion";
@@ -48,6 +48,11 @@ import {
   topDemandSlugs,
 } from "@/lib/digital-priority";
 import { productVisual, productVisualFit } from "@/lib/game-covers";
+import {
+  PRICE_RANGES,
+  type PriceRangeId,
+  type SortId,
+} from "@/lib/catalog-filters";
 
 /* ------------------------------- Constantes ------------------------------- */
 
@@ -72,29 +77,11 @@ const FAMILY_ICONS: Record<DigitalKind, typeof KeyRound> = {
   subscription_code: Sparkles,
 };
 
-/** Tranches de prix (en USD, devise de facturation) et leurs libellés. */
-const PRICE_RANGES = [
-  { id: "all", min: 0, max: Infinity, ar: "كل الأسعار", en: "Any price" },
-  { id: "u10", min: 0, max: 10, ar: "أقل من 10 $", en: "Under $10" },
-  { id: "10-30", min: 10, max: 30, ar: "10 – 30 $", en: "$10 – $30" },
-  { id: "30-100", min: 30, max: 100, ar: "30 – 100 $", en: "$30 – $100" },
-  { id: "100+", min: 100, max: Infinity, ar: "أكثر من 100 $", en: "$100 & up" },
-] as const;
-
-type PriceRangeId = (typeof PRICE_RANGES)[number]["id"];
-
 /** Libellé d'une tranche de prix dans la langue active. */
 function priceRangeLabel(id: PriceRangeId, ar: boolean): string {
   const range = PRICE_RANGES.find((item) => item.id === id) ?? PRICE_RANGES[0];
   return ar ? range.ar : range.en;
 }
-/**
- * `popular` = ordre commercial (voir `@/lib/digital-priority`) : les recharges
- * des jeux qui tournent dans la région et les cartes des grandes boutiques
- * d'abord, à zone équivalente les zones payables en USDT avant les autres.
- * C'est l'ordre par défaut — celui du fournisseur n'a aucun sens commercial.
- */
-type SortId = "popular" | "price-asc" | "price-desc" | "name";
 
 /** Prix d'entrée d'une fiche (0 si aucun montant : la fiche passe en dernier). */
 function entryPrice(product: DigitalProduct): number {
@@ -131,17 +118,49 @@ function initialsOf(product: DigitalProduct): string {
  * le fournisseur en publiera, ils apparaîtront dans « Codes logiciels » sans
  * toucher au code de cette page.
  */
-export function DigitalCatalog({ products, kind, onKindChange }: { products: DigitalProduct[]; kind: DigitalKind | "all"; onKindChange: (kind: DigitalKind | "all") => void }) {
+export function DigitalCatalog({
+  products,
+  kind,
+  onKindChange,
+  query,
+  onQueryChange,
+  platform,
+  onPlatformChange,
+  region,
+  onRegionChange,
+  priceRange,
+  onPriceRangeChange,
+  sort,
+  onSortChange,
+  onResetFilters,
+}: {
+  products: DigitalProduct[];
+  kind: DigitalKind | "all";
+  onKindChange: (kind: DigitalKind | "all") => void;
+  query: string;
+  onQueryChange: (q: string) => void;
+  platform: string;
+  onPlatformChange: (platform: string) => void;
+  region: string;
+  onRegionChange: (region: string) => void;
+  priceRange: PriceRangeId;
+  onPriceRangeChange: (price: PriceRangeId) => void;
+  sort: SortId;
+  onSortChange: (sort: SortId) => void;
+  onResetFilters: () => void;
+}) {
   const siteConfig = useSiteConfig();
   const { locale } = useI18n();
   const ar = locale === "ar";
 
-  const [query, setQuery] = useState("");
+  // Filtres contrôlés par la vue (`digital-store-view.tsx`), qui les tient
+  // aussi dans l'adresse : ce composant ne garde que l'état d'interface.
+  const setQuery = onQueryChange;
   const setKind = onKindChange;
-  const [platform, setPlatform] = useState("all");
-  const [region, setRegion] = useState("all");
-  const [priceRange, setPriceRange] = useState<PriceRangeId>("all");
-  const [sort, setSort] = useState<SortId>("popular");
+  const setPlatform = onPlatformChange;
+  const setRegion = onRegionChange;
+  const setPriceRange = onPriceRangeChange;
+  const setSort = onSortChange;
   const [filtersOpen, setFiltersOpen] = useState(false);
   // Nom commercial nettoyé, identique au H1 de la fiche : le catalogue ne
   // doit pas afficher « Game Top-Up — PUBG Mobile (Auto) » quand la page
@@ -221,8 +240,14 @@ export function DigitalCatalog({ products, kind, onKindChange }: { products: Dig
 
   /* ----------------------------- Filtrage ----------------------------- */
 
+  // La recherche est recalculée sur tout le catalogue (jusqu'à 2 000 fiches) :
+  // la valeur différée garde le champ de saisie réactif à chaque frappe, la
+  // grille suit juste après. Le compteur de filtres actifs, lui, suit la
+  // frappe immédiate.
+  const deferredQuery = useDeferredValue(query);
+
   const filtered = useMemo(() => {
-    const needle = query.trim().toLowerCase();
+    const needle = deferredQuery.trim().toLowerCase();
     const range = PRICE_RANGES.find((item) => item.id === priceRange) ?? PRICE_RANGES[0];
 
     const rows = products.filter((product) => {
@@ -266,7 +291,7 @@ export function DigitalCatalog({ products, kind, onKindChange }: { products: Dig
       );
     }
     return rows;
-  }, [products, query, kind, platform, region, priceRange, sort, ar]);
+  }, [products, deferredQuery, kind, platform, region, priceRange, sort, ar]);
 
   const activeFilters =
     (kind !== "all" ? 1 : 0) +
@@ -275,13 +300,9 @@ export function DigitalCatalog({ products, kind, onKindChange }: { products: Dig
     (priceRange !== "all" ? 1 : 0) +
     (query.trim() ? 1 : 0);
 
-  const resetFilters = () => {
-    setQuery("");
-    setKind("all");
-    setPlatform("all");
-    setRegion("all");
-    setPriceRange("all");
-  };
+  // Réinitialisation en une seule écriture d'adresse (voir la vue) : le tri
+  // est volontairement conservé, comme avant.
+  const resetFilters = onResetFilters;
 
   const requestMessage = ar
     ? "مرحبا نخبة 👋 أبحث عن كود أو بطاقة هدايا غير مدرجة في الكتالوج."
