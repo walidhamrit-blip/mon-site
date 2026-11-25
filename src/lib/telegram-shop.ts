@@ -26,6 +26,7 @@ import { digitalOrders, orders } from "@/db/schema";
 import { getDigitalCatalog } from "@/lib/digital-store";
 import { getFazercardsCatalog } from "@/lib/fazercards-catalog";
 import { createFazercardsCheckout, FazercardsOrderError } from "@/lib/fazercards-orders";
+import { fazercardsMinOrderUsd } from "@/lib/fazercards";
 import { readDigitalOverrides } from "@/lib/digital-overrides";
 import { resolveFazercardsCheckoutProduct } from "@/lib/digital-overrides-core";
 import { siteBaseUrl } from "@/lib/site-url";
@@ -45,9 +46,11 @@ import {
   isPlausibleEmail,
   parseShopCallback,
   shopCallback,
+  shopBelowMinimumView,
   shopCategoriesView,
   shopCategoryView,
   shopCopy,
+  fillShopTemplate,
   shopDenominationView,
   shopEmailPromptView,
   shopPaymentView,
@@ -379,6 +382,21 @@ async function startBuy(
   }
 
   const pending = pendingFor(product, denomination, stateQty(state), language);
+
+  // Plancher de facture crypto (ex. 1,50 $) : on l'annonce AVANT la caisse
+  // avec la quantité exacte à choisir, au lieu d'un échec après coup.
+  const minUsd = fazercardsMinOrderUsd();
+  if (Number(pending.totalUsd) + 1e-6 < minUsd) {
+    const backPage = typeof state.page === "number" ? state.page : 1;
+    await render(
+      actor.chatId,
+      messageId,
+      shopBelowMinimumView(product, denomination, minUsd, language, shopLinks(ctx), backPage),
+      state,
+    );
+    return;
+  }
+
   const { checkoutEmail } = await getTelegramShopContext(actor.chatId);
   if (checkoutEmail && isPlausibleEmail(checkoutEmail)) {
     await completeCheckout(actor, messageId, checkoutEmail, language, ctx, state, pending);
@@ -707,7 +725,7 @@ async function render(
     await setTelegramShopState(chatId, mergeShopState(currentState ?? {}, view.state));
   }
   const edited = messageId
-    ? await editTelegramMessage(chatId, messageId, view.text, { keyboard: view.keyboard })
+    ? await editTelegramMessage(chatId, messageId, view.text, { parseMode: "HTML", keyboard: view.keyboard })
     : { ok: false as const, error: "no_message_id" };
   if (!edited.ok) {
     await sendTelegramMessage(chatId, view.text, { parseMode: "HTML", keyboard: view.keyboard });
@@ -721,7 +739,7 @@ async function sendOrEdit(
   keyboard: { text: string; url?: string; callback_data?: string }[][],
 ): Promise<void> {
   const edited = messageId
-    ? await editTelegramMessage(chatId, messageId, text, { keyboard })
+    ? await editTelegramMessage(chatId, messageId, text, { parseMode: "HTML", keyboard })
     : { ok: false as const, error: "no_message_id" };
   if (!edited.ok) {
     await sendTelegramMessage(chatId, text, { parseMode: "HTML", keyboard });
@@ -737,6 +755,8 @@ function checkoutErrorMessage(error: unknown, language: ShopLocale): string {
       case "denomination_not_sellable":
       case "invalid_quantity":
         return copy.notFound;
+      case "below_minimum":
+        return fillShopTemplate(copy.belowMinimumRetry, { min: formatShopUsd(fazercardsMinOrderUsd()) });
       default:
         // Stock épuisé, fournisseur indisponible, montant refusé… : le détail
         // technique reste dans les logs, le client reçoit un message clair.
