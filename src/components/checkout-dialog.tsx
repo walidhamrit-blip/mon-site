@@ -710,21 +710,26 @@ export function CheckoutDialog({
                 </div>
 
                 {cardMode && cardGateway && cardQuote && (
-                  <div className="rounded-lg border border-[var(--accent)]/40 bg-[var(--accent)]/5 px-3 py-2 text-[11.5px] leading-5">
+                  <div className="rounded-lg border border-[var(--accent)]/40 bg-[var(--accent)]/5 px-3 py-2 text-[11.5px] leading-5 space-y-1.5">
                     <div className="flex items-center justify-between font-black">
                       <span>{ar ? "بطاقة أو محفظة رقمية" : "Card or digital wallet"}</span>
                       <span dir="ltr">${cardQuote.billedUsd.toFixed(2)} USD</span>
                     </div>
-                    <PaymentBrandLogos className="mt-2" />
+                    <PaymentBrandLogos />
                     {cardGateway.feePercent > 0 && (
-                      <p className="mt-0.5 text-[11px] opacity-75">
+                      <p className="text-[11px] opacity-75">
                         {ar
                           ? `يشمل ${cardGateway.feePercent}% رسوم معالجة البطاقة (${cardQuote.feeUsd.toFixed(2)} $).`
                           : `Includes ${cardGateway.feePercent}% card processing fee ($${cardQuote.feeUsd.toFixed(2)}).`}
                       </p>
                     )}
+                    <p className="border-t border-[var(--accent)]/20 pt-1.5 text-[11px] leading-[1.45] opacity-80">
+                      {ar
+                        ? "يُنفَّذ الدفع عبر مزوّد مالي مرخّص بتسوية رقمية تلقائية لطلبك (دون الحاجة لمحفظة خاصة)، وقد يُطلب تحقّق سريع من الهوية لمرة واحدة عند أول استخدام لهذه الخدمة."
+                        : "Processed via a licensed financial partner with automatic digital settlement to your order (no crypto wallet needed). A one-time identity verification may be requested on your first use of this service."}
+                    </p>
                     {belowCardMinimum && (
-                      <p className="mt-1 font-bold text-amber-400">
+                      <p className="font-bold text-amber-400">
                         {ar
                           ? `الحد الأدنى للدفع بالبطاقة ${cardGateway.minOrderUsd.toFixed(2)} $.`
                           : `Minimum card payment is $${cardGateway.minOrderUsd.toFixed(2)}.`}
