@@ -161,7 +161,7 @@ export async function handleShopCallback(
       await resendPaymentLink(actor, messageId, language, ctx, state);
       return true;
     case "watch":
-      await watchLastOrder(actor, messageId, callback.ref, language, ctx);
+      await watchLastOrder(actor, callback.ref, language, ctx);
       return true;
   }
 }
@@ -571,31 +571,33 @@ async function resendPaymentLink(
   await render(actor.chatId, messageId, view, state);
 }
 
-/** « Recevoir le code dans ce chat » : consentement explicite, par commande. */
+/**
+ * « Recevoir le code dans ce chat » : consentement explicite, par commande.
+ *
+ * La confirmation part dans un message SÉPARÉ : le message de paiement
+ * (facture NOWPayments, boutons 💳 / autres moyens) reste intact — le
+ * client peut activer les notifications PUIS payer dans n'importe quel
+ * ordre. Éditer la même bulle faisait disparaître le lien de paiement.
+ */
 async function watchLastOrder(
   actor: ShopActor,
-  messageId: number | null,
   ref: string,
   language: ShopLocale,
   ctx: ShopBotContext,
 ): Promise<void> {
+  const copy = shopCopy(language);
   const result = await watchOrderFromTelegram(actor.chatId, ref, language);
   if (!result.ok) {
-    const copy = shopCopy(language);
-    await sendOrEdit(
+    await sendTelegramMessage(
       actor.chatId,
-      messageId,
       result.error === "bot_unavailable" ? copy.unavailable : copy.notFound,
-      [[{ text: localeMenu(language), callback_data: "menu:home" }]],
     );
     return;
   }
-  await sendOrEdit(
-    actor.chatId,
-    messageId,
-    formatWatchConfirmation(result.ref, language, ctx.siteName),
-    [[{ text: localeMenu(language), callback_data: "menu:home" }]],
-  );
+  const text = result.alreadyWatching
+    ? copy.alreadyWatching
+    : formatWatchConfirmation(result.ref, language, ctx.siteName);
+  await sendTelegramMessage(actor.chatId, text);
 }
 
 /* -------------------------------- Outils ---------------------------------- */

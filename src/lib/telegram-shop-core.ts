@@ -296,6 +296,7 @@ export interface ShopCopyStrings {
   invalidEmail: string;
   belowMinimum: string;
   belowMinimumRetry: string;
+  alreadyWatching: string;
   cooldown: string;
   sellable: (count: number) => string;
   unavailable: string;
@@ -334,6 +335,8 @@ const SHOP_COPY: Record<ShopLocale, ShopCopyStrings> = {
       "💵 الحد الأدنى للفاتورة هو {min}.\n\nاختر كمية أكبر — مثلاً {qty} × {label} (المجموع {total}) — ثم اضغط «شراء».",
     belowMinimumRetry:
       "💵 الحد الأدنى للفاتورة هو {min} — اختر كمية أكبر أو مبلغاً أعلى ثم أعد المحاولة.",
+    alreadyWatching:
+      "✅ الإشعارات مفعّلة بالفعل لهذا الطلب — سيصل الكود هنا فور جاهزيته (وأيضاً إلى بريدك الإلكتروني). يمكنك الدفع في أي وقت من الرسالة أعلاه.",
     cooldown:
       "أنشأنا فاتورة قبل قليل: انتظر دقيقة قبل إنشاء أخرى (أو أكمل دفع الفاتورة الحالية).",
     sellable: (count: number) => `${count} منتج`,
@@ -372,6 +375,8 @@ const SHOP_COPY: Record<ShopLocale, ShopCopyStrings> = {
       "💵 The minimum invoice is {min}.\n\nIncrease the quantity — e.g. {qty} × {label} (total {total}) — then tap Buy.",
     belowMinimumRetry:
       "💵 The minimum invoice is {min} — pick a bigger quantity or amount and try again.",
+    alreadyWatching:
+      "✅ Notifications are already enabled for this order — the code will arrive right here as soon as it is ready (and to your email too). You can pay anytime from the message above.",
     cooldown:
       "An invoice was just created: please wait a minute before creating another (or finish paying for the current one).",
     sellable: (count: number) => `${count} product(s)`,

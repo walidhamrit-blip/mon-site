@@ -134,7 +134,9 @@ rien ne s'empile) :
   ✅ Commande créée — DGC-…
      💳 Payer maintenant (facture crypto NOWPayments)
      Carte / Skrill / carte de recharge → fiche web du produit
-     📩 Recevoir le code dans ce chat (consentement explicite)
+     📩 Recevoir le code dans ce chat (consentement explicite — la
+        confirmation arrive dans un message séparé, la facture reste
+        affichée et payable dans n'importe quel ordre)
 ```
 
 Points clés :
