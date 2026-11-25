@@ -24,8 +24,8 @@ export async function generateMetadata({ searchParams }: LocalePageProps): Promi
         : "Live Portfolio — Websites Built by Nukhba",
     description:
       locale === "ar"
-        ? "تصفّح مواقع حقيقية أنجزتها وكالة نخبة: متاجر إلكترونية، مطاعم، عيادات، شركات عقارية وتقنية في {city} و{country} — جرّب كل موقع مباشرة وخصّصه على هويتك."
-        : "Browse live client websites built by Nukhba: e-commerce stores, restaurants, clinics and tech companies — test each site on desktop and mobile and customise it to your brand.",
+        ? "تصفّح مواقع حقيقية قيد التشغيل: متاجر إلكترونية، مطاعم، عيادات، شركات عقارية وتقنية في {city} و{country} — جرّب كل موقع مباشرة وخصّصه على هويتك."
+        : "Browse live client websites across e-commerce stores, restaurants, clinics and tech companies — test each site on desktop and mobile and customise it to your brand.",
     keywords: [
       "أمثلة تصميم مواقع {country}",
       "معارض أعمال وكالة ويب {city}",
@@ -38,6 +38,7 @@ export async function generateMetadata({ searchParams }: LocalePageProps): Promi
 export default async function DemosPage({ searchParams }: LocalePageProps) {
   const { config, content } = await getSiteDataCached();
   const locale = await pageLocale(config, searchParams);
+  const ar = locale === "ar";
   const allDemos = getAllKnownDemos(content);
 
   // CollectionPage + ItemList : chaque réalisation est listée avec son
@@ -46,7 +47,7 @@ export default async function DemosPage({ searchParams }: LocalePageProps) {
     "@context": "https://schema.org",
     "@type": "CollectionPage",
     "@id": `${localizedAbsoluteUrl(config.url, "/demos", locale, siteLocale(config))}#collection`,
-    name: "معارض الأعمال الحية — نخبة",
+    name: ar ? "معارض الأعمال الحية — نخبة" : "Live Portfolio — Websites Built by Nukhba",
     url: localizedAbsoluteUrl(config.url, "/demos", locale, siteLocale(config)),
     inLanguage: locale,
     isPartOf: { "@id": absoluteUrl(config, "#website") },
@@ -57,7 +58,7 @@ export default async function DemosPage({ searchParams }: LocalePageProps) {
         "@type": "ListItem",
         position: i + 1,
         url: localizedAbsoluteUrl(config.url, `/demos/${d.slug}`, locale, siteLocale(config)),
-        name: d.title,
+        name: ar ? d.title : d.titleEn,
         image: d.image,
       })),
     },
@@ -68,8 +69,8 @@ export default async function DemosPage({ searchParams }: LocalePageProps) {
       <JsonLd
         data={[
           breadcrumbJsonLd(config, [
-            { name: "الرئيسية", path: "/" },
-            { name: "المعارض", path: "/demos" },
+            { name: ar ? "الرئيسية" : "Home", path: "/" },
+            { name: ar ? "المعارض" : "Live Portfolio", path: "/demos" },
           ], locale),
           collectionSchema,
         ]}

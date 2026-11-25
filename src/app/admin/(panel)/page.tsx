@@ -17,11 +17,13 @@ import {
   ShoppingBag,
   Gift,
   Sparkles,
+  Search,
   ExternalLink,
 } from "lucide-react";
 import { db, ensureSchema } from "@/db";
 import { leads, orders } from "@/db/schema";
 import { getSiteData } from "@/lib/store";
+import { readManualPaymentsAvailability } from "@/lib/manual-payment-availability";
 import {
   LEAD_STATUSES,
   collectAllDemos,
@@ -64,6 +66,7 @@ export default async function AdminDashboardPage() {
   let recent: (typeof leads.$inferSelect)[] = [];
 
   const { config, content } = await getSiteData();
+  const manualAvailability = await readManualPaymentsAvailability();
 
   try {
     await ensureSchema();
@@ -212,6 +215,13 @@ export default async function AdminDashboardPage() {
       title: "Réglages & Tarification",
       desc: "Palette de couleurs par défaut, WhatsApp, formules tarifaires, paiement libre et services à la carte.",
     },
+    {
+      href: "/admin/search-console",
+      icon: Search,
+      badge: "SEO & Indexation",
+      title: "Google Search Console & Quick Wins",
+      desc: "Suivez les clics, impressions, requêtes en position 11–20 (Page 2), l’état du sitemap et le suivi hebdomadaire automatique.",
+    },
   ];
 
   const maxDay = Math.max(1, ...daily.map((d) => d.count));
@@ -265,6 +275,7 @@ export default async function AdminDashboardPage() {
 
       <ManualPaymentsOverview
         phoneCardEnabled={config.fazercards.phoneCardPaymentsEnabled !== false}
+        masterEnabled={manualAvailability.masterEnabled}
         manualPayments={config.manualPayments}
       />
 

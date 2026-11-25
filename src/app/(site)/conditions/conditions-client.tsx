@@ -13,7 +13,7 @@ interface Section {
 const CONTENT: Record<"ar" | "en", { title: string; updated: string; intro: string; sections: Section[]; contactTitle: string; contactText: string }> = {
   ar: {
     title: "الشروط العامة للبيع والخدمة",
-    updated: "آخر تحديث: 05/11/2026",
+    updated: "آخر تحديث: 23/11/2026",
     intro:
       "تحدد هذه الشروط الأحكام التي تنظم العلاقة بين نخبة Nukhba Studio («نخبة») وكل عميل يطلب موقعاً إلكترونياً أو يشترك في إحدى باقاتنا عبر هذا الموقع.",
     sections: [
@@ -24,7 +24,7 @@ const CONTENT: Record<"ar" | "en", { title: string; updated: string; intro: stri
           "يتم الدفع بالعملات الرقمية عبر بوابة NOWPayments، وتُحتسب المبالغ بالدولار وتُدفع بنفس القيمة بـ USDT (1 USD = 1 USDT) أو بعملات أخرى يدعمها البوابة.",
           "في متجر الأكواد فقط، يمكن اختيار بطاقة تعبئة Libyana أو Al Madar. إرسال رمز البطاقة لا يعني قبول الدفع: نتحقق منها يدوياً أولاً، ثم نقبلها أو نرفضها، ولا يتم تسليم الكود المطلوب إلا بعد القبول والتجهيز اليدوي.",
           "عند الدفع ببطاقة الهاتف، يظهر سعر تقديري بالدينار = إجمالي الطلب بـ USDT × سعر الدولار في السوق الموازي × 120%. تعرض الصفحة مصدر السعر ووقت تحديثه، وتوافق على الحساب قبل إرسال الرمز. نسبة 20% تعوّض نقص قيمة البطاقات عند إعادة بيعها؛ هذا ليس سعر صرف رسمياً ولا يعني قبول الدفع.",
-          "يمكن الدفع أيضاً بتحويل يدوي بدون بوابة: Skrill أو Neteller أو Airtm أو D17 (بريد تونس / eDinar) أو Volet (AdvCash) أو WebMoney أو Kashy (TND). تحوّل المبلغ بنفسك إلى الحساب المعروض في صفحة الدفع، ثم تُدخل اسم صاحب الحساب وحساب المُرسِل ومعرّف العملية. لا يعني إرسال هذه البيانات قبول الدفع: نتحقق يدوياً من وصول المبلغ، وقد يبقى الطلب معلّقاً حتى ذلك الحين. لا تُعد التحويل قبل أن نتواصل معك.",
+          "يمكن الدفع أيضاً بتحويل يدوي بدون بوابة: Binance Pay أو OKX Pay أو Bybit Pay أو RedotPay (عبر المعرّف/UID) أو تحويل USDT مباشر (BEP20 / TRC20 / TON / Polygon / Solana) أو عبر Skrill أو Neteller أو Airtm أو D17 (بريد تونس / eDinar) أو Volet (AdvCash) أو WebMoney أو Kashy (TND). تحوّل المبلغ بنفسك إلى الحساب أو المحفظة المعروضة في صفحة الدفع، ثم تُدخل اسم صاحب الحساب وحساب/محفظة المُرسِل ومعرّف العملية (Order ID / TxHash). لا يعني إرسال هذه البيانات قبول الدفع: نتحقق يدوياً من وصول المبلغ، وقد يبقى الطلب معلّقاً حتى ذلك الحين. لا تُعد التحويل قبل أن نتواصل معك.",
           "في الدفع اليدوي، يُحتسب المبلغ المطلوب من إعدادات كل وسيلة: إجمالي الطلب بالدولار × سعر الصرف المعلن × نسبة الزيادة إن وُجدت (مثلاً الدولار = 5.40 دينار ليبي مع زيادة 8%). تعرض صفحة الدفع المبلغ النهائي بالعملة المطلوبة ومصدره، ويجب أن توافق عليه قبل الإرسال. أي تغيير في السعر من طرف الإدارة يُلزمك بالاطلاع على المبلغ الجديد قبل إعادة الإرسال.",
           "يُعتبر الطلب مؤكداً بعد استلام الدفعة المطلوبة (العربون أو أول دفعة للاشتراك) أو بعد قبول بطاقة الهاتف أو التحويل اليدوي من الإدارة.",
         ],
@@ -32,7 +32,7 @@ const CONTENT: Record<"ar" | "en", { title: string; updated: string; intro: stri
       {
         title: "2. الحجز والعربون",
         items: [
-          "الحجز يتطلب دفع عربون يُخصم من إجمالي المشروع.",
+          "الحجز يتطلب دفع عربون يُحتسب في فاتورة الرصيد بعد تأكيدنا. الدفع المباشر للسعر الكامل لا يخصمه تلقائياً؛ تواصل معنا بمرجع الحجز قبل دفع الباقي.",
           "لا يُسترد العربون بعد بدء العمل، إلا في حال تقصير ثابت من نخبة.",
         ],
       },
@@ -48,7 +48,7 @@ const CONTENT: Record<"ar" | "en", { title: string; updated: string; intro: stri
       {
         title: "4. النطاق والاستضافة",
         paragraphs: [
-          "تحدد عروض الأسعار والاتفاق الكتابي من يملك اسم النطاق (الدومين) والاستضافة، ومن يدفع تكلفة تجديدهما.",
+          "العرض الأساسي بسعر 35 دولاراً يشمل كوداً ثابتاً ولغة واحدة وتخصيص المحتوى المقدم عند التسليم الأول ونشر vercel.app وفق أهلية وحدود Vercel. الدومين الخاص غير مشمول. الإدارة بقاعدة بيانات واللغات والوظائف الإضافية خدمات منفصلة. التكاليف الخارجية والمتكررة وملكية الحسابات تؤكد كتابياً قبل الموافقة.",
         ],
       },
       {
@@ -102,7 +102,7 @@ const CONTENT: Record<"ar" | "en", { title: string; updated: string; intro: stri
   },
   en: {
     title: "Terms & conditions of sale",
-    updated: "Last updated: November 5, 2026",
+    updated: "Last updated: November 23, 2026",
     intro:
       "These terms set out the rules that govern the relationship between Nukhba Studio (\"Nukhba\") and each client who orders a website or subscribes to one of our plans through this site.",
     sections: [
@@ -113,7 +113,7 @@ const CONTENT: Record<"ar" | "en", { title: string; updated: string; intro: stri
           "Payments are made in cryptocurrency through the NOWPayments gateway; amounts are priced in USD and paid at the same value in USDT (1 USD = 1 USDT) or another supported coin.",
           "In the digital codes store only, you may choose a Libyana or Al Madar recharge card. Submitting a card code does not constitute accepted payment: we verify it manually before accepting or rejecting it, and the purchased code is delivered only after acceptance and manual preparation.",
           "For phone card payment, the indicative LYD price is the order total in USDT × the parallel-market USD/LYD rate × 120%. The checkout shows the rate source and update time and asks you to accept the calculation before submitting the code. The 20% offsets the loss of value when reselling cards; it is not an official exchange rate and does not mean payment is accepted.",
-          "Manual transfer is also available, without any gateway: Skrill, Neteller, Airtm, D17 (Poste Tunisienne / eDinar), Volet (AdvCash), WebMoney or Kashy (TND). You send the money yourself to the account shown at checkout, then enter the account holder name, the sender account and the transaction ID. Submitting those details does not constitute accepted payment: we verify receipt by hand, and the order stays pending until then. Do not send the transfer twice before hearing from us.",
+          "Manual transfer is also available, without any gateway: Binance Pay, OKX Pay, Bybit Pay, RedotPay (by ID/UID), direct USDT transfer (BEP20 / TRC20 / TON / Polygon / Solana), as well as Skrill, Neteller, Airtm, D17 (Poste Tunisienne / eDinar), Volet (AdvCash), WebMoney or Kashy (TND). You send the money yourself to the account, ID or wallet shown at checkout, then enter the account holder name, the sender account/wallet and the transaction ID (Order ID / TxHash). Submitting those details does not constitute accepted payment: we verify receipt by hand, and the order stays pending until then. Do not send the transfer twice before hearing from us.",
           "For a manual transfer, the amount due is derived from each method's settings: order total in USD × the published exchange rate × any markup (for example 1 USD = 5.40 LYD with an 8% markup). The checkout shows the final amount in the requested currency and its basis, and you must accept it before sending. If the rate changes on our side, you must review the new amount before resubmitting.",
           "An order is confirmed once the required payment (deposit or first subscription payment) is received, or once a phone card or manual transfer is accepted by our team.",
         ],
@@ -121,7 +121,7 @@ const CONTENT: Record<"ar" | "en", { title: string; updated: string; intro: stri
       {
         title: "2. Booking and deposit",
         items: [
-          "Booking requires a deposit, which is deducted from the total project price.",
+          "Booking requires a deposit credited on a confirmed balance invoice. Direct full-price checkout does not deduct it automatically; contact us with your reservation reference before paying the balance.",
           "The deposit is not refunded once work has started, unless Nukhba is clearly at fault.",
         ],
       },
@@ -137,7 +137,7 @@ const CONTENT: Record<"ar" | "en", { title: string; updated: string; intro: stri
       {
         title: "4. Domain name and hosting",
         paragraphs: [
-          "The quote and the written agreement state who owns the domain name and the hosting, and who pays for their renewal.",
+          "The $35 base offer includes static source code, one language, initial personalization with supplied content and vercel.app deployment subject to Vercel eligibility and limits. A custom domain is excluded. Database-backed management, extra languages and other modules are additional services. External and recurring costs and account ownership are confirmed in writing before approval.",
         ],
       },
       {

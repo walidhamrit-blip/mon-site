@@ -17,12 +17,12 @@ export async function generateMetadata({ searchParams }: LocalePageProps): Promi
     path: "/apps",
     title:
       locale === "ar"
-        ? "تطبيقات نخبة القادمة — iOS وAndroid والويب"
-        : "Nukhba Apps — Coming Soon on iOS, Android & Web",
+        ? "تطبيقات الجوال والويب القادمة — نخبة"
+        : "Mobile & Web Apps Coming Soon — Nukhba",
     description:
       locale === "ar"
-        ? "تطبيقات الجوال والويب من نخبة في طرابلس قريباً وقيد التحضير — حلول ذكية للمتاجر والعيادات والمطاعم على iOS وAndroid والويب مع تسجيل للإطلاق المبكر."
-        : "Nukhba mobile & web apps in Tripoli — in preparation and coming soon: smart solutions for shops, clinics and restaurants on iOS, Android and the web, with early-launch sign-up.",
+        ? "تطبيقات الجوال والويب في طرابلس قيد التحضير — حلول ذكية للمتاجر والعيادات والمطاعم على iOS وAndroid والويب مع تسجيل للإطلاق المبكر."
+        : "Mobile and web apps in Tripoli — in preparation and coming soon: smart solutions for shops, clinics and restaurants on iOS, Android and the web, with early-launch sign-up.",
     keywords: [
       "تطبيقات جوال ليبيا",
       "برمجة تطبيقات طرابلس",

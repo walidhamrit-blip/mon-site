@@ -1,15 +1,17 @@
 "use client";
 
 import Link from "next/link";
-import { useId, useState, useTransition } from "react";
+import { useEffect, useId, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowRight, Loader2, Power, Wallet } from "lucide-react";
-import { setManualPaymentMethodEnabled } from "@/app/admin/manual-payments-actions";
+import { setAllManualPaymentsEnabled, setManualPaymentMethodEnabled } from "@/app/admin/manual-payments-actions";
+import { manualPaymentsClosedAt } from "@/lib/manual-payment-hours";
 import { PhoneCardPaymentsToggle } from "./phone-card-payments-toggle";
 import {
   MANUAL_PAYMENT_CURRENCY_LABELS,
   MANUAL_PAYMENT_METHOD_LABELS,
   MANUAL_PAYMENT_METHODS,
+  isDollarPeggedManualCurrency,
   manualPaymentMethodReady,
   type ManualPaymentMethod,
 } from "@/lib/manual-payment-core";
@@ -25,19 +27,46 @@ import type { ManualPaymentsConfigData } from "@/lib/site-types";
  */
 export function ManualPaymentsOverview({
   phoneCardEnabled,
+  masterEnabled,
   manualPayments,
 }: {
   phoneCardEnabled: boolean;
+  masterEnabled: boolean | null;
   manualPayments: ManualPaymentsConfigData;
 }) {
   const router = useRouter();
   const titleId = useId();
   const descriptionId = useId();
+  const master = masterEnabled;
+  const [closedNow, setClosedNow] = useState(true);
+  const [masterBusy, setMasterBusy] = useState(false);
+  useEffect(() => {
+    const update = () => setClosedNow(manualPaymentsClosedAt(new Date()));
+    update();
+    const timer = window.setInterval(update, 30_000);
+    return () => window.clearInterval(timer);
+  }, []);
   const [pendingMethod, setPendingMethod] = useState<ManualPaymentMethod | null>(null);
   const [feedback, setFeedback] = useState<{ ok: boolean; text: string } | null>(null);
   const [transitionPending, startTransition] = useTransition();
 
-  const pending = transitionPending || pendingMethod !== null;
+  const pending = transitionPending || pendingMethod !== null || masterBusy;
+
+  const toggleMaster = () => {
+    if (master === null) return;
+    const next = !master;
+    setMasterBusy(true);
+    setFeedback(null);
+    startTransition(async () => {
+      try {
+        const result = await setAllManualPaymentsEnabled(next);
+        setFeedback({ ok: result.ok, text: result.message ?? result.error ?? "Réponse inattendue." });
+        if (result.ok) router.refresh();
+      } catch {
+        setFeedback({ ok: false, text: "Enregistrement impossible. Réessayez." });
+      } finally { setMasterBusy(false); }
+    });
+  };
 
   const toggleMethod = (method: ManualPaymentMethod) => {
     const current = manualPayments[method];
@@ -87,8 +116,8 @@ export function ManualPaymentsOverview({
             Paiements manuels
           </h2>
           <p id={descriptionId} className="mt-1.5 text-xs leading-5 text-stone-600">
-            Carte / solde téléphonique et virements hors passerelle. Chaque moyen est indépendant ;
-            les crypto-monnaies ne sont jamais coupées par ces interrupteurs. Les demandes déjà
+            Carte / solde téléphonique et virements hors passerelle. Chaque moyen garde son réglage individuel ;
+            les paiements automatiques par passerelle ne sont pas coupés par ces interrupteurs. Les demandes déjà
             reçues restent traitables.
           </p>
         </div>
@@ -101,6 +130,17 @@ export function ManualPaymentsOverview({
         </Link>
       </div>
 
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-stone-200 bg-stone-50 p-4">
+        <div>
+          <h3 className="text-sm font-black text-stone-900">Interrupteur général des paiements manuels</h3>
+          <p className="mt-1 text-xs text-stone-600">Inclut cartes téléphoniques et virements manuels, y compris USDT manuel. Les paiements crypto via NOWPayments ne sont pas concernés.</p>
+          <p role="status" className="mt-1 text-xs font-bold text-stone-800">{master === null ? "État indisponible : nouvelles demandes bloquées." : !master ? "Fermé manuellement, y compris après 9 h." : closedNow ? "Fermeture automatique : 00 h–09 h, heure de Tripoli." : "Ouvert : seuls les moyens individuels activés sont proposés."}</p>
+        </div>
+        <button type="button" role="switch" aria-checked={master === true} aria-label="Interrupteur général des paiements manuels" disabled={pending || master === null} onClick={toggleMaster} className="min-h-11 rounded-xl bg-stone-900 px-4 text-xs font-bold text-white disabled:opacity-50">
+          {masterBusy ? "Enregistrement…" : master === null ? "Indisponible" : master ? "Tout désactiver" : "Tout autoriser"}
+        </button>
+      </div>
+      <p className="text-xs text-stone-600">Les états ci-dessous indiquent les réglages individuels, pas la disponibilité effective : ils restent mémorisés même lorsque la fermeture générale ou horaire s’applique.</p>
       <PhoneCardPaymentsToggle enabled={phoneCardEnabled} embedded />
 
       <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
@@ -109,8 +149,8 @@ export function ManualPaymentsOverview({
           const complete = manualPaymentMethodReady(settings);
           const enabled = settings.enabled === true && complete;
           const busy = pendingMethod === method;
-          const rateLabel = settings.currency === "USD"
-            ? "1 USD = 1 USD"
+          const rateLabel = isDollarPeggedManualCurrency(settings.currency)
+            ? `1 USD = 1 ${settings.currency}`
             : settings.rate != null
               ? `1 USD = ${settings.rate.toFixed(2)} ${settings.currency}`
               : "Taux manquant";

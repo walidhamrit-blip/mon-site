@@ -34,8 +34,8 @@ export default async function manifest(): Promise<MetadataRoute.Manifest> {
       : "Nukhba نخبة — Web Design & Digital Store",
     short_name: "Nukhba نخبة",
     description: ar
-      ? "تصميم مواقع ومتاجر إلكترونية بالدولار مع متجر أكواد ألعاب وبرامج وبطاقات هدايا — تسليم في 7 أيام."
-      : "Websites and online stores priced in USD, plus a digital store for game keys, software and gift cards — delivered in 7 days.",
+      ? "تصميم مواقع ومتاجر إلكترونية بالدولار مع متجر أكواد ألعاب وبرامج وبطاقات هدايا — موعد التسليم حسب النطاق."
+      : "Websites and online stores priced in USD, plus a digital store for game keys, software and gift cards — delivery confirmed by scope.",
     id: "/",
     start_url: "/",
     scope: "/",

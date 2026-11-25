@@ -21,6 +21,7 @@ import { db, ensureSchema } from "@/db";
 import { orders, digitalOrders, settings, telegramCampaigns, telegramSubscribers } from "@/db/schema";
 import {
   composeBroadcast,
+  escapeTelegramHtml,
   formatDeliveryFailureAlert,
   formatLeadAlert,
   formatPaymentAlert,
@@ -38,6 +39,8 @@ import {
 const API_BASE = "https://api.telegram.org";
 const REQUEST_TIMEOUT_MS = 8_000;
 const WEBHOOK_SECRET_SETTING = "telegram_webhook_secret";
+const SHOP_EVENTS_SETTING = "telegram:shop-events";
+const MAX_SHOP_EVENTS = 25;
 /** Telegram : ~30 messages/seconde par bot. On reste large en dessous. */
 const BROADCAST_CHUNK = 20;
 const BROADCAST_PAUSE_MS = 1_100;
@@ -138,14 +141,49 @@ export async function sendTelegramMessage(
   return telegramApi<{ message_id: number }>("sendMessage", body, options.timeoutMs);
 }
 
+/**
+ * Met à jour un message existant (`editMessageText`) — c'est ce qui rend la
+ * navigation boutique fluide : catégories → produits → paiement remplacent
+ * le même message au lieu d'empiler des bulles.
+ *
+ * `ok: true` sur « message is not modified » (re-clic sur le bouton déjà
+ * affiché : rien à faire, ce n'est pas une erreur). L'appelant retombe sur
+ * `sendMessage` quand le message n'est plus éditable (trop ancien, supprimé).
+ */
+export async function editTelegramMessage(
+  chatId: string | number,
+  messageId: number,
+  text: string,
+  options: SendMessageOptions = {},
+): Promise<TelegramApiResult> {
+  const body: Record<string, unknown> = {
+    chat_id: chatId,
+    message_id: messageId,
+    text: telegramClamp(text),
+    link_preview_options: { is_disabled: options.disablePreview !== false },
+  };
+  if (options.parseMode !== undefined) body.parse_mode = options.parseMode;
+  if (options.keyboard?.length) body.reply_markup = { inline_keyboard: options.keyboard };
+  const result = await telegramApi("editMessageText", body, options.timeoutMs);
+  if (!result.ok && /message is not modified/i.test(result.error ?? "")) {
+    return { ok: true };
+  }
+  return result;
+}
+
 /** Message au chat d'administration (alertes). Silencieux si non configuré. */
 export async function notifyTelegramAdmin(
   text: string,
   keyboard?: TelegramButton[][],
+  options: { parseMode?: "HTML"; timeoutMs?: number } = {},
 ): Promise<TelegramApiResult> {
   const { adminChatId } = telegramConfig();
   if (!adminChatId) return { ok: false, error: "TELEGRAM_ADMIN_CHAT_ID absent." };
-  return sendTelegramMessage(adminChatId, text, { keyboard });
+  return sendTelegramMessage(adminChatId, text, {
+    keyboard,
+    parseMode: options.parseMode,
+    timeoutMs: options.timeoutMs,
+  });
 }
 
 /* --------------------------- Alertes métier (push) ------------------------ */
@@ -269,12 +307,15 @@ export async function storeWebhookSecret(secret: string): Promise<void> {
 /**
  * Déclare l'URL du webhook auprès de Telegram. Le secret est généré ici
  * (32 octets) puis mémorisé : l'admin n'a aucun secret à inventer.
+ *
+ * URL canonique : `/api/telegram-webhook` (alias `/api/telegram/webhook`
+ * conservé via une rewrite next.config pour les installations existantes).
  */
 export async function installTelegramWebhook(
   siteUrl: string,
 ): Promise<{ ok: boolean; url: string; error?: string }> {
   const base = siteUrl.replace(/\/+$/, "");
-  const url = `${base}/api/telegram/webhook`;
+  const url = `${base}/api/telegram-webhook`;
   if (!telegramConfigured()) {
     return { ok: false, url, error: "TELEGRAM_BOT_TOKEN absent ou invalide." };
   }
@@ -355,7 +396,9 @@ export async function sendTelegramTest(siteName: string): Promise<TelegramApiRes
     return { ok: false, error: "TELEGRAM_BOT_TOKEN absent ou invalide." };
   }
   return notifyTelegramAdmin(
-    `✅ <b>Test réussi</b> — ${siteName}\n\nCe chat recevra les alertes : nouvelle demande, paiement confirmé, campagne envoyée.`,
+    `✅ <b>Test réussi</b> — ${escapeTelegramHtml(siteName)}\n\nCe chat recevra les alertes : nouvelle demande, paiement confirmé, campagne envoyée.`,
+    undefined,
+    { parseMode: "HTML" },
   );
 }
 
@@ -428,6 +471,143 @@ export async function setTelegramLanguage(chatId: string, language: TelegramLoca
     .update(telegramSubscribers)
     .set({ language, updatedAt: new Date() })
     .where(eq(telegramSubscribers.chatId, chatId));
+}
+
+/* ------------------------- Boutique inline (état) -------------------------- */
+
+/**
+ * État de navigation de la boutique (forme exacte dans
+ * `telegram-shop-core.ts`, qui reste pur et testable sans base).
+ */
+export type TelegramShopState = Record<string, unknown>;
+
+/** Récupère l'état boutique + l'e-mail de caisse mémorisé d'un chat. */
+export async function getTelegramShopContext(
+  chatId: string,
+): Promise<{ shopState: TelegramShopState | null; checkoutEmail: string | null }> {
+  try {
+    const [row] = await db
+      .select({
+        shopState: telegramSubscribers.shopState,
+        checkoutEmail: telegramSubscribers.checkoutEmail,
+      })
+      .from(telegramSubscribers)
+      .where(eq(telegramSubscribers.chatId, chatId))
+      .limit(1);
+    return {
+      shopState:
+        row?.shopState && typeof row.shopState === "object" && !Array.isArray(row.shopState)
+          ? (row.shopState as TelegramShopState)
+          : null,
+      checkoutEmail: row?.checkoutEmail || null,
+    };
+  } catch {
+    return { shopState: null, checkoutEmail: null };
+  }
+}
+
+/** Écrit l'état de navigation (fusion partielle gérée par l'appelant). */
+export async function setTelegramShopState(
+  chatId: string,
+  state: TelegramShopState | null,
+): Promise<void> {
+  await ensureSchema();
+  await db
+    .update(telegramSubscribers)
+    .set({ shopState: state, updatedAt: new Date() })
+    .where(eq(telegramSubscribers.chatId, chatId))
+    .catch(() => undefined);
+}
+
+/** Mémorise le dernier e-mail de caisse (proposition au prochain achat). */
+export async function setTelegramCheckoutEmail(chatId: string, email: string): Promise<void> {
+  await ensureSchema();
+  await db
+    .update(telegramSubscribers)
+    .set({ checkoutEmail: email.slice(0, 254), updatedAt: new Date() })
+    .where(eq(telegramSubscribers.chatId, chatId))
+    .catch(() => undefined);
+}
+
+/**
+ * Nettoie une éventuelle caisse en attente (`pending`) lorsque le client
+ * quitte le tunnel (bouton Menu, nouvelle commande…). Best-effort.
+ */
+export async function clearTelegramPendingCheckout(chatId: string): Promise<void> {
+  try {
+    const { shopState } = await getTelegramShopContext(chatId);
+    if (!shopState || shopState.pending == null) return;
+    await setTelegramShopState(chatId, { ...shopState, pending: null });
+  } catch {
+    /* jamais bloquant */
+  }
+}
+
+export interface TelegramShopCheckoutEvent {
+  at: string;
+  reason: string;
+  alerted: boolean;
+  slug: string;
+  title: string;
+  label: string;
+  qty: number;
+  totalUsd: string;
+  actorLabel: string;
+  maskedEmail: string;
+  detail: string;
+}
+
+/**
+ * Journalise un refus ou incident de la caisse Telegram dans `settings`
+ * (`telegram:shop-events`, tampon circulaire de 25 entrées, aucun secret).
+ */
+export async function recordTelegramShopCheckoutEvent(
+  event: TelegramShopCheckoutEvent,
+): Promise<void> {
+  try {
+    await ensureSchema();
+    const existing = await listTelegramShopCheckoutEvents(MAX_SHOP_EVENTS);
+    const next = [event, ...existing].slice(0, MAX_SHOP_EVENTS);
+    await db
+      .insert(settings)
+      .values({ key: SHOP_EVENTS_SETTING, value: next, updatedAt: new Date() })
+      .onConflictDoUpdate({
+        target: settings.key,
+        set: { value: next, updatedAt: new Date() },
+      });
+  } catch (error) {
+    console.warn(
+      "[telegram][shop] journalisation impossible :",
+      error instanceof Error ? error.message : error,
+    );
+  }
+}
+
+/** Relit les derniers événements de caisse Telegram pour `/admin/telegram`. */
+export async function listTelegramShopCheckoutEvents(
+  limit = 10,
+): Promise<TelegramShopCheckoutEvent[]> {
+  try {
+    await ensureSchema();
+    const [row] = await db
+      .select({ value: settings.value })
+      .from(settings)
+      .where(eq(settings.key, SHOP_EVENTS_SETTING))
+      .limit(1);
+    if (!Array.isArray(row?.value)) return [];
+    return row.value
+      .filter((item): item is TelegramShopCheckoutEvent =>
+        Boolean(
+          item &&
+            typeof item === "object" &&
+            typeof (item as TelegramShopCheckoutEvent).at === "string" &&
+            typeof (item as TelegramShopCheckoutEvent).reason === "string",
+        ),
+      )
+      .slice(0, Math.max(1, limit));
+  } catch {
+    return [];
+  }
 }
 
 /** Consentement marketing — `true` horodate l'opt-in, `false` le retire. */

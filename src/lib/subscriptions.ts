@@ -340,6 +340,7 @@ export async function createManualClientSubscription(input: {
     await insertPreparedManualPayment(ref, prepared, { subscriptionId: row.id });
   } catch (error) {
     await db.delete(subscriptions).where(eq(subscriptions.id, row.id));
+    if (error instanceof ManualPaymentError) return { ok: false, code: error.code, status: error.status, message: error.message };
     if (isManualPaymentDuplicateError(error)) {
       return {
         ok: false,

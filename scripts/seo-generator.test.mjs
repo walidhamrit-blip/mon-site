@@ -377,9 +377,9 @@ test("schémas JSON-LD incluent geo, offre, HowTo — et aucun avis auto-déclar
     siteConfig.pricing.plans.length + siteConfig.standaloneServices.length,
   );
   assert.deepEqual(
-    catalog.itemListElement.slice(0, 3).map((offer) => offer.price),
-    ["360", "612", "1056"],
-    "les offres structurées publient le total modèle + 20 % de personnalisation",
+    catalog.itemListElement.slice(0, siteConfig.pricing.plans.length).map((offer) => offer.price),
+    ["35"],
+    "les offres structurées publient la base unique avec personnalisation initiale incluse",
   );
 
   const quoteConfig = {
@@ -422,7 +422,7 @@ test("schémas JSON-LD incluent geo, offre, HowTo — et aucun avis auto-déclar
   assert.equal(quoteWork.offers, undefined, "un devis non confirmé ne doit pas être présenté comme total");
   const pricedWork = demoJsonLd(pricedConfig, defaultDemos[0]);
   assert.equal(pricedWork.offers["@type"], "Offer");
-  assert.equal(Number(pricedWork.offers.price), 924);
+  assert.equal(Number(pricedWork.offers.price), 36.75); // $35 + the test-only 5% rate
   assert.equal(work.isPartOf["@id"], `${siteConfig.url}/#website`);
   assert.equal(work.mainEntityOfPage["@type"], "WebPage");
   assert.equal(work.about["@type"], "Thing");
@@ -578,8 +578,8 @@ test("A09 : le JSON-LD openingHoursSpecification est dérivé de config.hoursEn,
   assert.deepEqual(spec.dayOfWeek, expected.dayOfWeek);
   assert.equal(spec.opens, expected.opens);
   assert.equal(spec.closes, expected.closes);
-  // Cas concret : la config actuelle se termine à 23:00.
-  assert.equal(spec.closes, "23:00");
+  // Cas concret : la config actuelle se termine à 22:00 (confirmé par le propriétaire).
+  assert.equal(spec.closes, "22:00");
   // Et si l'admin change les horaires dans les réglages, le JSON-LD suit.
   const changed = { ...siteConfig, hoursEn: "Mon - Fri: 8:00 AM - 6:00 PM" };
   const lb2 = localBusinessJsonLd(changed, defaultTestimonials);
@@ -662,5 +662,5 @@ test("A08 : le proxy nettoie l'en-tête de langue interne et le recalcule depuis
   assert.match(proxy, /requestHeaders\.set\(LOCALE_HEADER, urlLocale \?\? LOCALE_DEFAULT_SIGNAL\)/);
   const layout = readFileSync(join(root, "src/app/layout.tsx"), "utf8");
   assert.match(layout, /requestLocale\(siteLocale\(config\)\)/);
-  assert.match(layout, /<I18nProvider defaultLocale=\{defaultLocale\} urlLocale=\{urlLocale \?\? \(isPublic \? defaultLocale : null\)\}>/);
+  assert.match(layout, /<I18nProvider defaultLocale=\{primaryLocale\} urlLocale=\{urlLocale \?\? \(isPublic \? defaultLocale : null\)\}>/);
 });

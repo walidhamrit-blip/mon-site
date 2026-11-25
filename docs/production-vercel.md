@@ -176,10 +176,13 @@ Le catalogue synchronisé est donc stocké dans la table `settings`
   que la copie dépasse son TTL : l'utilisateur reçoit la page immédiatement,
   la synchro se fait après l'envoi ;
 - le **cron** `/api/cron/fazercards-catalog` (une fois par jour,
-  `maxDuration = 60`) sert de filet de sécurité. ⚠️ Le plan **Hobby** de
-  Vercel refuse tout cron plus fréquent qu'une fois par jour et **fait
-  échouer le déploiement** (`Hobby accounts are limited to daily cron jobs`) ;
-  un `*/10` a déjà bloqué un déploiement de ce projet ;
+  `maxDuration = 60`) sert de filet de sécurité. ⚠️ Ce cron **reste
+  quotidien même sur Pro** : une synchro complète coûte un appel HTTP par
+  catégorie (~123) et plusieurs dizaines de secondes, donc la multiplier
+  empilerait des synchros concurrentes et de la facture d'invocations — le
+  rafraîchissement utile est déjà fait par `after()`. (Pour mémoire, le plan
+  Hobby refuse un cron plus fréquent que quotidien et **fait échouer le
+  déploiement** ; un `*/10` avait bloqué un déploiement de ce projet.)
 - après un déploiement, la première synchro peut être forcée à la main :
   `curl -s https://nokhba.net.ly/api/fazercards/catalog?refresh=1 > /dev/null`.
 
@@ -264,6 +267,30 @@ famille) et `rotation` (position de la fenêtre), puis
 5. Contrôle du solde et de l'abonnement revendeur : **dans le hub
    FazerCards** (Wallet / Subscription), jamais sur `/api/health` — le
    solde n'est volontairement pas exposé sur une route publique.
+
+### Alerte « Solde fournisseur illisible » — que faire
+
+L'e-mail du cron `/api/cron/fazercards-balance` (05:10 UTC) part vers
+`LEAD_NOTIFICATION_EMAIL`, sinon l'e-mail public du site
+(`contact@nokhba.net.ly`). Un solde **illisible** n'est pas un solde vide :
+la lecture a échoué. Le sujet de l'e-mail, le bandeau `/admin/digital` et
+`assessment.unknown` nomment la cause ; chaque cause a un seul correctif.
+
+| Sujet / cause | Ce que ça veut dire | Correctif |
+|---|---|---|
+| `clé API absente` | aucune `FAZERCARDS_API_KEY` dans l'environnement **Production**, ou déploiement non refait | ajouter la variable puis **Redeploy** |
+| `clé refusée par le fournisseur` | 401/403 : clé révoquée, tronquée, recopiée avec des guillemets, ou abonnement revendeur expiré | `reseller.fazercards.com` → Profile → API key ; vérifier Wallet / Subscription ; recopier dans Vercel ; Redeploy |
+| `fournisseur injoignable` | panne réseau, timeout ou limitation de débit (429) | rien à configurer : réessayer plus tard, la boutique reste ouverte |
+| `réponse du fournisseur inexploitable` | réponse reçue mais non lisible (HTML, JSON cassé, `FAZERCARDS_API_BASE` erroné) | vérifier `FAZERCARDS_API_BASE` (`https://api.fzr.cards/api/v2`) et lire l'erreur exacte sur `/admin/digital` |
+
+Dans tous les cas de solde illisible, la caisse **ne ferme pas** : la vente
+passe et la commande bascule en livraison manuelle (`balanceGate` →
+`allow / balance_unknown`). Tant que la lecture échoue, la couverture du
+plafond n'est pas garantie : il est prudent d'**abaisser le plafond**
+(`/admin/settings?tab=fazercards`) à ce qui peut être honoré à coup sûr.
+
+> Ne pas confondre avec « Solde fournisseur BAS / CRITIQUE » : là, le solde
+> est lu et il est insuffisant — il faut recharger, pas corriger une clé.
 
 🔐 Ne pas recopier la vraie clé FazerCards dans l'environnement
 **Preview** : les Preview lisent les mêmes noms de variables et le même
@@ -751,9 +778,11 @@ Au-delà, la commande passe en `manual` avec un motif explicite — jamais
 d'achat silencieux, jamais de double débit (Idempotency-Key par commande).
 
 Diagnostic sans achat : `GET /api/cron/digital-orders?dry=1` avec
-`Authorization: Bearer $CRON_SECRET`. Sur un plan Vercel Hobby, le cron est
-quotidien (`20 4 * * *`) ; sur Pro, resserrez à `*/5 * * * *` pour une
-reprise en minutes.
+`Authorization: Bearer $CRON_SECRET`. Plan Pro de ce projet : `*/5 * * * *`
+(réglé), soit 5 jobs par passage — au plus 12 jobs/min tous passages
+confondus, largement sous le rythme d'une commande payée. Sur un plan Hobby,
+il faudrait revenir à `20 4 * * *` (une fois par jour), la latence des
+retries étant alors portée par l'IPN et le sondage client.
 
 Cette route est aussi le **travailleur de la file de livraison**
 (`delivery_jobs`) : statuts granulaires (`pending_payment`,
@@ -767,9 +796,18 @@ complet : `docs/webhooks-resilience.md`.
 
 Dans **Administration → Boutique digitale**, la règle de recharge est modifiable
 sans redéploiement : seuil (30 USD par défaut) et solde cible (100 USD par défaut).
-Si le solde est strictement inférieur au seuil, le cron quotidien de solde peut
+Si le solde est strictement inférieur au seuil, le cron de solde peut
 envoyer une alerte et l'admin affiche la différence avec la cible. La base de
 données, `CRON_SECRET`, le cron Vercel et la messagerie doivent fonctionner.
+
+**Plan Vercel Pro (ce projet)** — cron solde : `0 * * * *`, une lecture par
+heure. Bien régler le seuil : la caisse peut vendre jusqu'au plafond
+(`FAZERCARDS_MAX_ORDER_USD`), et une vente au plafond débite le **coût
+fournisseur** d'un coup. Exemple mesuré le 21/11/2026 : solde 116,91 $,
+plafond 110 $ → coût d'une vente au plafond 98,99 $, soit 17,92 $ restants,
+donc `critical` après **une seule** vente. Un seuil à 20 $ n'alerterait
+qu'après l'effondrement de la capacité de vente ; viser un seuil proche du
+coût du plafond (≈ 120 $ pour un plafond de 110 $) et une cible supérieure.
 Cette règle ne crée ni facture FazerCards, ni retrait NOWPayments : la recharge
 reste manuelle. Vérifier les montants, frais et instructions BEP20 avant tout
 paiement. Ce réglage ne modifie pas le plafond de commande du site.

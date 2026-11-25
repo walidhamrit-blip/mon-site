@@ -40,7 +40,7 @@ const checkoutSchema = z.object({
   // Certification explicite de l'identifiant : obligatoire quand le
   // fournisseur ne sait pas vérifier le jeu (voir `playerIdGate`).
   idConfirmed: z.boolean().optional(),
-  paymentMethod: z.enum(["nowpayments", "phone_card", "manual"]).default("nowpayments"),
+  paymentMethod: z.enum(["nowpayments", "paygate", "phone_card", "manual"]).default("nowpayments"),
   // Paiement manuel sans passerelle : le client envoie l'argent lui-même sur
   // le compte de l'agence puis déclare sa preuve. Aucune passerelle n'est
   // appelée, et rien n'est débloqué sans un geste admin.
@@ -216,6 +216,8 @@ export async function POST(req: Request) {
       orderRef: result.orderRef,
       trackingToken: result.trackingToken,
       paymentUrl: result.paymentUrl,
+      trackingUrl: result.trackingUrl,
+      billedUsd: result.billedUsd,
       totalUsd: result.totalUsd,
       productTitle: result.productTitle,
       denominationLabel: result.denominationLabel,

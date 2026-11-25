@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { eq } from "drizzle-orm";
 import { db, ensureSchema } from "@/db";
-import { g2gDeliveries, g2gOfferMappings, type G2gOfferMapping } from "@/db/schema";
+import { g2gDeliveries, g2gOfferMappings, webhookEvents, type G2gOfferMapping } from "@/db/schema";
 import {
   applyKillSwitch,
   g2gAutoDeliveryEnabled,
@@ -20,12 +20,11 @@ import {
   parseG2gDeliveryEvent,
   verifyG2gWebhookSignature,
 } from "@/lib/g2g-core";
-import {
-  reserveWebhookEvent,
-  settleWebhookEvent,
-} from "@/lib/delivery-queue";
+import { payloadHash, settleWebhookEvent } from "@/lib/delivery-queue";
+import { webhookEventKey } from "@/lib/delivery-queue-core";
 import { purchaseG2gDelivery, type G2gPurchaseOutcome } from "@/lib/g2g-purchase";
-import { attemptG2gDelivery } from "@/lib/g2g-delivery";
+import { fazercardsGiftCardCards } from "@/lib/fazercards";
+import { automaticDeliveryVerified, isSyntheticDelivery } from "@/lib/g2g-pilot";
 import { notifyTelegramAdmin } from "@/lib/telegram";
 
 /**
@@ -134,26 +133,34 @@ export async function POST(req: Request) {
     return noStoreJson({ ok: false, error: parsed.reason }, 400);
   }
   const event = parsed.event;
+  // Un événement de test interne ne doit jamais déclencher d’achat réel.
+  const isSyntheticTest = isSyntheticDelivery(event.deliveryId, event.orderId);
 
-  // Idempotence stricte : un même delivery_id rejoué ne produit ni second
-  // achat ni seconde alerte. Une panne de journal ne bloque pas la réception.
-  let webhookKey = "";
+  // Réservation et trace minimale sont insérées dans une même transaction.
+  // Un crash ultérieur laisse une ligne planned, surveillée par la file et
+  // soumise à rapprochement humain, jamais à un nouvel achat automatique.
+  const webhookKey = webhookEventKey("g2g", event.deliveryId, event.eventType);
+  if (!webhookKey) return noStoreJson({ ok: false, error: "invalid_event_key" }, 400);
   try {
-    const reservation = await reserveWebhookEvent({
-      provider: "g2g",
-      eventId: event.deliveryId,
-      status: event.eventType,
-      rawBody,
+    await ensureSchema();
+    const hash = await payloadHash(rawBody);
+    const fresh = await db.transaction(async (tx) => {
+      const reserved = await tx.insert(webhookEvents).values({
+        provider: "g2g", eventKey: webhookKey, payloadHash: hash,
+        eventStatus: event.eventType, outcome: "received",
+      }).onConflictDoNothing({ target: webhookEvents.eventKey }).returning({ id: webhookEvents.id });
+      if (reserved.length === 0) return false;
+      const delivery = await tx.insert(g2gDeliveries).values({
+        deliveryId: event.deliveryId, orderId: event.orderId, offerId: event.offerId,
+        requestedQty: event.requestedQty, decision: "pending_review", status: "planned",
+        detail: "Réception enregistrée ; décision en cours.",
+      }).onConflictDoNothing({ target: g2gDeliveries.deliveryId }).returning({ id: g2gDeliveries.id });
+      return delivery.length > 0;
     });
-    if (!reservation.fresh) {
-      return noStoreJson({ ok: true, duplicate: true });
-    }
-    webhookKey = reservation.key;
+    if (!fresh) return noStoreJson({ ok: true, duplicate: true });
   } catch (error) {
-    console.warn(
-      "[g2g][webhook] journal d'idempotence indisponible :",
-      error instanceof Error ? error.message : error,
-    );
+    console.warn("[g2g][webhook] réservation et trace indisponibles :", error instanceof Error ? error.message : error);
+    return noStoreJson({ ok: false, error: "idempotency_unavailable" }, 503);
   }
 
   let mappingFound = false;
@@ -174,7 +181,7 @@ export async function POST(req: Request) {
       "[g2g][webhook] mapping illisible :",
       error instanceof Error ? error.message : error,
     );
-    // 503 → G2G réessaie ; l'événement reste « received » dans le journal.
+    // La trace planned sera escaladée pour un rapprochement manuel.
     return noStoreJson({ ok: false, error: "db_unavailable" }, 503);
   }
 
@@ -209,6 +216,19 @@ export async function POST(req: Request) {
     }
 
     if (offer) {
+      // Vérifier le SKU et son coût actuel, jamais le seul prix mis en cache.
+      let supplierCostUsd = 0;
+      if (mapping.supplierKind === "gift_card" && mapping.categoryId && mapping.supplierSkuId) {
+        try {
+          const cards = await fazercardsGiftCardCards(mapping.categoryId);
+          const sku = cards.offers.find((item) => item.card_id === mapping.supplierSkuId);
+          if (sku && sku.stock >= event.requestedQty && event.requestedQty >= sku.min_order_quantity && event.requestedQty <= sku.max_order_quantity) {
+            supplierCostUsd = Number(sku.price_usd);
+          }
+        } catch (error) {
+          console.warn("[g2g][webhook] SKU fournisseur illisible :", error instanceof Error ? error.message : error);
+        }
+      }
       plan = planG2gFulfilment({
         mappingEnabled: mapping.enabled,
         /**
@@ -227,7 +247,7 @@ export async function POST(req: Request) {
         offerCurrency: offer.currency ?? mapping.saleCurrency,
         offerDeliveryType: offer.delivery_type ?? null,
         offerCodeLabel: offer.code_label ?? null,
-        supplierCostUsd: Number(mapping.supplierPriceUsd ?? 0) || 0,
+        supplierCostUsd,
         saleCurrency: mapping.saleCurrency,
         minMarginPercent: mapping.minMarginPercent,
         maxCostUsd: Number(mapping.maxCostUsd ?? 0) || 0,
@@ -244,36 +264,20 @@ export async function POST(req: Request) {
   );
 
   try {
-    await ensureSchema();
-    await db
-      .insert(g2gDeliveries)
-      .values({
-        deliveryId: event.deliveryId,
-        orderId: event.orderId,
-        offerId: event.offerId,
-        requestedQty: event.requestedQty,
-        decision,
-        status: offerUnreadable ? "failed" : decision === "proceed" ? "planned" : "skipped",
-        unitPriceUsd: plan && plan.unitPrice > 0 ? String(plan.unitPrice) : null,
-        supplierCostUsd: plan && plan.supplierCostUsd > 0 ? String(plan.supplierCostUsd) : null,
-        netMarginPercent: plan ? String(plan.netMarginPercent) : null,
-        detail: offerUnreadable
-          ? `Offre G2G illisible : ${offerUnreadable}`
-          : plan
-            ? autoDeliveryEnabled
-              ? plan.summary
-              : `${plan.summary} — achat retenu par le coupe-circuit (G2G_AUTO_DELIVERY).`
-            : decision,
-        updatedAt: new Date(),
-      })
-      .onConflictDoNothing({ target: g2gDeliveries.deliveryId });
+    await db.update(g2gDeliveries).set({
+      decision,
+      status: offerUnreadable ? "failed" : "skipped",
+      unitPriceUsd: plan && plan.unitPrice > 0 ? String(plan.unitPrice) : null,
+      supplierCostUsd: plan && plan.supplierCostUsd > 0 ? String(plan.supplierCostUsd) : null,
+      netMarginPercent: plan ? String(plan.netMarginPercent) : null,
+      detail: offerUnreadable ? `Offre G2G illisible : ${offerUnreadable}` :
+        plan ? `${plan.summary} — livraison automatique non vérifiée : intervention manuelle.` : decision,
+      updatedAt: new Date(),
+    }).where(eq(g2gDeliveries.deliveryId, event.deliveryId));
   } catch (error) {
-    // Une panne du journal ne doit jamais faire échouer la réception :
-    // mieux vaut un événement sans trace qu'un événement rejoué sans fin.
-    console.warn(
-      "[g2g][webhook] journal de livraison indisponible :",
-      error instanceof Error ? error.message : error,
-    );
+    // La trace minimale planned reste en base et sera escaladée après délai.
+    console.warn("[g2g][webhook] décision non enregistrée :", error instanceof Error ? error.message : error);
+    return noStoreJson({ ok: false, error: "delivery_log_unavailable" }, 503);
   }
 
   /**
@@ -287,7 +291,7 @@ export async function POST(req: Request) {
    * RÉELLE soit `proceed`, ce qui est impossible coupe-circuit baissé.
    */
   let purchase: G2gPurchaseOutcome | null = null;
-  if (decision === "proceed") {
+  if (decision === "proceed" && !isSyntheticTest && automaticDeliveryVerified()) {
     try {
       purchase = await purchaseG2gDelivery({
         deliveryId: event.deliveryId,
@@ -314,55 +318,8 @@ export async function POST(req: Request) {
     }
   }
 
-  /** Fast path : livraison synchrone après achat réussi. FazerCards rend
-   * parfois les codes immédiatement ; dans ce cas, l'acheteur les reçoit
-   * sans attendre le prochain passage du cron. On tente trois fois sur
-   * ~6 s, puis on laisse le cron reprendre (brique 2). */
-  let deliveredSync = false;
-  if (purchase?.outcome === "purchased") {
-    try {
-      const [deliveryRow] = await db
-        .select()
-        .from(g2gDeliveries)
-        .where(eq(g2gDeliveries.deliveryId, event.deliveryId))
-        .limit(1);
-      const delivery = deliveryRow ?? null;
-      if (delivery) {
-        for (let i = 0; i < 3; i++) {
-          await new Promise((resolve) => setTimeout(resolve, 2000));
-          const result = await attemptG2gDelivery(delivery);
-          if (result.kind === "delivered") {
-            await db
-              .update(g2gDeliveries)
-              .set({
-                status: "delivered",
-                deliveryAttempts:
-                  Number(delivery.deliveryAttempts ?? 0) + 1,
-                nextAttemptAt: null,
-                detail: `Livré (synchrone) : ${result.codes} code(s) transmis à G2G.`,
-                updatedAt: new Date(),
-              })
-              .where(eq(g2gDeliveries.deliveryId, event.deliveryId));
-            deliveredSync = true;
-            break;
-          }
-          if (result.kind === "failed") {
-            // Une erreur G2G (pas un problème de codes manquants) ne doit
-            // pas être retentée en boucle dans le webhook : le cron s'en
-            // chargera avec son propre backoff.
-            break;
-          }
-          // awaiting_codes / no_order_ref → on retente au prochain tour.
-        }
-      }
-    } catch (error) {
-      // Le fast path échoue : ce n'est pas bloquant, le cron prend le relai.
-      console.warn(
-        "[g2g][webhook] livraison synchrone impossible :",
-        error instanceof Error ? error.message : String(error),
-      );
-    }
-  }
+  // Une seule voie de livraison : la file réclame la ligne avant traitement.
+  const deliveredSync = false;
 
   try {
     await notifyTelegramAdmin(
@@ -435,6 +392,7 @@ export async function POST(req: Request) {
     decision,
     /** Ce qui se serait passé si le coupe-circuit était activé. */
     hypothetical_decision: plan?.decision ?? null,
+    delivery_verified: false,
     net_margin_percent: plan?.netMarginPercent ?? null,
     /**
      * Prix de vente relu chez G2G et commission appliquée — de quoi

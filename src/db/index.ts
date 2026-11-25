@@ -505,6 +505,39 @@ export function ensureSchema(): Promise<void> {
         "CREATE INDEX IF NOT EXISTS manual_payments_status_idx ON manual_payments (status, created_at DESC)",
       );
 
+      // Passerelle Carte Bancaire → USDC Polygon (PayGate.to) : journal des
+      // sessions d'encaissement non-custodial et preuves de callback RSA-SHA256.
+      await pool.query(`
+        CREATE TABLE IF NOT EXISTS paygate_payments (
+          id serial PRIMARY KEY,
+          created_at timestamptz NOT NULL DEFAULT now(),
+          updated_at timestamptz NOT NULL DEFAULT now(),
+          order_ref text NOT NULL UNIQUE REFERENCES orders(ref) ON DELETE CASCADE,
+          merchant_wallet text NOT NULL,
+          address_in text NOT NULL,
+          polygon_address_in text NOT NULL,
+          ipn_token text NOT NULL,
+          callback_url text NOT NULL,
+          checkout_url text NOT NULL,
+          base_amount_usd text NOT NULL,
+          fee_percent text NOT NULL DEFAULT '0',
+          billed_amount_usd text NOT NULL,
+          min_acceptable_usd text NOT NULL,
+          provider text,
+          status text NOT NULL DEFAULT 'pending',
+          value_coin text,
+          value_forwarded_coin text,
+          coin text,
+          txid_in text,
+          txid_out text,
+          paid_at timestamptz,
+          last_detail text
+        )
+      `);
+      await pool.query(
+        "CREATE INDEX IF NOT EXISTS paygate_payments_status_idx ON paygate_payments (status, created_at DESC)",
+      );
+
       // Livraison des projets web : récapitulatif remis au client + validation
       // de recette horodatée (page publique /livraison/<ref>?t=<jeton>).
       await pool.query(`
@@ -558,6 +591,29 @@ export function ensureSchema(): Promise<void> {
       `);
       await pool.query(
         "CREATE INDEX IF NOT EXISTS telegram_subscribers_optin_idx \n          ON telegram_subscribers (marketing_opt_in, status)",
+      );
+      // Boutique inline du bot : e-mail de caisse mémorisé + état de
+      // navigation (callback Telegram limités à 64 octets).
+      await pool.query(
+        "ALTER TABLE telegram_subscribers ADD COLUMN IF NOT EXISTS checkout_email text",
+      );
+      await pool.query(
+        "ALTER TABLE telegram_subscribers ADD COLUMN IF NOT EXISTS shop_state jsonb",
+      );
+      // Identité Telegram portée par les commandes créées depuis le bot
+      // (suivi + livraison) — les deux tables sont écrites ensemble à la
+      // caisse (voir createDigitalCheckout).
+      await pool.query(
+        "ALTER TABLE orders ADD COLUMN IF NOT EXISTS telegram_chat_id text",
+      );
+      await pool.query(
+        "ALTER TABLE orders ADD COLUMN IF NOT EXISTS telegram_username text",
+      );
+      await pool.query(
+        "ALTER TABLE digital_orders ADD COLUMN IF NOT EXISTS telegram_chat_id text",
+      );
+      await pool.query(
+        "ALTER TABLE digital_orders ADD COLUMN IF NOT EXISTS telegram_username text",
       );
       // Suivi de commande depuis le chat Telegram (consentement explicite,
       // notification de livraison idempotente). Voir src/lib/telegram-delivery.ts.
@@ -725,6 +781,11 @@ export function ensureSchema(): Promise<void> {
       await pool.query(
         "CREATE INDEX IF NOT EXISTS g2g_deliveries_next_attempt_idx ON g2g_deliveries (next_attempt_at)",
       );
+      // Achat G2G : les anciennes lignes restent NULL et ne sont jamais
+      // considérées comme couvertes rétroactivement par une clé fournisseur.
+      await pool.query("ALTER TABLE g2g_deliveries ADD COLUMN IF NOT EXISTS supplier_idempotency_key text");
+      await pool.query("ALTER TABLE g2g_deliveries ADD COLUMN IF NOT EXISTS supplier_purchase_payload text");
+      await pool.query("ALTER TABLE g2g_deliveries ADD COLUMN IF NOT EXISTS supplier_purchase_started_at timestamptz");
       // Colonnes de la file de livraison (brique 2) : tentatives de livraison
       // distinctes des tentatives d'achat, et bail de reprise pour le cron.
       await pool.query(

@@ -1,3 +1,4 @@
+import { websiteOfferSummary, websiteTimelineNote, websiteDemoNote, paymentAvailabilityNote, websiteDepositNote } from "@/lib/website-offer";
 import { resolveDemoClassification, resolvePlanPriceBreakdown } from "@/lib/classification";
 import { whatsappLink } from "@/lib/utils";
 import { defaultAppsPage, defaultProductsPage } from "@/lib/content";
@@ -55,6 +56,10 @@ function languagesDescription(config: LlmsConfig): string {
  * réalisation dans l'administration se reflète immédiatement pour les
  * crawlers IA (ChatGPT/OAI-SearchBot, Perplexity, Claude, Gemini…).
  */
+function safeLinkTitle(value: string): string {
+  return value.replace(/\[/g, "(").replace(/\]/g, ")").trim();
+}
+
 export function buildLlmsTxt({
   config,
   content,
@@ -71,10 +76,10 @@ export function buildLlmsTxt({
   );
   lines.push("");
   lines.push(
-    `> ${config.name} (${config.nameAr}) is a premium web design and development agency based in ${marketEn.place} (${config.addressEn} / ${config.address}). We design and build fast, luxury-branded showcase websites, e-commerce stores and online booking systems for ${globalReach ? "businesses worldwide" : `businesses in ${marketEn.country}`} — delivered in ${config.stats.deliveryEn} (${config.stats.delivery}) with Next.js, 90+ Lighthouse scores, full Arabic (RTL) and English support, local & AI search optimization (SEO + GEO), multi-currency display, WhatsApp ordering and crypto payment options (full or 2–3 installments via NOWPayments). We also publish a catalogue of digital software codes and gaming gift cards with electronic delivery.`,
+    `> ${config.name} (${config.nameAr}) is a web agency based in ${marketEn.place}, serving ${globalReach ? "clients worldwide" : marketEn.country}. ${websiteOfferSummary("en")} Standalone services and optional maintenance are separate. We also operate a digital codes store.`,
   );
   lines.push("");
-  lines.push("## Key facts");
+  lines.push("**Key facts:**");
   lines.push("");
   lines.push(`- Agency: ${config.name} (${config.nameAr}) — ${config.tagline}`);
   lines.push(`- Address: ${config.addressEn} (${config.address})`);
@@ -87,102 +92,18 @@ export function buildLlmsTxt({
   // durées de support incluses dans les formules. Aucun chiffre de
   // confiance auto-déclaré (sites livrés, satisfaction, note, « 24/7 »).
   lines.push(
-    `- Track record: ${content.demos.length} live website examples published in the portfolio (${cleanUrl(base, "/demos")}), ${content.testimonials.length} client testimonials published on the site; delivery from ${config.stats.deliveryEn} depending on plan; support via WhatsApp and the contact page during opening hours (${config.hoursEn}), with 30–90 days of post-delivery support included depending on plan`,
+    `- Track record: ${content.demos.length} live website examples published in the portfolio (${cleanUrl(base, "/demos")}), ${content.testimonials.length} client testimonials published on the site; ${websiteTimelineNote("en")}; support via WhatsApp and the contact page during opening hours (${config.hoursEn}), with post-delivery maintenance available separately`,
   );
   // Langue de référence : identique à celle servie dans le HTML et les
   // métadonnées (arabe pour un marché arabophone, sauf choix explicite).
   lines.push(`- Languages: ${languagesDescription(config)}; French-speaking team`);
   lines.push(
-    `- Payments: USD-only pricing (1 USD = 1 USDT); crypto via NOWPayments — USDT recommended — in 1 payment or 2–3 installments, plus bank transfer on request; $${config.reservation.depositUsd} priority reservation deposit deducted from final price; step-by-step photo guide: ${cleanUrl(base, "/blog/how-to-pay-with-crypto-usdt")}`,
+    `- Payments: ${paymentAvailabilityNote("en")} Priority reservation deposit: $${config.reservation.depositUsd}. ${websiteDepositNote("en")} Step-by-step crypto guide: ${cleanUrl(base, "/blog/how-to-pay-with-crypto-usdt")}`,
   );
   lines.push("");
-  lines.push("## Main pages & AI resources");
+  lines.push("**Website offer (USD, one-time base price; management modules optional):**");
+  lines.push(websiteOfferSummary("en"));
   lines.push("");
-  lines.push(
-    `- [Homepage](${cleanUrl(base, "/")}): orientation page with two paths: website creation or digital shopping; category links and a short FAQ`,
-  );
-  const appsPage = content.appsPage ?? defaultAppsPage;
-  const productsPage = content.productsPage ?? defaultProductsPage;
-  lines.push(
-    `- [Live demos & portfolio](${cleanUrl(base, "/demos")}): ${content.demos.length} real, interactive client websites`,
-  );
-  lines.push(
-    `- [Our Applications — In Preparation / Coming Soon](${cleanUrl(base, "/apps")}): ${appsPage.items.length} mobile & web applications in preparation (${appsPage.statusBadgeEn} / ${appsPage.statusBadgeAr})`,
-  );
-  lines.push(
-    `- [Digital Products & Software — Coming Soon](${cleanUrl(base, "/products")}): ${productsPage.items.length} cloud POS, CRM, ERP & digital software kits (${productsPage.statusBadgeEn} / ${productsPage.statusBadgeAr})`,
-  );
-  lines.push(
-    `- [Website creation](${cleanUrl(base, "/creation-sites")}): website packages, examples, project process and quote request; related individual services and maintenance subscriptions`,
-    `- [Digital Codes & Gift Cards](${cleanUrl(base, "/codes")}): catalogue of software activation codes, gaming gift cards and in-game currency top-ups (Steam, PlayStation, Xbox, Roblox, Google Play, Amazon, Spotify) — priced in USD, region-tagged, electronic delivery. Buying guide and pre-purchase FAQ: region-locking rules, delivery time, payment (1 USD = 1 USDT) and replacement policy for invalid codes.`,
-  );
-  for (const code of digitalProducts) {
-    const from = code.denominations
-      .filter((denomination) => denomination.available)
-      .reduce<number | null>(
-        (min, denomination) =>
-          min == null ? denomination.priceUsd : Math.min(min, denomination.priceUsd),
-        null,
-      );
-    lines.push(
-      `  - [${code.titleEn} / ${code.titleAr}](${cleanUrl(base, `/codes/${code.slug}`)}): ${code.platform}${from != null ? ` — from $${from}` : ""} — digital code, electronic delivery`,
-    );
-  }
-  // Pages sectorielles automatiques (/sectors/[sector]) — 10 secteurs
-  lines.push(`- [Websites by sector](${cleanUrl(base, "/sectors")}): ${Object.keys(sectorSeo).length} sector pages — medical, restaurant, beauty, furniture, electronics, hardware…`);
-  for (const [id, sector] of Object.entries(sectorSeo)) {
-    const count = content.demos.filter((d) => d.sector === id).length;
-    lines.push(
-      `  - [${sector.labelEn} / ${sector.labelAr}](${cleanUrl(base, `/sectors/${id}`)}): ${count} showcase(s) — ${sector.titleEn}`,
-    );
-  }
-  lines.push(
-    `- [Open digital services](${cleanUrl(base, "/services")}): ${config.standaloneServices.length} fixed-scope services with published starting prices — website redesign, new section, pitch deck, branding, landing page, audit & fixes`,
-  );
-  for (const service of config.standaloneServices) {
-    const landing = resolveServiceLanding(service);
-    lines.push(
-      `  - [${service.titleEn} / ${service.titleAr}](${cleanUrl(base, `/services/${service.id}`)}): from $${service.priceFromUsd} — delivered in ${landing.deliveryEn}`,
-    );
-  }
-  // Pages comparatives automatiques (/compare/[slug]) — l'« annonce » SEO :
-  // une comparaison chiffrée entre نخبة et une alternative courante.
-  lines.push(
-    `- [Comparisons & alternatives](${cleanUrl(base, "/compare")}): ${comparisonIds.length} honest side-by-side comparisons — ${comparisonIds.map((id) => comparisons[id]?.competitorEn ?? id).join(", ")}`,
-  );
-  for (const id of comparisonIds) {
-    const comparison = comparisons[id];
-    if (!comparison) continue;
-    lines.push(
-      `  - [${comparison.h1En} / ${comparison.h1Ar}](${cleanUrl(base, `/compare/${id}`)}): ${comparison.competitorEn} ${comparison.themPriceLabel} vs Nukhba ${comparison.usPriceLabelEn} — ${comparisonText(comparison.descriptionEn, config.market, "en")}`,
-    );
-  }
-  const guides = sortArticles(blogArticles);
-  lines.push(
-    `- [Blog & practical guides](${cleanUrl(base, "/blog")}): ${guides.length} bilingual, number-driven guides for business owners worldwide — start with the USDT crypto payment photo guide`,
-  );
-  for (const article of guides) {
-    lines.push(
-      `  - [${article.titleEn} / ${article.titleAr}](${cleanUrl(base, `/blog/${article.slug}`)}): ${article.categoryEn} — updated ${formatArticleDate(article.updatedAt, "en")}`,
-    );
-  }
-  lines.push(
-    `- [Client badge & credits](${cleanUrl(base, "/badge")}): official "Website by Nukhba" badge — copy-paste HTML/React snippet, bilingual anchor and the verified list of client sites linking back to ${cleanUrl(base, "/")}`,
-  );
-  lines.push(
-    `- [Pricing plans & comparison](${cleanUrl(base, "/pricing")}): transparent USD packages (1 USD = 1 USDT), open services and installment options`,
-  );
-  lines.push(
-    `- [Contact & free consultation](${cleanUrl(base, "/contact")}): WhatsApp, phone, email and 2-hour response quote form`,
-  );
-  lines.push(
-    `- [Full AI Knowledge Base (AR/EN)](${cleanUrl(base, "/llms-full.txt")}): complete bilingual specification of all ${content.demos.length} portfolio projects, pricing tiers, standalone services, process steps, testimonials and FAQs`,
-  );
-  lines.push(`- [XML Sitemap](${cleanUrl(base, "/sitemap.xml")}): canonical URLs and images`);
-  lines.push("");
-  lines.push("## Pricing plans (USD, one-time + 1 year Vercel hosting included)");
-  lines.push("");
-
   for (const plan of config.pricing.plans) {
     const breakdown = resolvePlanPriceBreakdown(plan);
     const model = breakdown.modelPriceUsd == null
@@ -198,45 +119,14 @@ export function buildLlmsTxt({
       `- **${plan.nameEn} (${plan.name})** — ${model} + ${customization}; ${total}: ${plan.descriptionEn} (${plan.description}). Includes: ${plan.featuresEn.join(", ")}.`,
     );
   }
-
-  if (config.standaloneServices.length > 0) {
-    lines.push("");
-    lines.push("## Open-serve / standalone services (starting prices)");
-    lines.push("");
-    for (const srv of config.standaloneServices) {
-      lines.push(
-        `- **${srv.titleEn} (${srv.titleAr})** — from $${srv.priceFromUsd}: ${srv.descEn} (${srv.featuresEn.join(", ")})`,
-      );
-    }
-  }
-
   lines.push("");
-  lines.push(`## Portfolio & live client showcases (${content.demos.length} projects)`);
-  lines.push("");
-
-  for (const demo of content.demos) {
-    const cls = resolveDemoClassification(demo, config.pricing.plans);
-    const priceTag = cls
-      ? `Category ${cls.tier} (${cls.nameEn}) — model ${cls.priceUsd == null ? "on request" : `$${cls.priceUsd}`}; customization${cls.customizationPercent == null ? "" : ` (${cls.customizationPercent}%)`} ${cls.customizationUsd == null ? "quoted before payment" : `$${cls.customizationUsd}`}; total ${cls.totalPriceUsd == null ? "confirmed in quote" : `$${cls.totalPriceUsd}`}`
-      : demo.sectorEn;
-    const liveNote =
-      demo.previewUrl && /^https?:\/\//i.test(demo.previewUrl)
-        ? ` — Live preview: ${demo.previewUrl}`
-        : "";
-    lines.push(
-      `- [${demo.titleEn} — ${demo.title}](${cleanUrl(base, `/demos/${demo.slug}`)}): [${demo.sectorEn} / ${demo.sectorAr} · ${priceTag}] ${demo.descriptionEn}${liveNote}`,
-    );
-  }
-
-  lines.push("");
-  lines.push("## Frequently asked questions (AR / EN)");
+  lines.push("**Frequently asked questions (AR / EN):**");
   lines.push("");
   for (const faq of content.faqs) {
     lines.push(`- **${faq.qEn}** (${faq.qAr}): ${faq.aEn} — ${faq.aAr}`);
   }
-
   lines.push("");
-  lines.push("## Preferred citation (GEO)");
+  lines.push("**Preferred citation (GEO):**");
   lines.push("");
   lines.push(
     `- **Entity**: ${config.nameAr} (${config.name}) — premium web design & development agency for clients worldwide, studio at ${config.addressEn}. Website: ${cleanUrl(base, "/")}`,
@@ -248,14 +138,156 @@ export function buildLlmsTxt({
     `- **Preferred citation (AR)**: «${config.nameAr} (${config.name}) — وكالة تصميم مواقع في طرابلس، ليبيا: ${cleanUrl(base, "/")}»`,
   );
   lines.push(
-    `- **Price range**: website model from $${config.pricing.plans[0]?.priceUsd ?? 300} USD, plus a separate customization fee confirmed in the pricing card or written quote; open services from $${Math.min(...config.standaloneServices.map((s) => s.priceFromUsd))} USD`,
+    `- **Price range**: website model from $${config.pricing.plans[0]?.priceUsd ?? 35} USD, with initial content personalization included; extra functions quoted separately; open services from $${Math.min(...config.standaloneServices.map((s) => s.priceFromUsd))} USD`,
   );
   lines.push(
     `- **Contact**: ${config.phone} · ${config.email} · WhatsApp ${whatsappLink(config.whatsapp)}`,
   );
   lines.push(
-    `- **Do not confuse**: ${config.name} is a design & development agency (services), also operates a digital product store; it is not a hosting provider. Pricing is one-time, hosting for the first year is included.`,
+    `- **Do not confuse**: ${config.name} is a design & development agency (services), also operates a digital product store; it is not a hosting provider. The base price is one-time; vercel.app deployment is subject to Vercel eligibility and limits. Custom domains and external recurring costs are separate.`,
   );
+  lines.push("");
+  lines.push("## Main pages & AI resources");
+  lines.push("");
+  lines.push(
+    `- [Homepage](${cleanUrl(base, "/")}): orientation page with two paths: website creation or digital shopping; category links and a short FAQ`,
+  );
+  const appsPage = content.appsPage ?? defaultAppsPage;
+  const productsPage = content.productsPage ?? defaultProductsPage;
+  lines.push(
+    `- [Live demos & portfolio](${cleanUrl(base, "/demos")}): ${content.demos.length} real, interactive client websites`,
+  );
+  lines.push(
+    `- [Website creation](${cleanUrl(base, "/creation-sites")}): website packages, examples, project process and quote request; related individual services and maintenance subscriptions`,
+  );
+  lines.push(
+    `- [Pricing plans, website choice guide & comparison](${cleanUrl(base, "/pricing")}): transparent USD packages (1 USD = 1 USDT), interactive website choice guide (#website-guide) for extra languages and quoted modules, open services and installment options`,
+  );
+  lines.push(
+    `- [Our Applications — In Preparation / Coming Soon](${cleanUrl(base, "/apps")}): ${appsPage.items.length} mobile & web applications in preparation (${appsPage.statusBadgeEn} / ${appsPage.statusBadgeAr})`,
+  );
+  lines.push(
+    `- [Digital Products & Software — Coming Soon](${cleanUrl(base, "/products")}): ${productsPage.items.length} cloud POS, CRM, ERP & digital software kits (${productsPage.statusBadgeEn} / ${productsPage.statusBadgeAr})`,
+  );
+  lines.push(
+    `- [Client badge & credits](${cleanUrl(base, "/badge")}): official "Website by Nukhba" badge — copy-paste HTML/React snippet, bilingual anchor and the verified list of client sites linking back to ${cleanUrl(base, "/")}`,
+  );
+  lines.push(
+    `- [Contact & free consultation](${cleanUrl(base, "/contact")}): WhatsApp, phone, email and a quote form answered during opening hours`,
+  );
+
+  lines.push("");
+  lines.push("## Digital codes & gift cards");
+  lines.push("");
+  lines.push(
+    `- [Digital Codes & Gift Cards](${cleanUrl(base, "/codes")}): catalogue of software activation codes, gaming gift cards and in-game currency top-ups (Steam, PlayStation, Xbox, Roblox, Google Play, Amazon, Spotify) — priced in USD, region-tagged, electronic delivery (1 USD = 1 USDT) and replacement policy for invalid codes`,
+  );
+  lines.push(
+    `- [Digital Gift Cards Category](${cleanUrl(base, "/codes/category/gift_card")}): prepaid store vouchers for Steam, PlayStation, Xbox, Apple and Google Play with region matching guidance`,
+  );
+  lines.push(
+    `- [Game Top-Ups Category](${cleanUrl(base, "/codes/category/game_topup")}): direct in-game balance top-ups credited via Player ID with no account password required`,
+  );
+  lines.push(
+    `- [Software Keys Category](${cleanUrl(base, "/codes/category/software_key")}): genuine PC and operating-system license keys delivered by email`,
+  );
+  lines.push(
+    `- [Subscription Codes Category](${cleanUrl(base, "/codes/category/subscription_code")}): prepaid digital membership codes with zero recurring auto-billing`,
+  );
+  for (const code of digitalProducts) {
+    const from = code.denominations
+      .filter((denomination) => denomination.available)
+      .reduce<number | null>(
+        (min, denomination) =>
+          min == null ? denomination.priceUsd : Math.min(min, denomination.priceUsd),
+        null,
+      );
+    lines.push(
+      `- [${safeLinkTitle(`${code.titleEn} / ${code.titleAr}`)}](${cleanUrl(base, `/codes/${code.slug}`)}): ${code.platform}${from != null ? ` — from $${from}` : ""} — digital code, electronic delivery`,
+    );
+  }
+
+  lines.push("");
+  lines.push("## Websites by sector");
+  lines.push("");
+  lines.push(
+    `- [All sectors hub](${cleanUrl(base, "/sectors")}): ${Object.keys(sectorSeo).length} sector pages — medical, restaurant, beauty, furniture, electronics, hardware`,
+  );
+  for (const [id, sector] of Object.entries(sectorSeo)) {
+    const count = content.demos.filter((d) => d.sector === id).length;
+    lines.push(
+      `- [${safeLinkTitle(`${sector.labelEn} / ${sector.labelAr}`)}](${cleanUrl(base, `/sectors/${id}`)}): ${count} showcase(s) — ${sector.titleEn}`,
+    );
+  }
+
+  lines.push("");
+  lines.push("## Open digital services");
+  lines.push("");
+  lines.push(
+    `- [Open digital services hub](${cleanUrl(base, "/services")}): ${config.standaloneServices.length} fixed-scope services with published starting prices — website redesign, new section, pitch deck, branding, landing page, audit & fixes`,
+  );
+  for (const service of config.standaloneServices) {
+    const landing = resolveServiceLanding(service);
+    lines.push(
+      `- [${safeLinkTitle(`${service.titleEn} / ${service.titleAr}`)}](${cleanUrl(base, `/services/${service.id}`)}): from $${service.priceFromUsd} — delivered in ${landing.deliveryEn} (${service.descEn})`,
+    );
+  }
+
+  lines.push("");
+  lines.push("## Comparisons & alternatives");
+  lines.push("");
+  lines.push(
+    `- [Comparisons & alternatives hub](${cleanUrl(base, "/compare")}): ${comparisonIds.length} honest side-by-side comparisons — ${comparisonIds.map((id) => comparisons[id]?.competitorEn ?? id).join(", ")}`,
+  );
+  for (const id of comparisonIds) {
+    const comparison = comparisons[id];
+    if (!comparison) continue;
+    lines.push(
+      `- [${safeLinkTitle(`${comparison.h1En} / ${comparison.h1Ar}`)}](${cleanUrl(base, `/compare/${id}`)}): ${comparison.competitorEn} ${comparison.themPriceLabel} vs Nukhba ${comparison.usPriceLabelEn} — ${comparisonText(comparison.descriptionEn, config.market, "en")}`,
+    );
+  }
+
+  lines.push("");
+  lines.push("## Blog & practical guides");
+  lines.push("");
+  const guides = sortArticles(blogArticles);
+  lines.push(
+    `- [Blog & practical guides hub](${cleanUrl(base, "/blog")}): ${guides.length} bilingual, number-driven guides for business owners worldwide — start with the USDT crypto payment photo guide`,
+  );
+  for (const article of guides) {
+    lines.push(
+      `- [${safeLinkTitle(`${article.titleEn} / ${article.titleAr}`)}](${cleanUrl(base, `/blog/${article.slug}`)}): ${article.categoryEn} — updated ${formatArticleDate(article.updatedAt, "en")}`,
+    );
+  }
+
+  lines.push("");
+  lines.push(`## Portfolio & live client showcases (${content.demos.length} projects)`);
+  lines.push("");
+  for (const demo of content.demos) {
+    const cls = resolveDemoClassification(demo, config.pricing.plans);
+    const priceTag = cls
+      ? `Base offer (${cls.nameEn}) — model ${cls.priceUsd == null ? "on request" : `$${cls.priceUsd}`}; customization${cls.customizationPercent == null ? "" : ` (${cls.customizationPercent}%)`} ${cls.customizationUsd == null ? "quoted before payment" : `$${cls.customizationUsd}`}; total ${cls.totalPriceUsd == null ? "confirmed in quote" : `$${cls.totalPriceUsd}`}`
+      : demo.sectorEn;
+    const liveNote =
+      demo.previewUrl && /^https?:\/\//i.test(demo.previewUrl)
+        ? ` — Live preview: ${demo.previewUrl}`
+        : "";
+    lines.push(
+      `- [${safeLinkTitle(`${demo.titleEn} — ${demo.title}`)}](${cleanUrl(base, `/demos/${demo.slug}`)}): (${demo.sectorEn} / ${demo.sectorAr} · ${priceTag}) ${demo.descriptionEn}${liveNote}`,
+    );
+  }
+
+  lines.push("");
+  lines.push("## Optional");
+  lines.push("");
+  lines.push(
+    `- [Full AI Knowledge Base (AR/EN)](${cleanUrl(base, "/llms-full.txt")}): complete bilingual specification of all ${content.demos.length} portfolio projects, base website offer and optional modules, standalone services, process steps, testimonials and FAQs`,
+  );
+  lines.push(`- [XML Sitemap](${cleanUrl(base, "/sitemap.xml")}): canonical URLs and images`);
+  lines.push(`- [Client Reviews & Policy](${cleanUrl(base, "/avis")}): verified review channels (Trustpilot, Google, Scamadviser) and 48-hour response policy`);
+  lines.push(`- [Refund Policy](${cleanUrl(base, "/remboursement")}): deposit, subscription cancellation and digital-code replacement policy`);
+  lines.push(`- [Terms of Sale & Service](${cleanUrl(base, "/conditions")}): USD/USDT payment terms, intellectual property and digital store conditions`);
+  lines.push(`- [Legal Notice](${cleanUrl(base, "/mentions-legales")}): publisher identity, commercial registration and hosting details`);
   lines.push("");
   return lines.join("\n");
 }
@@ -301,7 +333,7 @@ export function buildLlmsFullTxt({
   );
   // A11 : mêmes faits vérifiables que /llms.txt (voir buildLlmsTxt).
   lines.push(
-    `- **Key metrics**: Delivery from ${config.stats.deliveryEn} (${config.stats.delivery}) depending on plan, ${content.demos.length} live website examples published in the portfolio (${cleanUrl(base, "/demos")}), ${content.testimonials.length} client testimonials published on the site; support via WhatsApp and the contact page during opening hours (${config.hoursEn}), with 30–90 days of post-delivery support included depending on plan`,
+    `- **Key metrics**: ${websiteTimelineNote("en")}, ${content.demos.length} live website examples published in the portfolio (${cleanUrl(base, "/demos")}), ${content.testimonials.length} client testimonials published on the site; support via WhatsApp and the contact page during opening hours (${config.hoursEn}), with post-delivery maintenance available separately`,
   );
 
   lines.push("");
@@ -333,15 +365,17 @@ export function buildLlmsFullTxt({
   }
 
   lines.push("");
-  lines.push("## 5. Website Packages & Pricing (باقات تصميم المواقع)");
+  lines.push("## 5. Website offer & options (عرض الموقع والخيارات)");
+  lines.push(websiteDemoNote("en"));
+  lines.push(websiteOfferSummary("en"), websiteOfferSummary("ar"));
   lines.push("");
-  for (const [idx, plan] of config.pricing.plans.entries()) {
+  for (const plan of config.pricing.plans) {
     const breakdown = resolvePlanPriceBreakdown(plan);
     const model = breakdown.modelPriceUsd == null ? "model on request" : `$${breakdown.modelPriceUsd} USD`;
     const customization = breakdown.customizationUsd == null ? "quoted in writing before final payment" : `$${breakdown.customizationUsd} USD`;
     const total = breakdown.totalPriceUsd == null ? "confirmed in quote" : `$${breakdown.totalPriceUsd} USD`;
     lines.push(
-      `### Category ${idx + 1}: ${plan.nameEn} (${plan.name}) — model ${model} + customization${breakdown.customizationPercent == null ? "" : ` (${breakdown.customizationPercent}%)`} ${customization} = ${total} (${plan.periodEn})`,
+      `### Base offer: ${plan.nameEn} (${plan.name}) — model ${model} + customization${breakdown.customizationPercent == null ? "" : ` (${breakdown.customizationPercent}%)`} ${customization} = ${total} (${plan.periodEn})`,
     );
     lines.push(`- **Summary (EN)**: ${plan.descriptionEn}`);
     lines.push(`- **Summary (AR)**: ${plan.description}`);
@@ -389,7 +423,7 @@ export function buildLlmsFullTxt({
   lines.push("");
   lines.push(`- **Comparisons hub URL**: ${cleanUrl(base, "/compare")}`);
   lines.push(
-    `- **Reading rule**: Nukhba figures are our published prices (websites from $${config.pricing.plans[0]?.priceUsd ?? 300} one-time, standalone services from $${lowestServicePrice(config.standaloneServices, 19)}). Competitor figures are stated as typical market pricing, not as verified facts about a specific company.`,
+    `- **Reading rule**: Nukhba figures are our published prices (websites from $${config.pricing.plans[0]?.priceUsd ?? 35} one-time, standalone services from $${lowestServicePrice(config.standaloneServices, 19)}). Competitor figures are stated as typical market pricing, not as verified facts about a specific company.`,
   );
   lines.push("");
   for (const id of comparisonIds) {
@@ -440,7 +474,7 @@ export function buildLlmsFullTxt({
     lines.push(`- **Sector**: ${demo.sectorEn} (${demo.sectorAr})`);
     if (cls) {
       lines.push(
-        `- **Category & Price**: Category ${cls.tier} — ${cls.nameEn} (${cls.name}); model ${cls.priceUsd == null ? "on request" : `$${cls.priceUsd} USD`}; customization${cls.customizationPercent == null ? "" : ` (${cls.customizationPercent}%)`} ${cls.customizationUsd == null ? "quoted before payment" : `$${cls.customizationUsd} USD`}; final total ${cls.totalPriceUsd == null ? "confirmed in the written quote" : `$${cls.totalPriceUsd} USD`}`,
+        `- **Offer & Price**: ${cls.nameEn} (${cls.name}); model ${cls.priceUsd == null ? "on request" : `$${cls.priceUsd} USD`}; customization${cls.customizationPercent == null ? "" : ` (${cls.customizationPercent}%)`} ${cls.customizationUsd == null ? "quoted before payment" : `$${cls.customizationUsd} USD`}; final total ${cls.totalPriceUsd == null ? "confirmed in the written quote" : `$${cls.totalPriceUsd} USD`}`,
       );
     }
     lines.push(`- **Description (EN)**: ${demo.descriptionEn}`);
@@ -459,6 +493,8 @@ export function buildLlmsFullTxt({
     lines.push(`- **Showcases in sector**: ${count}`);
     lines.push(`- **Title (AR)**: ${sector.titleAr}`);
     lines.push(`- **Title (EN)**: ${sector.titleEn}`);
+    lines.push(websiteDemoNote("en"));
+    lines.push(websiteDemoNote("ar"));
     lines.push(`- **Description (AR)**: ${sector.descriptionAr}`);
     lines.push(`- **Description (EN)**: ${sector.descriptionEn}`);
     lines.push(`- **Hero (AR)**: ${sector.h1Ar} — ${sector.heroSubtitleAr}`);
@@ -598,10 +634,10 @@ export function buildLlmsFullTxt({
   );
   lines.push(`- **Canonical URL**: ${cleanUrl(base, "/")}`);
   lines.push(
-    `- **Citation (EN)**: “${config.name} (${config.nameAr}), web design agency for international clients — website models from $${config.pricing.plans[0]?.priceUsd ?? 300} plus a separate customization fee confirmed before payment, delivered in ${config.stats.deliveryEn}.”`,
+    `- **Citation (EN)**: “${config.name} (${config.nameAr}), web design agency for international clients — website models from $${config.pricing.plans[0]?.priceUsd ?? 35} with initial content personalization included; timeline confirmed according to scope.”`,
   );
   lines.push(
-    `- **Citation (AR)**: «${config.nameAr} (${config.name})، وكالة تصميم مواقع في طرابلس، ليبيا — نماذج مواقع تبدأ من ${config.pricing.plans[0]?.priceUsd ?? 300} دولاراً، مع تكلفة تخصيص منفصلة تُعتمد قبل الدفع، وتسليم خلال ${config.stats.delivery}.»`,
+    `- **Citation (AR)**: «${config.nameAr} (${config.name})، وكالة تصميم مواقع في طرابلس، ليبيا — نماذج مواقع تبدأ من ${config.pricing.plans[0]?.priceUsd ?? 35} دولاراً، مع تخصيص المحتوى الأولي مشمولاً؛ المدة تؤكد حسب النطاق.»`,
   );
   lines.push(
     `- **Entity disambiguation**: ${config.name} is a web design & development agency (website creation, SEO/GEO) that also operates a digital product store (${cleanUrl(base, "/codes")}: software activation codes, gaming gift cards, in-game top-ups — electronic delivery by e-mail). It is not a general e-commerce marketplace and not a hosting provider.`,

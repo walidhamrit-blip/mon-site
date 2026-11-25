@@ -1,163 +1,61 @@
 "use client";
+
+import { WebsiteChoiceGuide } from "@/components/website-choice-guide";
+import { Check, Code2, Database, ArrowUpRight } from "lucide-react";
 import { LocalizedLink as Link } from "@/components/localized-link";
-import { motion } from "framer-motion";
-import { CalendarCheck, Check, Sparkles, ArrowUpRight } from "lucide-react";
+import { useSiteConfig } from "@/components/site-provider";
 import { useI18n } from "@/lib/i18n";
-import { useSectionHeading, useSiteConfig } from "@/components/site-provider";
-import { SectionHeading } from "@/components/section-heading";
-import { ModelPriceBreakdown } from "@/components/model-price-breakdown";
 import { ModelPurchaseButton } from "@/components/model-purchase-button";
+import { ModelPriceBreakdown } from "@/components/model-price-breakdown";
+import { Price } from "@/components/price";
 import { resolvePlanPriceBreakdown } from "@/lib/classification";
-import { formatUsd } from "@/lib/installments";
+import { websiteOptions } from "@/lib/website-offer";
+import { whatsappLink } from "@/lib/utils";
 
 export function Pricing() {
-  const siteConfig = useSiteConfig();
-  const heading = useSectionHeading("pricing");
-  const { locale, t } = useI18n();
-  const plans = siteConfig.pricing.plans;
+  const config = useSiteConfig();
+  const { locale } = useI18n();
+  const ar = locale === "ar";
+  const plan = config.pricing.plans[0];
+  if (!plan) return null;
 
-  return (
-    <section id="pricing" className="section section-muted">
-      <div className="site-container px-4 sm:px-6 lg:px-8">
-        <SectionHeading
-          align="center"
-          eyebrow={locale === "ar" ? "الباقات" : "Pricing"}
-          title={heading.title}
-          lead={heading.subtitle}
-          note={
-            <span className="chip chip-accent mx-auto mt-1">
-              <Sparkles className="h-3.5 w-3.5" />
-              {locale === "ar"
-                ? "كل الأسعار بالدولار — 1 دولار = 1 USDT عند الدفع"
-                : "All prices in USD — 1 USD = 1 USDT at checkout"}
-            </span>
-          }
-        />
+  return <><WebsiteChoiceGuide /><section id="pricing" className="section section-muted">
+    <div className="site-container px-4 sm:px-6 lg:px-8">
+      <header className="mx-auto max-w-3xl text-center">
+        <p className="section-eyebrow justify-center">{ar ? "عرض واحد، خيارات حسب حاجتك" : "One base offer. Only the options you need."}</p>
+        <h2 className="section-title">{ar ? "موقعك المخصص ابتداءً من " : "Your personalized website from "}<Price usd={plan.priceUsd ?? 35} /></h2>
+        <p className="section-lead">{ar ? "كل التصاميم بنفس السعر. ما يغيّر المبلغ هو الوظائف التي تختارها، وليس مظهر الموقع." : "Every design costs the same. Your selected functions change the price — not the appearance of your site."}</p>
+      </header>
 
-        <div className="mx-auto mt-12 grid max-w-[1120px] items-start gap-5 lg:grid-cols-3">
-          {plans.map((plan, idx) => (
-            <motion.div
-              key={plan.id}
-              initial={{ opacity: 0, y: 16 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: idx * 0.08 }}
-              className={`relative flex flex-col rounded-[var(--radius-lg)] border p-6 transition-shadow lg:p-7 ${plan.featured ? "border-[var(--accent)] bg-[var(--card)] text-[var(--foreground)] shadow-[var(--shadow-lg)]" : "border-[var(--border)] bg-[var(--card)] shadow-[var(--shadow-xs)] hover:shadow-[var(--shadow-md)]"}`}
-            >
-              {plan.featured && (
-                <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-4 py-1.5 rounded-full bg-[var(--accent)] text-[var(--accent-foreground)] text-xs font-black flex items-center gap-1.5 shadow">
-                  <Sparkles className="h-3.5 w-3.5" />
-                  {locale === "ar" ? plan.badge : plan.badgeEn}
-                </div>
-              )}
+      <div className="mx-auto mt-10 grid max-w-6xl items-start gap-6 lg:grid-cols-2">
+        <article className="rounded-[var(--radius-lg)] border border-[var(--accent)] bg-[var(--card)] p-6 shadow-[var(--shadow-md)] sm:p-8">
+          <Code2 className="h-7 w-7 text-[var(--accent)]" aria-hidden="true" />
+          <h3 className="mt-4 text-2xl font-black">{ar ? "موقع بدون قاعدة بيانات" : "Website without a database"}</h3>
+          <p className="mt-2 text-sm text-[var(--muted-foreground)]">{ar ? "دفعة واحدة — مثالي للتعريف بنشاطك وخدماتك أو عرض قائمة ومنتجات ثابتة." : "One-time payment — ideal for your business, services, a menu or a static product catalog."}</p>
+          <div className="my-6 rounded-2xl bg-[var(--secondary)]/50 p-4"><ModelPriceBreakdown breakdown={resolvePlanPriceBreakdown(plan)} /></div>
+          <ul className="space-y-3">{(ar ? plan.features : plan.featuresEn).map(feature => <li key={feature} className="flex gap-3 text-sm leading-6"><Check className="mt-1 h-4 w-4 shrink-0 text-[var(--accent)]" aria-hidden="true" /><span>{feature}</span></li>)}</ul>
+          <ModelPurchaseButton plan={plan} className="mt-6 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-full bg-[var(--accent)] px-5 py-3 text-center text-sm font-black text-[var(--accent-foreground)] hover:bg-[var(--accent-hover)]" />
+          <Link href="/demos" className="mt-4 flex min-h-11 items-center justify-center gap-2 text-sm font-bold underline underline-offset-4">{ar ? "اختر تصميمك من المعرض" : "Choose your design in the gallery"}<ArrowUpRight className="h-4 w-4" /></Link>
+        </article>
 
-              <div className="flex items-start justify-between gap-4">
-                <div>
-                  <div className="text-[11px] font-black uppercase tracking-[0.14em] text-[var(--muted-foreground)]">
-                    {locale === "ar" ? `الفئة ${idx + 1}` : `Category ${idx + 1}`}
-                  </div>
-                  <h3 className="mt-0.5 text-lg font-black">{locale === "ar" ? plan.name : plan.nameEn}</h3>
-                  <p className={`mt-1 text-[13.5px] leading-6 text-[var(--muted-foreground)]`}>{locale === "ar" ? plan.description : plan.descriptionEn}</p>
-                </div>
-                {plan.featured && <span className="h-8 w-8 rounded-full bg-[var(--accent)] grid place-items-center">✦</span>}
-              </div>
-
-              <div className="mt-6 rounded-2xl border border-[var(--border)]/70 bg-[var(--secondary)]/35 p-4">
-                <ModelPriceBreakdown breakdown={resolvePlanPriceBreakdown(plan)} />
-                <div className="mt-2 text-xs leading-5 text-[var(--muted-foreground)]">
-                  {locale === "ar" ? t.crypto.usdNoteAr : t.crypto.usdNoteEn}
-                </div>
-                {/* Prix après coupon : même calcul que le serveur de paiement. */}
-              </div>
-              <div className="text-xs text-[var(--muted-foreground)]">{locale === "ar" ? plan.period : plan.periodEn}</div>
-
-              <ModelPurchaseButton
-                plan={plan}
-                className={`mt-6 min-h-11 rounded-full px-4 py-2.5 font-bold inline-flex items-center justify-center gap-2 w-full cursor-pointer transition text-center ${plan.featured ? "bg-[var(--accent)] text-[var(--accent-foreground)] hover:bg-[var(--accent-hover)]" : "bg-[var(--primary)] text-[var(--primary-foreground)] hover:opacity-90"}`}
-              />
-
-              {resolvePlanPriceBreakdown(plan).totalPriceUsd != null && (
-                <p className="mt-2 text-center text-xs text-[var(--muted-foreground)]">
-                  {locale === "ar" ? t.crypto.installmentNoteAr : t.crypto.installmentNoteEn}
-                </p>
-              )}
-
-              <ul className="mt-6 space-y-2.5">
-                {(locale === "ar" ? plan.features : plan.featuresEn).map((f) => (
-                  <li key={f} className="flex gap-2.5 text-sm leading-6">
-                    <span className={`mt-0.5 h-5 w-5 rounded-full grid place-items-center flex-shrink-0 ${plan.featured ? "bg-[var(--accent)]/15 text-[var(--accent)]" : "bg-[var(--accent)]/15 text-[var(--accent)]"}`}>
-                      <Check className="h-3.5 w-3.5" />
-                    </span>
-                    <span>{f}</span>
-                  </li>
-                ))}
-              </ul>
-
-              <div className={`mt-6 text-xs pt-4 border-t border-[var(--border)] text-[var(--muted-foreground)]`}>
-                {locale === "ar" ? "سنة استضافة + شهادة SSL مجاناً" : "1 year hosting + SSL free"}
-              </div>
-            </motion.div>
-          ))}
-        </div>
-
-        {/* Remarque : tous les modèles du /demos peuvent servir de design aux
-            3 forfaits — ce qui change d'un forfait à l'autre, ce sont les
-            fonctions de dynamisation et la base de données, pas le design. */}
-        <div className="mx-auto mt-10 max-w-[760px] rounded-[20px] border border-[var(--border)] bg-[var(--card)] p-5 text-center">
-          <p className="text-sm font-black">
-            {locale === "ar"
-              ? "كل النماذج المعروضة في المعرض صالحة للتصميم في أي باقة من الباقات الثلاث."
-              : "Every model in our gallery works as the design of any of the 3 plans."}
-          </p>
-          <p className="mt-2 text-[13px] leading-6 text-[var(--muted-foreground)]">
-            {locale === "ar"
-              ? "التصميم لا يتغير من باقة إلى أخرى — ما يتغير هو التفعيل الديناميكي وقاعدة البيانات: موقع عرض (الواجهة)، موقع ديناميكي بمحتوى قابل للتعديل (الواجهة بلس)، أو متجر إلكتروني كامل بقاعدة بيانات ودفع (المتجر)."
-              : "The design does not change from one plan to another — what changes is the dynamization and the database: a showcase site (Vitrine), a dynamic site with editable content (Vitrine+), or a full online store with database and payment (Boutique)."}
-          </p>
-          <p className="mt-3 text-[13px]">
-            <Link href="/demos" className="font-bold text-[var(--accent)] hover:underline">
-              {locale === "ar" ? "شاهد النماذج في المعرض ↗" : "Browse the models in the gallery ↗"}
-            </Link>
-          </p>
-        </div>
-
-        {siteConfig.reservation?.enabled && (
-          <div className="mt-8 max-w-[760px] mx-auto rounded-[20px] border border-[var(--accent)]/30 bg-[var(--accent)]/5 p-5 flex flex-col sm:flex-row items-center justify-between gap-4">
-            <div className="text-center sm:text-start">
-              <div className="flex items-center justify-center sm:justify-start gap-2 text-sm font-black">
-                <CalendarCheck className="h-4 w-4 text-[var(--accent)]" />
-                {locale === "ar"
-                  ? "احجز مكانك في جدول العمل"
-                  : "Reserve your place in our queue"}
-              </div>
-              <p className="mt-1 text-xs text-[var(--muted-foreground)]">
-                {locale === "ar"
-                  ? `عربون ${formatUsd(siteConfig.reservation?.depositUsd ?? 1)} $ فقط — يُخصم من سعر المشروع ويمنحك أولوية في التنفيذ.`
-                  : `Only a $${formatUsd(siteConfig.reservation?.depositUsd ?? 1)} deposit — deducted from the project price and giving you priority.`}
-              </p>
-            </div>
-            <Link
-              href="/demos"
-              className="h-10 px-5 rounded-full bg-[var(--accent)] text-[var(--accent-foreground)] text-xs font-black inline-flex items-center gap-1.5 hover:bg-[var(--accent-hover)] transition-colors flex-shrink-0"
-            >
-              {locale === "ar" ? "اختر موقعاً واحجز" : "Pick a site & reserve"}
-              <ArrowUpRight className="h-3.5 w-3.5" />
-            </Link>
-          </div>
-        )}
-
-        <div className="mt-8 text-center">
-          <p className="text-sm text-[var(--muted-foreground)]">
-            {locale === "ar" ? "تحتاج شيئاً مخصصاً؟ " : "Need something custom? "}
-            <Link href="/contact" className="font-bold underline decoration-[var(--accent)] underline-offset-4">
-              {locale === "ar" ? "تحدث معنا" : "Talk to us"}
-            </Link>
-            {" — "}
-            {locale === "ar" ? "نصمم باقة على مقاسك" : "we tailor a plan"}
-          </p>
-        </div>
+        <article id="website-options" className="scroll-mt-24 rounded-[var(--radius-lg)] border border-[var(--border)] bg-[var(--card)] p-6 sm:p-8">
+          <Database className="h-7 w-7 text-[var(--accent)]" aria-hidden="true" />
+          <h3 className="mt-4 text-2xl font-black">{ar ? "أضف اللغات ووظائف الإدارة" : "Add languages and management tools"}</h3>
+          <p className="mt-3 text-sm leading-7 text-[var(--muted-foreground)]">{ar ? "وظائف الإدارة تستخدم قاعدة بيانات ولوحة إدارة آمنة مشتركة. كل وحدة تشمل شاشاتها اللازمة، دون احتساب البنية الأساسية مرتين. إضافة لغة وحدها لا تتطلب قاعدة بيانات." : "Management modules use a shared database and secure admin panel. Each module includes its required screens, without charging for the foundation twice. A language alone does not require a database."}</p>
+          <ul className="mt-5 divide-y divide-[var(--border)]">{websiteOptions.map(option => <li key={option.id} className="py-4">
+            <div className="flex flex-wrap items-baseline justify-between gap-2"><h4 className="font-bold">{ar ? option.nameAr : option.nameEn}</h4><span className="font-black text-[var(--accent)]">{option.priceUsd == null ? (ar ? "بعرض سعر" : "On quote") : <>{option.from && (ar ? "من " : "From ")}+<Price usd={option.priceUsd} />{option.id === "language" && (ar ? " / لغة" : " / language")}</>}</span></div>
+            <p className="mt-2 text-sm leading-6 text-[var(--muted-foreground)]">{ar ? option.detailAr : option.detailEn}</p>
+          </li>)}</ul>
+          <a href={whatsappLink(config.whatsapp, ar ? "مرحباً، أريد إضافة خيارات إلى عرض الموقع الأساسي. أرجو تأكيد النطاق والسعر الإجمالي والتكاليف المتكررة قبل الدفع." : "Hello, I would like options for the base website offer. Please confirm the scope, total price and any recurring fees before payment.")} target="_blank" rel="noopener noreferrer" className="mt-4 inline-flex min-h-11 w-full items-center justify-center rounded-full border border-[var(--accent)] px-5 py-3 text-center text-sm font-bold">{ar ? "حدد خياراتك واطلب عرضاً" : "Discuss your options & get a quote"}</a>
+          <p className="mt-3 text-xs leading-6 text-[var(--muted-foreground)]">{ar ? "الدفع المباشر يخص الموقع الأساسي فقط. الخيارات تؤكد في عرض مكتوب قبل فوترتها، ولا تضاف تلقائياً إلى الدفع." : "Direct checkout covers the base website only. Options are confirmed in a written quote before billing and are not automatically added to checkout."}</p>
+        </article>
       </div>
 
-    </section>
-  );
+      <aside className="mx-auto mt-6 max-w-6xl rounded-2xl border border-[var(--border)] bg-[var(--card)] p-5 text-sm leading-7 text-[var(--muted-foreground)]">
+        <p className="font-bold text-[var(--foreground)]">{ar ? "الإجمالي = سعر الموقع الأساسي + اللغات الإضافية + الوظائف المختارة، دون تكرار البنية الأساسية." : "Total = base website + additional languages + selected modules, without duplicating the technical foundation."}</p>
+        <p className="mt-2">{ar ? "التخصيص المجاني يخص المحتوى المقدم قبل التسليم الأول ضمن النموذج المختار. الصفحات الجديدة وتغيير الهيكل والتعديلات اللاحقة خدمات منفصلة بعد موافقتك. الوظائف الظاهرة في المعاينة، مثل السلة أو التقويم، ليست مفعّلة في العرض الثابت ما لم تُشترَ وحدتها." : "Free personalization covers supplied content before initial delivery within your chosen model. New pages, structural changes and later changes are separate services, subject to your approval. Functions shown in demos, such as carts or calendars, are not activated in the static offer unless the relevant module is purchased."}</p>
+        <p className="mt-2">{ar ? "الدومين المخصص غير مشمول. عنوان vercel.app ليس دوميناً خاصاً. مجانية النشر تخضع لأهلية وحدود Vercel، وليست ضمان استضافة مجانية مدى الحياة. أي تكاليف خارجية أو متكررة للاستضافة وقاعدة البيانات والتخزين والإرسال والدفع توضّح قبل الموافقة." : "A custom domain is not included. A vercel.app address is not a custom domain. Free deployment depends on Vercel eligibility and plan limits, not a lifetime hosting guarantee. Any external or recurring hosting, database, storage, messaging and payment costs are disclosed before approval."}</p>
+      </aside>
+    </div>
+  </section></>;
 }

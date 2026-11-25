@@ -23,12 +23,13 @@ export const maxDuration = 60;
  *     sécurité pour les commandes payées dont le webhook s'est perdu
  *     avant même la création du job (grâce 15 min, 6 tentatives, 14 jours).
  *
- * ⚠️ Plan Vercel Hobby : un cron ne peut pas être plus fréquent que
- * quotidien. Sur Hobby, ce passage quotidien reste un filet ; la latence
- * réelle des retries est portée par l'IPN (`after()`), le suivi client
- * (sondage 15 s) et `/api/digital/orders/[ref]`. Sur Pro, planifier une
- * exécution toutes les 5 minutes pour des retries en minutes
- * (voir docs/webhooks-resilience.md).
+ * Fréquence (plan Vercel **Pro** de ce projet) : toutes les 5 minutes.
+ * Chaque passage réclame jusqu'à 5 jobs, soit ≤ 12 jobs/min tous passages
+ * confondus — bien en dessous d'un achat par commande payée. Un plan Hobby
+ * n'accepterait qu'une exécution par jour : il faudrait alors revenir à
+ * `20 4 * * *`, la latence des retries restant portée par l'IPN (`after()`),
+ * le sondage client (15 s) et `/api/digital/orders/[ref]`.
+ * Voir docs/webhooks-resilience.md.
  *
  * Protégée par `CRON_SECRET` : sans secret configuré, la route refuse de
  * tourner. `?dry=1` produit le diagnostic sans rien acheter.

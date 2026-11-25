@@ -76,7 +76,7 @@ export function DemoViewer({ demo, allDemos }: { demo: Demo; allDemos: Demo[] })
               <button
                 type="button"
                 onClick={() => setMode("desktop")}
-                className={`h-8 px-4 rounded-full text-xs font-bold flex items-center gap-1.5 cursor-pointer ${
+                className={`min-h-10 px-4 rounded-full text-xs font-bold flex items-center gap-1.5 cursor-pointer ${
                   mode === "desktop"
                     ? "bg-[var(--primary)] text-[var(--primary-foreground)]"
                     : "hover:bg-[var(--card)]"
@@ -87,7 +87,7 @@ export function DemoViewer({ demo, allDemos }: { demo: Demo; allDemos: Demo[] })
               <button
                 type="button"
                 onClick={() => setMode("mobile")}
-                className={`h-8 px-4 rounded-full text-xs font-bold flex items-center gap-1.5 cursor-pointer ${
+                className={`min-h-10 px-4 rounded-full text-xs font-bold flex items-center gap-1.5 cursor-pointer ${
                   mode === "mobile"
                     ? "bg-[var(--primary)] text-[var(--primary-foreground)]"
                     : "hover:bg-[var(--card)]"
@@ -109,14 +109,16 @@ export function DemoViewer({ demo, allDemos }: { demo: Demo; allDemos: Demo[] })
                   src={demo.image}
                   {...imageOptimizationProps(demo.image)}
                   alt={demoImageAlt(demo, locale)}
-                  fill
+                  width={1200}
+                  height={825}
                   sizes="(max-width: 1024px) 100vw, 60vw"
-                  loading="lazy"
+                  loading="eager"
+                  fetchPriority="high"
                   decoding="async"
-                  className="object-cover"
+                  className="h-full w-full object-cover"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/65 via-transparent to-transparent" />
-                <div className="absolute bottom-0 p-6 text-white">
+                <div className="absolute bottom-0 p-4 text-white sm:p-6">
                   <span className="px-3 py-1 rounded-full bg-[var(--accent)] text-[var(--accent-foreground)] text-xs font-bold">
                     {sectorLabel}
                   </span>
@@ -160,8 +162,8 @@ export function DemoViewer({ demo, allDemos }: { demo: Demo; allDemos: Demo[] })
                     <div className="mb-3">
                       <div className="text-[10px] font-bold uppercase tracking-wider opacity-70">
                         {locale === "ar"
-                          ? `الفئة ${classification.tier}`
-                          : `Category ${classification.tier}`}
+                          ? "العرض الأساسي"
+                          : "Base offer"}
                       </div>
                       <div className="font-black">
                         {locale === "ar" ? classification.name : classification.nameEn}
@@ -183,8 +185,8 @@ export function DemoViewer({ demo, allDemos }: { demo: Demo; allDemos: Demo[] })
                     />
                     <p className="mt-2 text-[10px] opacity-70 leading-relaxed">
                       {locale === "ar"
-                        ? `عربون ${formatUsd(depositUsd)} $ يُخصم من الإجمالي النهائي بعد اعتماد التخصيص.`
-                        : `$${formatUsd(depositUsd)} deposit is deducted from the final total once customization is approved.`}
+                        ? `عربون ${formatUsd(depositUsd)} $ يُخصم من سعر الموقع الأساسي.`
+                        : `$${formatUsd(depositUsd)} deposit is deducted from the base website price.`}
                     </p>
                   </div>
                 )}

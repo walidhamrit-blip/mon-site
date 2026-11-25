@@ -22,8 +22,16 @@ import {
   formatWatchConfirmation,
   watchOrderFromTelegram,
 } from "@/lib/telegram-delivery";
+import {
+  handleShopCallback,
+  handleShopEmailInput,
+  openTelegramShop,
+  type ShopBotContext,
+} from "@/lib/telegram-shop";
+import { shopLocale, shopWhatsappUrl } from "@/lib/telegram-shop-core";
 
 import {
+  clearTelegramPendingCheckout,
   findOrderForBot,
   getTelegramSubscriber,
   notifyTelegramAdmin,
@@ -31,6 +39,7 @@ import {
   resolveWebhookSecret,
   saveTelegramSubscriber,
   sendTelegramMessage,
+  editTelegramMessage,
   setTelegramLanguage,
   setTelegramMarketingOptIn,
   telegramConfig,
@@ -40,7 +49,11 @@ import {
 } from "@/lib/telegram";
 
 /**
- * Webhook du bot Telegram — `/api/telegram/webhook`.
+ * Webhook du bot Telegram — `/api/telegram-webhook`.
+ *
+ * URL canonique déclarée à Telegram (`setWebhook`) ; l'ancienne adresse
+ * `/api/telegram/webhook` reste valable via une rewrite `next.config.ts`
+ * (aucune installation existante à casser).
  *
  * Telegram POSTe chaque message / clic de bouton ici. Trois règles :
  *
@@ -66,6 +79,8 @@ interface TelegramUser {
   is_bot?: boolean;
   first_name?: string;
   username?: string;
+  /** Code de langue du client Telegram (« ar », « en-US »…), indicatif seulement. */
+  language_code?: string;
 }
 
 interface TelegramChat {
@@ -171,10 +186,19 @@ async function handleMessage(message: TelegramMessage): Promise<void> {
   const ctx = await botContext();
   const { command, args } = parseTelegramCommand(text);
   const stored = await getTelegramSubscriber(chatId);
+  const isNew = !stored;
+  const actor = {
+    chatId,
+    username: message.from?.username ?? null,
+    firstName: message.from?.first_name ?? null,
+  };
+
+  // Langue : le choix EXPLICITE du client (boutons 🇬🇧/🇱🇾) prime — on ne
+  // re-détecte pas à chaque message. Les nouveaux arrivants voient le
+  // choix de langue dès /start ; un premier message libre garde la
+  // détection automatique (ar par défaut, comme le site).
   const language =
-    command === "start"
-      ? detectTelegramLocale(args, stored?.language ?? "ar")
-      : stored?.language ?? detectTelegramLocale(text, "ar");
+    stored?.language ?? detectTelegramLocale(command === "start" ? args : text, "ar");
 
   await saveTelegramSubscriber({
     chatId,
@@ -183,6 +207,12 @@ async function handleMessage(message: TelegramMessage): Promise<void> {
     language,
     source: command === "start" ? sanitizeStartPayload(args) || null : stored ? undefined : "telegram",
   });
+
+  // Toute commande explicite (`/start`, `/aide`, `/commande`…) sort d'une
+  // éventuelle attente d'e-mail pour éviter un état « pending » fantôme.
+  if (command && command !== "shop" && command !== "codes" && command !== "catalogue" && command !== "catalog") {
+    await clearTelegramPendingCheckout(chatId);
+  }
 
   switch (command) {
     case "start": {
@@ -193,6 +223,14 @@ async function handleMessage(message: TelegramMessage): Promise<void> {
       const watchedRef = orderRefFromStartPayload(args);
       if (watchedRef) {
         await watchFromMessage(chatId, watchedRef, language, ctx);
+        return;
+      }
+      if (isNew) {
+        // Choix de la langue dès /start (🇬🇧 English / 🇱🇾 العربية) —
+        // le menu complet arrive dans la langue choisie.
+        await reply(chatId, fillTemplate(botCopy(language).welcomeChoice, { site: ctx.siteName }), {
+          keyboard: languageKeyboard(),
+        });
         return;
       }
       await reply(
@@ -214,22 +252,13 @@ async function handleMessage(message: TelegramMessage): Promise<void> {
         keyboard: mainMenuKeyboard(language, links(ctx)),
       });
       return;
+    case "shop":
     case "codes":
     case "catalogue":
     case "catalog":
-    case "shop":
-      await reply(
-        chatId,
-        fillTemplate(botCopy(language).catalog, {
-          store: `${ctx.siteUrl}/codes`,
-        }),
-        {
-          keyboard: [
-            [{ text: botCopy(language).catalogButton, url: `${ctx.siteUrl}/codes` }],
-            [{ text: botCopy(language).buttons.menu, callback_data: "menu:home" }],
-          ],
-        },
-      );
+      // Boutique INLINE : catégories → produits → paiement dans le même
+      // message. Le lien web reste accessible depuis chaque vue.
+      await openTelegramShop(chatId, null, shopLocale(language), shopCtx(ctx));
       return;
     case "commande":
     case "order":
@@ -253,6 +282,11 @@ async function handleMessage(message: TelegramMessage): Promise<void> {
       return;
     default:
       break;
+  }
+
+  // Caisse en attente : le texte suivant est l'e-mail de livraison.
+  if (await handleShopEmailInput(actor, null, text, shopLocale(language), shopCtx(ctx))) {
+    return;
   }
 
   // Texte libre : référence de commande, demande d'humain, ou question.
@@ -289,6 +323,9 @@ async function handleCallback(query: TelegramCallbackQuery): Promise<void> {
   const stored = await getTelegramSubscriber(chatId);
   const language: TelegramLocale = stored?.language ?? "ar";
   const copy = botCopy(language);
+  // Navigation « au même endroit » : la boutique (et le menu) éditent le
+  // message du clavier au lieu d'empiler des bulles.
+  const messageId = query.message?.message_id ?? null;
 
   await telegramAnswerCallback(query.id);
 
@@ -299,12 +336,27 @@ async function handleCallback(query: TelegramCallbackQuery): Promise<void> {
     language,
   });
 
+  const actor = {
+    chatId,
+    username: query.from.username ?? null,
+    firstName: query.from.first_name ?? null,
+  };
+
+  // Boutique inline : catégories → produits → détails & paiement, en
+  // éditant le même message. `false` = pas une callback boutique.
+  if (await handleShopCallback(actor, messageId, data, shopLocale(language), shopCtx(ctx))) {
+    return;
+  }
+
   if (data === "menu:home") {
-    await reply(chatId, copy.menuTitle, { keyboard: mainMenuKeyboard(language, links(ctx)) });
+    await clearTelegramPendingCheckout(chatId);
+    await replyOrEdit(chatId, messageId, copy.menuTitle, {
+      keyboard: mainMenuKeyboard(language, links(ctx)),
+    });
     return;
   }
   if (data === "menu:orders") {
-    await reply(chatId, copy.ordersPrompt, {
+    await replyOrEdit(chatId, messageId, copy.ordersPrompt, {
       keyboard: [
         [{ text: copy.ordersButton, url: `${ctx.siteUrl}/codes/commande` }],
         [{ text: copy.buttons.menu, callback_data: "menu:home" }],
@@ -317,19 +369,19 @@ async function handleCallback(query: TelegramCallbackQuery): Promise<void> {
     return;
   }
   if (data === "menu:lang") {
-    await reply(chatId, copy.langPrompt, { keyboard: languageKeyboard() });
+    await replyOrEdit(chatId, messageId, copy.langPrompt, { keyboard: languageKeyboard() });
     return;
   }
   if (data === "offers:on") {
     await setTelegramMarketingOptIn(chatId, true);
-    await reply(chatId, copy.offersOn, {
+    await replyOrEdit(chatId, messageId, copy.offersOn, {
       keyboard: mainMenuKeyboard(language, links(ctx)),
     });
     return;
   }
   if (data === "offers:off") {
     await setTelegramMarketingOptIn(chatId, false);
-    await reply(chatId, copy.offersOff, {
+    await replyOrEdit(chatId, messageId, copy.offersOff, {
       keyboard: mainMenuKeyboard(language, links(ctx)),
     });
     return;
@@ -339,12 +391,41 @@ async function handleCallback(query: TelegramCallbackQuery): Promise<void> {
     if (isTelegramLocale(chosen)) {
       await setTelegramLanguage(chatId, chosen);
       const chosenCopy = botCopy(chosen);
-      await reply(chatId, `${chosenCopy.langSaved}\n\n${chosenCopy.menuTitle}`, {
+      // Première visite : enchaîner directement sur le menu complet.
+      const text = isNewSubscriberAfterLanguageChoice(stored)
+        ? `${chosenCopy.langSaved}\n\n${fillTemplate(chosenCopy.welcome, { site: ctx.siteName })}`
+        : `${chosenCopy.langSaved}\n\n${chosenCopy.menuTitle}`;
+      await replyOrEdit(chatId, messageId, text, {
         keyboard: mainMenuKeyboard(chosen, links(ctx)),
       });
       return;
     }
   }
+}
+
+/**
+ * Édite le message du clavier ; si l'édition est impossible (message trop
+ * ancien, supprimé…), envoie un nouveau message — jamais de réponse muette.
+ */
+async function replyOrEdit(
+  chatId: string,
+  messageId: number | null,
+  text: string,
+  options: SendMessageOptions = {},
+): Promise<void> {
+  const edited = messageId
+    ? await editTelegramMessage(chatId, messageId, text, { parseMode: "HTML", ...options })
+    : { ok: false as const };
+  if (!edited.ok) {
+    await reply(chatId, text, options);
+  }
+}
+
+/** Le client n'avait pas encore de langue enregistrée (premier /start). */
+function isNewSubscriberAfterLanguageChoice(
+  stored: Awaited<ReturnType<typeof getTelegramSubscriber>>,
+): boolean {
+  return !stored;
 }
 
 /* ------------------------------- Actions bot ------------------------------ */
@@ -464,6 +545,8 @@ async function forwardToTeam(
       language,
       text: message.text ?? "",
     }),
+    undefined,
+    { parseMode: "HTML" },
   );
 }
 
@@ -500,11 +583,26 @@ function wantsHuman(text: string): boolean {
 async function botContext(): Promise<BotContext> {
   const site = await getSiteDataCached().catch(() => null);
   const config = site?.config;
+  const whatsappUrl =
+    shopWhatsappUrl(config?.social?.whatsapp) ??
+    shopWhatsappUrl(config?.whatsapp) ??
+    config?.social?.whatsapp ??
+    "";
   return {
     siteName: config?.name ?? "Nukhba",
     siteUrl: siteBaseUrl().replace(/\/+$/, ""),
     email: config?.email ?? "",
-    whatsapp: config?.social?.whatsapp ?? "",
+    whatsapp: whatsappUrl,
+  };
+}
+
+/** Contexte attendu par la boutique inline (site + boutique web + WhatsApp). */
+function shopCtx(ctx: BotContext): ShopBotContext {
+  return {
+    siteName: ctx.siteName,
+    siteUrl: ctx.siteUrl,
+    storeUrl: `${ctx.siteUrl}/codes`,
+    whatsapp: ctx.whatsapp,
   };
 }
 

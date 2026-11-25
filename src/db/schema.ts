@@ -110,6 +110,13 @@ export const orders = pgTable("orders", {
   clientName: text("client_name"),
   email: text("email"),
   phone: text("phone"),
+  /**
+   * Identité Telegram du client quand la commande vient du bot
+   * (`/api/telegram-webhook`) : le suivi et la livraison manuelle savent
+   * alors « parler » au bon chat (`src/lib/telegram-delivery.ts`).
+   */
+  telegramChatId: text("telegram_chat_id"),
+  telegramUsername: text("telegram_username"),
   /** Identifiant du paiement chez NOWPayments. */
   paymentId: text("payment_id").unique(),
   payAddress: text("pay_address"),
@@ -234,6 +241,48 @@ export const manualPayments = pgTable("manual_payments", {
 
 export type ManualPayment = typeof manualPayments.$inferSelect;
 export type NewManualPayment = typeof manualPayments.$inferInsert;
+
+/**
+ * Sessions de paiement par Carte Bancaire → USDC Polygon (PayGate.to).
+ *
+ * Chaque commande réglée par carte reçoit une adresse temporaire Polygon unique
+ * (`polygon_address_in`) et une URL de callback signée (`callback_url`). On les
+ * conserve ici pour vérifier cryptographiquement (RSA-SHA256 + HMAC) que le
+ * callback reçu provient bien de PayGate.to et correspond exactement à cette
+ * commande et à notre portefeuille marchand (`merchant_wallet`).
+ */
+export const paygatePayments = pgTable("paygate_payments", {
+  id: serial("id").primaryKey(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  orderRef: text("order_ref")
+    .notNull()
+    .unique()
+    .references(() => orders.ref, { onDelete: "cascade" }),
+  merchantWallet: text("merchant_wallet").notNull(),
+  addressIn: text("address_in").notNull(),
+  polygonAddressIn: text("polygon_address_in").notNull(),
+  ipnToken: text("ipn_token").notNull(),
+  callbackUrl: text("callback_url").notNull(),
+  checkoutUrl: text("checkout_url").notNull(),
+  baseAmountUsd: text("base_amount_usd").notNull(),
+  feePercent: text("fee_percent").notNull().default("0"),
+  billedAmountUsd: text("billed_amount_usd").notNull(),
+  minAcceptableUsd: text("min_acceptable_usd").notNull(),
+  provider: text("provider"),
+  /** pending | paid | underpaid | failed */
+  status: text("status").notNull().default("pending"),
+  valueCoin: text("value_coin"),
+  valueForwardedCoin: text("value_forwarded_coin"),
+  coin: text("coin"),
+  txidIn: text("txid_in"),
+  txidOut: text("txid_out"),
+  paidAt: timestamp("paid_at", { withTimezone: true }),
+  lastDetail: text("last_detail"),
+});
+
+export type PayGatePayment = typeof paygatePayments.$inferSelect;
+export type NewPayGatePayment = typeof paygatePayments.$inferInsert;
 
 // Plans d'abonnement (mensuel / annuel), synchronisés avec NOWPayments.
 export const subscriptionPlans = pgTable("subscription_plans", {
@@ -444,6 +493,9 @@ export const digitalOrders = pgTable("digital_orders", {
   recipientName: text("recipient_name"),
   recipientPhone: text("recipient_phone"),
   locale: text("locale").notNull().default("ar"),
+  /** Identité Telegram du client (commandes créées depuis le bot). */
+  telegramChatId: text("telegram_chat_id"),
+  telegramUsername: text("telegram_username"),
 
   /** pending | paid | manual | delivered | failed */
   status: text("status").notNull().default("pending"),
@@ -676,6 +728,18 @@ export const telegramSubscribers = pgTable("telegram_subscribers", {
   optedInAt: timestamp("opted_in_at", { withTimezone: true }),
   /** Dernier message reçu du client (support), pour l'admin. */
   lastMessage: text("last_message"),
+  /**
+   * Dernier e-mail utilisé à la caisse du bot : proposé en préremplissage
+   * (le code part toujours sur un e-mail réel, jamais une adresse inventée).
+   */
+  checkoutEmail: text("checkout_email"),
+  /**
+   * État éphémère de navigation dans la boutique inline (produits de la
+   * page courante, montant choisi, caisse en attente d'e-mail). jsonb :
+   * les callback Telegram n'ont que 64 octets, les slugs complets restent
+   * donc côté serveur.
+   */
+  shopState: jsonb("shop_state"),
 });
 
 export type TelegramSubscriber = typeof telegramSubscribers.$inferSelect;
@@ -881,6 +945,10 @@ export const g2gDeliveries = pgTable("g2g_deliveries", {
   netMarginPercent: text("net_margin_percent"),
   /** Référence de commande fournisseur (jamais le code lui-même). */
   supplierOrderRef: text("supplier_order_ref"),
+  /** Intention d'achat immuable, écrite avant tout POST fournisseur. */
+  supplierIdempotencyKey: text("supplier_idempotency_key"),
+  supplierPurchasePayload: text("supplier_purchase_payload"),
+  supplierPurchaseStartedAt: timestamp("supplier_purchase_started_at", { withTimezone: true }),
   attempts: integer("attempts").notNull().default(0),
   nextAttemptAt: timestamp("next_attempt_at", { withTimezone: true }),
   /** Message lisible, sans code ni secret. */

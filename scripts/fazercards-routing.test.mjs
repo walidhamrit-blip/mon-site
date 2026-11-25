@@ -107,7 +107,7 @@ test("la livraison route les commandes fzr-… vers FazerCards", () => {
   // c'est lui, et lui seul, qui autorise un achat pour une carte téléphonique.
   assert.match(
     body,
-    /deliverPaidFazercardsOrder\(\s*loaded\.id,\s*\{\s*phoneCardApproved:\s*options\.phoneCardApproved === true,?\s*\}/,
+    /deliverPaidFazercardsOrder\(\s*loaded\.id,\s*\{\s*phoneCardApproved:\s*options\.phoneCardApproved === true,\s*manualPaymentApproved:\s*options\.manualPaymentApproved === true,?\s*\}/,
   );
   // Le routage doit précéder les contrôles Reloadly (config, produit relié).
   assert.ok(
@@ -386,11 +386,11 @@ test("la caisse refuse une facture sous le minimum crypto", () => {
   const dialogFlat = code(dialog);
   assert.match(dialogFlat, /MIN_CRYPTO_INVOICE_USD/);
   assert.match(dialogFlat, /belowMinimum/);
-  // Le bouton reste bloqué pendant le contrôle d'identifiant et, pour une
-  // carte téléphonique, tant que son devis LYD n'est pas disponible.
+  // Le bouton reste bloqué pendant le contrôle d'identifiant, sous le minimum
+  // (crypto ou carte bancaire PayGate), et tant que le devis LYD carte n'est pas disponible.
   assert.match(
     dialogFlat,
-    /disabled=\{busy \|\| !selected \|\| belowMinimum \|\| aboveLimit \|\| idGate === "pending" \|\| \(paymentMethod === "phone_card" && phoneQuotePending\)\}/,
+    /disabled=\{\s*busy \|\| !selected \|\| belowMinimum \|\| belowCardMinimum \|\| aboveLimit \|\| idGate === "pending" \|\| \(paymentMethod === "phone_card" && phoneQuotePending\)\s*\}/,
   );
 });
 
@@ -405,7 +405,7 @@ test("le plafond d'achat est refusé AVANT l'encaissement", () => {
   );
   const dialogFlat = code(dialog);
   assert.match(dialogFlat, /aboveLimit/);
-  assert.match(dialogFlat, /!selected \|\| belowMinimum \|\| aboveLimit/);
+  assert.match(dialogFlat, /!selected \|\| belowMinimum \|\| belowCardMinimum \|\| aboveLimit/);
 });
 
 /* ------------- Catalogue persisté (rendu de page sans synchro) ---------- */
@@ -444,15 +444,18 @@ test("le rendu des pages ne synchronise jamais (sinon timeout -> 500)", () => {
   assert.match(flat, /Catalogue FazerCards indisponible \(aucune copie en cache\)/);
 });
 
-test("le cron reste compatible avec le plan Hobby (une fois par jour)", () => {
+test("le cron catalogue reste quotidien, même sur le plan Pro", () => {
   assert.match(code(cronRoute), /export const maxDuration = 60;/);
   assert.match(code(cronRoute), /getFazercardsCatalog\(\{ force: true \}\)/);
   assert.match(code(cronRoute), /CRON_SECRET/);
   assert.match(vercelJson, /"path": "\/api\/cron\/fazercards-catalog"/);
-  // ⚠️ Un cron plus fréquent qu'une fois par jour fait ÉCHOUER le déploiement
-  // Vercel sur le plan Hobby (constaté : build rejeté avec *\/10).
+  // Pro autorise la minute, mais une synchro complète coûte un appel HTTP par
+  // catégorie (~123) et plusieurs dizaines de secondes : la multiplier
+  // empilerait des synchros concurrentes. Le rafraîchissement utile passe par
+  // `after()` dans le rendu, pas par un cron plus fréquent.
   assert.match(vercelJson, /"0 4 \* \* \*"/);
   assert.doesNotMatch(vercelJson, /"\*\/10 /);
+  assert.doesNotMatch(vercelJson, /fazercards-catalog",\s*"schedule": "\*/);
 });
 
 test("le catalogue se rafraîchit après la réponse (after), jamais dedans", () => {

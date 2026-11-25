@@ -1,20 +1,24 @@
 "use client";
 
-import { useMemo } from "react";
-import { Copy, Info } from "lucide-react";
+import { useMemo, useState } from "react";
+import { Check, Copy, Info } from "lucide-react";
 import {
+  MANUAL_PAYMENT_METHOD_KIND,
   MANUAL_PAYMENT_METHOD_LABELS,
   calculateManualPaymentQuote,
   formatManualPaymentAmount,
+  isCryptoManualPaymentMethod,
+  isDollarPeggedManualCurrency,
   type ManualPaymentCurrency,
   type ManualPaymentMethod,
   type ManualPaymentQuote,
 } from "@/lib/manual-payment-core";
 import type { PublicManualPaymentOption } from "@/lib/manual-payment-public";
+import { CryptoQrCode } from "@/components/crypto-qr-code";
 
 /**
  * Champs de preuve de paiement pour un virement manuel
- * (Skrill, Neteller, Airtm, D17, Volet, WebMoney et Kashy).
+ * (Binance Pay, OKX, Bybit, RedotPay, USDT direct, Skrill, Neteller, Airtm, D17, Volet, WebMoney et Kashy).
  *
  * Rendu partagé par les trois tunnels (boutique de codes, création de sites,
  * abonnements) : la consigne, le montant exact et les trois champs sont donc
@@ -73,6 +77,7 @@ export function ManualPaymentForm({
   locale: "ar" | "en";
 }) {
   const ar = locale === "ar";
+  const [copied, setCopied] = useState(false);
   const option = useMemo(
     () => options.find((item) => item.method === draft.method) ?? options[0] ?? null,
     [options, draft.method],
@@ -80,6 +85,53 @@ export function ManualPaymentForm({
   const quote = option ? manualQuoteForOption(option, amountUsd) : null;
 
   if (!option) return null;
+
+  const isCrypto = isCryptoManualPaymentMethod(option.method);
+  const isCryptoDirect = option.method.startsWith("usdt_");
+  const isCryptoPayId =
+    option.method === "binance_pay" ||
+    option.method === "okx_pay" ||
+    option.method === "bybit_pay" ||
+    option.method === "redotpay";
+  const methodKind = MANUAL_PAYMENT_METHOD_KIND[option.method];
+
+  const senderAccountLabel = isCryptoDirect
+    ? ar
+      ? "عنوان المحفظة المُرسِلة *"
+      : "Sender wallet address *"
+    : isCryptoPayId
+      ? ar
+        ? "معرّف حساب المُرسِل (UID / Pay ID / البريد) *"
+        : "Sender ID (UID / Pay ID / Email) *"
+      : ar
+        ? "حساب المُرسِل *"
+        : "Sender account *";
+
+  const senderAccountPlaceholder = isCryptoDirect
+    ? "0x... / T... / UQ..."
+    : isCryptoPayId
+      ? ar
+        ? "UID أو Pay ID أو البريد"
+        : "UID, Pay ID or email"
+      : methodKind === "phone"
+        ? ar
+          ? "رقم الهاتف"
+          : "Phone number"
+        : ar
+          ? "بريد أو محفظة أو هاتف"
+          : "E-mail, wallet or phone";
+
+  const txRefLabel = isCryptoDirect
+    ? ar
+      ? "هاش المعاملة (TxHash / TxID) *"
+      : "Transaction hash (TxHash) *"
+    : isCryptoPayId
+      ? ar
+        ? "معرّف العملية (Order ID / TxID) *"
+        : "Order ID / Transaction reference *"
+      : ar
+        ? "معرّف العملية (المرجع) *"
+        : "Transaction ID / reference *";
 
   const set = (patch: Partial<ManualPaymentDraft>) => onDraftChange({ ...draft, ...patch });
   const quoteKey = quote
@@ -89,6 +141,8 @@ export function ManualPaymentForm({
   const copyTarget = async () => {
     try {
       await navigator.clipboard.writeText(option.account);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
     } catch {
       // Presse-papiers indisponible : le compte reste lisible à l'écran.
     }
@@ -99,7 +153,7 @@ export function ManualPaymentForm({
       {options.length > 1 && (
         <div>
           <span className={LABEL_CLS}>{ar ? "اختر وسيلة الدفع" : "Choose a method"}</span>
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-1 gap-2 min-[360px]:grid-cols-2">
             {options.map((item) => {
               const active = item.method === option.method;
               return (
@@ -138,7 +192,7 @@ export function ManualPaymentForm({
             {formatManualPaymentAmount(quote.payAmount, quote.payCurrency)}
           </p>
         ) : (
-          <p className="mt-1 text-[12.5px] font-bold text-amber-700">
+          <p className="mt-1 text-[12.5px] font-bold text-amber-700 dark:text-amber-300">
             {ar
               ? "تعذر حساب المبلغ. تواصل معنا أو اختر الدفع بالعملات الرقمية."
               : "The amount could not be calculated. Contact us or choose crypto."}
@@ -162,12 +216,20 @@ export function ManualPaymentForm({
             type="button"
             onClick={copyTarget}
             aria-label={ar ? "نسخ الحساب" : "Copy the account"}
-            className="grid h-9 w-9 shrink-0 place-items-center rounded-lg border border-[var(--border)] bg-[var(--background)] hover:border-[var(--accent)]"
+            className="grid h-11 w-11 shrink-0 cursor-pointer place-items-center rounded-lg border border-[var(--border)] bg-[var(--background)] hover:border-[var(--accent)]"
           >
-            <Copy className="h-3.5 w-3.5" />
+            {copied ? <Check className="h-4 w-4 text-emerald-600 dark:text-emerald-400" /> : <Copy className="h-4 w-4" />}
           </button>
         </div>
-        {quote && (quote.payCurrency !== "USD" || quote.feePercent > 0) && (
+        {isCrypto && (
+          <CryptoQrCode
+            method={option.method}
+            value={option.account}
+            customImageUrl={option.qrImage}
+            locale={locale}
+          />
+        )}
+        {quote && (!isDollarPeggedManualCurrency(quote.payCurrency) || quote.feePercent > 0) && (
           <p className="mt-2 border-t border-[var(--accent)]/20 pt-2 text-[11px] leading-5 text-[var(--muted-foreground)]" dir="ltr">
             {quote.amountUsd.toFixed(2)} USD × {quote.payRate}{" "}
             {quote.payCurrency as ManualPaymentCurrency}
@@ -197,14 +259,14 @@ export function ManualPaymentForm({
         </label>
         <label className="block">
           <span className={LABEL_CLS}>
-            {ar ? "حساب المُرسِل *" : "Sender account *"}
+            {senderAccountLabel}
           </span>
           <input
             value={draft.senderAccount}
             onChange={(event) => set({ senderAccount: event.target.value })}
             maxLength={120}
             dir="ltr"
-            placeholder={ar ? "بريد أو محفظة أو هاتف" : "E-mail, wallet or phone"}
+            placeholder={senderAccountPlaceholder}
             className={INPUT_CLS}
           />
         </label>
@@ -212,7 +274,7 @@ export function ManualPaymentForm({
 
       <label className="block">
         <span className={LABEL_CLS}>
-          {ar ? "معرّف العملية (المرجع) *" : "Transaction ID / reference *"}
+          {txRefLabel}
         </span>
         <input
           value={draft.transactionRef}
@@ -234,12 +296,12 @@ export function ManualPaymentForm({
       </label>
 
       {quote && (
-        <label className="flex cursor-pointer items-start gap-2 rounded-lg border border-[var(--border)] px-2.5 py-2 text-[11.5px] font-bold leading-5">
+        <label className="flex min-h-11 cursor-pointer items-start gap-2.5 rounded-lg border border-[var(--border)] px-3 py-2.5 text-[11.5px] font-bold leading-5">
           <input
             type="checkbox"
             checked={quoteAccepted}
             onChange={(event) => onQuoteAcceptedChange(event.target.checked)}
-            className="mt-1 h-3.5 w-3.5 shrink-0 accent-[var(--accent)]"
+            className="mt-0.5 h-4 w-4 shrink-0 accent-[var(--accent)]"
           />
           <span>
             {ar

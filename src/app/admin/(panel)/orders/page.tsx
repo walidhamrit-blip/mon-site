@@ -139,7 +139,9 @@ export default async function AdminOrdersPage({ searchParams }: Props) {
         : o.paymentMethod === "manual" ||
             isManualPaymentMethod(o.paymentMethod)
           ? "manual"
-          : "nowpayments",
+          : o.paymentMethod === "paygate"
+            ? "paygate"
+            : "nowpayments",
     status: (ORDER_STATUSES as readonly string[]).includes(o.status)
       ? (o.status as OrderStatus)
       : "pending",

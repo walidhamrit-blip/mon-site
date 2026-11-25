@@ -131,15 +131,15 @@ test("l'index couvre toutes les sections du site", () => {
   }
   const ids = knowledge.docs.map((d) => d.id);
   assert.equal(new Set(ids).size, ids.length, "identifiants de fiches dupliqués");
-  for (const id of ["plan-vitrine", "plan-boutique", "service-restyle", "service-fix-optimize", "service-add-section", "sector-medical", "sector-sanitary", "compare-wix", "compare-seo-agency", "blog-how-to-pay-with-crypto-usdt", "demo-myphone-tripoli", "apps-nukhba-clinic-app", "products-nukhba-cloud-pos", "terms", "refund", "badge", "contact", "subscription-tracking", "digital-delivery"]) {
+  for (const id of ["plan-static-site", "service-restyle", "service-fix-optimize", "service-add-section", "sector-medical", "sector-sanitary", "compare-wix", "compare-seo-agency", "blog-how-to-pay-with-crypto-usdt", "demo-myphone-tripoli", "apps-nukhba-clinic-app", "products-nukhba-cloud-pos", "terms", "refund", "badge", "contact", "subscription-tracking", "digital-delivery"]) {
     assert.ok(ids.includes(id), `fiche manquante : ${id}`);
   }
   assert.equal(knowledge.productCount, defaultDigitalProducts.length);
 });
 
 test("le résumé LLM cite les prix exacts, les horaires et les limites de la boutique", () => {
-  assert.match(knowledge.core, /Vitrine \(vitrine\): model \$300 \+ 20% customization \$60 = total \$360/);
-  assert.match(knowledge.core, /Boutique \(boutique\): model \$880/);
+  assert.match(knowledge.core, /One offer at \$35/);
+  assert.match(knowledge.core, /content management from \$10/);
   assert.match(knowledge.core, /\$10\/mo or \$69\/yr/);
   assert.match(knowledge.core, /\$25\/mo or \$199\/yr/);
   assert.match(knowledge.core, /grace period max 5 days/);
@@ -177,7 +177,7 @@ const expectTop = (query, expectedId, lang = "en") => {
 
 test("recherche EN : chaque domaine du site est retrouvé", () => {
   expectTop("How much does a website cost?", "pricing-overview");
-  expectTop("What's included in the Boutique plan?", "plan-boutique");
+  expectTop("What's included in the Boutique plan?", "plan-static-site");
   expectTop("How do I pay with USDT?", "payment");
   expectTop("Can I reserve a slot with a deposit?", "reservation");
   expectTop("What are your subscription prices for hosting?", "subscriptions");
@@ -247,8 +247,8 @@ test("answerLocally : salutations, remerciements, inconnu", () => {
 
 test("answerLocally : réponses exactes AR/EN/FR avec bouton vers la page", () => {
   const price = assistant.answerLocally(knowledge, "كم سعر الموقع؟", "ar");
-  assert.match(price.text, /\$300/);
-  assert.match(price.text, /\$360/);
+  assert.match(price.text, /35/);
+  assert.match(price.text, /10/);
   assert.equal(price.actions[0].href, "/pricing");
   assert.ok(price.suggestions.length >= 2 && price.suggestions.length <= 4);
 
@@ -288,7 +288,7 @@ test("buildSystemPrompt : langue, règles et fiches pertinentes (requête + cont
   const prompt = assistant.buildSystemPrompt(knowledge, ["What are the subscriptions?", "and how do I cancel?"], "fr");
   assert.match(prompt, /Answer in French/);
   assert.match(prompt, /Track or cancel a subscription/);
-  assert.match(prompt, /Subscriptions \(hosting & maintenance\)/);
+  assert.match(prompt, /Optional maintenance subscriptions/);
   assert.match(prompt, /never invent numbers/);
   assert.match(prompt, /Website plans and subscriptions are paid in crypto/);
   assert.match(prompt, /phone recharge cards/);
@@ -380,7 +380,7 @@ test("/api/chat valide le corps", async () => {
 test("/api/chat sans clé → réponse locale complète en AR/EN/FR", async () => {
   const ar = await (await post({ prompt: "كم سعر الموقع؟", locale: "ar" })).json();
   assert.equal(ar.mode, "local");
-  assert.match(ar.text, /\$360/);
+  assert.match(ar.text, /35/);
   assert.equal(ar.actions[0].href, "/pricing");
 
   const fr = await (await post({ prompt: "Comment payer en USDT ?", locale: "en" })).json();
@@ -563,5 +563,26 @@ test("aucune mention du fournisseur retiré ni de « support 24/7 » dans l'assi
     // Les lignes qui interdisent explicitement la promesse sont autorisées.
     const promises = source.split("\n").filter((line) => /24\/7/.test(line) && !/never/i.test(line));
     assert.deepEqual(promises, [], `${file} promet un support 24/7`);
+  }
+});
+
+test("fallback replies use canonical caps, configured deposit and optional maintenance in AR/EN", () => {
+  for (const locale of ["en", "ar"]) {
+    const nodes = chatbot.buildChatNodes({
+      locale, plans: siteConfig.pricing.plans, currency: "$", currencyEn: "$",
+      whatsappHref: "https://wa.me/1", reservationUsd: 7, hours: siteConfig.hoursEn,
+      phone: siteConfig.phone, email: siteConfig.email, address: siteConfig.addressEn,
+      services: siteConfig.standaloneServices,
+    });
+    assert.ok(nodes.codes.answer.includes(String(MAX_DIGITAL_ORDER_USD)));
+    assert.ok(nodes.codes.answer.includes(String(MAX_GIFT_CARD_PRICE_USD)));
+    assert.doesNotMatch(nodes.codes.answer, /Max \$50|up to \$100|للطلب 50/);
+    assert.match(nodes.payment.answer, /7/);
+    assert.doesNotMatch(nodes.payment.answer, /never store.*wallet data|deposit is only \$1/);
+    if (locale === "en") {
+      assert.match(nodes.reservation.answer, /does not automatically deduct/);
+      assert.match(nodes.subscriptions.answer, /not website creation/);
+      assert.match(nodes.subscriptions.answer, /no automatic wallet debit/);
+    }
   }
 });

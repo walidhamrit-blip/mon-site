@@ -84,6 +84,27 @@ export const SUBSCRIPTION_PLANS: readonly SubscriptionPlanDef[] = TIERS.flatMap(
   ],
 );
 
+/** Same prices/IDs as existing subscriptions; these maintain an EXISTING site. */
+export function maintenanceTiers() {
+  return TIERS.map(tier => ({
+    tier: tier.tier,
+    name: `صيانة — ${tier.name}`,
+    nameEn: `Maintenance — ${tier.nameEn}`,
+    monthly: SUBSCRIPTION_PLANS.find(p => p.tier === tier.tier && p.cycle === "monthly")!,
+    annual: SUBSCRIPTION_PLANS.find(p => p.tier === tier.tier && p.cycle === "annual")!,
+    noteAr: tier.tier === "vitrine"
+      ? "صيانة موقع ثابت موجود وفق النطاق المتفق عليه؛ لا تشمل إنشاء الموقع."
+      : tier.tier === "vitrine-plus"
+        ? "صيانة موقع ذي محتوى قابل للإدارة موجود مسبقاً؛ لا تشمل شراء أو تفعيل وحدات الإدارة."
+        : "صيانة متجر أو نظام حجز موجود وفق الاتفاق؛ لا تشمل بناء متجر أو نظام حجز جديد.",
+    noteEn: tier.tier === "vitrine"
+      ? "Maintenance of an existing static site within the agreed scope; website creation is not included."
+      : tier.tier === "vitrine-plus"
+        ? "Maintenance of an existing content-managed site; buying or activating management modules is not included."
+        : "Maintenance of an existing store or booking system as agreed; building a new store or booking system is not included.",
+  }));
+}
+
 export function getSubscriptionPlan(id: string): SubscriptionPlanDef | undefined {
   return SUBSCRIPTION_PLANS.find((plan) => plan.id === id);
 }

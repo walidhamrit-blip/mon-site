@@ -1,3 +1,4 @@
+import { paymentAvailabilityNote, WEBSITE_LANGUAGE_PRICE_USD } from "@/lib/website-offer";
 import type { Faq } from "./site-types";
 import { absoluteUrl } from "./seo";
 import { fillPriceTokens } from "./service-pricing";
@@ -82,8 +83,8 @@ export const servicesHubFaqs: Faq[] = [
   {
     qAr: "كيف يتم الدفع؟",
     qEn: "How does payment work?",
-    aAr: "تحويل بنكي أو نقداً أو بالعملات الرقمية عبر NOWPayments، مع إمكانية التقسيط على دفعتين أو ثلاث. نبدأ العمل بعد دفعة مقدمة 50%، والباقي عند التسليم.",
-    aEn: "Bank transfer, cash or crypto via NOWPayments, with 2–3 instalments available. Work starts after a 50% deposit and the balance is due on delivery.",
+    aAr: paymentAvailabilityNote("ar") + " جدول الدفعات يحدد في الاتفاق.",
+    aEn: paymentAvailabilityNote("en") + " The payment schedule is defined in the agreement.",
   },
   {
     qAr: "هل تعملون مع عملاء خارج طرابلس؟",
@@ -334,8 +335,8 @@ const serviceLandingDefaults: Record<string, ServiceLandingContent> = {
   },
 
   branding: {
-    titleAr: "تصميم هوية بصرية وشعار لشركتك في طرابلس — من {price}",
-    titleEn: "Brand Identity & Logo Design in Tripoli — From {price}",
+    titleAr: "تصميم هوية بصرية وشعار احترافي في طرابلس",
+    titleEn: "Brand Identity & Logo Design in Tripoli",
     descriptionAr:
       "هوية بصرية متكاملة: شعار أصلي، دليل ألوان وخطوط، بطاقات عمل، قوالب سوشيال وملفات جاهزة للطباعة والويب — من {price} وتسليم 3–5 أيام.",
     descriptionEn:
@@ -482,8 +483,8 @@ const serviceLandingDefaults: Record<string, ServiceLandingContent> = {
       {
         qAr: "هل تعمل الصفحة بالعربية والإنجليزية؟",
         qEn: "Does it work in Arabic and English?",
-        aAr: "نعم، واجهة ثنائية اللغة مع RTL عربي صحيح، أو نسختين منفصلتين إن كانت الحملتان مختلفتين.",
-        aEn: "Yes — a bilingual page with correct Arabic RTL, or two separate versions if the two campaigns differ.",
+        aAr: `الأساس بلغة واحدة. إضافة لغة بترجمة يقدمها العميل تكلف ${WEBSITE_LANGUAGE_PRICE_USD} دولارات، ويؤكد نطاق النسخ المختلفة قبل الدفع.`,
+        aEn: `The base scope includes one language. An additional language with client-supplied translation costs $${WEBSITE_LANGUAGE_PRICE_USD}; separate campaign versions are scoped before payment.`,
       },
       {
         qAr: "هل أستطيع تعديل الصفحة بعد التسليم؟",

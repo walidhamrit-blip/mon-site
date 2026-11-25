@@ -32,22 +32,24 @@ export async function generateMetadata({ searchParams }: LocalePageProps): Promi
 export default async function ContactPage({ searchParams }: LocalePageProps) {
   const { config } = await getSiteDataCached();
   const locale = await pageLocale(config, searchParams);
+  const ar = locale === "ar";
   return (
     <>
       <JsonLd
         data={[
           breadcrumbJsonLd(config, [
-            { name: "الرئيسية", path: "/" },
-            { name: "تواصل معنا", path: "/contact" },
+            { name: ar ? "الرئيسية" : "Home", path: "/" },
+            { name: ar ? "تواصل معنا" : "Contact Us", path: "/contact" },
           ], locale),
           {
             "@context": "https://schema.org",
             "@type": "ContactPage",
             "@id": `${localizedAbsoluteUrl(config.url, "/contact", locale, siteLocale(config))}#contactpage`,
-            name: "تواصل مع نخبة — Contact Nukhba",
+            name: ar ? "تواصل مع نخبة" : "Contact Nukhba",
             url: localizedAbsoluteUrl(config.url, "/contact", locale, siteLocale(config)),
-            description:
-              "واتساب، هاتف وبريد إلكتروني — استشارة مجانية لمشروع موقعك في طرابلس.",
+            description: ar
+              ? "واتساب، هاتف وبريد إلكتروني — استشارة مجانية لمشروع موقعك في طرابلس."
+              : "WhatsApp, phone and email — free consultation for your website, online store or digital order.",
             inLanguage: locale,
             isPartOf: { "@id": absoluteUrl(config, "#website") },
           },

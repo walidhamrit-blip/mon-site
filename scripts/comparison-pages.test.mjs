@@ -60,6 +60,7 @@ async function compileModule(relPath, outName) {
   return import(pathToFileURL(outfile).href);
 }
 
+const { websiteOptions } = await compileModule("lib/website-offer.ts", "website-offer.mjs");
 const { siteConfig } = await compileModule("lib/config.ts", "config.mjs");
 const {
   comparisons,
@@ -334,8 +335,7 @@ test("aucun jeton de marché ne fuit dans les schémas ni dans le texte affiché
 });
 
 test("A03 : aucune promesse « sans renouvellement » et prix « from $X » alignés sur la config vivante", () => {
-  // Audit SEO/GEO 2026-11-01 (A03) : l'hébergement n'est inclus que la
-  // première année — aucun comparatif ne doit nier le renouvellement annuel.
+  // Do not promise unlimited free hosting; option prices are also legitimate published prices.
   // Tout prix « from $X » cité pour NOTRE offre doit exister dans la config
   // vivante (plan complet ou service à la carte) — fini les prix en dur
   // contradictoires (ex. 60/100/299 $ obsolètes de l'audit). On ne contrôle
@@ -344,6 +344,7 @@ test("A03 : aucune promesse « sans renouvellement » et prix « from $X » alig
   const allowedPrices = new Set([
     ...siteConfig.pricing.plans.map((plan) => plan.priceUsd),
     ...siteConfig.standaloneServices.map((s) => s.priceFromUsd),
+    ...websiteOptions.filter(option => option.priceUsd != null).map(option => option.priceUsd),
   ]);
   const cheapest = Math.min(...siteConfig.pricing.plans.map((plan) => plan.priceUsd));
   const TEXT_KEYS = new Set([

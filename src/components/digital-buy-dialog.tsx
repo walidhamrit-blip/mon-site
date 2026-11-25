@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { CheckCircle2, CreditCard, Loader2, Lock, Minus, Plus, ShieldCheck, Smartphone, Wallet, X, Zap } from "lucide-react";
+import { createPortal } from "react-dom";
+import { AlertTriangle, CheckCircle2, Coins, CreditCard, ExternalLink, Loader2, Lock, Minus, Plus, ShieldCheck, Smartphone, Wallet, X, Zap } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import { useSiteConfig } from "@/components/site-provider";
 import { Price } from "@/components/price";
@@ -24,7 +25,12 @@ import {
   type ManualPaymentDraft,
 } from "@/components/manual-payment-form";
 import type { PublicManualPaymentOption } from "@/lib/manual-payment-public";
+import {
+  calculatePayGateCardQuote,
+  type PublicPayGateOption,
+} from "@/lib/paygate-core";
 import { trackEvent } from "@/lib/analytics";
+import { PaymentBrandLogos } from "@/components/payment-methods";
 
 const MAX_QUANTITY = 10;
 /** Mémorise la dernière commande du visiteur pour préremplir le suivi. */
@@ -66,27 +72,37 @@ export function DigitalBuyDialog({ product, denominationId, onClose }: Props) {
   const [email, setEmail] = useState("");
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
-  const [phoneCardDisabled, setPhoneCardDisabled] = useState(false);
+  const [phoneCardDisabled, setPhoneCardDisabled] = useState(true);
   const phoneCardEnabled = siteConfig.fazercards?.phoneCardPaymentsEnabled !== false && !phoneCardDisabled;
   const [selectedPaymentMethod, setPaymentMethod] = useState<
-    "nowpayments" | "phone_card" | "manual"
+    "nowpayments" | "paygate" | "phone_card" | "manual"
   >("nowpayments");
   /**
-   * Moyens de paiement manuels proposables, lus depuis le serveur : le
-   * navigateur ne connaît pas la configuration (comptes, taux). Une liste
-   * vide = aucun moyen manuel configuré, ou configuration illisible.
+   * Moyens de paiement manuels proposables + passerelle carte (PayGate.to),
+   * lus depuis le serveur.
    */
   const [manualOptions, setManualOptions] = useState<PublicManualPaymentOption[]>([]);
+  const [cardGateway, setCardGateway] = useState<PublicPayGateOption | null>(null);
+  const [cardReady, setCardReady] = useState<{
+    orderRef: string;
+    trackingToken: string;
+    paymentUrl: string;
+    trackingUrl: string;
+    billedUsd: number;
+  } | null>(null);
   const [manualDraft, setManualDraft] = useState<ManualPaymentDraft>(EMPTY_MANUAL_PAYMENT_DRAFT);
   const [manualQuoteAccepted, setManualQuoteAccepted] = useState(false);
   // Si l'admin coupe le flux pendant qu'un dialogue est ouvert, la sélection
   // retombe sur crypto sans conserver un formulaire de carte actif.
   const manualSelected = selectedPaymentMethod === "manual" && manualOptions.length > 0;
+  const payGateSelected = selectedPaymentMethod === "paygate" && cardGateway?.enabled === true;
   const paymentMethod = manualSelected
     ? "manual"
-    : phoneCardEnabled && selectedPaymentMethod === "phone_card"
-      ? "phone_card"
-      : "nowpayments";
+    : payGateSelected
+      ? "paygate"
+      : phoneCardEnabled && selectedPaymentMethod === "phone_card"
+        ? "phone_card"
+        : "nowpayments";
   const [cardOperator, setCardOperator] = useState<"libyana" | "al_madar">("libyana");
   const [cardCode, setCardCode] = useState("");
   const [cardValueLyd, setCardValueLyd] = useState("");
@@ -150,12 +166,33 @@ export function DigitalBuyDialog({ product, denominationId, onClose }: Props) {
     isFazercards && selected && selected.priceUsd > 0
       ? Math.max(1, Math.ceil(MIN_CRYPTO_INVOICE_USD / selected.priceUsd))
       : 1;
+  const minCardQuantity =
+    isFazercards && cardGateway && selected && selected.priceUsd > 0
+      ? Math.max(1, Math.ceil(cardGateway.minOrderUsd / selected.priceUsd))
+      : 1;
   const belowMinimum =
     paymentMethod === "nowpayments" &&
     isFazercards &&
     selected != null &&
     total < MIN_CRYPTO_INVOICE_USD;
-  const effectiveMinQuantity = paymentMethod === "phone_card" ? 1 : minQuantity;
+  const belowCardMinimum =
+    paymentMethod === "paygate" &&
+    cardGateway != null &&
+    selected != null &&
+    total + 1e-6 < cardGateway.minOrderUsd;
+  const cardQuote =
+    cardGateway && total > 0
+      ? calculatePayGateCardQuote(total, {
+          feePercent: cardGateway.feePercent,
+          minReceivedRatio: 0.8,
+        })
+      : null;
+  const effectiveMinQuantity =
+    paymentMethod === "phone_card" ||
+    paymentMethod === "manual" ||
+    paymentMethod === "paygate"
+      ? 1
+      : minQuantity;
   // Plafond d'achat automatique : au-delà, la commande basculerait en
   // livraison manuelle après paiement. Le navigateur reflète la règle
   // serveur (modifiable dans /admin/settings) pour éviter d'encaisser pour rien.
@@ -167,13 +204,31 @@ export function DigitalBuyDialog({ product, denominationId, onClose }: Props) {
     : MAX_DIGITAL_ORDER_USD;
   const aboveLimit =
     selected != null && Math.round(total * 100) / 100 > maxOrderLimitUsd;
+  const minCardTotal = Math.round((selected?.priceUsd ?? 0) * minCardQuantity * 100) / 100;
+  const canBumpToCardMin =
+    minCardQuantity <= maxQuantity && minCardTotal <= maxOrderLimitUsd;
+  const minEligibleCardDenom =
+    cardGateway != null
+      ? (available.find(
+          (item) =>
+            item.priceUsd + 1e-6 >= cardGateway.minOrderUsd &&
+            item.priceUsd <= maxOrderLimitUsd,
+        ) ?? null)
+      : null;
 
   useEffect(() => {
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    document.documentElement.setAttribute("data-dialog", "open");
     const onKey = (event: KeyboardEvent) => {
       if (event.key === "Escape") onClose();
     };
     window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      document.documentElement.removeAttribute("data-dialog");
+      window.removeEventListener("keydown", onKey);
+    };
   }, [onClose]);
 
   // Le navigateur demande un devis indicatif ; le checkout le recalculera et
@@ -209,9 +264,7 @@ export function DigitalBuyDialog({ product, denominationId, onClose }: Props) {
     };
   }, [isFazercards, paymentMethod, phoneQuoteAmount, phoneQuoteRefresh]);
 
-  // Moyens de paiement manuels : chargés une fois à l'ouverture du dialogue.
-  // En cas d'échec réseau, aucune option manuelle n'est proposée — le client
-  // garde la crypto, et rien ne peut être payé sur un compte inventé.
+  // Moyens de paiement manuels + passerelle carte : chargés à l'ouverture du dialogue.
   useEffect(() => {
     if (!isFazercards) return;
     let cancelled = false;
@@ -221,8 +274,14 @@ export function DigitalBuyDialog({ product, denominationId, onClose }: Props) {
         const data = (await response.json().catch(() => ({}))) as {
           ok?: boolean;
           options?: PublicManualPaymentOption[];
+          phoneCardAvailable?: boolean;
+          cardGateway?: PublicPayGateOption | null;
         };
         if (cancelled) return;
+        setPhoneCardDisabled(!response.ok || !data.ok || data.phoneCardAvailable !== true);
+        setCardGateway(
+          response.ok && data.ok && data.cardGateway?.enabled ? data.cardGateway : null,
+        );
         const list = response.ok && data.ok && Array.isArray(data.options) ? data.options : [];
         setManualOptions(list);
         if (list.length > 0) {
@@ -233,7 +292,10 @@ export function DigitalBuyDialog({ product, denominationId, onClose }: Props) {
           );
         }
       } catch {
-        if (!cancelled) setManualOptions([]);
+        if (!cancelled) {
+          setManualOptions([]);
+          setCardGateway(null);
+        }
       }
     };
     void load();
@@ -241,6 +303,37 @@ export function DigitalBuyDialog({ product, denominationId, onClose }: Props) {
       cancelled = true;
     };
   }, [isFazercards]);
+
+  // Suivi automatique en arrière-plan dès qu'une session Carte Bancaire est ouverte :
+  // dès que le callback PayGate.to confirme le paiement, l'onglet Nukhba bascule
+  // tout seul vers la page de livraison des codes !
+  useEffect(() => {
+    if (!cardReady) return;
+    let stopped = false;
+    const check = async () => {
+      try {
+        const res = await fetch(
+          `/api/fazercards/orders/${encodeURIComponent(cardReady.orderRef)}?t=${encodeURIComponent(cardReady.trackingToken)}`,
+          { cache: "no-store" },
+        );
+        const payload = (await res.json().catch(() => ({}))) as {
+          ok?: boolean;
+          order?: { status?: string };
+        };
+        if (stopped || !res.ok || !payload.ok) return;
+        if (payload.order?.status === "paid" || payload.order?.status === "delivered") {
+          window.location.href = cardReady.trackingUrl;
+        }
+      } catch {
+        // Ignoré : le prochain tick réessaiera.
+      }
+    };
+    const interval = setInterval(() => void check(), 5000);
+    return () => {
+      stopped = true;
+      clearInterval(interval);
+    };
+  }, [cardReady]);
 
   const idFieldsKey = JSON.stringify(buyerFields);
   const allIdFieldsFilled =
@@ -533,6 +626,8 @@ export function DigitalBuyDialog({ product, denominationId, onClose }: Props) {
       const data = (await res.json().catch(() => ({}))) as {
         ok?: boolean;
         paymentUrl?: string;
+        trackingUrl?: string;
+        billedUsd?: number;
         orderRef?: string;
         trackingToken?: string;
         message?: string;
@@ -551,6 +646,7 @@ export function DigitalBuyDialog({ product, denominationId, onClose }: Props) {
           ? phoneCardUnavailableNotice(ar ? "ar" : "en")
           : data.message || (ar ? "تعذر إنشاء الطلب. حاول مرة أخرى." : "Could not create the order. Please retry."));
         if (
+          data.error === "manual_payment_unavailable" ||
           data.error === "manual_payment_quote_changed" ||
           data.error === "manual_payment_rate_unavailable" ||
           data.error === "manual_payment_method_unavailable"
@@ -593,6 +689,21 @@ export function DigitalBuyDialog({ product, denominationId, onClose }: Props) {
         // Stockage local indisponible : le lien de retour suffit.
       }
 
+      if (paymentMethod === "paygate" && data.orderRef && data.trackingToken) {
+        const fallbackTracking = `${locale === "en" ? "/en" : ""}/codes/commande?ref=${encodeURIComponent(
+          data.orderRef,
+        )}&t=${encodeURIComponent(data.trackingToken)}`;
+        setCardReady({
+          orderRef: data.orderRef,
+          trackingToken: data.trackingToken,
+          paymentUrl: data.paymentUrl,
+          trackingUrl: data.trackingUrl || fallbackTracking,
+          billedUsd: data.billedUsd ?? cardQuote?.billedUsd ?? total,
+        });
+        setBusy(false);
+        return;
+      }
+
       window.location.href = data.paymentUrl;
     } catch {
       setError(ar ? "اتصال الشبكة تعطّل." : "Network error.");
@@ -600,20 +711,105 @@ export function DigitalBuyDialog({ product, denominationId, onClose }: Props) {
     }
   };
 
-  return (
+  if (cardReady) {
+    const readyNode = (
+      <div
+        className="fixed inset-0 z-[10000] flex items-end justify-center bg-black/60 p-0 backdrop-blur-sm sm:items-center sm:p-4"
+        onClick={onClose}
+        role="dialog"
+        aria-modal="true"
+        aria-label={ar ? "إتمام الدفع بالبطاقة" : "Complete card payment"}
+        dir={ar ? "rtl" : "ltr"}
+      >
+        <div
+          className="w-full max-w-lg max-h-[92dvh] overflow-y-auto rounded-t-3xl bg-[var(--card)] p-5 pb-[max(1.5rem,env(safe-area-inset-bottom))] shadow-2xl sm:rounded-2xl sm:p-6"
+          onClick={(event) => event.stopPropagation()}
+        >
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <div className="text-[11px] font-black uppercase tracking-[0.16em] text-[var(--accent)]">
+                {ar ? "جلسة دفع آمنة جاهزة" : "Secure card session ready"}
+              </div>
+              <h2 className="mt-1 text-[17px] font-black" dir="auto">
+                {ar ? product.titleAr : product.titleEn}
+              </h2>
+            </div>
+            <button
+              type="button"
+              onClick={onClose}
+              aria-label={ar ? "إغلاق" : "Close"}
+              className="grid h-11 w-11 shrink-0 cursor-pointer place-items-center rounded-full border border-[var(--border)] text-[var(--muted-foreground)] hover:border-[var(--accent)]"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+
+          <div className="mt-4 rounded-2xl border border-[var(--accent)]/40 bg-[var(--accent)]/5 p-4">
+            <div className="flex items-center justify-between text-xs text-[var(--muted-foreground)]">
+              <span>{ar ? "رقم الطلب" : "Order reference"}</span>
+              <span className="font-mono font-bold text-[var(--foreground)]" dir="ltr">
+                {cardReady.orderRef}
+              </span>
+            </div>
+            <div className="mt-2 flex items-center justify-between text-sm font-black">
+              <span>{ar ? "المبلغ الإجمالي بالبطاقة" : "Card total"}</span>
+              <span dir="ltr">${cardReady.billedUsd.toFixed(2)} USD</span>
+            </div>
+            <p className="mt-2.5 text-[12px] leading-5 text-[var(--muted-foreground)]">
+              {ar
+                ? "اضغط الزر أدناه لفتح صفحة الدفع الآمنة (Visa / Mastercard / Apple Pay / Google Pay). بعد إتمام الدفع، ستتحدّث هذه الصفحة تلقائياً لعرض الكود وإرساله إلى بريدك الإلكتروني."
+                : "Tap the button below to open the secure payment page (Visa / Mastercard / Apple Pay / Google Pay). Once paid, this tab updates automatically to display your code and e-mail it to you."}
+            </p>
+          </div>
+
+          <a
+            href={cardReady.paymentUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="mt-4 inline-flex h-12 w-full items-center justify-center gap-2 rounded-full bg-[var(--accent)] px-4 text-sm font-black text-[var(--accent-foreground)] shadow-sm transition-colors hover:bg-[var(--accent-hover)]"
+          >
+            <CreditCard className="h-4 w-4" />
+            {ar
+              ? `فتح صفحة الدفع بالبطاقة · $${cardReady.billedUsd.toFixed(2)}`
+              : `Open secure card checkout · $${cardReady.billedUsd.toFixed(2)}`}
+            <ExternalLink className="h-4 w-4" />
+          </a>
+
+          <a
+            href={cardReady.trackingUrl}
+            className="mt-2.5 inline-flex h-11 w-full items-center justify-center gap-2 rounded-full border border-[var(--border)] px-4 text-xs font-black text-[var(--foreground)] transition-colors hover:border-[var(--accent)]"
+          >
+            <Loader2 className="h-3.5 w-3.5 animate-spin text-[var(--accent)]" />
+            {ar
+              ? "الانتقال إلى صفحة التتبع المباشر واستلام الكود"
+              : "Go to live tracking & code delivery page"}
+          </a>
+        </div>
+      </div>
+    );
+    if (typeof document === "undefined") return readyNode;
+    return createPortal(readyNode, document.body);
+  }
+
+  const buyDialogNode = (
     <div
-      className="fixed inset-0 z-[90] flex items-end justify-center bg-black/50 p-0 backdrop-blur-sm sm:items-center sm:p-4"
+      className="fixed inset-0 z-[10000] flex items-end justify-center bg-black/60 p-0 backdrop-blur-sm sm:items-center sm:p-4"
+      onClick={onClose}
       role="dialog"
       aria-modal="true"
       aria-label={ar ? "شراء الكود" : "Buy code"}
+      dir={ar ? "rtl" : "ltr"}
     >
-      <div className="w-full max-w-lg overflow-y-auto rounded-t-3xl bg-[var(--card)] p-5 shadow-2xl sm:rounded-2xl sm:p-6 max-h-[92vh]">
+      <div
+        className="w-full max-w-lg max-h-[92dvh] overflow-y-auto rounded-t-3xl bg-[var(--card)] p-5 pb-[max(1.5rem,env(safe-area-inset-bottom))] shadow-2xl sm:rounded-2xl sm:p-6"
+        onClick={(event) => event.stopPropagation()}
+      >
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
             <div className="text-[11px] font-black uppercase tracking-[0.16em] text-[var(--accent)]">
               {ar ? "شراء فوري" : "Buy now"}
             </div>
-            <h2 className="mt-1 truncate text-[17px] font-black" dir="auto">
+            <h2 className="mt-1 line-clamp-2 text-[17px] font-black leading-snug" dir="auto">
               {ar ? product.titleAr : product.titleEn}
             </h2>
           </div>
@@ -621,7 +817,7 @@ export function DigitalBuyDialog({ product, denominationId, onClose }: Props) {
             type="button"
             onClick={onClose}
             aria-label={ar ? "إغلاق" : "Close"}
-            className="grid h-9 w-9 shrink-0 place-items-center rounded-full border border-[var(--border)] text-[var(--muted-foreground)] hover:border-[var(--accent)]"
+            className="grid h-11 w-11 shrink-0 cursor-pointer place-items-center rounded-full border border-[var(--border)] text-[var(--muted-foreground)] hover:border-[var(--accent)]"
           >
             <X className="h-4 w-4" />
           </button>
@@ -694,7 +890,7 @@ export function DigitalBuyDialog({ product, denominationId, onClose }: Props) {
               onClick={() => setQuantity((value) => Math.max(effectiveMinQuantity, value - 1))}
               disabled={quantity <= effectiveMinQuantity}
               aria-label={ar ? "إنقاص" : "Decrease"}
-              className="grid h-9 w-9 place-items-center rounded-full border border-[var(--border)] disabled:opacity-40"
+              className="grid h-11 w-11 cursor-pointer place-items-center rounded-full border border-[var(--border)] disabled:cursor-not-allowed disabled:opacity-40"
             >
               <Minus className="h-4 w-4" />
             </button>
@@ -704,7 +900,7 @@ export function DigitalBuyDialog({ product, denominationId, onClose }: Props) {
               onClick={() => setQuantity((value) => Math.min(maxQuantity, value + 1))}
               disabled={quantity >= maxQuantity}
               aria-label={ar ? "زيادة" : "Increase"}
-              className="grid h-9 w-9 place-items-center rounded-full border border-[var(--border)] disabled:opacity-40"
+              className="grid h-11 w-11 cursor-pointer place-items-center rounded-full border border-[var(--border)] disabled:cursor-not-allowed disabled:opacity-40"
             >
               <Plus className="h-4 w-4" />
             </button>
@@ -718,7 +914,24 @@ export function DigitalBuyDialog({ product, denominationId, onClose }: Props) {
             <div className="mb-2 text-[11px] font-black uppercase tracking-wide text-[var(--muted-foreground)]">
               {ar ? "طريقة الدفع" : "Payment method"}
             </div>
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-1 gap-2 min-[360px]:grid-cols-2">
+              {cardGateway?.enabled && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setPaymentMethod("paygate");
+                    setError("");
+                  }}
+                  className={`flex min-h-12 items-center justify-center gap-2 rounded-xl border px-3 py-2 text-[12.5px] font-black ${
+                    paymentMethod === "paygate"
+                      ? "border-[var(--accent)] bg-[var(--accent)]/10 text-[var(--accent)]"
+                      : "border-[var(--border)] hover:border-[var(--accent)]/60"
+                  }`}
+                >
+                  <CreditCard className="h-4 w-4 shrink-0" />
+                  <span>{ar ? "بطاقة ومحافظ رقمية" : "Cards / wallets"}</span>
+                </button>
+              )}
               <button
                 type="button"
                 onClick={() => {
@@ -732,7 +945,7 @@ export function DigitalBuyDialog({ product, denominationId, onClose }: Props) {
                     : "border-[var(--border)] hover:border-[var(--accent)]/60"
                 }`}
               >
-                <CreditCard className="h-4 w-4" />
+                <Coins className="h-4 w-4 shrink-0" />
                 {ar ? "عملات رقمية" : "Crypto"}
               </button>
               <button
@@ -749,7 +962,7 @@ export function DigitalBuyDialog({ product, denominationId, onClose }: Props) {
                     : "border-[var(--border)] hover:border-[var(--accent)]/60"
                 }`}
               >
-                <Smartphone className="h-4 w-4" />
+                <Smartphone className="h-4 w-4 shrink-0" />
                 {ar ? "بطاقة / رصيد هاتف" : "Phone card / balance"}
               </button>
               {manualOptions.length > 0 && (
@@ -765,11 +978,103 @@ export function DigitalBuyDialog({ product, denominationId, onClose }: Props) {
                       : "border-[var(--border)] hover:border-[var(--accent)]/60"
                   }`}
                 >
-                  <Wallet className="h-4 w-4" />
+                  <Wallet className="h-4 w-4 shrink-0" />
                   {ar ? t.checkout.manualTransferAr : t.checkout.manualTransferEn}
                 </button>
               )}
             </div>
+            {paymentMethod === "paygate" && cardGateway && selected && belowCardMinimum && (
+              <div
+                role="region"
+                aria-live="polite"
+                className="mt-2.5 rounded-xl border border-amber-400/70 bg-amber-50/90 dark:bg-amber-950/35 px-3.5 py-3 text-[12px] leading-5 text-amber-950 dark:text-amber-100 space-y-2.5"
+              >
+                <div className="flex items-start gap-2">
+                  <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400" />
+                  <div>
+                    <p className="font-black">
+                      {ar
+                        ? `تأكيد مطلوب — الدفع بالبطاقة البنكية لا يُنفّذ إلا ابتداءً من ${cardGateway.minOrderUsd.toFixed(2)} $`
+                        : `Confirmation required — Card payment can only be processed from $${cardGateway.minOrderUsd.toFixed(2)}`}
+                    </p>
+                    <p className="mt-1 text-[11.5px] opacity-90">
+                      {canBumpToCardMin
+                        ? ar
+                          ? `مبلغ طلبك الحالي هو ${total.toFixed(2)} $ (الكمية: ${quantity}). للدفع بالبطاقة، هل توافق على رفع الكمية إلى ${minCardQuantity} وحدات (الإجمالي الأساسي ${minCardTotal.toFixed(2)} $)؟`
+                          : `Your current selection is $${total.toFixed(2)} (quantity: ${quantity}). To pay by card, please confirm increasing the quantity to ${minCardQuantity} units ($${minCardTotal.toFixed(2)} base total).`
+                        : ar
+                          ? `مبلغ طلبك الحالي هو ${total.toFixed(2)} $ وهو أقل من الحد الأدنى للبطاقة (${cardGateway.minOrderUsd.toFixed(2)} $). اختر فئة بقيمة ${cardGateway.minOrderUsd.toFixed(2)} $ فأكثر أو استخدم وسيلة دفع أخرى.`
+                          : `Your current selection ($${total.toFixed(2)}) is below the $${cardGateway.minOrderUsd.toFixed(2)} card minimum. Please select a $${cardGateway.minOrderUsd.toFixed(2)}+ denomination or choose another payment method.`}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex flex-wrap gap-2 pt-0.5">
+                  {canBumpToCardMin && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setQuantity(minCardQuantity);
+                        setError("");
+                      }}
+                      className="inline-flex min-h-11 flex-1 items-center justify-center gap-1.5 rounded-lg bg-amber-600 px-3 py-2 text-[11.5px] font-black text-white transition-colors hover:bg-amber-700 cursor-pointer"
+                    >
+                      <CheckCircle2 className="h-3.5 w-3.5 shrink-0" />
+                      {ar
+                        ? `تأكيد رفع الكمية إلى ${minCardQuantity} (${minCardTotal.toFixed(2)} $)`
+                        : `Confirm ${minCardQuantity} units ($${minCardTotal.toFixed(2)})`}
+                    </button>
+                  )}
+                  {!canBumpToCardMin && minEligibleCardDenom && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedId(minEligibleCardDenom.id);
+                        setQuantity(1);
+                        setError("");
+                      }}
+                      className="inline-flex min-h-11 flex-1 items-center justify-center gap-1.5 rounded-lg bg-amber-600 px-3 py-2 text-[11.5px] font-black text-white transition-colors hover:bg-amber-700 cursor-pointer"
+                    >
+                      <CheckCircle2 className="h-3.5 w-3.5 shrink-0" />
+                      {ar
+                        ? `اختيار فئة ${denominationLabel(minEligibleCardDenom, locale)} (${minEligibleCardDenom.priceUsd.toFixed(2)} $)`
+                        : `Select ${denominationLabel(minEligibleCardDenom, locale)} ($${minEligibleCardDenom.priceUsd.toFixed(2)})`}
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setPaymentMethod("nowpayments");
+                      setQuantity((value) => Math.max(minQuantity, value));
+                      setError("");
+                    }}
+                    className="inline-flex min-h-11 items-center justify-center rounded-lg border border-amber-500/50 bg-white/80 dark:bg-black/25 px-3 py-2 text-[11.5px] font-bold text-amber-950 dark:text-amber-100 transition-colors hover:bg-white cursor-pointer"
+                  >
+                    {ar
+                      ? `الإبقاء على الكمية (${quantity}) والدفع بالعملات الرقمية`
+                      : `Keep qty (${quantity}) & pay with Crypto`}
+                  </button>
+                </div>
+              </div>
+            )}
+            {paymentMethod === "paygate" && cardGateway && cardQuote && !belowCardMinimum && (
+              <div className="mt-2.5 rounded-xl border border-[var(--accent)]/40 bg-[var(--accent)]/5 px-3.5 py-2.5 text-[12px] leading-5">
+                <div className="flex flex-wrap items-center justify-between gap-2 font-black text-[var(--foreground)]">
+                  <span>{ar ? "الدفع بالبطاقة أو المحفظة الرقمية" : "Pay by card or digital wallet"}</span>
+                  <span dir="ltr">${cardQuote.billedUsd.toFixed(2)} USD</span>
+                </div>
+                <PaymentBrandLogos className="mt-2" />
+                <p className="mt-1 text-[11px] text-[var(--muted-foreground)]">
+                  {cardGateway.feePercent > 0
+                    ? ar
+                      ? `يشمل ${cardGateway.feePercent}% رسوم معالجة البطاقة (${cardQuote.feeUsd.toFixed(2)} $). التسليم تلقائي وفوري بعد تأكيد الدفع.`
+                      : `Includes ${cardGateway.feePercent}% card processing fee ($${cardQuote.feeUsd.toFixed(2)}). Code delivery is automatic and instant upon confirmation.`
+                    : ar
+                      ? "دفع فوري بالبطاقة البنكية مع تسليم تلقائي للكود بعد التأكيد."
+                      : "Instant card payment with automatic code delivery upon confirmation."}
+                </p>
+              </div>
+            )}
             {!phoneCardEnabled && (
               <p id="phone-card-paused-notice" role="status" className="mt-2 rounded-xl border border-amber-300/60 bg-amber-500/10 px-3 py-2.5 text-[12px] leading-5 text-[var(--foreground)]">
                 <strong className="block">{ar ? "الدفع اليدوي متوقف مؤقتاً" : "Manual payments temporarily paused"}</strong>
@@ -817,7 +1122,7 @@ export function DigitalBuyDialog({ product, denominationId, onClose }: Props) {
                 </p>
               )}
               {phoneQuoteError && (
-                <p className="mt-2 text-[11.5px] leading-5 text-amber-700">
+                <p className="mt-2 text-[11.5px] leading-5 text-amber-700 dark:text-amber-300">
                   {phoneQuoteError === "network"
                     ? ar
                       ? "تعذر الاتصال بخدمة السعر. تحقق من الشبكة؛ لن نخترع سعراً بديلاً."
@@ -886,7 +1191,7 @@ export function DigitalBuyDialog({ product, denominationId, onClose }: Props) {
                     </details>
                   )}
                   {phoneQuote.stale && (
-                    <p className="mt-1.5 rounded-md bg-amber-500/10 px-2 py-1.5 text-[10.5px] leading-4 text-amber-700">
+                    <p className="mt-1.5 rounded-md bg-amber-500/10 px-2 py-1.5 text-[10.5px] leading-4 text-amber-700 dark:text-amber-300">
                       {ar
                         ? "تنبيه: هذا آخر سعر تلقائي معروف لأن التحديث تعذر. أنت توافق على هذا السعر تحديداً."
                         : "Warning: this is the last known automatic rate because refreshing failed. You are agreeing to this specific rate."}
@@ -1009,14 +1314,14 @@ export function DigitalBuyDialog({ product, denominationId, onClose }: Props) {
               </p>
             )}
             {allIdFieldsFilled && idCheck.state === "ok" && (
-              <p className="flex items-center gap-1.5 rounded-lg bg-emerald-500/10 px-2.5 py-2 text-[12px] font-bold text-emerald-700">
+              <p className="flex items-center gap-1.5 rounded-lg bg-emerald-500/10 px-2.5 py-2 text-[12px] font-bold text-emerald-700 dark:text-emerald-300">
                 <CheckCircle2 className="h-4 w-4" />
                 {ar ? "الحساب:" : "Account:"}{" "}
                 {idCheck.playerName || (ar ? "تم التحقق" : "verified")}
               </p>
             )}
             {allIdFieldsFilled && idCheck.state === "invalid" && (
-              <p className="rounded-lg bg-red-500/10 px-2.5 py-2 text-[12px] font-bold text-red-700">
+              <p className="rounded-lg bg-red-500/10 px-2.5 py-2 text-[12px] font-bold text-red-700 dark:text-red-300">
                 {ar
                   ? "لم يتم العثور على هذا المعرّف في هذه اللعبة. تحقق منه قبل الدفع."
                   : "This ID was not found in this game. Check it before paying."}
@@ -1026,23 +1331,23 @@ export function DigitalBuyDialog({ product, denominationId, onClose }: Props) {
                 entiers deviendraient invendables), mais le client doit
                 certifier explicitement l'identifiant. */}
             {allIdFieldsFilled && idCheck.state === "unverifiable" && (
-              <div className="rounded-lg border border-amber-300/70 bg-amber-50 px-2.5 py-2">
-                <p className="text-[12px] font-bold leading-5 text-amber-900">
+              <div className="rounded-lg border border-amber-300/70 bg-amber-50 dark:bg-amber-950/40 px-2.5 py-2">
+                <p className="text-[12px] font-bold leading-5 text-amber-900 dark:text-amber-100">
                   {ar
                     ? "لا يمكننا التحقق من هذا المعرّف تلقائياً لدى المزوّد."
                     : "We cannot verify this ID automatically with the supplier."}
                 </p>
                 {idCheck.reason && (
-                  <p className="mt-0.5 text-[11px] leading-4 text-amber-800/80">
+                  <p className="mt-0.5 text-[11px] leading-4 text-amber-800/80 dark:text-amber-200/80">
                     {idCheck.reason}
                   </p>
                 )}
-                <label className="mt-2 flex cursor-pointer items-start gap-2 text-[11.5px] leading-4 text-amber-950">
+                <label className="mt-2 flex cursor-pointer items-start gap-2 text-[11.5px] leading-4 text-amber-950 dark:text-amber-100">
                   <input
                     type="checkbox"
                     checked={idConfirmed}
                     onChange={(event) => setIdConfirmed(event.target.checked)}
-                    className="mt-0.5 h-3.5 w-3.5 shrink-0 accent-[var(--accent)]"
+                    className="mt-0.5 h-4 w-4 shrink-0 accent-[var(--accent)]"
                   />
                   <span>
                     {ar
@@ -1105,7 +1410,7 @@ export function DigitalBuyDialog({ product, denominationId, onClose }: Props) {
         </div>
 
         {aboveLimit && (
-          <p className="mt-3 rounded-lg border border-amber-300/60 bg-amber-50 px-3 py-2 text-[12.5px] leading-5 text-amber-800">
+          <p className="mt-3 rounded-lg border border-amber-300/60 bg-amber-50 dark:bg-amber-950/40 px-3 py-2 text-[12.5px] leading-5 text-amber-800 dark:text-amber-200">
             {ar
               ? `الحد الأقصى ${maxOrderLimitUsd} $ للطلب الواحد — قلّل الكمية أو تواصل معنا على واتساب.`
               : `Maximum ${maxOrderLimitUsd} $ per order — reduce the quantity or contact us on WhatsApp.`}
@@ -1113,15 +1418,23 @@ export function DigitalBuyDialog({ product, denominationId, onClose }: Props) {
         )}
 
         {belowMinimum && (
-          <p className="mt-3 rounded-lg border border-amber-300/60 bg-amber-50 px-3 py-2 text-[12.5px] leading-5 text-amber-800">
+          <p className="mt-3 rounded-lg border border-amber-300/60 bg-amber-50 dark:bg-amber-950/40 px-3 py-2 text-[12.5px] leading-5 text-amber-800 dark:text-amber-200">
             {ar
               ? `الحد الأدنى للدفع ${MIN_CRYPTO_INVOICE_USD.toFixed(2)} $ — اختر ${minQuantity} وحدات على الأقل.`
               : `Minimum order ${MIN_CRYPTO_INVOICE_USD.toFixed(2)} $ — choose at least ${minQuantity} units.`}
           </p>
         )}
 
+        {belowCardMinimum && cardGateway && (
+          <p className="mt-3 rounded-lg border border-amber-300/60 bg-amber-50 dark:bg-amber-950/40 px-3 py-2 text-[12.5px] leading-5 text-amber-800 dark:text-amber-200">
+            {ar
+              ? `الحد الأدنى للدفع بالبطاقة البنكية هو ${cardGateway.minOrderUsd.toFixed(2)} $ — اختر ${minCardQuantity} وحدات على الأقل أو ادفع بالعملات الرقمية.`
+              : `Minimum card payment is $${cardGateway.minOrderUsd.toFixed(2)} — select at least ${minCardQuantity} units or switch to Crypto.`}
+          </p>
+        )}
+
         {error && (
-          <p className="mt-3 rounded-lg border border-red-300/60 bg-red-50 px-3 py-2 text-[12.5px] leading-5 text-red-700">
+          <p className="mt-3 rounded-lg border border-red-300/60 bg-red-50 dark:bg-red-950/40 px-3 py-2 text-[12.5px] leading-5 text-red-700 dark:text-red-200">
             {error}
           </p>
         )}
@@ -1129,7 +1442,15 @@ export function DigitalBuyDialog({ product, denominationId, onClose }: Props) {
         <button
           type="button"
           onClick={submit}
-          disabled={busy || !selected || belowMinimum || aboveLimit || idGate === "pending" || (paymentMethod === "phone_card" && phoneQuotePending)}
+          disabled={
+            busy ||
+            !selected ||
+            belowMinimum ||
+            belowCardMinimum ||
+            aboveLimit ||
+            idGate === "pending" ||
+            (paymentMethod === "phone_card" && phoneQuotePending)
+          }
           className="mt-4 inline-flex h-12 w-full items-center justify-center gap-2 rounded-full bg-[var(--accent)] text-sm font-black text-[var(--accent-foreground)] shadow-sm transition-colors hover:bg-[var(--accent-hover)] disabled:opacity-60"
         >
           {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Lock className="h-4 w-4" />}
@@ -1145,9 +1466,13 @@ export function DigitalBuyDialog({ product, denominationId, onClose }: Props) {
                 ? ar
                   ? t.checkout.manualSubmitAr
                   : t.checkout.manualSubmitEn
-                : ar
-                  ? `الدفع الآن · ${total.toFixed(2)} $`
-                  : `Pay now · $${total.toFixed(2)}`}
+                : paymentMethod === "paygate" && cardQuote
+                  ? ar
+                    ? `الدفع بالبطاقة · ${cardQuote.billedUsd.toFixed(2)} $`
+                    : `Pay by card · $${cardQuote.billedUsd.toFixed(2)}`
+                  : ar
+                    ? `الدفع الآن · ${total.toFixed(2)} $`
+                    : `Pay now · $${total.toFixed(2)}`}
         </button>
 
         <p className="mt-3 flex items-start gap-2 text-[11px] leading-5 text-[var(--muted-foreground)]">
@@ -1157,12 +1482,16 @@ export function DigitalBuyDialog({ product, denominationId, onClose }: Props) {
               ? "لا يُخصم أي مبلغ من هذا الموقع: أنت تحوّل بنفسك. لا يُعد الطلب مدفوعاً ولا يُسلَّم الكود إلا بعد أن نتحقق يدوياً من وصول المبلغ؛ احتفظ بمرجع العملية."
               : "Nothing is charged on this site: you send the money yourself. The order is not paid and no code is delivered until we verify receipt by hand; keep your transaction reference."
             : paymentMethod === "phone_card"
-            ? ar
-              ? "الطلب مجاني الإنشاء ولا يُعد مدفوعاً إلا بعد قبول الإدارة للبطاقة. بعدها يتم تسليم بطاقة الهدية يدوياً إلى بريدك وعلى صفحة التتبع."
-              : "Submitting an order is free; it is only marked paid after staff accept the card. Your gift card is then delivered manually by email and on the tracking page."
-            : ar
-              ? "الدفع بالعملات الرقمية (USDT وغيرها) عبر صفحة دفع آمنة. يُسلَّم الكود إلى بريدك الإلكتروني بعد تأكيد الدفع — عادةً في أقل من 5 دقائق."
-              : "Crypto payment (USDT and others) on a secure hosted page. Your code is e-mailed right after payment confirmation — usually under 5 minutes."}
+              ? ar
+                ? "الطلب مجاني الإنشاء ولا يُعد مدفوعاً إلا بعد قبول الإدارة للبطاقة. بعدها يتم تسليم بطاقة الهدية يدوياً إلى بريدك وعلى صفحة التتبع."
+                : "Submitting an order is free; it is only marked paid after staff accept the card. Your gift card is then delivered manually by email and on the tracking page."
+              : paymentMethod === "paygate"
+                ? ar
+                  ? "دفع مشفّر وآمن بالبطاقة (Visa / Mastercard / Apple Pay / Google Pay) دون تخزين بيانات بطاقتك لدينا. يُسلَّم الكود تلقائياً إلى بريدك وعلى صفحة التتبع فور تأكيد العملية."
+                  : "Encrypted hosted card checkout (Visa / Mastercard / Apple Pay / Google Pay) — we never see or store your card details. Your code is delivered automatically right after payment confirmation."
+                : ar
+                  ? "الدفع بالعملات الرقمية (USDT وغيرها) عبر صفحة دفع آمنة. يُسلَّم الكود إلى بريدك الإلكتروني بعد تأكيد الدفع — عادةً في أقل من 5 دقائق."
+                  : "Crypto payment (USDT and others) on a secure hosted page. Your code is e-mailed right after payment confirmation — usually under 5 minutes."}
         </p>
 
         {/* Frais de réseau : ils sont FIXES et peuvent dépasser la valeur
@@ -1179,4 +1508,7 @@ export function DigitalBuyDialog({ product, denominationId, onClose }: Props) {
       </div>
     </div>
   );
+
+  if (typeof document === "undefined") return buyDialogNode;
+  return createPortal(buyDialogNode, document.body);
 }

@@ -116,11 +116,14 @@ export function DigitalProductDetails({
                   <Image
                     src={visual}
                     alt={imageAlt}
-                    fill
+                    width={1200}
+                    height={675}
                     sizes="(max-width: 1024px) 100vw, 58vw"
                     quality={88}
-                    priority
-                    className="object-cover"
+                    preload
+                    loading="eager"
+                    fetchPriority="high"
+                    className="h-full w-full object-cover"
                   />
                   <div
                     aria-hidden="true"
@@ -248,7 +251,7 @@ export function DigitalProductDetails({
             </div>
 
             {/* Panneau des dénominations */}
-            <aside className="card-surface p-6">
+            <aside className="card-surface p-4 sm:p-6">
               <div className="text-[11px] font-black uppercase tracking-[0.16em] text-[var(--muted-foreground)]">
                 {ar ? "المبالغ المتاحة" : "Available amounts"}
               </div>
@@ -260,7 +263,7 @@ export function DigitalProductDetails({
                   {available.map((denomination) => (
                     <li
                       key={denomination.id}
-                      className="flex items-center justify-between gap-3 rounded-xl border border-[var(--border)] bg-[var(--secondary)]/40 px-4 py-3"
+                      className="flex flex-wrap items-center justify-between gap-2.5 rounded-xl border border-[var(--border)] bg-[var(--secondary)]/40 px-3.5 py-3 sm:px-4"
                     >
                       <span className="min-w-0">
                         <span className="block text-[14px] font-black" dir="ltr">
@@ -278,7 +281,7 @@ export function DigitalProductDetails({
                             )}
                         </span>
                       </span>
-                      <span className="flex shrink-0 items-center gap-2.5">
+                      <span className="ms-auto flex shrink-0 items-center gap-2.5">
                         <span className="text-[15px] font-black text-[var(--accent)]">
                           <Price usd={denomination.priceUsd} />
                         </span>
@@ -286,7 +289,7 @@ export function DigitalProductDetails({
                           <button
                             type="button"
                             onClick={() => setBuyDenomination(denomination.id)}
-                            className="inline-flex h-8 items-center gap-1 rounded-full bg-[var(--accent)] px-3 text-[11.5px] font-black text-[var(--accent-foreground)] transition-colors hover:bg-[var(--accent-hover)]"
+                            className="inline-flex min-h-10 cursor-pointer items-center gap-1 rounded-full bg-[var(--accent)] px-3.5 text-[11.5px] font-black text-[var(--accent-foreground)] transition-colors hover:bg-[var(--accent-hover)]"
                           >
                             <ShoppingBag className="h-3.5 w-3.5" />
                             {ar ? "شراء" : "Buy"}

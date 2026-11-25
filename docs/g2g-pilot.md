@@ -1,3 +1,9 @@
+> **Sécurisation en cours :** les indications d'activation dans les sections
+> historiques ci-dessous ne doivent pas être appliquées. Les achats et la
+> livraison automatiques restent bloqués ; garder `G2G_AUTO_DELIVERY` désarmé
+> et tous les stocks G2G à 0. Voir l'[audit de reprise](g2g-audit-reprise.md)
+> pour les réponses des fournisseurs, les limites actuelles et les prérequis.
+>
 # Pilote G2G OpenAPI v2 — procédure de branchement
 
 > Objectif : vendre nos cartes cadeaux et clés de jeux FazerCards sur G2G,
@@ -604,3 +610,27 @@ G2G, y compris celles sans mapping. Une modification directe sur G2G contourne
 ces protections ; elles ne garantissent pas l'état global du compte ni une
 fermeture si l'API G2G échoue. Vérifier le résultat et les logs. Le cron reste
 quotidien : il ne remplace pas une surveillance en temps réel.
+
+### Sécurisation en cours — vente désactivée
+
+Le format réel des codes FazerCards n'est pas encore vérifié : aucune extraction
+par heuristique ne doit être envoyée à G2G. Les commandes déjà achetées sont
+orientées vers une intervention manuelle et une alerte, sans livraison
+automatique. L'activation `api_qty > 0` par l'admin et l'achat depuis le webhook
+sont bloqués dans cette version, même si le coupe-circuit est armé. Maintenir
+`G2G_AUTO_DELIVERY` désarmé et tous les stocks à 0 sur G2G : un changement
+manuel sur G2G contourne l'admin et pourrait laisser une commande payée sans
+livraison. Ne pas relancer un achat au résultat incertain sans rapprochement
+manuel. Une préparation locale de clé d'idempotence ne permet pas de reprendre automatiquement un achat ambigu et ne couvre pas les achats historiques.
+
+Cette version n'est pas une livraison automatisée opérationnelle. Avant le
+pilote il faut valider le contrat réel des codes, sécuriser les reprises et
+l'idempotence, et effectuer des tests d'intégration sans dépenses.
+
+Les nouveaux événements sont réservés et inscrits dans le journal de livraison
+dans une transaction. Si le traitement s'interrompt, une ligne `planned`
+ancienne est signalée pour rapprochement manuel après dix minutes ; aucun
+réachat automatique n'est tenté. Les alertes Telegram sont au mieux : si
+Telegram est indisponible, consulter les échecs dans le panneau admin. Les
+événements historiques déjà réservés sans ligne de livraison ne sont pas
+récupérés automatiquement par ce mécanisme.

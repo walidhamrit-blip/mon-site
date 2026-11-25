@@ -256,3 +256,20 @@ export async function setManualPaymentMethodEnabled(
     return { ok: false, error: dbIssue(error) };
   }
 }
+
+/** Coupe ou autorise tous les paiements manuels, indépendamment des réglages individuels. */
+export async function setAllManualPaymentsEnabled(enabled: unknown): Promise<ActionResult> {
+  await requireAdmin();
+  if (typeof enabled !== "boolean") return { ok: false, error: "Valeur invalide." };
+  try {
+    const { MANUAL_PAYMENTS_MASTER_KEY } = await import("@/lib/manual-payment-availability");
+    await upsertSetting(MANUAL_PAYMENTS_MASTER_KEY, enabled);
+    revalidatePath("/", "layout");
+    revalidatePath("/admin", "layout");
+    return { ok: true, message: enabled
+      ? "Interrupteur général activé : les moyens individuellement actifs rouvrent entre 9 h et minuit (Tripoli)."
+      : "Tous les paiements manuels sont désactivés. Les demandes existantes restent consultables." };
+  } catch (error) {
+    return { ok: false, error: dbIssue(error) };
+  }
+}

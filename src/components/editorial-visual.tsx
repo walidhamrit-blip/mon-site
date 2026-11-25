@@ -17,10 +17,14 @@ export function EditorialVisual({ kind }: { kind: "web" | "store" }) {
         src={image.src}
         {...imageOptimizationProps(image.src)}
         alt={locale === "ar" ? image.altAr : image.altEn}
-        fill
+        width={1600}
+        height={720}
+        preload
+        loading="eager"
+        fetchPriority="high"
         sizes="(max-width: 1280px) 95vw, 1240px"
         quality={90}
-        className={web ? "editorial-visual-image is-web" : "editorial-visual-image"}
+        className={web ? "editorial-visual-image is-web h-full w-full" : "editorial-visual-image h-full w-full"}
       />
     </div>
   );

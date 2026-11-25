@@ -2,7 +2,7 @@
  * Horaires d'ouverture structurés — A09 (audit SEO/GEO 2026-11-01).
  *
  * Source unique : le texte `config.hoursEn`, éditable dans
- * /admin → Réglages (« Sat - Thu: 9:00 AM - 11:00 PM »). Ce module en dérive
+ * /admin → Réglages (« Sat - Thu: 9:00 AM - 10:00 PM »). Ce module en dérive
  * le JSON-LD `openingHoursSpecification` pour que le schema.org ne diverge
  * jamais du texte affiché en AR/EN (avant, opens/closes étaient en dur dans
  * seo.ts : 18h/22h/23h selon les sources).
@@ -124,7 +124,7 @@ export function parseOpeningHoursEn(text: string): OpeningHoursSpec | null {
 export const FALLBACK_OPENING_HOURS: OpeningHoursSpec = {
   dayOfWeek: ["Saturday", "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday"],
   opens: "09:00",
-  closes: "23:00",
+  closes: "22:00",
 };
 
 /**

@@ -89,6 +89,8 @@ import {
 } from "@/lib/phone-card-pricing-core";
 import {
   insertPreparedManualPayment,
+  assertManualPaymentsAvailable,
+  manualPaymentDeliveryGate,
   isManualPaymentDuplicateError,
   ManualPaymentError,
   prepareManualPayment,
@@ -96,9 +98,16 @@ import {
 } from "@/lib/manual-payments";
 import {
   manualPaymentQuoteMatches,
+  manualPaymentDeliveryRoute,
   normalizeManualPaymentMethod,
   type ManualPaymentInput,
 } from "@/lib/manual-payment-core";
+import {
+  createPayGateCardSession,
+  isPayGateError,
+  resolveLivePayGateConfig,
+} from "@/lib/paygate";
+import { payGateReady, type PayGateConfigData } from "@/lib/paygate-core";
 
 
 /* --------------------------------- Types -------------------------------- */
@@ -125,7 +134,7 @@ export interface CreateFazercardsCheckoutInput {
    * recharge téléphonique, ou d'un paiement manuel (Skrill / Neteller /
    * Airtm / D17 / Volet / WebMoney / Kashy).
    */
-  paymentMethod?: "nowpayments" | "phone_card" | "manual";
+  paymentMethod?: "nowpayments" | "paygate" | "phone_card" | "manual";
   phoneCard?: PhoneCardInput & {
     /** Confirmation client obligatoire ; le devis est revérifié côté serveur. */
     quoteAccepted?: boolean;
@@ -142,6 +151,8 @@ export interface FazercardsCheckoutResult {
   orderRef: string;
   trackingToken: string;
   paymentUrl: string;
+  trackingUrl?: string;
+  billedUsd?: number;
   totalUsd: number;
   productTitle: string;
   denominationLabel: string;
@@ -307,7 +318,21 @@ export async function createFazercardsCheckout(
 ): Promise<FazercardsCheckoutResult> {
   const usesPhoneCard = input.paymentMethod === "phone_card";
   const usesManualPayment = input.paymentMethod === "manual";
+  const usesPayGate = input.paymentMethod === "paygate";
   const locale = input.locale === "en" ? "en" : "ar";
+  let payGateConfig: PayGateConfigData | null = null;
+  if (usesPayGate) {
+    payGateConfig = await resolveLivePayGateConfig();
+    if (!payGateReady(payGateConfig)) {
+      throw new FazercardsOrderError(
+        "paygate_disabled",
+        503,
+        locale === "ar"
+          ? "الدفع بالبطاقة البنكية غير مفعّل حالياً. اختر العملات الرقمية أو طريقة أخرى."
+          : "Card payment is currently disabled. Please choose Crypto or another method.",
+      );
+    }
+  }
   // Garde serveur avant chiffrement, appel fournisseur ou création de commande.
   // Une page ouverte avant la désactivation ne peut donc pas contourner le bouton.
   const assertPhoneCardAvailable = async () => {
@@ -354,6 +379,10 @@ export async function createFazercardsCheckout(
   // et on valide la preuve AVANT toute création de commande, pour ne jamais
   // enregistrer une déclaration inexploitable.
   if (usesManualPayment) {
+    try { await assertManualPaymentsAvailable(locale); } catch (error) {
+      if (error instanceof ManualPaymentError) throw new FazercardsOrderError(error.code, error.status, error.message);
+      throw error;
+    }
     const method = normalizeManualPaymentMethod(input.manualPayment?.method);
     const { config } = await getSiteData();
     const settings = method ? config.manualPayments?.[method] : null;
@@ -443,7 +472,7 @@ export async function createFazercardsCheckout(
   // AVANT le paiement, avec l'action à faire (augmenter la quantité).
   const minOrderUsd = fazercardsMinOrderUsd();
   const minQuantity = Math.max(1, Math.ceil(minOrderUsd / unitPriceUsd));
-  if (!usesPhoneCard && !usesManualPayment && totalUsd < minOrderUsd) {
+  if (!usesPhoneCard && !usesManualPayment && !usesPayGate && totalUsd < minOrderUsd) {
     throw new FazercardsOrderError(
       "below_minimum",
       400,
@@ -451,6 +480,17 @@ export async function createFazercardsCheckout(
         minQuantity,
         denomination.maxOrderQuantity,
       )} × ${denomination.label}.`,
+    );
+  }
+
+  if (usesPayGate && payGateConfig && totalUsd + 1e-6 < payGateConfig.minOrderUsd) {
+    const minCardQty = Math.max(1, Math.ceil(payGateConfig.minOrderUsd / unitPriceUsd));
+    throw new FazercardsOrderError(
+      "below_paygate_minimum",
+      400,
+      locale === "ar"
+        ? `الحد الأدنى للدفع بالبطاقة البنكية هو ${payGateConfig.minOrderUsd.toFixed(2)} $ — اختر ${Math.min(minCardQty, denomination.maxOrderQuantity)} × ${denomination.label} على الأقل أو ادفع بالعملات الرقمية.`
+        : `Minimum card payment is $${payGateConfig.minOrderUsd.toFixed(2)} — select at least ${Math.min(minCardQty, denomination.maxOrderQuantity)} × ${denomination.label} or choose Crypto.`,
     );
   }
 
@@ -607,6 +647,10 @@ export async function createFazercardsCheckout(
   // plutôt que de faire payer un montant différent de celui affiché.
   let preparedManualPayment: PreparedManualPayment | null = null;
   if (usesManualPayment) {
+    try { await assertManualPaymentsAvailable(locale); } catch (error) {
+      if (error instanceof ManualPaymentError) throw new FazercardsOrderError(error.code, error.status, error.message);
+      throw error;
+    }
     const method = normalizeManualPaymentMethod(input.manualPayment?.method);
     if (!method) {
       throw new FazercardsOrderError(
@@ -719,7 +763,9 @@ export async function createFazercardsCheckout(
         ? "phone_card"
         : usesManualPayment
           ? (normalizeManualPaymentMethod(input.manualPayment?.method) ?? "manual")
-          : "nowpayments",
+          : usesPayGate
+            ? "paygate"
+            : "nowpayments",
       digitalOrderId: digitalOrderId ?? null,
     });
   } catch (error) {
@@ -790,6 +836,7 @@ export async function createFazercardsCheckout(
     } catch (error) {
       await db.delete(orders).where(eq(orders.ref, ref)).catch(() => null);
       await db.delete(digitalOrders).where(eq(digitalOrders.ref, ref)).catch(() => null);
+      if (error instanceof ManualPaymentError) throw new FazercardsOrderError(error.code, error.status, error.message);
       if (isManualPaymentDuplicateError(error)) {
         throw new FazercardsOrderError(
           "manual_payment_already_used",
@@ -816,6 +863,52 @@ export async function createFazercardsCheckout(
       orderRef: ref,
       trackingToken: tracking.token,
       paymentUrl: trackingUrl,
+      totalUsd,
+      productTitle: title,
+      denominationLabel: denomination.label,
+      quantity,
+    };
+  }
+
+  // 3 ter) Carte bancaire (Visa / Mastercard / Apple Pay / Google Pay → USDC Polygon
+  // via PayGate.to) : paiement vérifié par callback RSA-SHA256, livraison automatique.
+  if (usesPayGate) {
+    let session;
+    try {
+      session = await createPayGateCardSession({
+        orderRef: ref,
+        baseAmountUsd: totalUsd,
+        customerEmail: input.email,
+        baseOrigin: baseUrl,
+        locale: input.locale ?? "ar",
+        accentColor: config.theme?.accent,
+        config: payGateConfig ?? undefined,
+      });
+    } catch (error) {
+      await db.delete(orders).where(eq(orders.ref, ref)).catch(() => null);
+      await db.delete(digitalOrders).where(eq(digitalOrders.ref, ref)).catch(() => null);
+      if (isPayGateError(error)) {
+        throw new FazercardsOrderError(error.code, error.status, error.message);
+      }
+      throw error;
+    }
+
+    await db
+      .update(orders)
+      .set({
+        paymentUrl: session.checkoutUrl,
+        payAddress: session.polygonAddressIn,
+        updatedAt: new Date(),
+      })
+      .where(eq(orders.ref, ref))
+      .catch(() => null);
+
+    return {
+      orderRef: ref,
+      trackingToken: tracking.token,
+      paymentUrl: session.checkoutUrl,
+      trackingUrl,
+      billedUsd: session.quote.billedUsd,
       totalUsd,
       productTitle: title,
       denominationLabel: denomination.label,
@@ -889,7 +982,7 @@ function sleep(ms: number): Promise<void> {
  */
 export async function deliverPaidFazercardsOrder(
   idOrRef: number | string,
-  options: { force?: boolean; phoneCardApproved?: boolean } = {},
+  options: { force?: boolean; phoneCardApproved?: boolean; manualPaymentApproved?: boolean } = {},
 ): Promise<FazercardsDeliveryResult> {
   const loaded = await loadFazercardsOrder(idOrRef);
   if (!loaded) return { outcome: "not_found", ref: String(idOrRef) };
@@ -921,6 +1014,19 @@ export async function deliverPaidFazercardsOrder(
       ref: loaded.ref,
       message: "Carte téléphonique acceptée : livraison manuelle requise, aucun achat fournisseur déclenché.",
     };
+  }
+
+  // Défense en profondeur, même si cet appel contourne le routeur générique.
+  const manualGate = await manualPaymentDeliveryGate(loaded.ref);
+  const manualRoute = manualPaymentDeliveryRoute({
+    isManual: manualGate.isManual, status: manualGate.status,
+    autoDeliver: options.manualPaymentApproved === true,
+  });
+  if (manualRoute === "blocked") {
+    return { outcome: "not_paid", ref: loaded.ref, message: "Paiement manuel non vérifié : aucun achat fournisseur déclenché." };
+  }
+  if (manualRoute === "manual") {
+    return { outcome: "manual", ref: loaded.ref, message: "Paiement manuel accepté : livraison manuelle requise." };
   }
 
   // Garde-fou absolu : jamais d'achat sans paiement confirmé.

@@ -39,6 +39,7 @@ import {
   MANUAL_PAYMENT_LIMITS,
   MANUAL_PAYMENT_METHODS,
 } from "@/lib/manual-payment-core";
+import { createPayGateCardSession, isPayGateError } from "@/lib/paygate";
 import { sendManualPaymentReviewNotice } from "@/lib/digital-emails";
 
 /* Limite la cadence de création de factures crypto par IP+UA. Bloque
@@ -90,6 +91,7 @@ const createPaymentSchema = z
     phone: z.string().max(40).optional(),
     locale: z.enum(["ar", "en"]).optional(),
     utm: z.string().max(500).optional(),
+    paymentMethod: z.enum(["nowpayments", "paygate", "manual"]).optional(),
     /**
      * Paiement manuel sans passerelle (Skrill / Neteller / Airtm / D17 / Volet / WebMoney / Kashy) :
      * le client a envoyé l'argent lui-même et déclare sa preuve. Aucune
@@ -310,6 +312,7 @@ async function attachManualPayment(
   try {
     await insertPreparedManualPayment(orderRef, prepared);
   } catch (error) {
+    if (error instanceof ManualPaymentError) return errorResponse(error.code, error.status, { source: "input", status: null, message: error.message });
     if (isManualPaymentDuplicateError(error)) {
       return errorResponse("manual_payment_already_used", 409, {
         source: "input",
@@ -384,6 +387,8 @@ async function payExistingOrder(
   trackingToken: string | undefined,
   req: Request,
   manualPayment?: unknown,
+  paymentMethod?: "nowpayments" | "paygate" | "manual",
+  overrideEmail?: string,
 ) {
   await ensureSchema();
   const wanted = orderRef.trim().toUpperCase();
@@ -454,6 +459,83 @@ async function payExistingOrder(
   }
 
   const { config } = await getSiteData();
+  const locale: Locale = order.locale === "en" ? "en" : "ar";
+  const urls = paymentUrls(
+    req,
+    order.ref,
+    access === "granted" ? trackingToken : null,
+    locale,
+  );
+
+  if (paymentMethod === "paygate") {
+    const customerEmail = (overrideEmail || order.email || "").trim();
+    if (!customerEmail) {
+      return errorResponse("email_required", 400, {
+        source: "input",
+        status: null,
+        message: "Une adresse e-mail est requise pour payer par carte bancaire.",
+      });
+    }
+    let session;
+    try {
+      session = await createPayGateCardSession({
+        orderRef: order.ref,
+        baseAmountUsd: amount,
+        customerEmail,
+        baseOrigin: siteBaseUrl(req),
+        accentColor: config.theme?.accent,
+      });
+    } catch (error) {
+      if (isPayGateError(error)) {
+        return errorResponse(error.code, error.status, {
+          source: error.status >= 500 ? "config" : "input",
+          status: error.status,
+          message: error.message,
+        });
+      }
+      return errorResponse("gateway_error", 502, gatewayDetail(error));
+    }
+
+    const relaunched = await db
+      .update(orders)
+      .set({
+        paymentMethod: "paygate",
+        status: "pending",
+        ipnStatus: null,
+        paymentId: null,
+        payAddress: session.polygonAddressIn,
+        payCurrency: "usdc",
+        payAmount: null,
+        paymentUrl: session.checkoutUrl,
+        email: order.email || customerEmail,
+        updatedAt: new Date(),
+      })
+      .where(and(eq(orders.id, order.id), ne(orders.status, "paid")))
+      .returning({ id: orders.id });
+
+    if (relaunched.length === 0) {
+      return errorResponse("order_already_paid", 409, {
+        source: "input",
+        status: null,
+        message: `La commande « ${order.ref} » est déjà payée`,
+      });
+    }
+
+    return NextResponse.json({
+      ok: true,
+      orderRef: order.ref,
+      trackingToken: access === "granted" ? trackingToken : undefined,
+      trackingUrl: urls.successUrl,
+      groupRef: order.groupRef ?? order.ref,
+      installments: order.installments,
+      installmentIndex: order.installmentIndex,
+      trancheAmountUsd: amount,
+      paymentUrl: session.checkoutUrl,
+      priceAmount: session.quote.billedUsd,
+      priceCurrency: "usd",
+    });
+  }
+
   const label =
     order.installments > 1
       ? `${config.name} — ${order.planName} (${order.installmentIndex}/${order.installments})`
@@ -468,7 +550,7 @@ async function payExistingOrder(
       // notre `ref` (voir refCandidates dans ipn/route.ts).
       orderId: `${order.ref}-R${Date.now().toString(36).toUpperCase()}`,
       orderDescription: label,
-      ...paymentUrls(req, order.ref, access === "granted" ? trackingToken : null, order.locale === "en" ? "en" : "ar"),
+      ...urls,
     });
   } catch (error) {
     console.error(
@@ -548,6 +630,7 @@ async function createFlexibleOrder(
     phone?: string;
     locale?: "ar" | "en";
     utm?: string;
+    paymentMethod?: "nowpayments" | "paygate";
   },
 ) {
   const { config } = await getSiteData();
@@ -613,6 +696,7 @@ async function createFlexibleOrder(
         phone: data.phone?.trim() || null,
         utm: data.utm || null,
         locale: data.locale ?? null,
+        ...(data.paymentMethod === "paygate" ? { paymentMethod: "paygate" } : {}),
       })
       .returning({ id: orders.id });
     orderId = inserted[0]?.id ?? 0;
@@ -624,6 +708,66 @@ async function createFlexibleOrder(
     return errorResponse("save_failed", 500, databaseDetail(error));
   }
 
+  const urls = paymentUrls(req, ref, tracking.token, data.locale ?? "ar");
+
+  if (data.paymentMethod === "paygate") {
+    const customerEmail = data.email?.trim() || "";
+    if (!customerEmail) {
+      await db.delete(orders).where(eq(orders.id, orderId)).catch(() => null);
+      return errorResponse("email_required", 400, {
+        source: "input",
+        status: null,
+        message: "Une adresse e-mail valide est requise pour le paiement par carte bancaire.",
+      });
+    }
+    let session;
+    try {
+      session = await createPayGateCardSession({
+        orderRef: ref,
+        baseAmountUsd: amount,
+        customerEmail,
+        baseOrigin: siteBaseUrl(req),
+        locale: data.locale ?? "ar",
+        accentColor: config.theme?.accent,
+      });
+    } catch (error) {
+      await db.delete(orders).where(eq(orders.id, orderId)).catch(() => null);
+      if (isPayGateError(error)) {
+        return errorResponse(error.code, error.status, {
+          source: error.status >= 500 ? "config" : "input",
+          status: error.status,
+          message: error.message,
+        });
+      }
+      return errorResponse("gateway_error", 502, gatewayDetail(error));
+    }
+
+    await db
+      .update(orders)
+      .set({
+        paymentMethod: "paygate",
+        payAddress: session.polygonAddressIn,
+        paymentUrl: session.checkoutUrl,
+        updatedAt: new Date(),
+      })
+      .where(eq(orders.id, orderId))
+      .catch(() => null);
+
+    return NextResponse.json({
+      ok: true,
+      orderRef: ref,
+      trackingToken: tracking.token,
+      trackingUrl: urls.successUrl,
+      groupRef: ref,
+      installments: 1,
+      installmentIndex: 1,
+      trancheAmountUsd: amount,
+      paymentUrl: session.checkoutUrl,
+      priceAmount: session.quote.billedUsd,
+      priceCurrency: "usd",
+    });
+  }
+
   // 2) Facture NOWPayments (page de paiement hébergée).
   let invoice: CreatedInvoice;
   try {
@@ -631,7 +775,7 @@ async function createFlexibleOrder(
       priceAmount: amount,
       orderId: ref,
       orderDescription: `${config.name} — ${label}`.slice(0, 190),
-      ...paymentUrls(req, ref, tracking.token, data.locale ?? "ar"),
+      ...urls,
     });
   } catch (error) {
     console.error(
@@ -719,10 +863,11 @@ export async function POST(req: Request) {
   }
 
   const data = parsed.data;
+  const usesPayGate = data.paymentMethod === "paygate" && !data.manualPayment;
 
-  // Le paiement manuel ne dépend d'aucune passerelle : on ne refuse l'absence
-  // de clé NOWPayments que pour les paiements crypto.
-  if (!data.manualPayment && !nowPaymentsConfigured()) {
+  // Le paiement manuel et PayGate ne dépendent pas de NOWPayments : on ne
+  // refuse l'absence de clé NOWPayments que pour les paiements crypto directs.
+  if (!data.manualPayment && !usesPayGate && !nowPaymentsConfigured()) {
     return errorResponse("gateway_not_configured", 503, {
       source: "config",
       status: null,
@@ -739,6 +884,8 @@ export async function POST(req: Request) {
         data.trackingToken,
         req,
         data.manualPayment,
+        usesPayGate ? "paygate" : data.paymentMethod,
+        data.email,
       );
     } catch (error) {
       console.error(
@@ -777,6 +924,7 @@ export async function POST(req: Request) {
         phone: data.phone,
         locale: data.locale,
         utm: data.utm,
+        paymentMethod: usesPayGate ? "paygate" : "nowpayments",
       });
     } catch (error) {
       console.error(
@@ -888,7 +1036,11 @@ export async function POST(req: Request) {
           phone: data.phone || null,
           utm: data.utm || null,
           locale: data.locale ?? null,
-          ...(data.manualPayment ? { paymentMethod: "manual" } : {}),
+          ...(data.manualPayment
+            ? { paymentMethod: "manual" }
+            : usesPayGate && index === 0
+              ? { paymentMethod: "paygate" }
+              : {}),
         })),
       )
       .returning({ id: orders.id, ref: orders.ref });
@@ -924,6 +1076,66 @@ export async function POST(req: Request) {
         .catch(() => null);
     }
     return response;
+  }
+
+  // 2 ter) Carte bancaire (PayGate.to → USDC Polygon) pour la première tranche.
+  if (usesPayGate) {
+    const firstRef = trancheRef(baseRef, 1);
+    const customerEmail = (data.email ?? "").trim();
+    if (!customerEmail) {
+      await db.delete(orders).where(eq(orders.groupRef, baseRef)).catch(() => null);
+      return errorResponse("email_required", 400, {
+        source: "input",
+        status: null,
+        message: "Une adresse e-mail valide est requise pour le paiement par carte bancaire.",
+      });
+    }
+    let session;
+    try {
+      session = await createPayGateCardSession({
+        orderRef: firstRef,
+        baseAmountUsd: usdTranches[0] ?? totalUsd,
+        customerEmail,
+        baseOrigin: siteBaseUrl(req),
+        accentColor: config.theme?.accent,
+      });
+    } catch (error) {
+      await db.delete(orders).where(eq(orders.groupRef, baseRef)).catch(() => null);
+      if (isPayGateError(error)) {
+        return errorResponse(error.code, error.status, {
+          source: error.status >= 500 ? "config" : "input",
+          status: error.status,
+          message: error.message,
+        });
+      }
+      return errorResponse("gateway_error", 502, gatewayDetail(error));
+    }
+
+    await db
+      .update(orders)
+      .set({
+        paymentMethod: "paygate",
+        payAddress: session.polygonAddressIn,
+        paymentUrl: session.checkoutUrl,
+        updatedAt: new Date(),
+      })
+      .where(eq(orders.id, firstOrderId))
+      .catch(() => null);
+
+    const urls = paymentUrls(req, baseRef, tracking.token, data.locale ?? "ar");
+    return NextResponse.json({
+      ok: true,
+      orderRef: baseRef,
+      trackingToken: tracking.token,
+      trackingUrl: urls.successUrl,
+      groupRef: baseRef,
+      installments: count,
+      installmentIndex: 1,
+      trancheAmountUsd: usdTranches[0],
+      paymentUrl: session.checkoutUrl,
+      priceAmount: session.quote.billedUsd,
+      priceCurrency: "usd",
+    });
   }
 
   // 2) Facture NOWPayments pour la première tranche : le client est

@@ -73,25 +73,25 @@ export function DigitalShowcase({
           </div>
         </div>
 
-        <ul className="mt-7 grid grid-cols-2 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        <ul className="mt-7 grid grid-cols-1 gap-3 min-[360px]:grid-cols-2 lg:grid-cols-3">
           {products.map((product) => (
             <li key={product.slug}>
               <Link
                 href={`/codes/${product.slug}`}
                 className="store-preview-card group flex h-full flex-col overflow-hidden rounded-[var(--radius-lg)] border border-[var(--border)] bg-[var(--card)] transition-colors hover:border-[var(--accent)]"
               >
-                {product.image && <span className="store-preview-art"><Image src={product.image} alt={product.title} fill sizes="(max-width: 640px) 90vw, (max-width: 1024px) 45vw, 390px" className="object-cover" {...imageOptimizationProps(product.image)} /></span>}
-                <span className="min-w-0 flex-1 p-5">
-                  <span className="block text-[11px] font-black uppercase tracking-[0.12em] text-[var(--muted-foreground)]">
+                {product.image && <span className="store-preview-art"><Image src={product.image} alt={product.title} width={640} height={400} sizes="(max-width: 640px) 90vw, (max-width: 1024px) 45vw, 390px" className="h-full w-full object-cover" {...imageOptimizationProps(product.image)} /></span>}
+                <span className="min-w-0 flex-1 p-3.5 sm:p-5">
+                  <span className="block text-[10.5px] font-black uppercase tracking-[0.1em] text-[var(--muted-foreground)] sm:text-[11px]">
                     {product.platform} ·{" "}
                     {ar
                       ? DIGITAL_KIND_LABELS[product.kind].ar
                       : DIGITAL_KIND_LABELS[product.kind].en}
                   </span>
-                  <span className="mt-1 block truncate text-[14px] font-black">
+                  <span className="mt-1 line-clamp-2 block text-[13.5px] font-black leading-snug sm:text-[14px]">
                     {product.title}
                   </span>
-                  <span className="mt-1 block text-[12px] font-bold text-[var(--accent)]" dir="ltr">
+                  <span className="mt-1.5 block text-[12px] font-bold text-[var(--accent)]" dir="ltr">
                     {product.fromUsd != null
                       ? `${ar ? "من" : "From"} $${product.fromUsd.toFixed(2)}`
                       : ar
@@ -99,7 +99,7 @@ export function DigitalShowcase({
                         : "Coming soon"}
                   </span>
                 </span>
-                <ArrowUpRight className="mx-5 mb-5 h-4 w-4 shrink-0 text-[var(--accent)] transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5 rtl:rotate-[-90deg]" />
+                <ArrowUpRight className="mx-3.5 mb-3.5 h-4 w-4 shrink-0 text-[var(--accent)] transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5 sm:mx-5 sm:mb-5 rtl:rotate-[-90deg]" />
               </Link>
             </li>
           ))}

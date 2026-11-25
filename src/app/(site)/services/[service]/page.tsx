@@ -110,20 +110,21 @@ export default async function ServicePage({
   );
   const canonical = localizedAbsoluteUrl(config.url, servicePath(service.id), locale, siteLocale(config));
 
+  const ar = locale === "ar";
   return (
     <>
       <JsonLd
         data={[
           breadcrumbJsonLd(config, [
-            { name: "الرئيسية", path: "/" },
-            { name: "الخدمات", path: "/services" },
-            { name: service.titleAr, path: servicePath(service.id) },
+            { name: ar ? "الرئيسية" : "Home", path: "/" },
+            { name: ar ? "الخدمات" : "Services", path: "/services" },
+            { name: ar ? service.titleAr : service.titleEn, path: servicePath(service.id) },
           ], locale),
           webPageJsonLd(config, {
             path: servicePath(service.id),
             locale,
-            name: landing.titleAr,
-            description: landing.answerAr,
+            name: ar ? landing.titleAr : landing.titleEn,
+            description: ar ? landing.answerAr : landing.answerEn,
             speakable: ["h1", "#service-answer"],
             about: `${service.titleEn} — Tripoli, Libya`,
           }),

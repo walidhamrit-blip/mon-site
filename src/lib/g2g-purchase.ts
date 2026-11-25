@@ -1,10 +1,11 @@
-import { and, eq, inArray, sql } from "drizzle-orm";
+import { randomUUID } from "node:crypto";
+import { and, eq, inArray, isNull, sql } from "drizzle-orm";
 
 import { db, ensureSchema } from "@/db";
 import { g2gDeliveries } from "@/db/schema";
 import { fazercardsBalance, fazercardsGiftCardOrder } from "@/lib/fazercards";
+import { automaticDeliveryVerified } from "@/lib/g2g-pilot";
 import {
-  g2gIdempotencyKey,
   shouldPurchaseNow,
   type G2gFulfilmentPlan,
 } from "@/lib/g2g-fulfilment-core";
@@ -20,9 +21,7 @@ import {
  *
  *   1. `shouldPurchaseNow()` — la porte. Elle croise le verdict du moteur
  *      avec l'état RÉEL du coupe-circuit.
- *   2. Une clé d'idempotence dérivée du `delivery_id` — le fournisseur ne
- *      prélève qu'une fois, même si l'événement est rejoué.
- *   3. Une prise de possession atomique en base — deux webhooks concurrents
+ *   2. Une prise de possession atomique en base — deux webhooks concurrents
  *      ne peuvent pas acheter tous les deux.
  *
  * Le journal est écrit AVANT l'appel réseau (`status = 'purchasing'`). Si le
@@ -48,8 +47,6 @@ export type G2gPurchaseOutcome =
   | { outcome: "not_eligible"; reason: string }
   /** Identifiants fournisseur manquants : on n'achète pas à l'aveugle. */
   | { outcome: "missing_sku" }
-  /** Pas de clé d'idempotence exploitable : un rejeu coûterait double. */
-  | { outcome: "invalid_key" }
   /** Solde fournisseur insuffisant — souvent transitoire, donc réessayable. */
   | { outcome: "insufficient_balance"; balanceUsd: number; neededUsd: number }
   /** Solde illisible : on ne commande pas à l'aveugle. */
@@ -66,9 +63,7 @@ function safeReason(error: unknown): string {
 }
 
 /**
- * Une minute : délai avant qu'une reprise soit tentée. Volontairement court
- * — l'acheteur attend son code — mais suffisant pour qu'un incident
- * transitoire se résorbe.
+ * Une minute : délai avant rapprochement manuel en cas d'issue incertaine.
  */
 const RETRY_DELAY_MS = 60_000;
 
@@ -83,6 +78,9 @@ export async function purchaseG2gDelivery(
    *    on exige que la décision RÉELLE, coupe-circuit appliqué, soit
    *    `proceed`. C'est ce qui rend le coupe-circuit effectif.
    */
+  if (!automaticDeliveryVerified()) {
+    return { outcome: "not_eligible", reason: "delivery_not_verified" };
+  }
   if (!shouldPurchaseNow(input.plan, input.autoDeliveryEnabled)) {
     return { outcome: "not_eligible", reason: input.plan?.decision ?? "no_plan" };
   }
@@ -95,12 +93,8 @@ export async function purchaseG2gDelivery(
   if (!categoryId || !cardId) {
     return { outcome: "missing_sku" };
   }
-
-  // 3. Clé d'idempotence : sans elle, un événement rejoué achèterait deux
-  //    fois. On préfère ne pas acheter du tout.
-  const idempotencyKey = g2gIdempotencyKey(input.deliveryId);
-  if (!idempotencyKey) {
-    return { outcome: "invalid_key" };
+  if (!Number.isInteger(input.requestedQty) || input.requestedQty < 1 || input.requestedQty > 100) {
+    return { outcome: "not_eligible", reason: "invalid_quantity" };
   }
 
   await ensureSchema();
@@ -112,10 +106,9 @@ export async function purchaseG2gDelivery(
    * négatif — dans les deux cas une commande payée qu'on ne peut pas
    * honorer. On vérifie donc AVANT de dépenser.
    *
-   * Volontairement placé avant la prise de possession : un solde vide est
-   * généralement transitoire (rechargement en cours). La ligne reste donc
-   * `planned` et sera reprise plus tard, au lieu d'être marquée `failed`
-   * pour un incident réparable.
+   * Placé avant la prise de possession. Si le solde est indisponible ou
+   * insuffisant, le traitement s'arrête pour intervention manuelle ; il n'y
+   * a pas de reprise automatique d'achat.
    */
   const neededUsd = Number(input.plan?.totalCostUsd ?? 0);
   let balanceUsd: number;
@@ -128,7 +121,8 @@ export async function purchaseG2gDelivery(
     await db
       .update(g2gDeliveries)
       .set({
-        nextAttemptAt: new Date(Date.now() + RETRY_DELAY_MS),
+        status: "failed",
+        nextAttemptAt: null,
         detail: `Solde fournisseur illisible : ${safeReason(error)}`,
         updatedAt: new Date(),
       })
@@ -145,7 +139,8 @@ export async function purchaseG2gDelivery(
     await db
       .update(g2gDeliveries)
       .set({
-        nextAttemptAt: new Date(Date.now() + RETRY_DELAY_MS),
+        status: "failed",
+        nextAttemptAt: null,
         detail: `Solde insuffisant : ${balanceUsd} $ disponibles pour ${neededUsd} $ nécessaires.`,
         updatedAt: new Date(),
       })
@@ -169,27 +164,48 @@ export async function purchaseG2gDelivery(
    * C'est aussi l'écriture anticipée : `purchasing` signifie « de l'argent
    * a pu partir ».
    */
+  // Chaque intention reçoit une clé aléatoire ; elle et le corps exact sont
+  // persistés dans le même UPDATE que la prise de possession. Aucune reprise
+  // automatique n'est activée, même avec la garantie annoncée de 7 jours.
+  const idempotencyKey = `g2g-fzr-${randomUUID()}`;
+  const purchasePayload = JSON.stringify({ category_id: categoryId, card_id: cardId, quantity: input.requestedQty });
+  const purchaseStartedAt = new Date();
   const claimed = await db
     .update(g2gDeliveries)
     .set({
       status: "purchasing",
+      supplierIdempotencyKey: idempotencyKey,
+      supplierPurchasePayload: purchasePayload,
+      supplierPurchaseStartedAt: purchaseStartedAt,
       attempts: sql`${g2gDeliveries.attempts} + 1`,
-      // Reprise possible si cet appel ne revient jamais.
+      // Résultat incertain : la file déclenchera un rapprochement manuel.
       nextAttemptAt: new Date(Date.now() + RETRY_DELAY_MS),
-      detail: `Achat en cours (clé ${idempotencyKey}).`,
+      detail: "Achat en cours ; résultat incertain à vérifier manuellement en cas de panne.",
       updatedAt: new Date(),
     })
     .where(
       and(
         eq(g2gDeliveries.deliveryId, input.deliveryId),
+        eq(g2gDeliveries.orderId, input.orderId),
+        eq(g2gDeliveries.offerId, input.offerId),
+        eq(g2gDeliveries.requestedQty, input.requestedQty),
+        eq(g2gDeliveries.attempts, 0),
+        isNull(g2gDeliveries.supplierIdempotencyKey),
+        isNull(g2gDeliveries.supplierPurchasePayload),
+        isNull(g2gDeliveries.supplierPurchaseStartedAt),
         inArray(g2gDeliveries.status, ["planned"]),
       ),
     )
-    .returning({ id: g2gDeliveries.id });
+    .returning({ id: g2gDeliveries.id, supplierIdempotencyKey: g2gDeliveries.supplierIdempotencyKey, supplierPurchasePayload: g2gDeliveries.supplierPurchasePayload });
 
   if (claimed.length === 0) {
     // Soit un autre traitement l'a déjà pris, soit l'état est terminal.
     return { outcome: "already_handled" };
+  }
+
+  // Toute incohérence laisse l'intention en revue manuelle, jamais de POST.
+  if (claimed[0].supplierIdempotencyKey !== idempotencyKey || claimed[0].supplierPurchasePayload !== purchasePayload) {
+    return { outcome: "failed", reason: "Intention d'achat incohérente : rapprochement manuel requis." };
   }
 
   // 6. L'appel qui coûte de l'argent.

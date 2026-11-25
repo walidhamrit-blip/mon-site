@@ -9,13 +9,9 @@ export const maxDuration = 30;
 /**
  * File de livraison G2G (cron Vercel, toutes les minutes — plan Pro).
  *
- * Après l'achat JIT (brique 1), une ligne `g2g_deliveries` se trouve en
- * statut `purchased`. Ce cron :
- *
- *   1. Réclame les livraisons dues (nextAttemptAt échu, attempts < max) ;
- *   2. Sonde FazerCards pour récupérer les codes ;
- *   3. Livre chaque code à G2G via POST /v2/orders/{id}/delivery ;
- *   4. Reprogramme avec backoff, ou escalade (Telegram) après épuisement.
+ * Les lignes anciennes ou en attente sont réclamées pour examen manuel.
+ * Aucun code n'est envoyé tant que le format fournisseur n'est pas vérifié.
+ * Une alerte Telegram est tentée ; surveiller aussi le panneau des échecs.
  *
  * Protégé par `CRON_SECRET` (obligatoire : Vercel envoie l'en-tête
  * `Authorization: Bearer <secret>` sur chaque exécution cron).

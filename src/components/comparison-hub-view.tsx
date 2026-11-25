@@ -59,7 +59,7 @@ export function ComparisonHubView({
               {pick(c.hubShortAr, c.hubShortEn)}{" "}
               {ar ? "موقع من" : "A website from"}{" "}
               <Price usd={sitePriceUsd} compact />
-              {ar ? "، تسليم من 7 أيام." : ", delivered in 7 days."}
+              {ar ? "؛ الموعد يؤكد حسب النطاق." : "; delivery is confirmed by scope."}
             </p>
           </div>
 

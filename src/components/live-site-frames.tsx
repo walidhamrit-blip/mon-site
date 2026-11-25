@@ -165,7 +165,11 @@ export function FullscreenLiveViewer({
     ? config.pricing.plans.find((plan) => plan.id === classification.planId)
     : null;
   const depositUsd = config.reservation?.depositUsd ?? 1;
-  const [mode, setMode] = useState<"desktop" | "mobile">(initialMode);
+  const [mode, setMode] = useState<"desktop" | "mobile">(() =>
+    typeof window !== "undefined" && window.innerWidth < 768 && initialMode === "desktop"
+      ? "mobile"
+      : initialMode,
+  );
   const [reloadKey, setReloadKey] = useState(0);
   const [loading, setLoading] = useState(true);
   const mounted = useSyncExternalStore(
@@ -180,8 +184,10 @@ export function FullscreenLiveViewer({
   useEffect(() => {
     const prevOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
+    document.documentElement.setAttribute("data-dialog", "open");
     return () => {
       document.body.style.overflow = prevOverflow;
+      document.documentElement.removeAttribute("data-dialog");
     };
   }, []);
 
@@ -189,11 +195,11 @@ export function FullscreenLiveViewer({
 
   const content = (
     <div
-      className="fixed inset-0 z-[9999] w-screen h-screen bg-[#0B0B0E] text-white flex flex-col overflow-hidden"
+      className="fixed inset-0 z-[9999] flex h-dvh w-full flex-col overflow-hidden bg-[#0B0B0E] text-white"
       style={{ isolation: "isolate" }}
     >
       {/* Barre supérieure de contrôle plein écran */}
-      <div className="min-h-14 h-auto py-2 px-3 sm:px-5 border-b border-white/10 bg-[#111116] flex flex-wrap items-center justify-between gap-2 flex-shrink-0">
+      <div className="flex min-h-14 h-auto flex-shrink-0 flex-wrap items-center justify-between gap-2 border-b border-white/10 bg-[#111116] px-3 pb-2 pt-[max(0.5rem,env(safe-area-inset-top))] sm:px-5">
         {/* Gauche : Retour / Fermer + Titre */}
         <div className="flex items-center gap-2.5 min-w-0">
           {onClose ? (
@@ -201,7 +207,7 @@ export function FullscreenLiveViewer({
               type="button"
               onClick={onClose}
               aria-label={locale === "ar" ? "إغلاق العرض الكامل" : "Exit Fullscreen"}
-              className="h-9 px-3.5 rounded-full bg-white/10 hover:bg-white/20 text-xs font-bold inline-flex items-center gap-1.5 transition-colors cursor-pointer flex-shrink-0"
+              className="min-h-10 px-3.5 rounded-full bg-white/10 hover:bg-white/20 text-xs font-bold inline-flex items-center gap-1.5 transition-colors cursor-pointer flex-shrink-0"
             >
               <Minimize2 className="h-3.5 w-3.5" />
               <span className="hidden sm:inline">
@@ -212,7 +218,7 @@ export function FullscreenLiveViewer({
             <Link
               href={backHref}
               aria-label={locale === "ar" ? "الرجوع للمعارض" : "Back to Demos"}
-              className="h-9 px-3.5 rounded-full bg-white/10 hover:bg-white/20 text-xs font-bold inline-flex items-center gap-1.5 transition-colors flex-shrink-0"
+              className="min-h-10 px-3.5 rounded-full bg-white/10 hover:bg-white/20 text-xs font-bold inline-flex items-center gap-1.5 transition-colors flex-shrink-0"
             >
               {locale === "ar" ? (
                 <ArrowRight className="h-3.5 w-3.5" />
@@ -239,39 +245,41 @@ export function FullscreenLiveViewer({
           <button
             type="button"
             onClick={() => setMode("desktop")}
-            className={`h-8 px-4 rounded-full text-xs sm:text-sm font-black inline-flex items-center gap-1.5 transition-all cursor-pointer ${
+            className={`min-h-9 flex-1 justify-center sm:flex-none px-3.5 sm:px-4 rounded-full text-xs sm:text-sm font-black inline-flex items-center gap-1.5 transition-all cursor-pointer ${
               mode === "desktop"
                 ? "bg-[var(--accent)] text-[var(--accent-foreground)] shadow"
                 : "text-zinc-300 hover:text-white"
             }`}
           >
-            <Monitor className="h-4 w-4" />
-            <span>{locale === "ar" ? "عرض حاسوب (Desktop)" : "Desktop View"}</span>
+            <Monitor className="h-4 w-4 shrink-0" />
+            <span className="sm:hidden">{locale === "ar" ? "حاسوب" : "Desktop"}</span>
+            <span className="hidden sm:inline">{locale === "ar" ? "عرض حاسوب (Desktop)" : "Desktop View"}</span>
           </button>
           <button
             type="button"
             onClick={() => setMode("mobile")}
-            className={`h-8 px-4 rounded-full text-xs sm:text-sm font-black inline-flex items-center gap-1.5 transition-all cursor-pointer ${
+            className={`min-h-9 flex-1 justify-center sm:flex-none px-3.5 sm:px-4 rounded-full text-xs sm:text-sm font-black inline-flex items-center gap-1.5 transition-all cursor-pointer ${
               mode === "mobile"
                 ? "bg-[var(--accent)] text-[var(--accent-foreground)] shadow"
                 : "text-zinc-300 hover:text-white"
             }`}
           >
-            <Smartphone className="h-4 w-4" />
-            <span>{locale === "ar" ? "عرض هاتف (Mobile)" : "Mobile View"}</span>
+            <Smartphone className="h-4 w-4 shrink-0" />
+            <span className="sm:hidden">{locale === "ar" ? "هاتف" : "Mobile"}</span>
+            <span className="hidden sm:inline">{locale === "ar" ? "عرض هاتف (Mobile)" : "Mobile View"}</span>
           </button>
         </div>
 
         {/* Droite : Classification + Réservation + Actualiser + Ouvrir */}
-        <div className="flex items-center gap-2 flex-shrink-0">
+        <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
           {classification && (
             <span
-              className="hidden xl:inline-flex items-center gap-1.5 h-9 px-3 rounded-full bg-white/10 border border-white/15 text-[11px] font-bold text-zinc-200"
+              className="hidden xl:inline-flex items-center gap-1.5 h-10 px-3 rounded-full bg-white/10 border border-white/15 text-[11px] font-bold text-zinc-200"
               dir="ltr"
               title={locale === "ar" ? "فئة الموقع وسعره" : "Site category & price"}
             >
               <Tag className="h-3.5 w-3.5 text-[var(--accent)]" />
-              {locale === "ar" ? "الفئة" : "Cat."} {classification.tier}
+              {locale === "ar" ? "العرض الأساسي" : "Base offer"}
               <span className="text-white/30">·</span>
               {classification.totalPriceUsd != null ? (
                 <Price usd={classification.totalPriceUsd} />
@@ -294,7 +302,7 @@ export function FullscreenLiveViewer({
                   ? `احجز — ${formatUsd(depositUsd)} $`
                   : `Reserve — $${formatUsd(depositUsd)}`
               }
-              className="h-9 px-3.5 sm:px-4 rounded-full bg-[var(--accent)] hover:bg-[var(--accent-hover)] text-[var(--accent-foreground)] text-xs font-black inline-flex items-center gap-1.5 transition-colors cursor-pointer"
+              className="min-h-10 px-3.5 sm:px-4 rounded-full bg-[var(--accent)] hover:bg-[var(--accent-hover)] text-[var(--accent-foreground)] text-xs font-black inline-flex items-center gap-1.5 transition-colors cursor-pointer"
             />
           )}
 
@@ -306,7 +314,7 @@ export function FullscreenLiveViewer({
             }}
             title={locale === "ar" ? "إعادة تحميل الموقع" : "Reload site"}
             aria-label={locale === "ar" ? "إعادة تحميل الموقع" : "Reload site"}
-            className="h-9 w-9 rounded-full bg-white/10 hover:bg-white/20 grid place-items-center transition-colors cursor-pointer"
+            className="h-10 w-10 rounded-full bg-white/10 hover:bg-white/20 grid place-items-center transition-colors cursor-pointer"
           >
             <RotateCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
           </button>
@@ -314,7 +322,7 @@ export function FullscreenLiveViewer({
           <Link
             href="/contact"
             onClick={() => onClose?.()}
-            className="hidden lg:inline-flex h-9 px-4 rounded-full bg-white/10 hover:bg-white/20 text-xs font-bold items-center gap-1.5 transition-colors"
+            className="hidden lg:inline-flex h-10 px-4 rounded-full bg-white/10 hover:bg-white/20 text-xs font-bold items-center gap-1.5 transition-colors"
           >
             <Sparkles className="h-3.5 w-3.5 text-[var(--accent)]" />
             <span>{locale === "ar" ? "اطلب موقعاً مماثلاً" : "Order Similar Site"}</span>
@@ -325,7 +333,7 @@ export function FullscreenLiveViewer({
             target="_blank"
             rel="noopener noreferrer"
             aria-label={locale === "ar" ? "فتح في نافذة جديدة" : "Open in New Tab"}
-            className="h-9 px-4 rounded-full bg-white/10 hover:bg-white/20 text-xs font-bold inline-flex items-center gap-1.5 transition-colors"
+            className="min-h-10 px-3.5 sm:px-4 rounded-full bg-white/10 hover:bg-white/20 text-xs font-bold inline-flex items-center gap-1.5 transition-colors"
           >
             <span className="hidden sm:inline">
               {locale === "ar" ? "فتح في نافذة جديدة" : "Open in New Tab"}
@@ -339,14 +347,14 @@ export function FullscreenLiveViewer({
       <div
         dir="ltr"
         className={`flex-1 w-full overflow-hidden flex items-center justify-center relative ${
-          mode === "mobile" ? "bg-[#0B0B0E] p-3 sm:p-6" : "bg-white p-0"
+          mode === "mobile" ? "bg-[#0B0B0E] p-0 sm:p-6" : "bg-white p-0"
         }`}
       >
         {loading && (
           <div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-[#0B0B0E] text-white p-6 text-center">
             <div className="h-11 w-11 rounded-full border-3 border-[var(--accent)] border-t-transparent animate-spin mb-3" />
             <div className="text-base font-bold">{title}</div>
-            <div className="text-xs text-zinc-400 mt-1" dir="ltr">
+            <div className="text-xs text-zinc-400 mt-1 break-all" dir="ltr">
               {demo.previewUrl}
             </div>
           </div>
@@ -355,12 +363,12 @@ export function FullscreenLiveViewer({
         <div
           className={
             mode === "mobile"
-              ? "w-[390px] max-w-full h-full max-h-[844px] rounded-[38px] border-[10px] border-zinc-800 bg-white shadow-[0_25px_80px_rgba(0,0,0,0.85)] overflow-hidden relative flex flex-col"
+              ? "h-full w-full bg-white overflow-hidden relative flex flex-col sm:w-[390px] sm:max-w-full sm:max-h-[844px] sm:rounded-[38px] sm:border-[10px] sm:border-zinc-800 sm:shadow-[0_25px_80px_rgba(0,0,0,0.85)]"
               : "w-full h-full bg-white overflow-hidden"
           }
         >
           {mode === "mobile" && (
-            <div className="h-6 bg-zinc-900 flex items-center justify-center flex-shrink-0">
+            <div className="hidden h-6 flex-shrink-0 items-center justify-center bg-zinc-900 sm:flex">
               <div className="h-1.5 w-16 rounded-full bg-zinc-700" />
             </div>
           )}
@@ -380,27 +388,26 @@ export function FullscreenLiveViewer({
       {(config.reservation?.enabled || classifiedPlan) && offerVisible && (
         <div
           dir={locale === "ar" ? "rtl" : "ltr"}
-          className="absolute bottom-3 start-3 end-3 sm:end-auto sm:w-[330px] z-30 rounded-2xl border border-white/15 bg-[#111116]/95 backdrop-blur-md p-4 text-white shadow-[0_18px_50px_rgba(0,0,0,0.55)]"
+          className="absolute bottom-[max(0.75rem,env(safe-area-inset-bottom))] start-3 end-3 sm:end-auto sm:w-[330px] max-h-[46dvh] overflow-y-auto z-30 rounded-2xl border border-white/15 bg-[#111116]/95 backdrop-blur-md p-4 text-white shadow-[0_18px_50px_rgba(0,0,0,0.55)]"
         >
           <div className="flex items-start justify-between gap-3">
-            <span className="inline-flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wider text-[var(--accent)]">
+            <span className="inline-flex items-center gap-1.5 pt-1 text-[10px] font-black uppercase tracking-wider text-[var(--accent)]">
               <Sparkles className="h-3 w-3" />
-              {locale === "ar" ? "سعر الموقع والتخصيص" : "Model + customization"}
+              {locale === "ar" ? "عرض الموقع الأساسي" : "Base website offer"}
             </span>
             <button
               type="button"
               onClick={() => setOfferVisible(false)}
-              className="h-6 w-6 -mt-1 -me-1 grid place-items-center rounded-full text-zinc-500 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
+              className="h-10 w-10 -mt-1.5 -me-1.5 grid shrink-0 place-items-center rounded-full text-zinc-400 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
               aria-label={locale === "ar" ? "إخفاء العرض" : "Dismiss offer"}
             >
-              <X className="h-3.5 w-3.5" />
+              <X className="h-4 w-4" />
             </button>
           </div>
 
           {classification && (
             <div className="mt-2 rounded-xl bg-white/5 p-3">
               <div className="mb-2 text-[10px] uppercase tracking-wider text-zinc-500">
-                {locale === "ar" ? `الفئة ${classification.tier} · ` : `Category ${classification.tier} · `}
                 {locale === "ar" ? classification.name : classification.nameEn}
               </div>
               <ModelPriceBreakdown
@@ -415,19 +422,19 @@ export function FullscreenLiveViewer({
             <ModelPurchaseButton
               plan={classifiedPlan}
               demo={demo}
-              className="mt-3 h-10 w-full rounded-full bg-[var(--accent)] text-[var(--accent-foreground)] text-xs font-black inline-flex items-center justify-center gap-1.5 hover:bg-[var(--accent-hover)] transition-colors cursor-pointer"
+              className="mt-3 min-h-11 w-full rounded-full bg-[var(--accent)] px-3 text-[var(--accent-foreground)] text-xs font-black inline-flex items-center justify-center gap-1.5 hover:bg-[var(--accent-hover)] transition-colors cursor-pointer"
             />
           )}
           {config.reservation?.enabled && (
             <>
               <ReservationButton
                 demo={demo}
-                className="mt-2 h-10 w-full rounded-full border border-white/20 bg-white/10 text-white text-xs font-black inline-flex items-center justify-center gap-1.5 hover:bg-white/15 transition-colors cursor-pointer"
+                className="mt-2 min-h-11 w-full rounded-full border border-white/20 bg-white/10 px-3 text-white text-xs font-black inline-flex items-center justify-center gap-1.5 hover:bg-white/15 transition-colors cursor-pointer"
               />
               <p className="mt-2 text-[10px] text-zinc-500 leading-relaxed">
                 {locale === "ar"
-                  ? `العربون ${formatUsd(depositUsd)} $ (= ${formatUsd(depositUsd)} USDT) يُخصم من الإجمالي بعد اعتماد التخصيص.`
-                  : `$${formatUsd(depositUsd)} deposit (= ${formatUsd(depositUsd)} USDT) is deducted from the final total after customization is approved.`}
+                  ? `العربون ${formatUsd(depositUsd)} $ (= ${formatUsd(depositUsd)} USDT) يُخصم من سعر الموقع الأساسي.`
+                  : `$${formatUsd(depositUsd)} deposit (= ${formatUsd(depositUsd)} USDT) is deducted from the base website price.`}
               </p>
             </>
           )}
@@ -462,7 +469,7 @@ export function FullscreenLiveViewer({
             <p>
               {demo.sectorAr} ({demo.sectorEn})
               {classification
-                ? ` — الفئة ${classification.tier}: ${classification.name} (${classification.nameEn}) · نموذج الموقع: ${classification.priceUsd != null ? `$${formatUsd(classification.priceUsd)} USD (= USDT)` : "حسب الطلب"} · التخصيص${classification.customizationPercent != null ? ` (${classification.customizationPercent}٪)` : ""}: ${classification.customizationUsd != null ? `$${formatUsd(classification.customizationUsd)} USD` : "عرض سعر مكتوب قبل الدفع"} · الإجمالي: ${classification.totalPriceUsd != null ? `$${formatUsd(classification.totalPriceUsd)} USD (= USDT)` : "يُحدد ويُعتمد قبل الدفع النهائي"}`
+                ? ` — العرض الأساسي: ${classification.name} (${classification.nameEn}) · نموذج الموقع: ${classification.priceUsd != null ? `$${formatUsd(classification.priceUsd)} USD (= USDT)` : "حسب الطلب"} · التخصيص${classification.customizationPercent != null ? ` (${classification.customizationPercent}٪)` : ""}: ${classification.customizationUsd != null ? `$${formatUsd(classification.customizationUsd)} USD` : "عرض سعر مكتوب قبل الدفع"} · الإجمالي: ${classification.totalPriceUsd != null ? `$${formatUsd(classification.totalPriceUsd)} USD (= USDT)` : "يُحدد ويُعتمد قبل الدفع النهائي"}`
                 : ""}
             </p>
           </section>

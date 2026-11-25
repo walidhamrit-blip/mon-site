@@ -18,7 +18,10 @@ await build({
     builder.onResolve({ filter: /^@\/db$/ }, () => ({ path: "db", namespace: "test-db" }));
     builder.onLoad({ filter: /.*/, namespace: "test-db" }, () => ({ loader: "js", contents: `
       export async function ensureSchema() {}
-      export const db = { select() { return { from() { return { where() { return { async limit() { return globalThis.__retiredRows || []; } }; } }; } }; } };
+      export const db = { select() { return { from() { return {
+        where() { return { async limit() { return globalThis.__retiredRows || []; } }; },
+        leftJoin() { return { where() { return { async limit() { return [{ paymentMethod: "nowpayments", id: null, method: null, status: null }]; } }; } }; }
+      }; } }; } };
     ` }));
   } }],
 });

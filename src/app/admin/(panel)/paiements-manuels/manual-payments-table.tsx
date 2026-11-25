@@ -112,7 +112,7 @@ export function ManualPaymentsTable({ rows }: { rows: AdminManualPaymentRow[] })
             Paiements manuels à vérifier
           </h2>
           <p className="mt-1 max-w-3xl text-[12px] leading-5 text-stone-600">
-            Skrill, Neteller, Airtm, D17, Volet, WebMoney et Kashy. Confrontez le compte expéditeur et
+            Binance Pay, OKX, Bybit, RedotPay, USDT direct, Skrill, Neteller, Airtm, D17, Volet, WebMoney et Kashy. Confrontez le compte expéditeur et
             l’identifiant de transaction à votre relevé AVANT d’accepter : le site
             ne peut pas vérifier la réception à votre place. Sans votre
             acceptation, aucun code n’est livré et aucun achat fournisseur n’est fait.

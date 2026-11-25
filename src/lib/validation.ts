@@ -10,6 +10,13 @@ import {
   MANUAL_PAYMENT_METHOD_DEFAULT_CURRENCY,
   type ManualPaymentMethodSettings,
 } from "@/lib/manual-payment-core";
+import {
+  DEFAULT_PAYGATE_CONFIG,
+  PAYGATE_CLOAK_MODES,
+  isForbiddenTokenContractAddress,
+  isPayGateSharedDomain,
+  isValidPayGateWallet,
+} from "@/lib/paygate-core";
 
 /* ---------- Paiements manuels sans passerelle (Skrill / Neteller / Airtm / D17 / Volet / WebMoney / Kashy) ---------- */
 
@@ -43,6 +50,22 @@ const manualPaymentMethodBaseSchema = (
       .max(100, "La majoration ne peut pas dépasser 100 %.")
       .default(0),
     instructions: z.string().trim().max(MANUAL_PAYMENT_LIMITS.note).default(""),
+    qrImage: z
+      .string()
+      .trim()
+      .max(MANUAL_PAYMENT_LIMITS.qrImage)
+      .refine((value) => {
+        if (value === "") return true;
+        if (value.startsWith("/")) {
+          return !value.startsWith("//") && !/[\\\u0000-\u001f]/.test(value);
+        }
+        try {
+          return new URL(value).protocol === "https:";
+        } catch {
+          return false;
+        }
+      }, "Utilisez un chemin local (/…) ou une URL HTTPS")
+      .default(""),
   });
 
 export const manualPaymentMethodSchema = manualPaymentMethodBaseSchema;
@@ -61,13 +84,21 @@ const methodSchema = (method: (typeof MANUAL_PAYMENT_METHODS)[number]) =>
 
 export const manualPaymentsConfigSchema = z.object(
   Object.fromEntries(
-    MANUAL_PAYMENT_METHODS.map((method) => [method, methodSchema(method)]),
-  ) as Record<(typeof MANUAL_PAYMENT_METHODS)[number], ReturnType<typeof methodSchema>>,
+    MANUAL_PAYMENT_METHODS.map((method) => [
+      method,
+      methodSchema(method).default(() =>
+        defaultManualPaymentConfig(MANUAL_PAYMENT_METHOD_DEFAULT_CURRENCY[method]),
+      ),
+    ]),
+  ) as Record<
+    (typeof MANUAL_PAYMENT_METHODS)[number],
+    z.ZodDefault<ReturnType<typeof methodSchema>>
+  >,
 );
 
 export function defaultManualPaymentConfig(
   currency: ManualPaymentMethodSettings["currency"] = "USD",
-): ManualPaymentMethodSettings {
+): ManualPaymentMethodSettings & { qrImage: string } {
   return {
     enabled: false,
     account: "",
@@ -76,8 +107,85 @@ export function defaultManualPaymentConfig(
     rate: null,
     feePercent: 0,
     instructions: "",
+    qrImage: "",
   };
 }
+
+/* ---------- Passerelle Carte Bancaire → USDC Polygon (PayGate.to) ---------- */
+
+export const payGateConfigSchema = z
+  .object({
+    enabled: z.boolean().default(DEFAULT_PAYGATE_CONFIG.enabled),
+    usdcPolygonWallet: z
+      .string()
+      .trim()
+      .max(120)
+      .default(DEFAULT_PAYGATE_CONFIG.usdcPolygonWallet),
+    minOrderUsd: z.coerce
+      .number()
+      .min(1, "Le montant minimum doit être d'au moins 1 $.")
+      .max(10_000, "Le montant minimum ne peut pas dépasser 10 000 $.")
+      .default(DEFAULT_PAYGATE_CONFIG.minOrderUsd),
+    feePercent: z.coerce
+      .number()
+      .min(0, "La majoration carte ne peut pas être négative.")
+      .max(50, "La majoration carte ne peut pas dépasser 50 %.")
+      .default(DEFAULT_PAYGATE_CONFIG.feePercent),
+    minReceivedRatio: z.coerce
+      .number()
+      .min(0.5, "Le ratio minimal reçu doit être d'au moins 0,50 (50 %).")
+      .max(1, "Le ratio minimal reçu ne peut pas dépasser 1,00 (100 %).")
+      .default(DEFAULT_PAYGATE_CONFIG.minReceivedRatio),
+    provider: z.string().trim().max(40).default(DEFAULT_PAYGATE_CONFIG.provider),
+    cloakMode: z.enum(PAYGATE_CLOAK_MODES).default(DEFAULT_PAYGATE_CONFIG.cloakMode),
+    apiDomain: z.string().trim().max(253).default(DEFAULT_PAYGATE_CONFIG.apiDomain),
+    checkoutDomain: z
+      .string()
+      .trim()
+      .max(253)
+      .default(DEFAULT_PAYGATE_CONFIG.checkoutDomain),
+  })
+  .superRefine((value, ctx) => {
+    const wallet = value.usdcPolygonWallet.trim();
+    if (!wallet && value.enabled) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["usdcPolygonWallet"],
+        message:
+          "Renseignez votre portefeuille personnel Polygon (0x…) avant d'activer la carte bancaire.",
+      });
+      return;
+    }
+    if (wallet) {
+      if (isForbiddenTokenContractAddress(wallet)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["usdcPolygonWallet"],
+          message:
+            "Cette adresse est le contrat du jeton USDC/USDT (et non votre portefeuille personnel) : les fonds y seraient perdus.",
+        });
+      } else if (!isValidPayGateWallet(wallet)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["usdcPolygonWallet"],
+          message:
+            "Adresse EVM invalide : elle doit commencer par 0x suivi de 40 caractères hexadécimaux.",
+        });
+      }
+    }
+    if (
+      value.cloakMode === "custom_domain" &&
+      (!value.checkoutDomain.trim() || isPayGateSharedDomain(value.checkoutDomain))
+    ) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["checkoutDomain"],
+        message:
+          "En mode Sous-domaine personnalisé, saisissez votre propre sous-domaine (ex. pay.votredomaine.com) et non un domaine partagé paygate.to / paygate.sbs.",
+      });
+    }
+  })
+  .default({ ...DEFAULT_PAYGATE_CONFIG });
 
 /* ---------- Nouvelle demande (formulaire public -> /api/lead) ---------- */
 
@@ -650,7 +758,12 @@ export const siteConfigSchema = z.object({
       method,
       defaultManualPaymentConfig(MANUAL_PAYMENT_METHOD_DEFAULT_CURRENCY[method]),
     ]),
-  ) as Record<(typeof MANUAL_PAYMENT_METHODS)[number], ManualPaymentMethodSettings>),
+  ) as Record<(typeof MANUAL_PAYMENT_METHODS)[number], ManualPaymentMethodSettings & { qrImage: string }>),
+  /**
+   * Passerelle Carte Bancaire → USDC Polygon (PayGate.to).
+   * `.default()` indispensable pour la compatibilité avec les configs déjà en base.
+   */
+  paygate: payGateConfigSchema.default({ ...DEFAULT_PAYGATE_CONFIG }),
   /**
    * Profils d'avis + demandes d'avis. `.default()` est indispensable : les
    * configurations déjà enregistrées en base n'ont pas ce bloc, et un

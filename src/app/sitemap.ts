@@ -27,6 +27,23 @@ import { siteLocale } from "@/lib/seo";
 export const dynamic = "force-dynamic";
 
 /**
+ * Échappe les entités XML dans une URL d'image de sitemap (`<image:loc>`).
+ * Next.js concatène `item.images` tel quel sans échapper `&` : une seule query
+ * string externe (`?w=1200&q=80`) provoque une erreur XML dans Search Console.
+ */
+export function xmlSafeImageUrl(raw: string | null | undefined): string | null {
+  const trimmed = (raw ?? "").trim();
+  if (!trimmed || /\s/.test(trimmed)) return null;
+  if (!/^https?:\/\//i.test(trimmed)) return null;
+  return trimmed
+    .replace(/&(?!amp;|lt;|gt;|quot;|apos;)/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&apos;");
+}
+
+/**
  * Sitemap — uniquement des URLs canoniques et des dates RÉELLES.
  *
  * Constat de l'audit : toutes les entrées portaient `lastModified = now`
@@ -96,8 +113,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // on retombe sur l'image externe du portfolio. La date de capture n'est
   // déclarée que si elle existe réellement.
   const demoRoutes: MetadataRoute.Sitemap = getAllKnownDemos(content).map((d) => {
-    const localPreviews = getDemoPreviewImages(d).map((path) => `${base}${path}`);
-    const fallback = d.image && !d.image.includes("&") ? [d.image] : [];
+    const localPreviews = getDemoPreviewImages(d)
+      .map((path) => xmlSafeImageUrl(`${base}${path}`))
+      .filter((u): u is string => Boolean(u));
+    const fallbackImg = d.image ? xmlSafeImageUrl(d.image.startsWith("http") ? d.image : `${base}${d.image}`) : null;
+    const fallback = fallbackImg ? [fallbackImg] : [];
     const images = localPreviews.length > 0 ? localPreviews : fallback;
     const capturedAt = getDemoCapturedAt(d);
     return {
@@ -135,13 +155,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     (product) => product.status === "available" || lowestPriceUsd(product) != null,
   );
   const digitalRoutes: MetadataRoute.Sitemap = digitalProducts.map((product) => {
-    const image = product.image
+    const rawImage = product.image
       ? product.image.startsWith("http")
         ? product.image
-        : `${base}${product.image}`
+        : `${base}${product.image.startsWith("/") ? "" : "/"}${product.image}`
       : null;
+    const image = xmlSafeImageUrl(rawImage);
     return {
-      url: `${base}/codes/${product.slug}`,
+      url: `${base}/codes/${encodeURI(product.slug)}`,
       changeFrequency: "weekly",
       priority: lowestPriceUsd(product) != null ? 0.75 : 0.5,
       ...(image ? { images: [image] } : {}),

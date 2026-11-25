@@ -97,6 +97,7 @@ export function ServiceDetailView({
                 {second(landing.subtitleAr, landing.subtitleEn)}
               </p>
 
+              <p className="mt-4 rounded-xl border border-[var(--accent)]/30 p-4 text-sm leading-7">{ar ? "هذه خدمات مستقلة بنطاق خاص، وليست رسوماً إلزامية لتخصيص المحتوى الأولي المشمول في عرض الموقع الأساسي. إنشاء نصوص أو صفحات أو تصميم جديد يختلف عن إدخال محتواك في نموذج موجود." : "These are separate scoped services, not mandatory fees for the initial content personalization included in the base website offer. Creating copy, pages or a new design is different from inserting your content into an existing model."}</p>
               <div className="mt-6 flex flex-wrap gap-3">
                 <a
                   href={whatsappUrl}

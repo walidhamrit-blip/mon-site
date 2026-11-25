@@ -46,7 +46,7 @@ export function HeroVisual({ variant = "mixed", compact = false }: { variant?: "
       <div className="hero-visual-stage">
         <AnimatePresence initial={false} mode="sync">
           <motion.div key={slide.src} className="hero-visual-frame" initial={{ opacity: 0, x: reduced ? 0 : 35 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: reduced ? 0 : -35 }} transition={{ duration: reduced ? 0 : 0.65 }}>
-            <Image src={slide.src} alt={ar ? slide.altAr : slide.altEn} fill sizes={compact ? "(max-width: 768px) 92vw, 70vw" : "(max-width: 1024px) 92vw, 52vw"} preload={variant === "mixed" && current === 0} className={`hero-visual-image ${slide.type === "web" ? "is-website" : ""}`} />
+            <Image src={slide.src} alt={ar ? slide.altAr : slide.altEn} width={1600} height={900} sizes={compact ? "(max-width: 768px) 92vw, 70vw" : "(max-width: 1024px) 92vw, 52vw"} preload={current === 0} loading={current === 0 ? "eager" : "lazy"} fetchPriority={current === 0 ? "high" : "auto"} className={`hero-visual-image h-full w-full ${slide.type === "web" ? "is-website" : ""}`} />
           </motion.div>
         </AnimatePresence>
         <div className="hero-visual-shade" />

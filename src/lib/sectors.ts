@@ -1,3 +1,4 @@
+import { websiteOfferSummary, websiteTimelineNote, websiteDemoNote } from "@/lib/website-offer";
 import type { Demo, Faq } from "./site-types";
 import { localizedAbsoluteUrl, type Locale } from "@/lib/locale";
 
@@ -40,9 +41,9 @@ export const sectorSeo: Record<string, SectorSeo> = {
     titleAr: "تصميم مواقع عيادات في طرابلس — حجز مواعيد أونلاين",
     titleEn: "Clinic & Healthcare Website Design in Tripoli — Online Booking",
     descriptionAr:
-      "وكالة نخبة تصمم مواقع عيادات ومراكز صحية في طرابلس: حجز مواعيد حسب التاريخ، عرض الأطباء والخدمات، تقييمات مرضى معروضة، وتواصل واتساب مباشر — تسليم 7-10 أيام.",
+      "وكالة نخبة تصمم مواقع عيادات ومراكز صحية في طرابلس: حجز مواعيد حسب التاريخ، عرض الأطباء والخدمات، تقييمات مرضى معروضة، وتواصل واتساب مباشر — الموعد حسب النطاق والحجز الآلي خيار إضافي.",
     descriptionEn:
-      "Nukhba builds clinic & healthcare sites in Tripoli: appointment booking, doctor showcase, displayed patient reviews and WhatsApp contact — delivered in 7-10 days.",
+      "Nukhba builds clinic & healthcare sites in Tripoli: appointment booking, doctor showcase, displayed patient reviews and WhatsApp contact — scope-confirmed delivery; automated booking is an extra option.",
     h1Ar: "تصميم مواقع عيادات ومراكز صحية في طرابلس",
     h1En: "Clinic & Healthcare Websites in Tripoli",
     heroSubtitleAr:
@@ -55,26 +56,26 @@ export const sectorSeo: Record<string, SectorSeo> = {
       {
         qAr: "كم يستغرق إنشاء موقع عيادة؟",
         qEn: "How long to build a clinic website?",
-        aAr: "من 7 إلى 10 أيام: نطلق صفحة الحجز والتعريف بالطبيب في 48 ساعة، ثم نضيف الخدمات والتقييمات حتى التسليم.",
-        aEn: "7 to 10 days: booking & doctor pages go live in 48h, then we add services & reviews until delivery.",
+        aAr: websiteTimelineNote("ar"),
+        aEn: websiteTimelineNote("en"),
       },
       {
         qAr: "هل المرضى يستطيعون حجز موعد أونلاين؟",
         qEn: "Can patients book online?",
-        aAr: "نعم — يختار المريض نوع الاستشارة والتاريخ، ويرى أقرب موعد متاح مع تأكيد عبر واتساب.",
-        aEn: "Yes — patients pick consultation type & date, see next availability, and confirm via WhatsApp.",
+        aAr: "طلب موعد برسالة واتساب يعالج يدوياً. إدارة الأوقات والتوفر والحجوزات الفعلية تحتاج وحدة حجز بقاعدة بيانات وإدارة، بعرض سعر منفصل.",
+        aEn: "A WhatsApp appointment request is handled manually. Actual slot availability and booking management need a separately quoted booking module with a database and admin tools.",
       },
       {
         qAr: "هل الموقع يعمل بالعربية والإنجليزية والفرنسية؟",
         qEn: "Is it trilingual?",
-        aAr: "نعم، واجهة ثلاثية اللغات مع RTL عربي صحيح وفلاتر لغة سهلة لكبار السن.",
-        aEn: "Yes — AR/EN/FR with proper RTL Arabic and easy language switch for elderly patients.",
+        aAr: "الأساس لغة واحدة. كل لغة إضافية 10 دولارات بترجمة يقدمها العميل؛ العربية والإنجليزية والفرنسية ممكنة حسب الاتفاق.",
+        aEn: "The base includes one language. Each extra language is $10 with client-supplied translation; AR, EN and FR can be agreed.",
       },
       {
         qAr: "هل يظهر موقع العيادة في جوجل بسرعة؟",
         qEn: "Will the clinic rank on Google?",
-        aAr: "نعم — بنية SEO محلية (Tripoli + geo)، بيانات منظمة وسرعة 90+ Lighthouse تجعل جوجل يجدكم قبل المنافسين.",
-        aEn: "Yes — local SEO (Tripoli + geo), structured data & 90+ Lighthouse speed put you ahead on Google.",
+        aAr: "أسس النموذج التقنية مشمولة؛ لا نضمن الفهرسة أو ترتيباً أو درجة أداء ثابتة. SEO المخصص خدمة منفصلة.",
+        aEn: "The model’s technical foundations are included; no indexing, ranking or fixed performance score is guaranteed. Dedicated SEO is separate.",
       },
     ],
   },
@@ -157,8 +158,8 @@ export const sectorSeo: Record<string, SectorSeo> = {
       {
         qAr: "هل المتجر آمن وسريع على الموبايل؟",
         qEn: "Is it fast & safe on mobile?",
-        aAr: "نعم — Next.js مع 90+ Lighthouse، دفع عند الاستلام + تحويل، وصور WebP محسّنة.",
-        aEn: "Yes — Next.js 90+ Lighthouse, cash-on-delivery + transfer, optimized WebP images.",
+        aAr: "نعم — نموذج Next.js متجاوب، دفع عند الاستلام + تحويل، وصور WebP محسّنة.",
+        aEn: "Yes — responsive Next.js model, cash-on-delivery + transfer, optimized WebP images.",
       },
     ],
   },
@@ -205,8 +206,8 @@ export const sectorSeo: Record<string, SectorSeo> = {
     id: "toys",
     labelAr: "ألعاب أطفال",
     labelEn: "Kids & Toys",
-    titleAr: "تصميم متاجر ألعاب أطفال في طرابلس — دفع عند الاستلام",
-    titleEn: "Kids & Toys Store Design in Tripoli — Cash on Delivery",
+    titleAr: "تصميم متاجر ألعاب أطفال وهدايا في طرابلس",
+    titleEn: "Kids & Toys Online Store Design in Tripoli",
     descriptionAr:
       "متاجر ألعاب أطفال في طرابلس: ليغو، باربي، سكوترات، دراجات وألعاب ذكاء — سلة ودفع عند الاستلام وفروع تفاعلية.",
     descriptionEn:
@@ -271,8 +272,8 @@ export const sectorSeo: Record<string, SectorSeo> = {
     id: "electronics",
     labelAr: "هواتف ذكية وإلكترونيات",
     labelEn: "Smartphones & Electronics",
-    titleAr: "تصميم متاجر هواتف وإلكترونيات في طرابلس — كتالوج وسلة",
-    titleEn: "Smartphone & Electronics Store in Tripoli — Catalog & Cart",
+    titleAr: "تصميم متاجر هواتف وإلكترونيات في طرابلس",
+    titleEn: "Smartphone & Electronics Store in Tripoli",
     descriptionAr:
       "متاجر هواتف ذكية في طرابلس: كتالوج بالعلامات، سلة ودفع عبر واتساب، تتبع الطلب برقم مرجعي وتوصيل لكل ليبيا — ماي فون نموذجاً.",
     descriptionEn:
@@ -304,8 +305,8 @@ export const sectorSeo: Record<string, SectorSeo> = {
     id: "hardware",
     labelAr: "مواد بناء وعدد",
     labelEn: "Tools & Construction",
-    titleAr: "تصميم متاجر عدد ومواد بناء في طرابلس — تسعير مقاولين",
-    titleEn: "Hardware & Construction Store in Tripoli — Contractor Quotes",
+    titleAr: "تصميم متاجر عدد ومواد بناء في طرابلس",
+    titleEn: "Hardware & Construction Store in Tripoli",
     descriptionAr:
       "متاجر عدد كهربائية ويدوية ومواد بناء ودهانات في طرابلس — سلة وعروض أسعار للمقاولين والورشات، 8 أقسام متخصصة.",
     descriptionEn:
@@ -370,8 +371,8 @@ export const sectorSeo: Record<string, SectorSeo> = {
     id: "sanitary",
     labelAr: "أطقم صحية وصنابير",
     labelEn: "Sanitary & Brassware",
-    titleAr: "تصميم مواقع أطقم صحية وصنابير في طرابلس — ضمان 5 سنوات",
-    titleEn: "Sanitary & Brassware Website in Tripoli — 5-Year Warranty",
+    titleAr: "تصميم مواقع أطقم صحية وصنابير في طرابلس",
+    titleEn: "Sanitary & Brassware Website in Tripoli",
     descriptionAr:
       "مواقع أطقم صحية وصنابير نحاسية في طرابلس: كتالوج بفلترة فورية (حمام، مطبخ، صمامات)، مصنّع وموزّع مع ضمان 5 سنوات.",
     descriptionEn:
@@ -400,6 +401,16 @@ export const sectorSeo: Record<string, SectorSeo> = {
     ],
   },
 };
+
+/** Capability descriptions are previews, not extra functions included for $35. */
+for (const sector of Object.values(sectorSeo)) {
+  sector.faqsAr = [{
+    qAr: "هل كل وظائف المعاينة مشمولة في السعر الأساسي؟",
+    qEn: "Are all demo functions included in the base price?",
+    aAr: websiteOfferSummary("ar"),
+    aEn: websiteOfferSummary("en"),
+  }, ...sector.faqsAr];
+}
 
 /** Liste triée des secteurs avec SEO (utile pour sitemap & llms.txt) */
 export const sectorIds = Object.keys(sectorSeo);
@@ -433,7 +444,7 @@ export function sectorCollectionJsonLd(
     "@id": `${url}#collection`,
     name: ar ? sector.titleAr : sector.titleEn,
     alternateName: ar ? sector.titleEn : sector.titleAr,
-    description: ar ? sector.descriptionAr : sector.descriptionEn,
+    description: (ar ? sector.descriptionAr : sector.descriptionEn) + " " + websiteDemoNote(ar ? "ar" : "en"),
     url,
     inLanguage: locale ?? ["en", "ar"],
     isPartOf: { "@id": `${base}/#website` },

@@ -181,7 +181,7 @@ export function HeroShowcase() {
             <div className="mt-2 max-w-[350px] rounded-xl border border-[var(--border)] bg-[var(--card)]/90 p-3">
               <div className="mb-1.5 flex flex-wrap items-center gap-2 text-[11px]">
                 <span className="font-bold text-[var(--accent)]">
-                  {ar ? `الفئة ${classification.tier}` : `Category ${classification.tier}`}
+                  {ar ? "العرض الأساسي" : "Base offer"}
                 </span>
                 <span>{ar ? classification.name : classification.nameEn}</span>
               </div>

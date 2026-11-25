@@ -1,6 +1,9 @@
 // Types partagés entre le site public, le stockage (base de données)
 // et le panneau d'administration. Aucune dépendance serveur ici.
 
+import type { ManualPaymentCurrency, ManualPaymentMethod } from "@/lib/manual-payment-core";
+import type { PayGateConfigData } from "@/lib/paygate-core";
+
 export interface Demo {
   slug: string;
   sector: string;
@@ -160,24 +163,21 @@ export interface ManualPaymentMethodConfigData {
   /** Titulaire du compte (affiché au client pour éviter les erreurs). */
   beneficiary: string;
   /** Devise que le client doit envoyer. */
-  currency: "USD" | "LYD" | "EUR" | "TND" | "WMZ";
-  /** 1 USD = X devise. Ignoré pour la devise USD ; requis sinon. */
+  currency: ManualPaymentCurrency;
+  /** 1 USD = X devise. Ignoré pour USD / USDT ; requis sinon. */
   rate: number | null;
   /** Majoration appliquée au montant envoyé (frais, perte de change). */
   feePercent: number;
   /** Consigne libre affichée au client avant son transfert. */
   instructions: string;
+  /** Image QR code personnalisée (chemin local ou URL HTTPS), facultative. */
+  qrImage?: string;
 }
 
-export type ManualPaymentsConfigData = {
-  skrill: ManualPaymentMethodConfigData;
-  neteller: ManualPaymentMethodConfigData;
-  airtm: ManualPaymentMethodConfigData;
-  d17: ManualPaymentMethodConfigData;
-  advcash: ManualPaymentMethodConfigData;
-  webmoney: ManualPaymentMethodConfigData;
-  kashy: ManualPaymentMethodConfigData;
-};
+export type ManualPaymentsConfigData = Record<
+  ManualPaymentMethod,
+  ManualPaymentMethodConfigData
+>;
 
 export interface SiteConfigData {
   name: string;
@@ -251,6 +251,8 @@ export interface SiteConfigData {
    * saisi par l'administrateur, et une méthode sans compte reste fermée.
    */
   manualPayments: ManualPaymentsConfigData;
+  /** Passerelle Carte Bancaire → USDC Polygon sans KYC/KYB (PayGate.to). */
+  paygate: PayGateConfigData;
   /** Profils d'avis (Trustpilot, Google, Scamadviser) + demandes d'avis. */
   trust: TrustConfigData;
   /** Identité légale publiée sur /mentions-legales. */
@@ -629,7 +631,7 @@ export interface OrderRow {
   payCurrency: string | null;
   payAmount: string | null;
   paymentUrl: string | null;
-  paymentMethod: "nowpayments" | "phone_card" | "manual";
+  paymentMethod: "nowpayments" | "paygate" | "phone_card" | "manual";
   status: OrderStatus;
   ipnStatus: string | null;
   utm: string | null;

@@ -3,10 +3,13 @@ import { categoryHref, getDigitalCategory } from "@/lib/digital-categories";
 import type { Metadata } from "next";
 import { pageLocale } from "@/lib/locale-server";
 import type { LocalePageProps } from "@/lib/locale";
-import { localizedAbsoluteUrl } from "@/lib/locale";
-import { notFound } from "next/navigation";
+import { localizedAbsoluteUrl, localizedPath } from "@/lib/locale";
+import { notFound, permanentRedirect } from "next/navigation";
 import { digitalCatalogStatus } from "@/lib/digital-store";
-import { productPageFallback } from "@/lib/digital-fallback";
+import {
+  productPageFallback,
+  resolveLegacyDigitalSlugRedirect,
+} from "@/lib/digital-fallback";
 import {
   absoluteUrl,
   breadcrumbJsonLd,
@@ -112,6 +115,14 @@ export default async function DigitalProductPage({
           ar={(await pageLocale(config, searchParams)) === "ar"}
           phone={config.phone}
         />
+      );
+    }
+    const { products: activeProducts } = await getPublicCatalogCached();
+    const legacyTarget = resolveLegacyDigitalSlugRedirect(slug, activeProducts);
+    if (legacyTarget) {
+      const targetLocale = await pageLocale(config, searchParams);
+      permanentRedirect(
+        localizedPath(legacyTarget, targetLocale, siteLocale(config)),
       );
     }
     notFound();

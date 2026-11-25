@@ -50,7 +50,7 @@ import {
  */
 export const getSiteDataCachedShared = unstable_cache(
   async (): Promise<SiteData> => getSiteData(),
-  ["site-data"],
+  ["site-data", "website-offer-35-v3-closing-22"],
   { revalidate: SITE_DATA_REVALIDATE_SECONDS, tags: [CACHE_TAGS.site] },
 );
 

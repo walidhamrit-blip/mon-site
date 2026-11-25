@@ -1,3 +1,4 @@
+import { websiteOfferSummary } from "@/lib/website-offer";
 import type { Metadata } from "next";
 import { pageLocale } from "@/lib/locale-server";
 import type { LocalePageProps } from "@/lib/locale";
@@ -21,10 +22,7 @@ export async function generateMetadata({ searchParams }: LocalePageProps): Promi
       locale === "ar"
         ? "أسعار تصميم المواقع والمتاجر بالدولار"
         : "Website & Store Pricing in USD — No Surprises",
-    description:
-      locale === "ar"
-        ? "أسعار واضحة بالدولار في {country}: سعر النموذج + رسوم التخصيص + الإجمالي قبل الدفع (1 دولار = 1 USDT) — دفعة واحدة أو 2–3 أقساط."
-        : "Transparent USD pricing in {countryEn}: model price, a separate customization fee, a clear total before checkout (1 USD = 1 USDT) — full or 2–3 installments.",
+    description: websiteOfferSummary(locale),
     keywords: [
       "website pricing USD",
       "e-commerce website price",
@@ -42,6 +40,7 @@ export async function generateMetadata({ searchParams }: LocalePageProps): Promi
 export default async function PricingPage({ searchParams }: LocalePageProps) {
   const { config, content } = await getSiteDataCached();
   const locale = await pageLocale(config, searchParams);
+  const ar = locale === "ar";
   return (
     <>
       {/* Le catalogue d'offres (#offer-catalog) est déjà injecté par le
@@ -49,8 +48,8 @@ export default async function PricingPage({ searchParams }: LocalePageProps) {
       <JsonLd
         data={[
           breadcrumbJsonLd(config, [
-            { name: "Home", path: "/" },
-            { name: "Pricing", path: "/pricing" },
+            { name: ar ? "الرئيسية" : "Home", path: "/" },
+            { name: ar ? "الأسعار" : "Pricing", path: "/pricing" },
           ], locale),
           faqJsonLd(content.faqs, config.market, locale),
         ]}
