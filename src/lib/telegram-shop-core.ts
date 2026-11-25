@@ -93,6 +93,12 @@ export const EMPTY_SHOP_STATE: TelegramShopState = {};
 export type ShopCallback =
   | { view: "root" }
   | { view: "category"; kind: string; page: number }
+  | { view: "brands"; kind: string; page: number }
+  | { view: "brand"; index: number }
+  | { view: "regionPage"; page: number }
+  | { view: "region"; index: number }
+  | { view: "regionAll" }
+  | { view: "brandProductsPage"; page: number }
   | { view: "product"; index: number }
   | { view: "productPage"; page: number }
   | { view: "denomination"; index: number }
@@ -113,6 +119,18 @@ export function shopCallback(cb: ShopCallback): string {
       return SHOP_CALLBACK_PREFIX;
     case "category":
       return `${SHOP_CALLBACK_PREFIX}:c:${cb.kind}:${Math.max(1, cb.page)}`;
+    case "brands":
+      return `${SHOP_CALLBACK_PREFIX}:b:${cb.kind}:${Math.max(1, cb.page)}`;
+    case "brand":
+      return `${SHOP_CALLBACK_PREFIX}:bn:${cb.index}`;
+    case "regionPage":
+      return `${SHOP_CALLBACK_PREFIX}:rgp:${Math.max(1, cb.page)}`;
+    case "region":
+      return `${SHOP_CALLBACK_PREFIX}:rg:${cb.index}`;
+    case "regionAll":
+      return `${SHOP_CALLBACK_PREFIX}:rga`;
+    case "brandProductsPage":
+      return `${SHOP_CALLBACK_PREFIX}:bp:${Math.max(1, cb.page)}`;
     case "product":
       return `${SHOP_CALLBACK_PREFIX}:p:${cb.index}`;
     case "productPage":
@@ -146,6 +164,30 @@ export function parseShopCallback(data: string | null | undefined): ShopCallback
       if (!kind) return null;
       const parsed = Number.parseInt(page ?? "1", 10);
       return { view: "category", kind, page: Number.isFinite(parsed) ? Math.max(1, parsed) : 1 };
+    }
+    case "b": {
+      const [kind, page] = rest;
+      if (!kind) return null;
+      const parsed = Number.parseInt(page ?? "1", 10);
+      return { view: "brands", kind, page: Number.isFinite(parsed) ? Math.max(1, parsed) : 1 };
+    }
+    case "bn": {
+      const index = Number.parseInt(rest[0] ?? "", 10);
+      return Number.isInteger(index) && index >= 0 ? { view: "brand", index } : null;
+    }
+    case "rgp": {
+      const parsed = Number.parseInt(rest[0] ?? "1", 10);
+      return { view: "regionPage", page: Number.isFinite(parsed) ? Math.max(1, parsed) : 1 };
+    }
+    case "rg": {
+      const index = Number.parseInt(rest[0] ?? "", 10);
+      return Number.isInteger(index) && index >= 0 ? { view: "region", index } : null;
+    }
+    case "rga":
+      return { view: "regionAll" };
+    case "bp": {
+      const parsed = Number.parseInt(rest[0] ?? "1", 10);
+      return { view: "brandProductsPage", page: Number.isFinite(parsed) ? Math.max(1, parsed) : 1 };
     }
     case "p": {
       const index = Number.parseInt(rest[0] ?? "", 10);
@@ -217,6 +259,8 @@ export interface ShopDenomination {
   faceValue: string;
   priceUsd: number;
   available: boolean;
+  /** Région de cette offre (présente dans le catalogue ; sert au tri par région). */
+  region?: string;
   /** Champs acheteur exigés (identifiant joueur…) : pas de vente en chat. */
   fields?: { key: string; label: string; type: string }[];
   maxQuantity?: number | null;
@@ -251,6 +295,74 @@ function minPrice(product: ShopProduct): number {
   return prices.length ? Math.min(...prices) : Number.POSITIVE_INFINITY;
 }
 
+/* ------------------------- Marques & régions ------------------------- */
+
+/**
+ * Hierarchie des cartes cadeaux : la PREMIÈRE navigation est le TYPE de carte
+ * (Steam, PlayStation, Google Play…) — c'est la plateforme du catalogue — puis
+ * la RÉGION sous chaque marque. Les autres familles gardent la liste plate.
+ */
+export interface ShopBrandEntry {
+  name: string;
+  count: number;
+}
+
+export function shopBrandsOfKind(catalog: ShopCatalogInput, kind: string): ShopBrandEntry[] {
+  const counts = new Map<string, number>();
+  for (const product of shopProductsOfKind(catalog, kind)) {
+    const brand = product.platform?.trim();
+    if (!brand) continue;
+    counts.set(brand, (counts.get(brand) ?? 0) + 1);
+  }
+  return Array.from(counts, ([name, count]) => ({ name, count })).sort((a, b) =>
+    a.name.localeCompare(b.name),
+  );
+}
+
+/** Régions couvertes par une marque : union des fiches et des montants vendables. */
+export function shopRegionsOfBrand(
+  catalog: ShopCatalogInput,
+  kind: string,
+  brand: string,
+): string[] {
+  const regions = new Set<string>();
+  for (const product of shopProductsOfBrand(catalog, kind, brand)) {
+    for (const region of product.regions ?? []) {
+      const normalized = region.trim().toUpperCase();
+      if (normalized) regions.add(normalized);
+    }
+    for (const denomination of product.denominations) {
+      if (!denomination.available) continue;
+      const normalized = denomination.region?.trim().toUpperCase();
+      if (normalized) regions.add(normalized);
+    }
+  }
+  return Array.from(regions).sort((a, b) => a.localeCompare(b));
+}
+
+/** Produits d'une marque (plateforme exacte), éventuellement restreints à une région. */
+export function shopProductsOfBrand(
+  catalog: ShopCatalogInput,
+  kind: string,
+  brand: string,
+  region?: string | null,
+): ShopProduct[] {
+  const products = shopProductsOfKind(catalog, kind).filter(
+    (product) => product.platform?.trim() === brand,
+  );
+  if (!region?.trim()) return products;
+  return products.filter((product) => shopProductCoversRegion(product, region));
+}
+
+function shopProductCoversRegion(product: ShopProduct, region: string): boolean {
+  const target = region.trim().toUpperCase();
+  if (!target) return true;
+  if ((product.regions ?? []).some((item) => item.trim().toUpperCase() === target)) return true;
+  return product.denominations.some(
+    (item) => item.available && item.region?.trim().toUpperCase() === target,
+  );
+}
+
 export function shopFromPrice(product: ShopProduct): number | null {
   const price = minPrice(product);
   return Number.isFinite(price) ? price : null;
@@ -277,6 +389,9 @@ export interface ShopCopyStrings {
   title: string;
   chooseCategory: string;
   from: string;
+  chooseBrand: string;
+  chooseRegion: string;
+  allRegions: string;
   chooseAmount: string;
   back: string;
   pageOf: (page: number, total: number) => string;
@@ -312,6 +427,9 @@ const SHOP_COPY: Record<ShopLocale, ShopCopyStrings> = {
     title: "🛒 المتجر",
     chooseCategory: "اختر عائلة المنتجات:",
     from: "ابتداءً من",
+    chooseBrand: "اختر نوع البطاقة:",
+    chooseRegion: "اختر المنطقة:",
+    allRegions: "كل المناطق",
     chooseAmount: "اختر المبلغ:",
     back: "⬅️ رجوع",
     pageOf: (page: number, total: number) => `${page}/${total}`,
@@ -353,6 +471,9 @@ const SHOP_COPY: Record<ShopLocale, ShopCopyStrings> = {
     title: "🛒 Shop",
     chooseCategory: "Choose a category:",
     from: "from",
+    chooseBrand: "Choose a card type:",
+    chooseRegion: "Choose a region:",
+    allRegions: "All regions",
     chooseAmount: "Choose your amount:",
     back: "⬅️ Back",
     pageOf: (page: number, total: number) => `${page}/${total}`,
@@ -468,26 +589,55 @@ export function shopCategoriesView(
   return { text: lines.join("\n"), keyboard };
 }
 
+/** Contexte marque/région quand la liste de produits est atteinte via la hiérarchie cartes cadeaux. */
+export interface ShopCategoryContext {
+  /** Marque (plateforme) sélectionnée — filtre la liste. */
+  brand: string;
+  /** Région choisie — `null` = toutes les régions de la marque. */
+  region: string | null;
+  /** `true` si la marque expose plusieurs régions (le retour remonte aux régions). */
+  regionStep: boolean;
+}
+
 export function shopCategoryView(
   catalog: ShopCatalogInput,
   kind: string,
   page: number,
   locale: ShopLocale,
   links: ShopLinks,
+  context?: ShopCategoryContext,
 ): ShopView {
   const copy = shopCopy(locale);
-  const products = shopProductsOfKind(catalog, kind);
+  const products = context
+    ? shopProductsOfBrand(catalog, kind, context.brand, context.region)
+    : shopProductsOfKind(catalog, kind);
   const totalPages = pageCountOf(products.length, SHOP_PRODUCTS_PER_PAGE);
   const safePage = Math.min(Math.max(1, page), totalPages);
   const slice = pageSlice(products, safePage, SHOP_PRODUCTS_PER_PAGE);
+
+  // Paginer/revenir : sans contexte → callbacks de catégorie ; avec contexte
+  // marque/région → callbacks dédiés (l'état porte la marque et la région).
+  const pageCallback = context
+    ? (target: number) => shopCallback({ view: "brandProductsPage", page: target })
+    : (target: number) => shopCallback({ view: "category", kind, page: target });
+  const backData = context
+    ? shopCallback(
+        context.regionStep
+          ? { view: "regionPage", page: 1 }
+          : { view: "brands", kind, page: 1 },
+      )
+    : shopCallback({ view: "root" });
 
   if (products.length === 0) {
     return {
       text: `${copy.title}\n\n${copy.emptyCategory}`,
       keyboard: [
-        [{ text: copy.back, callback_data: shopCallback({ view: "root" }) }],
+        [{ text: copy.back, callback_data: backData }],
         [{ text: locale === "ar" ? "🌐 المتجر" : "🌐 Web store", url: categoryUrl(links, kind) }],
       ],
+      state: context
+        ? { kind, brand: context.brand, region: context.region }
+        : { kind, brand: null, region: null },
     };
   }
 
@@ -512,12 +662,97 @@ export function shopCategoryView(
   if (totalPages > 1) {
     rows.push([
       safePage > 1
-        ? { text: "◀️", callback_data: shopCallback({ view: "category", kind, page: safePage - 1 }) }
-        : { text: "·", callback_data: shopCallback({ view: "category", kind, page: safePage }) },
-      { text: copy.pageOf(safePage, totalPages), callback_data: shopCallback({ view: "category", kind, page: safePage }) },
+        ? { text: "◀️", callback_data: pageCallback(safePage - 1) }
+        : { text: "·", callback_data: pageCallback(safePage) },
+      { text: copy.pageOf(safePage, totalPages), callback_data: pageCallback(safePage) },
       safePage < totalPages
-        ? { text: "▶️", callback_data: shopCallback({ view: "category", kind, page: safePage + 1 }) }
-        : { text: "·", callback_data: shopCallback({ view: "category", kind, page: safePage }) },
+        ? { text: "▶️", callback_data: pageCallback(safePage + 1) }
+        : { text: "·", callback_data: pageCallback(safePage) },
+    ]);
+  }
+
+  rows.push([
+    { text: copy.back, callback_data: backData },
+    { text: locale === "ar" ? "🌐 المتجر" : "🌐 Web store", url: categoryUrl(links, kind) },
+  ]);
+
+  const heading = context
+    ? `${copy.title} — ${context.brand}${context.region ? ` · ${context.region}` : ""}`
+    : `${copy.title} — ${shopCategoryLabel(kind, locale)}`;
+  const text = [
+    heading,
+    "",
+    copy.sellable(products.length),
+    "",
+    copy.chooseAmount,
+  ].join("\n");
+  return {
+    text,
+    keyboard: rows,
+    state: {
+      products: stateProducts,
+      kind,
+      page: safePage,
+      brand: context?.brand ?? null,
+      region: context?.region ?? null,
+    },
+  };
+}
+
+/**
+ * Niveau 1 des cartes cadeaux : les TYPES de carte (Steam, PlayStation,
+ * Google Play…) — la plateforme du catalogue, triée alphabétiquement.
+ */
+export function shopBrandsView(
+  catalog: ShopCatalogInput,
+  kind: string,
+  page: number,
+  locale: ShopLocale,
+  links: ShopLinks,
+): ShopView {
+  const copy = shopCopy(locale);
+  const brands = shopBrandsOfKind(catalog, kind);
+  const productCount = shopProductsOfKind(catalog, kind).length;
+
+  if (brands.length === 0) {
+    return {
+      text: `${copy.title}\n\n${copy.emptyCategory}`,
+      keyboard: [
+        [{ text: copy.back, callback_data: shopCallback({ view: "root" }) }],
+        [{ text: locale === "ar" ? "🌐 المتجر" : "🌐 Web store", url: categoryUrl(links, kind) }],
+      ],
+      state: { kind, brand: null, region: null },
+    };
+  }
+
+  const totalPages = pageCountOf(brands.length, SHOP_PRODUCTS_PER_PAGE);
+  const safePage = Math.min(Math.max(1, page), totalPages);
+  const slice = pageSlice(brands, safePage, SHOP_PRODUCTS_PER_PAGE);
+
+  const rows: ShopKeyboard = [];
+  let row: ShopButton[] = [];
+  const stateBrands: string[] = [];
+  slice.forEach((entry, index) => {
+    stateBrands.push(entry.name);
+    row.push({
+      text: `${entry.name} (${entry.count})`.slice(0, 60),
+      callback_data: shopCallback({ view: "brand", index }),
+    });
+    if (row.length === 2) {
+      rows.push(row.splice(0, 2));
+    }
+  });
+  if (row.length) rows.push(row);
+
+  if (totalPages > 1) {
+    rows.push([
+      safePage > 1
+        ? { text: "◀️", callback_data: shopCallback({ view: "brands", kind, page: safePage - 1 }) }
+        : { text: "·", callback_data: shopCallback({ view: "brands", kind, page: safePage }) },
+      { text: copy.pageOf(safePage, totalPages), callback_data: shopCallback({ view: "brands", kind, page: safePage }) },
+      safePage < totalPages
+        ? { text: "▶️", callback_data: shopCallback({ view: "brands", kind, page: safePage + 1 }) }
+        : { text: "·", callback_data: shopCallback({ view: "brands", kind, page: safePage }) },
     ]);
   }
 
@@ -529,14 +764,100 @@ export function shopCategoryView(
   const text = [
     `${copy.title} — ${shopCategoryLabel(kind, locale)}`,
     "",
-    copy.sellable(products.length),
+    copy.sellable(productCount),
     "",
-    copy.chooseAmount,
+    copy.chooseBrand,
   ].join("\n");
   return {
     text,
     keyboard: rows,
-    state: { products: stateProducts, kind, page: safePage },
+    state: {
+      kind,
+      page: safePage,
+      brands: stateBrands,
+      brand: null,
+      region: null,
+    },
+  };
+}
+
+/**
+ * Niveau 2 sous une marque : les RÉGIONS couvertes (fiches + montants),
+ * plus « Toutes les régions » toujours accessible sous la pagination.
+ */
+export function shopBrandRegionsView(
+  catalog: ShopCatalogInput,
+  kind: string,
+  brand: string,
+  page: number,
+  locale: ShopLocale,
+  links: ShopLinks,
+): ShopView {
+  const copy = shopCopy(locale);
+  const regions = shopRegionsOfBrand(catalog, kind, brand);
+
+  if (regions.length === 0) {
+    // Aucune région exploitable : liste plate de la marque (toutes régions).
+    return shopCategoryView(catalog, kind, page, locale, links, {
+      brand,
+      region: null,
+      regionStep: false,
+    });
+  }
+
+  const totalPages = pageCountOf(regions.length, SHOP_PRODUCTS_PER_PAGE);
+  const safePage = Math.min(Math.max(1, page), totalPages);
+  const slice = pageSlice(regions, safePage, SHOP_PRODUCTS_PER_PAGE);
+
+  const rows: ShopKeyboard = [];
+  let row: ShopButton[] = [];
+  const stateRegions: string[] = [];
+  slice.forEach((region, index) => {
+    stateRegions.push(region);
+    const count = shopProductsOfBrand(catalog, kind, brand, region).length;
+    row.push({
+      text: `${region} (${count})`.slice(0, 60),
+      callback_data: shopCallback({ view: "region", index }),
+    });
+    if (row.length === 2) {
+      rows.push(row.splice(0, 2));
+    }
+  });
+  if (row.length) rows.push(row);
+
+  if (totalPages > 1) {
+    rows.push([
+      safePage > 1
+        ? { text: "◀️", callback_data: shopCallback({ view: "regionPage", page: safePage - 1 }) }
+        : { text: "·", callback_data: shopCallback({ view: "regionPage", page: safePage }) },
+      { text: copy.pageOf(safePage, totalPages), callback_data: shopCallback({ view: "regionPage", page: safePage }) },
+      safePage < totalPages
+        ? { text: "▶️", callback_data: shopCallback({ view: "regionPage", page: safePage + 1 }) }
+        : { text: "·", callback_data: shopCallback({ view: "regionPage", page: safePage }) },
+    ]);
+  }
+
+  rows.push([{ text: copy.allRegions, callback_data: shopCallback({ view: "regionAll" }) }]);
+  rows.push([
+    { text: copy.back, callback_data: shopCallback({ view: "brands", kind, page: 1 }) },
+    { text: locale === "ar" ? "🌐 المتجر" : "🌐 Web store", url: categoryUrl(links, kind) },
+  ]);
+
+  const text = [
+    `${copy.title} — ${brand}`,
+    "",
+    copy.chooseRegion,
+  ].join("\n");
+  return {
+    text,
+    keyboard: rows,
+    state: {
+      kind,
+      brand,
+      page: safePage,
+      regions: stateRegions,
+      region: null,
+    },
   };
 }
 
@@ -545,6 +866,8 @@ export function shopProductView(
   page: number,
   locale: ShopLocale,
   links: ShopLinks,
+  /** Retour personnalisé : hiérarchie marque/région des cartes cadeaux. */
+  backData?: string,
 ): ShopView {
   const copy = shopCopy(locale);
   const sellable = product.denominations.filter((item) => item.available && item.priceUsd > 0);
@@ -598,7 +921,10 @@ export function shopProductView(
   }
 
   rows.push([
-    { text: copy.back, callback_data: shopCallback({ view: "category", kind: product.kind, page: 1 }) },
+    {
+      text: copy.back,
+      callback_data: backData ?? shopCallback({ view: "category", kind: product.kind, page: 1 }),
+    },
     { text: locale === "ar" ? "🌐 Fiche web" : "🌐 Web page", url: productUrl(links, product.slug) },
   ]);
 

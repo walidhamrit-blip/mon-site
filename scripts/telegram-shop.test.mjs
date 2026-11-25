@@ -75,6 +75,11 @@ const {
   shopCategoriesView,
   shopCategoryView,
   shopBelowMinimumView,
+  shopBrandRegionsView,
+  shopBrandsOfKind,
+  shopBrandsView,
+  shopProductsOfBrand,
+  shopRegionsOfBrand,
   shopCopy,
   shopDenominationView,
   shopEmailPromptView,
@@ -365,6 +370,157 @@ test("la vue paiement expose facture, carte, autres moyens et consentement", () 
   assert.equal(view.state.lastOrder.paymentUrl, "https://nowpayments.io/invoice/abc");
   assert.equal(view.state.lastOrder.trackingToken, "tok_abc123");
   assert.equal(view.state.lastOrder.qty, 2);
+});
+
+test("cartes cadeaux : marques (types de carte) triées avec compteurs", () => {
+  const catalog = [
+    fakeProduct({ slug: "steam-us", platform: "Steam", regions: ["US"] }),
+    fakeProduct({ slug: "steam-tr", platform: "Steam", regions: ["TR"] }),
+    fakeProduct({ slug: "google-play-us", platform: "Google Play", regions: ["US"] }),
+    fakeProduct({ slug: "itunes-ae", platform: "iTunes", regions: ["AE"] }),
+  ];
+  const brands = shopBrandsOfKind(catalog, "gift_card");
+  assert.deepEqual(
+    brands.map((b) => `${b.name}:${b.count}`),
+    ["Google Play:1", "iTunes:1", "Steam:2"],
+  );
+});
+
+test("cartes cadeaux : régions d'une marque = union fiches + montants, normalisées", () => {
+  const catalog = [
+    fakeProduct({
+      slug: "steam-multi",
+      platform: "Steam",
+      regions: ["us", "eu"],
+      denominations: [
+        { id: "s-10", label: "$10", faceValue: "10 USD", priceUsd: 11.5, available: true, region: "tr" },
+        { id: "s-20", label: "$20", faceValue: "20 USD", priceUsd: 22.5, available: true, region: "EU" },
+        { id: "s-30", label: "$30", faceValue: "30 USD", priceUsd: 33, available: false, region: "AE" }, // épuisé : ignoré
+      ],
+    }),
+  ];
+  assert.deepEqual(shopRegionsOfBrand(catalog, "gift_card", "Steam"), ["EU", "TR", "US"]);
+});
+
+test("cartes cadeaux : filtre marque + région via fiches ET montants", () => {
+  const catalog = [
+    fakeProduct({ slug: "steam-us", platform: "Steam", regions: ["US"] }),
+    fakeProduct({
+      slug: "steam-tr",
+      platform: "Steam",
+      regions: [],
+      denominations: [
+        { id: "s-tr-50", label: "50 TRY", faceValue: "50 TRY", priceUsd: 3.2, available: true, region: "TR" },
+      ],
+    }),
+    fakeProduct({ slug: "google-play-us", platform: "Google Play", regions: ["US"] }),
+  ];
+  assert.deepEqual(
+    shopProductsOfBrand(catalog, "gift_card", "Steam").map((p) => p.slug),
+    ["steam-tr", "steam-us"],
+  );
+  assert.deepEqual(
+    shopProductsOfBrand(catalog, "gift_card", "Steam", "tr").map((p) => p.slug),
+    ["steam-tr"],
+  );
+  assert.deepEqual(
+    shopProductsOfBrand(catalog, "gift_card", "Steam", "US").map((p) => p.slug),
+    ["steam-us"],
+  );
+  // Région non couverte : aucun produit (défense en profondeur).
+  assert.deepEqual(shopProductsOfBrand(catalog, "gift_card", "Steam", "JP"), []);
+});
+
+test("vue marques : boutons type de carte + retour boutique + état des marques", () => {
+  const catalog = [
+    fakeProduct({ slug: "steam-us", platform: "Steam", regions: ["US"] }),
+    fakeProduct({ slug: "steam-tr", platform: "Steam", regions: ["TR"] }),
+    fakeProduct({ slug: "google-play-us", platform: "Google Play", regions: ["US"] }),
+  ];
+  const view = shopBrandsView(catalog, "gift_card", 1, "en", LINKS);
+  assert.match(view.text, /Choose a card type:/);
+  const flat = view.keyboard.flat();
+  const labels = flat.filter((b) => b.callback_data?.startsWith("shop:bn:")).map((b) => b.text);
+  assert.deepEqual(labels, ["Google Play (1)", "Steam (2)"]);
+  assert.deepEqual(
+    flat.filter((b) => b.callback_data?.startsWith("shop:bn:")).map((b) => b.callback_data),
+    ["shop:bn:0", "shop:bn:1"],
+  );
+  assert.ok(flat.some((b) => b.callback_data === "shop"), "retour vers la boutique");
+  assert.deepEqual(view.state.brands, ["Google Play", "Steam"]);
+  assert.equal(view.state.brand, null);
+});
+
+test("vue régions : boutons région + toutes les régions + retour marques", () => {
+  const catalog = [
+    fakeProduct({ slug: "steam-us", platform: "Steam", regions: ["US"] }),
+    fakeProduct({
+      slug: "steam-tr",
+      platform: "Steam",
+      regions: [],
+      denominations: [
+        { id: "s-tr-50", label: "50 TRY", faceValue: "50 TRY", priceUsd: 3.2, available: true, region: "TR" },
+      ],
+    }),
+  ];
+  const view = shopBrandRegionsView(catalog, "gift_card", "Steam", 1, "en", LINKS);
+  assert.match(view.text, /Choose a region:/);
+  const flat = view.keyboard.flat();
+  const regions = flat.filter((b) => b.callback_data?.startsWith("shop:rg:")).map((b) => b.text);
+  assert.deepEqual(regions, ["TR (1)", "US (1)"]);
+  assert.ok(flat.some((b) => b.callback_data === "shop:rga"), "bouton toutes les régions");
+  assert.ok(flat.some((b) => b.callback_data === "shop:b:gift_card:1"), "retour vers les marques");
+  assert.deepEqual(view.state.regions, ["TR", "US"]);
+  assert.equal(view.state.brand, "Steam");
+});
+
+test("liste produits marque : pagination dédiée et retour régions/marques", () => {
+  const catalog = [
+    fakeProduct({ slug: "steam-us", platform: "Steam", regions: ["US"] }),
+    fakeProduct({ slug: "steam-tr", platform: "Steam", regions: ["TR"] }),
+  ];
+  // Marque multi-régions : le retour remonte aux régions, pagination dédiée.
+  const withRegions = shopCategoryView(catalog, "gift_card", 1, "en", LINKS, {
+    brand: "Steam",
+    region: "US",
+    regionStep: true,
+  });
+  let flat = withRegions.keyboard.flat();
+  assert.match(withRegions.text, /Steam · US/);
+  assert.ok(
+    flat.every((b) => !b.callback_data?.startsWith("shop:c:")),
+    "aucun callback de catégorie plate",
+  );
+  assert.ok(flat.some((b) => b.callback_data === "shop:rgp:1"), "retour régions");
+  assert.deepEqual(withRegions.state.products, ["steam-us"]);
+  assert.equal(withRegions.state.brand, "Steam");
+  assert.equal(withRegions.state.region, "US");
+
+  // Marque mono-région : retour direct vers les marques.
+  const single = shopCategoryView(
+    [fakeProduct({ slug: "google-play-us", platform: "Google Play", regions: ["US"] })],
+    "gift_card",
+    1,
+    "en",
+    LINKS,
+    { brand: "Google Play", region: null, regionStep: false },
+  );
+  flat = single.keyboard.flat();
+  assert.ok(flat.some((b) => b.callback_data === "shop:b:gift_card:1"), "retour marques");
+});
+
+test("callbacks marque/région : aller-retour codec", () => {
+  assert.equal(shopCallback({ view: "brands", kind: "gift_card", page: 2 }), "shop:b:gift_card:2");
+  assert.deepEqual(parseShopCallback("shop:b:gift_card:2"), {
+    view: "brands",
+    kind: "gift_card",
+    page: 2,
+  });
+  assert.deepEqual(parseShopCallback("shop:bn:3"), { view: "brand", index: 3 });
+  assert.deepEqual(parseShopCallback("shop:rgp:1"), { view: "regionPage", page: 1 });
+  assert.deepEqual(parseShopCallback("shop:rg:5"), { view: "region", index: 5 });
+  assert.deepEqual(parseShopCallback("shop:rga"), { view: "regionAll" });
+  assert.deepEqual(parseShopCallback("shop:bp:4"), { view: "brandProductsPage", page: 4 });
 });
 
 test("sans URL de bascule (sous minimum carte), pas de bouton carte", () => {
