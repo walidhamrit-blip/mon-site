@@ -191,6 +191,8 @@ export interface ShopProduct {
   status: string;
   platform: string;
   regions?: string[];
+  /** Fournisseur qui livre la fiche (comme `DigitalProduct.supplier`). */
+  supplier?: string;
   titleAr: string;
   titleEn: string;
   descriptionAr: string;
@@ -199,6 +201,14 @@ export interface ShopProduct {
   deliveryNoteEn: string;
   denominations: ShopDenomination[];
 }
+
+/**
+ * Seul fournisseur vendable aujourd'hui : l'ancien fournisseur a été retiré
+ * définitivement (`LEGACY_SUPPLIER_RETIRED`), le site web route déjà toutes
+ * ses ventes vers FazerCards — le bot applique la MÊME règle pour ne jamais
+ * proposer un produit que la caisse refuserait.
+ */
+export const SHOP_SELLABLE_SUPPLIER = "fazercards";
 
 export interface ShopDenomination {
   id: string;
@@ -223,7 +233,10 @@ export function shopCategoryLabel(kind: string, locale: ShopLocale): string {
 /** Fiches vendables d'une famille, triées comme sur le site. */
 export function shopProductsOfKind(products: ShopCatalogInput, kind: string): ShopProduct[] {
   const matching = products.filter(
-    (product) => product.kind === kind && product.status === "available",
+    (product) =>
+      product.kind === kind &&
+      product.status === "available" &&
+      product.supplier === SHOP_SELLABLE_SUPPLIER,
   );
   return matching
     .filter((product) => product.denominations.some((item) => item.available && item.priceUsd > 0))

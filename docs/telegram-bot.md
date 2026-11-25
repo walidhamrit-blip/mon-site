@@ -139,9 +139,10 @@ rien ne s'empile) :
 
 Points clés :
 
-- **Prix toujours recalculés côté serveur** : la caisse du bot appelle la
-  même fonction que le site (`createDigitalCheckout`) — aucun montant
-  transmis par le chat n'est accepté.
+- **Caisse identique au site (FazerCards)** : le bot vend exactement ce que
+  la boutique web vend — mêmes fiches (fournisseur actif uniquement, les
+  fiches de l'ancien fournisseur retiré sont exclues), prix recalculés côté
+  serveur via `createFazercardsCheckout`, facture crypto NOWPayments.
 - **E-mail de livraison exigé** : à la première commande, le bot demande
   l'e-mail (les codes partent par e-mail comme sur le site), le mémorise
   et le propose ensuite en préremplissage. Jamais d'adresse inventée.
