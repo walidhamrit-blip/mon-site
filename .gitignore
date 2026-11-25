@@ -27,3 +27,6 @@ npm-debug.log*
 # Images sources brutes (recherche) — seules les versions traitées dans
 # public/ sont versionnées.
 /image-search/
+
+# Sauvegardes locales de la base (données personnelles, jamais versionnées)
+/backups/

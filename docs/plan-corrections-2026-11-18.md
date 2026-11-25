@@ -474,6 +474,20 @@ script Vercel. Test de comportement : `scripts/analytics-runtime.test.mjs`
 **Critère d'acceptation.** Une restauration réelle a été exécutée et chronométrée ; la procédure tient sur une page.
 **Effort.** 2 h + action propriétaire. **Risque.** Faible.
 
+**État au 20/11/2026 — partiel.**
+- `scripts/backup-leads.mjs` et `scripts/restore-leads.mjs` : export JSON de la
+  table `leads`, validation du fichier (version, compte, doublons, colonnes
+  obligatoires), restauration en simulation par défaut, insertion des seules
+  lignes absentes, transaction et réavancée de la séquence `id`.
+- `scripts/lib/leads-backup.mjs` + 5 tests unitaires (aucune base requise).
+- `.github/workflows/sauvegardes.yml` : aller-retour réel sur un PostgreSQL 16
+  à chaque PR et sur `main` — table vidée puis restaurée, identifiants et
+  séquence vérifiés.
+- `docs/runbook-sauvegardes.md` : procédure, limites, exercice trimestriel.
+- **Reste à faire (propriétaire)** : confirmer la rétention et le PITR du
+  fournisseur Postgres, et déposer une copie chiffrée hors site. Les scripts
+  ne couvrent que `leads`, pas `orders` ni `settings`.
+
 ---
 
 ### C-14 — Nokhba AI Doctor · **P3 (spécification en §7)**
