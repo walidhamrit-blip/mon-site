@@ -433,4 +433,26 @@ test("Filtrage intelligent des processeurs & affichage épuré sur /pay/card/[re
   assert.match(clientSrc, /return "auto";/);
   assert.match(clientSrc, /formatPayGateProcessorSummary/);
   assert.match(clientSrc, /showFallbackGateways/);
+
+  // Information loyale et transparente : mentionne la conversion numérique automatique
+  // et la vérification possible lors de la première utilisation (jamais "sans aucun compte requis")
+  assert.doesNotMatch(clientSrc, /no extra account needed/i);
+  assert.doesNotMatch(clientSrc, /دون الحاجة لأي حساب إضافي/);
+  assert.match(clientSrc, /First-time verification notice:/);
+  assert.match(clientSrc, /تنبيه عند الاستخدام لأول مرة:/);
+  assert.match(clientSrc, /digital settlement \(USDC \/ crypto\)/);
+
+  const digitalDialogSrc = fs.readFileSync(
+    path.resolve(repoRoot, "src/components/digital-buy-dialog.tsx"),
+    "utf8",
+  );
+  assert.match(digitalDialogSrc, /one-time identity verification may be requested on your first use/);
+  assert.match(digitalDialogSrc, /عند أول استخدام لهذه الخدمة/);
+
+  const siteCheckoutSrc = fs.readFileSync(
+    path.resolve(repoRoot, "src/components/checkout-dialog.tsx"),
+    "utf8",
+  );
+  assert.match(siteCheckoutSrc, /one-time identity verification may be requested on your first use/);
+  assert.match(siteCheckoutSrc, /عند أول استخدام لهذه الخدمة/);
 });

@@ -1038,20 +1038,25 @@ export function DigitalBuyDialog({ product, denominationId, onClose }: Props) {
               </div>
             )}
             {paymentMethod === "paygate" && cardGateway && cardQuote && !belowCardMinimum && (
-              <div className="mt-2.5 rounded-xl border border-[var(--accent)]/40 bg-[var(--accent)]/5 px-3.5 py-2.5 text-[12px] leading-5">
+              <div className="mt-2.5 rounded-xl border border-[var(--accent)]/40 bg-[var(--accent)]/5 px-3.5 py-2.5 text-[12px] leading-5 space-y-1.5">
                 <div className="flex flex-wrap items-center justify-between gap-2 font-black text-[var(--foreground)]">
                   <span>{ar ? "الدفع بالبطاقة أو المحفظة الرقمية" : "Pay by card or digital wallet"}</span>
                   <span dir="ltr">${cardQuote.billedUsd.toFixed(2)} USD</span>
                 </div>
-                <PaymentBrandLogos className="mt-2" />
-                <p className="mt-1 text-[11px] text-[var(--muted-foreground)]">
+                <PaymentBrandLogos />
+                <p className="text-[11px] text-[var(--muted-foreground)]">
                   {cardGateway.feePercent > 0
                     ? ar
                       ? `يشمل ${cardGateway.feePercent}% رسوم معالجة البطاقة (${cardQuote.feeUsd.toFixed(2)} $). التسليم تلقائي وفوري بعد تأكيد الدفع.`
                       : `Includes ${cardGateway.feePercent}% card processing fee ($${cardQuote.feeUsd.toFixed(2)}). Code delivery is automatic and instant upon confirmation.`
                     : ar
-                      ? "دفع فوري بالبطاقة البنكية مع تسليم تلقائي للكود بعد التأكيد."
-                      : "Instant card payment with automatic code delivery upon confirmation."}
+                      ? "دفع بالبطاقة البنكية مع تسليم تلقائي للكود فور تأكيد العملية."
+                      : "Card payment with automatic code delivery upon confirmation."}
+                </p>
+                <p className="border-t border-[var(--accent)]/20 pt-1.5 text-[11px] leading-[1.45] text-[var(--muted-foreground)]">
+                  {ar
+                    ? "تتم المعالجة عبر مزوّد مالي مرخّص بتحويل تلقائي إلى تسوية رقمية موجّهة لطلبك (دون الحاجة لأي محفظة خاصة بك)، وقد يُطلب منك تحقّق سريع من الهوية لمرة واحدة عند أول استخدام لهذه الخدمة."
+                    : "Processed via a licensed financial partner with automatic digital settlement routed to your order (no crypto wallet needed). A one-time identity verification may be requested on your first use of this service."}
                 </p>
               </div>
             )}

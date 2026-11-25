@@ -10,6 +10,7 @@ import {
   Loader2,
   Lock,
   ShieldCheck,
+  UserCheck,
 } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import {
@@ -171,19 +172,33 @@ export function CardCheckoutClient({
         </div>
       </div>
 
-      {/* Moyens de paiement mis en avant (sans jargon technique) */}
-      <div className="mt-4 rounded-2xl border border-[var(--accent)]/30 bg-[var(--accent)]/[0.06] p-4">
+      {/* Moyens de paiement et fonctionnement transparent */}
+      <div className="mt-4 rounded-2xl border border-[var(--accent)]/30 bg-[var(--accent)]/[0.06] p-4 space-y-2.5">
         <div className="text-xs font-extrabold text-[var(--foreground)]">
           {ar
             ? "الدفع بالبطاقة البنكية أو المحفظة الرقمية"
             : "Pay with Bank Card, Apple Pay, or Google Pay"}
         </div>
-        <PaymentBrandLogos className="mt-2.5 gap-2" />
-        <p className="mt-2 text-[11.5px] leading-5 text-[var(--muted-foreground)]">
+        <PaymentBrandLogos className="gap-2" />
+        <p className="text-[11.5px] leading-5 text-[var(--muted-foreground)]">
           {ar
-            ? "أكمل الدفع مباشرة ببطاقتك البنكية (Visa / Mastercard) أو عبر Apple Pay و Google Pay في الصفحة المؤمّنة التالية دون الحاجة لأي حساب إضافي."
-            : "Complete your payment directly with Visa, Mastercard, Apple Pay, or Google Pay on the next secure screen — no extra account needed."}
+            ? "يُنفَّذ الدفع بالبطاقة (Visa / Mastercard) أو Apple Pay / Google Pay عبر شريك مالي مرخّص يقوم بتحويل المبلغ تلقائياً إلى تسوية رقمية (USDC / أصول رقمية) موجّهة مباشرة لطلبك — جميع بيانات الاستلام مُعبّأة مسبقاً ولا تحتاج إلى إنشاء أو امتلاك أي محفظة رقمية."
+            : "Your Visa, Mastercard, Apple Pay, or Google Pay payment is processed by a licensed financial partner that automatically converts the amount into a digital settlement (USDC / crypto) routed directly to your order — all receiving details are pre-filled and you do not need any crypto wallet."}
         </p>
+        <div className="flex items-start gap-2 rounded-xl border border-[var(--accent)]/25 bg-[var(--background)]/75 px-3 py-2 text-[11px] leading-5 text-[var(--foreground)]">
+          <UserCheck className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[var(--accent)]" />
+          <span>
+            {ar ? (
+              <>
+                <strong>تنبيه عند الاستخدام لأول مرة:</strong> قد يطلب منك مزوّد الخدمة المرخّص إجراء تحقّق سريع لمرة واحدة فقط (تأكيد البريد الإلكتروني أو إثبات الهوية) في أول عملية دفع عبر هذه الخدمة التزاماً بمعايير الأمان المصرفية.
+              </>
+            ) : (
+              <>
+                <strong>First-time verification notice:</strong> On your first use of this payment service, the licensed provider may request a quick one-time verification (email or identity check) for banking security compliance.
+              </>
+            )}
+          </span>
+        </div>
       </div>
 
       {/* Résumé commande */}
