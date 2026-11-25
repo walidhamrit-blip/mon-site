@@ -312,18 +312,44 @@ function minPrice(product: ShopProduct): number {
 
 /**
  * Hierarchie des cartes cadeaux : la PREMIÈRE navigation est le TYPE de carte
- * (Steam, PlayStation, Google Play…) — c'est la plateforme du catalogue — puis
- * la RÉGION sous chaque marque. Les autres familles gardent la liste plate.
+ * (Steam, PlayStation, Google Play…) puis la RÉGION sous chaque marque. Les
+ * autres familles gardent la liste plate.
+ *
+ * ⚠️ Le fournisseur nomme ses catégories avec la région incluse —
+ * « Amazon (US) », « Amazon (FR) », « PlayStation (TR) », « Netflix GLOBAL » :
+ * sans dérivation, chaque variante apparaîtrait comme une marque distincte et
+ * le premier niveau serait une longue liste de doublons. La marque est donc
+ * le nom SANS le suffixe de région ; la région devient une étape dédiée.
  */
+
+const BRAND_REGION_SUFFIX = /\s*\(([A-Za-z]{2,4})\)\s*$/;
+
+/** Marque + variante dérivées du produit (région explicite ou suffixe du nom). */
+export function shopBrandKeyOf(product: ShopProduct): { brand: string; region: string | null } {
+  const name = product.platform?.trim() ?? "";
+  if (!name) return { brand: "", region: null };
+  const paren = BRAND_REGION_SUFFIX.exec(name);
+  if (paren) {
+    const brand = name.slice(0, paren.index).trim().replace(/[\s\-–—]+$/, "");
+    if (brand) return { brand, region: paren[1].toUpperCase() };
+  }
+  if (/\bGLOBAL\b/i.test(name)) {
+    const stripped = name.replace(/\bGLOBAL\b/gi, "").replace(/[\s\-–—]+$/, "").trim();
+    if (stripped) return { brand: stripped, region: "GLOBAL" };
+  }
+  return { brand: name, region: null };
+}
+
 export interface ShopBrandEntry {
   name: string;
   count: number;
 }
 
+/** Marques (types de carte) triées, compteurs = fiches vendables de la marque. */
 export function shopBrandsOfKind(catalog: ShopCatalogInput, kind: string): ShopBrandEntry[] {
   const counts = new Map<string, number>();
   for (const product of shopProductsOfKind(catalog, kind)) {
-    const brand = product.platform?.trim();
+    const { brand } = shopBrandKeyOf(product);
     if (!brand) continue;
     counts.set(brand, (counts.get(brand) ?? 0) + 1);
   }
@@ -332,7 +358,7 @@ export function shopBrandsOfKind(catalog: ShopCatalogInput, kind: string): ShopB
   );
 }
 
-/** Régions couvertes par une marque : union des fiches et des montants vendables. */
+/** Régions couvertes par une marque : variantes du nom, fiches et montants vendables. */
 export function shopRegionsOfBrand(
   catalog: ShopCatalogInput,
   kind: string,
@@ -340,6 +366,8 @@ export function shopRegionsOfBrand(
 ): string[] {
   const regions = new Set<string>();
   for (const product of shopProductsOfBrand(catalog, kind, brand)) {
+    const { region: variant } = shopBrandKeyOf(product);
+    if (variant) regions.add(variant);
     for (const region of product.regions ?? []) {
       const normalized = region.trim().toUpperCase();
       if (normalized) regions.add(normalized);
@@ -353,7 +381,7 @@ export function shopRegionsOfBrand(
   return Array.from(regions).sort((a, b) => a.localeCompare(b));
 }
 
-/** Produits d'une marque (plateforme exacte), éventuellement restreints à une région. */
+/** Produits d'une marque, éventuellement restreints à une région (toutes si `null`). */
 export function shopProductsOfBrand(
   catalog: ShopCatalogInput,
   kind: string,
@@ -361,7 +389,7 @@ export function shopProductsOfBrand(
   region?: string | null,
 ): ShopProduct[] {
   const products = shopProductsOfKind(catalog, kind).filter(
-    (product) => product.platform?.trim() === brand,
+    (product) => shopBrandKeyOf(product).brand === brand,
   );
   if (!region?.trim()) return products;
   return products.filter((product) => shopProductCoversRegion(product, region));
@@ -370,6 +398,7 @@ export function shopProductsOfBrand(
 function shopProductCoversRegion(product: ShopProduct, region: string): boolean {
   const target = region.trim().toUpperCase();
   if (!target) return true;
+  if (shopBrandKeyOf(product).region === target) return true;
   if ((product.regions ?? []).some((item) => item.trim().toUpperCase() === target)) return true;
   return product.denominations.some(
     (item) => item.available && item.region?.trim().toUpperCase() === target,
@@ -900,8 +929,9 @@ export function shopBrandRegionsView(
   slice.forEach((region, index) => {
     stateRegions.push(region);
     const count = shopProductsOfBrand(catalog, kind, brand, region).length;
+    const variant = region === "GLOBAL" ? `${brand} Global` : `${brand} ${region}`;
     row.push({
-      text: `${region} (${count})`.slice(0, 60),
+      text: `${variant} (${count})`.slice(0, 60),
       callback_data: shopCallback({ view: "region", index }),
     });
     if (row.length === 2) {
