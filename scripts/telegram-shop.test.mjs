@@ -397,6 +397,33 @@ test("cartes cadeaux : marques (types de carte) triées avec compteurs", () => {
   );
 });
 
+test("cartes cadeaux : la marque dérive du nom sans le suffixe de région", () => {
+  const catalog = [
+    fakeProduct({ slug: "amazon-us", platform: "Amazon (US)", regions: ["US"] }),
+    fakeProduct({ slug: "amazon-fr", platform: "Amazon (FR)", regions: ["FR"] }),
+    fakeProduct({ slug: "amazon-de", platform: "Amazon (DE)", regions: ["DE"] }),
+    fakeProduct({ slug: "netflix-global", platform: "Netflix GLOBAL", regions: ["GLOBAL"] }),
+    fakeProduct({ slug: "steam", platform: "Steam", regions: ["US", "TR"] }),
+  ];
+  const brands = shopBrandsOfKind(catalog, "gift_card");
+  assert.deepEqual(
+    brands.map((b) => `${b.name}:${b.count}`),
+    ["Amazon:3", "Netflix:1", "Steam:1"],
+  );
+  assert.deepEqual(shopRegionsOfBrand(catalog, "gift_card", "Amazon"), ["DE", "FR", "US"]);
+  assert.deepEqual(shopRegionsOfBrand(catalog, "gift_card", "Netflix"), ["GLOBAL"]);
+  // Amazon (US) ne couvre que US — même si une autre fiche porte US ailleurs.
+  assert.deepEqual(
+    shopProductsOfBrand(catalog, "gift_card", "Amazon", "US").map((p) => p.slug),
+    ["amazon-us"],
+  );
+  // Marque sans suffixe : couverture via fiches et montants (logique d'origine).
+  assert.deepEqual(
+    shopProductsOfBrand(catalog, "gift_card", "Steam", "TR").map((p) => p.slug),
+    ["steam"],
+  );
+});
+
 test("cartes cadeaux : régions d'une marque = union fiches + montants, normalisées", () => {
   const catalog = [
     fakeProduct({
@@ -478,7 +505,7 @@ test("vue régions : boutons région + toutes les régions + retour marques", ()
   assert.match(view.text, /Choose a region:/);
   const flat = view.keyboard.flat();
   const regions = flat.filter((b) => b.callback_data?.startsWith("shop:rg:")).map((b) => b.text);
-  assert.deepEqual(regions, ["TR (1)", "US (1)"]);
+  assert.deepEqual(regions, ["Steam TR (1)", "Steam US (1)"]);
   assert.ok(flat.some((b) => b.callback_data === "shop:rga"), "bouton toutes les régions");
   assert.ok(flat.some((b) => b.callback_data === "shop:b:gift_card:1"), "retour vers les marques");
   assert.deepEqual(view.state.regions, ["TR", "US"]);

@@ -122,9 +122,11 @@ rien ne s'empile) :
 🛒 Boutique
   ├─ 🎁 Cartes cadeaux
   │     ↓
-  │   Types de carte — « Steam (4) · PlayStation (3) · Google Play (2)… »
+  │   Types de carte — « Amazon (5) · Steam (4) · PlayStation (3)… »
+  │     (la marque est dérivée du nom fournisseur : « Amazon (US) »,
+  │      « Amazon (FR) »… regroupés sous « Amazon »)
   │     ↓
-  │   Régions — « US (3) · TR (2)… » + « Toutes les régions »
+  │   Régions — « Amazon US (3) · Amazon FR (2)… » + « Toutes les régions »
   │     ↓
   │   Produits de la marque/région — « à partir de $11.50 », 8 par page
   ├─ 🎮 Recharges de jeux (8)      ┐ liste plate
