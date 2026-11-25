@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import {
   AlertTriangle,
   CheckCircle2,
+  ChevronDown,
   CreditCard,
   ExternalLink,
   Loader2,
@@ -11,7 +12,10 @@ import {
   ShieldCheck,
 } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
-import type { PayGateProviderOption } from "@/lib/paygate-core";
+import {
+  formatPayGateProcessorSummary,
+  type PayGateProviderOption,
+} from "@/lib/paygate-core";
 import { PaymentBrandLogos } from "@/components/payment-methods";
 
 interface CardCheckoutClientProps {
@@ -45,14 +49,29 @@ export function CardCheckoutClient({
   const ar = locale === "ar";
 
   const eligibleProviders = providers.filter((p) => p.eligible);
-  const defaultProviderId =
-    forcedProvider || eligibleProviders[0]?.id || providers[0]?.id || "auto";
+  // Liste restreinte (max 6) uniquement pour le tiroir de secours si une carte est refusée
+  const fallbackGateways = eligibleProviders.slice(0, 6);
+  const processorSummary = formatPayGateProcessorSummary(providers, 5);
 
-  const [selectedProvider, setSelectedProvider] = useState<string>(defaultProviderId);
+  const initialProviderId = (() => {
+    if (forcedProvider) return forcedProvider;
+    if (errorCode === "provider_unavailable" && fallbackGateways.length > 0) {
+      const next = fallbackGateways.find((p) => p.id !== triedProvider);
+      if (next) return next.id;
+    }
+    return "auto";
+  })();
+
+  const [selectedProvider, setSelectedProvider] = useState<string>(initialProviderId);
   const [status, setStatus] = useState<string>(initialStatus);
-  const [showAllProviders, setShowAllProviders] = useState<boolean>(
+  const [showFallbackGateways, setShowFallbackGateways] = useState<boolean>(
     Boolean(errorCode === "provider_unavailable"),
   );
+
+  const manualGateway =
+    !forcedProvider && selectedProvider !== "auto"
+      ? fallbackGateways.find((p) => p.id === selectedProvider)
+      : undefined;
 
   useEffect(() => {
     if (status === "paid") return;
@@ -130,12 +149,19 @@ export function CardCheckoutClient({
           </div>
           <div className="min-w-0">
             <h1 className="text-base sm:text-lg font-black text-[var(--foreground)]">
-              {ar ? "بوابة الدفع الآمن بالبطاقة" : "Secure Card Checkout"}
+              {ar ? "بوابة الدفع الآمن" : "Secure Card Checkout"}
             </h1>
-            <PaymentBrandLogos className="mt-1.5 gap-1.5" />
+            <p className="mt-0.5 text-xs font-semibold text-[var(--muted-foreground)]">
+              {ar
+                ? "بطاقة بنكية · Apple Pay · Google Pay"
+                : "Bank Card · Apple Pay · Google Pay"}
+            </p>
           </div>
         </div>
-        <div className="rounded-xl border border-[var(--accent)]/35 bg-[var(--accent)]/10 px-3 py-1.5 text-end" dir="ltr">
+        <div
+          className="rounded-xl border border-[var(--accent)]/35 bg-[var(--accent)]/10 px-3 py-1.5 text-end"
+          dir="ltr"
+        >
           <div className="text-[10px] font-bold uppercase tracking-wider text-[var(--muted-foreground)]">
             USD
           </div>
@@ -145,8 +171,23 @@ export function CardCheckoutClient({
         </div>
       </div>
 
+      {/* Moyens de paiement mis en avant (sans jargon technique) */}
+      <div className="mt-4 rounded-2xl border border-[var(--accent)]/30 bg-[var(--accent)]/[0.06] p-4">
+        <div className="text-xs font-extrabold text-[var(--foreground)]">
+          {ar
+            ? "الدفع بالبطاقة البنكية أو المحفظة الرقمية"
+            : "Pay with Bank Card, Apple Pay, or Google Pay"}
+        </div>
+        <PaymentBrandLogos className="mt-2.5 gap-2" />
+        <p className="mt-2 text-[11.5px] leading-5 text-[var(--muted-foreground)]">
+          {ar
+            ? "أكمل الدفع مباشرة ببطاقتك البنكية (Visa / Mastercard) أو عبر Apple Pay و Google Pay في الصفحة المؤمّنة التالية دون الحاجة لأي حساب إضافي."
+            : "Complete your payment directly with Visa, Mastercard, Apple Pay, or Google Pay on the next secure screen — no extra account needed."}
+        </p>
+      </div>
+
       {/* Résumé commande */}
-      <div className="mt-4 rounded-2xl border border-[var(--border)] bg-[var(--background)] p-3.5 text-xs space-y-1.5">
+      <div className="mt-3.5 rounded-2xl border border-[var(--border)] bg-[var(--background)] p-3.5 text-xs space-y-1.5">
         <div className="flex items-center justify-between gap-2">
           <span className="text-[var(--muted-foreground)]">
             {ar ? "الطلب" : "Order"}
@@ -175,77 +216,19 @@ export function CardCheckoutClient({
         )}
       </div>
 
-      {/* Alerte si un processeur spécifique n'a pas répondu */}
+      {/* Alerte uniquement si une passerelle spécifique n'a pas répondu */}
       {errorCode === "provider_unavailable" && (
         <div className="mt-4 flex items-start gap-2.5 rounded-2xl border border-amber-400/50 bg-amber-500/10 p-3.5 text-xs leading-5 text-amber-800 dark:text-amber-200">
           <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
           <div>
             {ar
-              ? `المزوّد المختار (${triedProvider || "التلقائي"}) غير متاح حالياً لبلدك أو لهذا المبلغ. اختر مزوّد بطاقة آخر من القائمة أدناه بنقرة واحدة.`
-              : `The selected processor (${triedProvider || "auto"}) is temporarily unavailable for your region or amount. Pick another licensed card processor below in one click.`}
+              ? "البوابة المختارة غير متاحة مؤقتاً لبلدك أو لهذا المبلغ. اخترنا لك بوابة بديلة جاهزة أدناه، اضغط للمتابعة."
+              : "The previous gateway is temporarily unavailable for your region or amount. An alternative gateway has been selected below — click continue."}
           </div>
         </div>
       )}
 
-      {/* Sélection de processeur */}
-      {!forcedProvider && eligibleProviders.length > 1 && (
-        <div className="mt-5">
-          <div className="flex items-center justify-between gap-2 mb-2">
-            <span className="text-xs font-bold text-[var(--foreground)]">
-              {ar ? "مزوّد الدفع المعتمد" : "Licensed payment processor"}
-            </span>
-            <button
-              type="button"
-              onClick={() => setShowAllProviders((v) => !v)}
-              className="text-[11px] font-semibold text-[var(--accent)] hover:underline cursor-pointer"
-            >
-              {showAllProviders
-                ? ar
-                  ? "إخفاء البدائل"
-                  : "Hide alternatives"
-                : ar
-                  ? `تغيير المزوّد (${eligibleProviders.length})`
-                  : `Switch processor (${eligibleProviders.length})`}
-            </button>
-          </div>
-
-          <div className="grid gap-2 sm:grid-cols-2">
-            {(showAllProviders ? eligibleProviders : eligibleProviders.slice(0, 4)).map(
-              (provider, idx) => {
-                const active = selectedProvider === provider.id;
-                return (
-                  <button
-                    key={provider.id}
-                    type="button"
-                    onClick={() => setSelectedProvider(provider.id)}
-                    className={`flex flex-col items-start rounded-xl border p-3 text-start transition-colors cursor-pointer ${
-                      active
-                        ? "border-[var(--accent)] bg-[var(--accent)]/12"
-                        : "border-[var(--border)] bg-[var(--background)] hover:border-[var(--accent)]/50"
-                    }`}
-                  >
-                    <div className="flex w-full items-center justify-between gap-1.5">
-                      <span className="text-xs font-black text-[var(--foreground)]">
-                        {provider.name}
-                      </span>
-                      {idx === 0 && (
-                        <span className="rounded-full bg-[var(--accent)]/20 px-2 py-0.5 text-[10px] font-bold text-[var(--accent)]">
-                          {ar ? "موصى به" : "Recommended"}
-                        </span>
-                      )}
-                    </div>
-                    <span className="mt-1 text-[10.5px] text-[var(--muted-foreground)]" dir="ltr">
-                      {ar ? provider.methodsLabelAr : provider.methodsLabelEn}
-                    </span>
-                  </button>
-                );
-              },
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* Bouton principal -> redirection serveur directe vers le processeur agréé */}
+      {/* Bouton principal -> routage automatique serveur (ou passerelle de secours choisie) */}
       <a
         href={goHref(selectedProvider)}
         target="_blank"
@@ -253,14 +236,18 @@ export function CardCheckoutClient({
         className="mt-5 inline-flex h-12 w-full items-center justify-center gap-2 rounded-full bg-[var(--accent)] px-6 text-sm font-black text-[var(--accent-foreground)] shadow-sm transition-colors hover:bg-[var(--accent-hover)]"
       >
         <Lock className="h-4 w-4" />
-        {ar
-          ? `المتابعة للدفع الآمن · $${billedUsd.toFixed(2)}`
-          : `Continue to secure card payment · $${billedUsd.toFixed(2)}`}
+        {manualGateway
+          ? ar
+            ? `المتابعة للدفع الآمن (${manualGateway.name}) · $${billedUsd.toFixed(2)}`
+            : `Continue to secure payment (${manualGateway.name}) · $${billedUsd.toFixed(2)}`
+          : ar
+            ? `المتابعة للدفع الآمن · $${billedUsd.toFixed(2)}`
+            : `Continue to secure payment · $${billedUsd.toFixed(2)}`}
         <ExternalLink className="h-3.5 w-3.5" />
       </a>
 
       {/* Attente temps réel */}
-      <div className="mt-4 flex items-center justify-center gap-2 text-xs text-[var(--muted-foreground)]">
+      <div className="mt-3.5 flex items-center justify-center gap-2 text-xs text-[var(--muted-foreground)]">
         <Loader2 className="h-3.5 w-3.5 animate-spin text-[var(--accent)]" />
         <span>
           {ar
@@ -269,13 +256,87 @@ export function CardCheckoutClient({
         </span>
       </div>
 
-      <div className="mt-4 flex items-start gap-2 rounded-xl border border-[var(--border)] bg-[var(--background)] p-3 text-[11px] leading-5 text-[var(--muted-foreground)]">
-        <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-[var(--accent)]" />
-        <span>
-          {ar
-            ? "اتصال مباشر ومشفّر بمزوّد البطاقات المعتمد دون أي وسيط محجوب. إذا رُفضت بطاقتك لدى مزوّد معيّن، ارجع إلى هذه التبويبة واختر مزوّداً آخر بنقرة واحدة."
-            : "Direct encrypted connection to the licensed card processor — no blocked intermediary domain. If your bank declines one processor, simply pick another one above."}
-        </span>
+      {/* Mention discrète en petits caractères des prestataires agréés + option de secours repliée */}
+      <div className="mt-4 rounded-xl border border-[var(--border)] bg-[var(--background)] p-3 text-[11px] leading-5 text-[var(--muted-foreground)]">
+        <div className="flex items-start gap-2">
+          <ShieldCheck className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[var(--accent)]" />
+          <p>
+            {ar ? (
+              <>
+                اتصال مشفّر ومباشر عبر مزوّدي خدمات الدفع المعتمدين دولياً{" "}
+                <span className="opacity-80" dir="ltr">
+                  ({processorSummary})
+                </span>
+                .
+              </>
+            ) : (
+              <>
+                Encrypted payment processed directly by licensed payment providers{" "}
+                <span className="opacity-80">({processorSummary})</span>.
+              </>
+            )}
+          </p>
+        </div>
+
+        {!forcedProvider && fallbackGateways.length > 1 && (
+          <div className="mt-2 border-t border-[var(--border)]/70 pt-2">
+            <button
+              type="button"
+              onClick={() => setShowFallbackGateways((v) => !v)}
+              aria-expanded={showFallbackGateways}
+              className="inline-flex items-center gap-1 text-[11px] font-semibold text-[var(--muted-foreground)] hover:text-[var(--foreground)] transition-colors cursor-pointer"
+            >
+              <span>
+                {showFallbackGateways
+                  ? ar
+                    ? "إخفاء بوابات المعالجة البديلة"
+                    : "Hide alternative gateways"
+                  : ar
+                    ? "هل رُفضت بطاقتك من البنك؟ جرّب بوابة معالجة بديلة"
+                    : "Card declined by your bank? Try an alternative gateway"}
+              </span>
+              <ChevronDown
+                className={`h-3.5 w-3.5 transition-transform ${
+                  showFallbackGateways ? "rotate-180" : ""
+                }`}
+              />
+            </button>
+
+            {showFallbackGateways && (
+              <div className="mt-2.5 flex flex-wrap gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => setSelectedProvider("auto")}
+                  className={`rounded-lg border px-2.5 py-1.5 text-[11px] font-bold transition-colors cursor-pointer ${
+                    selectedProvider === "auto"
+                      ? "border-[var(--accent)] bg-[var(--accent)]/15 text-[var(--foreground)]"
+                      : "border-[var(--border)] bg-[var(--card)] text-[var(--muted-foreground)] hover:border-[var(--accent)]/50"
+                  }`}
+                >
+                  {ar ? "تلقائي (موصى به)" : "Automatic (Recommended)"}
+                </button>
+                {fallbackGateways.map((provider) => {
+                  const active = selectedProvider === provider.id;
+                  return (
+                    <button
+                      key={provider.id}
+                      type="button"
+                      onClick={() => setSelectedProvider(provider.id)}
+                      dir="ltr"
+                      className={`rounded-lg border px-2.5 py-1.5 text-[11px] font-bold transition-colors cursor-pointer ${
+                        active
+                          ? "border-[var(--accent)] bg-[var(--accent)]/15 text-[var(--foreground)]"
+                          : "border-[var(--border)] bg-[var(--card)] text-[var(--muted-foreground)] hover:border-[var(--accent)]/50"
+                      }`}
+                    >
+                      {provider.name}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );

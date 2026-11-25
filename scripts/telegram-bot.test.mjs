@@ -377,6 +377,26 @@ test("le /start des nouveaux arrivants propose le choix de langue", () => {
   assert.match(route, /openTelegramShop\(/);
 });
 
+test("la bascule crypto → carte reprend la commande existante, sans jeton pas de bascule", () => {
+  const route = code(read("src/app/api/payments/paygate/switch/route.ts"));
+  // Authentification par jeton de suivi (empreinte) + refus strict si faux.
+  assert.match(route, /trackingAccess\(/);
+  assert.match(route, /"denied"/);
+  assert.match(route, /status: 403/);
+  // Une commande déjà payée ne rebascule jamais (retour au suivi).
+  assert.match(route, /order\.status !== "pending"/);
+  // Session carte en attente réutilisée (aucune nouvelle adresse mintée).
+  assert.match(route, /eq\(paygatePayments\.status, "pending"\)/);
+  // Redirections sans cache ni indexation (motifs du projet).
+  assert.match(route, /noindex, nofollow/);
+  // La commande bascule vers paygate pour les routes aval (/pay/card, callback).
+  assert.match(route, /paymentMethod: "paygate"/);
+  // La page de suivi propose la bascule aux commandes crypto en attente.
+  const status = code(read("src/app/(site)/codes/commande/digital-order-status.tsx"));
+  assert.match(status, /api\/payments\/paygate\/switch/);
+  assert.match(status, /paymentMethod === "nowpayments"/);
+});
+
 test("aucun composant client n'importe le module serveur du bot", () => {
   const files = walk(join(root, "src"));
   const offenders = files

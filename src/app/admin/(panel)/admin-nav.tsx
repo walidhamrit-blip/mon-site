@@ -21,6 +21,7 @@ import {
   ClipboardCheck,
   Settings,
   Send,
+  Search,
   ExternalLink,
   LogOut,
   Menu,
@@ -88,6 +89,7 @@ export function AdminNav({ newLeads, paidOrders }: Props) {
       { href: "/admin/content", label: "Textes, FAQ & Avis", sublabel: "Contenus partagés arabe / anglais", icon: FileText },
       { href: "/admin/media", label: "Bannières & images", sublabel: "Accueil, boutique & sections", icon: Camera },
       { href: "/admin/settings", label: "Identité, thèmes & tarifs", sublabel: "Contacts, FazerCards & offres web", icon: Settings },
+      { href: "/admin/search-console", label: "Search Console & SEO", sublabel: "Clics, positions 11–20 & sitemap", icon: Search },
       { href: "/admin/telegram", label: "Bot Telegram", sublabel: "Alertes ventes, suivi & campagnes", icon: Send },
     ] },
     { title: "Pages secondaires & Héritage", items: [

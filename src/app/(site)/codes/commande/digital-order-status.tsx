@@ -617,6 +617,26 @@ export function DigitalOrderStatus({
                 </div>
               )}
 
+            {order.status === "pending" &&
+              order.paymentMethod === "nowpayments" &&
+              order.paymentUrl &&
+              token && (
+                <div className="rounded-xl border border-[var(--border)] bg-[var(--secondary)]/30 p-4">
+                  <p className="text-[12.5px] leading-5 text-[var(--muted-foreground)]">
+                    {ar
+                      ? "لقد أنشأتم فاتورة بالعملات الرقمية لهذا الطلب. تفضلون الدفع بالبطاقة بدلاً من ذلك؟ تُستكمل الطلب الحالي — دون البدء من جديد."
+                      : "A crypto invoice is open for this order. Prefer paying by card instead? Your current order continues — no need to start over."}
+                  </p>
+                  <a
+                    href={`/api/payments/paygate/switch?ref=${encodeURIComponent(ref)}&t=${encodeURIComponent(token)}`}
+                    className="mt-3 inline-flex h-11 items-center justify-center gap-2 rounded-full border border-[var(--accent)]/50 bg-transparent px-5 text-[13px] font-black text-[var(--accent)] transition-colors hover:bg-[var(--accent)]/10"
+                  >
+                    <CreditCard className="h-4 w-4" />
+                    {ar ? "الدفع بالبطاقة بدلاً من العملات الرقمية" : "Pay by card instead"}
+                  </a>
+                </div>
+              )}
+
             {order.notice && (
               <p className="rounded-lg border border-[var(--border)] bg-[var(--secondary)]/40 px-3.5 py-3 text-[12.5px] leading-6 text-[var(--muted-foreground)]">
                 {order.notice}

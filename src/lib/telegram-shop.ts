@@ -31,6 +31,8 @@ import { createFazercardsCheckout, FazercardsOrderError } from "@/lib/fazercards
 import { fazercardsMinOrderUsd } from "@/lib/fazercards";
 import { isNowPaymentsError } from "@/lib/nowpayments";
 import { resolveFazercardsMaxOrderUsd } from "@/lib/store";
+import { resolveLivePayGateConfig } from "@/lib/paygate";
+import { payGateReady } from "@/lib/paygate-core";
 import { readDigitalOverrides } from "@/lib/digital-overrides";
 import { resolveFazercardsCheckoutProduct } from "@/lib/digital-overrides-core";
 import { siteBaseUrl } from "@/lib/site-url";
@@ -61,6 +63,7 @@ import {
   shopCategoriesView,
   shopCategoryView,
   shopCheckoutErrorView,
+  shopCardSwitchUrl,
   shopCopy,
   shopDenominationView,
   shopEmailPromptView,
@@ -102,6 +105,7 @@ interface PendingCheckout {
 interface LastOrderInfo {
   ref: string;
   paymentUrl: string;
+  trackingToken: string;
   slug: string;
   title: string;
   label: string;
@@ -644,6 +648,8 @@ async function completeCheckout(
       qty: result.quantity,
       totalUsd: formatShopUsd(result.totalUsd),
       paymentUrl: result.paymentUrl,
+      trackingToken: result.trackingToken,
+      cardUrl: await cardSwitchUrlFor(ctx, result.orderRef, result.trackingToken, result.totalUsd),
       slug: pending.slug,
       email,
       locale: language,
@@ -744,6 +750,26 @@ function formatActorLabel(actor: ShopActor): string {
 }
 
 /**
+ * URL de bascule carte pour cette commande — `null` si la passerelle carte
+ * est désactivée ou si le montant est sous son minimum (bouton masqué plutôt
+ * qu'un clic qui rebondit sans explication).
+ */
+async function cardSwitchUrlFor(
+  ctx: ShopBotContext,
+  ref: string,
+  token: string,
+  totalUsd: number,
+): Promise<string | null> {
+  try {
+    const config = await resolveLivePayGateConfig();
+    if (!payGateReady(config) || totalUsd + 1e-6 < config.minOrderUsd) return null;
+    return shopCardSwitchUrl(shopLinks(ctx), ref, token);
+  } catch {
+    return null;
+  }
+}
+
+/**
  * Écrit `telegram_chat_id` / `telegram_username` sur les deux lignes de la
  * commande (`orders` + `digital_orders`). Best-effort : un échec ne doit
  * jamais invalider une commande déjà créée.
@@ -789,6 +815,12 @@ async function resendPaymentLink(
     qty: last.qty,
     totalUsd: last.totalUsd,
     paymentUrl: last.paymentUrl,
+    cardUrl: await cardSwitchUrlFor(
+      ctx,
+      last.ref,
+      last.trackingToken,
+      Number(String(last.totalUsd).replace(/[^0-9.]/g, "")) || 0,
+    ),
     slug: last.slug,
     email: last.email,
     locale: language,
@@ -912,6 +944,7 @@ function lastOrderFromState(state: TelegramShopState): LastOrderInfo | null {
   return {
     ref: candidate.ref,
     paymentUrl: candidate.paymentUrl,
+    trackingToken: typeof candidate.trackingToken === "string" ? candidate.trackingToken : "",
     slug: typeof candidate.slug === "string" ? candidate.slug : "",
     title: typeof candidate.title === "string" ? candidate.title : "",
     label: typeof candidate.label === "string" ? candidate.label : "",

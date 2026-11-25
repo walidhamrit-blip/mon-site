@@ -87,6 +87,7 @@ const {
   shopPaymentView,
   shopProductView,
   shopProductsOfKind,
+  shopCardSwitchUrl,
   shopFromPrice,
   shopWhatsappUrl,
   SHOP_CALLBACK_PREFIX,
@@ -335,7 +336,7 @@ test("la vue montant minimum reste juste aux bornes de quantité", () => {
 
 /* --------------------------------- Paiement -------------------------------- */
 
-test("la vue paiement expose facture, autres moyens et consentement", () => {
+test("la vue paiement expose facture, carte, autres moyens et consentement", () => {
   const view = shopPaymentView({
     ref: "DGC-1A2B3C4D5E6F",
     title: "PlayStation Store (US)",
@@ -343,6 +344,8 @@ test("la vue paiement expose facture, autres moyens et consentement", () => {
     qty: 2,
     totalUsd: "$55.80",
     paymentUrl: "https://nowpayments.io/invoice/abc",
+    trackingToken: "tok_abc123",
+    cardUrl: "https://nokhba.net.ly/api/payments/paygate/switch?ref=DGC-1A2B3C4D5E6F&t=tok_abc123",
     slug: "playstation-store-us",
     email: "client@example.com",
     locale: "en",
@@ -358,13 +361,49 @@ test("la vue paiement expose facture, autres moyens et consentement", () => {
   );
   const pay = flat.find((b) => b.text.includes("Pay now"));
   assert.equal(pay.url, "https://nowpayments.io/invoice/abc");
-  const other = flat.find((b) => b.text.includes("Card / Skrill"));
+  // Carte : continue la MÊME commande via la route de bascule (ref + jeton).
+  const card = flat.find((b) => b.text.includes("Pay by card"));
+  assert.equal(
+    card.url,
+    "https://nokhba.net.ly/api/payments/paygate/switch?ref=DGC-1A2B3C4D5E6F&t=tok_abc123",
+  );
+  // Autres méthodes (Skrill, recharge) : preuve à déclarer → fiche web du produit.
+  const other = flat.find((b) => b.text.includes("Other methods"));
   assert.equal(other.url, "https://nokhba.net.ly/codes/playstation-store-us");
-  // La caisse en attente est effacée, la dernière commande conservée.
+  // La caisse en attente est effacée, la dernière commande conservée (avec jeton).
   assert.equal(view.state.pending, null);
   assert.equal(view.state.lastOrder.ref, "DGC-1A2B3C4D5E6F");
   assert.equal(view.state.lastOrder.paymentUrl, "https://nowpayments.io/invoice/abc");
+  assert.equal(view.state.lastOrder.trackingToken, "tok_abc123");
   assert.equal(view.state.lastOrder.qty, 2);
+});
+
+test("sans URL de bascule (sous minimum carte), pas de bouton carte", () => {
+  const view = shopPaymentView({
+    ref: "DGC-1A2B3C4D5E6F",
+    title: "Amazon (AE)",
+    label: "1 AED",
+    qty: 2,
+    totalUsd: "$2.36",
+    paymentUrl: "https://nowpayments.io/invoice/def",
+    trackingToken: "tok_abc123",
+    cardUrl: null,
+    slug: "amazon-ae",
+    email: "client@example.com",
+    locale: "en",
+    links: LINKS,
+  });
+  const flat = view.keyboard.flat();
+  assert.ok(!flat.some((b) => b.text.includes("Pay by card")), "bouton carte masqué");
+  assert.ok(flat.some((b) => b.text.includes("Pay now")), "facture crypto toujours là");
+  assert.equal(view.state.lastOrder.trackingToken, "tok_abc123");
+});
+
+test("l'URL de bascule carte reste correcte pour refs et jetons exotiques", () => {
+  assert.equal(
+    shopCardSwitchUrl(LINKS, "dgc-1a2b3c4d5e6f", "tok+/=&x"),
+    "https://nokhba.net.ly/api/payments/paygate/switch?ref=dgc-1a2b3c4d5e6f&t=tok%2B%2F%3D%26x",
+  );
 });
 
 test("la demande d'e-mail montre la commande et une sortie", () => {

@@ -78,6 +78,7 @@ export interface TelegramShopState {
   lastOrder?: {
     ref: string;
     paymentUrl: string;
+    trackingToken: string;
     slug: string;
     title: string;
     label: string;
@@ -302,6 +303,7 @@ export interface ShopCopyStrings {
   buySuggested: string;
   buyNeedsFields: string;
   payNow: string;
+  payCard: string;
   payOther: string;
   receiveHere: string;
   emailPrompt: string;
@@ -348,7 +350,8 @@ const SHOP_COPY: Record<ShopLocale, ShopCopyStrings> = {
     buySuggested: "✅ شراء ×{qty} — {total}",
     buyNeedsFields: "افتح صفحة المنتج (بيانات مطلوبة)",
     payNow: "💳 ادفع الآن (عملات رقمية)",
-    payOther: "بطاقة / Skrill / بطاقة هاتف — على الموقع",
+    payCard: "💳 الدفع بالبطاقة (فيزا / ماستركارد)",
+    payOther: "🏦 طرق أخرى (Skrill، بطاقة هاتف)",
     receiveHere: "📩 استلم الكود في هذه المحادثة",
     emailPrompt:
       "إلى أي بريد إلكتروني نرسل الكود؟\n\nأرسل عنوان بريدك هنا — مثال:\n<code>name@example.com</code>",
@@ -405,7 +408,8 @@ const SHOP_COPY: Record<ShopLocale, ShopCopyStrings> = {
     buySuggested: "✅ Buy ×{qty} — {total}",
     buyNeedsFields: "Open product page (details required)",
     payNow: "💳 Pay now (crypto)",
-    payOther: "Card / Skrill / Phone card — on the site",
+    payCard: "💳 Pay by card (Visa / Mastercard)",
+    payOther: "🏦 Other methods (Skrill, phone card)",
     receiveHere: "📩 Receive the code in this chat",
     emailPrompt:
       "Which email address should we send the code to?\n\nSend it here — e.g.:\n<code>name@example.com</code>",
@@ -1090,10 +1094,23 @@ export interface ShopPaymentInfo {
   qty: number;
   totalUsd: string;
   paymentUrl: string;
+  /**
+   * URL de bascule carte sur la commande existante — fournie par le module
+   * serveur UNIQUEMENT si la passerelle carte est prête et que le montant
+   * atteint son minimum (sinon `null` : pas de bouton qui rebondit).
+   */
+  cardUrl?: string | null;
+  /** Jeton de suivi : mémorisé dans l'état pour rejouer la bascule plus tard. */
+  trackingToken?: string | null;
   slug: string;
   email: string;
   locale: ShopLocale;
   links: ShopLinks;
+}
+
+/** URL de bascule « payer cette commande par carte » (aucune nouvelle caisse). */
+export function shopCardSwitchUrl(links: ShopLinks, ref: string, token: string): string {
+  return `${links.site}/api/payments/paygate/switch?ref=${encodeURIComponent(ref)}&t=${encodeURIComponent(token)}`;
 }
 
 /** Message « commande créée » : le lien de paiement EST le livrable. */
@@ -1107,24 +1124,25 @@ export function shopPaymentView(info: ShopPaymentInfo): ShopView {
     total: escapeShopHtml(info.totalUsd),
     email: escapeShopHtml(info.email),
   });
+  const keyboard = [
+    [{ text: copy.payNow, url: info.paymentUrl }],
+    // Continue la MÊME commande par carte (bascule serveur, jeton de suivi).
+    ...(info.cardUrl ? [[{ text: copy.payCard, url: info.cardUrl }]] : []),
+    // Skrill / carte de recharge : preuves à déclarer → fiche web du produit.
+    [{ text: copy.payOther, url: productUrl(info.links, info.slug) }],
+    [{ text: copy.receiveHere, callback_data: shopCallback({ view: "watch", ref: info.ref }) }],
+    [{ text: localeMenu(info.locale), callback_data: "menu:home" }],
+  ];
+
   return {
     text,
-    keyboard: [
-      [{ text: copy.payNow, url: info.paymentUrl }],
-      [
-        {
-          text: copy.payOther,
-          url: productUrl(info.links, info.slug),
-        },
-      ],
-      [{ text: copy.receiveHere, callback_data: shopCallback({ view: "watch", ref: info.ref }) }],
-      [{ text: localeMenu(info.locale), callback_data: "menu:home" }],
-    ],
+    keyboard,
     state: {
       pending: null,
       lastOrder: {
         ref: info.ref,
         paymentUrl: info.paymentUrl,
+        trackingToken: info.trackingToken ?? "",
         slug: info.slug,
         title: info.title,
         label: info.label,
