@@ -126,12 +126,12 @@ test.after(() => rmSync(outDir, { recursive: true, force: true }));
 
 test("l'index couvre toutes les sections du site", () => {
   const sections = new Set(knowledge.docs.map((d) => d.section));
-  for (const section of ["general", "pricing", "payment", "subscriptions", "services", "digital", "product", "demos", "sectors", "compare", "blog", "apps", "products", "legal", "contact", "faq"]) {
+  for (const section of ["general", "pricing", "payment", "subscriptions", "services", "digital", "product", "gift_card", "game_key", "demos", "sectors", "compare", "blog", "apps", "products", "legal", "contact", "faq"]) {
     assert.ok(sections.has(section), `section manquante : ${section}`);
   }
   const ids = knowledge.docs.map((d) => d.id);
   assert.equal(new Set(ids).size, ids.length, "identifiants de fiches dupliqués");
-  for (const id of ["plan-static-site", "service-restyle", "service-fix-optimize", "service-add-section", "sector-medical", "sector-sanitary", "compare-wix", "compare-seo-agency", "blog-how-to-pay-with-crypto-usdt", "demo-myphone-tripoli", "apps-nukhba-clinic-app", "products-nukhba-cloud-pos", "terms", "refund", "badge", "contact", "subscription-tracking", "digital-delivery"]) {
+  for (const id of ["plan-static-site", "service-restyle", "service-fix-optimize", "service-add-section", "sector-medical", "sector-sanitary", "compare-wix", "compare-seo-agency", "blog-how-to-pay-with-crypto-usdt", "demo-myphone-tripoli", "apps-nukhba-clinic-app", "products-nukhba-cloud-pos", "terms", "refund", "badge", "contact", "subscription-tracking", "digital-delivery", "digital-gift-cards", "digital-game-keys"]) {
     assert.ok(ids.includes(id), `fiche manquante : ${id}`);
   }
   assert.equal(knowledge.productCount, defaultDigitalProducts.length);
@@ -185,7 +185,9 @@ test("recherche EN : chaque domaine du site est retrouvé", () => {
   expectTop("How much is a landing page?", "service-landing");
   expectTop("Do you redesign old websites?", "service-restyle");
   expectTop("Where is my order? I didn't receive my code", "digital-delivery");
-  expectTop("Buy a Steam gift card", "digital-overview");
+  expectTop("Buy a Steam gift card", "digital-gift-cards");
+  expectTop("Where can I buy a gift card?", "digital-gift-cards");
+  expectTop("I want a game activation key", "digital-game-keys");
   expectTop("Show me examples of clinic websites", "sector-medical");
   expectTop("Nukhba vs Wix", "compare-wix");
   expectTop("How to get cited by ChatGPT", "blog-get-cited-by-chatgpt-google-ai");
@@ -236,7 +238,7 @@ test("les produits digitaux sont retrouvés par plateforme / slug", () => {
 test("answerLocally : salutations, remerciements, inconnu", () => {
   const hello = assistant.answerLocally(knowledge, "Bonjour", "fr");
   assert.match(hello.text, /assistant Nukhba/);
-  assert.equal(hello.suggestions.length, 8);
+  assert.equal(hello.suggestions.length, 9);
   const thanks = assistant.answerLocally(knowledge, "شكراً", "ar");
   assert.match(thanks.text, /الرحب/);
   const unknown = assistant.answerLocally(knowledge, "zzzz qqqq", "en");
@@ -337,7 +339,8 @@ test("chatbot.ts : les nœuds locaux couvrent les nouveaux domaines en AR/EN/FR"
   for (const id of chatbot.START_NODES) assert.ok(nodes[id], `nœud de départ manquant : ${id}`);
   assert.equal(chatbot.matchChatNode("Quels abonnements proposez-vous ?", nodes), "subscriptions");
   assert.equal(chatbot.matchChatNode("أين طلبي؟", nodes), "order");
-  assert.equal(chatbot.matchChatNode("carte cadeau steam", nodes), "codes");
+  assert.equal(chatbot.matchChatNode("carte cadeau steam", nodes), "gift-cards");
+  assert.equal(chatbot.matchChatNode("clé de jeu", nodes), "game-keys");
   assert.equal(chatbot.matchChatNode("refund please", nodes), "refund");
   assert.equal(chatbot.matchChatNode("What services do you offer?", nodes), "services");
   assert.match(nodes.services.answer, /\$49/);

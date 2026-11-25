@@ -49,6 +49,8 @@ export const START_NODES = [
   "delivery",
   "payment",
   "subscriptions",
+  "gift-cards",
+  "game-keys",
   "codes",
   "order",
   "services",
@@ -184,6 +186,43 @@ export function buildChatNodes(ctx: ChatContext): Record<string, ChatNode> {
       followUps: ["payment", "refund", "prices", "human"],
       keywords: ["اشتراك", "اشتراكات", "تجديد", "صيانة", "استضافة", "subscription", "abonnement", "renew", "renouvellement", "hosting", "maintenance", "hébergement", "annuler", "cancel", "إلغاء"],
       action: { label: ar ? "صفحة الاشتراكات" : "Subscriptions page", href: "/abonnements" },
+    },
+    {
+      id: "gift-cards",
+      label: ar ? "كيف أشتري بطاقة هدايا؟" : "How do I buy a gift card?",
+      answer: ar
+        ? `متجر بطاقات الهدايا الرقمية: Steam، PlayStation، Xbox، Google Play، Apple… اختر البطاقة والقيمة والمنطقة ثم ادفع بالدولار/USDT عبر NOWPayments، ويصلك كود الاسترداد على بريدك فور تأكيد الدفع — عادة خلال دقائق.
+
+تحقق دائماً من منطقة حسابك قبل الشراء: البطاقات مرتبطة بالمنطقة، ولا تُسترد بعد التسليم. الحد الأقصى لبطاقة الهدايا ${MAX_GIFT_CARD_PRICE_USD} $، والحد الأقصى للطلب ${MAX_DIGITAL_ORDER_USD} $. إذا كان الكود غير صالح، أخبرنا خلال 48 ساعة مع لقطة شاشة للاستبدال.`
+        : `The digital gift cards store covers Steam, PlayStation, Xbox, Google Play, Apple… Pick the card, denomination and region, pay in USD/USDT via NOWPayments, and your redemption code is emailed right after payment confirmation — usually within minutes.
+
+Always check your account region before buying: cards are region-locked and non-refundable once delivered. Gift cards are capped at $${MAX_GIFT_CARD_PRICE_USD} and orders at $${MAX_DIGITAL_ORDER_USD}. If a code is invalid, report it within 48 hours with a screenshot for a replacement.`,
+      followUps: ["codes", "order", "payment", "refund", "human"],
+      keywords: [
+        "بطاقة هدايا", "بطاقات هدايا", "هدايا", "كود هدية", "gift card", "gift cards", "carte cadeau",
+        "carte de cadeau", "carte cadeaux", "card", "voucher", "réduction", "reduction",
+        "redeem", "استرداد الكود", "steam", "playstation", "psn", "xbox", "google play", "apple", "itunes",
+        "محفظة", "wallet", "region", "منطقة", "région",
+      ],
+      action: { label: ar ? "افتح بطاقات الهدايا" : "Open gift cards", href: "/codes/category/gift_card" },
+    },
+    {
+      id: "game-keys",
+      label: ar ? "كيف أشتري مفتاح لعبة؟" : "How do I buy a game key?",
+      answer: ar
+        ? `مفاتيح تفعيل الألعاب والبرامج الأصلية: اختر اللعبة أو البرنامج والمنصة والمنطقة، ثم ادفع بالدولار/USDT عبر NOWPayments. يصلك مفتاح التفعيل الفريد على بريدك فور تأكيد الدفع، مع خطوات التفعيل داخل البرنامج أو منصة الناشر الرسمية.
+
+تحقق من إصدار البرنامج وعدد الأجهزة والمنطقة في صفحة المنتج قبل الشراء. المفاتيح لا تُسترد بعد التسليم؛ إذا ظهر خطأ أثناء التفعيل، أخبرنا خلال 48 ساعة مع لقطة شاشة للتحقق والاستبدال. الحد الأقصى للطلب ${MAX_DIGITAL_ORDER_USD} $.`
+        : `Genuine game & software activation keys: choose the title, platform and region, then pay in USD/USDT via NOWPayments. Your unique activation key is emailed right after payment confirmation, along with activation steps inside the publisher's official platform.
+
+Check the software edition, number of covered devices and region on the product page before buying. Keys are non-refundable once delivered; if an activation error appears, report it within 48 hours with a screenshot for verification and replacement. Max $${MAX_DIGITAL_ORDER_USD} per order.`,
+      followUps: ["codes", "order", "payment", "refund", "human"],
+      keywords: [
+        "مفتاح", "مفاتيح", "كود تفعيل", "activation", "activation key", "clé", "cle", "clés", "cles",
+        "game key", "game keys", "key de jeu", "clé de jeu", "clé d'activation", "license", "licence",
+        "ترخيص", "تفعيل", "jeu", "game", "ألعاب", "العاب", "pc", "windows",
+      ],
+      action: { label: ar ? "افتح مفاتيح الألعاب والبرامج" : "Open game & software keys", href: "/codes/category/software_key" },
     },
     {
       id: "codes",
