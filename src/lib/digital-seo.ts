@@ -343,9 +343,9 @@ export function productSeoTitle(product: DigitalProduct, locale: Locale): string
   // préfixe, sinon le titre devient « بطاقة هدايا بطاقة Xbox ».
   const alreadyTyped = ar
     ? new RegExp(
-        `^(${kind.split(" ")[0]}|${DIGITAL_KIND_LABELS[product.kind].ar.split(" ")[0]})`,
+        `^(${kind.split(" ")[0]}|${DIGITAL_KIND_LABELS[product.kind].ar.split(" ")[0]})|(بطاقة|كود|مفتاح|شحن|اشتراك)`,
       ).test(name)
-    : new RegExp(`^(${kind}|${kind.split(" ")[0]})`, "i").test(name);
+    : new RegExp(`^(${kind}|${kind.split(" ")[0]})|\\b(gift\\s*card|code|key|top[- ]?up|wallet|voucher)\\b`, "i").test(name);
   const label = alreadyTyped ? "" : `${kind} `;
   if (ar) {
     return `${label}${name}${from != null ? ` — من ${from.toFixed(2)} دولار` : ""} | نخبة`;

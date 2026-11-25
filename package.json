@@ -30,6 +30,7 @@
     "demos:prune-audit": "node scripts/remove-audit-service-demo.mjs",
     "codes:rotate": "node scripts/reencrypt-digital-codes.mjs",
     "seo:check": "node scripts/seo-check.mjs",
+    "seo:gsc-quick-wins": "node scripts/gsc-quick-wins.mjs",
     "audit:catalog": "node scripts/catalog-audit.mjs",
     "seo:geo": "node scripts/geo-citations.mjs",
     "previews:capture": "node scripts/capture-previews.mjs",

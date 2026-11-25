@@ -110,7 +110,7 @@ function checkPage(entry, html) {
   if (!descMatch || !descMatch[1].trim()) {
     record(page, "error", "meta description absente ou vide");
   } else {
-    const len = descMatch[1].trim().length;
+    const len = decode(descMatch[1].trim()).length;
     if (len < 50) record(page, "warn", `description courte (${len} car., min conseillé 50)`);
     if (len > 160) record(page, "warn", `description longue (${len} car., max conseillé 160)`);
   }
@@ -284,6 +284,7 @@ function checkPage(entry, html) {
     pathname.startsWith("/services/") ||
     pathname.startsWith("/blog/") ||
     pathname.startsWith("/compare/") ||
+    (isCodeCategory && !/[?&]page=/.test(page)) ||
     isCodeProduct;
   if (isFaqExpected) {
     if (!hasFaqSchema) {

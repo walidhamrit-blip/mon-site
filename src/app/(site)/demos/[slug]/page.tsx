@@ -63,14 +63,15 @@ export default async function DemoPage({ params, searchParams }: { params: Promi
   const demo = allDemos.find((d) => d.slug === slug);
   if (!demo) notFound();
 
+  const ar = locale === "ar";
   return (
     <>
       <JsonLd
         data={[
           breadcrumbJsonLd(config, [
-            { name: "الرئيسية", path: "/" },
-            { name: "المعارض", path: "/demos" },
-            { name: demo.title, path: `/demos/${demo.slug}` },
+            { name: ar ? "الرئيسية" : "Home", path: "/" },
+            { name: ar ? "المعارض" : "Live Portfolio", path: "/demos" },
+            { name: ar ? demo.title : demo.titleEn, path: `/demos/${demo.slug}` },
           ], locale),
           demoJsonLd(config, demo, locale),
         ]}

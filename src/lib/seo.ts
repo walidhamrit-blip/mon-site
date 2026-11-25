@@ -132,8 +132,8 @@ export function defaultMetaDescription(
   // ≤ 155 caractères, phrase complète : une description coupée au milieu
   // d'un mot (« … مع متجر… ») gaspille la seule accroche de la SERP.
   return lang === "ar"
-    ? `وكالة نخبة في ${labels.city}: مواقع ومتاجر إلكترونية بأسعار بالدولار${reach}، موقع ثابت من 35 دولاراً ووظائف اختيارية وموعد حسب النطاق — ومتجر أكواد ألعاب وبرامج وبطاقات هدايا.`
-    : `Nukhba in ${labels.city}: websites and online stores priced in USD${reach}, static base $35 with optional modules and scope-confirmed delivery — plus a digital store for game keys, software and gift cards.`;
+    ? `وكالة نخبة في ${labels.city}: مواقع ومتاجر بالدولار${reach}، عرض ثابت بـ35$ مع وظائف اختيارية، ومتجر بطاقات هدايا وأكواد ألعاب وبرامج.`
+    : `Nukhba in ${labels.city}: websites and online stores in USD${reach}, $35 static base with optional modules, plus gift cards and game codes.`;
 }
 
 /**
@@ -1023,9 +1023,6 @@ export function pageMetadata(config: SiteConfig, opts: PageSeoOptions): Metadata
   const description = serpDescription(
     applyMarketTokens(opts.description, market, locale),
   );
-  const keywords = opts.keywords?.map((keyword) =>
-    applyMarketTokens(keyword, market, locale),
-  );
   // undefined = pas d'images déclarées manuellement (la page s'appuie sur
   // les fichiers opengraph-image / twitter-image du segment de route).
   const ogImage =
@@ -1040,23 +1037,18 @@ export function pageMetadata(config: SiteConfig, opts: PageSeoOptions): Metadata
   return {
     title,
     description,
-    keywords,
     alternates: {
       canonical,
       ...(!opts.noindex ? { languages: languageAlternates(config.url, opts.path, defaultLocale) } : {}),
     },
     robots: opts.noindex
-      ? { index: false, follow: false, googleBot: { index: false, follow: false } }
+      ? { index: false, follow: false }
       : {
           index: true,
           follow: true,
-          googleBot: {
-            index: true,
-            follow: true,
-            "max-image-preview": "large",
-            "max-snippet": -1,
-            "max-video-preview": -1,
-          },
+          "max-image-preview": "large",
+          "max-snippet": -1,
+          "max-video-preview": -1,
         },
     openGraph: {
       title,
@@ -1090,9 +1082,6 @@ export function pageMetadata(config: SiteConfig, opts: PageSeoOptions): Metadata
     },
     twitter: {
       card: "summary_large_image",
-      title,
-      description,
-      ...(ogImage ? { images: [ogImage] } : {}),
     },
   };
 }

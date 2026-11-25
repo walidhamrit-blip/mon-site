@@ -39,9 +39,12 @@ export default async function SectorsIndexPage({ searchParams }: LocalePageProps
     "@context": "https://schema.org",
     "@type": "CollectionPage",
     "@id": `${localizedAbsoluteUrl(config.url, "/sectors", locale, siteLocale(config))}#collection`,
-    name: "قطاعات تصميم المواقع — نخبة",
-    alternateName: "Website Design by Sector — Nukhba",
-    description: "تصفح خدمات نخبة حسب قطاع نشاطك في طرابلس",
+    name: locale === "ar" ? "قطاعات تصميم المواقع — نخبة" : "Website Design by Sector — Nukhba",
+    alternateName: locale === "ar" ? "Website Design by Sector — Nukhba" : "قطاعات تصميم المواقع — نخبة",
+    description:
+      locale === "ar"
+        ? "تصفح خدمات نخبة حسب قطاع نشاطك في طرابلس"
+        : "Browse Nukhba website models and industry solutions tailored to your business sector.",
     url: localizedAbsoluteUrl(config.url, "/sectors", locale, siteLocale(config)),
     inLanguage: locale,
     isPartOf: { "@id": absoluteUrl(config, "#website") },
@@ -55,8 +58,8 @@ export default async function SectorsIndexPage({ searchParams }: LocalePageProps
           "@type": "ListItem",
           position: i + 1,
           url: localizedAbsoluteUrl(config.url, `/sectors/${id}`, locale, siteLocale(config)),
-          name: s.titleAr,
-          description: s.descriptionAr,
+          name: locale === "ar" ? s.titleAr : s.titleEn,
+          description: locale === "ar" ? s.descriptionAr : s.descriptionEn,
           numberOfItems: count,
         };
       }),
@@ -75,8 +78,8 @@ export default async function SectorsIndexPage({ searchParams }: LocalePageProps
       <JsonLd
         data={[
           breadcrumbJsonLd(config, [
-            { name: "الرئيسية", path: "/" },
-            { name: "القطاعات", path: "/sectors" },
+            { name: locale === "ar" ? "الرئيسية" : "Home", path: "/" },
+            { name: locale === "ar" ? "القطاعات" : "Sectors", path: "/sectors" },
           ], locale),
           collectionSchema,
         ]}

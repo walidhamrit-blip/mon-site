@@ -197,10 +197,13 @@ export function ArticleView({
                       <Image
                         src={section.image.src}
                         alt={ar ? section.image.altAr : section.image.altEn}
-                        fill
+                        width={1280}
+                        height={720}
                         sizes="(max-width: 1024px) 100vw, 760px"
                         quality={88}
-                        className="object-cover"
+                        loading={index === 0 ? "eager" : "lazy"}
+                        fetchPriority={index === 0 ? "high" : "auto"}
+                        className="h-full w-full object-cover"
                       />
                     </div>
                     {(ar ? section.image.captionAr : section.image.captionEn) && (

@@ -40,6 +40,7 @@ export async function generateMetadata({ searchParams }: LocalePageProps): Promi
 export default async function PricingPage({ searchParams }: LocalePageProps) {
   const { config, content } = await getSiteDataCached();
   const locale = await pageLocale(config, searchParams);
+  const ar = locale === "ar";
   return (
     <>
       {/* Le catalogue d'offres (#offer-catalog) est déjà injecté par le
@@ -47,8 +48,8 @@ export default async function PricingPage({ searchParams }: LocalePageProps) {
       <JsonLd
         data={[
           breadcrumbJsonLd(config, [
-            { name: "Home", path: "/" },
-            { name: "Pricing", path: "/pricing" },
+            { name: ar ? "الرئيسية" : "Home", path: "/" },
+            { name: ar ? "الأسعار" : "Pricing", path: "/pricing" },
           ], locale),
           faqJsonLd(content.faqs, config.market, locale),
         ]}

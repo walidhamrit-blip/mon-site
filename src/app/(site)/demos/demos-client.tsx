@@ -112,8 +112,8 @@ export function DemosClient() {
               </h1>
               <p className="mt-2.5 text-sm sm:text-base opacity-60 max-w-[58ch]">
                 {ar
-                  ? "كل النماذج بنفس السعر الأساسي مع تخصيص المحتوى المقدم عند التسليم الأول. أضف الوظائف حسب حاجتك."
-                  : "Every model has the same base price, with initial personalization of your supplied content included. Add functions as needed."}
+                  ? "أعمال حية ومواقع صمّمتها نخبة: كل النماذج بنفس السعر الأساسي مع تخصيص المحتوى المقدم عند التسليم الأول. أضف الوظائف حسب حاجتك."
+                  : "Live portfolio of websites built by Nukhba: every model has the same base price, with initial personalization of your supplied content included. Add functions as needed."}
               </p>
               <p className="mt-2 inline-flex items-center gap-2 rounded-full border border-[#0B6B3A]/35 bg-[#0B6B3A]/10 px-4 py-1.5 text-xs font-bold text-[#0B6B3A]">
                 {ar
@@ -187,7 +187,7 @@ export function DemosClient() {
             </div>
 
             <div className="grid grid-cols-2 gap-5 sm:grid-cols-2 lg:grid-cols-3">
-              {group.entries.map(({ demo, classification }) => {
+              {group.entries.map(({ demo, classification }, entryIndex) => {
                 const live = isRealUrl(demo.previewUrl);
                 // Une catégorie peut ne contenir qu'un seul site : sur trois
                 // colonnes, la carte seule laissait les deux tiers de la ligne
@@ -210,7 +210,7 @@ export function DemosClient() {
                         solo ? "aspect-[16/10] lg:aspect-auto lg:w-[52%]" : "aspect-[16/10]"
                       }`}
                     >
-                      <ProjectPreview demo={demo} />
+                      <ProjectPreview demo={demo} priority={index === 0 && entryIndex === 0} />
                       <div className="absolute inset-0 bg-gradient-to-t from-black/45 via-transparent to-transparent" />
                       <span className="absolute top-2.5 start-2.5 rounded-full bg-white px-2.5 py-1 text-[11px] font-bold text-black">
                         {ar ? demo.sectorAr : demo.sectorEn}

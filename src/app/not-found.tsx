@@ -2,8 +2,14 @@ import Link from "next/link";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "الصفحة غير موجودة — Page not found (404)",
-  robots: { index: false, follow: false },
+  title: "الصفحة غير موجودة (404) — Page not found",
+  description:
+    "الصفحة المطلوبة غير متاحة أو تم نقلها. عد إلى الرئيسية أو تصفّح أعمال نخبة ومتجر الأكواد الرقمية.",
+  alternates: {},
+  robots: {
+    index: false,
+    follow: false,
+  },
 };
 
 /** Page 404 dédiée : garde le visiteur dans le site plutôt qu'un écran nu. */

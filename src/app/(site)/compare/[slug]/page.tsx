@@ -110,22 +110,23 @@ export default async function ComparisonPage({
       titleEn: service.titleEn,
     }));
 
+  const ar = locale === "ar";
   return (
     <>
       <JsonLd
         data={[
           breadcrumbJsonLd(config, [
-            { name: "الرئيسية", path: "/" },
-            { name: "المقارنات", path: "/compare" },
-            { name: comparison.h1Ar, path: comparePath(comparison.id) },
+            { name: ar ? "الرئيسية" : "Home", path: "/" },
+            { name: ar ? "المقارنات" : "Comparisons", path: "/compare" },
+            { name: ar ? resolved.h1Ar : resolved.h1En, path: comparePath(comparison.id) },
           ], locale),
           webPageJsonLd(config, {
             path: comparePath(comparison.id),
             locale,
-            name: comparison.h1Ar,
-            description: comparison.answerAr,
+            name: ar ? resolved.h1Ar : resolved.h1En,
+            description: ar ? resolved.answerAr : resolved.answerEn,
             speakable: ["h1", "#compare-answer"],
-            about: `${comparison.competitorEn} — Nukhba comparison`,
+            about: ar ? `${resolved.competitorAr} — مقارنة نخبة` : `${resolved.competitorEn} — Nukhba comparison`,
           }),
           comparisonServiceJsonLd(config, comparison, sitePriceUsd, locale),
           comparisonCriteriaJsonLd(config, comparison, locale),

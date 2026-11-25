@@ -109,11 +109,13 @@ export function DemoViewer({ demo, allDemos }: { demo: Demo; allDemos: Demo[] })
                   src={demo.image}
                   {...imageOptimizationProps(demo.image)}
                   alt={demoImageAlt(demo, locale)}
-                  fill
+                  width={1200}
+                  height={825}
                   sizes="(max-width: 1024px) 100vw, 60vw"
-                  loading="lazy"
+                  loading="eager"
+                  fetchPriority="high"
                   decoding="async"
-                  className="object-cover"
+                  className="h-full w-full object-cover"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/65 via-transparent to-transparent" />
                 <div className="absolute bottom-0 p-6 text-white">

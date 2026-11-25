@@ -90,12 +90,14 @@ test("lecture serveur sans cache : activé, désactivé, base indisponible", asy
       builder.onResolve({ filter: /^@\/db$/ }, () => ({ path: "db", namespace: "stub" }));
       builder.onResolve({ filter: /^@\/db\/schema$/ }, () => ({ path: "schema", namespace: "stub" }));
       builder.onResolve({ filter: /^@\/lib\/store$/ }, () => ({ path: "store", namespace: "stub" }));
+      builder.onResolve({ filter: /^@\/lib\/manual-payment-hours$/ }, () => ({ path: "hours", namespace: "stub" }));
       builder.onLoad({ filter: /^db$/, namespace: "stub" }, () => ({ loader: "js", contents: `
         export async function ensureSchema() { if (globalThis.__availabilityFailure) throw new Error("database down"); }
         export const db = { select() { return { from() { return { where() { return { limit: async () => globalThis.__availabilityRows }; } }; } }; } };
       ` }));
       builder.onLoad({ filter: /^schema$/, namespace: "stub" }, () => ({ loader: "js", contents: "export const settings = { key: 'key', value: 'value' };" }));
       builder.onLoad({ filter: /^store$/, namespace: "stub" }, () => ({ loader: "js", contents: "export const SETTINGS_KEYS = { phoneCardPaymentsEnabled: 'phone_card_payments_enabled' };" }));
+      builder.onLoad({ filter: /^hours$/, namespace: "stub" }, () => ({ loader: "js", contents: "export const manualPaymentsClosedAt = () => false;" }));
     },
   };
   const { readPhoneCardAvailability } = await compile("src/lib/phone-card-availability.ts", "availability.mjs", [stubs, aliasPlugin]);
