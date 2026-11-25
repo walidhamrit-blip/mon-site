@@ -382,7 +382,8 @@ test("cartes cadeaux du bot : hiérarchie type de carte → région", () => {
   assert.match(shopMod, /case "regionAll":/);
   assert.match(shopMod, /case "brandProductsPage":/);
   // Index périmé (catalogue changé) : réouverture de la boutique, jamais de crash.
-  assert.match(shopMod, /on rouvre la boutique/);
+  assert.match(shopMod, /if \(!brand \|\| !kind\)/);
+  assert.match(shopMod, /if \(!kind \|\| !brand\)/);
   // Le retour d'une fiche produit remonte la hiérarchie (régions ou marques).
   assert.match(shopMod, /regionPage.*brands|brands.*regionPage/s);
 });
