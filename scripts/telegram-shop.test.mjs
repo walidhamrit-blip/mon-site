@@ -334,6 +334,7 @@ test("la vue paiement expose facture, carte, autres moyens et consentement", () 
     totalUsd: "$55.80",
     paymentUrl: "https://nowpayments.io/invoice/abc",
     trackingToken: "tok_abc123",
+    cardUrl: "https://nokhba.net.ly/api/payments/paygate/switch?ref=DGC-1A2B3C4D5E6F&t=tok_abc123",
     slug: "playstation-store-us",
     email: "client@example.com",
     locale: "en",
@@ -364,6 +365,27 @@ test("la vue paiement expose facture, carte, autres moyens et consentement", () 
   assert.equal(view.state.lastOrder.paymentUrl, "https://nowpayments.io/invoice/abc");
   assert.equal(view.state.lastOrder.trackingToken, "tok_abc123");
   assert.equal(view.state.lastOrder.qty, 2);
+});
+
+test("sans URL de bascule (sous minimum carte), pas de bouton carte", () => {
+  const view = shopPaymentView({
+    ref: "DGC-1A2B3C4D5E6F",
+    title: "Amazon (AE)",
+    label: "1 AED",
+    qty: 2,
+    totalUsd: "$2.36",
+    paymentUrl: "https://nowpayments.io/invoice/def",
+    trackingToken: "tok_abc123",
+    cardUrl: null,
+    slug: "amazon-ae",
+    email: "client@example.com",
+    locale: "en",
+    links: LINKS,
+  });
+  const flat = view.keyboard.flat();
+  assert.ok(!flat.some((b) => b.text.includes("Pay by card")), "bouton carte masqué");
+  assert.ok(flat.some((b) => b.text.includes("Pay now")), "facture crypto toujours là");
+  assert.equal(view.state.lastOrder.trackingToken, "tok_abc123");
 });
 
 test("l'URL de bascule carte reste correcte pour refs et jetons exotiques", () => {

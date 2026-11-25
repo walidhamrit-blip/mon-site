@@ -27,6 +27,8 @@ import { getDigitalCatalog } from "@/lib/digital-store";
 import { getFazercardsCatalog } from "@/lib/fazercards-catalog";
 import { createFazercardsCheckout, FazercardsOrderError } from "@/lib/fazercards-orders";
 import { fazercardsMinOrderUsd } from "@/lib/fazercards";
+import { resolveLivePayGateConfig } from "@/lib/paygate";
+import { payGateReady } from "@/lib/paygate-core";
 import { readDigitalOverrides } from "@/lib/digital-overrides";
 import { resolveFazercardsCheckoutProduct } from "@/lib/digital-overrides-core";
 import { siteBaseUrl } from "@/lib/site-url";
@@ -49,6 +51,7 @@ import {
   shopBelowMinimumView,
   shopCategoriesView,
   shopCategoryView,
+  shopCardSwitchUrl,
   shopCopy,
   fillShopTemplate,
   shopDenominationView,
@@ -500,7 +503,7 @@ async function completeCheckout(
       qty: result.quantity,
       totalUsd: formatShopUsd(result.totalUsd),
       paymentUrl: result.paymentUrl,
-      trackingToken: result.trackingToken,
+      cardUrl: await cardSwitchUrlFor(ctx, result.orderRef, result.trackingToken, result.totalUsd),
       slug: pending.slug,
       email,
       locale: language,
@@ -515,6 +518,26 @@ async function completeCheckout(
     await sendOrEdit(actor.chatId, messageId, checkoutErrorMessage(error, language), [
       [{ text: localeMenu(language), callback_data: "menu:home" }],
     ]);
+  }
+}
+
+/**
+ * URL de bascule carte pour cette commande — `null` si la passerelle carte
+ * est désactivée ou si le montant est sous son minimum (bouton masqué plutôt
+ * qu'un clic qui rebondit sans explication).
+ */
+async function cardSwitchUrlFor(
+  ctx: ShopBotContext,
+  ref: string,
+  token: string,
+  totalUsd: number,
+): Promise<string | null> {
+  try {
+    const config = await resolveLivePayGateConfig();
+    if (!payGateReady(config) || totalUsd + 1e-6 < config.minOrderUsd) return null;
+    return shopCardSwitchUrl(shopLinks(ctx), ref, token);
+  } catch {
+    return null;
   }
 }
 
@@ -564,7 +587,12 @@ async function resendPaymentLink(
     qty: last.qty,
     totalUsd: last.totalUsd,
     paymentUrl: last.paymentUrl,
-    trackingToken: last.trackingToken,
+    cardUrl: await cardSwitchUrlFor(
+      ctx,
+      last.ref,
+      last.trackingToken,
+      Number(last.totalUsd) || 0,
+    ),
     slug: last.slug,
     email: last.email,
     locale: language,
