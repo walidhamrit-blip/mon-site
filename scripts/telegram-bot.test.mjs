@@ -368,6 +368,26 @@ test("l'URL setWebhook canonique est /api/telegram-webhook (alias conservé)", (
   assert.match(setup, /api\/telegram-webhook/);
 });
 
+test("cartes cadeaux du bot : hiérarchie type de carte → région", () => {
+  const shopMod = code(read("src/lib/telegram-shop.ts"));
+  // Cascade déclenchée uniquement pour la famille cartes cadeaux.
+  assert.match(shopMod, /kind === "gift_card"/);
+  assert.match(shopMod, /shopBrandsOfKind\(/);
+  assert.match(shopMod, /shopRegionsOfBrand\(/);
+  // Tous les nouveaux callbacks sont câblés dans le switch boutique.
+  assert.match(shopMod, /case "brands":/);
+  assert.match(shopMod, /case "brand":/);
+  assert.match(shopMod, /case "regionPage":/);
+  assert.match(shopMod, /case "region":/);
+  assert.match(shopMod, /case "regionAll":/);
+  assert.match(shopMod, /case "brandProductsPage":/);
+  // Index périmé (catalogue changé) : réouverture de la boutique, jamais de crash.
+  assert.match(shopMod, /if \(!brand \|\| !kind\)/);
+  assert.match(shopMod, /if \(!kind \|\| !brand\)/);
+  // Le retour d'une fiche produit remonte la hiérarchie (régions ou marques).
+  assert.match(shopMod, /regionPage.*brands|brands.*regionPage/s);
+});
+
 test("le /start des nouveaux arrivants propose le choix de langue", () => {
   const route = code(read("src/app/api/telegram/webhook/route.ts"));
   assert.match(route, /isNew/);

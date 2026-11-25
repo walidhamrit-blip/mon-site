@@ -34,6 +34,12 @@ import { resolveFazercardsMaxOrderUsd } from "@/lib/store";
 import { resolveLivePayGateConfig } from "@/lib/paygate";
 import { payGateReady } from "@/lib/paygate-core";
 import { readDigitalOverrides } from "@/lib/digital-overrides";
+import {
+  shopBrandRegionsView,
+  shopBrandsOfKind,
+  shopBrandsView,
+  shopRegionsOfBrand,
+} from "@/lib/telegram-shop-core";
 import { resolveFazercardsCheckoutProduct } from "@/lib/digital-overrides-core";
 import { siteBaseUrl } from "@/lib/site-url";
 import { denominationLabel } from "@/lib/digital-types";
@@ -156,6 +162,35 @@ export async function handleShopCallback(
     case "category":
       await renderCategory(actor, messageId, callback.kind, callback.page, language, ctx, state);
       return true;
+    case "brands":
+      await renderBrands(actor, messageId, callback.kind, callback.page, language, ctx, state);
+      return true;
+    case "brand":
+      await renderBrandEntry(actor, messageId, callback.index, language, ctx, state);
+      return true;
+    case "regionPage":
+      await renderBrandRegions(actor, messageId, callback.page, language, ctx, state);
+      return true;
+    case "region":
+      await renderBrandProducts(actor, messageId, callback.index, language, ctx, state);
+      return true;
+    case "regionAll":
+      await renderBrandProducts(actor, messageId, null, language, ctx, state);
+      return true;
+    case "brandProductsPage": {
+      const kind = typeof state.kind === "string" ? state.kind : null;
+      const brand = typeof state.brand === "string" ? state.brand : null;
+      if (!kind || !brand) {
+        await openTelegramShop(actor.chatId, messageId, language, ctx);
+        return true;
+      }
+      const catalog = await loadCatalog();
+      const region = typeof state.region === "string" ? state.region : null;
+      await renderBrandProductList(
+        actor, messageId, catalog, kind, brand, region, callback.page, language, ctx, state,
+      );
+      return true;
+    }
     case "product":
       await renderProductByIndex(actor, messageId, callback.index, language, ctx, state);
       return true;
@@ -270,8 +305,139 @@ async function renderCategory(
   state: TelegramShopState,
 ): Promise<void> {
   const catalog = await loadCatalog();
+  // Cartes cadeaux : hiérarchie TYPE de carte (Steam, PlayStation…) puis
+  // RÉGION. Une seule marque → régions directement ; une seule région →
+  // liste plate (comportement d'origine des autres familles).
+  if (kind === "gift_card") {
+    const links = shopLinks(ctx);
+    const brands = shopBrandsOfKind(catalog, kind);
+    if (brands.length > 1) {
+      await render(actor.chatId, messageId, shopBrandsView(catalog, kind, page, language, links), state);
+      return;
+    }
+    if (brands.length === 1) {
+      const brand = brands[0].name;
+      if (shopRegionsOfBrand(catalog, kind, brand).length > 1) {
+        await render(
+          actor.chatId,
+          messageId,
+          shopBrandRegionsView(catalog, kind, brand, page, language, links),
+          state,
+        );
+        return;
+      }
+    }
+  }
   const view = shopCategoryView(catalog, kind, page, language, shopLinks(ctx));
   await render(actor.chatId, messageId, view, state);
+}
+
+/** Liste de produits d'une marque cartes cadeaux (région éventuelle). */
+async function renderBrandProductList(
+  actor: ShopActor,
+  messageId: number | null,
+  catalog: ShopProduct[],
+  kind: string,
+  brand: string,
+  region: string | null,
+  page: number,
+  language: ShopLocale,
+  ctx: ShopBotContext,
+  state: TelegramShopState,
+): Promise<void> {
+  const view = shopCategoryView(catalog, kind, page, language, shopLinks(ctx), {
+    brand,
+    region,
+    regionStep: shopRegionsOfBrand(catalog, kind, brand).length > 1,
+  });
+  await render(actor.chatId, messageId, view, state);
+}
+
+async function renderBrands(
+  actor: ShopActor,
+  messageId: number | null,
+  kind: string,
+  page: number,
+  language: ShopLocale,
+  ctx: ShopBotContext,
+  state: TelegramShopState,
+): Promise<void> {
+  const catalog = await loadCatalog();
+  const view = shopBrandsView(catalog, kind, page, language, shopLinks(ctx));
+  await render(actor.chatId, messageId, view, state);
+}
+
+/** Marque choisie : régions si la marque en couvre plusieurs, sinon liste directe. */
+async function renderBrandEntry(
+  actor: ShopActor,
+  messageId: number | null,
+  index: number,
+  language: ShopLocale,
+  ctx: ShopBotContext,
+  state: TelegramShopState,
+): Promise<void> {
+  const catalog = await loadCatalog();
+  const brands = stringList(state.brands);
+  const kind = typeof state.kind === "string" ? state.kind : null;
+  const brand = brands[index];
+  if (!brand || !kind) {
+    // Index périmé (catalogue changé, ancien clavier) : on rouvre la boutique.
+    await openTelegramShop(actor.chatId, messageId, language, ctx);
+    return;
+  }
+  if (shopRegionsOfBrand(catalog, kind, brand).length > 1) {
+    await render(
+      actor.chatId,
+      messageId,
+      shopBrandRegionsView(catalog, kind, brand, 1, language, shopLinks(ctx)),
+      state,
+    );
+    return;
+  }
+  await renderBrandProductList(
+    actor, messageId, catalog, kind, brand, null, 1, language, ctx, state,
+  );
+}
+
+async function renderBrandRegions(
+  actor: ShopActor,
+  messageId: number | null,
+  page: number,
+  language: ShopLocale,
+  ctx: ShopBotContext,
+  state: TelegramShopState,
+): Promise<void> {
+  const catalog = await loadCatalog();
+  const kind = typeof state.kind === "string" ? state.kind : null;
+  const brand = typeof state.brand === "string" ? state.brand : null;
+  if (!kind || !brand) {
+    await openTelegramShop(actor.chatId, messageId, language, ctx);
+    return;
+  }
+  const view = shopBrandRegionsView(catalog, kind, brand, page, language, shopLinks(ctx));
+  await render(actor.chatId, messageId, view, state);
+}
+
+/** Région choisie (`null` = toutes les régions) : liste des produits filtrée. */
+async function renderBrandProducts(
+  actor: ShopActor,
+  messageId: number | null,
+  regionIndex: number | null,
+  language: ShopLocale,
+  ctx: ShopBotContext,
+  state: TelegramShopState,
+): Promise<void> {
+  const catalog = await loadCatalog();
+  const kind = typeof state.kind === "string" ? state.kind : null;
+  const brand = typeof state.brand === "string" ? state.brand : null;
+  if (!kind || !brand) {
+    await openTelegramShop(actor.chatId, messageId, language, ctx);
+    return;
+  }
+  const region = regionIndex == null ? null : (stringList(state.regions)[regionIndex] ?? null);
+  await renderBrandProductList(
+    actor, messageId, catalog, kind, brand, region, 1, language, ctx, state,
+  );
 }
 
 async function renderProductByIndex(
@@ -328,7 +494,19 @@ async function renderProduct(
       : typeof state.page === "number"
         ? state.page
         : 1;
-  const view = shopProductView(product, page, language, shopLinks(ctx), categoryPage);
+  // Fiche atteinte depuis la hiérarchie cartes cadeaux : le retour remonte
+  // aux régions de la marque (ou à la liste des marques).
+  let backData: string | undefined;
+  const kind = typeof state.kind === "string" ? state.kind : null;
+  const brand = typeof state.brand === "string" ? state.brand : null;
+  if (kind && brand) {
+    backData = shopCallback(
+      shopRegionsOfBrand(await loadCatalog(), kind, brand).length > 1
+        ? { view: "regionPage", page: 1 }
+        : { view: "brands", kind, page: 1 },
+    );
+  }
+  const view = shopProductView(product, page, language, shopLinks(ctx), categoryPage, backData);
   await render(actor.chatId, messageId, view, state);
 }
 

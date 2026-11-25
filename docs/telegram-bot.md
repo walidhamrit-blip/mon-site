@@ -120,12 +120,16 @@ rien ne s'empile) :
 
 ```
 🛒 Boutique
-  ├─ 🎁 Cartes cadeaux (12)
-  ├─ 🎮 Recharges de jeux (8)
-  ├─ 🔑 Clés logiciels (5)
-  └─ 📺 Codes d'abonnement (3)
-        ↓
-  Liste des produits — « à partir de $11.50 » sur chaque bouton, 8 par page
+  ├─ 🎁 Cartes cadeaux
+  │     ↓
+  │   Types de carte — « Steam (4) · PlayStation (3) · Google Play (2)… »
+  │     ↓
+  │   Régions — « US (3) · TR (2)… » + « Toutes les régions »
+  │     ↓
+  │   Produits de la marque/région — « à partir de $11.50 », 8 par page
+  ├─ 🎮 Recharges de jeux (8)      ┐ liste plate
+  ├─ 🔑 Clés logiciels (5)         │ (fournisseur → fiche web si
+  └─ 📺 Codes d'abonnement (3)     ┘ champs acheteur)
         ↓
   Montants disponibles — « $10 · $11.50 » sur chaque bouton
         ↓
@@ -133,7 +137,9 @@ rien ne s'empile) :
         ↓
   ✅ Commande créée — DGC-…
      💳 Payer maintenant (facture crypto NOWPayments)
-     Carte / Skrill / carte de recharge → fiche web du produit
+     💳 Payer par carte — LA MÊME commande bascule vers Visa/Mastercard
+        (masqué sous le minimum carte du réglage admin)
+     🏦 Other methods — Skrill / carte de recharge → fiche web
      📩 Recevoir le code dans ce chat (consentement explicite — la
         confirmation arrive dans un message séparé, la facture reste
         affichée et payable dans n'importe quel ordre)
