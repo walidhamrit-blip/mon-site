@@ -71,6 +71,11 @@ export interface LegacyProductCandidate {
  * fiche FazerCards active correspondante (ou vers son rayon thématique).
  * Renvoie `null` pour tout slug inconnu afin de conserver la 404 légitime.
  */
+export function isLegacySeedSlug(slug: string | null | undefined): boolean {
+  const normalized = (slug ?? "").trim().toLowerCase();
+  return Boolean(normalized && Object.hasOwn(LEGACY_SEED_SLUG_RULES, normalized));
+}
+
 export function resolveLegacyDigitalSlugRedirect(
   slug: string,
   products: readonly LegacyProductCandidate[],

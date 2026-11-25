@@ -20,8 +20,12 @@ Une fois les 3 variables configurées, votre site dispose de **4 automatismes co
    - Contrôle `https://nokhba.net.ly/sitemap.xml` et ne le resoumet intelligemment qu’au besoin (le lundi, s’il manque, si Google ne l’a pas lu depuis 7 jours, ou s’il reste des erreurs avec un délai anti-spam de 20 h).
    - Met à jour quotidiennement le ticket unique de suivi sur GitHub (**`📊 Suivi automatique Google Search Console`**) et publie l’artefact JSON/Markdown (90 jours).
    - Envoie un condensé sur Telegram le lundi, et **immédiatement** n’importe quel autre jour uniquement en cas d’anomalie (erreur sitemap ou baisse brutale de trafic).
-4. **Pont direct vers Arena (`gh` + `google_sheets`)** :
-   - Depuis Arena, l’agent lit automatiquement le ticket GitHub mis à jour par `gsc-monitor.yml` (et/ou votre Google Sheet si `GOOGLE_SHEETS_GSC_SPREADSHEET_ID` est configuré), identifie les pages à optimiser et ouvre une Pull Request vérifiée par les tests automatisés avant mise en production.
+4. **Pilote automatique SEO fermé (`scripts/gsc-auto-optimize.mjs` + `src/lib/seo-autopilot.ts`)** :
+   - Chaque matin à 08:30 UTC, juste après le relevé Search Console, le pilote sélectionne jusqu'à **2 nouvelles pages éligibles** (Quick Wins Page 2 `≥ 8` impressions ou Page 1 CTR `< 3,5 %` `≥ 15` impressions).
+   - **Verrou anti-yo-yo 18 jours** : toute page fraîchement optimisée est verrouillée pendant 18 jours dans `src/lib/seo-autopilot-data.ts` afin de laisser Google stabiliser sa position.
+   - **Validation automatique avant commit** : `typecheck` + garde-fous SERP (`title ≤ 60`, `description 50..155`, zéro promesse interdite) tournent avant tout push automatique sur `main`.
+5. **Préchauffage & Notification automatique post-déploiement (`.github/workflows/seo-index-ping.yml` / `npm run seo:index-ping`)** :
+   - À chaque push sur `main`, le workflow attend la fin du déploiement Vercel, préchauffe les URLs impactées, notifie **IndexNow** (`AR` + `?lang=en` + `sitemap.xml` + `llms.txt`) et inspecte les URLs modifiées auprès de **Google Search Console**.
 
 ---
 
