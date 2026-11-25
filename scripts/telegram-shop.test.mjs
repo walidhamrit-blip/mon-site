@@ -74,6 +74,7 @@ const {
   shopCallbackFits,
   shopCategoriesView,
   shopCategoryView,
+  shopBelowMinimumView,
   shopCopy,
   shopDenominationView,
   shopEmailPromptView,
@@ -287,6 +288,38 @@ test("un produit à champs acheteur n'offre pas d'achat en chat", () => {
   assert.ok(!callbacks.includes("shop:buy"));
   const webUrl = view.keyboard.flat().find((b) => b.url?.includes("/codes/roblox-robux"));
   assert.ok(webUrl, "le bouton renvoie vers la fiche web");
+});
+
+/* --------------------------- Plancher de facture --------------------------- */
+
+test("la vue montant minimum suggère la quantité exacte", () => {
+  // Amazon (AE) 1 AED à 1,18 $ : sous le plancher de 1,50 $.
+  const cheap = fakeProduct({
+    slug: "amazon-ae",
+    titleEn: "Amazon (AE) · Instant use",
+    denominations: [{ id: "aed-1", label: "1 AED", faceValue: "1 AED", priceUsd: 1.18, available: true }],
+  });
+  const view = shopBelowMinimumView(cheap, cheap.denominations[0], 1.5, "en", LINKS, 2);
+  assert.match(view.text, /minimum invoice is \$1\.50/);
+  assert.match(view.text, /2 × 1 AED/);
+  assert.match(view.text, /\$2\.36/);
+  assert.match(view.text, /Amazon \(AE\)/);
+  // Retour vers la page produit (page courante préservée) + fiche web.
+  const callbacks = view.keyboard.flat().map((b) => b.callback_data);
+  assert.ok(callbacks.includes("shop:pd:2"));
+  assert.ok(view.keyboard.flat().some((b) => b.url?.includes("/codes/amazon-ae")));
+});
+
+test("la vue montant minimum reste juste aux bornes de quantité", () => {
+  const cheap = fakeProduct({
+    denominations: [
+      { id: "tiny", label: "$0.20", faceValue: "0.20 USD", priceUsd: 0.2, available: true, maxQuantity: 3 },
+    ],
+  });
+  const view = shopBelowMinimumView(cheap, cheap.denominations[0], 1.5, "en", LINKS, 1);
+  // 1.50 / 0.20 = 7.5 → plafonné à maxQuantity 3 → reste sous le plancher.
+  assert.match(view.text, /3 × \$0\.20/);
+  assert.match(view.text, /below the minimum even at maximum/);
 });
 
 /* --------------------------------- Paiement -------------------------------- */

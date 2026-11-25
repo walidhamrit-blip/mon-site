@@ -294,6 +294,8 @@ export interface ShopCopyStrings {
   payAgain: string;
   noOrderYet: string;
   invalidEmail: string;
+  belowMinimum: string;
+  belowMinimumRetry: string;
   cooldown: string;
   sellable: (count: number) => string;
   unavailable: string;
@@ -328,6 +330,10 @@ const SHOP_COPY: Record<ShopLocale, ShopCopyStrings> = {
     noOrderYet: "لا يوجد طلب حديث: افتح المتجر واختر منتجاً.",
     invalidEmail:
       "هذا العنوان لا يبدو بريداً إلكترونياً صالحاً. حاول مرة أخرى (مثال name@example.com)، أو ألغِ.",
+    belowMinimum:
+      "💵 الحد الأدنى للفاتورة هو {min}.\n\nاختر كمية أكبر — مثلاً {qty} × {label} (المجموع {total}) — ثم اضغط «شراء».",
+    belowMinimumRetry:
+      "💵 الحد الأدنى للفاتورة هو {min} — اختر كمية أكبر أو مبلغاً أعلى ثم أعد المحاولة.",
     cooldown:
       "أنشأنا فاتورة قبل قليل: انتظر دقيقة قبل إنشاء أخرى (أو أكمل دفع الفاتورة الحالية).",
     sellable: (count: number) => `${count} منتج`,
@@ -362,6 +368,10 @@ const SHOP_COPY: Record<ShopLocale, ShopCopyStrings> = {
     noOrderYet: "No recent order: open the shop and pick a product.",
     invalidEmail:
       "That doesn't look like a valid email. Try again (e.g. name@example.com), or cancel.",
+    belowMinimum:
+      "💵 The minimum invoice is {min}.\n\nIncrease the quantity — e.g. {qty} × {label} (total {total}) — then tap Buy.",
+    belowMinimumRetry:
+      "💵 The minimum invoice is {min} — pick a bigger quantity or amount and try again.",
     cooldown:
       "An invoice was just created: please wait a minute before creating another (or finish paying for the current one).",
     sellable: (count: number) => `${count} product(s)`,
@@ -664,6 +674,53 @@ export function shopEmailPromptView(pending: { title: string; label: string; tot
       `💵 ${formatShopUsd(Number(pending.totalUsd))}`,
     ].join("\n"),
     keyboard: [[{ text: `✖️ ${copy.cancel}`, callback_data: shopCallback({ view: "cancel" }) }]],
+  };
+}
+
+/**
+ * Vue « facture trop petite » : la passerelle crypto refuse les factures
+ * sous un plancher (`FAZERCARDS_MIN_ORDER_USD`, ex. 1,50 $). On l'annonce
+ * AVANT la caisse, avec l'action à faire (quantité exacte suggérée).
+ */
+export function shopBelowMinimumView(
+  product: ShopProduct,
+  denomination: ShopDenomination,
+  minUsd: number,
+  locale: ShopLocale,
+  links: ShopLinks,
+  productPage = 1,
+): ShopView {
+  const copy = shopCopy(locale);
+  const maxQty = Math.max(
+    1,
+    Math.min(denomination.maxQuantity ?? SHOP_MAX_QUANTITY, SHOP_MAX_QUANTITY),
+  );
+  const suggestedQty = Math.min(Math.max(1, Math.ceil(minUsd / denomination.priceUsd)), maxQty);
+  const suggestedTotal = Math.round(denomination.priceUsd * suggestedQty * 100) / 100;
+  const title = locale === "ar" ? product.titleAr : product.titleEn;
+  const label = denominationLabel(denomination, locale);
+  const sellableAgain = suggestedTotal + 1e-6 >= minUsd;
+
+  const text = [
+    `📦 <b>${escapeShopHtml(title)}</b> — ${escapeShopHtml(label)}`,
+    "",
+    fillShopTemplate(copy.belowMinimum, {
+      min: formatShopUsd(minUsd),
+      qty: String(suggestedQty),
+      label: escapeShopHtml(label),
+      total: formatShopUsd(suggestedTotal),
+    }),
+    ...(sellableAgain
+      ? []
+      : ["", locale === "ar" ? "Ce montant reste insuffisant même en quantité maximale : ouvrez la fiche web." : "This amount stays below the minimum even at maximum quantity: open the web page instead."]),
+  ].join("\n");
+
+  return {
+    text,
+    keyboard: [
+      [{ text: copy.back, callback_data: shopCallback({ view: "productPage", page: productPage }) }],
+      [{ text: locale === "ar" ? "🌐 Fiche web" : "🌐 Web page", url: `${links.site}/codes/${encodeURIComponent(product.slug)}` }],
+    ],
   };
 }
 
