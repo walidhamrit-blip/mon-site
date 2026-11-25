@@ -4,8 +4,12 @@
 > Mode d'emploi : `docs/mesure-funnel.md`.
 > Aucune donnée personnelle ici : uniquement des compteurs.
 
-**Référence** : début de mesure = **20/11/2026** · fin = **27/11/2026**
+**Référence** : début de mesure = **18/11/2026** · fin = **25/11/2026**
 (période sans modification de l'accueil)
+
+> Les dates de ce document suivent le calendrier local. Les horodatages des
+> runs GitHub peuvent afficher deux jours de plus : c'est l'horloge de la CI,
+> pas une autre mesure.
 
 | Semaine | Visites | `gateway_click` | Carte n°1 | `whatsapp_click` | `lead_submit` | `checkout_start` | Décision |
 |---|---:|---:|---|---:|---:|---:|---|
@@ -16,7 +20,7 @@
 
 ## Référence technique de l'accueil
 
-Relevé du **20/11/2026**, avant toute modification de l'accueil (C-08).
+Relevé du **18/11/2026**, avant toute modification de l'accueil (C-08).
 Lighthouse **12**, mobile émulé, **3 runs**, médiane — production
 `https://nokhba.net.ly/`.
 
@@ -41,7 +45,7 @@ Lighthouse **12**, mobile émulé, **3 runs**, médiane — production
 
 | Événement | État | Preuve |
 |---|---|---|
-| `audit_request` | **vérifié** le 20/11/2026 | envoi du formulaire de `/audit`, événement visible dans Vercel Analytics |
+| `audit_request` | **vérifié** le 18/11/2026 | envoi du formulaire de `/audit`, événement visible dans Vercel Analytics |
 | `service_view` | **vérifié** | événement visible lors d'un test d'ouverture de page service |
 | `gateway_click` | à confirmer | — |
 | `whatsapp_click` | à confirmer | — |
