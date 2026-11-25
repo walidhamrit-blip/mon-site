@@ -92,7 +92,7 @@ export default async function AdminSearchConsolePage() {
             </li>
             <li>
               Redéployez sur Vercel : ce panneau devient actif et le workflow{" "}
-              <code>.github/workflows/gsc-monitor.yml</code> publiera chaque lundi votre rapport automatique (clics, sitemap, Quick Wins Page 2).
+              <code>.github/workflows/gsc-monitor.yml</code> publiera <b>tous les matins (7j/7 à 08:30 UTC)</b> votre rapport automatique (pouls 7j, tendance 28j, état sitemap et Quick Wins Page 2).
             </li>
           </ol>
           <p className="text-[12px] text-amber-900">
