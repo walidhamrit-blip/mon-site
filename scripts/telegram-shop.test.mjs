@@ -547,6 +547,56 @@ test("liste produits marque : pagination dédiée et retour régions/marques", (
   assert.ok(flat.some((b) => b.callback_data === "shop:b:gift_card:1"), "retour marques");
 });
 
+test("version arabe : intitulés arabes des marques, régions et légende MENA/GLOBAL", () => {
+  const catalog = [
+    fakeProduct({ slug: "amazon-us", platform: "Amazon (US)", regions: ["US"] }),
+    fakeProduct({ slug: "amazon-mena", platform: "Amazon (MENA)", regions: ["MENA"] }),
+    fakeProduct({ slug: "amazon-global", platform: "Amazon GLOBAL", regions: ["GLOBAL"] }),
+    fakeProduct({ slug: "steam", platform: "Steam", regions: ["US", "TR"] }),
+  ];
+
+  // Niveau 1 : « أمازون · Amazon (3) » — marque inconnue → nom d'origine.
+  const brandsAr = shopBrandsView(catalog, "gift_card", 1, "ar", LINKS);
+  const brandLabels = brandsAr.keyboard.flat()
+    .filter((b) => b.callback_data?.startsWith("shop:bn:"))
+    .map((b) => b.text);
+  assert.deepEqual(brandLabels, ["أمازون · Amazon (3)", "ستيم · Steam (1)"]);
+
+  // Niveau 2 : boutons « ستيم تركيا / ستيم أمريكا », titre « ستيم (Steam) »,
+  // et légende expliquant MENA (pays) + GLOBAL.
+  const regionsAr = shopBrandRegionsView(catalog, "gift_card", "Amazon", 1, "ar", LINKS);
+  const regionLabels = regionsAr.keyboard.flat()
+    .filter((b) => b.callback_data?.startsWith("shop:rg:"))
+    .map((b) => b.text);
+  // Ordre = tri alphabétique des codes (GLOBAL < MENA < US).
+  assert.deepEqual(
+    regionLabels,
+    ["أمازون عالمية (1)", "أمازون الشرق الأوسط وشمال إفريقيا (1)", "أمازون أمريكا (1)"],
+  );
+  assert.match(regionsAr.text, /أمازون \(Amazon\)/);
+  assert.match(
+    regionsAr.text,
+    /MENA = الشرق الأوسط وشمال إفريقيا — الخليج \(السعودية، الإمارات، قطر، الكويت، عُمان، البحرين\)، مصر، الأردن، لبنان، المغرب العربي/,
+  );
+  assert.match(regionsAr.text, /GLOBAL = عالمية — تعمل في جميع الدول دون قيود إقليمية/);
+
+  // Version anglaise : boutons inchangés, légende traduite.
+  const regionsEn = shopBrandRegionsView(catalog, "gift_card", "Amazon", 1, "en", LINKS);
+  const enLabels = regionsEn.keyboard.flat()
+    .filter((b) => b.callback_data?.startsWith("shop:rg:"))
+    .map((b) => b.text);
+  assert.deepEqual(enLabels, ["Amazon GLOBAL (1)", "Amazon MENA (1)", "Amazon US (1)"]);
+  assert.match(regionsEn.text, /MENA = Middle East & North Africa/);
+
+  // Liste produits : titre localisé « ستيم (Steam) · تركيا ».
+  const listAr = shopCategoryView(catalog, "gift_card", 1, "ar", LINKS, {
+    brand: "Steam",
+    region: "TR",
+    regionStep: true,
+  });
+  assert.match(listAr.text, /ستيم \(Steam\) · تركيا/);
+});
+
 test("callbacks marque/région : aller-retour codec", () => {
   assert.equal(shopCallback({ view: "brands", kind: "gift_card", page: 2 }), "shop:b:gift_card:2");
   assert.deepEqual(parseShopCallback("shop:b:gift_card:2"), {
