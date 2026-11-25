@@ -1,4 +1,5 @@
 import { websiteOfferSummary } from "@/lib/website-offer";
+import { resolveAutopilotOverride } from "@/lib/seo-autopilot";
 import type { Metadata } from "next";
 import { resolveDemoClassification, resolvePlanPriceBreakdown } from "@/lib/classification";
 import { getDemoCapturedAt, getDemoPreviewImages } from "@/lib/preview-manifest";
@@ -1017,11 +1018,15 @@ export function pageMetadata(config: SiteConfig, opts: PageSeoOptions): Metadata
   // Chaque langue a sa canonique auto-référente. Une page noindex (suivi,
   // paiement, ressource absente) ne doit pas entrer dans un cluster hreflang.
   const canonical = localizedAbsoluteUrl(config.url, opts.path, locale, defaultLocale);
+  const autoOverride = !opts.noindex ? resolveAutopilotOverride(opts.path, locale) : null;
   // Titre borné à 60 caractères, suffixe de marque ajouté une seule fois.
-  const title = serpTitle(applyMarketTokens(opts.title, market, locale), locale);
+  const title = serpTitle(
+    applyMarketTokens(autoOverride?.title ?? opts.title, market, locale),
+    locale,
+  );
   // Description bornée à ~155 caractères (largeur d'affichage Google).
   const description = serpDescription(
-    applyMarketTokens(opts.description, market, locale),
+    applyMarketTokens(autoOverride?.description ?? opts.description, market, locale),
   );
   // undefined = pas d'images déclarées manuellement (la page s'appuie sur
   // les fichiers opengraph-image / twitter-image du segment de route).

@@ -1,0 +1,68 @@
+name: SEO Auto-Index Ping
+
+# Après chaque push sur `main` (ou lancement manuel), attend que le déploiement
+# Vercel de production soit prêt puis préchauffe les pages modifiées et notifie
+# automatiquement IndexNow + Google Search Console.
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+    inputs:
+      all_priority:
+        description: "Notifier toutes les pages stratégiques immédiatement"
+        required: false
+        default: true
+        type: boolean
+
+permissions:
+  contents: read
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Récupération du code (avec historique du commit précédent)
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 2
+
+      - name: Installation Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: 22
+
+      - name: Attente de la fin du déploiement Vercel sur main
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          COMMIT_SHA: ${{ github.sha }}
+          REPO: ${{ github.repository }}
+        run: |
+          for i in $(seq 1 12); do
+            STATE=$(gh api "repos/${REPO}/commits/${COMMIT_SHA}/statuses" --jq '[.[] | select(.context == "Vercel")][0].state // "pending"' 2>/dev/null || echo "pending")
+            echo "Tentative ${i}/12 — Vercel=${STATE}"
+            if [ "${STATE}" = "success" ]; then
+              break
+            fi
+            sleep 15
+          done
+
+      - name: Préchauffage & Notification IndexNow + Google Search Console
+        env:
+          SITE_URL: ${{ vars.SITE_URL || 'https://nokhba.net.ly' }}
+          GOOGLE_INDEXING_CLIENT_EMAIL: ${{ secrets.GOOGLE_INDEXING_CLIENT_EMAIL }}
+          GOOGLE_INDEXING_PRIVATE_KEY: ${{ secrets.GOOGLE_INDEXING_PRIVATE_KEY }}
+          GOOGLE_INDEXING_SITE_URL: ${{ secrets.GOOGLE_INDEXING_SITE_URL || vars.GOOGLE_INDEXING_SITE_URL }}
+          EVENT_NAME: ${{ github.event_name }}
+          ALL_PRIORITY: ${{ inputs.all_priority }}
+          BEFORE_SHA: ${{ github.event.before }}
+          AFTER_SHA: ${{ github.sha }}
+        run: |
+          if [ "${EVENT_NAME}" = "workflow_dispatch" ] && [ "${ALL_PRIORITY}" = "true" ]; then
+            node scripts/seo-index-ping.mjs --all-priority
+          else
+            node scripts/seo-index-ping.mjs --before "${BEFORE_SHA}" --after "${AFTER_SHA}"
+          fi
