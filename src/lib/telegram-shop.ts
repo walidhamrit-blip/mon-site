@@ -2,22 +2,24 @@
  * Boutique inline du bot Telegram — orchestration serveur.
  *
  * Ce module branche le catalogue du site (`getDigitalCatalog`) et la caisse
- * du site (`createDigitalCheckout`) sur le chat Telegram :
+ * du site (`createFazercardsCheckout`) sur le chat Telegram :
  *
  *   Catégories → Produits (avec prix) → Détails & Paiement
  *
  * Chaque clic appelle `editMessageText` sur le MÊME message : la navigation
  * reste fluide et instantanée, sans empiler des bulles. Le rendu (textes,
- * claviers, bornes) vit dans `telegram-shop-core.ts` (pur) ; ce module se
- * contente de résoudre les index courts du clavier, d'écrire l'état du chat
- * et de créer la commande.
+ * claviers, bornes, diagnostic d'erreur) vit dans `telegram-shop-core.ts`
+ * (pur) ; ce module résout les index courts du clavier, écrit l'état du chat,
+ * journalise les blocages de caisse et crée la commande.
  *
  * Garde-fous repris du site :
- *  - le prix est TOUJOURS recalculé côté serveur (`createDigitalCheckout`) ;
- *  - un e-mail réel de livraison est exigé (jamais d'adresse inventée) ;
- *  - les produits à champs acheteur (identifiant joueur…) ne se vendent pas
- *    dans le chat : le bot renvoie vers la fiche web complète ;
- *  - un garde-fou anti-spam évite de marteler NOWPayments facture après facture.
+ *  - le prix est TOUJOURS recalculé côté serveur (`createFazercardsCheckout`) ;
+ *  - un e-mail réel de livraison est exigé, mémorisé dès validation, affiché
+ *    sur la fiche montant et modifiable en un clic ;
+ *  - la quantité initiale respecte le plancher de facture crypto (1,50 $) ;
+ *  - tout échec nettoie `pending`, propose un bouton WhatsApp pré-rempli +
+ *    la fiche web, journalise la cause dans `/admin/telegram` et alerte
+ *    l'équipe si l'incident est opérationnel (solde fournisseur, passerelle).
  */
 
 import { eq } from "drizzle-orm";
@@ -27,36 +29,45 @@ import { getDigitalCatalog } from "@/lib/digital-store";
 import { getFazercardsCatalog } from "@/lib/fazercards-catalog";
 import { createFazercardsCheckout, FazercardsOrderError } from "@/lib/fazercards-orders";
 import { fazercardsMinOrderUsd } from "@/lib/fazercards";
+import { isNowPaymentsError } from "@/lib/nowpayments";
+import { resolveFazercardsMaxOrderUsd } from "@/lib/store";
 import { readDigitalOverrides } from "@/lib/digital-overrides";
 import { resolveFazercardsCheckoutProduct } from "@/lib/digital-overrides-core";
 import { siteBaseUrl } from "@/lib/site-url";
 import { denominationLabel } from "@/lib/digital-types";
+import { orderRefFromText } from "@/lib/telegram-core";
 import { formatWatchConfirmation, watchOrderFromTelegram } from "@/lib/telegram-delivery";
 import {
   editTelegramMessage,
   getTelegramShopContext,
+  notifyTelegramAdmin,
+  recordTelegramShopCheckoutEvent,
   sendTelegramMessage,
   setTelegramCheckoutEmail,
   setTelegramShopState,
   type TelegramShopState,
 } from "@/lib/telegram";
 import {
+  classifyShopCheckoutError,
   EMPTY_SHOP_STATE,
+  formatShopCheckoutFailureAlert,
   formatShopUsd,
+  isCancelShopInput,
   isPlausibleEmail,
+  maskShopEmail,
   parseShopCallback,
-  shopCallback,
   shopBelowMinimumView,
+  shopCallback,
   shopCategoriesView,
   shopCategoryView,
+  shopCheckoutErrorView,
   shopCopy,
-  fillShopTemplate,
   shopDenominationView,
   shopEmailPromptView,
+  shopInitialQuantity,
   shopPaymentView,
   shopProductView,
   SHOP_MAX_QUANTITY,
-  type ShopCallback,
   type ShopDenomination,
   type ShopLinks,
   type ShopLocale,
@@ -68,6 +79,7 @@ export interface ShopBotContext {
   siteName: string;
   siteUrl: string;
   storeUrl: string;
+  whatsapp?: string;
 }
 
 export interface ShopActor {
@@ -84,6 +96,7 @@ interface PendingCheckout {
   title: string;
   label: string;
   totalUsd: string;
+  promptMessageId?: number | null;
 }
 
 interface LastOrderInfo {
@@ -109,8 +122,11 @@ export async function openTelegramShop(
   language: ShopLocale,
   ctx: ShopBotContext,
 ): Promise<void> {
-  const catalog = await loadCatalog();
-  await render(chatId, messageId, shopCategoriesView(catalog, language, shopLinks(ctx)));
+  const [{ state }, catalog] = await Promise.all([
+    loadShopContext(chatId),
+    loadCatalog(),
+  ]);
+  await render(chatId, messageId, shopCategoriesView(catalog, language, shopLinks(ctx)), state);
 }
 
 /**
@@ -127,7 +143,7 @@ export async function handleShopCallback(
   const callback = parseShopCallback(data);
   if (!callback) return false;
 
-  const state = await loadState(actor.chatId);
+  const { state, checkoutEmail } = await loadShopContext(actor.chatId);
 
   switch (callback.view) {
     case "root":
@@ -143,19 +159,45 @@ export async function handleShopCallback(
       await renderProductBySlug(actor, messageId, callback.page, language, ctx, state);
       return true;
     case "denomination":
-      await renderDenominationByIndex(actor, messageId, callback.index, language, ctx, state);
+      await renderDenominationByIndex(
+        actor,
+        messageId,
+        callback.index,
+        language,
+        ctx,
+        state,
+        checkoutEmail,
+      );
       return true;
     case "quantity":
-      await shiftQuantity(actor, messageId, callback.delta, language, ctx, state);
+      await shiftQuantity(
+        actor,
+        messageId,
+        callback.delta,
+        language,
+        ctx,
+        state,
+        checkoutEmail,
+      );
       return true;
     case "buy":
-      await startBuy(actor, messageId, language, ctx, state);
+      await startBuy(actor, messageId, language, ctx, state, checkoutEmail);
+      return true;
+    case "buyMin":
+      await startBuy(
+        actor,
+        messageId,
+        language,
+        ctx,
+        { ...state, qty: callback.qty },
+        checkoutEmail,
+      );
       return true;
     case "email":
       await askEmail(actor, messageId, language, ctx, state);
       return true;
     case "cancel":
-      await cancelPending(actor, messageId, language, ctx);
+      await cancelPending(actor, messageId, language, ctx, state);
       return true;
     case "pay":
       await resendPaymentLink(actor, messageId, language, ctx, state);
@@ -177,8 +219,23 @@ export async function handleShopEmailInput(
   language: ShopLocale,
   ctx: ShopBotContext,
 ): Promise<boolean> {
-  const state = await loadState(actor.chatId);
-  if (!state.pending) return false;
+  const { state } = await loadShopContext(actor.chatId);
+  const pending = pendingFromState(state);
+  if (!pending) return false;
+
+  // Le client tape « إلغاء » / « cancel » au lieu de cliquer sur le bouton.
+  if (isCancelShopInput(text)) {
+    await dismissPromptKeyboard(actor.chatId, pending);
+    await cancelPending(actor, messageId, language, ctx, state);
+    return true;
+  }
+
+  // Une référence de commande (ex. DGC-…) doit atteindre le suivi, pas être
+  // rejetée comme « e-mail invalide ».
+  if (orderRefFromText(text)) {
+    await setTelegramShopState(actor.chatId, { ...state, pending: null });
+    return false;
+  }
 
   if (!isPlausibleEmail(text)) {
     const copy = shopCopy(language);
@@ -188,7 +245,12 @@ export async function handleShopEmailInput(
     return true;
   }
 
-  await completeCheckout(actor, messageId, text.trim().toLowerCase(), language, ctx, state);
+  const normalizedEmail = text.trim().toLowerCase();
+  // On mémorise l'e-mail valide AVANT l'appel passerelle : si un garde-fou
+  // bloque la commande, le client n'aura jamais à ressaisir son adresse.
+  await setTelegramCheckoutEmail(actor.chatId, normalizedEmail);
+  await dismissPromptKeyboard(actor.chatId, pending);
+  await completeCheckout(actor, messageId, normalizedEmail, language, ctx, state, pending);
   return true;
 }
 
@@ -223,7 +285,7 @@ async function renderProductByIndex(
     await openTelegramShop(actor.chatId, messageId, language, ctx);
     return;
   }
-  await renderProduct(actor, messageId, slug, 1, language, ctx);
+  await renderProduct(actor, messageId, slug, 1, language, ctx, state);
 }
 
 async function renderProductBySlug(
@@ -239,7 +301,7 @@ async function renderProductBySlug(
     await openTelegramShop(actor.chatId, messageId, language, ctx);
     return;
   }
-  await renderProduct(actor, messageId, slug, page, language, ctx);
+  await renderProduct(actor, messageId, slug, page, language, ctx, state);
 }
 
 async function renderProduct(
@@ -249,14 +311,21 @@ async function renderProduct(
   page: number,
   language: ShopLocale,
   ctx: ShopBotContext,
+  state: TelegramShopState,
 ): Promise<void> {
   const product = await findProduct(slug);
   if (!product) {
     await openTelegramShop(actor.chatId, messageId, language, ctx);
     return;
   }
-  const view = shopProductView(product, page, language, shopLinks(ctx));
-  await render(actor.chatId, messageId, view);
+  const categoryPage =
+    typeof state.categoryPage === "number"
+      ? state.categoryPage
+      : typeof state.page === "number"
+        ? state.page
+        : 1;
+  const view = shopProductView(product, page, language, shopLinks(ctx), categoryPage);
+  await render(actor.chatId, messageId, view, state);
 }
 
 async function renderDenominationByIndex(
@@ -266,6 +335,7 @@ async function renderDenominationByIndex(
   language: ShopLocale,
   ctx: ShopBotContext,
   state: TelegramShopState,
+  checkoutEmail: string | null,
 ): Promise<void> {
   const product = typeof state.slug === "string" ? await findProduct(state.slug) : null;
   const denomId = stringList(state.denoms)[index];
@@ -276,18 +346,25 @@ async function renderDenominationByIndex(
   }
   const denomination = product.denominations.find((item) => item.id === denomId);
   if (!denomination) {
-    await renderProduct(actor, messageId, product.slug, backPage, language, ctx);
+    await renderProduct(actor, messageId, product.slug, backPage, language, ctx, state);
     return;
   }
+  const minUsd = fazercardsMinOrderUsd();
+  const initial = shopInitialQuantity(denomination, minUsd);
   const view = shopDenominationView(
     product,
     denomination,
-    stateQty(state),
+    initial.qty,
     backPage,
     language,
     shopLinks(ctx),
+    {
+      checkoutEmail,
+      minOrderUsd: minUsd,
+      autoAdjustedMin: initial.autoAdjusted,
+    },
   );
-  await render(actor.chatId, messageId, view);
+  await render(actor.chatId, messageId, view, state);
 }
 
 async function shiftQuantity(
@@ -297,6 +374,7 @@ async function shiftQuantity(
   language: ShopLocale,
   ctx: ShopBotContext,
   state: TelegramShopState,
+  checkoutEmail: string | null,
 ): Promise<void> {
   const product = typeof state.slug === "string" ? await findProduct(state.slug) : null;
   const denomId = typeof state.denomId === "string" ? state.denomId : null;
@@ -307,7 +385,7 @@ async function shiftQuantity(
   }
   const denomination = product.denominations.find((item) => item.id === denomId);
   if (!denomination) {
-    await renderProduct(actor, messageId, product.slug, backPage, language, ctx);
+    await renderProduct(actor, messageId, product.slug, backPage, language, ctx, state);
     return;
   }
   const maxQty = Math.max(
@@ -315,10 +393,25 @@ async function shiftQuantity(
     Math.min(denomination.maxQuantity ?? SHOP_MAX_QUANTITY, SHOP_MAX_QUANTITY),
   );
   const next = Math.min(Math.max(1, stateQty(state) + delta), maxQty);
-  const view = shopDenominationView(product, denomination, next, backPage, language, shopLinks(ctx));
-  await render(actor.chatId, messageId, view);
+  const view = shopDenominationView(
+    product,
+    denomination,
+    next,
+    backPage,
+    language,
+    shopLinks(ctx),
+    {
+      checkoutEmail,
+      minOrderUsd: fazercardsMinOrderUsd(),
+    },
+  );
+  await render(actor.chatId, messageId, view, state);
 }
 
+/**
+ * Demande explicite d'e-mail (bouton « ✉️ Changer l'e-mail » ou premier achat).
+ * Force l'invite même lorsqu'un `checkoutEmail` est déjà enregistré.
+ */
 async function askEmail(
   actor: ShopActor,
   messageId: number | null,
@@ -326,12 +419,39 @@ async function askEmail(
   ctx: ShopBotContext,
   state: TelegramShopState,
 ): Promise<void> {
-  const pending = pendingFromState(state);
+  let pending = pendingFromState(state);
   if (!pending) {
-    await startBuy(actor, messageId, language, ctx, state);
-    return;
+    const product = typeof state.slug === "string" ? await findProduct(state.slug) : null;
+    const denomId = typeof state.denomId === "string" ? state.denomId : null;
+    const denomination = product?.denominations.find((item) => item.id === denomId);
+    if (!product || !denomination || (denomination.fields?.length ?? 0) > 0) {
+      await openTelegramShop(actor.chatId, messageId, language, ctx);
+      return;
+    }
+    pending = pendingFor(product, denomination, stateQty(state), language);
   }
-  await render(actor.chatId, messageId, shopEmailPromptView(pending, language), state);
+
+  const minUsd = fazercardsMinOrderUsd();
+  if (Number(pending.totalUsd) + 1e-6 < minUsd) {
+    const product = await findProduct(pending.slug);
+    const denomination = product?.denominations.find((item) => item.id === pending!.denomId);
+    if (product && denomination) {
+      const backPage = typeof state.page === "number" ? state.page : 1;
+      await render(
+        actor.chatId,
+        messageId,
+        shopBelowMinimumView(product, denomination, minUsd, language, shopLinks(ctx), backPage),
+        state,
+      );
+      return;
+    }
+  }
+
+  const shownId = await render(actor.chatId, messageId, shopEmailPromptView(pending, language));
+  await setTelegramShopState(actor.chatId, {
+    ...state,
+    pending: { ...pending, promptMessageId: shownId },
+  });
 }
 
 async function cancelPending(
@@ -339,6 +459,7 @@ async function cancelPending(
   messageId: number | null,
   language: ShopLocale,
   ctx: ShopBotContext,
+  state: TelegramShopState,
 ): Promise<void> {
   const copy = shopCopy(language);
   const catalog = await loadCatalog();
@@ -347,6 +468,7 @@ async function cancelPending(
     actor.chatId,
     messageId,
     { ...view, text: `${copy.changedMind}\n\n${view.text}`, state: { pending: null } },
+    state,
   );
 }
 
@@ -357,6 +479,7 @@ async function startBuy(
   language: ShopLocale,
   ctx: ShopBotContext,
   state: TelegramShopState,
+  checkoutEmail: string | null,
 ): Promise<void> {
   const product = typeof state.slug === "string" ? await findProduct(state.slug) : null;
   const denomId = typeof state.denomId === "string" ? state.denomId : null;
@@ -366,6 +489,8 @@ async function startBuy(
     return;
   }
 
+  const backPage = typeof state.page === "number" ? state.page : 1;
+
   // Champs acheteur requis (identifiant joueur, serveur…) : la fiche web
   // complète est obligatoire — jamais de vente « à l'aveugle » dans le chat.
   if ((denomination.fields?.length ?? 0) > 0) {
@@ -373,21 +498,21 @@ async function startBuy(
       product,
       denomination,
       stateQty(state),
-      1,
+      backPage,
       language,
       shopLinks(ctx),
+      { checkoutEmail },
     );
-    await render(actor.chatId, messageId, view);
+    await render(actor.chatId, messageId, view, state);
     return;
   }
 
   const pending = pendingFor(product, denomination, stateQty(state), language);
 
-  // Plancher de facture crypto (ex. 1,50 $) : on l'annonce AVANT la caisse
-  // avec la quantité exacte à choisir, au lieu d'un échec après coup.
+  // 1) Plancher de facture crypto (ex. 1,50 $) : annoncé AVANT la caisse,
+  //    avec un bouton d'achat direct à la quantité minimale.
   const minUsd = fazercardsMinOrderUsd();
   if (Number(pending.totalUsd) + 1e-6 < minUsd) {
-    const backPage = typeof state.page === "number" ? state.page : 1;
     await render(
       actor.chatId,
       messageId,
@@ -397,14 +522,32 @@ async function startBuy(
     return;
   }
 
-  const { checkoutEmail } = await getTelegramShopContext(actor.chatId);
+  // 2) Plafond d'achat automatique (ex. 25 $) : annoncé AVANT la saisie d'e-mail,
+  //    avec bouton WhatsApp pré-rempli pour les commandes volumineuses.
+  const maxUsd = await resolveFazercardsMaxOrderUsd();
+  if (Number(pending.totalUsd) > maxUsd + 1e-6) {
+    const view = shopCheckoutErrorView({
+      reason: "above_limit",
+      locale: language,
+      links: shopLinks(ctx),
+      pending,
+      minOrderUsd: minUsd,
+      maxOrderUsd: maxUsd,
+    });
+    await render(actor.chatId, messageId, view, state);
+    return;
+  }
+
   if (checkoutEmail && isPlausibleEmail(checkoutEmail)) {
     await completeCheckout(actor, messageId, checkoutEmail, language, ctx, state, pending);
     return;
   }
 
-  await setTelegramShopState(actor.chatId, { ...state, pending });
-  await render(actor.chatId, messageId, shopEmailPromptView(pending, language), state);
+  const shownId = await render(actor.chatId, messageId, shopEmailPromptView(pending, language));
+  await setTelegramShopState(actor.chatId, {
+    ...state,
+    pending: { ...pending, promptMessageId: shownId },
+  });
 }
 
 async function completeCheckout(
@@ -426,7 +569,9 @@ async function completeCheckout(
   // Garde-fou anti-spam : une facture NOWPayments par minute et par chat.
   const lastAt = typeof state.lastCheckoutAt === "string" ? Date.parse(state.lastCheckoutAt) : NaN;
   if (Number.isFinite(lastAt) && Date.now() - lastAt < CHECKOUT_COOLDOWN_MS) {
+    await setTelegramShopState(actor.chatId, { ...state, pending: null });
     await sendOrEdit(actor.chatId, messageId, copy.cooldown, [
+      [{ text: copy.title, callback_data: shopCallback({ view: "root" }) }],
       [{ text: localeMenu(language), callback_data: "menu:home" }],
     ]);
     return;
@@ -509,11 +654,93 @@ async function completeCheckout(
       lastCheckoutAt: new Date().toISOString(),
     });
   } catch (error) {
-    console.warn("[telegram][shop] caisse :", error instanceof Error ? error.message : error);
-    await sendOrEdit(actor.chatId, messageId, checkoutErrorMessage(error, language), [
-      [{ text: localeMenu(language), callback_data: "menu:home" }],
-    ]);
+    const detail = error instanceof Error ? error.message : String(error);
+    console.warn("[telegram][shop] caisse :", detail);
+
+    const { reason, alertAdmin } = classifyShopCheckoutError({
+      errorCode: error instanceof FazercardsOrderError ? error.code : null,
+      isNowPayments: isNowPaymentsError(error),
+    });
+    const maxUsd = await resolveFazercardsMaxOrderUsd().catch(() => 25);
+    const errorView = shopCheckoutErrorView({
+      reason,
+      locale: language,
+      links: shopLinks(ctx),
+      pending,
+      minOrderUsd: fazercardsMinOrderUsd(),
+      maxOrderUsd: maxUsd,
+    });
+    await render(actor.chatId, messageId, errorView, state);
+
+    const actorLabel = formatActorLabel(actor);
+    const maskedEmail = maskShopEmail(email);
+    await recordTelegramShopCheckoutEvent({
+      at: new Date().toISOString(),
+      reason,
+      alerted: alertAdmin,
+      slug: pending.slug,
+      title: pending.title,
+      label: pending.label,
+      qty: pending.qty,
+      totalUsd: pending.totalUsd,
+      actorLabel,
+      maskedEmail,
+      detail: detail.slice(0, 240),
+    });
+
+    if (alertAdmin) {
+      const base = ctx.siteUrl.replace(/\/+$/, "");
+      await notifyTelegramAdmin(
+        formatShopCheckoutFailureAlert({
+          siteName: ctx.siteName,
+          reason,
+          title: pending.title,
+          label: pending.label,
+          qty: pending.qty,
+          totalUsd: pending.totalUsd,
+          actorLabel,
+          maskedEmail,
+          detail,
+        }),
+        [
+          [
+            { text: "🤖 Diagnostic Bot", url: `${base}/admin/telegram` },
+            { text: "📦 Solde & Boutique", url: `${base}/admin/digital` },
+          ],
+        ],
+        { parseMode: "HTML", timeoutMs: 4_000 },
+      ).catch(() => undefined);
+    }
   }
+}
+
+/**
+ * Retire le bouton « ✖️ الإلغاء » resté sur la bulle d'invite d'e-mail après
+ * la réponse texte du client, pour éviter les boutons orphelins dans le chat.
+ */
+async function dismissPromptKeyboard(
+  chatId: string,
+  pending: PendingCheckout,
+): Promise<void> {
+  if (!pending.promptMessageId) return;
+  await editTelegramMessage(
+    chatId,
+    pending.promptMessageId,
+    `📦 <b>${escapeInline(pending.title)}</b>\n💳 ${escapeInline(pending.label)}${pending.qty > 1 ? ` · ×${pending.qty}` : ""} · ${formatShopUsd(Number(pending.totalUsd))}`,
+    { parseMode: "HTML", keyboard: [] },
+  ).catch(() => undefined);
+}
+
+function escapeInline(value: string): string {
+  return value.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+
+function formatActorLabel(actor: ShopActor): string {
+  const parts = [
+    actor.firstName?.trim() || null,
+    actor.username?.trim() ? `@${actor.username.trim().replace(/^@/, "")}` : null,
+  ].filter(Boolean);
+  return parts.length ? parts.join(" · ") : `Chat #${actor.chatId.slice(-6)}`;
 }
 
 /**
@@ -602,9 +829,14 @@ async function watchLastOrder(
 
 /* -------------------------------- Outils ---------------------------------- */
 
-async function loadState(chatId: string): Promise<TelegramShopState> {
-  const { shopState } = await getTelegramShopContext(chatId);
-  return { ...EMPTY_SHOP_STATE, ...(shopState ?? {}) } as TelegramShopState;
+async function loadShopContext(
+  chatId: string,
+): Promise<{ state: TelegramShopState; checkoutEmail: string | null }> {
+  const { shopState, checkoutEmail } = await getTelegramShopContext(chatId);
+  return {
+    state: { ...EMPTY_SHOP_STATE, ...(shopState ?? {}) } as TelegramShopState,
+    checkoutEmail,
+  };
 }
 
 async function loadCatalog(): Promise<ShopProduct[]> {
@@ -660,7 +892,16 @@ function pendingFromState(state: TelegramShopState): PendingCheckout | null {
   ) {
     return null;
   }
-  return candidate as PendingCheckout;
+  return {
+    slug: candidate.slug,
+    denomId: candidate.denomId,
+    qty: candidate.qty,
+    title: candidate.title,
+    label: candidate.label,
+    totalUsd: candidate.totalUsd,
+    promptMessageId:
+      typeof candidate.promptMessageId === "number" ? candidate.promptMessageId : null,
+  };
 }
 
 function lastOrderFromState(state: TelegramShopState): LastOrderInfo | null {
@@ -692,7 +933,11 @@ function stateQty(state: TelegramShopState): number {
 }
 
 function shopLinks(ctx: ShopBotContext): ShopLinks {
-  return { site: ctx.siteUrl, store: ctx.storeUrl };
+  return {
+    site: ctx.siteUrl,
+    store: ctx.storeUrl,
+    ...(ctx.whatsapp ? { whatsapp: ctx.whatsapp } : {}),
+  };
 }
 
 function localeMenu(locale: ShopLocale): string {
@@ -716,22 +961,25 @@ function mergeShopState(
   return merged;
 }
 
-/** Écrit l'état puis met à jour le message (retombe sur un envoi si l'édition échoue). */
+/**
+ * Écrit l'état puis met à jour le message (retombe sur un envoi si l'édition
+ * échoue). Renvoie l'identifiant du message affiché si connu.
+ */
 async function render(
   chatId: string,
   messageId: number | null,
   view: ShopView,
   currentState?: TelegramShopState,
-): Promise<void> {
+): Promise<number | null> {
   if (view.state) {
     await setTelegramShopState(chatId, mergeShopState(currentState ?? {}, view.state));
   }
   const edited = messageId
     ? await editTelegramMessage(chatId, messageId, view.text, { parseMode: "HTML", keyboard: view.keyboard })
     : { ok: false as const, error: "no_message_id" };
-  if (!edited.ok) {
-    await sendTelegramMessage(chatId, view.text, { parseMode: "HTML", keyboard: view.keyboard });
-  }
+  if (edited.ok) return messageId;
+  const sent = await sendTelegramMessage(chatId, view.text, { parseMode: "HTML", keyboard: view.keyboard });
+  return sent.ok ? (sent.result?.message_id ?? null) : null;
 }
 
 async function sendOrEdit(
@@ -746,24 +994,4 @@ async function sendOrEdit(
   if (!edited.ok) {
     await sendTelegramMessage(chatId, text, { parseMode: "HTML", keyboard });
   }
-}
-
-function checkoutErrorMessage(error: unknown, language: ShopLocale): string {
-  const copy = shopCopy(language);
-  if (error instanceof FazercardsOrderError) {
-    switch (error.code) {
-      case "product_not_found":
-      case "denomination_not_found":
-      case "denomination_not_sellable":
-      case "invalid_quantity":
-        return copy.notFound;
-      case "below_minimum":
-        return fillShopTemplate(copy.belowMinimumRetry, { min: formatShopUsd(fazercardsMinOrderUsd()) });
-      default:
-        // Stock épuisé, fournisseur indisponible, montant refusé… : le détail
-        // technique reste dans les logs, le client reçoit un message clair.
-        return copy.unavailable;
-    }
-  }
-  return copy.unavailable;
 }

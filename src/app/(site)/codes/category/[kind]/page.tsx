@@ -111,12 +111,12 @@ export default async function DigitalCategoryPage({ params, searchParams }: Prop
           {listing.products.length === 0 ? (
             <p>{ar ? "لا توجد منتجات في هذه الفئة حالياً. تصفح الفئات الأخرى لمعرفة المتاح." : "No products in this category right now. Browse the other categories for available products."}</p>
           ) : (
-            <ul className="grid grid-cols-2 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <ul className="grid grid-cols-1 gap-3 min-[380px]:grid-cols-2 sm:gap-4 lg:grid-cols-4">
               {listing.products.map((product) => {
                 const price = lowestPriceUsd(product);
-                return <li key={product.id} className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-5">
-                  <h2 className="text-lg font-bold"><Link href={`/codes/${product.slug}`} className="underline-offset-4 hover:underline">{productSeoName(product, ar ? "ar" : "en")}</Link></h2>
-                  <p className="mt-2 text-sm text-[var(--muted-foreground)]">{product.platform} · {product.regions.join(" / ")}</p>
+                return <li key={product.id} className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-4 sm:p-5">
+                  <h2 className="text-base font-bold leading-snug sm:text-lg"><Link href={`/codes/${product.slug}`} className="underline-offset-4 hover:underline">{productSeoName(product, ar ? "ar" : "en")}</Link></h2>
+                  <p className="mt-2 text-xs text-[var(--muted-foreground)] sm:text-sm">{product.platform} · {product.regions.join(" / ")}</p>
                   {price != null && <p className="mt-3 font-bold">{ar ? "تبدأ من" : "From"} ${price.toFixed(2)}</p>}
                 </li>;
               })}
@@ -124,11 +124,11 @@ export default async function DigitalCategoryPage({ params, searchParams }: Prop
           )}
           {listing.pageCount > 1 && (
             <nav aria-label={ar ? "صفحات الفئة" : "Category pagination"} className="mt-8 flex flex-wrap items-center gap-2">
-              {page > 1 && <Link rel="prev" href={categoryHref(category.kind, page - 1)} className="rounded border p-3">{ar ? "السابق" : "Previous"}</Link>}
+              {page > 1 && <Link rel="prev" href={categoryHref(category.kind, page - 1)} className="inline-flex min-h-11 items-center justify-center rounded-lg border border-[var(--border)] px-3.5 py-2 text-sm">{ar ? "السابق" : "Previous"}</Link>}
               {Array.from({ length: listing.pageCount }, (_, index) => index + 1).map((number) => (
-                <Link key={number} href={categoryHref(category.kind, number)} aria-current={page === number ? "page" : undefined} aria-label={ar ? `الصفحة ${number}` : `Page ${number}`} className={`rounded border p-3 ${page === number ? "font-black underline" : ""}`}>{number}</Link>
+                <Link key={number} href={categoryHref(category.kind, number)} aria-current={page === number ? "page" : undefined} aria-label={ar ? `الصفحة ${number}` : `Page ${number}`} className={`inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg border border-[var(--border)] px-3 py-2 text-sm ${page === number ? "bg-[var(--secondary)] font-black underline" : ""}`}>{number}</Link>
               ))}
-              {page < listing.pageCount && <Link rel="next" href={categoryHref(category.kind, page + 1)} className="rounded border p-3">{ar ? "التالي" : "Next"}</Link>}
+              {page < listing.pageCount && <Link rel="next" href={categoryHref(category.kind, page + 1)} className="inline-flex min-h-11 items-center justify-center rounded-lg border border-[var(--border)] px-3.5 py-2 text-sm">{ar ? "التالي" : "Next"}</Link>}
             </nav>
           )}
         </section>

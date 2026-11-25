@@ -153,7 +153,7 @@ export function ManualPaymentForm({
       {options.length > 1 && (
         <div>
           <span className={LABEL_CLS}>{ar ? "اختر وسيلة الدفع" : "Choose a method"}</span>
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-1 gap-2 min-[360px]:grid-cols-2">
             {options.map((item) => {
               const active = item.method === option.method;
               return (
@@ -192,7 +192,7 @@ export function ManualPaymentForm({
             {formatManualPaymentAmount(quote.payAmount, quote.payCurrency)}
           </p>
         ) : (
-          <p className="mt-1 text-[12.5px] font-bold text-amber-700">
+          <p className="mt-1 text-[12.5px] font-bold text-amber-700 dark:text-amber-300">
             {ar
               ? "تعذر حساب المبلغ. تواصل معنا أو اختر الدفع بالعملات الرقمية."
               : "The amount could not be calculated. Contact us or choose crypto."}
@@ -216,9 +216,9 @@ export function ManualPaymentForm({
             type="button"
             onClick={copyTarget}
             aria-label={ar ? "نسخ الحساب" : "Copy the account"}
-            className="grid h-9 w-9 shrink-0 place-items-center rounded-lg border border-[var(--border)] bg-[var(--background)] hover:border-[var(--accent)]"
+            className="grid h-11 w-11 shrink-0 cursor-pointer place-items-center rounded-lg border border-[var(--border)] bg-[var(--background)] hover:border-[var(--accent)]"
           >
-            {copied ? <Check className="h-3.5 w-3.5 text-emerald-600" /> : <Copy className="h-3.5 w-3.5" />}
+            {copied ? <Check className="h-4 w-4 text-emerald-600 dark:text-emerald-400" /> : <Copy className="h-4 w-4" />}
           </button>
         </div>
         {isCrypto && (
@@ -296,12 +296,12 @@ export function ManualPaymentForm({
       </label>
 
       {quote && (
-        <label className="flex cursor-pointer items-start gap-2 rounded-lg border border-[var(--border)] px-2.5 py-2 text-[11.5px] font-bold leading-5">
+        <label className="flex min-h-11 cursor-pointer items-start gap-2.5 rounded-lg border border-[var(--border)] px-3 py-2.5 text-[11.5px] font-bold leading-5">
           <input
             type="checkbox"
             checked={quoteAccepted}
             onChange={(event) => onQuoteAcceptedChange(event.target.checked)}
-            className="mt-1 h-3.5 w-3.5 shrink-0 accent-[var(--accent)]"
+            className="mt-0.5 h-4 w-4 shrink-0 accent-[var(--accent)]"
           />
           <span>
             {ar

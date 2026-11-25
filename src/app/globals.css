@@ -766,6 +766,21 @@ html[data-chatbot="open"] .whatsapp-float,
 html[data-chatbot="open"] .back-to-top {
   display: none !important;
 }
+/* Toute modale / feuille d'achat ouverte masque aussi les widgets flottants. */
+html[data-dialog="open"] .whatsapp-float,
+html[data-dialog="open"] .site-chatbot,
+html[data-dialog="open"] .back-to-top {
+  display: none !important;
+}
+/* Mobile : iOS Safari zoome de force toute la page dès qu'un champ de saisie
+   a une police < 16 px (et ne dézoome pas à la fermeture du clavier virtuel). */
+@media (max-width: 767px) {
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+  textarea,
+  select {
+    font-size: max(16px, 1rem) !important;
+  }
+}
 /* Confort visuel : les animations décoratives répétitives sont coupées
    quand le visiteur demande moins de mouvement. */
 @media (prefers-reduced-motion: reduce) {
