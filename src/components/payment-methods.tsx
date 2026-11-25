@@ -1,7 +1,9 @@
 "use client";
 
+import { useState } from "react";
 import { Apple } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
+import { MarqueePauseButton } from "@/components/marquee-pause-button";
 
 const methods = ["visa", "mastercard", "apple-pay", "google-pay"] as const;
 
@@ -136,9 +138,11 @@ export function PaymentMethodsRibbon({
   const { locale } = useI18n();
   const ar = locale === "ar";
   const heading = ar ? "طرق الدفع المتاحة" : "Payment methods";
+  const [paused, setPaused] = useState(false);
 
   return (
-    <section className="payment-ribbon" aria-label={heading}>
+    <section className="payment-ribbon" aria-label={heading} data-paused={paused || undefined}>
+      <MarqueePauseButton paused={paused} onToggle={() => setPaused((value) => !value)} ar={ar} label={heading} className="payment-ribbon-pause" />
       <div className="payment-ribbon-window" aria-label={ar ? "البطاقات والمحافظ والعملات الرقمية ووسائل الدفع الإضافية" : "Cards, wallets, crypto and other payment methods"}>
         <div className="payment-ribbon-track">
           {[0, 1, 2, 3].map((copy) => (

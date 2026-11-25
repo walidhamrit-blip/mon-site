@@ -37,11 +37,15 @@ export function WhatsAppEnquiry({ children, className, ariaLabel, initialSubject
   const dialog = useRef<HTMLDialogElement>(null);
   const titleId = useId();
   const subjectId = useId();
+  const errorId = useId();
+  const subjectRef = useRef<HTMLTextAreaElement>(null);
   const [subject, setSubject] = useState(initialSubject);
+  const [showError, setShowError] = useState(false);
   const [page, setPage] = useState<ReturnType<typeof publicEnquiryPage>>(null);
 
   function open() {
     setSubject(initialSubject);
+    setShowError(false);
     setPage(publicEnquiryPage(window.location.pathname, document.title));
     dialog.current?.showModal();
   }
@@ -51,29 +55,34 @@ export function WhatsAppEnquiry({ children, className, ariaLabel, initialSubject
 
   return <>
     <button type="button" onClick={open} aria-label={ariaLabel} title={ariaLabel} className={className}>{children}</button>
-    <dialog ref={dialog} aria-labelledby={titleId} onKeyDown={(event) => event.stopPropagation()} className="m-auto max-h-[90dvh] w-[calc(100%-1.5rem)] max-w-md overflow-y-auto rounded-2xl border border-[var(--border)] bg-[var(--card)] p-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] text-[var(--foreground)] shadow-2xl backdrop:bg-black/60 sm:p-6">
+    <dialog ref={dialog} aria-labelledby={titleId} onKeyDown={(event) => event.stopPropagation()} className="m-auto max-h-[90dvh] w-[calc(100%-1.5rem)] max-w-md overflow-y-auto overscroll-contain rounded-2xl border border-[var(--border)] bg-[var(--card)] p-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] text-[var(--foreground)] shadow-2xl backdrop:bg-black/60 sm:p-6">
       <div className="flex items-start justify-between gap-4">
         <h2 id={titleId} className="pt-1 text-lg font-bold">{ar ? "كيف يمكننا مساعدتك؟" : "How can we help?"}</h2>
         <button type="button" onClick={() => dialog.current?.close()} aria-label={ar ? "إغلاق" : "Close"} className="grid h-11 w-11 shrink-0 cursor-pointer place-items-center rounded-full bg-[var(--secondary)] transition-colors hover:bg-[var(--muted)]"><X className="h-5 w-5" /></button>
       </div>
       <div className="mt-4">
         <label htmlFor={subjectId} className="block text-sm font-semibold">{ar ? "ما المنتج أو الخدمة أو السؤال الذي تريد الاستفسار عنه؟" : "Which product, service or question would you like to ask about?"}</label>
-        <textarea id={subjectId} maxLength={500} value={subject} onChange={(event) => setSubject(event.target.value)} placeholder={ar ? "مثال: سعر بطاقة ستيم أو إنشاء متجر إلكتروني..." : "For example: a Steam card price or an online store..."} className="mt-2 min-h-28 w-full rounded-xl border border-[var(--border)] bg-[var(--background)] p-3 text-sm text-[var(--foreground)]" />
+        <textarea ref={subjectRef} id={subjectId} name="subject" autoComplete="off" maxLength={500} value={subject} onChange={(event) => { setSubject(event.target.value); if (event.target.value.trim()) setShowError(false); }} aria-invalid={showError || undefined} aria-describedby={showError ? errorId : undefined} placeholder={ar ? "مثال: سعر بطاقة ستيم أو إنشاء متجر إلكتروني…" : "For example: a Steam card price or an online store…"} className="mt-2 min-h-28 w-full rounded-xl border border-[var(--border)] bg-[var(--background)] p-3 text-sm text-[var(--foreground)] aria-[invalid=true]:border-red-600" />
+        {/* Erreur affichée à côté du champ, annoncée par les lecteurs d'écran. */}
+        <p id={errorId} aria-live="polite" className="mt-2 text-sm font-semibold text-red-700 dark:text-red-400">{showError ? (ar ? "اكتب سؤالك أولاً، ثم اضغط على متابعة." : "Type your question first, then continue.") : ""}</p>
         <p className="mt-2 text-xs leading-5 text-[var(--muted-foreground)]">{ar ? "لا ترسل كلمات المرور أو بيانات الدفع الحساسة." : "Please do not share passwords or sensitive payment details."} {page && (ar ? `ستُرفق الصفحة التي تتصفحها: ${page.title || page.path}` : `The page you are viewing will be included: ${page.title || page.path}`)}</p>
         <a
           href={link}
           target="_blank"
           rel="noopener noreferrer"
-          aria-disabled={blocked || undefined}
           onClick={(event) => {
+            // Le lien reste cliquable : un champ vide affiche une consigne et
+            // y replace le focus, au lieu d'un bouton grisé sans explication.
             if (blocked) {
               event.preventDefault();
+              setShowError(true);
+              subjectRef.current?.focus();
               return;
             }
             trackEvent({ name: "whatsapp_click", source });
             dialog.current?.close();
           }}
-          className={`mt-5 inline-flex min-h-11 w-full items-center justify-center rounded-full bg-[#0B6B3A] px-5 font-bold text-white ${blocked ? "pointer-events-none opacity-50" : ""}`}
+          className="mt-5 inline-flex min-h-11 w-full items-center justify-center rounded-full bg-[#0B6B3A] px-5 font-bold text-white transition-colors hover:bg-[#095a31]"
         >
           {ar ? "متابعة إلى واتساب" : "Continue to WhatsApp"}
         </a>

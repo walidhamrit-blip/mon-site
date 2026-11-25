@@ -22,7 +22,7 @@ function telegramUrlFrom(handle: string | undefined): string {
   return /^[A-Za-z0-9_]{4,32}$/.test(clean) ? `https://t.me/${clean}` : "";
 }
 
-export function Footer({ telegramBot }: { telegramBot?: string }) {
+export function Footer({ telegramBot, year }: { telegramBot?: string; year: number }) {
   const telegramUrl = telegramUrlFrom(telegramBot);
   const config = useSiteConfig();
   const { locale } = useI18n();
@@ -71,7 +71,7 @@ export function Footer({ telegramBot }: { telegramBot?: string }) {
       <nav className="gaming-footer-resources" aria-label={ar ? "الموارد والمعلومات" : "Resources & information"}>
         {[["/blog",ar ? "الأدلة" : "Guides"],["/compare",ar ? "المقارنات" : "Comparisons"],["/products",ar ? "منتجاتنا" : "Our products"],["/apps",ar ? "تطبيقاتنا" : "Our apps"],["/badge",ar ? "شارة العملاء" : "Client badge"],["/conditions",ar ? "الشروط" : "Terms"],["/remboursement",ar ? "الاسترداد" : "Refund policy"],["/avis",ar ? "تقييمات العملاء" : "Customer reviews"],["/mentions-legales",ar ? "المعلومات القانونية" : "Legal notice"]].map(([href,label]) => <Link key={href} href={href}>{label}</Link>)}
       </nav>
-      <div className="gaming-footer-bottom"><span>© {new Date().getFullYear()} {config.name}</span><span>{ar ? "مواقع · بطاقات · ألعاب" : "WEBSITES / CARDS / GAMING"}</span></div>
+      <div className="gaming-footer-bottom"><span>© {year} {config.name}</span><span>{ar ? "مواقع · بطاقات · ألعاب" : "WEBSITES / CARDS / GAMING"}</span></div>
     </div>
   </footer>;
 }

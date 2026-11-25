@@ -3,6 +3,7 @@ import Image from "next/image";
 import { imageOptimizationProps } from "@/lib/image-source";
 import { ArrowUpRight, Gamepad2, ShieldCheck, Zap } from "lucide-react";
 import { DIGITAL_KIND_LABELS, type DigitalKind } from "@/lib/digital-types";
+import { Price } from "@/components/price";
 
 /**
  * Bandeau « boutique numérique » de la page d'accueil.
@@ -80,7 +81,9 @@ export function DigitalShowcase({
                 href={`/codes/${product.slug}`}
                 className="store-preview-card group flex h-full flex-col overflow-hidden rounded-[var(--radius-lg)] border border-[var(--border)] bg-[var(--card)] transition-colors hover:border-[var(--accent)]"
               >
-                {product.image && <span className="store-preview-art"><Image src={product.image} alt={product.title} width={640} height={400} sizes="(max-width: 640px) 90vw, (max-width: 1024px) 45vw, 390px" className="h-full w-full object-cover" {...imageOptimizationProps(product.image)} /></span>}
+                {/* Image décorative : le nom du produit est écrit juste en dessous,
+                    un alt identique serait lu deux fois par les lecteurs d'écran. */}
+                {product.image && <span className="store-preview-art"><Image src={product.image} alt="" width={640} height={400} sizes="(max-width: 640px) 90vw, (max-width: 1024px) 45vw, 390px" className="h-full w-full object-cover" {...imageOptimizationProps(product.image)} /></span>}
                 <span className="min-w-0 flex-1 p-3.5 sm:p-5">
                   <span className="block text-[10.5px] font-black uppercase tracking-[0.1em] text-[var(--muted-foreground)] sm:text-[11px]">
                     {product.platform} ·{" "}
@@ -91,15 +94,21 @@ export function DigitalShowcase({
                   <span className="mt-1 line-clamp-2 block text-[13.5px] font-black leading-snug sm:text-[14px]">
                     {product.title}
                   </span>
-                  <span className="mt-1.5 block text-[12px] font-bold text-[var(--accent)]" dir="ltr">
-                    {product.fromUsd != null
-                      ? `${ar ? "من" : "From"} $${product.fromUsd.toFixed(2)}`
-                      : ar
-                        ? "قريباً"
-                        : "Coming soon"}
+                  {/* Prix converti et formaté dans la devise choisie par le
+                      visiteur (Intl.NumberFormat via le CurrencyProvider). */}
+                  <span className="mt-1.5 block text-[12px] font-bold text-[var(--accent)]">
+                    {product.fromUsd != null ? (
+                      <>
+                        {ar ? "من" : "From"} <Price usd={product.fromUsd} />
+                      </>
+                    ) : ar ? (
+                      "قريباً"
+                    ) : (
+                      "Coming soon"
+                    )}
                   </span>
                 </span>
-                <ArrowUpRight className="mx-3.5 mb-3.5 h-4 w-4 shrink-0 text-[var(--accent)] transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5 sm:mx-5 sm:mb-5 rtl:rotate-[-90deg]" />
+                <ArrowUpRight className="mx-3.5 mb-3.5 h-4 w-4 shrink-0 text-[var(--accent)] transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5 rtl:group-hover:-translate-x-0.5 sm:mx-5 sm:mb-5 rtl:rotate-[-90deg]" />
               </Link>
             </li>
           ))}
@@ -111,7 +120,7 @@ export function DigitalShowcase({
             className="inline-flex h-11 items-center gap-2 rounded-full bg-[var(--accent)] px-6 text-sm font-black text-[var(--accent-foreground)] transition-colors hover:bg-[var(--accent-hover)]"
           >
             {ar ? "تصفّح كل الأكواد والبطاقات" : "Browse all codes & cards"}
-            <ArrowUpRight className="h-4 w-4" />
+            <ArrowUpRight className="h-4 w-4 rtl:rotate-[-90deg]" />
           </Link>
         </div>
       </div>

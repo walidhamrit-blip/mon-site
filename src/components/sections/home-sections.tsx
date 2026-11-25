@@ -75,7 +75,7 @@ export function HomeSections({
           <div className="max-w-3xl space-y-3">
             {homeFaqs.map((faq) => <details key={faq.qEn} className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-5"><summary className="cursor-pointer font-bold">{ar ? faq.qAr : faq.qEn}</summary><p className="mt-3 text-sm leading-7 text-[var(--muted-foreground)]">{ar ? faq.aAr : faq.aEn}</p></details>)}
           </div>
-          <Link href="/contact" className="mt-6 inline-flex rounded-full bg-[var(--accent)] px-6 py-3 text-sm font-bold text-[var(--accent-foreground)]">{ar ? "تحدث معنا" : "Talk to us"}</Link>
+          <Link href="/contact" className="mt-6 inline-flex rounded-full bg-[var(--accent)] px-6 py-3 text-sm font-bold text-[var(--accent-foreground)] transition-colors hover:bg-[var(--accent-hover)]">{ar ? "تحدث معنا" : "Talk to us"}</Link>
         </div>
       </section>
     </>

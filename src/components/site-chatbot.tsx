@@ -467,8 +467,11 @@ function ChatShell() {
                 placeholder={ar ? "اسأل سؤالك…" : "Ask your question…"}
                 aria-label={ar ? "اكتب سؤالك" : "Type your question"}
                 maxLength={MAX_INPUT_CHARS}
-                disabled={typing}
-                className="h-11 min-w-0 flex-1 rounded-full border border-[var(--border)] bg-[var(--secondary)]/50 px-3 text-[13px] outline-none focus:border-[var(--accent)]"
+                name="question"
+                autoComplete="off"
+                /* Le champ reste actif pendant la réponse (le focus n'est pas
+                   perdu) : c'est `send` et le bouton qui bloquent l'envoi. */
+                className="h-11 min-w-0 flex-1 rounded-full border border-[var(--border)] bg-[var(--secondary)]/50 px-3 text-[13px] focus:border-[var(--accent)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--ring)]"
               />
               <button
                 type="submit"
