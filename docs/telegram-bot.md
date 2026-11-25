@@ -74,9 +74,10 @@ ajoutez-y le bot, écrivez un message dans le groupe, relancez
 Ce bouton :
 1. génère un secret aléatoire de 32 octets (aucun secret à inventer),
 2. le stocke dans la table `settings` (clé `telegram_webhook_secret`),
-3. déclare `https://<votre-site>/api/telegram/webhook` chez Telegram avec ce
-   secret,
-4. publie le menu des commandes (`/start`, `/codes`, `/commande`, …).
+3. déclare `https://<votre-site>/api/telegram-webhook` chez Telegram avec ce
+   secret (l'ancienne adresse `/api/telegram/webhook` reste valable : les
+   deux URLs pointent le même gestionnaire via une rewrite),
+4. publie le menu des commandes (`/start`, `/shop`, `/codes`, …).
 
 Équivalent en ligne de commande :
 
@@ -100,15 +101,58 @@ vous préférez gérer le secret par variable d'environnement.)
 
 | Action du client | Réponse du bot |
 |---|---|
-| `/start` | Message de bienvenue + menu (trilingue **ar / fr / en**) |
+| `/start` (première visite) | Bienvenue + **choix de la langue** : 🇬🇧 English / 🇱🇾 العربية |
+| `/start` (déjà venu) | Menu dans la langue enregistrée |
+| `/shop`, `/codes` ou bouton **🛒 Boutique** | Boutique inline : familles → produits (avec prix) → montants → **lien de paiement** |
 | Appuie sur **Catalogue** | Lien vers `/codes` |
 | `/commande DGC-…` (ou colle la référence seule) | Statut, produit, montant, date, lien de suivi |
-| `/prevenir DGC-…` (ou bouton « recevoir aussi le code sur Telegram ») | Consentement à recevoir **ce code** dans le chat ; envoi automatique à la livraison |
+| `/prevenir DGC-…` (ou « recevoir aussi le code sur Telegram ») | Consentement à recevoir **ce code** dans le chat ; envoi automatique à la livraison |
 | Appuie sur **Offres** → *Oui* | Consentement marketing enregistré |
 | `/stop` | Retrait du consentement (immédiat) |
-| `/langue` | Change la langue du bot |
+| `/langue` | Change la langue du bot (bilingue 🇬🇧 / 🇱🇾) |
 | « humain », « agent », « support » | Coordonnées WhatsApp/e-mail + **message transféré à l'équipe** |
 | Toute autre question | Aide + message transféré à l'équipe |
+
+### La boutique inline (`/shop`)
+
+Navigation **dans le même message** (chaque clic appelle `editMessageText`,
+rien ne s'empile) :
+
+```
+🛒 Boutique
+  ├─ 🎁 Cartes cadeaux (12)
+  ├─ 🎮 Recharges de jeux (8)
+  ├─ 🔑 Clés logiciels (5)
+  └─ 📺 Codes d'abonnement (3)
+        ↓
+  Liste des produits — « à partir de $11.50 » sur chaque bouton, 8 par page
+        ↓
+  Montants disponibles — « $10 · $11.50 » sur chaque bouton
+        ↓
+  Détails & quantité (➖/➕) → ✅ Acheter
+        ↓
+  ✅ Commande créée — DGC-…
+     💳 Payer maintenant (facture crypto NOWPayments)
+     Carte / Skrill / carte de recharge → fiche web du produit
+     📩 Recevoir le code dans ce chat (consentement explicite)
+```
+
+Points clés :
+
+- **Prix toujours recalculés côté serveur** : la caisse du bot appelle la
+  même fonction que le site (`createDigitalCheckout`) — aucun montant
+  transmis par le chat n'est accepté.
+- **E-mail de livraison exigé** : à la première commande, le bot demande
+  l'e-mail (les codes partent par e-mail comme sur le site), le mémorise
+  et le propose ensuite en préremplissage. Jamais d'adresse inventée.
+- **Identité Telegram sur la commande** : chaque commande créée depuis le
+  bot enregistre le `chat_id` et le `@username` du client sur les tables
+  `orders` et `digital_orders` (visibles dans `/admin/digital/orders`) —
+  l'équipe sait à qui elle parle pour le suivi et la livraison.
+- **Produits à champs acheteur** (recharges avec identifiant joueur…) :
+  pas de vente « à l'aveugle » dans le chat — le bot renvoie vers la fiche
+  web, où le formulaire complet et tous les moyens de paiement existent.
+- **Anti-spam** : une facture NOWPayments par minute et par chat au maximum.
 
 Garde-fous :
 
@@ -210,7 +254,7 @@ npm run telegram:check                       # état : bot, chat ids, webhook
 npm run telegram:check -- --webhook https://exemple.com   # installer
 npm run telegram:check -- --commands         # publier le menu /start…
 npm run telegram:check -- --delete-webhook   # tout débrancher
-npm run test:telegram                        # tests du noyau (aucun réseau)
+npm run test:telegram                        # tests noyau + boutique (aucun réseau)
 ```
 
 ---
@@ -234,7 +278,7 @@ Journal serveur : filtre `[telegram]` dans les logs Vercel.
 
 ## 9. Sécurité — ce qui est garanti
 
-- **Authentification** : chaque POST sur `/api/telegram/webhook` exige
+- **Authentification** : chaque POST sur `/api/telegram-webhook` exige
   l'en-tête `x-telegram-bot-api-secret-token` (comparaison à temps constant,
   chiffrée avant comparaison). Sans secret configuré, la route répond `503`
   — elle n'accepte jamais une mise à jour non authentifiée.
@@ -256,11 +300,14 @@ Journal serveur : filtre `[telegram]` dans les logs Vercel.
 | Fichier | Rôle |
 |---|---|
 | `src/lib/telegram-core.ts` | Fonctions pures : textes ar/en/fr, claviers, références, composition des campagnes |
+| `src/lib/telegram-shop-core.ts` | Boutique inline (pur) : callback courts, vues familles/produits/montants/paiement, e-mail |
+| `src/lib/telegram-shop.ts` | Boutique inline (serveur) : catalogue, état par chat, caisse, `editMessageText` |
 | `src/lib/telegram.ts` | API Bot, abonnés, campagnes, webhook, alertes |
 | `src/lib/telegram-delivery.ts` | Suivi de commande depuis le chat : consentement, envoi des codes, idempotence |
-| `src/app/api/telegram/webhook/route.ts` | Réception des mises à jour Telegram |
+| `src/app/api/telegram/webhook/route.ts` | Réception des mises à jour Telegram (`/api/telegram-webhook` via rewrite) |
 | `src/app/api/telegram/webhook/route.ts` (GET) | Diagnostic `{configured, alerts}` |
 | `src/app/admin/(panel)/telegram/` | Panneau d'administration + actions serveur |
-| `src/db/schema.ts` | `telegram_subscribers`, `telegram_campaigns` |
+| `src/db/schema.ts` | `telegram_subscribers` (+ état boutique, e-mail caisse), `telegram_campaigns`, colonnes `telegram_chat_id` / `telegram_username` sur les commandes |
 | `scripts/telegram-setup.mjs` | Diagnostic / installation en ligne de commande |
-| `scripts/telegram-bot.test.mjs` | Tests (aucun réseau) |
+| `scripts/telegram-bot.test.mjs` | Tests du noyau (aucun réseau) |
+| `scripts/telegram-shop.test.mjs` | Tests de la boutique inline (aucun réseau) |

@@ -592,6 +592,29 @@ export function ensureSchema(): Promise<void> {
       await pool.query(
         "CREATE INDEX IF NOT EXISTS telegram_subscribers_optin_idx \n          ON telegram_subscribers (marketing_opt_in, status)",
       );
+      // Boutique inline du bot : e-mail de caisse mémorisé + état de
+      // navigation (callback Telegram limités à 64 octets).
+      await pool.query(
+        "ALTER TABLE telegram_subscribers ADD COLUMN IF NOT EXISTS checkout_email text",
+      );
+      await pool.query(
+        "ALTER TABLE telegram_subscribers ADD COLUMN IF NOT EXISTS shop_state jsonb",
+      );
+      // Identité Telegram portée par les commandes créées depuis le bot
+      // (suivi + livraison) — les deux tables sont écrites ensemble à la
+      // caisse (voir createDigitalCheckout).
+      await pool.query(
+        "ALTER TABLE orders ADD COLUMN IF NOT EXISTS telegram_chat_id text",
+      );
+      await pool.query(
+        "ALTER TABLE orders ADD COLUMN IF NOT EXISTS telegram_username text",
+      );
+      await pool.query(
+        "ALTER TABLE digital_orders ADD COLUMN IF NOT EXISTS telegram_chat_id text",
+      );
+      await pool.query(
+        "ALTER TABLE digital_orders ADD COLUMN IF NOT EXISTS telegram_username text",
+      );
       // Suivi de commande depuis le chat Telegram (consentement explicite,
       // notification de livraison idempotente). Voir src/lib/telegram-delivery.ts.
       await pool.query(`
