@@ -8,7 +8,7 @@ import { normalizePhoneCardPaymentsEnabled } from "@/lib/phone-card-core";
 import { normalizeManualPaymentsConfig } from "@/lib/manual-payment-core";
 import { normalizePayGateConfig } from "@/lib/paygate-core";
 import { fazercardsMaxOrderUsd } from "@/lib/fazercards";
-import { ensureDemoSeoFields } from "@/lib/ai/seo-generator";
+import { ensureDemoSeoFields, templateSeoCopy } from "@/lib/ai/seo-generator";
 import {
   PROCESS_STEP_06_MARKER,
   migrateProcessHeading,
@@ -285,12 +285,52 @@ const LEGACY_PLACEHOLDER_SLUGS = new Set([
   "safir-hotel",
 ]);
 
+const DEMO_SEO_KEYS = [
+  "metaTitle",
+  "metaDescription",
+  "metaTitleEn",
+  "metaDescriptionEn",
+  "imageAltAr",
+  "imageAltEn",
+] as const;
+
+function pickDemoSeoField(
+  key: (typeof DEMO_SEO_KEYS)[number],
+  base: Demo,
+  stored: Demo,
+  storedTemplate: ReturnType<typeof templateSeoCopy>,
+  baseTemplate: ReturnType<typeof templateSeoCopy>,
+): string | undefined {
+  const rawStored = stored[key]?.trim();
+  const rawBase = base[key]?.trim();
+  if (!rawStored) return rawBase;
+  // Promeut le texte SEO optimisé en code lorsque la base ne contient que
+  // le gabarit mécanique auto-généré, sans jamais écraser une saisie admin.
+  if (
+    rawBase &&
+    rawBase !== storedTemplate[key] &&
+    rawBase !== baseTemplate[key] &&
+    (rawStored === storedTemplate[key] || rawStored === baseTemplate[key])
+  ) {
+    return rawBase;
+  }
+  return stored[key];
+}
+
 function backfillClassification(base: Demo, stored: Demo): Demo {
+  const storedTemplate = templateSeoCopy(stored);
+  const baseTemplate = templateSeoCopy(base);
   return {
     ...stored,
     planId: stored.planId ?? base.planId,
     categoryTier: stored.categoryTier ?? base.categoryTier,
     priceUsd: stored.priceUsd !== undefined ? stored.priceUsd : base.priceUsd,
+    metaTitle: pickDemoSeoField("metaTitle", base, stored, storedTemplate, baseTemplate),
+    metaDescription: pickDemoSeoField("metaDescription", base, stored, storedTemplate, baseTemplate),
+    metaTitleEn: pickDemoSeoField("metaTitleEn", base, stored, storedTemplate, baseTemplate),
+    metaDescriptionEn: pickDemoSeoField("metaDescriptionEn", base, stored, storedTemplate, baseTemplate),
+    imageAltAr: pickDemoSeoField("imageAltAr", base, stored, storedTemplate, baseTemplate),
+    imageAltEn: pickDemoSeoField("imageAltEn", base, stored, storedTemplate, baseTemplate),
   };
 }
 

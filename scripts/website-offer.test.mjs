@@ -14,7 +14,8 @@ await build({
     export { siteConfig } from "./src/lib/config";
     export { demos, faqs } from "./src/lib/content";
     export { mergeConfig, buildSiteData } from "./src/lib/store";
-    export { demoJsonLd, offerCatalogJsonLd, localBusinessJsonLd } from "./src/lib/seo";`,
+    export { templateSeoCopy } from "./src/lib/ai/seo-generator";
+    export { demoJsonLd, demoSeoMeta, offerCatalogJsonLd, localBusinessJsonLd, pageMetadata } from "./src/lib/seo";`,
     resolveDir: process.cwd(), loader: "ts" },
   bundle: true, format: "esm", platform: "node", outfile,
   packages: "external", logLevel: "silent",
@@ -188,4 +189,75 @@ test("closing at 22:00 is consistent for defaults, legacy settings and business 
     assert.equal(schema.openingHoursSpecification[0].closes, "22:00");
     assert.equal(JSON.stringify(stored), before, "stored input is not mutated");
   }
+});
+
+test("Page-1 CTR optimization: /pricing, /contact and pizzeria-forno-tripoli stay <=60 title and <=155 untruncated description", () => {
+  const pricingSrc = readFileSync("src/app/(site)/pricing/page.tsx", "utf8");
+  assert.doesNotMatch(pricingSrc, /description:\s*websiteOfferSummary\(locale\)/, "/pricing must use a concise SERP description instead of truncating the 560-char summary");
+
+  const pricingAr = offer.pageMetadata(offer.siteConfig, {
+    locale: "ar",
+    path: "/pricing",
+    title: `أسعار تصميم المواقع في {country} — عرض موحد ${offer.WEBSITE_BASE_PRICE_USD}$`,
+    description: `موقع مخصص بسعر موحد ${offer.WEBSITE_BASE_PRICE_USD}$ يشمل الكود وتخصيص محتواك الأول مجاناً، مع إضافات واضحة (لغة +${offer.WEBSITE_LANGUAGE_PRICE_USD}$، إدارة محتوى من ${offer.WEBSITE_CONTENT_FROM_USD}$، متجر أو حجز بعرض سعر) ودفع USD أو USDT.`,
+  });
+  const pricingEn = offer.pageMetadata(offer.siteConfig, {
+    locale: "en",
+    path: "/pricing",
+    title: `Website & Store Pricing from $${offer.WEBSITE_BASE_PRICE_USD} (USD/USDT)`,
+    description: `Custom website base at $${offer.WEBSITE_BASE_PRICE_USD} with source code & free initial setup. Clear add-ons (+$${offer.WEBSITE_LANGUAGE_PRICE_USD} language, CMS from $${offer.WEBSITE_CONTENT_FROM_USD}, store or booking quoted) in USD/USDT.`,
+  });
+
+  const contactAr = offer.pageMetadata(offer.siteConfig, {
+    locale: "ar",
+    path: "/contact",
+    title: "تواصل مع نخبة في {city} — واتساب وعرض سعر مجاني",
+    description: "تواصل مباشرة عبر واتساب أو الهاتف أو البريد في {city}: عرض سعر مجاني لتصميم موقعك أو متجرك بـ35$ ودعم فوري لطلبات البطاقات والأكواد الرقمية.",
+  });
+  const contactEn = offer.pageMetadata(offer.siteConfig, {
+    locale: "en",
+    path: "/contact",
+    title: "Contact Nukhba ({cityEn}) — Free Quote & WhatsApp",
+    description: "Message Nukhba in {cityEn} on WhatsApp, phone or email: get a free quote for your $35 website or online store and fast support for digital code orders.",
+  });
+
+  const pizzeria = offer.demos.find((d) => d.slug === "pizzeria-forno-tripoli");
+  assert.ok(pizzeria, "pizzeria-forno-tripoli demo exists");
+  const pizzeriaAr = offer.pageMetadata(offer.siteConfig, {
+    locale: "ar",
+    path: "/demos/pizzeria-forno-tripoli",
+    ...offer.demoSeoMeta(pizzeria, "ar"),
+  });
+  const pizzeriaEn = offer.pageMetadata(offer.siteConfig, {
+    locale: "en",
+    path: "/demos/pizzeria-forno-tripoli",
+    ...offer.demoSeoMeta(pizzeria, "en"),
+  });
+
+  for (const meta of [pricingAr, pricingEn, contactAr, contactEn, pizzeriaAr, pizzeriaEn]) {
+    assert.ok(String(meta.title).length <= 60, `title <= 60: ${meta.title}`);
+    assert.ok(!String(meta.title).endsWith("…"), `title not truncated: ${meta.title}`);
+    assert.ok(String(meta.description).length >= 50 && String(meta.description).length <= 155, `desc 50..155: ${meta.description}`);
+    assert.ok(!String(meta.description).endsWith("…"), `desc not truncated: ${meta.description}`);
+  }
+});
+
+test("buildSiteData promotes curated demo SEO over mechanical templateSeoCopy but keeps custom admin SEO", () => {
+  const baseDemo = offer.demos.find((d) => d.slug === "pizzeria-forno-tripoli");
+  const stripped = { ...baseDemo };
+  delete stripped.metaTitle;
+  delete stripped.metaDescription;
+  delete stripped.metaTitleEn;
+  delete stripped.metaDescriptionEn;
+  delete stripped.imageAltAr;
+  delete stripped.imageAltEn;
+  const mechanical = { ...stripped, ...offer.templateSeoCopy(stripped) };
+
+  const upgraded = offer.buildSiteData([{ key: "content_demos", value: [mechanical] }]);
+  assert.equal(upgraded.content.demos[0].metaTitle, baseDemo.metaTitle);
+  assert.equal(upgraded.content.demos[0].metaDescription, baseDemo.metaDescription);
+
+  const customAdmin = { ...mechanical, metaTitle: "عنوان مخصص من لوحة الإدارة" };
+  const preserved = offer.buildSiteData([{ key: "content_demos", value: [customAdmin] }]);
+  assert.equal(preserved.content.demos[0].metaTitle, "عنوان مخصص من لوحة الإدارة");
 });
