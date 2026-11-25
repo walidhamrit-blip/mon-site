@@ -122,11 +122,13 @@ rien ne s'empile) :
 🛒 Boutique
   ├─ 🎁 Cartes cadeaux
   │     ↓
-  │   Types de carte — « Amazon (5) · Steam (4) · PlayStation (3)… »
-  │     (la marque est dérivée du nom fournisseur : « Amazon (US) »,
-  │      « Amazon (FR) »… regroupés sous « Amazon »)
+  │   Types de carte — « أمازون · Amazon (5) · ستيم · Steam (4)… »
+  │     (marque dérivée du nom fournisseur : « Amazon (US) », « Amazon
+  │      (FR) »… regroupés sous « Amazon » ; noms arabes à côté)
   │     ↓
-  │   Régions — « Amazon US (3) · Amazon FR (2)… » + « Toutes les régions »
+  │   Régions — « أمازون أمريكا (3) · أمازون فرنسا (2)… » + « كل المناطق »
+  │     + légende : « 🗺️ MENA = الشرق الأوسط وشمال إفريقيا — الخليج،
+  │      مصر، الأردن، لبنان، المغرب العربي », « 🗺️ GLOBAL = عالمية »…
   │     ↓
   │   Produits de la marque/région — « à partir de $11.50 », 8 par page
   ├─ 🎮 Recharges de jeux (8)      ┐ liste plate

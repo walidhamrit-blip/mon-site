@@ -405,6 +405,184 @@ function shopProductCoversRegion(product: ShopProduct, region: string): boolean 
   );
 }
 
+/* --------------------- Intitulés arabes & légende --------------------- */
+
+/**
+ * Noms arabes des marques courantes — le catalogue fournisseur est en
+ * anglais : le public arabophone voit l'intitulé arabe à côté du nom
+ * d'origine (reconnaissance garantie). Marque inconnue → nom d'origine.
+ */
+const BRAND_LABELS_AR: Record<string, string> = {
+  amazon: "أمازون",
+  steam: "ستيم",
+  playstation: "بلايستيشن",
+  "playstation store": "متجر بلايستيشن",
+  "google play": "جوجل بلاي",
+  google: "جوجل",
+  itunes: "آيتونز",
+  "app store": "آيتونز",
+  apple: "آبل",
+  netflix: "نتفليكس",
+  xbox: "إكس بوكس",
+  nintendo: "نينتندو",
+  spotify: "سبوتيفاي",
+  "razer gold": "ريزر جولد",
+  pubg: "ببجي",
+  "google tv": "جوجل تي في",
+  shein: "شين",
+  "playstation plus": "بلايستيشن بلس",
+  Hulu: "هولو",
+  "amazon prime": "أمازون برايم",
+  "google one": "جوجل ون",
+  cashbill: "كاش بيل",
+  "mygoods": "ماي جودز",
+};
+
+/** Noms arabes des régions/pays — affichés sur les boutons de la vue région. */
+const REGION_LABELS_AR: Record<string, string> = {
+  us: "أمريكا",
+  fr: "فرنسا",
+  de: "ألمانيا",
+  gb: "بريطانيا",
+  uk: "بريطانيا",
+  ae: "الإمارات",
+  sa: "السعودية",
+  qa: "قطر",
+  kw: "الكويت",
+  bh: "البحرين",
+  om: "عُمان",
+  jo: "الأردن",
+  lb: "لبنان",
+  eg: "مصر",
+  ma: "المغرب",
+  dz: "الجزائر",
+  tn: "تونس",
+  ly: "ليبيا",
+  sd: "السودان",
+  tr: "تركيا",
+  eu: "أوروبا",
+  global: "عالمية",
+  mena: "الشرق الأوسط وشمال إفريقيا",
+  row: "باقي العالم",
+  na: "أمريكا الشمالية",
+  latam: "أمريكا اللاتينية",
+  apac: "آسيا والمحيط الهادي",
+  asia: "آسيا",
+  africa: "إفريقيا",
+  ca: "كندا",
+  au: "أستراليا",
+  nz: "نيوزيلندا",
+  it: "إيطاليا",
+  es: "إسبانيا",
+  nl: "هولندا",
+  be: "بلجيكا",
+  at: "النمسا",
+  ch: "سويسرا",
+  pt: "البرتغال",
+  gr: "اليونان",
+  ie: "إيرلندا",
+  pl: "بولندا",
+  se: "السويد",
+  no: "النرويج",
+  dk: "الدنمارك",
+  fi: "فنلندا",
+  ro: "رومانيا",
+  cz: "التشيك",
+  hu: "هنغاريا",
+  ru: "روسيا",
+  ua: "أوكرانيا",
+  br: "البرازيل",
+  mx: "المكسيك",
+  ar: "الأرجنتين",
+  cl: "تشيلي",
+  co: "كولومبيا",
+  jp: "اليابان",
+  kr: "كوريا",
+  in: "الهند",
+  pk: "باكستان",
+  ph: "الفلبين",
+  id: "إندونيسيا",
+  my: "ماليزيا",
+  ng: "نيجيريا",
+};
+
+/** Explication (deux langues) des codes de région qui ne sont pas un pays. */
+const REGION_EXPLANATIONS: Record<string, { ar: string; en: string }> = {
+  MENA: {
+    ar: "الشرق الأوسط وشمال إفريقيا — الخليج (السعودية، الإمارات، قطر، الكويت، عُمان، البحرين)، مصر، الأردن، لبنان، المغرب العربي",
+    en: "Middle East & North Africa — Gulf (Saudi Arabia, UAE, Qatar, Kuwait, Oman, Bahrain), Egypt, Jordan, Lebanon, Maghreb",
+  },
+  GLOBAL: {
+    ar: "عالمية — تعمل في جميع الدول دون قيود إقليمية",
+    en: "Worldwide — works in any country, no regional restriction",
+  },
+  EU: {
+    ar: "أوروبا — الحساب يجب أن يكون مسجلاً في دولة أوروبية",
+    en: "Europe — the account must be registered in a European country",
+  },
+  ROW: {
+    ar: "باقي دول العالم — خارج أوروبا وأمريكا الشمالية غالباً",
+    en: "Rest of World — usually outside Europe and North America",
+  },
+  LATAM: {
+    ar: "أمريكا اللاتينية — المكسيك، البرازيل، الأرجنتين، تشيلي…",
+    en: "Latin America — Mexico, Brazil, Argentina, Chile…",
+  },
+  APAC: {
+    ar: "آسيا والمحيط الهادي — اليابان، كوريا، الهند، أستراليا…",
+    en: "Asia-Pacific — Japan, Korea, India, Australia…",
+  },
+  NA: {
+    ar: "أمريكا الشمالية — الولايات المتحدة وكندا",
+    en: "North America — United States & Canada",
+  },
+  ASIA: { ar: "قارة آسيا", en: "Asia continent" },
+  AFRICA: { ar: "قارة إفريقيا", en: "Africa continent" },
+};
+
+/** Intitulé arabe de la marque (retombe sur le nom d'origine si inconnue). */
+export function shopBrandLabel(brand: string, locale: ShopLocale): string {
+  if (locale !== "ar") return brand;
+  return BRAND_LABELS_AR[brand.trim().toLowerCase()] ?? brand;
+}
+
+/** Titre de section : « ستيم (Steam) » en arabe, nom d'origine en anglais. */
+export function shopBrandHeading(brand: string, locale: ShopLocale): string {
+  if (locale !== "ar") return brand;
+  const ar = BRAND_LABELS_AR[brand.trim().toLowerCase()];
+  return ar ? `${ar} (${brand})` : brand;
+}
+
+/** Libellé de région seul : « تركيا » en arabe, code d'origine en anglais. */
+export function shopRegionLabel(region: string, locale: ShopLocale): string {
+  if (locale !== "ar") return region;
+  return REGION_LABELS_AR[region.trim().toLowerCase()] ?? region;
+}
+
+/** Libellé de bouton région : « أمازون أمريكا » en arabe, « Amazon US » en anglais. */
+export function shopRegionButtonLabel(
+  brand: string,
+  region: string,
+  locale: ShopLocale,
+): string {
+  return `${shopBrandLabel(brand, locale)} ${shopRegionLabel(region, locale)}`;
+}
+
+/**
+ * Légende sous la liste des régions : explique les codes qui ne sont pas
+ * un pays (MENA = quels pays, GLOBAL, EU…). Une ligne par code spécial
+ * présent dans la liste, dans l'ordre alphabétique.
+ */
+export function shopRegionLegend(regions: readonly string[], locale: ShopLocale): string[] {
+  const lines: string[] = [];
+  for (const region of regions) {
+    const explanation = REGION_EXPLANATIONS[region.trim().toUpperCase()];
+    if (!explanation) continue;
+    lines.push(locale === "ar" ? `🗺️ ${region} = ${explanation.ar}` : `🗺️ ${region} = ${explanation.en}`);
+  }
+  return lines;
+}
+
 export function shopFromPrice(product: ShopProduct): number | null {
   const price = minPrice(product);
   return Number.isFinite(price) ? price : null;
@@ -787,7 +965,9 @@ export function shopCategoryView(
   ]);
 
   const heading = context
-    ? `${copy.title} — ${context.brand}${context.region ? ` · ${context.region}` : ""}`
+    ? `${copy.title} — ${shopBrandHeading(context.brand, locale)}${
+        context.region ? ` · ${shopRegionLabel(context.region, locale)}` : ""
+      }`
     : `${copy.title} — ${shopCategoryLabel(kind, locale)}`;
   const text = [
     heading,
@@ -846,8 +1026,10 @@ export function shopBrandsView(
   const stateBrands: string[] = [];
   slice.forEach((entry, index) => {
     stateBrands.push(entry.name);
+    const label = shopBrandLabel(entry.name, locale);
+    const text = label === entry.name ? entry.name : `${label} · ${entry.name}`;
     row.push({
-      text: `${entry.name} (${entry.count})`.slice(0, 60),
+      text: `${text} (${entry.count})`.slice(0, 60),
       callback_data: shopCallback({ view: "brand", index }),
     });
     if (row.length === 2) {
@@ -919,6 +1101,9 @@ export function shopBrandRegionsView(
     });
   }
 
+  // Légende sous la liste : explique les codes non-pays (MENA, GLOBAL…).
+  const legend = shopRegionLegend(regions, locale);
+
   const totalPages = pageCountOf(regions.length, SHOP_PRODUCTS_PER_PAGE);
   const safePage = Math.min(Math.max(1, page), totalPages);
   const slice = pageSlice(regions, safePage, SHOP_PRODUCTS_PER_PAGE);
@@ -929,9 +1114,8 @@ export function shopBrandRegionsView(
   slice.forEach((region, index) => {
     stateRegions.push(region);
     const count = shopProductsOfBrand(catalog, kind, brand, region).length;
-    const variant = region === "GLOBAL" ? `${brand} Global` : `${brand} ${region}`;
     row.push({
-      text: `${variant} (${count})`.slice(0, 60),
+      text: `${shopRegionButtonLabel(brand, region, locale)} (${count})`.slice(0, 60),
       callback_data: shopCallback({ view: "region", index }),
     });
     if (row.length === 2) {
@@ -959,9 +1143,10 @@ export function shopBrandRegionsView(
   ]);
 
   const text = [
-    `${copy.title} — ${brand}`,
+    `${copy.title} — ${shopBrandHeading(brand, locale)}`,
     "",
     copy.chooseRegion,
+    ...(legend.length ? ["", ...legend] : []),
   ].join("\n");
   return {
     text,
