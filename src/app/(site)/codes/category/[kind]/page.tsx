@@ -9,7 +9,7 @@ import { categoryHref, categoryProducts, CATEGORY_PAGE_SIZE, getDigitalCategory,
 import { productSeoName } from "@/lib/digital-seo";
 import { digitalCatalogStatus } from "@/lib/digital-store";
 import { lowestPriceUsd } from "@/lib/digital-types";
-import { breadcrumbJsonLd, pageMetadata, siteLocale } from "@/lib/seo";
+import { breadcrumbJsonLd, faqJsonLd, pageMetadata, siteLocale } from "@/lib/seo";
 import { localizedAbsoluteUrl, localeFromSearchParams, type LocalePageProps, type RouteSearchParams } from "@/lib/locale";
 import {
   getPublicCatalogCached,
@@ -42,19 +42,20 @@ const loadCategory = cache(async (kind: string, params: RouteSearchParams) => {
   const locale = localeFromSearchParams(params, siteLocale(config));
   const ar = locale === "ar";
   const name = ar ? category.ar : category.en;
+  const seoTitle = ar ? category.seoTitleAr : category.seoTitleEn;
   const suffix = page > 1 ? (ar ? ` — الصفحة ${page}` : ` — Page ${page}`) : "";
   const description = ar ? category.descriptionAr : category.descriptionEn;
-  return { category, page, config, degraded, listing, ar, locale, name, suffix, description };
+  return { category, page, config, degraded, listing, ar, locale, name, seoTitle, suffix, description };
 });
 
 export async function generateMetadata({ params, searchParams }: Props): Promise<Metadata> {
   const { kind } = await params;
   const query = await searchParams;
-  const { category, page, config, degraded, locale, name, suffix, description } = await loadCategory(kind, query);
+  const { category, page, config, degraded, locale, seoTitle, suffix, description } = await loadCategory(kind, query);
   return pageMetadata(config, {
     locale,
     path: categoryHref(category.kind, page),
-    title: `${name}${suffix}`,
+    title: `${seoTitle}${suffix}`,
     description: `${page > 1 ? (locale === "ar" ? `الصفحة ${page}. ` : `Page ${page}. `) : ""}${description}`,
     noindex: degraded,
   });
@@ -65,28 +66,39 @@ export default async function DigitalCategoryPage({ params, searchParams }: Prop
   const query = await searchParams;
   const { category, page, config, degraded, listing, ar, locale, name, suffix, description } = await loadCategory(kind, query);
   const path = categoryHref(category.kind, page);
+  const faqs = category.faqs;
+  const guideHeading = ar ? category.guideHeadingAr : category.guideHeadingEn;
+  const guideParagraphs = ar ? category.guideParagraphsAr : category.guideParagraphsEn;
+  const checklistTitle = ar ? category.checklistTitleAr : category.checklistTitleEn;
+  const checklist = ar ? category.checklistAr : category.checklistEn;
+
+  const schemas: Record<string, unknown>[] = [
+    breadcrumbJsonLd(config, [
+      { name: ar ? "الرئيسية" : "Home", path: "/" },
+      { name: ar ? "الأكواد" : "Digital codes", path: "/codes" },
+      { name: `${name}${suffix}`, path },
+    ], locale),
+    {
+      "@context": "https://schema.org", "@type": "CollectionPage",
+      "@id": `${localizedAbsoluteUrl(config.url, path, locale, siteLocale(config))}#collection`, url: localizedAbsoluteUrl(config.url, path, locale, siteLocale(config)),
+      name: `${name}${suffix}`, description, inLanguage: ar ? "ar" : "en",
+      ...(!degraded ? { mainEntity: {
+        "@type": "ItemList", numberOfItems: listing.products.length,
+        itemListElement: listing.products.map((product, index) => ({
+          "@type": "ListItem", position: (page - 1) * CATEGORY_PAGE_SIZE + index + 1,
+          name: productSeoName(product, ar ? "ar" : "en"),
+          url: localizedAbsoluteUrl(config.url, `/codes/${product.slug}`, locale, siteLocale(config)),
+        })),
+      } } : {}),
+    },
+  ];
+  if (page === 1 && faqs.length > 0) {
+    schemas.push(faqJsonLd(faqs, config.market, locale));
+  }
+
   return (
     <>
-      <JsonLd data={[
-        breadcrumbJsonLd(config, [
-          { name: ar ? "الرئيسية" : "Home", path: "/" },
-          { name: ar ? "الأكواد" : "Digital codes", path: "/codes" },
-          { name: `${name}${suffix}`, path },
-        ], locale),
-        {
-          "@context": "https://schema.org", "@type": "CollectionPage",
-          "@id": `${localizedAbsoluteUrl(config.url, path, locale, siteLocale(config))}#collection`, url: localizedAbsoluteUrl(config.url, path, locale, siteLocale(config)),
-          name: `${name}${suffix}`, description, inLanguage: ar ? "ar" : "en",
-          ...(!degraded ? { mainEntity: {
-            "@type": "ItemList", numberOfItems: listing.products.length,
-            itemListElement: listing.products.map((product, index) => ({
-              "@type": "ListItem", position: (page - 1) * CATEGORY_PAGE_SIZE + index + 1,
-              name: productSeoName(product, ar ? "ar" : "en"),
-              url: localizedAbsoluteUrl(config.url, `/codes/${product.slug}`, locale, siteLocale(config)),
-            })),
-          } } : {}),
-        },
-      ]} />
+      <JsonLd data={schemas} />
       <header className="site-container px-4 pt-8 sm:px-6 lg:px-8">
         <Link href="/codes" className="text-sm underline">{ar ? "كل الأكواد" : "All digital codes"}</Link>
         <h1 className="mt-4 text-3xl font-black">{name}{suffix}</h1>
@@ -99,12 +111,12 @@ export default async function DigitalCategoryPage({ params, searchParams }: Prop
           {listing.products.length === 0 ? (
             <p>{ar ? "لا توجد منتجات في هذه الفئة حالياً. تصفح الفئات الأخرى لمعرفة المتاح." : "No products in this category right now. Browse the other categories for available products."}</p>
           ) : (
-            <ul className="grid grid-cols-2 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <ul className="grid grid-cols-1 gap-3 min-[380px]:grid-cols-2 sm:gap-4 lg:grid-cols-4">
               {listing.products.map((product) => {
                 const price = lowestPriceUsd(product);
-                return <li key={product.id} className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-5">
-                  <h2 className="text-lg font-bold"><Link href={`/codes/${product.slug}`} className="underline-offset-4 hover:underline">{productSeoName(product, ar ? "ar" : "en")}</Link></h2>
-                  <p className="mt-2 text-sm text-[var(--muted-foreground)]">{product.platform} · {product.regions.join(" / ")}</p>
+                return <li key={product.id} className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-4 sm:p-5">
+                  <h2 className="text-base font-bold leading-snug sm:text-lg"><Link href={`/codes/${product.slug}`} className="underline-offset-4 hover:underline">{productSeoName(product, ar ? "ar" : "en")}</Link></h2>
+                  <p className="mt-2 text-xs text-[var(--muted-foreground)] sm:text-sm">{product.platform} · {product.regions.join(" / ")}</p>
                   {price != null && <p className="mt-3 font-bold">{ar ? "تبدأ من" : "From"} ${price.toFixed(2)}</p>}
                 </li>;
               })}
@@ -112,12 +124,52 @@ export default async function DigitalCategoryPage({ params, searchParams }: Prop
           )}
           {listing.pageCount > 1 && (
             <nav aria-label={ar ? "صفحات الفئة" : "Category pagination"} className="mt-8 flex flex-wrap items-center gap-2">
-              {page > 1 && <Link rel="prev" href={categoryHref(category.kind, page - 1)} className="rounded border p-3">{ar ? "السابق" : "Previous"}</Link>}
+              {page > 1 && <Link rel="prev" href={categoryHref(category.kind, page - 1)} className="inline-flex min-h-11 items-center justify-center rounded-lg border border-[var(--border)] px-3.5 py-2 text-sm">{ar ? "السابق" : "Previous"}</Link>}
               {Array.from({ length: listing.pageCount }, (_, index) => index + 1).map((number) => (
-                <Link key={number} href={categoryHref(category.kind, number)} aria-current={page === number ? "page" : undefined} aria-label={ar ? `الصفحة ${number}` : `Page ${number}`} className={`rounded border p-3 ${page === number ? "font-black underline" : ""}`}>{number}</Link>
+                <Link key={number} href={categoryHref(category.kind, number)} aria-current={page === number ? "page" : undefined} aria-label={ar ? `الصفحة ${number}` : `Page ${number}`} className={`inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg border border-[var(--border)] px-3 py-2 text-sm ${page === number ? "bg-[var(--secondary)] font-black underline" : ""}`}>{number}</Link>
               ))}
-              {page < listing.pageCount && <Link rel="next" href={categoryHref(category.kind, page + 1)} className="rounded border p-3">{ar ? "التالي" : "Next"}</Link>}
+              {page < listing.pageCount && <Link rel="next" href={categoryHref(category.kind, page + 1)} className="inline-flex min-h-11 items-center justify-center rounded-lg border border-[var(--border)] px-3.5 py-2 text-sm">{ar ? "التالي" : "Next"}</Link>}
             </nav>
+          )}
+        </section>
+      )}
+      {page === 1 && (
+        <section className="site-container border-t border-[var(--border)] px-4 py-10 sm:px-6 lg:px-8">
+          <div className="grid gap-8 lg:grid-cols-[1.35fr_1fr]">
+            <div>
+              <h2 className="text-2xl font-black">{guideHeading}</h2>
+              <div className="mt-4 space-y-4 leading-7 text-[var(--muted-foreground)]">
+                {guideParagraphs.map((paragraph, idx) => (
+                  <p key={idx}>{paragraph}</p>
+                ))}
+              </div>
+            </div>
+            <aside className="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-6">
+              <h3 className="text-lg font-bold">{checklistTitle}</h3>
+              <ul className="mt-4 space-y-3 text-sm leading-6 text-[var(--muted-foreground)]">
+                {checklist.map((item, idx) => (
+                  <li key={idx} className="flex gap-2.5">
+                    <span aria-hidden="true" className="font-black text-[var(--accent)]">✓</span>
+                    <span>{item}</span>
+                  </li>
+                ))}
+              </ul>
+            </aside>
+          </div>
+          {faqs.length > 0 && (
+            <div className="mt-10">
+              <h2 className="text-xl font-black">
+                {ar ? `أسئلة شائعة حول ${name}` : `Frequently asked questions about ${name.toLowerCase()}`}
+              </h2>
+              <dl className="mt-4 grid gap-4 sm:grid-cols-3">
+                {faqs.map((item, idx) => (
+                  <div key={idx} className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-5">
+                    <dt className="font-bold leading-snug">{ar ? item.qAr : item.qEn}</dt>
+                    <dd className="mt-2 text-sm leading-6 text-[var(--muted-foreground)]">{ar ? item.aAr : item.aEn}</dd>
+                  </div>
+                ))}
+              </dl>
+            </div>
           )}
         </section>
       )}

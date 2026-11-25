@@ -419,9 +419,9 @@ export const comparisons: Record<string, ComparisonSeo> = {
     titleAr: "Wix أم موقع مصمّم خصيصاً؟ مقارنة لـ {city}",
     titleEn: "Wix vs a custom website: the comparison for {cityEn}",
     descriptionAr:
-      "منشئ مواقع جاهز أم موقع مصمّم خصيصاً من نخبة؟ قارن التكلفة على 3 سنوات، السرعة، التحكم، ملكية الملفات و SEO قبل أن تختار.",
+      "منشئ مواقع جاهز أم موقع مصمّم خصيصاً لعلامتك؟ قارن التكلفة على 3 سنوات، السرعة، التحكم، ملكية الملفات و SEO قبل أن تختار.",
     descriptionEn:
-      "A ready-made builder or a custom Nukhba site? Compare the 3-year cost, speed, control, file ownership and SEO before you choose.",
+      "A ready-made builder or a custom-built website? Compare the 3-year cost, speed, control, full file ownership and SEO before you choose.",
     h1Ar: "Wix ومنشئات المواقع أم موقع مصمّم خصيصاً؟",
     h1En: "Wix and website builders, or a custom website?",
     subtitleAr:
@@ -1098,9 +1098,14 @@ export function comparisonsCollectionJsonLd(
     "@context": "https://schema.org",
     "@type": "CollectionPage",
     "@id": `${url}#collection`,
-    name: "مقارنات صريحة — نخبة Nukhba",
+    name:
+      locale === "en"
+        ? "Honest Comparisons: Nukhba vs the Alternatives"
+        : "مقارنات صريحة — نخبة Nukhba",
     description:
-      "مقارنات صريحة بين نخبة والإعلانات المدفوعة ومنشئات المواقع والمستقلين واشتراكات SEO: التكلفة، السرعة، الملكية والأثر بعد المشروع.",
+      locale === "en"
+        ? "Honest side-by-side comparisons between Nukhba, paid ads, website builders, freelancers and SEO retainers: cost, speed, ownership and long-term value."
+        : "مقارنات صريحة بين نخبة والإعلانات المدفوعة ومنشئات المواقع والمستقلين واشتراكات SEO: التكلفة، السرعة، الملكية والأثر بعد المشروع.",
     url,
     inLanguage: locale ?? ["en", "ar"],
     isPartOf: { "@id": absoluteUrl(config, "#website") },

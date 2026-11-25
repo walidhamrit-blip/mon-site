@@ -87,25 +87,29 @@ export default async function BlogPage({ searchParams }: LocalePageProps) {
     readingMinutes: article.readingMinutes,
   }));
 
+  const ar = locale === "ar";
   return (
     <>
       <JsonLd
         data={[
           breadcrumbJsonLd(config, [
-            { name: "Home", path: "/" },
-            { name: "Guides", path: "/blog" },
+            { name: ar ? "الرئيسية" : "Home", path: "/" },
+            { name: ar ? "الأدلة والمدونة" : "Guides", path: "/blog" },
           ], locale),
           webPageJsonLd(config, {
             path: "/blog",
             locale,
-            name: "Nukhba Guides — Crypto Payments, Website Costs & Growth",
-            description:
-              "Practical English and Arabic guides: the USDT photo payment guide first, then USD website pricing, agency selection, e-commerce launch and AI search visibility.",
+            name: ar
+              ? "أدلة نخبة — الدفع بـ USDT، تكلفة المواقع وخطة النمو"
+              : "Nukhba Guides — Crypto Payments, Website Costs & Growth",
+            description: ar
+              ? "أدلة عملية بالعربية والإنجليزية: الدفع بـ USDT خطوة بخطوة بالصور، تكلفة المواقع بالدولار، اختيار الوكالة، إطلاق المتجر، والظهور في محركات الذكاء الاصطناعي."
+              : "Practical English and Arabic guides: the USDT photo payment guide first, then USD website pricing, agency selection, e-commerce launch and AI search visibility.",
             speakable: ["h1", "#blog-answer"],
-            about: "Website, e-commerce and crypto payment guides",
+            about: ar ? "أدلة تصميم المواقع والمتاجر والدفع بـ USDT" : "Website, e-commerce and crypto payment guides",
           }),
-          blogCollectionJsonLd(config, blogArticles),
-          faqJsonLd(HUB_FAQS),
+          blogCollectionJsonLd(config, blogArticles, locale),
+          faqJsonLd(HUB_FAQS, config.market, locale),
         ]}
       />
       <BlogClient articles={articles} />

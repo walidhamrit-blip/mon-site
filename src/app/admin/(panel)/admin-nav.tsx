@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -21,6 +21,7 @@ import {
   ClipboardCheck,
   Settings,
   Send,
+  Search,
   ExternalLink,
   LogOut,
   Menu,
@@ -51,6 +52,20 @@ export function AdminNav({ newLeads, paidOrders }: Props) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
 
+  useEffect(() => {
+    if (!open) return;
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setOpen(false);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => {
+      document.body.style.overflow = prevOverflow;
+      window.removeEventListener("keydown", onKey);
+    };
+  }, [open]);
+
   const groups: NavGroup[] = [
     { title: "Vue d’ensemble", items: [
       { href: "/admin", label: "Tableau de bord", sublabel: "Parcours publics & activité", icon: LayoutDashboard, exact: true },
@@ -74,6 +89,7 @@ export function AdminNav({ newLeads, paidOrders }: Props) {
       { href: "/admin/content", label: "Textes, FAQ & Avis", sublabel: "Contenus partagés arabe / anglais", icon: FileText },
       { href: "/admin/media", label: "Bannières & images", sublabel: "Accueil, boutique & sections", icon: Camera },
       { href: "/admin/settings", label: "Identité, thèmes & tarifs", sublabel: "Contacts, FazerCards & offres web", icon: Settings },
+      { href: "/admin/search-console", label: "Search Console & SEO", sublabel: "Clics, positions 11–20 & sitemap", icon: Search },
       { href: "/admin/telegram", label: "Bot Telegram", sublabel: "Alertes ventes, suivi & campagnes", icon: Send },
     ] },
     { title: "Pages secondaires & Héritage", items: [
@@ -109,7 +125,7 @@ export function AdminNav({ newLeads, paidOrders }: Props) {
             type="button"
             onClick={() => setOpen(false)}
             aria-label="Fermer le menu"
-            className="lg:hidden h-8 w-8 rounded-lg border border-stone-200 grid place-items-center text-stone-500 hover:bg-stone-100"
+            className="lg:hidden h-11 w-11 rounded-lg border border-stone-200 grid place-items-center text-stone-500 hover:bg-stone-100"
           >
             <X className="h-4 w-4" />
           </button>
@@ -230,7 +246,7 @@ export function AdminNav({ newLeads, paidOrders }: Props) {
             type="button"
             onClick={() => setOpen(true)}
             aria-label="Ouvrir le menu"
-            className="h-9 w-9 rounded-lg border border-stone-200 bg-stone-50 grid place-items-center text-stone-700"
+            className="h-11 w-11 rounded-lg border border-stone-200 bg-stone-50 grid place-items-center text-stone-700"
           >
             <Menu className="h-4 w-4" />
           </button>
@@ -239,8 +255,8 @@ export function AdminNav({ newLeads, paidOrders }: Props) {
 
       {/* Tiroir mobile */}
       {open && (
-        <div className="lg:hidden fixed inset-0 z-40 flex">
-          <div className="w-76 max-w-[85vw] bg-white border-r border-stone-200 p-4 overflow-y-auto shadow-2xl">
+        <div className="lg:hidden fixed inset-0 z-40 flex h-dvh">
+          <div className="w-76 max-w-[85vw] bg-white border-r border-stone-200 p-4 pb-[max(1.25rem,env(safe-area-inset-bottom))] overflow-y-auto shadow-2xl">
             {navContent}
           </div>
           <button

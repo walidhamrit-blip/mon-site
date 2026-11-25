@@ -275,6 +275,15 @@ export function productFaqs(product: DigitalProduct, locale: Locale): DigitalFaq
         ? `معرّف اللاعب (Player ID) أو معرّف الحساب في ${platform}، مع المنطقة/السيرفر إذا كان مطلوباً. البريد الإلكتروني لا يُستخدم للشحن.`
         : `Your ${platform} player ID (and region/server if required). An email address cannot be used for a top-up.`,
     });
+  } else if (product.kind === "subscription_code" || /spotify|netflix|plus|game\s*pass/i.test(platform)) {
+    faqs.splice(1, 0, {
+      q: ar
+        ? `كيف أفعّل اشتراك ${platform} في ليبيا بدون بطاقة مصرفية دولية؟`
+        : `How do I activate a ${platform} subscription in Libya without an international bank card?`,
+      a: ar
+        ? `اشترِ كود ${platform} بالدولار أو USDT (أو وسائل الدفع المحلية المتاحة)، واستلم رمز التفعيل فوراً لتمديد اشتراكك مباشرة من صفحة Redeem الرسمية دون الحاجة لبطاقة فيزا أو ماستركارد.`
+        : `Buy a ${platform} code in USD or USDT and redeem it directly on the official ${platform} redeem page — your subscription activates immediately with no international Visa or Mastercard required.`,
+    });
   }
   return faqs;
 }
@@ -343,9 +352,9 @@ export function productSeoTitle(product: DigitalProduct, locale: Locale): string
   // préfixe, sinon le titre devient « بطاقة هدايا بطاقة Xbox ».
   const alreadyTyped = ar
     ? new RegExp(
-        `^(${kind.split(" ")[0]}|${DIGITAL_KIND_LABELS[product.kind].ar.split(" ")[0]})`,
+        `^(${kind.split(" ")[0]}|${DIGITAL_KIND_LABELS[product.kind].ar.split(" ")[0]})|(بطاقة|كود|مفتاح|شحن|اشتراك)`,
       ).test(name)
-    : new RegExp(`^(${kind}|${kind.split(" ")[0]})`, "i").test(name);
+    : new RegExp(`^(${kind}|${kind.split(" ")[0]})|\\b(gift\\s*card|code|key|top[- ]?up|wallet|voucher)\\b`, "i").test(name);
   const label = alreadyTyped ? "" : `${kind} `;
   if (ar) {
     return `${label}${name}${from != null ? ` — من ${from.toFixed(2)} دولار` : ""} | نخبة`;
@@ -419,6 +428,8 @@ export function productSeoKeywords(product: DigitalProduct): string[] {
     `${product.platform} code`,
     `${product.platform} gift card`,
     `${product.platform} ليبيا`,
+    `اشتراك ${product.platform} ليبيا`,
+    `كود اشتراك ${product.platform}`,
     `شراء ${product.titleAr}`,
     `buy ${product.titleEn} USDT`,
   ];

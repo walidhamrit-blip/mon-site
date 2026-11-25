@@ -335,8 +335,8 @@ const serviceLandingDefaults: Record<string, ServiceLandingContent> = {
   },
 
   branding: {
-    titleAr: "تصميم هوية بصرية وشعار لشركتك في طرابلس — من {price}",
-    titleEn: "Brand Identity & Logo Design in Tripoli — From {price}",
+    titleAr: "تصميم هوية بصرية وشعار احترافي في طرابلس",
+    titleEn: "Brand Identity & Logo Design in Tripoli",
     descriptionAr:
       "هوية بصرية متكاملة: شعار أصلي، دليل ألوان وخطوط، بطاقات عمل، قوالب سوشيال وملفات جاهزة للطباعة والويب — من {price} وتسليم 3–5 أيام.",
     descriptionEn:

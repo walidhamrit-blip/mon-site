@@ -112,8 +112,8 @@ export function DemosClient() {
               </h1>
               <p className="mt-2.5 text-sm sm:text-base opacity-60 max-w-[58ch]">
                 {ar
-                  ? "كل النماذج بنفس السعر الأساسي مع تخصيص المحتوى المقدم عند التسليم الأول. أضف الوظائف حسب حاجتك."
-                  : "Every model has the same base price, with initial personalization of your supplied content included. Add functions as needed."}
+                  ? "أعمال حية ومواقع صمّمتها نخبة: كل النماذج بنفس السعر الأساسي مع تخصيص المحتوى المقدم عند التسليم الأول. أضف الوظائف حسب حاجتك."
+                  : "Live portfolio of websites built by Nukhba: every model has the same base price, with initial personalization of your supplied content included. Add functions as needed."}
               </p>
               <p className="mt-2 inline-flex items-center gap-2 rounded-full border border-[#0B6B3A]/35 bg-[#0B6B3A]/10 px-4 py-1.5 text-xs font-bold text-[#0B6B3A]">
                 {ar
@@ -138,7 +138,7 @@ export function DemosClient() {
                   type="button"
                   onClick={() => setQ("")}
                   aria-label={ar ? "مسح البحث" : "Clear search"}
-                  className="absolute end-2 top-1/2 -translate-y-1/2 grid h-7 w-7 place-items-center rounded-full opacity-60 hover:opacity-100 cursor-pointer"
+                  className="absolute end-1 top-1/2 -translate-y-1/2 grid h-9 w-9 place-items-center rounded-full opacity-60 hover:opacity-100 cursor-pointer"
                 >
                   <X className="h-3.5 w-3.5" />
                 </button>
@@ -186,8 +186,8 @@ export function DemosClient() {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-5 sm:grid-cols-2 lg:grid-cols-3">
-              {group.entries.map(({ demo, classification }) => {
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5 lg:grid-cols-3">
+              {group.entries.map(({ demo, classification }, entryIndex) => {
                 const live = isRealUrl(demo.previewUrl);
                 // Une catégorie peut ne contenir qu'un seul site : sur trois
                 // colonnes, la carte seule laissait les deux tiers de la ligne
@@ -210,7 +210,7 @@ export function DemosClient() {
                         solo ? "aspect-[16/10] lg:aspect-auto lg:w-[52%]" : "aspect-[16/10]"
                       }`}
                     >
-                      <ProjectPreview demo={demo} />
+                      <ProjectPreview demo={demo} priority={index === 0 && entryIndex === 0} />
                       <div className="absolute inset-0 bg-gradient-to-t from-black/45 via-transparent to-transparent" />
                       <span className="absolute top-2.5 start-2.5 rounded-full bg-white px-2.5 py-1 text-[11px] font-bold text-black">
                         {ar ? demo.sectorAr : demo.sectorEn}
@@ -247,14 +247,14 @@ export function DemosClient() {
                         <ModelPurchaseButton
                           plan={plan}
                           demo={demo}
-                          className="mt-3 inline-flex min-h-9 w-full flex-wrap items-center justify-center gap-1.5 rounded-full border border-[var(--accent)]/50 bg-[var(--accent)]/10 px-3 py-2 text-center text-[11px] font-black hover:bg-[var(--accent)]/20 transition-colors"
+                          className="mt-3 inline-flex min-h-11 w-full flex-wrap items-center justify-center gap-1.5 rounded-full border border-[var(--accent)]/50 bg-[var(--accent)]/10 px-3 py-2 text-center text-[11.5px] font-black hover:bg-[var(--accent)]/20 transition-colors"
                         />
                       )}
 
                       <div className="mt-3 flex items-center gap-2 pt-3 border-t border-[var(--border)]/70">
                         <Link
                           href={`/demos/${demo.slug}`}
-                          className="inline-flex h-9 flex-1 items-center justify-center gap-1.5 rounded-full bg-[var(--primary)] px-3 text-xs font-bold text-[var(--primary-foreground)] hover:opacity-90 transition-opacity"
+                          className="inline-flex min-h-11 flex-1 items-center justify-center gap-1.5 rounded-full bg-[var(--primary)] px-3 text-xs font-bold text-[var(--primary-foreground)] hover:opacity-90 transition-opacity"
                         >
                           {ar ? "معاينة الموقع" : "View site"}
                           <ArrowUpRight className="h-3.5 w-3.5" />
@@ -265,7 +265,7 @@ export function DemosClient() {
                             target="_blank"
                             rel="noopener noreferrer"
                             title={ar ? "فتح الموقع الكامل" : "Open full site"}
-                            className="inline-flex h-9 items-center justify-center gap-1.5 rounded-full border border-[var(--border)] px-3 text-xs font-bold hover:border-[var(--accent)] transition-colors"
+                            className="inline-flex min-h-11 items-center justify-center gap-1.5 rounded-full border border-[var(--border)] px-3 text-xs font-bold hover:border-[var(--accent)] transition-colors"
                           >
                             <ExternalLink className="h-3.5 w-3.5" />
                             {ar ? "زيارة" : "Visit"}

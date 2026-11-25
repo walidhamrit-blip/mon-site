@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { createPortal } from "react-dom";
 import { AlertTriangle, CheckCircle2, Coins, CreditCard, ExternalLink, Loader2, Lock, Minus, Plus, ShieldCheck, Smartphone, Wallet, X, Zap } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import { useSiteConfig } from "@/components/site-provider";
@@ -216,11 +217,18 @@ export function DigitalBuyDialog({ product, denominationId, onClose }: Props) {
       : null;
 
   useEffect(() => {
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    document.documentElement.setAttribute("data-dialog", "open");
     const onKey = (event: KeyboardEvent) => {
       if (event.key === "Escape") onClose();
     };
     window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      document.documentElement.removeAttribute("data-dialog");
+      window.removeEventListener("keydown", onKey);
+    };
   }, [onClose]);
 
   // Le navigateur demande un devis indicatif ; le checkout le recalculera et
@@ -704,16 +712,21 @@ export function DigitalBuyDialog({ product, denominationId, onClose }: Props) {
   };
 
   if (cardReady) {
-    return (
+    const readyNode = (
       <div
-        className="fixed inset-0 z-[90] flex items-end justify-center bg-black/50 p-0 backdrop-blur-sm sm:items-center sm:p-4"
+        className="fixed inset-0 z-[10000] flex items-end justify-center bg-black/60 p-0 backdrop-blur-sm sm:items-center sm:p-4"
+        onClick={onClose}
         role="dialog"
         aria-modal="true"
         aria-label={ar ? "إتمام الدفع بالبطاقة" : "Complete card payment"}
+        dir={ar ? "rtl" : "ltr"}
       >
-        <div className="w-full max-w-lg overflow-y-auto rounded-t-3xl bg-[var(--card)] p-5 shadow-2xl sm:rounded-2xl sm:p-6">
+        <div
+          className="w-full max-w-lg max-h-[92dvh] overflow-y-auto rounded-t-3xl bg-[var(--card)] p-5 pb-[max(1.5rem,env(safe-area-inset-bottom))] shadow-2xl sm:rounded-2xl sm:p-6"
+          onClick={(event) => event.stopPropagation()}
+        >
           <div className="flex items-start justify-between gap-3">
-            <div>
+            <div className="min-w-0">
               <div className="text-[11px] font-black uppercase tracking-[0.16em] text-[var(--accent)]">
                 {ar ? "جلسة دفع آمنة جاهزة" : "Secure card session ready"}
               </div>
@@ -725,7 +738,7 @@ export function DigitalBuyDialog({ product, denominationId, onClose }: Props) {
               type="button"
               onClick={onClose}
               aria-label={ar ? "إغلاق" : "Close"}
-              className="grid h-9 w-9 shrink-0 place-items-center rounded-full border border-[var(--border)] text-[var(--muted-foreground)] hover:border-[var(--accent)]"
+              className="grid h-11 w-11 shrink-0 cursor-pointer place-items-center rounded-full border border-[var(--border)] text-[var(--muted-foreground)] hover:border-[var(--accent)]"
             >
               <X className="h-4 w-4" />
             </button>
@@ -774,22 +787,29 @@ export function DigitalBuyDialog({ product, denominationId, onClose }: Props) {
         </div>
       </div>
     );
+    if (typeof document === "undefined") return readyNode;
+    return createPortal(readyNode, document.body);
   }
 
-  return (
+  const buyDialogNode = (
     <div
-      className="fixed inset-0 z-[90] flex items-end justify-center bg-black/50 p-0 backdrop-blur-sm sm:items-center sm:p-4"
+      className="fixed inset-0 z-[10000] flex items-end justify-center bg-black/60 p-0 backdrop-blur-sm sm:items-center sm:p-4"
+      onClick={onClose}
       role="dialog"
       aria-modal="true"
       aria-label={ar ? "شراء الكود" : "Buy code"}
+      dir={ar ? "rtl" : "ltr"}
     >
-      <div className="w-full max-w-lg overflow-y-auto rounded-t-3xl bg-[var(--card)] p-5 shadow-2xl sm:rounded-2xl sm:p-6 max-h-[92vh]">
+      <div
+        className="w-full max-w-lg max-h-[92dvh] overflow-y-auto rounded-t-3xl bg-[var(--card)] p-5 pb-[max(1.5rem,env(safe-area-inset-bottom))] shadow-2xl sm:rounded-2xl sm:p-6"
+        onClick={(event) => event.stopPropagation()}
+      >
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
             <div className="text-[11px] font-black uppercase tracking-[0.16em] text-[var(--accent)]">
               {ar ? "شراء فوري" : "Buy now"}
             </div>
-            <h2 className="mt-1 truncate text-[17px] font-black" dir="auto">
+            <h2 className="mt-1 line-clamp-2 text-[17px] font-black leading-snug" dir="auto">
               {ar ? product.titleAr : product.titleEn}
             </h2>
           </div>
@@ -797,7 +817,7 @@ export function DigitalBuyDialog({ product, denominationId, onClose }: Props) {
             type="button"
             onClick={onClose}
             aria-label={ar ? "إغلاق" : "Close"}
-            className="grid h-9 w-9 shrink-0 place-items-center rounded-full border border-[var(--border)] text-[var(--muted-foreground)] hover:border-[var(--accent)]"
+            className="grid h-11 w-11 shrink-0 cursor-pointer place-items-center rounded-full border border-[var(--border)] text-[var(--muted-foreground)] hover:border-[var(--accent)]"
           >
             <X className="h-4 w-4" />
           </button>
@@ -870,7 +890,7 @@ export function DigitalBuyDialog({ product, denominationId, onClose }: Props) {
               onClick={() => setQuantity((value) => Math.max(effectiveMinQuantity, value - 1))}
               disabled={quantity <= effectiveMinQuantity}
               aria-label={ar ? "إنقاص" : "Decrease"}
-              className="grid h-9 w-9 place-items-center rounded-full border border-[var(--border)] disabled:opacity-40"
+              className="grid h-11 w-11 cursor-pointer place-items-center rounded-full border border-[var(--border)] disabled:cursor-not-allowed disabled:opacity-40"
             >
               <Minus className="h-4 w-4" />
             </button>
@@ -880,7 +900,7 @@ export function DigitalBuyDialog({ product, denominationId, onClose }: Props) {
               onClick={() => setQuantity((value) => Math.min(maxQuantity, value + 1))}
               disabled={quantity >= maxQuantity}
               aria-label={ar ? "زيادة" : "Increase"}
-              className="grid h-9 w-9 place-items-center rounded-full border border-[var(--border)] disabled:opacity-40"
+              className="grid h-11 w-11 cursor-pointer place-items-center rounded-full border border-[var(--border)] disabled:cursor-not-allowed disabled:opacity-40"
             >
               <Plus className="h-4 w-4" />
             </button>
@@ -894,7 +914,7 @@ export function DigitalBuyDialog({ product, denominationId, onClose }: Props) {
             <div className="mb-2 text-[11px] font-black uppercase tracking-wide text-[var(--muted-foreground)]">
               {ar ? "طريقة الدفع" : "Payment method"}
             </div>
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-1 gap-2 min-[360px]:grid-cols-2">
               {cardGateway?.enabled && (
                 <button
                   type="button"
@@ -997,7 +1017,7 @@ export function DigitalBuyDialog({ product, denominationId, onClose }: Props) {
                         setQuantity(minCardQuantity);
                         setError("");
                       }}
-                      className="inline-flex min-h-9 flex-1 items-center justify-center gap-1.5 rounded-lg bg-amber-600 px-3 py-1.5 text-[11.5px] font-black text-white transition-colors hover:bg-amber-700 cursor-pointer"
+                      className="inline-flex min-h-11 flex-1 items-center justify-center gap-1.5 rounded-lg bg-amber-600 px-3 py-2 text-[11.5px] font-black text-white transition-colors hover:bg-amber-700 cursor-pointer"
                     >
                       <CheckCircle2 className="h-3.5 w-3.5 shrink-0" />
                       {ar
@@ -1013,7 +1033,7 @@ export function DigitalBuyDialog({ product, denominationId, onClose }: Props) {
                         setQuantity(1);
                         setError("");
                       }}
-                      className="inline-flex min-h-9 flex-1 items-center justify-center gap-1.5 rounded-lg bg-amber-600 px-3 py-1.5 text-[11.5px] font-black text-white transition-colors hover:bg-amber-700 cursor-pointer"
+                      className="inline-flex min-h-11 flex-1 items-center justify-center gap-1.5 rounded-lg bg-amber-600 px-3 py-2 text-[11.5px] font-black text-white transition-colors hover:bg-amber-700 cursor-pointer"
                     >
                       <CheckCircle2 className="h-3.5 w-3.5 shrink-0" />
                       {ar
@@ -1028,7 +1048,7 @@ export function DigitalBuyDialog({ product, denominationId, onClose }: Props) {
                       setQuantity((value) => Math.max(minQuantity, value));
                       setError("");
                     }}
-                    className="inline-flex min-h-9 items-center justify-center rounded-lg border border-amber-500/50 bg-white/80 dark:bg-black/25 px-3 py-1.5 text-[11.5px] font-bold text-amber-950 dark:text-amber-100 transition-colors hover:bg-white cursor-pointer"
+                    className="inline-flex min-h-11 items-center justify-center rounded-lg border border-amber-500/50 bg-white/80 dark:bg-black/25 px-3 py-2 text-[11.5px] font-bold text-amber-950 dark:text-amber-100 transition-colors hover:bg-white cursor-pointer"
                   >
                     {ar
                       ? `الإبقاء على الكمية (${quantity}) والدفع بالعملات الرقمية`
@@ -1102,7 +1122,7 @@ export function DigitalBuyDialog({ product, denominationId, onClose }: Props) {
                 </p>
               )}
               {phoneQuoteError && (
-                <p className="mt-2 text-[11.5px] leading-5 text-amber-700">
+                <p className="mt-2 text-[11.5px] leading-5 text-amber-700 dark:text-amber-300">
                   {phoneQuoteError === "network"
                     ? ar
                       ? "تعذر الاتصال بخدمة السعر. تحقق من الشبكة؛ لن نخترع سعراً بديلاً."
@@ -1171,7 +1191,7 @@ export function DigitalBuyDialog({ product, denominationId, onClose }: Props) {
                     </details>
                   )}
                   {phoneQuote.stale && (
-                    <p className="mt-1.5 rounded-md bg-amber-500/10 px-2 py-1.5 text-[10.5px] leading-4 text-amber-700">
+                    <p className="mt-1.5 rounded-md bg-amber-500/10 px-2 py-1.5 text-[10.5px] leading-4 text-amber-700 dark:text-amber-300">
                       {ar
                         ? "تنبيه: هذا آخر سعر تلقائي معروف لأن التحديث تعذر. أنت توافق على هذا السعر تحديداً."
                         : "Warning: this is the last known automatic rate because refreshing failed. You are agreeing to this specific rate."}
@@ -1294,14 +1314,14 @@ export function DigitalBuyDialog({ product, denominationId, onClose }: Props) {
               </p>
             )}
             {allIdFieldsFilled && idCheck.state === "ok" && (
-              <p className="flex items-center gap-1.5 rounded-lg bg-emerald-500/10 px-2.5 py-2 text-[12px] font-bold text-emerald-700">
+              <p className="flex items-center gap-1.5 rounded-lg bg-emerald-500/10 px-2.5 py-2 text-[12px] font-bold text-emerald-700 dark:text-emerald-300">
                 <CheckCircle2 className="h-4 w-4" />
                 {ar ? "الحساب:" : "Account:"}{" "}
                 {idCheck.playerName || (ar ? "تم التحقق" : "verified")}
               </p>
             )}
             {allIdFieldsFilled && idCheck.state === "invalid" && (
-              <p className="rounded-lg bg-red-500/10 px-2.5 py-2 text-[12px] font-bold text-red-700">
+              <p className="rounded-lg bg-red-500/10 px-2.5 py-2 text-[12px] font-bold text-red-700 dark:text-red-300">
                 {ar
                   ? "لم يتم العثور على هذا المعرّف في هذه اللعبة. تحقق منه قبل الدفع."
                   : "This ID was not found in this game. Check it before paying."}
@@ -1311,23 +1331,23 @@ export function DigitalBuyDialog({ product, denominationId, onClose }: Props) {
                 entiers deviendraient invendables), mais le client doit
                 certifier explicitement l'identifiant. */}
             {allIdFieldsFilled && idCheck.state === "unverifiable" && (
-              <div className="rounded-lg border border-amber-300/70 bg-amber-50 px-2.5 py-2">
-                <p className="text-[12px] font-bold leading-5 text-amber-900">
+              <div className="rounded-lg border border-amber-300/70 bg-amber-50 dark:bg-amber-950/40 px-2.5 py-2">
+                <p className="text-[12px] font-bold leading-5 text-amber-900 dark:text-amber-100">
                   {ar
                     ? "لا يمكننا التحقق من هذا المعرّف تلقائياً لدى المزوّد."
                     : "We cannot verify this ID automatically with the supplier."}
                 </p>
                 {idCheck.reason && (
-                  <p className="mt-0.5 text-[11px] leading-4 text-amber-800/80">
+                  <p className="mt-0.5 text-[11px] leading-4 text-amber-800/80 dark:text-amber-200/80">
                     {idCheck.reason}
                   </p>
                 )}
-                <label className="mt-2 flex cursor-pointer items-start gap-2 text-[11.5px] leading-4 text-amber-950">
+                <label className="mt-2 flex cursor-pointer items-start gap-2 text-[11.5px] leading-4 text-amber-950 dark:text-amber-100">
                   <input
                     type="checkbox"
                     checked={idConfirmed}
                     onChange={(event) => setIdConfirmed(event.target.checked)}
-                    className="mt-0.5 h-3.5 w-3.5 shrink-0 accent-[var(--accent)]"
+                    className="mt-0.5 h-4 w-4 shrink-0 accent-[var(--accent)]"
                   />
                   <span>
                     {ar
@@ -1390,7 +1410,7 @@ export function DigitalBuyDialog({ product, denominationId, onClose }: Props) {
         </div>
 
         {aboveLimit && (
-          <p className="mt-3 rounded-lg border border-amber-300/60 bg-amber-50 px-3 py-2 text-[12.5px] leading-5 text-amber-800">
+          <p className="mt-3 rounded-lg border border-amber-300/60 bg-amber-50 dark:bg-amber-950/40 px-3 py-2 text-[12.5px] leading-5 text-amber-800 dark:text-amber-200">
             {ar
               ? `الحد الأقصى ${maxOrderLimitUsd} $ للطلب الواحد — قلّل الكمية أو تواصل معنا على واتساب.`
               : `Maximum ${maxOrderLimitUsd} $ per order — reduce the quantity or contact us on WhatsApp.`}
@@ -1398,7 +1418,7 @@ export function DigitalBuyDialog({ product, denominationId, onClose }: Props) {
         )}
 
         {belowMinimum && (
-          <p className="mt-3 rounded-lg border border-amber-300/60 bg-amber-50 px-3 py-2 text-[12.5px] leading-5 text-amber-800">
+          <p className="mt-3 rounded-lg border border-amber-300/60 bg-amber-50 dark:bg-amber-950/40 px-3 py-2 text-[12.5px] leading-5 text-amber-800 dark:text-amber-200">
             {ar
               ? `الحد الأدنى للدفع ${MIN_CRYPTO_INVOICE_USD.toFixed(2)} $ — اختر ${minQuantity} وحدات على الأقل.`
               : `Minimum order ${MIN_CRYPTO_INVOICE_USD.toFixed(2)} $ — choose at least ${minQuantity} units.`}
@@ -1406,7 +1426,7 @@ export function DigitalBuyDialog({ product, denominationId, onClose }: Props) {
         )}
 
         {belowCardMinimum && cardGateway && (
-          <p className="mt-3 rounded-lg border border-amber-300/60 bg-amber-50 px-3 py-2 text-[12.5px] leading-5 text-amber-800">
+          <p className="mt-3 rounded-lg border border-amber-300/60 bg-amber-50 dark:bg-amber-950/40 px-3 py-2 text-[12.5px] leading-5 text-amber-800 dark:text-amber-200">
             {ar
               ? `الحد الأدنى للدفع بالبطاقة البنكية هو ${cardGateway.minOrderUsd.toFixed(2)} $ — اختر ${minCardQuantity} وحدات على الأقل أو ادفع بالعملات الرقمية.`
               : `Minimum card payment is $${cardGateway.minOrderUsd.toFixed(2)} — select at least ${minCardQuantity} units or switch to Crypto.`}
@@ -1414,7 +1434,7 @@ export function DigitalBuyDialog({ product, denominationId, onClose }: Props) {
         )}
 
         {error && (
-          <p className="mt-3 rounded-lg border border-red-300/60 bg-red-50 px-3 py-2 text-[12.5px] leading-5 text-red-700">
+          <p className="mt-3 rounded-lg border border-red-300/60 bg-red-50 dark:bg-red-950/40 px-3 py-2 text-[12.5px] leading-5 text-red-700 dark:text-red-200">
             {error}
           </p>
         )}
@@ -1488,4 +1508,7 @@ export function DigitalBuyDialog({ product, denominationId, onClose }: Props) {
       </div>
     </div>
   );
+
+  if (typeof document === "undefined") return buyDialogNode;
+  return createPortal(buyDialogNode, document.body);
 }

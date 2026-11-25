@@ -197,7 +197,7 @@ export function normalizePayGateHost(value: unknown, fallback: string): string {
 export function normalizePayGateProvider(value: unknown): string {
   if (typeof value !== "string") return "";
   const cleaned = value.trim().toLowerCase();
-  if (!cleaned || cleaned === "hosted" || cleaned === "multi") return "";
+  if (!cleaned || cleaned === "hosted" || cleaned === "multi" || cleaned === "auto") return "";
   return /^[a-z0-9_-]{2,40}$/.test(cleaned) ? cleaned : "";
 }
 
@@ -478,20 +478,73 @@ const PROVIDER_PRIORITY_ORDER = [
   "wert",
   "guardarian",
   "moonpay",
+  "topper",
+  "banxa",
   "rampnetwork",
   "transak",
   "mercuryo",
-  "banxa",
-  "topper",
   "alchemypay",
   "unlimit",
   "simplex",
+  "sardine",
+  "stix",
   "revolut",
   "stripe",
-  "sardine",
-  "robinhood",
   "particle",
 ];
+
+/**
+ * Rails renvoyés par `control/provider-status/` qui ne sont PAS des passerelles
+ * carte universelles : doublons de moyens de paiement ("Apple Pay", "Google Pay"
+ * déjà inclus dans tous les vrais processeurs carte), connexions de comptes
+ * d'exchanges crypto ("Binance Connect", "Coinbase Pay", "Blockchain.com") ou
+ * virements domestiques locaux.
+ */
+const NON_CARD_GATEWAY_PROVIDER_IDS = new Set([
+  "applepay",
+  "apple_pay",
+  "apple-pay",
+  "googlepay",
+  "google_pay",
+  "google-pay",
+  "binance",
+  "binanceconnect",
+  "binance_connect",
+  "coinbase",
+  "coinbasepay",
+  "coinbase_pay",
+  "blockchain",
+  "blockchaincom",
+  "blockchain_com",
+  "upi",
+  "interac",
+  "pix",
+  "pse",
+  "spei",
+  "gcash",
+  "maya",
+  "grabpay",
+]);
+
+const NON_CARD_GATEWAY_NAME_RE =
+  /^(?:apple\s*pay|google\s*pay|binance\b|coinbase\b|blockchain\.com\b)/i;
+
+/**
+ * Rails strictement réservés aux résidents américains (PayGate les annote `(USA)`
+ * dans `provider_name`) : notamment `PayPal (USA)` (PYUSD on-ramp US), `Venmo (USA)`,
+ * `Cash App (USA)` et `Robinhood (USA)`. Il n'existe pas d'intégration PayPal
+ * mondiale chez PayGate.to : les afficher hors USA provoque un rejet géographique.
+ */
+const US_ONLY_PROVIDER_IDS = new Set([
+  "paypal",
+  "pyusd",
+  "venmo",
+  "cashapp",
+  "cash_app",
+  "robinhood",
+]);
+
+const US_ONLY_PROVIDER_NAME_RE = /\(\s*USA\s*\)/i;
 
 const PROVIDER_METHODS_HINT: Record<string, { en: string; ar: string }> = {
   wert: {
@@ -526,13 +579,49 @@ const PROVIDER_METHODS_HINT: Record<string, { en: string; ar: string }> = {
     en: "Visa · Mastercard · Apple Pay · Google Pay",
     ar: "Visa · Mastercard · Apple Pay · Google Pay",
   },
+  alchemypay: {
+    en: "Visa · Mastercard · Apple Pay · Google Pay",
+    ar: "Visa · Mastercard · Apple Pay · Google Pay",
+  },
+  unlimit: {
+    en: "Visa · Mastercard · Apple Pay · Google Pay",
+    ar: "Visa · Mastercard · Apple Pay · Google Pay",
+  },
+  simplex: {
+    en: "Visa · Mastercard · Apple Pay · Google Pay",
+    ar: "Visa · Mastercard · Apple Pay · Google Pay",
+  },
+  sardine: {
+    en: "Visa · Mastercard · Apple Pay · Google Pay",
+    ar: "Visa · Mastercard · Apple Pay · Google Pay",
+  },
+  stix: {
+    en: "Visa · Mastercard · Apple Pay · Google Pay",
+    ar: "Visa · Mastercard · Apple Pay · Google Pay",
+  },
   stripe: {
-    en: "Visa · Mastercard · Apple Pay · Google Pay (US/Supported)",
+    en: "Visa · Mastercard · Apple Pay · Google Pay (US/EU)",
     ar: "Visa · Mastercard · Apple Pay · Google Pay",
   },
   revolut: {
     en: "Revolut Pay · Visa · Mastercard",
     ar: "Revolut Pay · Visa · Mastercard",
+  },
+  paypal: {
+    en: "PayPal (US accounts only)",
+    ar: "PayPal (الحسابات الأمريكية فقط)",
+  },
+  venmo: {
+    en: "Venmo (US only)",
+    ar: "Venmo (الولايات المتحدة فقط)",
+  },
+  cashapp: {
+    en: "Cash App (US only)",
+    ar: "Cash App (الولايات المتحدة فقط)",
+  },
+  robinhood: {
+    en: "Robinhood Connect (US only)",
+    ar: "Robinhood (الولايات المتحدة فقط)",
   },
 };
 
@@ -547,16 +636,23 @@ export const FALLBACK_PAYGATE_RAW_PROVIDERS: ReadonlyArray<Record<string, unknow
   { id: "topper", provider_name: "Topper", status: "active", minimum_currency: "USD", minimum_amount: 10 },
 ];
 
+export interface NormalizePayGateProvidersOptions {
+  /** Code ISO-2 du pays de l'acheteur (ex. "LY", "FR", "US") pour écarter les rails exclusifs USA hors US. */
+  buyerCountry?: string | null;
+}
+
 /**
- * Normalise et trie la liste des processeurs carte actifs renvoyée par
- * `/control/provider-status/` selon le montant USD à régler.
+ * Normalise, filtre et trie la liste des processeurs carte internationaux actifs
+ * renvoyée par `/control/provider-status/` selon le montant USD et le pays.
  */
 export function normalizePayGateProviders(
   rawProviders: ReadonlyArray<Record<string, unknown>>,
   billedUsd: number,
+  options?: NormalizePayGateProvidersOptions,
 ): PayGateProviderOption[] {
   const seen = new Set<string>();
   const out: PayGateProviderOption[] = [];
+  const isUsBuyer = (options?.buyerCountry ?? "").trim().toUpperCase() === "US";
 
   for (const row of rawProviders) {
     if (!row || typeof row !== "object") continue;
@@ -564,6 +660,23 @@ export function normalizePayGateProviders(
     if (!id || seen.has(id)) continue;
     const status = String(row.status ?? "").trim().toLowerCase();
     if (status !== "active") continue;
+
+    const name = String(row.provider_name ?? id).trim() || id;
+
+    // Écarte les doublons de moyens ("Apple Pay", "Google Pay") et les portefeuilles
+    // d'exchanges crypto ("Binance Connect", "Coinbase Pay", "Blockchain.com").
+    if (NON_CARD_GATEWAY_PROVIDER_IDS.has(id) || NON_CARD_GATEWAY_NAME_RE.test(name)) {
+      continue;
+    }
+
+    // Écarte les rails exclusivement américains (`PayPal (USA)`, `Venmo (USA)`,
+    // `Cash App (USA)`, `Robinhood (USA)`) pour tout acheteur hors États-Unis.
+    if (
+      !isUsBuyer &&
+      (US_ONLY_PROVIDER_IDS.has(id) || US_ONLY_PROVIDER_NAME_RE.test(name))
+    ) {
+      continue;
+    }
 
     // On écarte les rails purement locaux non-USD (ex. INR UPI, CAD Interac)
     // lorsque minimum_currency n'est ni USD ni EUR, sauf processeurs globaux connus.
@@ -577,7 +690,6 @@ export function normalizePayGateProviders(
       Number.isFinite(rawMin) && rawMin > 0
         ? Math.round((currency === "EUR" ? rawMin * 1.1 : rawMin) * 100) / 100
         : 15;
-    const name = String(row.provider_name ?? id).trim() || id;
     const hint = PROVIDER_METHODS_HINT[id] ?? {
       en: "Visa · Mastercard · Apple Pay · Google Pay",
       ar: "Visa · Mastercard · Apple Pay · Google Pay",
@@ -605,6 +717,35 @@ export function normalizePayGateProviders(
   });
 
   return out;
+}
+
+/**
+ * Formate en mention discrète (petits caractères) les principaux prestataires
+ * financiers agréés susceptibles de traiter la transaction carte.
+ */
+export function formatPayGateProcessorSummary(
+  providers: ReadonlyArray<Pick<PayGateProviderOption, "name" | "eligible">>,
+  maxNames = 5,
+): string {
+  const eligible = providers.filter((p) => p.eligible);
+  const pool = eligible.length > 0 ? eligible : providers;
+  const names: string[] = [];
+  const seen = new Set<string>();
+
+  for (const item of pool) {
+    const clean = item.name.replace(/\s*\([^)]*\)\s*/g, " ").replace(/\s+/g, " ").trim();
+    if (!clean) continue;
+    const key = clean.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    names.push(clean);
+    if (names.length >= maxNames) break;
+  }
+
+  if (names.length === 0) {
+    return "Wert · Guardarian · MoonPay · Banxa · Topper";
+  }
+  return names.join(" · ");
 }
 
 export type ExtractedProcessorRedirect =

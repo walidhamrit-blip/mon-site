@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { headers } from "next/headers";
 import { notFound } from "next/navigation";
 import { eq } from "drizzle-orm";
 import { db, ensureSchema } from "@/db";
@@ -81,16 +82,22 @@ export default async function PayGateCardPage({
       ? order
       : await reconcilePayGateOrder(order).catch(() => order);
 
+  const reqHeaders = await headers();
+  const buyerCountry =
+    reqHeaders.get("x-vercel-ip-country") ||
+    reqHeaders.get("cf-ipcountry") ||
+    null;
+
   const livePayGate = await resolveLivePayGateConfig();
   const billedUsd = Number(session.billedAmountUsd) || Number(order.amountUsd) || 15;
   const providers =
     reconciled.status === "paid"
       ? []
-      : await fetchPayGateActiveProviders(billedUsd, livePayGate);
+      : await fetchPayGateActiveProviders(billedUsd, livePayGate, buyerCountry);
 
   return (
-    <main className="pt-6 min-h-[72vh]">
-      <div className="mx-auto max-w-[960px] px-4 sm:px-6 lg:px-8 py-10">
+    <div className="pt-6 pb-12 min-h-[72vh]">
+      <div className="mx-auto max-w-[960px] px-4 sm:px-6 lg:px-8 py-8 sm:py-10">
         <CardCheckoutClient
           orderRef={ref}
           checkoutToken={token}
@@ -105,6 +112,6 @@ export default async function PayGateCardPage({
           triedProvider={query.tried ?? null}
         />
       </div>
-    </main>
+    </div>
   );
 }

@@ -54,6 +54,8 @@ export interface TelegramShopState {
   /** Catégorie + page courants (bouton retour fidèle). */
   kind?: string | null;
   page?: number;
+  /** Page de la catégorie (conservée quand on parcourt les montants d'un produit). */
+  categoryPage?: number;
   /** Slug du produit affiché. */
   slug?: string | null;
   /** Identifiants de montants affichés (index `shop:d:<i>`). */
@@ -69,6 +71,8 @@ export interface TelegramShopState {
     title: string;
     label: string;
     totalUsd: string;
+    /** Message d'invitation envoyé au client (pour nettoyer le bouton ✖️ après saisie). */
+    promptMessageId?: number | null;
   } | null;
   /** Dernière commande créée depuis le bot (re-envoi du lien de paiement). */
   lastOrder?: {
@@ -104,6 +108,7 @@ export type ShopCallback =
   | { view: "denomination"; index: number }
   | { view: "quantity"; delta: -1 | 1 }
   | { view: "buy" }
+  | { view: "buyMin"; qty: number }
   | { view: "email" }
   | { view: "cancel" }
   | { view: "pay" }
@@ -141,6 +146,8 @@ export function shopCallback(cb: ShopCallback): string {
       return `${SHOP_CALLBACK_PREFIX}:q:${cb.delta > 0 ? "+" : "-"}`;
     case "buy":
       return `${SHOP_CALLBACK_PREFIX}:buy`;
+    case "buyMin":
+      return `${SHOP_CALLBACK_PREFIX}:bm:${Math.min(Math.max(1, cb.qty), SHOP_MAX_QUANTITY)}`;
     case "email":
       return `${SHOP_CALLBACK_PREFIX}:email`;
     case "cancel":
@@ -207,6 +214,12 @@ export function parseShopCallback(data: string | null | undefined): ShopCallback
     }
     case "buy":
       return { view: "buy" };
+    case "bm": {
+      const qty = Number.parseInt(rest[0] ?? "", 10);
+      return Number.isInteger(qty) && qty >= 1 && qty <= SHOP_MAX_QUANTITY
+        ? { view: "buyMin", qty }
+        : null;
+    }
     case "email":
       return { view: "email" };
     case "cancel":
@@ -388,23 +401,29 @@ export function pageSlice<T>(items: T[], page: number, perPage: number): T[] {
 export interface ShopCopyStrings {
   title: string;
   chooseCategory: string;
+  chooseProduct: string;
   from: string;
   chooseBrand: string;
   chooseRegion: string;
   allRegions: string;
   chooseAmount: string;
   back: string;
+  webPage: string;
+  webStore: string;
   pageOf: (page: number, total: number) => string;
   region: string;
   quantity: string;
   total: string;
   buy: string;
+  buySuggested: string;
   buyNeedsFields: string;
   payNow: string;
   payCard: string;
   payOther: string;
   receiveHere: string;
   emailPrompt: string;
+  deliveryEmail: string;
+  changeEmail: string;
   cancel: string;
   orderCreated: string;
   changedMind: string;
@@ -413,6 +432,12 @@ export interface ShopCopyStrings {
   invalidEmail: string;
   belowMinimum: string;
   belowMinimumRetry: string;
+  belowMinimumUnreachable: string;
+  minQtyAutoNote: string;
+  aboveLimit: string;
+  gatewayUnavailable: string;
+  whatsappOrder: string;
+  whatsappPrefill: string;
   alreadyWatching: string;
   cooldown: string;
   sellable: (count: number) => string;
@@ -426,42 +451,59 @@ const SHOP_COPY: Record<ShopLocale, ShopCopyStrings> = {
   ar: {
     title: "🛒 المتجر",
     chooseCategory: "اختر عائلة المنتجات:",
+    chooseProduct: "اختر المنتج:",
     from: "ابتداءً من",
     chooseBrand: "اختر نوع البطاقة:",
     chooseRegion: "اختر المنطقة:",
     allRegions: "كل المناطق",
     chooseAmount: "اختر المبلغ:",
     back: "⬅️ رجوع",
+    webPage: "🌐 صفحة المنتج",
+    webStore: "🌐 المتجر",
     pageOf: (page: number, total: number) => `${page}/${total}`,
     region: "المنطقة",
     quantity: "الكمية",
     total: "المجموع",
     buy: "شراء",
+    buySuggested: "✅ شراء ×{qty} — {total}",
     buyNeedsFields: "افتح صفحة المنتج (بيانات مطلوبة)",
     payNow: "💳 ادفع الآن (عملات رقمية)",
     payCard: "💳 الدفع بالبطاقة (فيزا / ماستركارد)",
     payOther: "🏦 طرق أخرى (Skrill، بطاقة هاتف)",
     receiveHere: "📩 استلم الكود في هذه المحادثة",
     emailPrompt:
-      "إلى أي بريد إلكتروني نرسل الكود؟\n\nأرسله هنا (مثال <code>name@example.com</code>)، أو ألغِ.",
+      "إلى أي بريد إلكتروني نرسل الكود؟\n\nأرسل عنوان بريدك هنا — مثال:\n<code>name@example.com</code>",
+    deliveryEmail: "البريد المستلم",
+    changeEmail: "✉️ تغيير البريد",
     cancel: "إلغاء",
     orderCreated:
-      "✅ تم إنشاء الطلب — {ref}\n\n📦 {title} — {label}\n🔢 ×{qty}\n💵 {total} دولار\n✉️ سيصل الكود إلى {email}\n\nادفع من الزر أدناه؛ سأؤكد لك هنا فور استلام الدفع.",
+      "✅ تم إنشاء الطلب — <code>{ref}</code>\n\n📦 <b>{title}</b>\n💳 {label} · ×{qty}\n💵 {total} دولار\n✉️ سيصل الكود إلى <code>{email}</code>\n\nادفع من الزر أدناه؛ سأؤكد لك هنا فور استلام الدفع.",
     changedMind: "تم إلغاء الطلب. المتجر مفتوح 👇",
     payAgain: "رابط الدفع لطلبك الأخير:",
     noOrderYet: "لا يوجد طلب حديث: افتح المتجر واختر منتجاً.",
     invalidEmail:
-      "هذا العنوان لا يبدو بريداً إلكترونياً صالحاً. حاول مرة أخرى (مثال name@example.com)، أو ألغِ.",
+      "هذا العنوان لا يبدو بريداً إلكترونياً صالحاً.\nأعد الإرسال على الشكل:\n<code>name@example.com</code>\nأو اضغط «إلغاء».",
     belowMinimum:
-      "💵 الحد الأدنى للفاتورة هو {min}.\n\nاختر كمية أكبر — مثلاً {qty} × {label} (المجموع {total}) — ثم اضغط «شراء».",
+      "💵 الحد الأدنى للفاتورة هو {min}.\n\nاختر كمية أكبر — مثلاً {qty} × {label} (المجموع {total}) — أو اضغط الزر أدناه للشراء مباشرة.",
     belowMinimumRetry:
       "💵 الحد الأدنى للفاتورة هو {min} — اختر كمية أكبر أو مبلغاً أعلى ثم أعد المحاولة.",
+    belowMinimumUnreachable:
+      "هذا المبلغ أقل من الحد الأدنى حتى بأقصى كمية — افتح صفحة المنتج للدفع بوسيلة أخرى.",
+    minQtyAutoNote:
+      "ℹ️ الحد الأدنى للفاتورة بالعملات الرقمية هو {min} — ضُبطت الكمية تلقائياً على ×{qty} (لشراء ×1 افتح صفحة المنتج).",
+    aboveLimit:
+      "💵 الحد الأقصى للطلب الفوري هو {max} — قلّل الكمية (حتى ×{maxQty}) أو اطلب الكمية عبر واتساب.",
+    gatewayUnavailable:
+      "⚠️ تعذّر إنشاء فاتورة الدفع بالعملات الرقمية مؤقتاً (لم يُخصم أي مبلغ). يمكنك الدفع بوسيلة أخرى من صفحة المنتج أو مراسلتنا على واتساب.",
+    whatsappOrder: "💬 اطلب عبر واتساب",
+    whatsappPrefill: "مرحباً، أرغب في شراء هذا المنتج يدوياً:\n{title} — {label} (×{qty}) — {total}",
     alreadyWatching:
       "✅ الإشعارات مفعّلة بالفعل لهذا الطلب — سيصل الكود هنا فور جاهزيته (وأيضاً إلى بريدك الإلكتروني). يمكنك الدفع في أي وقت من الرسالة أعلاه.",
     cooldown:
       "أنشأنا فاتورة قبل قليل: انتظر دقيقة قبل إنشاء أخرى (أو أكمل دفع الفاتورة الحالية).",
     sellable: (count: number) => `${count} منتج`,
-    unavailable: "البيع متوقف مؤقتاً لهذا المنتج. راسلنا على واتساب وسنوفره لك يدوياً.",
+    unavailable:
+      "⏸️ الشراء التلقائي متوقف مؤقتاً لهذا الطلب (لم يُخصم أي مبلغ). اضغط زر واتساب أدناه وسنوفّره لك يدوياً فوراً، أو افتح صفحة المنتج.",
     notFound: "لم أجد المنتج: ربما تغيّر الكتالوج، أعد فتح المتجر.",
     codeByEmail:
       "يُرسل الكود إلى بريدك فور تأكيد الدفع — وأيضاً هنا في المحادثة إن ضغطت «استلم الكود».",
@@ -470,42 +512,59 @@ const SHOP_COPY: Record<ShopLocale, ShopCopyStrings> = {
   en: {
     title: "🛒 Shop",
     chooseCategory: "Choose a category:",
+    chooseProduct: "Choose a product:",
     from: "from",
     chooseBrand: "Choose a card type:",
     chooseRegion: "Choose a region:",
     allRegions: "All regions",
     chooseAmount: "Choose your amount:",
     back: "⬅️ Back",
+    webPage: "🌐 Product page",
+    webStore: "🌐 Web store",
     pageOf: (page: number, total: number) => `${page}/${total}`,
     region: "Region",
     quantity: "Quantity",
     total: "Total",
     buy: "Buy",
+    buySuggested: "✅ Buy ×{qty} — {total}",
     buyNeedsFields: "Open product page (details required)",
     payNow: "💳 Pay now (crypto)",
     payCard: "💳 Pay by card (Visa / Mastercard)",
     payOther: "🏦 Other methods (Skrill, phone card)",
     receiveHere: "📩 Receive the code in this chat",
     emailPrompt:
-      "Which email address should we send the code to?\n\nSend it here (e.g. <code>name@example.com</code>), or cancel.",
+      "Which email address should we send the code to?\n\nSend it here — e.g.:\n<code>name@example.com</code>",
+    deliveryEmail: "Delivery email",
+    changeEmail: "✉️ Change email",
     cancel: "Cancel",
     orderCreated:
-      "✅ Order created — {ref}\n\n📦 {title} — {label}\n🔢 ×{qty}\n💵 {total} USD\n✉️ Code will be sent to {email}\n\nPay below; I'll confirm right here once received.",
+      "✅ Order created — <code>{ref}</code>\n\n📦 <b>{title}</b>\n💳 {label} · ×{qty}\n💵 {total} USD\n✉️ Code will be sent to <code>{email}</code>\n\nPay below; I'll confirm right here once received.",
     changedMind: "Order cancelled. The shop is still open 👇",
     payAgain: "Payment link for your last order:",
     noOrderYet: "No recent order: open the shop and pick a product.",
     invalidEmail:
-      "That doesn't look like a valid email. Try again (e.g. name@example.com), or cancel.",
+      "That doesn't look like a valid email.\nTry again (e.g. <code>name@example.com</code>), or tap Cancel.",
     belowMinimum:
-      "💵 The minimum invoice is {min}.\n\nIncrease the quantity — e.g. {qty} × {label} (total {total}) — then tap Buy.",
+      "💵 The minimum invoice is {min}.\n\nIncrease the quantity — e.g. {qty} × {label} (total {total}) — or tap below to buy right away.",
     belowMinimumRetry:
       "💵 The minimum invoice is {min} — pick a bigger quantity or amount and try again.",
+    belowMinimumUnreachable:
+      "This amount stays below the minimum even at maximum quantity: open the product page to pay with another method.",
+    minQtyAutoNote:
+      "ℹ️ Minimum crypto invoice is {min} — quantity set to ×{qty} automatically (open the product page to buy ×1).",
+    aboveLimit:
+      "💵 Maximum instant order is {max} — reduce the quantity (up to ×{maxQty}) or order via WhatsApp.",
+    gatewayUnavailable:
+      "⚠️ Could not create the crypto invoice right now (nothing was charged). Try another payment method on the product page or message us on WhatsApp.",
+    whatsappOrder: "💬 Order via WhatsApp",
+    whatsappPrefill: "Hi, I'd like to order this item manually:\n{title} — {label} (×{qty}) — {total}",
     alreadyWatching:
       "✅ Notifications are already enabled for this order — the code will arrive right here as soon as it is ready (and to your email too). You can pay anytime from the message above.",
     cooldown:
       "An invoice was just created: please wait a minute before creating another (or finish paying for the current one).",
     sellable: (count: number) => `${count} product(s)`,
-    unavailable: "Product temporarily unavailable.",
+    unavailable:
+      "⏸️ Instant checkout is temporarily paused for this order (nothing was charged). Tap WhatsApp below so we can fulfill it manually, or open the product page.",
     notFound: "Product not found: the catalogue may have changed, reopen the shop.",
     codeByEmail:
       "The code goes to your email as soon as payment is confirmed — and to this chat too if you tap “Receive the code”.",
@@ -530,6 +589,24 @@ export function fillShopTemplate(template: string, values: Record<string, string
 export interface ShopLinks {
   site: string;
   store: string;
+  /** Numéro ou URL WhatsApp de l'agence (optionnel). */
+  whatsapp?: string;
+}
+
+/**
+ * Construit un lien `https://wa.me/<chiffres>?text=…` propre à partir d'un
+ * numéro ou d'une URL `wa.me` configurée dans l'admin. `null` si absent.
+ */
+export function shopWhatsappUrl(
+  whatsapp: string | null | undefined,
+  message?: string,
+): string | null {
+  const raw = (whatsapp ?? "").trim();
+  if (!raw) return null;
+  const digits = raw.replace(/\D/g, "");
+  if (!digits) return null;
+  const base = `https://wa.me/${digits}`;
+  return message ? `${base}?text=${encodeURIComponent(message)}` : base;
 }
 
 function productUrl(links: ShopLinks, slug: string): string {
@@ -562,8 +639,9 @@ export type ShopCatalogInput = readonly ShopProduct[];
 export function shopCategoriesView(
   catalog: ShopCatalogInput,
   locale: ShopLocale,
-  links: ShopLinks,
+  _links: ShopLinks,
 ): ShopView {
+  void _links;
   const copy = shopCopy(locale);
   const keyboard: ShopKeyboard = [];
   const rows: ShopButton[] = [];
@@ -586,10 +664,10 @@ export function shopCategoriesView(
     "",
     locale === "ar" ? "💵 الأسعار بالدولار الأمريكي — التسليم فور تأكيد الدفع." : "💵 Prices in USD — delivered as soon as payment is confirmed.",
   ];
-  return { text: lines.join("\n"), keyboard };
+  return { text: lines.join("\n"), keyboard, state: { pending: null } };
 }
 
-/** Contexte marque/région quand la liste de produits est atteinte via la hiérarchie cartes cadeaux. */
+/** Contexte marque/région quand la liste est atteinte via la hiérarchie cartes cadeaux. */
 export interface ShopCategoryContext {
   /** Marque (plateforme) sélectionnée — filtre la liste. */
   brand: string;
@@ -633,11 +711,14 @@ export function shopCategoryView(
       text: `${copy.title}\n\n${copy.emptyCategory}`,
       keyboard: [
         [{ text: copy.back, callback_data: backData }],
-        [{ text: locale === "ar" ? "🌐 المتجر" : "🌐 Web store", url: categoryUrl(links, kind) }],
+        [{ text: copy.webStore, url: categoryUrl(links, kind) }],
       ],
-      state: context
-        ? { kind, brand: context.brand, region: context.region }
-        : { kind, brand: null, region: null },
+      state: {
+        pending: null,
+        kind,
+        brand: context?.brand ?? null,
+        region: context?.region ?? null,
+      },
     };
   }
 
@@ -673,7 +754,7 @@ export function shopCategoryView(
 
   rows.push([
     { text: copy.back, callback_data: backData },
-    { text: locale === "ar" ? "🌐 المتجر" : "🌐 Web store", url: categoryUrl(links, kind) },
+    { text: copy.webStore, url: categoryUrl(links, kind) },
   ]);
 
   const heading = context
@@ -684,7 +765,7 @@ export function shopCategoryView(
     "",
     copy.sellable(products.length),
     "",
-    copy.chooseAmount,
+    copy.chooseProduct,
   ].join("\n");
   return {
     text,
@@ -693,6 +774,8 @@ export function shopCategoryView(
       products: stateProducts,
       kind,
       page: safePage,
+      categoryPage: safePage,
+      pending: null,
       brand: context?.brand ?? null,
       region: context?.region ?? null,
     },
@@ -719,9 +802,9 @@ export function shopBrandsView(
       text: `${copy.title}\n\n${copy.emptyCategory}`,
       keyboard: [
         [{ text: copy.back, callback_data: shopCallback({ view: "root" }) }],
-        [{ text: locale === "ar" ? "🌐 المتجر" : "🌐 Web store", url: categoryUrl(links, kind) }],
+        [{ text: copy.webStore, url: categoryUrl(links, kind) }],
       ],
-      state: { kind, brand: null, region: null },
+      state: { pending: null, kind, brand: null, region: null },
     };
   }
 
@@ -758,7 +841,7 @@ export function shopBrandsView(
 
   rows.push([
     { text: copy.back, callback_data: shopCallback({ view: "root" }) },
-    { text: locale === "ar" ? "🌐 المتجر" : "🌐 Web store", url: categoryUrl(links, kind) },
+    { text: copy.webStore, url: categoryUrl(links, kind) },
   ]);
 
   const text = [
@@ -772,8 +855,10 @@ export function shopBrandsView(
     text,
     keyboard: rows,
     state: {
+      pending: null,
       kind,
       page: safePage,
+      categoryPage: safePage,
       brands: stateBrands,
       brand: null,
       region: null,
@@ -840,7 +925,7 @@ export function shopBrandRegionsView(
   rows.push([{ text: copy.allRegions, callback_data: shopCallback({ view: "regionAll" }) }]);
   rows.push([
     { text: copy.back, callback_data: shopCallback({ view: "brands", kind, page: 1 }) },
-    { text: locale === "ar" ? "🌐 المتجر" : "🌐 Web store", url: categoryUrl(links, kind) },
+    { text: copy.webStore, url: categoryUrl(links, kind) },
   ]);
 
   const text = [
@@ -852,6 +937,7 @@ export function shopBrandRegionsView(
     text,
     keyboard: rows,
     state: {
+      pending: null,
       kind,
       brand,
       page: safePage,
@@ -866,6 +952,7 @@ export function shopProductView(
   page: number,
   locale: ShopLocale,
   links: ShopLinks,
+  categoryPage = 1,
   /** Retour personnalisé : hiérarchie marque/région des cartes cadeaux. */
   backData?: string,
 ): ShopView {
@@ -923,16 +1010,57 @@ export function shopProductView(
   rows.push([
     {
       text: copy.back,
-      callback_data: backData ?? shopCallback({ view: "category", kind: product.kind, page: 1 }),
+      callback_data:
+        backData ??
+        shopCallback({ view: "category", kind: product.kind, page: Math.max(1, categoryPage) }),
     },
-    { text: locale === "ar" ? "🌐 Fiche web" : "🌐 Web page", url: productUrl(links, product.slug) },
+    { text: copy.webPage, url: productUrl(links, product.slug) },
   ]);
 
   return {
     text: lines.join("\n"),
     keyboard: rows,
-    state: { slug: product.slug, denoms: stateDenoms, products: undefined },
+    state: {
+      slug: product.slug,
+      page: safePage,
+      denoms: stateDenoms,
+      products: undefined,
+      pending: null,
+    },
   };
+}
+
+/**
+ * Calcule la quantité initiale d'un montant : si le prix unitaire est sous le
+ * plancher de facture crypto (`minUsd`, ex. 1,50 $), pré-sélectionne la plus
+ * petite quantité atteignant ce plancher — exactement comme la caisse web
+ * (`digital-buy-dialog.tsx`), afin d'éviter un clic « Acheter » voué à l'échec.
+ */
+export function shopInitialQuantity(
+  denomination: Pick<ShopDenomination, "priceUsd" | "maxQuantity">,
+  minUsd = 0,
+): { qty: number; autoAdjusted: boolean; minQty: number } {
+  const maxQty = Math.max(
+    1,
+    Math.min(denomination.maxQuantity ?? SHOP_MAX_QUANTITY, SHOP_MAX_QUANTITY),
+  );
+  const minQty =
+    minUsd > 0 && denomination.priceUsd > 0
+      ? Math.max(1, Math.ceil(minUsd / denomination.priceUsd))
+      : 1;
+  if (minQty > 1 && minQty <= maxQty) {
+    return { qty: minQty, autoAdjusted: true, minQty };
+  }
+  return { qty: 1, autoAdjusted: false, minQty };
+}
+
+export interface ShopDenominationViewOptions {
+  /** E-mail déjà mémorisé sur ce chat (affiché + modifiable en un clic). */
+  checkoutEmail?: string | null;
+  /** Plancher de facture crypto (ex. 1,50 $) : affiche une note si pré-ajusté. */
+  minOrderUsd?: number;
+  /** La quantité vient-elle d'être relevée automatiquement au plancher ? */
+  autoAdjustedMin?: boolean;
 }
 
 export function shopDenominationView(
@@ -942,6 +1070,7 @@ export function shopDenominationView(
   productPage: number,
   locale: ShopLocale,
   links: ShopLinks,
+  options: ShopDenominationViewOptions = {},
 ): ShopView {
   const copy = shopCopy(locale);
   const maxQty = Math.max(
@@ -953,6 +1082,16 @@ export function shopDenominationView(
   const label = denominationLabel(denomination, locale);
   const total = Math.round(denomination.priceUsd * qty * 100) / 100;
   const needsFields = (denomination.fields?.length ?? 0) > 0;
+  const savedEmail = isPlausibleEmail(options.checkoutEmail)
+    ? options.checkoutEmail!.trim()
+    : null;
+  const minUsd = options.minOrderUsd ?? 0;
+  const showAutoNote =
+    !needsFields &&
+    options.autoAdjustedMin === true &&
+    minUsd > 0 &&
+    denomination.priceUsd < minUsd &&
+    total + 1e-6 >= minUsd;
 
   const lines = [
     `📦 <b>${escapeShopHtml(title)}</b>`,
@@ -960,6 +1099,18 @@ export function shopDenominationView(
     "",
     `🔢 ${copy.quantity}: <b>${qty}</b>`,
     `💵 ${copy.total}: <b>${formatShopUsd(total)}</b>`,
+    ...(savedEmail && !needsFields
+      ? [`✉️ ${copy.deliveryEmail}: <code>${escapeShopHtml(savedEmail)}</code>`]
+      : []),
+    ...(showAutoNote
+      ? [
+          "",
+          fillShopTemplate(copy.minQtyAutoNote, {
+            min: formatShopUsd(minUsd),
+            qty: String(qty),
+          }),
+        ]
+      : []),
     "",
     copy.codeByEmail,
   ];
@@ -972,7 +1123,7 @@ export function shopDenominationView(
 
   const rows: ShopKeyboard = [qtyRow];
   if (needsFields) {
-      // Identifiant joueur, serveur… : le formulaire web complet est obligatoire.
+    // Identifiant joueur, serveur… : le formulaire web complet est obligatoire.
     rows.push([
       {
         text: `🛒 ${copy.buyNeedsFields}`,
@@ -986,26 +1137,42 @@ export function shopDenominationView(
         callback_data: shopCallback({ view: "buy" }),
       },
     ]);
+    if (savedEmail) {
+      rows.push([
+        {
+          text: copy.changeEmail,
+          callback_data: shopCallback({ view: "email" }),
+        },
+      ]);
+    }
   }
   rows.push([
     { text: copy.back, callback_data: shopCallback({ view: "productPage", page: Math.max(1, productPage) }) },
-    { text: locale === "ar" ? "🌐 Fiche web" : "🌐 Web page", url: productUrl(links, product.slug) },
+    { text: copy.webPage, url: productUrl(links, product.slug) },
   ]);
 
   return {
     text: lines.join("\n"),
     keyboard: rows,
-    state: { slug: product.slug, denomId: denomination.id, qty },
+    state: { slug: product.slug, denomId: denomination.id, qty, pending: null },
   };
 }
 
-export function shopEmailPromptView(pending: { title: string; label: string; totalUsd: string }, locale: ShopLocale): ShopView {
+export function shopEmailPromptView(
+  pending: { title: string; label: string; totalUsd: string; qty?: number },
+  locale: ShopLocale,
+): ShopView {
   const copy = shopCopy(locale);
+  const qtySuffix = pending.qty && pending.qty > 1 ? ` · ×${pending.qty}` : "";
+  // Chaque champ vit sur sa propre ligne : en arabe (RTL), concaténer un
+  // titre arabe+latin (« بطاقة هدايا — Amazon (AE) ») et un libellé anglais
+  // (« Instant use — 1 AED ») sur une même ligne inverse visuellement l'ordre.
   return {
     text: [
       copy.emailPrompt,
       "",
-      `📦 ${escapeShopHtml(pending.title)} — ${escapeShopHtml(pending.label)}`,
+      `📦 <b>${escapeShopHtml(pending.title)}</b>`,
+      `💳 ${escapeShopHtml(pending.label)}${qtySuffix}`,
       `💵 ${formatShopUsd(Number(pending.totalUsd))}`,
     ].join("\n"),
     keyboard: [[{ text: `✖️ ${copy.cancel}`, callback_data: shopCallback({ view: "cancel" }) }]],
@@ -1015,7 +1182,7 @@ export function shopEmailPromptView(pending: { title: string; label: string; tot
 /**
  * Vue « facture trop petite » : la passerelle crypto refuse les factures
  * sous un plancher (`FAZERCARDS_MIN_ORDER_USD`, ex. 1,50 $). On l'annonce
- * AVANT la caisse, avec l'action à faire (quantité exacte suggérée).
+ * AVANT la caisse, avec un bouton d'achat direct à la quantité minimale.
  */
 export function shopBelowMinimumView(
   product: ShopProduct,
@@ -1037,7 +1204,8 @@ export function shopBelowMinimumView(
   const sellableAgain = suggestedTotal + 1e-6 >= minUsd;
 
   const text = [
-    `📦 <b>${escapeShopHtml(title)}</b> — ${escapeShopHtml(label)}`,
+    `📦 <b>${escapeShopHtml(title)}</b>`,
+    `💳 ${escapeShopHtml(label)}`,
     "",
     fillShopTemplate(copy.belowMinimum, {
       min: formatShopUsd(minUsd),
@@ -1045,18 +1213,207 @@ export function shopBelowMinimumView(
       label: escapeShopHtml(label),
       total: formatShopUsd(suggestedTotal),
     }),
-    ...(sellableAgain
-      ? []
-      : ["", locale === "ar" ? "Ce montant reste insuffisant même en quantité maximale : ouvrez la fiche web." : "This amount stays below the minimum even at maximum quantity: open the web page instead."]),
+    ...(sellableAgain ? [] : ["", copy.belowMinimumUnreachable]),
   ].join("\n");
+
+  const keyboard: ShopKeyboard = [];
+  if (sellableAgain) {
+    keyboard.push([
+      {
+        text: fillShopTemplate(copy.buySuggested, {
+          qty: String(suggestedQty),
+          total: formatShopUsd(suggestedTotal),
+        }),
+        callback_data: shopCallback({ view: "buyMin", qty: suggestedQty }),
+      },
+    ]);
+  }
+  keyboard.push([
+    { text: copy.back, callback_data: shopCallback({ view: "productPage", page: Math.max(1, productPage) }) },
+    { text: copy.webPage, url: productUrl(links, product.slug) },
+  ]);
 
   return {
     text,
-    keyboard: [
-      [{ text: copy.back, callback_data: shopCallback({ view: "productPage", page: productPage }) }],
-      [{ text: locale === "ar" ? "🌐 Fiche web" : "🌐 Web page", url: `${links.site}/codes/${encodeURIComponent(product.slug)}` }],
-    ],
+    keyboard,
+    state: { pending: null },
   };
+}
+
+/* --------------------- Diagnostic & erreurs de caisse --------------------- */
+
+/**
+ * Cause structurée d'un refus à la caisse du bot — enregistrée dans le
+ * journal admin (`/admin/telegram`) afin de ne jamais deviner à partir d'une
+ * capture d'écran client.
+ */
+export type ShopCheckoutFailureReason =
+  | "below_minimum"
+  | "above_limit"
+  | "not_found"
+  | "supplier_balance_insufficient"
+  | "supplier_not_configured"
+  | "payment_gateway_error"
+  | "unexpected_error";
+
+export const SHOP_FAILURE_REASON_LABELS: Record<ShopCheckoutFailureReason, string> = {
+  below_minimum: "Sous le minimum crypto",
+  above_limit: "Au-dessus du plafond auto",
+  not_found: "Produit / montant indisponible",
+  supplier_balance_insufficient: "Solde fournisseur insuffisant",
+  supplier_not_configured: "Fournisseur non configuré",
+  payment_gateway_error: "Passerelle crypto (NOWPayments)",
+  unexpected_error: "Erreur serveur inattendue",
+};
+
+/**
+ * Classe une erreur de caisse : distingue les bornes normales côté client
+ * (`below_minimum`, `above_limit`, `not_found`) des incidents d'exploitation
+ * (`alertAdmin: true`) qui doivent prévenir l'équipe immédiatement.
+ */
+export function classifyShopCheckoutError(input: {
+  errorCode?: string | null;
+  isNowPayments?: boolean;
+}): { reason: ShopCheckoutFailureReason; alertAdmin: boolean } {
+  switch (input.errorCode) {
+    case "product_not_found":
+    case "denomination_not_found":
+    case "denomination_not_sellable":
+    case "invalid_quantity":
+    case "invalid_price":
+      return { reason: "not_found", alertAdmin: false };
+    case "below_minimum":
+      return { reason: "below_minimum", alertAdmin: false };
+    case "above_limit":
+      return { reason: "above_limit", alertAdmin: false };
+    case "supplier_balance_insufficient":
+      return { reason: "supplier_balance_insufficient", alertAdmin: true };
+    case "supplier_not_configured":
+      return { reason: "supplier_not_configured", alertAdmin: true };
+    default:
+      if (input.isNowPayments) {
+        return { reason: "payment_gateway_error", alertAdmin: true };
+      }
+      return { reason: "unexpected_error", alertAdmin: true };
+  }
+}
+
+export interface ShopCheckoutErrorViewInput {
+  reason: ShopCheckoutFailureReason;
+  locale: ShopLocale;
+  links: ShopLinks;
+  pending: {
+    slug: string;
+    title: string;
+    label: string;
+    qty: number;
+    totalUsd: string;
+  };
+  minOrderUsd?: number;
+  maxOrderUsd?: number;
+}
+
+/**
+ * Vue d'échec de caisse : message honnête selon la cause réelle + boutons
+ * d'action immédiats (WhatsApp pré-rempli quand un humain peut dépanner,
+ * fiche web pour les autres moyens de paiement, boutique & menu) + nettoyage
+ * de `pending` pour ne jamais bloquer le chat en mode « saisie d'e-mail ».
+ */
+export function shopCheckoutErrorView(input: ShopCheckoutErrorViewInput): ShopView {
+  const { reason, locale, links, pending } = input;
+  const copy = shopCopy(locale);
+  const unitUsd =
+    pending.qty > 0 ? Number(pending.totalUsd) / pending.qty : Number(pending.totalUsd);
+  const maxUsd = input.maxOrderUsd && input.maxOrderUsd > 0 ? input.maxOrderUsd : 25;
+  const maxQty =
+    unitUsd > 0 ? Math.max(1, Math.floor(maxUsd / unitUsd)) : 1;
+
+  let text: string;
+  switch (reason) {
+    case "not_found":
+      text = copy.notFound;
+      break;
+    case "below_minimum":
+      text = fillShopTemplate(copy.belowMinimumRetry, {
+        min: formatShopUsd(input.minOrderUsd ?? 1.5),
+      });
+      break;
+    case "above_limit":
+      text = fillShopTemplate(copy.aboveLimit, {
+        max: formatShopUsd(maxUsd),
+        maxQty: String(maxQty),
+      });
+      break;
+    case "payment_gateway_error":
+      text = copy.gatewayUnavailable;
+      break;
+    case "supplier_balance_insufficient":
+    case "supplier_not_configured":
+    case "unexpected_error":
+      text = copy.unavailable;
+      break;
+  }
+
+  const keyboard: ShopKeyboard = [];
+  const needsWhatsapp =
+    reason === "supplier_balance_insufficient" ||
+    reason === "supplier_not_configured" ||
+    reason === "payment_gateway_error" ||
+    reason === "unexpected_error" ||
+    reason === "above_limit";
+
+  if (needsWhatsapp) {
+    const waMessage = fillShopTemplate(copy.whatsappPrefill, {
+      title: pending.title,
+      label: pending.label,
+      qty: String(pending.qty),
+      total: formatShopUsd(Number(pending.totalUsd)),
+    });
+    const waUrl = shopWhatsappUrl(links.whatsapp, waMessage);
+    if (waUrl) {
+      keyboard.push([{ text: copy.whatsappOrder, url: waUrl }]);
+    }
+  }
+
+  if (pending.slug && reason !== "not_found") {
+    keyboard.push([{ text: copy.webPage, url: productUrl(links, pending.slug) }]);
+  }
+
+  keyboard.push([
+    { text: copy.title, callback_data: shopCallback({ view: "root" }) },
+    { text: localeMenu(locale), callback_data: "menu:home" },
+  ]);
+
+  return {
+    text,
+    keyboard,
+    state: { pending: null },
+  };
+}
+
+/** Alerte HTML envoyée au chat d'administration lorsqu'une vente bot bloque. */
+export function formatShopCheckoutFailureAlert(input: {
+  siteName: string;
+  reason: ShopCheckoutFailureReason;
+  title: string;
+  label: string;
+  qty: number;
+  totalUsd: string;
+  actorLabel: string;
+  maskedEmail: string;
+  detail: string;
+}): string {
+  const reasonLabel = SHOP_FAILURE_REASON_LABELS[input.reason];
+  return [
+    `⚠️ <b>Échec caisse Telegram</b> — ${escapeShopHtml(input.siteName)}`,
+    "",
+    `🔎 <b>Cause</b> : ${escapeShopHtml(reasonLabel)}`,
+    `📦 ${escapeShopHtml(input.title)} — ${escapeShopHtml(input.label)} (×${input.qty} · ${escapeShopHtml(formatShopUsd(Number(input.totalUsd)))})`,
+    `👤 ${escapeShopHtml(input.actorLabel)} · ✉️ <code>${escapeShopHtml(input.maskedEmail)}</code>`,
+    input.detail ? `🧾 <code>${escapeShopHtml(clip(input.detail, 220))}</code>` : null,
+  ]
+    .filter((line): line is string => Boolean(line))
+    .join("\n");
 }
 
 export interface ShopPaymentInfo {
@@ -1137,6 +1494,25 @@ const EMAIL_PATTERN =
 export function isPlausibleEmail(value: string | null | undefined): boolean {
   const email = (value ?? "").trim();
   return email.length >= 6 && email.length <= 254 && EMAIL_PATTERN.test(email);
+}
+
+/** Détecte un mot d'annulation tapé au clavier pendant la demande d'e-mail. */
+const CANCEL_INPUT_PATTERN = /^(?:cancel|annuler|stop|إلغاء|الغاء|رجوع)$/i;
+
+export function isCancelShopInput(value: string | null | undefined): boolean {
+  return CANCEL_INPUT_PATTERN.test((value ?? "").trim());
+}
+
+/** Masque un e-mail pour les journaux/alertes internes (`wa***@gmail.com`). */
+export function maskShopEmail(email: string | null | undefined): string {
+  const clean = (email ?? "").trim();
+  const at = clean.indexOf("@");
+  if (at <= 0) return "—";
+  const local = clean.slice(0, at);
+  const domain = clean.slice(at + 1);
+  if (!domain) return "—";
+  const prefix = local.slice(0, Math.min(2, local.length));
+  return `${prefix}***@${domain}`;
 }
 
 /* ------------------------------- Utilitaires ------------------------------ */

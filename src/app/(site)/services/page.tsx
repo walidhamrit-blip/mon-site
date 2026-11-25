@@ -79,14 +79,19 @@ export default async function ServicesPage({ searchParams }: LocalePageProps) {
     .filter((item): item is NonNullable<typeof item> => Boolean(item))
     .map((item) => resolveComparisonTokens(item, config.market));
 
+  const ar = locale === "ar";
+  const minUsd = Number.isFinite(lowestPrice) ? lowestPrice : 15;
   const webPage = webPageJsonLd(config, {
     path: "/services",
     locale,
-    name: "خدمات نخبة الرقمية السريعة — أسعار معلنة وتسليم سريع",
-    description:
-      `خدمات رقمية à la carte في طرابلس: إعادة تصميم موقع، إضافة قسم، عروض تقديمية، هوية بصرية، صفحة هبوط، وإصلاح وتحسين — بأسعار تبدأ من ${Number.isFinite(lowestPrice) ? lowestPrice : 15} دولاراً.`,
+    name: ar
+      ? "خدمات نخبة الرقمية السريعة — أسعار معلنة وتسليم سريع"
+      : "Nukhba Open Digital Services — Published USD Prices",
+    description: ar
+      ? `خدمات رقمية حسب الطلب في طرابلس: إعادة تصميم موقع، إضافة قسم، عروض تقديمية، هوية بصرية، صفحة هبوط، وإصلاح وتحسين — بأسعار تبدأ من ${minUsd} دولاراً.`
+      : `On-demand digital services in Tripoli: website restyle, new sections, pitch decks, brand identity, landing pages and site optimization — starting at $${minUsd}.`,
     speakable: ["h1", "#services-answer"],
-    about: "خدمات تصميم وتطوير الويب في طرابلس، ليبيا",
+    about: ar ? "خدمات تصميم وتطوير الويب في طرابلس، ليبيا" : "Web design and digital services in Tripoli, Libya",
   });
 
   return (
@@ -94,8 +99,8 @@ export default async function ServicesPage({ searchParams }: LocalePageProps) {
       <JsonLd
         data={[
           breadcrumbJsonLd(config, [
-            { name: "الرئيسية", path: "/" },
-            { name: "الخدمات", path: "/services" },
+            { name: ar ? "الرئيسية" : "Home", path: "/" },
+            { name: ar ? "الخدمات" : "Services", path: "/services" },
           ], locale),
           webPage,
           servicesCollectionJsonLd(config, services, locale),

@@ -1,18 +1,24 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ArrowLeft, BookOpen, Megaphone } from "lucide-react";
+import { AlertTriangle, ArrowLeft, BookOpen, Megaphone } from "lucide-react";
 import {
   listTelegramCampaigns,
+  listTelegramShopCheckoutEvents,
   listTelegramSubscribers,
   telegramAudienceStats,
   telegramBotIdentity,
   telegramConfig,
   telegramWebhookStatus,
   type TelegramCampaignView,
+  type TelegramShopCheckoutEvent,
   type TelegramSubscriberView,
   type TelegramWebhookStatus,
 } from "@/lib/telegram";
 import { telegramDeepLink } from "@/lib/telegram-core";
+import {
+  SHOP_FAILURE_REASON_LABELS,
+  type ShopCheckoutFailureReason,
+} from "@/lib/telegram-shop-core";
 import { TelegramPanel } from "./telegram-panel";
 
 export const metadata: Metadata = {
@@ -29,17 +35,19 @@ const DEFAULTS = {
   audience: { total: 0, optedIn: 0, blocked: 0 },
   subscribers: [] as TelegramSubscriberView[],
   campaigns: [] as TelegramCampaignView[],
+  shopEvents: [] as TelegramShopCheckoutEvent[],
 };
 
 export default async function AdminTelegramPage() {
   const cfg = telegramConfig();
 
-  const [webhook, audience, subscribers, campaigns, identity] = await Promise.all([
+  const [webhook, audience, subscribers, campaigns, identity, shopEvents] = await Promise.all([
     telegramWebhookStatus().catch(() => DEFAULTS.webhook),
     telegramAudienceStats().catch(() => DEFAULTS.audience),
     listTelegramSubscribers(12).catch(() => DEFAULTS.subscribers),
     listTelegramCampaigns(8).catch(() => DEFAULTS.campaigns),
     telegramBotIdentity().catch(() => null),
+    listTelegramShopCheckoutEvents(10).catch(() => DEFAULTS.shopEvents),
   ]);
 
   const botUsername = cfg.botUsername || identity?.username || "";
@@ -189,6 +197,74 @@ export default async function AdminTelegramPage() {
           )}
         </div>
       </section>
+
+      {/* Diagnostic caisse Telegram ------------------------------------------ */}
+      <section className="rounded-2xl border border-stone-200 bg-white p-5">
+        <header className="flex flex-wrap items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <AlertTriangle className="h-4 w-4 text-amber-600" />
+            <h2 className="text-sm font-black tracking-tight">
+              Diagnostic caisse Telegram (derniers refus &amp; incidents)
+            </h2>
+          </div>
+          <Link
+            href="/admin/digital"
+            className="text-[12px] font-semibold text-stone-600 underline hover:text-stone-900"
+          >
+            Vérifier le solde fournisseur &amp; la boutique →
+          </Link>
+        </header>
+        <p className="mt-1.5 text-[12px] text-stone-500">
+          Chaque tentative d&apos;achat qui échoue dans le bot est enregistrée ici avec sa cause
+          exacte (minimum crypto, plafond, solde fournisseur, passerelle NOWPayments). Les
+          incidents d&apos;exploitation envoient aussi une alerte directe sur votre chat admin.
+        </p>
+        {shopEvents.length === 0 ? (
+          <p className="mt-3 text-[12.5px] text-stone-500">
+            Aucun refus ou incident enregistré sur la caisse Telegram.
+          </p>
+        ) : (
+          <ul className="mt-3 divide-y divide-stone-100">
+            {shopEvents.map((event, idx) => {
+              const reasonLabel =
+                SHOP_FAILURE_REASON_LABELS[event.reason as ShopCheckoutFailureReason] ??
+                event.reason;
+              return (
+                <li
+                  key={`${event.at}-${idx}`}
+                  className="flex flex-wrap items-start justify-between gap-3 py-2.5"
+                >
+                  <div className="min-w-0 flex-1 space-y-0.5">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span
+                        className={`inline-flex rounded-full px-2 py-0.5 text-[10.5px] font-bold ${
+                          event.alerted
+                            ? "bg-amber-100 text-amber-900"
+                            : "bg-stone-100 text-stone-700"
+                        }`}
+                      >
+                        {reasonLabel}
+                      </span>
+                      <span className="truncate text-[13px] font-semibold text-stone-800">
+                        {event.title} — {event.label} (×{event.qty} · ${event.totalUsd})
+                      </span>
+                    </div>
+                    <div className="text-[11.5px] text-stone-500">
+                      {formatDateTime(event.at)} · {event.actorLabel} ·{" "}
+                      <code>{event.maskedEmail}</code>
+                    </div>
+                    {event.detail ? (
+                      <div className="truncate font-mono text-[11px] text-stone-400">
+                        {event.detail}
+                      </div>
+                    ) : null}
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </section>
     </div>
   );
 }
@@ -197,4 +273,15 @@ function formatDate(value: Date | string): string {
   const date = typeof value === "string" ? new Date(value) : value;
   if (Number.isNaN(date.getTime())) return "—";
   return date.toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit", year: "2-digit" });
+}
+
+function formatDateTime(value: Date | string): string {
+  const date = typeof value === "string" ? new Date(value) : value;
+  if (Number.isNaN(date.getTime())) return "—";
+  return date.toLocaleString("fr-FR", {
+    day: "2-digit",
+    month: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
 }
