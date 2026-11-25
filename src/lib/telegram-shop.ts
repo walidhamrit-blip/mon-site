@@ -20,8 +20,15 @@
  *  - un garde-fou anti-spam évite de marteler NOWPayments facture après facture.
  */
 
-import { createDigitalCheckout, DigitalOrderError } from "@/lib/digital-orders";
+import { eq } from "drizzle-orm";
+import { db } from "@/db";
+import { digitalOrders, orders } from "@/db/schema";
 import { getDigitalCatalog } from "@/lib/digital-store";
+import { getFazercardsCatalog } from "@/lib/fazercards-catalog";
+import { createFazercardsCheckout, FazercardsOrderError } from "@/lib/fazercards-orders";
+import { readDigitalOverrides } from "@/lib/digital-overrides";
+import { resolveFazercardsCheckoutProduct } from "@/lib/digital-overrides-core";
+import { siteBaseUrl } from "@/lib/site-url";
 import { denominationLabel } from "@/lib/digital-types";
 import { formatWatchConfirmation, watchOrderFromTelegram } from "@/lib/telegram-delivery";
 import {
@@ -409,19 +416,62 @@ async function completeCheckout(
 
   const locale = language === "ar" ? ("ar" as const) : ("en" as const);
   try {
-    const result = await createDigitalCheckout({
-      productSlug: pending.slug,
-      denominationId: pending.denomId,
-      quantity: pending.qty,
-      email,
-      name: actor.firstName?.trim() || undefined,
-      locale,
-      telegram: {
-        chatId: actor.chatId,
-        username: actor.username ?? null,
-        firstName: actor.firstName ?? null,
+    // Caisse du site, route FazerCards — le fournisseur actif du projet
+    // (l'ancien fournisseur est retiré : `LEGACY_SUPPLIER_RETIRED`). Le prix
+    // est recalculé côté serveur à partir du catalogue fournisseur, exactement
+    // comme depuis la boutique web. `paymentMethod: "nowpayments"` : la
+    // facture hébergée crypto, chemin principal du bot.
+    const catalog = await getFazercardsCatalog();
+    const overridesState = await readDigitalOverrides();
+    // Conserve l'identifiant canonique `fzr-*` : le slug public peut être
+    // personnalisé par les surcharges admin, la livraison route par id.
+    const matchedProduct = resolveFazercardsCheckoutProduct(
+      catalog.products,
+      overridesState,
+      pending.slug,
+    );
+    const canonicalProductId = matchedProduct?.id ?? pending.slug;
+    const productsAdapter = {
+      findBySlug: (slug: string) => {
+        const product =
+          slug === canonicalProductId && matchedProduct
+            ? matchedProduct
+            : resolveFazercardsCheckoutProduct(catalog.products, overridesState, slug);
+        if (!product) return null;
+        return {
+          kind: product.kind,
+          categoryId: product.categoryId,
+          denominations: product.denominations.map((denomination) => ({
+            id: denomination.id,
+            label: denomination.label,
+            priceUsd: denomination.priceUsd,
+            available: denomination.available,
+            maxOrderQuantity: denomination.maxOrderQuantity,
+            supplierOfferId: denomination.supplierOfferId,
+            supplierCostUsd: denomination.supplierCostUsd,
+            fields: denomination.fields,
+          })),
+        };
       },
-    });
+    };
+
+    const result = await createFazercardsCheckout(
+      {
+        productId: canonicalProductId,
+        denominationId: pending.denomId,
+        quantity: pending.qty,
+        email,
+        name: actor.firstName?.trim() || undefined,
+        locale,
+        paymentMethod: "nowpayments",
+      },
+      productsAdapter,
+      new Request(siteBaseUrl()),
+    );
+
+    // Identité Telegram sur la commande (les deux tables, comme la caisse web
+    // le ferait pour ses propres entrées) : suivi + livraison retrouvent le chat.
+    await stampTelegramIdentity(result.orderRef, actor);
 
     await setTelegramCheckoutEmail(actor.chatId, email);
     const view = shopPaymentView({
@@ -445,6 +495,30 @@ async function completeCheckout(
     await sendOrEdit(actor.chatId, messageId, checkoutErrorMessage(error, language), [
       [{ text: localeMenu(language), callback_data: "menu:home" }],
     ]);
+  }
+}
+
+/**
+ * Écrit `telegram_chat_id` / `telegram_username` sur les deux lignes de la
+ * commande (`orders` + `digital_orders`). Best-effort : un échec ne doit
+ * jamais invalider une commande déjà créée.
+ */
+async function stampTelegramIdentity(
+  ref: string,
+  actor: ShopActor,
+): Promise<void> {
+  const patch = {
+    telegramChatId: actor.chatId,
+    telegramUsername: actor.username?.trim() || null,
+  };
+  try {
+    await db.update(orders).set(patch).where(eq(orders.ref, ref));
+    await db.update(digitalOrders).set(patch).where(eq(digitalOrders.ref, ref));
+  } catch (error) {
+    console.warn(
+      "[telegram][shop] identité Telegram non apposée :",
+      error instanceof Error ? error.message : error,
+    );
   }
 }
 
@@ -656,19 +730,17 @@ async function sendOrEdit(
 
 function checkoutErrorMessage(error: unknown, language: ShopLocale): string {
   const copy = shopCopy(language);
-  if (error instanceof DigitalOrderError) {
+  if (error instanceof FazercardsOrderError) {
     switch (error.code) {
       case "product_not_found":
       case "denomination_not_found":
+      case "denomination_not_sellable":
       case "invalid_quantity":
         return copy.notFound;
-      case "supplier_retired":
-      case "supplier_mode_mismatch":
-      case "supplier_not_configured":
-      case "supplier_price_unsupported":
-        return copy.unavailable;
       default:
-        return `${copy.unavailable}\n\n${error.message}`;
+        // Stock épuisé, fournisseur indisponible, montant refusé… : le détail
+        // technique reste dans les logs, le client reçoit un message clair.
+        return copy.unavailable;
     }
   }
   return copy.unavailable;

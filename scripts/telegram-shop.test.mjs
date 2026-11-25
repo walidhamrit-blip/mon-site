@@ -94,6 +94,7 @@ function fakeProduct(overrides = {}) {
     status: "available",
     platform: "PlayStation",
     regions: ["US"],
+    supplier: "fazercards",
     titleAr: "بطاقة بلايستيشن أمريكية",
     titleEn: "PlayStation Store (US)",
     descriptionAr: "شحن محفظة بلايستيشن الأمريكية فوراً.",
@@ -156,6 +157,10 @@ const CATALOG = [
   fakeProduct({ slug: "steam-wallet", kind: "game_topup", titleEn: "Steam Wallet", titleAr: "محفظة ستيم" }),
   fakeProduct({ slug: "not-for-sale", status: "coming_soon" }),
   fakeProduct({ slug: "no-denoms", denominations: [] }),
+  // Fiche de l'ANCIEN fournisseur (retiré) : jamais vendable, jamais listée —
+  // la caisse la refuserait (LEGACY_SUPPLIER_RETIRED), le bot ne doit donc
+  // pas la proposer.
+  fakeProduct({ slug: "legacy-psn", supplier: "reloadly" }),
 ];
 
 test("les catégories affichent le nombre de produits vendables", () => {
@@ -168,10 +173,19 @@ test("les catégories affichent le nombre de produits vendables", () => {
     assert.ok(callbacks.includes("shop:c:gift_card:1"));
     assert.ok(callbacks.includes("shop:c:subscription_code:1"));
     assert.ok(callbacks.includes("menu:home"));
-    // Le compteur n'expose pas les fiches hors vente (coming_soon, sans montants).
+    // Le compteur n'expose ni les fiches hors vente (coming_soon, sans
+    // montants) ni celles de l'ancien fournisseur retiré.
     const giftCardRow = view.keyboard.flat().find((b) => b.callback_data === "shop:c:gift_card:1");
     assert.match(giftCardRow.text, /\(1\)/);
   }
+});
+
+test("l'ancien fournisseur retiré n'est jamais proposé dans la boutique", () => {
+  const products = shopProductsOfKind(CATALOG, "gift_card");
+  assert.deepEqual(
+    products.map((p) => p.slug),
+    ["playstation-store-us"],
+  );
 });
 
 test("la page produits liste des prix et ne transporte que des index", () => {
