@@ -305,13 +305,13 @@ Les avis Next concernent précisément un mécanisme que le site utilise massive
 **Critère d'acceptation.** Un visiteur peut lire un rapport complet avant de commander ; chaque promesse de la page a une preuve ou une limite explicite.
 **Effort.** 1–2 sessions (contenu). **Risque.** Faible.
 
-**État au 18/11/2026 — appliqué.**
+**État au 20/11/2026 — appliqué.**
 - `src/lib/audit-checklist.ts` : **46 points** répartis en 8 catégories, poids total 100, textes AR/EN.
 - Page **`/audit`** : liste complète, bloc « ce que vous recevez » (rapport
   imprimable, points classés, mesures datées, appel de 30 min + suivi 14 jours),
   **rapport exemple réel** et formulaire.
 - Rapport exemple : démo **Tulin Magazin** (notre démo, pas un client),
-  Lighthouse 12 mobile, 3 runs, médiane, **18/11/2026**, avant et après en
+  Lighthouse 12 mobile, 3 runs, médiane, **20/11/2026**, avant et après en
   production (après déploiement du correctif). Avant : performance 82
   (69–86), accessibilité 96, bonnes pratiques 75, SEO 100. Après : performance
   85 (67–90), accessibilité **100**, bonnes pratiques 75, SEO 100.
@@ -474,7 +474,7 @@ script Vercel. Test de comportement : `scripts/analytics-runtime.test.mjs`
 **Critère d'acceptation.** Une restauration réelle a été exécutée et chronométrée ; la procédure tient sur une page.
 **Effort.** 2 h + action propriétaire. **Risque.** Faible.
 
-**État au 18/11/2026 — partiel.**
+**État au 20/11/2026 — partiel.**
 - `scripts/backup-leads.mjs` et `scripts/restore-leads.mjs` : export JSON de la
   table `leads`, validation du fichier (version, compte, doublons, colonnes
   obligatoires), restauration en simulation par défaut, insertion des seules
