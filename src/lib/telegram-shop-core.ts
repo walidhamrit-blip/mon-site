@@ -740,8 +740,14 @@ export interface ShopPaymentInfo {
   qty: number;
   totalUsd: string;
   paymentUrl: string;
-  /** Jeton de suivi : autorise la bascule vers la carte sur la commande EXISTANTE. */
-  trackingToken: string;
+  /**
+   * URL de bascule carte sur la commande existante — fournie par le module
+   * serveur UNIQUEMENT si la passerelle carte est prête et que le montant
+   * atteint son minimum (sinon `null` : pas de bouton qui rebondit).
+   */
+  cardUrl?: string | null;
+  /** Jeton de suivi : mémorisé dans l'état pour rejouer la bascule plus tard. */
+  trackingToken?: string | null;
   slug: string;
   email: string;
   locale: ShopLocale;
@@ -764,23 +770,25 @@ export function shopPaymentView(info: ShopPaymentInfo): ShopView {
     total: escapeShopHtml(info.totalUsd),
     email: escapeShopHtml(info.email),
   });
+  const keyboard = [
+    [{ text: copy.payNow, url: info.paymentUrl }],
+    // Continue la MÊME commande par carte (bascule serveur, jeton de suivi).
+    ...(info.cardUrl ? [[{ text: copy.payCard, url: info.cardUrl }]] : []),
+    // Skrill / carte de recharge : preuves à déclarer → fiche web du produit.
+    [{ text: copy.payOther, url: productUrl(info.links, info.slug) }],
+    [{ text: copy.receiveHere, callback_data: shopCallback({ view: "watch", ref: info.ref }) }],
+    [{ text: localeMenu(info.locale), callback_data: "menu:home" }],
+  ];
+
   return {
     text,
-    keyboard: [
-      [{ text: copy.payNow, url: info.paymentUrl }],
-      // Continue la MÊME commande par carte (bascule serveur, jeton de suivi).
-      [{ text: copy.payCard, url: shopCardSwitchUrl(info.links, info.ref, info.trackingToken) }],
-      // Skrill / carte de recharge : preuves à déclarer → fiche web du produit.
-      [{ text: copy.payOther, url: productUrl(info.links, info.slug) }],
-      [{ text: copy.receiveHere, callback_data: shopCallback({ view: "watch", ref: info.ref }) }],
-      [{ text: localeMenu(info.locale), callback_data: "menu:home" }],
-    ],
+    keyboard,
     state: {
       pending: null,
       lastOrder: {
         ref: info.ref,
         paymentUrl: info.paymentUrl,
-        trackingToken: info.trackingToken,
+        trackingToken: info.trackingToken ?? "",
         slug: info.slug,
         title: info.title,
         label: info.label,
