@@ -116,11 +116,14 @@ export function DigitalProductDetails({
                   <Image
                     src={visual}
                     alt={imageAlt}
-                    fill
+                    width={1200}
+                    height={675}
                     sizes="(max-width: 1024px) 100vw, 58vw"
                     quality={88}
-                    priority
-                    className="object-cover"
+                    preload
+                    loading="eager"
+                    fetchPriority="high"
+                    className="h-full w-full object-cover"
                   />
                   <div
                     aria-hidden="true"

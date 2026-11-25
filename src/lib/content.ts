@@ -78,7 +78,7 @@ export const demos = [
     description:
       "متجر متكامل للعدد الكهربائية واليدوية ومواد البناء والدهانات ومعدات السلامة في طرابلس — سلة تسوق وعروض أسعار للمقاولين والورشات",
     descriptionEn:
-      "Power tools, construction materials, paints & safety equipment store in Tripoli — online cart & B2B contractor quotes",
+      "Power tools, building materials, paints and safety gear store — online cart and B2B contractor quotes.",
     image: "https://m-et-outillage-modele-3.vercel.app/images/hero1.jpg",
     color: "#D97706",
     features: ["عدد ومواد بناء", "سلة وطلب فوري", "عروض أسعار للمقاولين", "8 أقسام متخصصة"],
@@ -97,7 +97,7 @@ export const demos = [
     description:
       "معرض ومتجر إلكتروني للبضائع الأوروبية في طرابلس — أثاث منزلي، أجهزة كهربائية أصلية، وعدة بريكولاج مع سلة وطلب عبر واتساب",
     descriptionEn:
-      "European furniture, home appliances & DIY store in Tripoli — 8 categories, countdown deals, cart & WhatsApp ordering",
+      "European furniture, home appliances and DIY store — 8 categories, countdown deals, cart and WhatsApp checkout.",
     image: "https://images.pexels.com/photos/6585763/pexels-photo-6585763.jpeg?auto=compress&cs=tinysrgb&fit=crop&w=1200&h=800",
     color: "#0F766E",
     features: ["8 أقسام منزلية", "عروض بعدّاد تنازلي", "سلة وطلب واتساب", "توصيل 22 مدينة"],
@@ -135,7 +135,7 @@ export const demos = [
     description:
       "معرض مفروشات فاخرة وتصميم داخلي حسب الطلب — كتالوج تفاعلي، اختيار الخامات والأخشاب، طلب تسعير وحجز زيارة خاصة للمعرض",
     descriptionEn:
-      "Bespoke luxury furniture & interior architecture showroom — interactive wood/stone selector, custom quote cart & private showroom booking",
+      "Bespoke furniture and interior showroom — wood and stone selector, custom quote cart and private visit booking.",
     image: "https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?auto=format&fit=crop&w=1600&q=90",
     color: "#8B5A2B",
     features: ["تخصيص الأخشاب والرخام", "طلب تسعير ومقاسات خاصة", "حجز زيارة خاصة للمعرض", "معرض أعمال القصور والفلل"],
@@ -154,7 +154,7 @@ export const demos = [
     description:
       "متجر عطور ومستحضرات تجميل وعناية بالبشرة — باقات «3 بسعر واحد»، أكواد خصم داخل المتجر، مجموعات هدايا، وتجربة ثنائية اللغة",
     descriptionEn:
-      "Luxury fragrances, cosmetics & skincare e-commerce — Mix & Match bundles, promo codes, gift sets & bilingual AR/EN experience",
+      "Luxury fragrances, cosmetics and skincare store — Mix & Match bundles, promo codes, gift sets and AR/EN checkout.",
     image: "https://hala-dun.vercel.app/images/hero-perfume.jpg",
     color: "#9D174D",
     features: ["عروض Mix & Match", "عطور ومكياج وعناية", "أكواد خصم وسلة ذكية", "عربي + إنجليزي"],

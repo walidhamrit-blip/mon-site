@@ -248,7 +248,7 @@ export function runSeoAudit(
       level: "pass",
       title: `FAQ bilingue complète — pré-requis technique (${faqs.length} Q/R)`,
       detail:
-        "Le schéma FAQPage est présent et les Q/R sont exportées dans /llms.txt et /llms-full.txt. L'affichage d'un résultat enrichi et une citation IA ne sont pas garantis par ce contrôle.",
+        "Le schéma FAQPage est aligné sur les Q/R visibles et exporté dans /llms.txt et /llms-full.txt pour les moteurs IA (Google a retiré les résultats enrichis FAQ en mai 2026 ; aucune citation IA ni position n'est garantie).",
     });
   }
 

@@ -206,8 +206,8 @@ export const sectorSeo: Record<string, SectorSeo> = {
     id: "toys",
     labelAr: "ألعاب أطفال",
     labelEn: "Kids & Toys",
-    titleAr: "تصميم متاجر ألعاب أطفال في طرابلس — دفع عند الاستلام",
-    titleEn: "Kids & Toys Store Design in Tripoli — Cash on Delivery",
+    titleAr: "تصميم متاجر ألعاب أطفال وهدايا في طرابلس",
+    titleEn: "Kids & Toys Online Store Design in Tripoli",
     descriptionAr:
       "متاجر ألعاب أطفال في طرابلس: ليغو، باربي، سكوترات، دراجات وألعاب ذكاء — سلة ودفع عند الاستلام وفروع تفاعلية.",
     descriptionEn:
@@ -272,8 +272,8 @@ export const sectorSeo: Record<string, SectorSeo> = {
     id: "electronics",
     labelAr: "هواتف ذكية وإلكترونيات",
     labelEn: "Smartphones & Electronics",
-    titleAr: "تصميم متاجر هواتف وإلكترونيات في طرابلس — كتالوج وسلة",
-    titleEn: "Smartphone & Electronics Store in Tripoli — Catalog & Cart",
+    titleAr: "تصميم متاجر هواتف وإلكترونيات في طرابلس",
+    titleEn: "Smartphone & Electronics Store in Tripoli",
     descriptionAr:
       "متاجر هواتف ذكية في طرابلس: كتالوج بالعلامات، سلة ودفع عبر واتساب، تتبع الطلب برقم مرجعي وتوصيل لكل ليبيا — ماي فون نموذجاً.",
     descriptionEn:
@@ -305,8 +305,8 @@ export const sectorSeo: Record<string, SectorSeo> = {
     id: "hardware",
     labelAr: "مواد بناء وعدد",
     labelEn: "Tools & Construction",
-    titleAr: "تصميم متاجر عدد ومواد بناء في طرابلس — تسعير مقاولين",
-    titleEn: "Hardware & Construction Store in Tripoli — Contractor Quotes",
+    titleAr: "تصميم متاجر عدد ومواد بناء في طرابلس",
+    titleEn: "Hardware & Construction Store in Tripoli",
     descriptionAr:
       "متاجر عدد كهربائية ويدوية ومواد بناء ودهانات في طرابلس — سلة وعروض أسعار للمقاولين والورشات، 8 أقسام متخصصة.",
     descriptionEn:
@@ -371,8 +371,8 @@ export const sectorSeo: Record<string, SectorSeo> = {
     id: "sanitary",
     labelAr: "أطقم صحية وصنابير",
     labelEn: "Sanitary & Brassware",
-    titleAr: "تصميم مواقع أطقم صحية وصنابير في طرابلس — ضمان 5 سنوات",
-    titleEn: "Sanitary & Brassware Website in Tripoli — 5-Year Warranty",
+    titleAr: "تصميم مواقع أطقم صحية وصنابير في طرابلس",
+    titleEn: "Sanitary & Brassware Website in Tripoli",
     descriptionAr:
       "مواقع أطقم صحية وصنابير نحاسية في طرابلس: كتالوج بفلترة فورية (حمام، مطبخ، صمامات)، مصنّع وموزّع مع ضمان 5 سنوات.",
     descriptionEn:

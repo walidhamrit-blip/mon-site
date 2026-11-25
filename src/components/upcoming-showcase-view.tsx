@@ -486,11 +486,13 @@ function ShowcaseImage({
         src={src}
         {...imageOptimizationProps(src)}
         alt={alt}
-        fill
+        width={1200}
+        height={750}
         sizes="(max-width: 768px) 100vw, 50vw"
         loading={priority ? "eager" : "lazy"}
+        fetchPriority={priority ? "high" : "auto"}
         decoding="async"
-        className="object-cover transition-transform duration-500 group-hover:scale-[1.04]"
+        className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.04]"
         onError={() => setFailed(true)}
       />
       {/* Voile de lisibilité, uniquement sur une vraie photo : sur le visuel

@@ -56,15 +56,17 @@ export default async function BadgePage({ searchParams }: LocalePageProps) {
   const origin = resolveSiteOrigin({ url: config.url, domain: config.domain });
   const canonical = badgeCanonical(origin);
   const linked = linkedClients();
+  const ar = locale === "ar";
 
   const schema = {
     "@context": "https://schema.org",
     "@type": "WebPage",
     "@id": `${localizedAbsoluteUrl(config.url, "/badge", locale, siteLocale(config))}#webpage`,
-    name: "شارة نخبة — Badge « Website by Nukhba »",
-    alternateName: "Nukhba Client Badge",
-    description:
-      "Page officielle de la شارة نخبة : extraits HTML et React, ancres bilingues et liste des sites clients validés.",
+    name: ar ? "شارة «Website by Nukhba» للمواقع المنجزة" : "“Website by Nukhba” Client Badge",
+    alternateName: ar ? "Nukhba Client Badge" : "شارة نخبة",
+    description: ar
+      ? "الصفحة الرسمية لشارة نخبة: أكواد HTML وReact جاهزة للنسخ وقائمة المواقع الموثقة."
+      : "Official Nukhba client badge page: copy-paste HTML and React snippets, bilingual anchors and verified client sites.",
     url: localizedAbsoluteUrl(config.url, "/badge", locale, siteLocale(config)),
     inLanguage: locale,
     isPartOf: { "@id": absoluteUrl(config, "#website") },
@@ -85,7 +87,7 @@ export default async function BadgePage({ searchParams }: LocalePageProps) {
               "@type": "ListItem",
               position: index + 1,
               url,
-              name: entry.titleEn || entry.title,
+              name: ar ? entry.title : entry.titleEn || entry.title,
             })),
           },
         }
@@ -97,8 +99,8 @@ export default async function BadgePage({ searchParams }: LocalePageProps) {
       <JsonLd
         data={[
           breadcrumbJsonLd(config, [
-            { name: "الرئيسية", path: "/" },
-            { name: "شارة نخبة", path: "/badge" },
+            { name: ar ? "الرئيسية" : "Home", path: "/" },
+            { name: ar ? "شارة نخبة" : "Client Badge", path: "/badge" },
           ], locale),
           schema,
         ]}

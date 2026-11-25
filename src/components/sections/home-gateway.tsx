@@ -23,7 +23,7 @@ export function HomeGateway() {
         {items.map(({ icon: Icon, ...item }, i) => (
           <Link key={item.href} href={item.href} data-category={i} onClick={() => trackEvent({ name: "gateway_click", path: item.href })} className="gateway-card group flex flex-col rounded-[var(--radius-lg)] border border-[var(--border)] bg-[var(--card)] p-5 sm:p-6">
             <div className="gateway-art">
-              <Image src={item.visual.src} alt={ar ? item.visual.altAr || item.title : item.visual.altEn || item.title} fill sizes="(max-width: 768px) 85vw, 380px" className="object-cover object-top" {...imageOptimizationProps(item.visual.src)} />
+              <Image src={item.visual.src} alt={ar ? item.visual.altAr || item.title : item.visual.altEn || item.title} width={760} height={440} sizes="(max-width: 768px) 85vw, 380px" loading={i === 0 ? "eager" : "lazy"} fetchPriority={i === 0 ? "high" : "auto"} className="h-full w-full object-cover object-top" {...imageOptimizationProps(item.visual.src)} />
               <span className="gateway-art-icon"><Icon className="h-5 w-5" /></span>
             </div>
             <p className="gaming-card-index" aria-hidden="true">0{i + 1} / {ar ? "اختر مسارك" : "CHOOSE YOUR PATH"}</p>

@@ -67,31 +67,6 @@ export async function generateMetadata(): Promise<Metadata> {
     // et poussait la plupart des titres au-delà de 60 caractères.
     title,
     description,
-    keywords: [
-      `تصميم مواقع ${labels.city}`,
-      `شركة تصميم مواقع ${labels.country}`,
-      `متجر إلكتروني ${labels.country}`,
-      `تصميم متجر إلكتروني ${labels.city}`,
-      "حجز مواعيد أونلاين",
-      `تحسين SEO ${labels.country}`,
-      `وكالة ويب ${labels.city}`,
-      `web design ${labelsEn.city}`,
-      `web design ${labelsEn.country}`,
-      `e-commerce ${labelsEn.country}`,
-      "Nukhba web agency",
-      `création site web ${labelsEn.city}`,
-      "premium website design",
-      "online booking website",
-      "pay with USDT website",
-      ...(globalReach
-        ? ["web design agency worldwide", "international web design", "تصميم مواقع عالمي"]
-        : []),
-    ],
-    authors: [{ name: "نخبة Nukhba", url: baseUrl }],
-    creator: "نخبة Nukhba",
-    publisher: "نخبة Nukhba",
-    category: "technology",
-    applicationName: "نخبة Nukhba",
     alternates: {
       // Canonique auto-référente + cluster AR/EN réciproque sur chaque URL.
       canonical,
@@ -120,20 +95,13 @@ export async function generateMetadata(): Promise<Metadata> {
     },
     twitter: {
       card: "summary_large_image",
-      title,
-      description,
-      images: ["/og.jpg"],
     },
     robots: {
       index: true,
       follow: true,
-      googleBot: {
-        index: true,
-        follow: true,
-        "max-image-preview": "large",
-        "max-snippet": -1,
-        "max-video-preview": -1,
-      },
+      "max-image-preview": "large",
+      "max-snippet": -1,
+      "max-video-preview": -1,
     },
     // Vérification Google Search Console : balise meta émise sur toutes les
     // pages. Le code n'est valide que pour le domaine qu'il a été émis
@@ -247,6 +215,37 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
         </ThemeProvider>
 
         <JsonLd data={structuredData} />
+        {isPublic && (
+          <script
+            type="speculationrules"
+            dangerouslySetInnerHTML={{
+              __html: JSON.stringify({
+                prefetch: [
+                  {
+                    where: {
+                      and: [
+                        { href_matches: "/*" },
+                        {
+                          not: {
+                            href_matches: [
+                              "/api/*",
+                              "/admin*",
+                              "/pay/*",
+                              "/livraison*",
+                              "/codes/commande*",
+                              "/abonnements/suivi*",
+                            ],
+                          },
+                        },
+                      ],
+                    },
+                    eagerness: "conservative",
+                  },
+                ],
+              }),
+            }}
+          />
+        )}
       </body>
     </html>
   );

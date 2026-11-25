@@ -80,7 +80,7 @@ export function DigitalShowcase({
                 href={`/codes/${product.slug}`}
                 className="store-preview-card group flex h-full flex-col overflow-hidden rounded-[var(--radius-lg)] border border-[var(--border)] bg-[var(--card)] transition-colors hover:border-[var(--accent)]"
               >
-                {product.image && <span className="store-preview-art"><Image src={product.image} alt={product.title} fill sizes="(max-width: 640px) 90vw, (max-width: 1024px) 45vw, 390px" className="object-cover" {...imageOptimizationProps(product.image)} /></span>}
+                {product.image && <span className="store-preview-art"><Image src={product.image} alt={product.title} width={640} height={400} sizes="(max-width: 640px) 90vw, (max-width: 1024px) 45vw, 390px" className="h-full w-full object-cover" {...imageOptimizationProps(product.image)} /></span>}
                 <span className="min-w-0 flex-1 p-5">
                   <span className="block text-[11px] font-black uppercase tracking-[0.12em] text-[var(--muted-foreground)]">
                     {product.platform} ·{" "}

@@ -98,14 +98,15 @@ export default async function SectorPage({
   const collectionLd = sectorCollectionJsonLd(config, sector, demosInSector, locale);
   const faqLd = sectorFaqJsonLd(sector, locale);
 
+  const ar = locale === "ar";
   return (
     <>
       <JsonLd
         data={[
           breadcrumbJsonLd(config, [
-            { name: "الرئيسية", path: "/" },
-            { name: "القطاعات", path: "/sectors" },
-            { name: sector.labelAr, path: `/sectors/${sector.id}` },
+            { name: ar ? "الرئيسية" : "Home", path: "/" },
+            { name: ar ? "القطاعات" : "Sectors", path: "/sectors" },
+            { name: ar ? sector.labelAr : sector.labelEn, path: `/sectors/${sector.id}` },
           ], locale),
           collectionLd,
           faqLd,

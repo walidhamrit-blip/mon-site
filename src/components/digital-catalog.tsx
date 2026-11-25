@@ -695,11 +695,13 @@ export function DigitalCatalog({ products, kind, onKindChange }: { products: Dig
                                   ? `غلاف ${displayName(product)}`
                                   : `${displayName(product)} cover art`
                               }
-                              fill
+                              width={600}
+                              height={900}
                               sizes="(max-width: 359px) 100vw, (max-width: 767px) 50vw, (max-width: 1023px) 33vw, 22vw"
                               quality={88}
-                              priority={index < 4}
-                              className="object-cover transition-transform duration-500 ease-out group-hover:scale-[1.045]"
+                              loading={index < 4 ? "eager" : "lazy"}
+                              fetchPriority={index === 0 ? "high" : "auto"}
+                              className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 ease-out group-hover:scale-[1.045]"
                             />
                           )
                         ) : (
@@ -794,6 +796,7 @@ export function DigitalCatalog({ products, kind, onKindChange }: { products: Dig
                             className="inline-flex min-h-11 w-full shrink-0 items-center justify-center gap-1 rounded-full bg-[var(--primary)] px-4 text-[12px] font-black text-[var(--primary-foreground)] transition-opacity hover:opacity-90 sm:w-auto"
                           >
                             {ar ? "التفاصيل" : "Details"}
+                            <span className="sr-only"> — {displayName(product)}</span>
                           </Link>
                         </div>
                       </div>
@@ -1080,19 +1083,22 @@ function AdminCoverImage({
         src={src}
         alt=""
         aria-hidden="true"
-        fill
+        width={600}
+        height={900}
         sizes={sizes}
         quality={75}
-        className="scale-110 object-cover opacity-55 blur-xl"
+        className="absolute inset-0 h-full w-full scale-110 object-cover opacity-55 blur-xl"
       />
       <div aria-hidden="true" className="absolute inset-0 bg-black/25" />
       <Image
         src={src}
         alt={alt}
-        fill
+        width={600}
+        height={900}
         sizes={sizes}
         quality={88}
-        priority={priority}
+        loading={priority ? "eager" : "lazy"}
+        fetchPriority={priority ? "high" : "auto"}
         onLoad={(event) => {
           const img = event.currentTarget;
           if (img.naturalWidth > 0 && img.naturalHeight > 0) {
@@ -1102,8 +1108,8 @@ function AdminCoverImage({
         }}
         className={
           offRatio
-            ? "object-contain p-2.5 transition-transform duration-500 ease-out group-hover:scale-[1.045]"
-            : "object-cover transition-transform duration-500 ease-out group-hover:scale-[1.045]"
+            ? "absolute inset-0 h-full w-full object-contain p-2.5 transition-transform duration-500 ease-out group-hover:scale-[1.045]"
+            : "absolute inset-0 h-full w-full object-cover transition-transform duration-500 ease-out group-hover:scale-[1.045]"
         }
       />
     </>

@@ -87,7 +87,8 @@ export function ProjectPreview({
           key={src}
           src={src}
           alt={title}
-          fill
+          width={1280}
+          height={800}
           sizes={sizes}
           quality={90}
           // Captures locales : optimisées par Next (srcset net sur retina).
@@ -97,7 +98,7 @@ export function ProjectPreview({
           loading={priority ? "eager" : "lazy"}
           fetchPriority={priority ? "high" : "auto"}
           decoding="async"
-          className={`object-cover ${screenshot ? "object-top" : "object-center"}`}
+          className={`h-full w-full object-cover ${screenshot ? "object-top" : "object-center"}`}
           onError={() => setFailedSrc(src)}
         />
       )}

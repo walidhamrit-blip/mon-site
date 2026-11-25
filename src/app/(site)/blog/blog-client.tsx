@@ -117,11 +117,14 @@ export function BlogClient({ articles }: { articles: BlogCardLite[] }) {
                 <Image
                   src="/guide-crypto/step-2-invoice-usdt.jpg"
                   alt={ar ? "فاتورة دفع USDT على الهاتف مع رمز QR" : "USDT payment invoice on a phone with QR code"}
-                  fill
+                  width={1280}
+                  height={720}
                   sizes="(max-width: 1024px) 100vw, 50vw"
                   quality={88}
-                  priority
-                  className="object-cover"
+                  preload
+                  loading="eager"
+                  fetchPriority="high"
+                  className="h-full w-full object-cover"
                 />
                 <span className="absolute top-3 start-3 inline-flex items-center gap-1.5 rounded-full bg-[var(--accent)] px-3 py-1 text-[11px] font-black text-[var(--accent-foreground)]">
                   <Bitcoin className="h-3.5 w-3.5" />
