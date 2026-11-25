@@ -89,6 +89,7 @@ interface PendingCheckout {
 interface LastOrderInfo {
   ref: string;
   paymentUrl: string;
+  trackingToken: string;
   slug: string;
   title: string;
   label: string;
@@ -499,6 +500,7 @@ async function completeCheckout(
       qty: result.quantity,
       totalUsd: formatShopUsd(result.totalUsd),
       paymentUrl: result.paymentUrl,
+      trackingToken: result.trackingToken,
       slug: pending.slug,
       email,
       locale: language,
@@ -562,6 +564,7 @@ async function resendPaymentLink(
     qty: last.qty,
     totalUsd: last.totalUsd,
     paymentUrl: last.paymentUrl,
+    trackingToken: last.trackingToken,
     slug: last.slug,
     email: last.email,
     locale: language,
@@ -671,6 +674,7 @@ function lastOrderFromState(state: TelegramShopState): LastOrderInfo | null {
   return {
     ref: candidate.ref,
     paymentUrl: candidate.paymentUrl,
+    trackingToken: typeof candidate.trackingToken === "string" ? candidate.trackingToken : "",
     slug: typeof candidate.slug === "string" ? candidate.slug : "",
     title: typeof candidate.title === "string" ? candidate.title : "",
     label: typeof candidate.label === "string" ? candidate.label : "",
