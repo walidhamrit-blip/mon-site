@@ -17,6 +17,7 @@ import {
   ShoppingBag,
   Gift,
   Sparkles,
+  Search,
   ExternalLink,
 } from "lucide-react";
 import { db, ensureSchema } from "@/db";
@@ -213,6 +214,13 @@ export default async function AdminDashboardPage() {
       badge: "Thème, contacts & tarifs",
       title: "Réglages & Tarification",
       desc: "Palette de couleurs par défaut, WhatsApp, formules tarifaires, paiement libre et services à la carte.",
+    },
+    {
+      href: "/admin/search-console",
+      icon: Search,
+      badge: "SEO & Indexation",
+      title: "Google Search Console & Quick Wins",
+      desc: "Suivez les clics, impressions, requêtes en position 11–20 (Page 2), l’état du sitemap et le suivi hebdomadaire automatique.",
     },
   ];
 

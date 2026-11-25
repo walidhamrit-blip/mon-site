@@ -1,9 +1,10 @@
 #!/usr/bin/env node
 /**
- * Tests de la soumission Search Console (`src/lib/google-indexing.ts`).
+ * Tests de l'intégration Google Search Console (`src/lib/google-indexing.ts`).
  *
  * Aucun appel réseau : le JWT est signé avec une paire RSA générée à la
- * volée puis vérifié avec la clé publique, comme le ferait Google.
+ * volée puis vérifié avec la clé publique, et les appels HTTP Google APIs
+ * sont simulés localement.
  */
 import { test } from "node:test";
 import assert from "node:assert/strict";
@@ -60,8 +61,15 @@ const {
   buildServiceAccountAssertion,
   searchConsoleProperty,
   sitemapUrlFor,
+  isPreviewOrLocalOrigin,
   googleIndexingAllowed,
+  getSearchConsoleConfigStatus,
   notifyGoogleSitemap,
+  fetchGoogleSitemapStatus,
+  fetchSearchConsoleSnapshot,
+  parseSearchConsoleCsv,
+  classifySearchConsoleOpportunities,
+  resetGoogleTokenCache,
 } = await compileModule("lib/google-indexing.ts", "google-indexing.mjs");
 
 const { privateKey, publicKey } = generateKeyPairSync("rsa", {
@@ -113,6 +121,27 @@ test("searchConsoleProperty gère URL, domaine et propriété sc-domain", () => 
     sitemapUrlFor("https://nokhba.net.ly/"),
     "https://nokhba.net.ly/sitemap.xml",
   );
+});
+
+test("isPreviewOrLocalOrigin bloque localhost, vercel.app et e2b.app", () => {
+  assert.equal(isPreviewOrLocalOrigin("http://localhost:3000"), true);
+  assert.equal(isPreviewOrLocalOrigin("https://mon-site-amber-nine.vercel.app"), true);
+  assert.equal(isPreviewOrLocalOrigin("https://3000-sandbox.e2b.app"), true);
+  assert.equal(isPreviewOrLocalOrigin("https://nokhba.net.ly"), false);
+});
+
+test("getSearchConsoleConfigStatus n'expose jamais la clé privée", () => {
+  const status = getSearchConsoleConfigStatus("https://nokhba.net.ly", {
+    GOOGLE_INDEXING_CLIENT_EMAIL: "bot@test.iam.gserviceaccount.com",
+    GOOGLE_INDEXING_PRIVATE_KEY: privateKey,
+    GOOGLE_INDEXING_SITE_URL: "sc-domain:nokhba.net.ly",
+    VERCEL_ENV: "production",
+  });
+  assert.equal(status.configured, true);
+  assert.equal(status.clientEmail, "bot@test.iam.gserviceaccount.com");
+  assert.equal(status.privateKeyConfigured, true);
+  assert.equal(status.property, "sc-domain:nokhba.net.ly");
+  assert.equal("privateKey" in status, false);
 });
 
 test("le JWT est signé en RS256 et vérifiable avec la clé publique", () => {
@@ -176,5 +205,164 @@ test("sans configuration, la soumission est ignorée sans appel réseau", async 
     if (previousKey !== undefined) {
       process.env.GOOGLE_INDEXING_PRIVATE_KEY = previousKey;
     }
+  }
+});
+
+test("notifyGoogleSitemap refuse les domaines preview même avec allowManualAdmin", async () => {
+  const previousEmail = process.env.GOOGLE_INDEXING_CLIENT_EMAIL;
+  const previousKey = process.env.GOOGLE_INDEXING_PRIVATE_KEY;
+  process.env.GOOGLE_INDEXING_CLIENT_EMAIL = "robot@projet.iam.gserviceaccount.com";
+  process.env.GOOGLE_INDEXING_PRIVATE_KEY = privateKey;
+  try {
+    const result = await notifyGoogleSitemap("https://preview-test.vercel.app", {
+      allowManualAdmin: true,
+    });
+    assert.equal(result.status, "skipped");
+    assert.equal(result.reason, "preview-or-local-origin");
+  } finally {
+    if (previousEmail === undefined) delete process.env.GOOGLE_INDEXING_CLIENT_EMAIL;
+    else process.env.GOOGLE_INDEXING_CLIENT_EMAIL = previousEmail;
+    if (previousKey === undefined) delete process.env.GOOGLE_INDEXING_PRIVATE_KEY;
+    else process.env.GOOGLE_INDEXING_PRIVATE_KEY = previousKey;
+  }
+});
+
+test("parseSearchConsoleCsv et classifySearchConsoleOpportunities extraient Page 2 et faible CTR", () => {
+  const csv = [
+    "\uFEFFRequêtes les plus fréquentes,Page,Clics,Impressions,CTR,Position",
+    '"acheter carte steam, libye",https://nokhba.net.ly/codes/steam,3,180,1.67%,12.3',
+    "pubg uc libya,https://nokhba.net.ly/codes/pubg,1,240,0.42%,4.2",
+    "nukhba studio,https://nokhba.net.ly/,45,90,50%,1.1",
+  ].join("\n");
+
+  const rows = parseSearchConsoleCsv(csv);
+  assert.equal(rows.length, 3);
+  assert.equal(rows[0].query, "acheter carte steam, libye");
+  assert.equal(rows[0].impressions, 180);
+  assert.ok(Math.abs(rows[0].ctr - 0.0167) < 0.0005);
+
+  const { quickWins, lowCtrPageOne } = classifySearchConsoleOpportunities(rows);
+  assert.equal(quickWins.length, 1);
+  assert.equal(quickWins[0].query, "acheter carte steam, libye");
+  assert.equal(quickWins[0].kind, "page2_quick_win");
+
+  assert.equal(lowCtrPageOne.length, 1);
+  assert.equal(lowCtrPageOne[0].query, "pubg uc libya");
+  assert.equal(lowCtrPageOne[0].kind, "page1_low_ctr");
+});
+
+test("fetchSearchConsoleSnapshot agrège KPIs 28j, deltas, sitemap et Quick Wins", async () => {
+  resetGoogleTokenCache();
+  const originalFetch = globalThis.fetch;
+  const previousEmail = process.env.GOOGLE_INDEXING_CLIENT_EMAIL;
+  const previousKey = process.env.GOOGLE_INDEXING_PRIVATE_KEY;
+  const previousSite = process.env.GOOGLE_INDEXING_SITE_URL;
+
+  process.env.GOOGLE_INDEXING_CLIENT_EMAIL = "robot@projet.iam.gserviceaccount.com";
+  process.env.GOOGLE_INDEXING_PRIVATE_KEY = privateKey;
+  process.env.GOOGLE_INDEXING_SITE_URL = "sc-domain:nokhba.net.ly";
+
+  let analyticsCallIndex = 0;
+  globalThis.fetch = async (url, init) => {
+    const u = String(url);
+    if (u.includes("oauth2.googleapis.com/token")) {
+      return new Response(
+        JSON.stringify({ access_token: "mock-token-123", expires_in: 3600 }),
+        { status: 200 },
+      );
+    }
+    if (u.includes("/sitemaps/")) {
+      return new Response(
+        JSON.stringify({
+          lastSubmitted: "2026-11-20T08:00:00Z",
+          lastDownloaded: "2026-11-24T06:00:00Z",
+          warnings: "0",
+          errors: "0",
+          contents: [{ type: "web", submitted: "155", indexed: "142" }],
+        }),
+        { status: 200 },
+      );
+    }
+    if (u.includes("/searchAnalytics/query")) {
+      const body = JSON.parse(String(init?.body ?? "{}"));
+      if (Array.isArray(body.dimensions) && body.dimensions.length === 0) {
+        analyticsCallIndex += 1;
+        const payload =
+          analyticsCallIndex === 1
+            ? { rows: [{ clicks: 150, impressions: 3000, ctr: 0.05, position: 11.2 }] }
+            : { rows: [{ clicks: 100, impressions: 2500, ctr: 0.04, position: 13.0 }] };
+        return new Response(JSON.stringify(payload), { status: 200 });
+      }
+      if (body.dimensions?.[0] === "page") {
+        return new Response(
+          JSON.stringify({
+            rows: [
+              {
+                keys: ["https://nokhba.net.ly/codes"],
+                clicks: 80,
+                impressions: 1200,
+                ctr: 0.066,
+                position: 6.4,
+              },
+            ],
+          }),
+          { status: 200 },
+        );
+      }
+      return new Response(
+        JSON.stringify({
+          rows: [
+            {
+              keys: ["gift cards libya usdt", "https://nokhba.net.ly/codes"],
+              clicks: 2,
+              impressions: 160,
+              ctr: 0.0125,
+              position: 11.8,
+            },
+            {
+              keys: ["design site web tripoli", "https://nokhba.net.ly/creation-sites"],
+              clicks: 2,
+              impressions: 210,
+              ctr: 0.0095,
+              position: 5.1,
+            },
+          ],
+        }),
+        { status: 200 },
+      );
+    }
+    return new Response("Not Found", { status: 404 });
+  };
+
+  try {
+    const snap = await fetchSearchConsoleSnapshot("https://nokhba.net.ly", {
+      days: 28,
+      nowMs: Date.parse("2026-11-24T12:00:00Z"),
+    });
+    assert.equal(snap.status, "ok");
+    assert.equal(snap.summary.current.clicks, 150);
+    assert.equal(snap.summary.previous.clicks, 100);
+    assert.equal(snap.summary.deltas.clicksPct, 50);
+    assert.equal(snap.summary.deltas.positionDiff, -1.8);
+    assert.equal(snap.sitemap.status, "ok");
+    assert.equal(snap.sitemap.submittedUrls, 155);
+    assert.equal(snap.sitemap.indexedUrls, 142);
+    assert.equal(snap.quickWins.length, 1);
+    assert.equal(snap.quickWins[0].query, "gift cards libya usdt");
+    assert.equal(snap.lowCtrPageOne.length, 1);
+    assert.equal(snap.lowCtrPageOne[0].query, "design site web tripoli");
+
+    const smOnly = await fetchGoogleSitemapStatus("https://nokhba.net.ly");
+    assert.equal(smOnly.status, "ok");
+    assert.equal(smOnly.submittedUrls, 155);
+  } finally {
+    globalThis.fetch = originalFetch;
+    resetGoogleTokenCache();
+    if (previousEmail === undefined) delete process.env.GOOGLE_INDEXING_CLIENT_EMAIL;
+    else process.env.GOOGLE_INDEXING_CLIENT_EMAIL = previousEmail;
+    if (previousKey === undefined) delete process.env.GOOGLE_INDEXING_PRIVATE_KEY;
+    else process.env.GOOGLE_INDEXING_PRIVATE_KEY = previousKey;
+    if (previousSite === undefined) delete process.env.GOOGLE_INDEXING_SITE_URL;
+    else process.env.GOOGLE_INDEXING_SITE_URL = previousSite;
   }
 });

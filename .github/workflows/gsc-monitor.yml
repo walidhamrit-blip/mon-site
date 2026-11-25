@@ -1,0 +1,88 @@
+name: Google Search Console Monitor
+
+# Suivi hebdomadaire automatique Google Search Console :
+# - Resoumet le sitemap canonique (/sitemap.xml) et vérifie ses erreurs / URL.
+# - Relève les clics, impressions, CTR et positions (28j vs 28j précédents).
+# - Extrait les Quick Wins Page 2 (positions 11–20) et les pages Page 1 à CTR bas.
+# - Met à jour le ticket de suivi GitHub (lisible automatiquement depuis Arena)
+#   et synchronise optionnellement Google Sheets / Telegram.
+# Tolérant : sans secrets configurés, écrit un rapport « skipped » et réussit (code 0).
+
+on:
+  schedule:
+    - cron: "30 8 * * 1" # chaque lundi 08:30 UTC
+  workflow_dispatch:
+    inputs:
+      days:
+        description: "Fenêtre d'analyse en jours (7 à 90)"
+        required: false
+        default: "28"
+        type: string
+      submit_sitemap:
+        description: "Resoumettre le sitemap canonique (/sitemap.xml)"
+        required: false
+        default: true
+        type: boolean
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  monitor:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Récupération du code
+        uses: actions/checkout@v5
+
+      - name: Installation Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: 22
+
+      - name: Analyse Google Search Console & Sitemap
+        id: gsc
+        env:
+          SITE_URL: ${{ vars.SITE_URL || 'https://nokhba.net.ly' }}
+          GOOGLE_INDEXING_CLIENT_EMAIL: ${{ secrets.GOOGLE_INDEXING_CLIENT_EMAIL }}
+          GOOGLE_INDEXING_PRIVATE_KEY: ${{ secrets.GOOGLE_INDEXING_PRIVATE_KEY }}
+          GOOGLE_INDEXING_SITE_URL: ${{ secrets.GOOGLE_INDEXING_SITE_URL || vars.GOOGLE_INDEXING_SITE_URL }}
+          GOOGLE_SHEETS_GSC_SPREADSHEET_ID: ${{ secrets.GOOGLE_SHEETS_GSC_SPREADSHEET_ID || vars.GOOGLE_SHEETS_GSC_SPREADSHEET_ID }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_ADMIN_CHAT_ID: ${{ secrets.TELEGRAM_ADMIN_CHAT_ID }}
+          INPUT_DAYS: ${{ inputs.days || '28' }}
+          INPUT_SUBMIT: ${{ inputs.submit_sitemap }}
+        run: |
+          ARGS=(--days "${INPUT_DAYS}")
+          if [ "${INPUT_SUBMIT}" != "false" ]; then
+            ARGS+=(--submit-sitemap)
+          fi
+          node scripts/gsc-monitor.mjs "${ARGS[@]}"
+          if [ -f reports/gsc-monitor-latest.md ]; then
+            cat reports/gsc-monitor-latest.md >> "$GITHUB_STEP_SUMMARY"
+          fi
+          STATUS=$(node -e 'const fs=require("fs"); const r=JSON.parse(fs.readFileSync("reports/gsc-monitor-latest.json","utf8")); process.stdout.write(r.status || "skipped");')
+          echo "status=${STATUS}" >> "$GITHUB_OUTPUT"
+
+      - name: Publication de l'artefact Search Console
+        uses: actions/upload-artifact@v4
+        with:
+          name: gsc-monitor-report
+          path: reports/gsc-monitor-*
+          retention-days: 90
+
+      - name: Mise à jour du tableau de suivi GitHub (Pont Arena)
+        if: steps.gsc.outputs.status == 'ok'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TITLE="📊 Suivi automatique Google Search Console"
+          EXISTING_NUMBER=$(gh issue list --state open --search "\"${TITLE}\" in:title" --json number,title --jq ".[] | select(.title == \"${TITLE}\") | .number" | head -n 1)
+          if [ -n "${EXISTING_NUMBER}" ]; then
+            gh issue edit "${EXISTING_NUMBER}" --body-file reports/gsc-monitor-latest.md
+            echo "Issue #${EXISTING_NUMBER} mise à jour."
+          else
+            gh issue create --title "${TITLE}" --body-file reports/gsc-monitor-latest.md
+          fi
