@@ -1,20 +1,21 @@
 #!/usr/bin/env node
 /**
- * Google Search Console Monitor — Suivi automatique hebdomadaire & Quick Wins SEO.
+ * Google Search Console Monitor — Mode « Quotidien intelligent » (7j/7).
  *
- * Exécuté chaque lundi par `.github/workflows/gsc-monitor.yml` (et à la demande) :
- *   1. Resoumet optionnellement `https://nokhba.net.ly/sitemap.xml` (`--submit-sitemap`).
- *   2. Vérifie l'état du sitemap (erreurs, avertissements, URL soumises / indexées).
- *   3. Compare les 28 derniers jours aux 28 jours précédents (clics, impressions, CTR, position).
- *   4. Extrait les **Quick Wins Page 2** (positions 11–20) et les **Pages en 1re page à faible CTR**
- *      avec les actions d'optimisation concrètes (`/seo page`).
- *   5. Écrit `reports/gsc-monitor-YYYY-MM-DD.json`, `reports/gsc-monitor-latest.json`
- *      et `reports/gsc-monitor-latest.md` (publiés en artefact GitHub + Issue de suivi pour Arena).
- *   6. Optionnel : synchronise un Google Sheet (`GOOGLE_SHEETS_GSC_SPREADSHEET_ID`) lisible
- *      directement par le connecteur `google_sheets` d'Arena, et envoie un condensé Telegram / Resend.
- *
- * Tolérant : sans clés (`GOOGLE_INDEXING_CLIENT_EMAIL` / `GOOGLE_INDEXING_PRIVATE_KEY`),
- * le script écrit un rapport `status: "skipped"` et se termine avec le code 0.
+ * Exécuté tous les matins à 08:30 UTC par `.github/workflows/gsc-monitor.yml` :
+ *   1. Contrôle quotidien des clics, impressions, CTR et positions :
+ *      - Pouls court terme (7 derniers jours vs 7 jours précédents)
+ *      - Tendance de fond (28 derniers jours vs 28 jours précédents)
+ *   2. Gestion intelligente du `sitemap.xml` (`--sitemap-mode auto`) :
+ *      - Lit d'abord l'état actuel chez Google (`GET sitemaps`).
+ *      - Resoumet (`PUT sitemaps`) uniquement le lundi, si le sitemap est absent,
+ *        si Google ne l'a pas relu depuis >= 7 jours, ou si des erreurs subsistent
+ *        (avec un délai minimal de 20h entre deux renvois) — évite le spam quotidien.
+ *   3. Détection élargie des **Quick Wins Page 2** (requêtes ET pages en pos. 11–20)
+ *      et des **Pages en 1re page à CTR < 3,5 %**.
+ *   4. Met à jour quotidiennement `reports/gsc-monitor-latest.md` (+ Ticket GitHub #269
+ *      lisible directement depuis Arena) et n'alerte Telegram hors lundi qu'en cas
+ *      d'anomalie (erreurs sitemap ou chute brutale de clics).
  */
 
 import { createSign } from "node:crypto";
@@ -31,17 +32,34 @@ export function parseMonitorArgs(argv = []) {
   const opts = {
     days: 28,
     submitSitemap: false,
+    sitemapMode: "never", // "never" | "always" | "auto"
+    forceAlert: false,
     csv: null,
     outDir: null,
     dryRun: false,
   };
   for (let i = 0; i < argv.length; i += 1) {
     const arg = argv[i];
-    if (arg === "--days" && argv[i + 1]) opts.days = Math.max(7, Math.min(90, Number(argv[++i]) || 28));
-    else if (arg === "--submit-sitemap") opts.submitSitemap = true;
-    else if (arg === "--csv" && argv[i + 1]) opts.csv = argv[++i];
-    else if (arg === "--out-dir" && argv[i + 1]) opts.outDir = argv[++i];
-    else if (arg === "--dry-run") opts.dryRun = true;
+    if (arg === "--days" && argv[i + 1]) {
+      opts.days = Math.max(7, Math.min(90, Number(argv[++i]) || 28));
+    } else if (arg === "--submit-sitemap") {
+      opts.submitSitemap = true;
+      opts.sitemapMode = "always";
+    } else if (arg === "--sitemap-mode" && argv[i + 1]) {
+      const m = String(argv[++i]).toLowerCase();
+      if (m === "auto" || m === "always" || m === "never") {
+        opts.sitemapMode = m;
+        opts.submitSitemap = m === "always";
+      }
+    } else if (arg === "--force-alert") {
+      opts.forceAlert = true;
+    } else if (arg === "--csv" && argv[i + 1]) {
+      opts.csv = argv[++i];
+    } else if (arg === "--out-dir" && argv[i + 1]) {
+      opts.outDir = argv[++i];
+    } else if (arg === "--dry-run") {
+      opts.dryRun = true;
+    }
   }
   return opts;
 }
@@ -77,6 +95,68 @@ export function isPreviewOrLocalOrigin(origin = "") {
   } catch {
     return true;
   }
+}
+
+/**
+ * Décide intelligemment s'il faut resoumettre `sitemap.xml` aujourd'hui.
+ */
+export function decideSmartSitemapSubmit({
+  mode = "auto",
+  status = "ok",
+  errors = 0,
+  lastDownloaded = null,
+  lastSubmitted = null,
+  nowMs = Date.now(),
+} = {}) {
+  if (mode === "never") return { shouldSubmit: false, reason: "disabled" };
+  if (mode === "always") return { shouldSubmit: true, reason: "forced_always" };
+
+  if (status === "not_found") {
+    return { shouldSubmit: true, reason: "missing_in_gsc" };
+  }
+
+  const submittedAgeMs = lastSubmitted ? nowMs - Date.parse(lastSubmitted) : Infinity;
+  if (errors > 0 && (!Number.isFinite(submittedAgeMs) || submittedAgeMs >= 20 * 3_600_000)) {
+    return { shouldSubmit: true, reason: "has_errors_retry_24h" };
+  }
+
+  const downloadedAgeMs = lastDownloaded ? nowMs - Date.parse(lastDownloaded) : Infinity;
+  if (!Number.isFinite(downloadedAgeMs) || downloadedAgeMs >= 7 * 86_400_000) {
+    return { shouldSubmit: true, reason: "stale_download_7d" };
+  }
+
+  const dayOfWeekUtc = new Date(nowMs).getUTCDay(); // 1 = Lundi
+  if (dayOfWeekUtc === 1 && (!Number.isFinite(submittedAgeMs) || submittedAgeMs >= 20 * 3_600_000)) {
+    return { shouldSubmit: true, reason: "weekly_monday_refresh" };
+  }
+
+  return { shouldSubmit: false, reason: "healthy_skip_daily" };
+}
+
+/**
+ * Décide si une notification active (Telegram) doit partir aujourd'hui :
+ * - Lundi = condensé hebdomadaire complet
+ * - Mardi–Dimanche = uniquement en cas d'anomalie (erreur sitemap ou chute >= 50 % sur 7j)
+ */
+export function shouldSendDailyAlert({
+  report,
+  forceAlert = false,
+  nowMs = Date.now(),
+} = {}) {
+  if (!report || report.status !== "ok") return { send: false, reason: "not_ok" };
+  if (forceAlert) return { send: true, reason: "manual_run" };
+  if ((report.sitemap?.errors ?? 0) > 0) {
+    return { send: true, reason: "sitemap_errors" };
+  }
+  const prev7 = report.pulse7d?.previous?.clicks ?? 0;
+  const cur7 = report.pulse7d?.current?.clicks ?? 0;
+  if (prev7 >= 10 && cur7 <= prev7 * 0.5) {
+    return { send: true, reason: "traffic_drop_7d" };
+  }
+  if (new Date(nowMs).getUTCDay() === 1) {
+    return { send: true, reason: "weekly_monday_digest" };
+  }
+  return { send: false, reason: "quiet_healthy_day" };
 }
 
 export function buildJwtAssertion(clientEmail, privateKey, scope = WEBMASTERS_SCOPE, nowMs = Date.now()) {
@@ -183,10 +263,10 @@ export function scoreOpportunity(row) {
 
 export function recommendAction(row) {
   if (row.position < 10.5) {
-    return "Page 1 mais CTR bas : réécrire <title> & meta description (bénéfice immédiat USD/USDT, livraison auto) sans changer l'URL";
+    return "Page 1 mais CTR < 3,5 % : réécrire <title> & meta description (bénéfice immédiat USD/USDT, livraison auto) — respecter 14–21j entre deux retouches";
   }
   const actions = [];
-  if (row.ctr < 0.02) {
+  if (row.ctr < 0.025) {
     actions.push("Réécrire <title> & meta description avec la requête exacte + valeur ajoutée");
   }
   if (row.position >= 14.5) {
@@ -197,23 +277,46 @@ export function recommendAction(row) {
   return actions.join(" · ");
 }
 
-export function classifyOpportunities(rows = [], limit = 25) {
-  const quickWins = rows
-    .filter((r) => r.position >= 10.5 && r.position <= 20.5 && r.impressions >= 5)
+export function classifyOpportunities(rows = [], topPages = [], limit = 25) {
+  const queryQuickWins = rows
+    .filter((r) => r.position >= 10.5 && r.position <= 20.5 && r.impressions >= 3)
     .map((r) => ({
       ...r,
       kind: "page2_quick_win",
       opportunityScore: scoreOpportunity(r),
       missedClicksEstimate: Math.max(1, Math.round(r.impressions * Math.max(0.01, 0.08 - r.ctr))),
       recommendedAction: recommendAction(r),
-    }))
+    }));
+
+  const coveredPages = new Set(queryQuickWins.map((r) => r.page).filter(Boolean));
+  const pageLevelQuickWins = topPages
+    .filter(
+      (p) =>
+        p.page &&
+        !coveredPages.has(p.page) &&
+        p.position >= 10.5 &&
+        p.position <= 20.5 &&
+        p.impressions >= 5,
+    )
+    .map((p) => {
+      const synthetic = { query: "(toutes requêtes cumulées)", ...p };
+      return {
+        ...synthetic,
+        kind: "page2_quick_win",
+        opportunityScore: scoreOpportunity(synthetic),
+        missedClicksEstimate: Math.max(1, Math.round(p.impressions * Math.max(0.01, 0.08 - p.ctr))),
+        recommendedAction: recommendAction(synthetic),
+      };
+    });
+
+  const quickWins = [...queryQuickWins, ...pageLevelQuickWins]
     .sort((a, b) => b.opportunityScore - a.opportunityScore)
     .slice(0, limit);
 
-  const lowCtrPageOne = rows
-    .filter((r) => r.position >= 1 && r.position < 10.5 && r.impressions >= 20 && r.ctr < 0.025)
+  const queryLowCtr = rows
+    .filter((r) => r.position >= 1 && r.position < 10.5 && r.impressions >= 20 && r.ctr < 0.035)
     .map((r) => {
-      const expectedCtr = r.position <= 3 ? 0.15 : r.position <= 6 ? 0.07 : 0.04;
+      const expectedCtr = r.position <= 3 ? 0.15 : r.position <= 6 ? 0.07 : 0.05;
       const missed = Math.max(1, Math.round(r.impressions * Math.max(0.01, expectedCtr - r.ctr)));
       return {
         ...r,
@@ -222,7 +325,33 @@ export function classifyOpportunities(rows = [], limit = 25) {
         missedClicksEstimate: missed,
         recommendedAction: recommendAction(r),
       };
-    })
+    });
+
+  const coveredLowCtrPages = new Set(queryLowCtr.map((r) => r.page).filter(Boolean));
+  const pageLowCtr = topPages
+    .filter(
+      (p) =>
+        p.page &&
+        !coveredLowCtrPages.has(p.page) &&
+        p.position >= 1 &&
+        p.position < 10.5 &&
+        p.impressions >= 20 &&
+        p.ctr < 0.035,
+    )
+    .map((p) => {
+      const expectedCtr = p.position <= 3 ? 0.15 : p.position <= 6 ? 0.07 : 0.05;
+      const missed = Math.max(1, Math.round(p.impressions * Math.max(0.01, expectedCtr - p.ctr)));
+      const synthetic = { query: "(toutes requêtes cumulées)", ...p };
+      return {
+        ...synthetic,
+        kind: "page1_low_ctr",
+        opportunityScore: missed,
+        missedClicksEstimate: missed,
+        recommendedAction: recommendAction(synthetic),
+      };
+    });
+
+  const lowCtrPageOne = [...queryLowCtr, ...pageLowCtr]
     .sort((a, b) => b.opportunityScore - a.opportunityScore)
     .slice(0, limit);
 
@@ -261,45 +390,21 @@ async function queryAnalytics({ property, token, startDate, endDate, dimensions,
   return res.json();
 }
 
-async function submitAndInspectSitemap({ property, sitemapUrl, token, shouldSubmit }) {
-  const endpoint = `https://www.googleapis.com/webmasters/v3/sites/${encodeURIComponent(property)}/sitemaps/${encodeURIComponent(sitemapUrl)}`;
-  let submission = { attempted: false, ok: false, status: null, note: null };
-
-  if (shouldSubmit) {
-    if (isPreviewOrLocalOrigin(sitemapUrl)) {
-      submission = { attempted: false, ok: false, status: null, note: "skipped_preview_or_local" };
-    } else {
-      submission.attempted = true;
-      const putRes = await fetch(endpoint, {
-        method: "PUT",
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      submission.status = putRes.status;
-      submission.ok = putRes.ok;
-      if (!putRes.ok) {
-        submission.note =
-          putRes.status === 403
-            ? "HTTP 403 : donnez le droit « Complet » au compte de service dans Search Console pour autoriser l'envoi du sitemap."
-            : `HTTP ${putRes.status}`;
-      }
-    }
-  }
-
+async function readSitemapState({ endpoint, token }) {
   const getRes = await fetch(endpoint, {
     method: "GET",
     headers: { Authorization: `Bearer ${token}` },
   });
   if (getRes.status === 404) {
-    return { status: "not_found", submission, warnings: 0, errors: 0, submittedUrls: 0, indexedUrls: 0 };
+    return { status: "not_found", warnings: 0, errors: 0, submittedUrls: 0, indexedUrls: 0 };
   }
   if (!getRes.ok) {
-    return { status: `http_${getRes.status}`, submission, warnings: 0, errors: 0, submittedUrls: 0, indexedUrls: 0 };
+    return { status: `http_${getRes.status}`, warnings: 0, errors: 0, submittedUrls: 0, indexedUrls: 0 };
   }
   const data = await getRes.json();
   const contents = Array.isArray(data.contents) ? data.contents : [];
   return {
     status: "ok",
-    submission,
     lastSubmitted: data.lastSubmitted ?? null,
     lastDownloaded: data.lastDownloaded ?? null,
     isPending: Boolean(data.isPending),
@@ -310,15 +415,82 @@ async function submitAndInspectSitemap({ property, sitemapUrl, token, shouldSubm
   };
 }
 
+async function inspectAndSmartSubmitSitemap({ property, sitemapUrl, token, sitemapMode, nowMs }) {
+  const endpoint = `https://www.googleapis.com/webmasters/v3/sites/${encodeURIComponent(property)}/sitemaps/${encodeURIComponent(sitemapUrl)}`;
+  let current = await readSitemapState({ endpoint, token });
+
+  const decision = decideSmartSitemapSubmit({
+    mode: sitemapMode,
+    status: current.status,
+    errors: current.errors,
+    lastDownloaded: current.lastDownloaded,
+    lastSubmitted: current.lastSubmitted,
+    nowMs,
+  });
+
+  let submission = {
+    attempted: false,
+    ok: false,
+    status: null,
+    decisionReason: decision.reason,
+    note: null,
+  };
+
+  if (decision.shouldSubmit) {
+    if (isPreviewOrLocalOrigin(sitemapUrl)) {
+      submission.note = "skipped_preview_or_local";
+    } else {
+      submission.attempted = true;
+      const putRes = await fetch(endpoint, {
+        method: "PUT",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      submission.status = putRes.status;
+      submission.ok = putRes.ok;
+      if (putRes.ok) {
+        current = await readSitemapState({ endpoint, token });
+      } else {
+        submission.note =
+          putRes.status === 403
+            ? "HTTP 403 : donnez le droit « Complet » au compte de service dans Search Console."
+            : `HTTP ${putRes.status}`;
+      }
+    }
+  }
+
+  return {
+    ...current,
+    submission,
+  };
+}
+
 function escapeMdCell(text = "") {
   return String(text).replace(/\|/g, "\\|").replace(/\r?\n/g, " ").trim();
 }
 
+function buildPeriodSummary(days, current, previous, dates) {
+  return {
+    days,
+    ...dates,
+    current,
+    previous,
+    deltas: {
+      clicksPct: pctDelta(current.clicks, previous.clicks),
+      impressionsPct: pctDelta(current.impressions, previous.impressions),
+      ctrPts: Math.round((current.ctr - previous.ctr) * 10_000) / 100,
+      positionDiff:
+        previous.position > 0 && current.position > 0
+          ? Math.round((current.position - previous.position) * 100) / 100
+          : 0,
+    },
+  };
+}
+
 export function buildMarkdownReport(report) {
   const lines = [];
-  lines.push(`# 📊 Suivi automatique Google Search Console — \`${report.property}\``);
+  lines.push(`# 📊 Suivi quotidien Google Search Console — \`${report.property}\``);
   lines.push("");
-  lines.push(`- **Généré le** : \`${report.generatedAt}\``);
+  lines.push(`- **Dernier contrôle (7j/7)** : \`${report.generatedAt}\``);
   lines.push(`- **Statut** : \`${report.status}\``);
   lines.push(`- **Sitemap contrôlé** : \`${report.sitemapUrl}\``);
 
@@ -328,12 +500,26 @@ export function buildMarkdownReport(report) {
     return `${lines.join("\n")}\n`;
   }
 
-  if (report.summary) {
+  const fmtDelta = (v, unit = "%") => (v === null || v === undefined ? "—" : `${v > 0 ? "+" : ""}${v}${unit}`);
+
+  if (report.pulse7d && report.summary) {
+    const p7 = report.pulse7d;
+    const s28 = report.summary;
+    lines.push(`- **Pouls 7 jours** : \`${p7.startDate}\` → \`${p7.endDate}\` · **Tendance ${s28.days} jours** : \`${s28.startDate}\` → \`${s28.endDate}\``);
+    lines.push("");
+    lines.push("## 1. Indicateurs globaux (Pouls 7j & Tendance 28j)");
+    lines.push("");
+    lines.push("| Indicateur | 7 derniers jours | Évol. 7j | 28 derniers jours | Évol. 28j |");
+    lines.push("|---|---:|---:|---:|---:|");
+    lines.push(`| **Clics organiques** | **${p7.current.clicks}** | ${fmtDelta(p7.deltas.clicksPct, " %")} | **${s28.current.clicks}** | ${fmtDelta(s28.deltas.clicksPct, " %")} |`);
+    lines.push(`| **Impressions** | **${p7.current.impressions}** | ${fmtDelta(p7.deltas.impressionsPct, " %")} | **${s28.current.impressions}** | ${fmtDelta(s28.deltas.impressionsPct, " %")} |`);
+    lines.push(`| **CTR moyen** | **${(p7.current.ctr * 100).toFixed(2)} %** | ${fmtDelta(p7.deltas.ctrPts, " pt")} | **${(s28.current.ctr * 100).toFixed(2)} %** | ${fmtDelta(s28.deltas.ctrPts, " pt")} |`);
+    lines.push(`| **Position moyenne** | **${p7.current.position > 0 ? p7.current.position.toFixed(1) : "—"}** | ${fmtDelta(p7.deltas.positionDiff, "")} | **${s28.current.position > 0 ? s28.current.position.toFixed(1) : "—"}** | ${fmtDelta(s28.deltas.positionDiff, "")} |`);
+  } else if (report.summary) {
     const s = report.summary;
-    const fmtDelta = (v, unit = "%") => (v === null || v === undefined ? "—" : `${v > 0 ? "+" : ""}${v}${unit}`);
     lines.push(`- **Fenêtre** : \`${s.startDate}\` → \`${s.endDate}\` (${s.days}j vs \`${s.previousStartDate}\` → \`${s.previousEndDate}\`)`);
     lines.push("");
-    lines.push("## 1. Indicateurs globaux (28 jours)");
+    lines.push(`## 1. Indicateurs globaux (${s.days} jours)`);
     lines.push("");
     lines.push("| Indicateur | Période actuelle | Période précédente | Évolution |");
     lines.push("|---|---:|---:|---:|");
@@ -353,7 +539,11 @@ export function buildMarkdownReport(report) {
     if (sm.lastDownloaded) lines.push(`- **Dernière lecture Google** : \`${sm.lastDownloaded}\``);
     if (sm.submission?.attempted) {
       lines.push(
-        `- **Resoumission hebdomadaire** : ${sm.submission.ok ? "✅ acceptée" : `⚠️ ${sm.submission.note ?? "échec"}`}`,
+        `- **Resoumission intelligente** : ${sm.submission.ok ? `✅ envoyée (\`${sm.submission.decisionReason}\`)` : `⚠️ ${sm.submission.note ?? "échec"}`}`,
+      );
+    } else if (sm.submission?.decisionReason) {
+      lines.push(
+        `- **Resoumission intelligente** : ⏭️ non nécessaire aujourd'hui (\`${sm.submission.decisionReason}\` — évite le spam Google)`,
       );
     }
   }
@@ -363,7 +553,7 @@ export function buildMarkdownReport(report) {
   lines.push(`## 3. Quick Wins Page 2 — Positions 11 à 20 (${quickWins.length})`);
   lines.push("");
   if (quickWins.length === 0) {
-    lines.push("_Aucune requête détectée entre les positions 10.5 et 20.5 avec >= 5 impressions sur cette période._");
+    lines.push("_Aucune requête ou page détectée entre les positions 10.5 et 20.5 sur cette période._");
   } else {
     lines.push("| # | Requête | Page cible | Pos. | Impr. | Clics | CTR | Action recommandée (`/seo page`) |");
     lines.push("|---:|---|---|---:|---:|---:|---:|---|");
@@ -376,10 +566,10 @@ export function buildMarkdownReport(report) {
 
   const lowCtr = report.lowCtrPageOne ?? [];
   lines.push("");
-  lines.push(`## 4. Pages en 1re page à faible CTR < 2,5 % (${lowCtr.length})`);
+  lines.push(`## 4. Pages en 1re page à faible CTR < 3,5 % (${lowCtr.length})`);
   lines.push("");
   if (lowCtr.length === 0) {
-    lines.push("_Aucune requête en Top 10 avec >= 20 impressions et CTR < 2,5 %._");
+    lines.push("_Aucune requête ou page en Top 10 avec >= 20 impressions et CTR < 3,5 %._");
   } else {
     lines.push("| # | Requête | Page cible | Pos. | Impr. | Clics | CTR | Action recommandée |");
     lines.push("|---:|---|---|---:|---:|---:|---:|---|");
@@ -406,7 +596,8 @@ export function buildMarkdownReport(report) {
 
   lines.push("");
   lines.push("---");
-  lines.push("_Pour appliquer automatiquement ces optimisations dans Arena : demandez « Applique les Quick Wins du dernier rapport Search Console »._");
+  lines.push("> **Règle SEO anti-yo-yo :** laissez **14 à 21 jours** à Google après la réécriture du `<title>` d'une page avant de la retoucher à nouveau. Optimisez en priorité les nouvelles URL détectées.");
+  lines.push("_Pour appliquer automatiquement les nouvelles opportunités dans Arena : demandez « Applique les Quick Wins du dernier rapport Search Console »._");
   return `${lines.join("\n")}\n`;
 }
 
@@ -418,6 +609,7 @@ async function syncToGoogleSheet({ clientEmail, privateKey, spreadsheetId, repor
     const row = [
       report.generatedAt.slice(0, 10),
       report.property,
+      report.pulse7d?.current?.clicks ?? "",
       s?.current.clicks ?? 0,
       s?.deltas.clicksPct ?? "",
       s?.current.impressions ?? 0,
@@ -436,7 +628,7 @@ async function syncToGoogleSheet({ clientEmail, privateKey, spreadsheetId, repor
       body: JSON.stringify({ values: [row] }),
     });
     if (!res.ok) {
-      console.warn(`[gsc-monitor] Google Sheets HTTP ${res.status} (vérifiez le partage du fichier avec ${clientEmail})`);
+      console.warn(`[gsc-monitor] Google Sheets HTTP ${res.status}`);
       return false;
     }
     return true;
@@ -446,21 +638,29 @@ async function syncToGoogleSheet({ clientEmail, privateKey, spreadsheetId, repor
   }
 }
 
-async function sendTelegramDigest(report) {
+async function sendTelegramDigest(report, alertDecision) {
+  if (!alertDecision?.send) return false;
   const botToken = process.env.TELEGRAM_BOT_TOKEN?.trim();
   const chatId = process.env.TELEGRAM_ADMIN_CHAT_ID?.trim();
   if (!botToken || !chatId || report.status !== "ok" || !report.summary) return false;
   try {
     const s = report.summary;
+    const p7 = report.pulse7d;
     const topWin = report.quickWins?.[0];
+    const prefix =
+      alertDecision.reason === "sitemap_errors"
+        ? "⚠️ Alerte Sitemap Search Console"
+        : alertDecision.reason === "traffic_drop_7d"
+          ? "⚠️ Alerte baisse de clics Search Console (7j)"
+          : "📊 Bilan Search Console";
     const text = [
-      `📊 Search Console (${s.days}j) — ${report.property}`,
-      `• Clics : ${s.current.clicks} (${s.deltas.clicksPct !== null ? `${s.deltas.clicksPct > 0 ? "+" : ""}${s.deltas.clicksPct}%` : "—"})`,
-      `• Impressions : ${s.current.impressions}`,
+      `${prefix} — ${report.property}`,
+      p7 ? `• 7 jours : ${p7.current.clicks} clics · ${p7.current.impressions} impr.` : "",
+      `• ${s.days} jours : ${s.current.clicks} clics (${s.deltas.clicksPct !== null ? `${s.deltas.clicksPct > 0 ? "+" : ""}${s.deltas.clicksPct}%` : "—"}) · ${s.current.impressions} impr.`,
       `• CTR : ${(s.current.ctr * 100).toFixed(2)}% · Pos. moy. : ${s.current.position.toFixed(1)}`,
       `• Sitemap : ${report.sitemap?.errors ?? 0} erreur(s) · ${report.sitemap?.submittedUrls ?? 0} URL`,
       `• Quick Wins Page 2 : ${report.quickWins?.length ?? 0}`,
-      topWin ? `• Priorité #1 : « ${topWin.query} » (pos. ${topWin.position.toFixed(1)}, ${topWin.impressions} impr.)` : "",
+      topWin ? `• Priorité #1 : « ${topWin.query} » (${topWin.page.replace(/^https?:\/\/[^/]+/, "") || "/"}, pos. ${topWin.position.toFixed(1)})` : "",
     ]
       .filter(Boolean)
       .join("\n");
@@ -476,12 +676,12 @@ async function sendTelegramDigest(report) {
   }
 }
 
-export async function runGscMonitor(argv = process.argv.slice(2), env = process.env) {
+export async function runGscMonitor(argv = process.argv.slice(2), env = process.env, nowMs = Date.now()) {
   const opts = parseMonitorArgs(argv);
   const baseUrl = (env.SITE_URL || "https://nokhba.net.ly").trim().replace(/\/+$/, "");
   const property = normalizeProperty(baseUrl, env.GOOGLE_INDEXING_SITE_URL);
   const sitemapUrl = `${baseUrl}/sitemap.xml`;
-  const generatedAt = new Date().toISOString();
+  const generatedAt = new Date(nowMs).toISOString();
   const rootDir = fileURLToPath(new URL("..", import.meta.url));
   const outDir = opts.outDir || join(rootDir, "reports");
 
@@ -489,7 +689,7 @@ export async function runGscMonitor(argv = process.argv.slice(2), env = process.
 
   if (opts.csv) {
     const rows = parseGscCsv(readFileSync(opts.csv, "utf8"));
-    const { quickWins, lowCtrPageOne } = classifyOpportunities(rows, 25);
+    const { quickWins, lowCtrPageOne } = classifyOpportunities(rows, [], 25);
     const totalClicks = rows.reduce((sum, r) => sum + r.clicks, 0);
     const totalImpr = rows.reduce((sum, r) => sum + r.impressions, 0);
     const avgPos =
@@ -535,12 +735,24 @@ export async function runGscMonitor(argv = process.argv.slice(2), env = process.
     const privateKey = normalizePrivateKey(env.GOOGLE_INDEXING_PRIVATE_KEY);
     const token = await fetchGoogleAccessToken(clientEmail, privateKey, WEBMASTERS_SCOPE);
 
-    const endDate = isoDateDaysAgo(2);
-    const startDate = isoDateDaysAgo(opts.days + 1);
-    const previousEndDate = isoDateDaysAgo(opts.days + 2);
-    const previousStartDate = isoDateDaysAgo(opts.days * 2 + 1);
+    const endDate = isoDateDaysAgo(2, nowMs);
+    const startDate = isoDateDaysAgo(opts.days + 1, nowMs);
+    const previousEndDate = isoDateDaysAgo(opts.days + 2, nowMs);
+    const previousStartDate = isoDateDaysAgo(opts.days * 2 + 1, nowMs);
 
-    const [curTotalsRaw, prevTotalsRaw, pagesRaw, queryPageRaw, sitemap] = await Promise.all([
+    const start7d = isoDateDaysAgo(8, nowMs);
+    const prevEnd7d = isoDateDaysAgo(9, nowMs);
+    const prevStart7d = isoDateDaysAgo(15, nowMs);
+
+    const [
+      curTotalsRaw,
+      prevTotalsRaw,
+      cur7Raw,
+      prev7Raw,
+      pagesRaw,
+      queryPageRaw,
+      sitemap,
+    ] = await Promise.all([
       queryAnalytics({ property, token, startDate, endDate, dimensions: [], rowLimit: 1 }),
       queryAnalytics({
         property,
@@ -550,7 +762,16 @@ export async function runGscMonitor(argv = process.argv.slice(2), env = process.
         dimensions: [],
         rowLimit: 1,
       }),
-      queryAnalytics({ property, token, startDate, endDate, dimensions: ["page"], rowLimit: 25 }),
+      queryAnalytics({ property, token, startDate: start7d, endDate, dimensions: [], rowLimit: 1 }),
+      queryAnalytics({
+        property,
+        token,
+        startDate: prevStart7d,
+        endDate: prevEnd7d,
+        dimensions: [],
+        rowLimit: 1,
+      }),
+      queryAnalytics({ property, token, startDate, endDate, dimensions: ["page"], rowLimit: 30 }),
       queryAnalytics({
         property,
         token,
@@ -559,11 +780,12 @@ export async function runGscMonitor(argv = process.argv.slice(2), env = process.
         dimensions: ["query", "page"],
         rowLimit: 5000,
       }),
-      submitAndInspectSitemap({
+      inspectAndSmartSubmitSitemap({
         property,
         sitemapUrl,
         token,
-        shouldSubmit: opts.submitSitemap,
+        sitemapMode: opts.sitemapMode,
+        nowMs,
       }),
     ]);
 
@@ -576,8 +798,6 @@ export async function runGscMonitor(argv = process.argv.slice(2), env = process.
         position: Number(r?.position ?? 0) || 0,
       };
     };
-    const current = extract(curTotalsRaw);
-    const previous = extract(prevTotalsRaw);
 
     const rows = (queryPageRaw.rows ?? []).map((r) => ({
       query: r.keys?.[0] ?? "",
@@ -596,7 +816,7 @@ export async function runGscMonitor(argv = process.argv.slice(2), env = process.
       position: Number(r.position ?? 0) || 0,
     }));
 
-    const { quickWins, lowCtrPageOne } = classifyOpportunities(rows, 25);
+    const { quickWins, lowCtrPageOne } = classifyOpportunities(rows, topPages, 25);
 
     report = {
       status: "ok",
@@ -604,24 +824,18 @@ export async function runGscMonitor(argv = process.argv.slice(2), env = process.
       generatedAt,
       property,
       sitemapUrl,
-      summary: {
-        days: opts.days,
+      pulse7d: buildPeriodSummary(7, extract(cur7Raw), extract(prev7Raw), {
+        startDate: start7d,
+        endDate,
+        previousStartDate: prevStart7d,
+        previousEndDate: prevEnd7d,
+      }),
+      summary: buildPeriodSummary(opts.days, extract(curTotalsRaw), extract(prevTotalsRaw), {
         startDate,
         endDate,
         previousStartDate,
         previousEndDate,
-        current,
-        previous,
-        deltas: {
-          clicksPct: pctDelta(current.clicks, previous.clicks),
-          impressionsPct: pctDelta(current.impressions, previous.impressions),
-          ctrPts: Math.round((current.ctr - previous.ctr) * 10_000) / 100,
-          positionDiff:
-            previous.position > 0 && current.position > 0
-              ? Math.round((current.position - previous.position) * 100) / 100
-              : 0,
-        },
-      },
+      }),
       sitemap,
       topPages,
       topQueries: [...rows].sort((a, b) => b.clicks - a.clicks).slice(0, 20),
@@ -638,7 +852,14 @@ export async function runGscMonitor(argv = process.argv.slice(2), env = process.
         report,
       });
     }
-    await sendTelegramDigest(report);
+
+    const alertDecision = shouldSendDailyAlert({
+      report,
+      forceAlert: opts.forceAlert,
+      nowMs,
+    });
+    report.alertDecision = alertDecision;
+    await sendTelegramDigest(report, alertDecision);
   }
 
   await mkdir(outDir, { recursive: true });
@@ -667,8 +888,10 @@ if (isDirectRun) {
         console.log(`ℹ️  GSC Monitor ignoré (${report.reason}). Rapport écrit : ${latestMdPath}`);
       } else {
         console.log(
-          `✅ GSC Monitor terminé (${report.property}) : ${report.summary?.current.clicks ?? 0} clics, ` +
-            `${report.quickWins?.length ?? 0} Quick Wins Page 2 -> ${latestMdPath}`,
+          `✅ GSC Monitor quotidien terminé (${report.property}) : ` +
+            `7j=${report.pulse7d?.current.clicks ?? "—"} clics, ` +
+            `28j=${report.summary?.current.clicks ?? 0} clics, ` +
+            `${report.quickWins?.length ?? 0} Quick Wins -> ${latestMdPath}`,
         );
       }
     })

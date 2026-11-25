@@ -2,7 +2,7 @@
 
 - **Domaine contrôlé :** `https://nokhba.net.ly` (`sc-domain:nokhba.net.ly`)
 - **Panneau d’administration en direct :** `/admin/search-console`
-- **Suivi hebdomadaire automatisé :** `.github/workflows/gsc-monitor.yml` (`npm run seo:gsc-monitor`)
+- **Suivi quotidien intelligent (7j/7) :** `.github/workflows/gsc-monitor.yml` (`npm run seo:gsc-monitor`)
 - **Extraction CLI locale / CSV :** `npm run seo:gsc-quick-wins`
 
 > **Règle de sécurité absolue :** ne collez **jamais** le contenu de votre clé privée (`-----BEGIN PRIVATE KEY-----…`) dans un chat, un ticket public ou un fichier du dépôt. Les clés sont déposées **uniquement** dans **Vercel Environment Variables** et **GitHub Actions Secrets**.
@@ -15,11 +15,11 @@ Une fois les 3 variables configurées, votre site dispose de **4 automatismes co
 
 1. **Notification automatique à chaque sauvegarde Admin (`src/lib/indexnow.ts` + `src/lib/google-indexing.ts`)** : chaque mise à jour de contenu ou de fiche resoumet automatiquement `https://nokhba.net.ly/sitemap.xml` à Google Search Console (en production uniquement, jamais depuis une preview).
 2. **Panneau temps réel `/admin/search-console`** : affiche à la demande vos clics, impressions, CTR, position moyenne (28j vs 28j précédents), l’état du sitemap, les **Quick Wins Page 2 (positions 11–20)** et les **pages en 1re page à faible CTR (< 2,5 %)** — plus un analyseur CSV instantané utilisable même sans clé API.
-3. **Contrôle automatique chaque lundi à 08:30 UTC (`.github/workflows/gsc-monitor.yml`)** :
-   - Resoumet `https://nokhba.net.ly/sitemap.xml` et relève erreurs / URL indexées.
-   - Compare les performances organiques des 28 derniers jours aux 28 jours précédents.
-   - Met à jour automatiquement un ticket unique de suivi sur GitHub (**`📊 Suivi automatique Google Search Console`**) et publie l’artefact JSON/Markdown (90 jours).
-   - Envoie un condensé sur Telegram si `TELEGRAM_BOT_TOKEN` et `TELEGRAM_ADMIN_CHAT_ID` sont renseignés.
+3. **Contrôle quotidien intelligent tous les matins à 08:30 UTC (`.github/workflows/gsc-monitor.yml`)** :
+   - Relève chaque matin le **pouls court terme (7 jours)** et la **tendance de fond (28 jours)**.
+   - Contrôle `https://nokhba.net.ly/sitemap.xml` et ne le resoumet intelligemment qu’au besoin (le lundi, s’il manque, si Google ne l’a pas lu depuis 7 jours, ou s’il reste des erreurs avec un délai anti-spam de 20 h).
+   - Met à jour quotidiennement le ticket unique de suivi sur GitHub (**`📊 Suivi automatique Google Search Console`**) et publie l’artefact JSON/Markdown (90 jours).
+   - Envoie un condensé sur Telegram le lundi, et **immédiatement** n’importe quel autre jour uniquement en cas d’anomalie (erreur sitemap ou baisse brutale de trafic).
 4. **Pont direct vers Arena (`gh` + `google_sheets`)** :
    - Depuis Arena, l’agent lit automatiquement le ticket GitHub mis à jour par `gsc-monitor.yml` (et/ou votre Google Sheet si `GOOGLE_SHEETS_GSC_SPREADSHEET_ID` est configuré), identifie les pages à optimiser et ouvre une Pull Request vérifiée par les tests automatisés avant mise en production.
 
@@ -106,7 +106,7 @@ Si vous souhaitez conserver l’historique hebdomadaire dans une feuille Google 
 
 Une fois le workflow actif :
 
-1. **Chaque lundi**, GitHub Actions interroge Search Console, resoumet `sitemap.xml` et met à jour le ticket **`📊 Suivi automatique Google Search Console`** avec :
+1. **Chaque matin (7j/7)**, GitHub Actions interroge Search Console, contrôle intelligemment `sitemap.xml` et met à jour le ticket **`📊 Suivi automatique Google Search Console`** avec :
    - les requêtes en **position 11 à 20** (*Quick Wins Page 2*) classées par potentiel de trafic ;
    - les pages déjà en **1re page mais à CTR < 2,5 %** nécessitant un meilleur `<title>` / meta description.
 2. **À tout moment dans Arena**, écrivez simplement :

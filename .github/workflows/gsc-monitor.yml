@@ -1,28 +1,32 @@
 name: Google Search Console Monitor
 
-# Suivi hebdomadaire automatique Google Search Console :
-# - Resoumet le sitemap canonique (/sitemap.xml) et vérifie ses erreurs / URL.
-# - Relève les clics, impressions, CTR et positions (28j vs 28j précédents).
-# - Extrait les Quick Wins Page 2 (positions 11–20) et les pages Page 1 à CTR bas.
-# - Met à jour le ticket de suivi GitHub (lisible automatiquement depuis Arena)
-#   et synchronise optionnellement Google Sheets / Telegram.
-# Tolérant : sans secrets configurés, écrit un rapport « skipped » et réussit (code 0).
+# Suivi quotidien intelligent Google Search Console (7j/7 à 08:30 UTC) :
+# - Relève chaque matin le pouls 7j + la tendance 28j (clics, impressions, CTR, rang).
+# - Contrôle la santé de /sitemap.xml et ne le resoumet qu'au besoin (lundi, absent,
+#   retard de lecture >= 7j, ou erreurs avec délai anti-spam de 20h).
+# - Détecte les Quick Wins Page 2 (requêtes & pages en pos. 11–20) et CTR < 3,5 %.
+# - Met à jour quotidiennement le ticket GitHub #269 (pont direct vers Arena)
+#   et n'alerte Telegram hors lundi qu'en cas d'anomalie.
 
 on:
   schedule:
-    - cron: "30 8 * * 1" # chaque lundi 08:30 UTC
+    - cron: "30 8 * * *" # tous les matins à 08:30 UTC (10:30 heure de Tripoli)
   workflow_dispatch:
     inputs:
       days:
-        description: "Fenêtre d'analyse en jours (7 à 90)"
+        description: "Fenêtre de tendance en jours (7 à 90)"
         required: false
         default: "28"
         type: string
-      submit_sitemap:
-        description: "Resoumettre le sitemap canonique (/sitemap.xml)"
+      sitemap_mode:
+        description: "Mode sitemap : auto (intelligent), always (forcer), never (ignorer)"
         required: false
-        default: true
-        type: boolean
+        default: "auto"
+        type: choice
+        options:
+          - auto
+          - always
+          - never
 
 permissions:
   contents: read
@@ -42,7 +46,7 @@ jobs:
         with:
           node-version: 22
 
-      - name: Analyse Google Search Console & Sitemap
+      - name: Analyse quotidienne Google Search Console & Sitemap
         id: gsc
         env:
           SITE_URL: ${{ vars.SITE_URL || 'https://nokhba.net.ly' }}
@@ -53,11 +57,12 @@ jobs:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_ADMIN_CHAT_ID: ${{ secrets.TELEGRAM_ADMIN_CHAT_ID }}
           INPUT_DAYS: ${{ inputs.days || '28' }}
-          INPUT_SUBMIT: ${{ inputs.submit_sitemap }}
+          INPUT_SITEMAP_MODE: ${{ inputs.sitemap_mode || 'auto' }}
+          EVENT_NAME: ${{ github.event_name }}
         run: |
-          ARGS=(--days "${INPUT_DAYS}")
-          if [ "${INPUT_SUBMIT}" != "false" ]; then
-            ARGS+=(--submit-sitemap)
+          ARGS=(--days "${INPUT_DAYS}" --sitemap-mode "${INPUT_SITEMAP_MODE}")
+          if [ "${EVENT_NAME}" = "workflow_dispatch" ]; then
+            ARGS+=(--force-alert)
           fi
           node scripts/gsc-monitor.mjs "${ARGS[@]}"
           if [ -f reports/gsc-monitor-latest.md ]; then
