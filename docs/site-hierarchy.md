@@ -49,3 +49,17 @@ synchronisation.
 Les parcours boutique et studio ont désormais chacun leur en-tête, leur pied
 de page, leur action principale et leur identité visuelle, sans changement
 d'URL. Voir [`architecture-deux-univers.md`](architecture-deux-univers.md).
+
+## Ordre de découverte (menu, accueil, pied de page)
+
+Ordre unique, défini dans `primaryNavigation` (`src/lib/site-hierarchy.ts`) et repris par
+les portes d'accueil (`home-gateway.tsx`), les CTA (`home-intro.tsx`) et le pied de page :
+
+1. **Création de sites** — `/creation-sites` (offre principale) ;
+2. **Applications** — `/apps`, badge « قريباً / Soon » tant que l'offre n'est pas lancée ;
+3. **Produits numériques** — `/codes`, une seule catégorie dont les rayons sont en sous-menu :
+   `/codes/category/{gift_card, software_key, game_topup, subscription_code}` (générés depuis
+   `storeCategories`, donc toujours alignés sur les pages indexées) ;
+4. Contact.
+
+Aucun titre, URL ni canonique n'est modifié par cet ordre : seul le maillage interne change.

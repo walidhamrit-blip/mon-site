@@ -191,6 +191,21 @@ html.dark .public-shell [data-universe-preview="studio"] {
   background: var(--accent); color: var(--accent-foreground); font-size: .9rem; font-weight: 800;
 }
 .public-shell .universe-door:hover .universe-door-action { background: var(--accent-hover); }
+/* Lien principal étendu à toute la carte ; les rayons restent cliquables au-dessus. */
+.public-shell .universe-door-link::after { content: ""; position: absolute; inset: 0; z-index: 1; border-radius: inherit; }
+.public-shell .universe-door-link:focus-visible { outline: none; }
+.public-shell .universe-door:has(.universe-door-link:focus-visible) { outline: 3px solid var(--ring); outline-offset: 4px; }
+.public-shell .universe-door-points.is-links li { padding: 0; }
+.public-shell .universe-door-points.is-links a {
+  position: relative; z-index: 2; display: inline-flex; align-items: center; min-height: 44px; padding: .3rem .75rem;
+}
+.public-shell .universe-door-points.is-links a:hover { color: var(--accent); }
+.public-shell .universe-door-soon {
+  position: absolute; inset-block-start: 14px; inset-inline-end: 14px;
+  padding: .3rem .65rem; border-radius: .5rem; background: var(--background); color: var(--brand-gold, var(--accent));
+  border: 1px solid var(--brand-gold, var(--accent)); font-size: .72rem; font-weight: 800;
+}
+.public-shell .universe-door-soon-art { filter: saturate(.75); }
 /* Porte boutique : énergie gaming (angles, halo de nuit). */
 .public-shell [data-universe-preview="store"].universe-door { border-radius: 1rem .3rem 1rem .3rem; }
 .dark .public-shell [data-universe-preview="store"].universe-door:hover { box-shadow: 0 0 32px -16px var(--accent); }
@@ -202,3 +217,17 @@ html.dark .public-shell [data-universe-preview="studio"] {
 @media (prefers-reduced-motion: reduce) {
   .public-shell .universe-door, .public-shell .universe-door:hover { transition: none; transform: none; }
 }
+
+/* 8. Menu principal : badge « bientôt » et sous-menu des produits numériques. */
+.public-shell .nav-soon-badge {
+  display: inline-flex; align-items: center; padding: .05rem .4rem; border-radius: .35rem;
+  border: 1px solid color-mix(in srgb, var(--brand-gold, var(--accent)) 45%, var(--border));
+  color: var(--brand-gold, var(--accent)); font-size: .62rem; font-weight: 800; line-height: 1.5;
+  letter-spacing: 0;
+}
+.public-shell .primary-menu .nav-dropdown-panel a { color: var(--muted-foreground); font-weight: 700; }
+.public-shell .primary-menu .nav-dropdown-panel a:hover,
+.public-shell .primary-menu .nav-dropdown-panel a:focus-visible { background: var(--secondary); color: var(--foreground); }
+.public-shell .primary-menu .nav-dropdown-panel a[aria-current="page"] { color: var(--accent); background: var(--secondary); }
+.public-shell .primary-menu .nav-dropdown-panel a[aria-current="page"]::after { display: none; }
+.public-shell .primary-menu .nav-dropdown-panel li:first-child a { color: var(--foreground); }

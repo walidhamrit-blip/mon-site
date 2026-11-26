@@ -7,9 +7,17 @@ const { outputFiles } = await build({ entryPoints: ["src/lib/site-hierarchy.ts"]
 const hierarchy = await import(`data:text/javascript;base64,${Buffer.from(outputFiles[0].text).toString("base64")}`);
 const read = (path) => readFileSync(path, "utf8");
 
-test("four primary destinations, same bilingual source for both menus", () => {
-  assert.deepEqual(hierarchy.primaryNavigation.map((link) => link.href), ["/", "/codes", "/creation-sites", "/contact"]);
+test("primary destinations in reading order: websites, apps (soon), digital products, contact", () => {
+  assert.deepEqual(hierarchy.primaryNavigation.map((link) => link.href), ["/", "/creation-sites", "/apps", "/codes", "/contact"]);
   for (const link of hierarchy.primaryNavigation) { assert.ok(link.ar); assert.ok(link.en); }
+  assert.equal(hierarchy.primaryNavigation.find((link) => link.href === "/apps").soon, true);
+  // Les produits numériques sont UNE catégorie : ses sous-catégories sont
+  // les rayons indexés /codes/category/[kind], dans l'ordre des facettes.
+  const products = hierarchy.primaryNavigation.find((link) => link.href === "/codes");
+  assert.deepEqual(
+    products.children.map((child) => child.href),
+    hierarchy.storeCategories.filter((category) => category.kind !== "all").map((category) => `/codes/category/${category.kind}`),
+  );
   assert.match(read("src/components/navbar.tsx"), /primaryNavigation\.map/);
 });
 

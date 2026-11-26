@@ -44,6 +44,11 @@ export function Navbar() {
   const { locale } = useI18n();
   const { mode, toggle } = useTheme();
   const [open, setOpen] = useState(false);
+  // Sous-menu « المنتجات الرقمية » (ordinateur) : motif « disclosure », pas
+  // de rôle ARIA menu — ce sont de simples liens de navigation.
+  const [submenu, setSubmenu] = useState<string | null>(null);
+  const submenuRef = useRef<HTMLDivElement | null>(null);
+  const hoverOpened = useRef(false);
   const menuRef = useRef<HTMLDivElement | null>(null);
   const toggleRef = useRef<HTMLButtonElement | null>(null);
   const headerRef = useRef<HTMLElement | null>(null);
@@ -129,13 +134,46 @@ export function Navbar() {
   if (menuPath !== pathname) {
     setMenuPath(pathname);
     if (open) setOpen(false);
+    if (submenu) setSubmenu(null);
   }
 
-  const hubLinks = primaryNavigation.map((link) => ({ href: link.href, label: ar ? link.ar : link.en }));
+  // Sous-menu ouvert : fermeture par Échap (focus rendu au bouton) ou clic extérieur.
+  useEffect(() => {
+    if (!submenu) return;
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") return;
+      setSubmenu(null);
+      submenuRef.current?.querySelector<HTMLButtonElement>("button[aria-expanded]")?.focus();
+    };
+    const onPointer = (event: PointerEvent) => {
+      if (!submenuRef.current?.contains(event.target as Node)) setSubmenu(null);
+    };
+    window.addEventListener("keydown", onKey);
+    window.addEventListener("pointerdown", onPointer);
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      window.removeEventListener("pointerdown", onPointer);
+    };
+  }, [submenu]);
+
+  // Ordre de lecture : sites → applications (bientôt) → produits numériques
+  // (une catégorie, ses rayons en sous-menu) → contact.
+  const hubLinks = primaryNavigation.map((link) => ({
+    href: link.href,
+    label: ar ? link.ar : link.en,
+    soon: Boolean(link.soon),
+    children: (link.children ?? []).map((child) => ({ href: child.href, label: ar ? child.ar : child.en })),
+  }));
   const links =
     universe === "hub"
       ? hubLinks
-      : universeNavigation[universe].map((link) => ({ href: link.href, label: ar ? link.ar : link.en }));
+      : universeNavigation[universe].map((link) => ({
+          href: link.href,
+          label: ar ? link.ar : link.en,
+          soon: Boolean(link.soon),
+          children: [] as { href: string; label: string }[],
+        }));
+  const soonLabel = ar ? "قريباً" : "Soon";
   const brand = universeBrands[universe];
   const tagline = (ar ? brand.taglineAr : brand.taglineEn).replace("{city}", marketText.city);
   // Le sélecteur de palette ne concerne que la boutique : le studio et
@@ -204,16 +242,70 @@ export function Navbar() {
             >
               {links.map((link) => {
                 const active = isActive(link.href);
-                return (
+                const item = (
                   <Link
                     key={link.href}
                     href={link.href}
                     aria-current={active ? "page" : undefined}
-                    className={`inline-flex shrink-0 items-center whitespace-nowrap rounded-full px-3 py-2 text-[13px] font-medium transition-colors ${active ? "bg-[var(--card)] font-bold text-[var(--foreground)]" : "text-[var(--muted-foreground)] hover:text-[var(--foreground)]"}`}
+                    className={`inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full px-3 py-2 text-[13px] font-medium transition-colors ${active ? "bg-[var(--card)] font-bold text-[var(--foreground)]" : "text-[var(--muted-foreground)] hover:text-[var(--foreground)]"}`}
                   >
                     {link.label}
-
+                    {link.soon ? <span className="nav-soon-badge">{soonLabel}</span> : null}
                   </Link>
+                );
+                if (link.children.length === 0) return item;
+                const submenuId = `submenu-${link.href.replace(/\W+/g, "") || "root"}`;
+                const expanded = submenu === link.href;
+                return (
+                  <div
+                    key={link.href}
+                    ref={submenuRef}
+                    className="nav-dropdown relative flex items-center"
+                    onMouseEnter={() => {
+                      if (submenu !== link.href) hoverOpened.current = true;
+                      setSubmenu(link.href);
+                    }}
+                    onMouseLeave={() => {
+                      hoverOpened.current = false;
+                      setSubmenu((value) => (value === link.href ? null : value));
+                    }}
+                  >
+                    {item}
+                    <button
+                      type="button"
+                      aria-expanded={expanded}
+                      aria-controls={submenuId}
+                      aria-label={ar ? `فئات ${link.label}` : `${link.label} categories`}
+                      onClick={() => {
+                        // Ouvert par le survol juste avant : le clic confirme au lieu de refermer.
+                        if (hoverOpened.current) { hoverOpened.current = false; return; }
+                        setSubmenu((value) => (value === link.href ? null : link.href));
+                      }}
+                      className="nav-dropdown-toggle -ms-2 grid h-11 w-7 cursor-pointer place-items-center text-[var(--muted-foreground)] hover:text-[var(--foreground)]"
+                    >
+                      <ChevronDown className={`h-3.5 w-3.5 transition-transform ${expanded ? "rotate-180" : ""}`} aria-hidden="true" />
+                    </button>
+                    <div id={submenuId} hidden={!expanded} className="nav-dropdown-panel absolute top-full z-50 min-w-60 pt-2 [inset-inline-start:0]">
+                      <ul className="rounded-xl border border-[var(--border)] bg-[var(--popover)] p-2 text-[var(--popover-foreground)] shadow-[var(--shadow-lg)]">
+                        <li>
+                          <Link href={link.href} className="flex min-h-11 items-center rounded-lg px-3 text-[13px] font-bold hover:bg-[var(--secondary)]">
+                            {ar ? "كل المنتجات الرقمية" : "All digital products"}
+                          </Link>
+                        </li>
+                        {link.children.map((child) => (
+                          <li key={child.href}>
+                            <Link
+                              href={child.href}
+                              aria-current={pathname === child.href ? "page" : undefined}
+                              className="flex min-h-11 items-center rounded-lg px-3 text-[13px] font-semibold text-[var(--muted-foreground)] hover:bg-[var(--secondary)] hover:text-[var(--foreground)]"
+                            >
+                              {child.label}
+                            </Link>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  </div>
                 );
               })}
             </nav>
@@ -302,17 +394,36 @@ export function Navbar() {
               <div className="rounded-[var(--radius-lg)] border border-[var(--border)] bg-[var(--card)] p-4 shadow-[var(--shadow-lg)] sm:p-6">
                 <nav aria-label={ar ? "قائمة الجوال" : "Mobile menu"} className="flex flex-col gap-1">
                   {links.map((link) => (
-                    <Link
-                      key={link.href}
-                      href={link.href}
-                      onClick={() => setOpen(false)}
-                      className={`flex min-h-11 items-center justify-between rounded-xl px-4 py-3 text-[15px] font-semibold transition-colors hover:bg-[var(--secondary)] ${
-                        isActive(link.href) ? "bg-[var(--secondary)] font-bold" : ""
-                      }`}
-                    >
-                      <span>{link.label}</span>
-                      <ArrowUpRight className="h-4 w-4 opacity-30 rtl:rotate-[-90deg]" aria-hidden="true" />
-                    </Link>
+                    <div key={link.href}>
+                      <Link
+                        href={link.href}
+                        onClick={() => setOpen(false)}
+                        className={`flex min-h-11 items-center justify-between rounded-xl px-4 py-3 text-[15px] font-semibold transition-colors hover:bg-[var(--secondary)] ${
+                          isActive(link.href) ? "bg-[var(--secondary)] font-bold" : ""
+                        }`}
+                      >
+                        <span className="inline-flex items-center gap-2">
+                          {link.label}
+                          {link.soon ? <span className="nav-soon-badge">{soonLabel}</span> : null}
+                        </span>
+                        <ArrowUpRight className="h-4 w-4 opacity-30 rtl:rotate-[-90deg]" aria-hidden="true" />
+                      </Link>
+                      {link.children.length > 0 ? (
+                        <ul className="mb-1 ms-4 border-s border-[var(--border)] ps-2">
+                          {link.children.map((child) => (
+                            <li key={child.href}>
+                              <Link
+                                href={child.href}
+                                onClick={() => setOpen(false)}
+                                className="flex min-h-11 items-center rounded-lg px-3 text-[14px] font-medium text-[var(--muted-foreground)] hover:bg-[var(--secondary)] hover:text-[var(--foreground)]"
+                              >
+                                {child.label}
+                              </Link>
+                            </li>
+                          ))}
+                        </ul>
+                      ) : null}
+                    </div>
                   ))}
                 </nav>
 

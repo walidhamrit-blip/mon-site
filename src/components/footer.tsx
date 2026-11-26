@@ -18,7 +18,7 @@ type FooterGroup = { title: string; icon: typeof Gamepad2; links: readonly Foote
  * discrètement, l'autre service Nukhba.
  */
 function footerContent(universe: Universe, ar: boolean) {
-  const storeGroup: FooterGroup = { title: ar ? "المتجر الرقمي" : "Digital store", icon: Gamepad2, links: [
+  const storeGroup: FooterGroup = { title: ar ? "المنتجات الرقمية" : "Digital products", icon: Gamepad2, links: [
     ["/codes", ar ? "كل المنتجات" : "All products"],
     ["/codes/category/gift_card", ar ? "بطاقات هدايا" : "Gift cards"],
     ["/codes/category/software_key", ar ? "مفاتيح ألعاب وبرامج" : "Game & software keys"],
@@ -27,6 +27,7 @@ function footerContent(universe: Universe, ar: boolean) {
   ] };
   const studioGroup: FooterGroup = { title: ar ? "إنشاء المواقع" : "Website creation", icon: Code2, links: [
     ["/creation-sites", ar ? "ابدأ مشروعك" : "Start your project"],
+    ["/apps", ar ? "التطبيقات (قريباً)" : "Apps (coming soon)"],
     ["/demos", ar ? "نماذج المواقع" : "Website examples"],
     ["/pricing", ar ? "الباقات والأسعار" : "Plans & pricing"],
     ["/services", ar ? "خدمات حسب الطلب" : "Individual services"],
@@ -43,7 +44,6 @@ function footerContent(universe: Universe, ar: boolean) {
     ["/blog", ar ? "الأدلة" : "Guides"],
     ["/compare", ar ? "المقارنات" : "Comparisons"],
     ["/products", ar ? "منتجاتنا" : "Our products"],
-    ["/apps", ar ? "تطبيقاتنا" : "Our apps"],
     ["/badge", ar ? "شارة العملاء" : "Client badge"],
   ] };
   const legal: FooterLink[] = [
@@ -62,7 +62,7 @@ function footerContent(universe: Universe, ar: boolean) {
       groups: [storeGroup, orderHelpGroup],
       resources: legal,
       motto: ar ? "بطاقات · مفاتيح · شحن" : "CARDS / KEYS / TOP-UPS",
-      sibling: ["/creation-sites", ar ? "إنشاء المواقع والتطبيقات" : "Websites & apps"] as FooterLink,
+      sibling: ["/creation-sites", ar ? "مواقع وتطبيقات" : "Websites & apps"] as FooterLink,
     };
   }
   if (universe === "studio") {
@@ -74,17 +74,18 @@ function footerContent(universe: Universe, ar: boolean) {
       groups: [studioGroup, studioResourcesGroup],
       resources: legal,
       motto: ar ? "تصميم · تطوير · إطلاق" : "DESIGN / BUILD / LAUNCH",
-      sibling: ["/codes", ar ? "المتجر الرقمي" : "Digital store"] as FooterLink,
+      sibling: ["/codes", ar ? "المنتجات الرقمية" : "Digital products"] as FooterLink,
     };
   }
   return {
     kicker: ar ? "خطوتك التالية" : "YOUR NEXT MOVE",
-    heading: ar ? "اختر مسارك: متجر رقمي أو مشروع موقع." : "Choose your path: digital store or website project.",
-    actions: [["/codes", ar ? "اكتشف المتجر" : "Explore the store"], ["/creation-sites#lead-form", ar ? "أنشئ موقعك" : "Build your website"]] as FooterLink[],
+    heading: ar ? "اختر مسارك: مشروع موقع أو منتجات رقمية." : "Choose your path: website project or digital products.",
+    actions: [["/creation-sites#lead-form", ar ? "أنشئ موقعك" : "Build your website"], ["/codes", ar ? "تصفح المنتجات الرقمية" : "Browse digital products"]] as FooterLink[],
     about: ar ? "خدمتان مستقلتان تحت علامة واحدة: استوديو لإنشاء المواقع والتطبيقات، ومتجر للبطاقات الرقمية ومفاتيح الألعاب." : "Two independent services under one brand: a studio for websites and apps, and a store for digital cards and game keys.",
-    groups: [storeGroup, studioGroup],
+    // Même ordre que le menu : sites et applications, puis produits numériques.
+    groups: [studioGroup, storeGroup],
     resources: [...studioResourcesGroup.links, ...legal],
-    motto: ar ? "استوديو · متجر" : "STUDIO / STORE",
+    motto: ar ? "مواقع · تطبيقات · منتجات رقمية" : "WEBSITES / APPS / DIGITAL PRODUCTS",
     sibling: null,
   };
 }

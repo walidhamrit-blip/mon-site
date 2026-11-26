@@ -54,6 +54,8 @@ export interface UniverseLink {
   href: string;
   ar: string;
   en: string;
+  /** Rubrique annoncée, pas encore ouverte (badge « قريباً / Soon »). */
+  soon?: boolean;
 }
 
 export interface UniverseBrand {
@@ -101,7 +103,8 @@ export const universeNavigation: Record<Exclude<Universe, "hub">, readonly Unive
     { href: "/codes/category/subscription_code", ar: "اشتراكات", en: "Subscriptions" },
   ],
   studio: [
-    { href: "/creation-sites", ar: "إنشاء المواقع", en: "Website creation" },
+    { href: "/creation-sites", ar: "إنشاء المواقع", en: "Websites" },
+    { href: "/apps", ar: "التطبيقات", en: "Apps", soon: true },
     { href: "/demos", ar: "النماذج", en: "Examples" },
     { href: "/pricing", ar: "الأسعار", en: "Pricing" },
     { href: "/services", ar: "الخدمات", en: "Services" },
@@ -116,11 +119,15 @@ export const universePrimaryAction: Record<Universe, UniverseLink> = {
   store: { href: "/codes/commande", ar: "تتبع طلبي", en: "Track my order" },
 };
 
-/** Barre de marque : l'endossement « un service Nukhba », visible partout. */
+/**
+ * Barre de marque : l'endossement « un service Nukhba », visible partout.
+ * Même ordre que le menu principal : sites et applications, puis produits
+ * numériques.
+ */
 export const universeSwitcher: readonly (UniverseLink & { universe: Universe })[] = [
   { universe: "hub", href: "/", ar: "نخبة", en: "Nukhba" },
-  { universe: "store", href: "/codes", ar: "المتجر الرقمي", en: "Digital store" },
-  { universe: "studio", href: "/creation-sites", ar: "إنشاء المواقع", en: "Websites & apps" },
+  { universe: "studio", href: "/creation-sites", ar: "مواقع وتطبيقات", en: "Websites & apps" },
+  { universe: "store", href: "/codes", ar: "المنتجات الرقمية", en: "Digital products" },
 ];
 
 /** Univers qui suivent la palette gaming choisie par le visiteur. */

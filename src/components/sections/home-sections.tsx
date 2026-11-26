@@ -32,18 +32,7 @@ export function HomeSections({
       <HomeIntro />
       <HomeGateway />
       <Hero />
-      {/* Aperçu boutique dans l'identité gaming ; le bloc web suivant reste sobre. */}
-      <section data-universe-preview="store" className="gaming-store-section border-y border-[var(--border)] bg-[var(--secondary)]/30">
-        <div className="site-container px-4 py-12 sm:px-6 lg:px-8">
-          <p className="gaming-kicker">{ar ? "متجر نخبة" : "NUKHBA STORE"}</p>
-          <h2 className="text-2xl font-black">{ar ? "اختر فئة من المتجر الرقمي" : "Explore the digital store"}</h2>
-          <p className="mt-3 max-w-2xl text-sm leading-7 text-[var(--muted-foreground)]">{ar ? "اختر حسب حاجتك. راجع المنصة والمنطقة وشروط التفعيل في صفحة كل منتج قبل الطلب." : "Shop by what you need. Check each product’s platform, region and activation requirements before ordering."}</p>
-          <nav aria-label={ar ? "فئات المنتجات" : "Product categories"} className="mt-6 flex flex-wrap gap-3">
-            {storeCategories.map((category) => <Link key={category.kind} href={category.kind === "all" ? "/codes" : `/codes/category/${category.kind}`} className="rounded-full border border-[var(--border)] bg-[var(--card)] px-5 py-3 text-sm font-bold hover:border-[var(--accent)]">{ar ? category.ar : category.en}</Link>)}
-          </nav>
-        </div>
-        {storeShowcase}
-      </section>
+      {/* Ordre de lecture : d'abord les sites et applications (identité sobre)… */}
       <section data-universe-preview="studio" className="site-container px-4 py-14 sm:px-6 lg:px-8">
         <div className="gaming-project-panel grid gap-8 rounded-[var(--radius-lg)] border border-[var(--border)] bg-[var(--card)] p-6 sm:p-10 md:grid-cols-2">
           <div>
@@ -56,10 +45,23 @@ export function HomeSections({
               ["/creation-sites", ar ? "اكتشف عروض إنشاء المواقع" : "Explore website creation"],
               ["/demos", ar ? "شاهد نماذج المواقع" : "View website examples"],
               ["/pricing", ar ? "راجع الباقات والأسعار" : "Review plans & prices"],
+              ["/apps", ar ? "التطبيقات — قريباً" : "Apps — coming soon"],
               ["/creation-sites#lead-form", ar ? "اطلب عرض سعر لمشروعك" : "Request a project quote"],
             ].map(([href, label]) => <Link key={href} href={href} className="flex items-center justify-between gap-3 rounded-xl bg-[var(--secondary)] px-5 py-4 text-sm font-bold hover:text-[var(--accent)]">{label}<ArrowUpRight className="h-4 w-4 rtl:rotate-[-90deg]" aria-hidden="true" /></Link>)}
           </div>
         </div>
+      </section>
+      {/* Puis les produits numériques, dans l'identité gaming (aperçu boutique). */}
+      <section data-universe-preview="store" className="gaming-store-section border-y border-[var(--border)] bg-[var(--secondary)]/30">
+        <div className="site-container px-4 py-12 sm:px-6 lg:px-8">
+          <p className="gaming-kicker">{ar ? "المنتجات الرقمية" : "DIGITAL PRODUCTS"}</p>
+          <h2 className="text-2xl font-black">{ar ? "اختر فئة من المتجر الرقمي" : "Explore the digital store"}</h2>
+          <p className="mt-3 max-w-2xl text-sm leading-7 text-[var(--muted-foreground)]">{ar ? "اختر حسب حاجتك. راجع المنصة والمنطقة وشروط التفعيل في صفحة كل منتج قبل الطلب." : "Shop by what you need. Check each product’s platform, region and activation requirements before ordering."}</p>
+          <nav aria-label={ar ? "فئات المنتجات" : "Product categories"} className="mt-6 flex flex-wrap gap-3">
+            {storeCategories.map((category) => <Link key={category.kind} href={category.kind === "all" ? "/codes" : `/codes/category/${category.kind}`} className="rounded-full border border-[var(--border)] bg-[var(--card)] px-5 py-3 text-sm font-bold hover:border-[var(--accent)]">{ar ? category.ar : category.en}</Link>)}
+          </nav>
+        </div>
+        {storeShowcase}
       </section>
       <section className="gaming-support-section border-t border-[var(--border)] bg-[var(--secondary)]/30">
         <div className="site-container px-4 py-14 sm:px-6 lg:px-8">
