@@ -141,10 +141,10 @@ const nextConfig: NextConfig = {
       { pathname: "/game-covers/**" },
     ],
     // Qualités utilisées par les visuels (bannière, guide crypto, cartes
-    // boutique/démos). 85 était demandé par plusieurs `<Image quality={85}>`
-    // sans être déclaré : Next servait la qualité par défaut en le signalant
-    // à chaque rendu.
-    qualities: [75, 85, 88, 90],
+    // boutique/démos, vignettes Mini App /tg). 85 était demandé par plusieurs
+    // `<Image quality={85}>` sans être déclaré : Next servait la qualité par
+    // défaut en le signalant à chaque rendu.
+    qualities: [70, 75, 85, 88, 90],
   },
   async headers() {
     return [

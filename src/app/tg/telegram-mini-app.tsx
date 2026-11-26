@@ -1,6 +1,7 @@
 "use client";
 
 import Script from "next/script";
+import Image from "next/image";
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import {
   buildMiniAppBrands,
@@ -320,12 +321,15 @@ export function TelegramMiniApp({
             style={{ background: `linear-gradient(145deg, ${product.color}, #141a26)` }}
           >
             {product.image ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
+              // Jaquette redimensionnée par l'optimiseur (~230 px, webp) :
+              // les fichiers bruts font 24–140 Ko pour une vignette de ~100 px.
+              <Image
                 src={product.image}
                 alt=""
-                loading="lazy"
-                decoding="async"
+                fill
+                sizes="(max-width: 479px) 33vw, 25vw"
+                quality={70}
+                priority={index < 6}
                 className={product.fit === "contain" ? styles.contain : undefined}
               />
             ) : (
@@ -519,8 +523,7 @@ export function TelegramMiniApp({
                         onClick={() => pickBrand(entry.name)}
                       >
                         {entry.image ? (
-                          // eslint-disable-next-line @next/next/no-img-element
-                          <img src={entry.image} alt="" loading="lazy" decoding="async" />
+                          <Image src={entry.image} alt="" fill sizes="(max-width: 479px) 46vw, 32vw" quality={70} />
                         ) : (
                           <span className={styles.brandFallback} aria-hidden="true">
                             {miniAppInitials(entry.name)}
