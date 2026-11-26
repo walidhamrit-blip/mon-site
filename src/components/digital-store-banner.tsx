@@ -17,7 +17,7 @@ export function DigitalStoreBanner({ locale }: { locale: "ar" | "en" }) {
         <div className="flex flex-col gap-4 rounded-[var(--radius-lg)] border border-[var(--accent)]/35 bg-[var(--accent)]/5 p-6 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-start gap-3">
             <span className="mt-0.5 grid h-10 w-10 shrink-0 place-items-center rounded-full bg-[var(--accent)]/15 text-[var(--accent)]">
-              <KeyRound className="h-5 w-5" />
+              <KeyRound className="h-5 w-5" aria-hidden="true" />
             </span>
             <div>
               <h2 className="text-lg font-black">
@@ -35,7 +35,7 @@ export function DigitalStoreBanner({ locale }: { locale: "ar" | "en" }) {
             className="inline-flex h-12 shrink-0 items-center justify-center gap-2 rounded-full bg-[var(--accent)] px-6 text-sm font-black text-[var(--accent-foreground)] transition-colors hover:bg-[var(--accent-hover)]"
           >
             {ar ? "تصفّح المتجر الرقمي" : "Browse the digital store"}
-            <ArrowUpRight className="h-4 w-4" />
+            <ArrowUpRight className="h-4 w-4" aria-hidden="true" />
           </Link>
         </div>
       </div>

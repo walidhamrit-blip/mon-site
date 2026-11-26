@@ -46,7 +46,7 @@ export function DigitalShowcase({
         <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <p className="inline-flex items-center gap-2 rounded-full border border-[var(--border)] bg-[var(--card)] px-3 py-1 text-[11px] font-black text-[var(--accent)]">
-              <Gamepad2 className="h-3.5 w-3.5" />
+              <Gamepad2 className="h-3.5 w-3.5" aria-hidden="true" />
               {ar ? "متجر نخبة الرقمي" : "Nukhba digital store"}
             </p>
             <h2
@@ -66,10 +66,10 @@ export function DigitalShowcase({
 
           <div className="flex flex-wrap items-center gap-2">
             <span className="chip">
-              <Zap className="h-3 w-3" /> {ar ? "تسليم فوري" : "Instant delivery"}
+              <Zap className="h-3 w-3" aria-hidden="true" /> {ar ? "تسليم فوري" : "Instant delivery"}
             </span>
             <span className="chip">
-              <ShieldCheck className="h-3 w-3" /> {ar ? "أكواد أصلية" : "Genuine codes"}
+              <ShieldCheck className="h-3 w-3" aria-hidden="true" /> {ar ? "أكواد أصلية" : "Genuine codes"}
             </span>
           </div>
         </div>
@@ -108,7 +108,7 @@ export function DigitalShowcase({
                     )}
                   </span>
                 </span>
-                <ArrowUpRight className="mx-3.5 mb-3.5 h-4 w-4 shrink-0 text-[var(--accent)] transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5 rtl:group-hover:-translate-x-0.5 sm:mx-5 sm:mb-5 rtl:rotate-[-90deg]" />
+                <ArrowUpRight className="mx-3.5 mb-3.5 h-4 w-4 shrink-0 text-[var(--accent)] transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5 rtl:group-hover:-translate-x-0.5 sm:mx-5 sm:mb-5 rtl:rotate-[-90deg]" aria-hidden="true" />
               </Link>
             </li>
           ))}
@@ -120,7 +120,7 @@ export function DigitalShowcase({
             className="inline-flex h-11 items-center gap-2 rounded-full bg-[var(--accent)] px-6 text-sm font-black text-[var(--accent-foreground)] transition-colors hover:bg-[var(--accent-hover)]"
           >
             {ar ? "تصفّح كل الأكواد والبطاقات" : "Browse all codes & cards"}
-            <ArrowUpRight className="h-4 w-4 rtl:rotate-[-90deg]" />
+            <ArrowUpRight className="h-4 w-4 rtl:rotate-[-90deg]" aria-hidden="true" />
           </Link>
         </div>
       </div>

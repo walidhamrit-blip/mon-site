@@ -36,7 +36,7 @@ export function FAQ() {
                 >
                   <span className="font-bold text-[15px] leading-6">{locale === "ar" ? item.qAr : item.qEn}</span>
                   <span className={`grid h-8 w-8 shrink-0 place-items-center rounded-full border transition-colors ${isOpen ? "bg-[var(--primary)] text-[var(--primary-foreground)] border-[var(--primary)]" : "bg-[var(--secondary)] border-[var(--border)]"}`}>
-                    {isOpen ? <Minus className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
+                    {isOpen ? <Minus className="h-4 w-4" aria-hidden="true" /> : <Plus className="h-4 w-4" aria-hidden="true" />}
                   </span>
                 </button>
                 {/* Réponse TOUJOURS présente dans le DOM (important : le

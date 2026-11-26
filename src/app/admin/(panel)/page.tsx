@@ -254,14 +254,14 @@ export default async function AdminDashboardPage() {
             target="_blank"
             className="h-10 px-4 rounded-xl border border-stone-300 bg-white text-stone-700 text-xs sm:text-sm font-semibold inline-flex items-center gap-1.5 hover:bg-stone-50"
           >
-            Voir le site <ExternalLink className="h-3.5 w-3.5" />
+            Voir le site <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
           </Link>
         </div>
       </div>
 
       {dbError && (
         <div className="rounded-2xl border border-amber-300 bg-amber-50 p-4 flex gap-3 shadow-2xs">
-          <AlertTriangle className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />
+          <AlertTriangle className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" aria-hidden="true" />
           <div className="text-sm space-y-1">
             <div className="font-bold text-amber-900">
               Base de données non connectée sur cet environnement
@@ -339,7 +339,7 @@ export default async function AdminDashboardPage() {
                   </p>
                 </div>
                 <span className="inline-flex items-center gap-1 text-xs font-bold text-stone-900 group-hover:translate-x-0.5 transition-transform">
-                  Ouvrir l’espace <ArrowRight className="h-3.5 w-3.5 text-[#B8923F]" />
+                  Ouvrir l’espace <ArrowRight className="h-3.5 w-3.5 text-[#B8923F]" aria-hidden="true" />
                 </span>
               </Link>
             );
@@ -386,7 +386,7 @@ export default async function AdminDashboardPage() {
               Vérifiez à tout moment le rendu public des pages du site :
             </p>
             <div className="space-y-2 text-xs font-semibold">
-              {ADMIN_PUBLIC_LINKS.map((item) => <Link key={item.href} href={item.href} target="_blank" rel="noopener noreferrer" className="flex items-center justify-between rounded-xl border border-stone-200 bg-[#FAF9F6] px-3.5 py-2.5 text-stone-800 hover:border-[#C6A664]">{item.label}<ExternalLink className="h-3.5 w-3.5" /></Link>)}
+              {ADMIN_PUBLIC_LINKS.map((item) => <Link key={item.href} href={item.href} target="_blank" rel="noopener noreferrer" className="flex items-center justify-between rounded-xl border border-stone-200 bg-[#FAF9F6] px-3.5 py-2.5 text-stone-800 hover:border-[#C6A664]">{item.label}<ExternalLink className="h-3.5 w-3.5" aria-hidden="true" /></Link>)}
             </div>
           </div>
         )}
@@ -398,7 +398,7 @@ export default async function AdminDashboardPage() {
               href="/admin/leads"
               className="inline-flex items-center gap-1 text-xs font-semibold text-[#8A6D2F] hover:underline"
             >
-              Tout voir <ArrowRight className="h-3.5 w-3.5" />
+              Tout voir <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
             </Link>
           </div>
           {recent.length === 0 ? (

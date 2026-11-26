@@ -149,7 +149,7 @@ export function ReviewsClient({
                   className="group flex items-center justify-between gap-3 rounded-2xl border border-[var(--border)] bg-[var(--card)] px-4 py-3.5 transition-colors hover:border-[var(--accent,#C6A664)]"
                 >
                   <span className="text-sm font-bold">{ar ? link.labelAr : link.labelEn}</span>
-                  <ArrowUpRight className="h-4 w-4 shrink-0 opacity-60 transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
+                  <ArrowUpRight className="h-4 w-4 shrink-0 opacity-60 transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5" aria-hidden="true" />
                 </a>
               </li>
             ))}

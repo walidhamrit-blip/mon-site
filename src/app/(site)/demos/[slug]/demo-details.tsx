@@ -81,7 +81,7 @@ export function DemoDetails({
                   className="mt-4 inline-flex items-center gap-1.5 text-sm font-bold text-[var(--accent)] hover:underline"
                 >
                   كل مواقع {sector.labelAr} في طرابلس
-                  <ArrowUpRight className="h-4 w-4" />
+                  <ArrowUpRight className="h-4 w-4" aria-hidden="true" />
                 </Link>
               </div>
             )}
@@ -100,7 +100,7 @@ export function DemoDetails({
                   {plan.features.map((feature, idx) => (
                     <li key={feature} className="flex gap-2 text-sm">
                       <span className="h-5 w-5 rounded-full bg-green-500 text-white grid place-items-center flex-shrink-0 mt-0.5">
-                        <Check className="h-3 w-3" />
+                        <Check className="h-3 w-3" aria-hidden="true" />
                       </span>
                       <span>
                         {feature}
@@ -116,7 +116,7 @@ export function DemoDetails({
                   className="mt-4 inline-flex items-center gap-1.5 text-sm font-bold text-[var(--accent)] hover:underline"
                 >
                   تفاصيل العرض والخيارات
-                  <ArrowUpRight className="h-4 w-4" />
+                  <ArrowUpRight className="h-4 w-4" aria-hidden="true" />
                 </Link>
               </div>
             )}
@@ -170,7 +170,7 @@ export function DemoDetails({
                       className="text-[var(--accent)] hover:underline inline-flex items-center gap-1"
                     >
                       زيارة الموقع
-                      <ArrowUpRight className="h-3.5 w-3.5" />
+                      <ArrowUpRight className="h-3.5 w-3.5" aria-hidden="true" />
                     </a>
                   </dd>
                 </div>

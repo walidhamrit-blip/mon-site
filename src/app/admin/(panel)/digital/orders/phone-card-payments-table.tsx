@@ -155,7 +155,7 @@ export function PhoneCardPaymentsTable({ rows }: { rows: AdminPhoneCardPaymentRo
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h2 className="flex items-center gap-2 text-[15px] font-black text-stone-900">
-            <Smartphone className="h-4 w-4 text-amber-700" />
+            <Smartphone className="h-4 w-4 text-amber-700" aria-hidden="true" />
             Cartes téléphoniques à vérifier
           </h2>
           <p className="mt-1 max-w-3xl text-[12px] leading-5 text-stone-600">
@@ -284,7 +284,7 @@ export function PhoneCardPaymentsTable({ rows }: { rows: AdminPhoneCardPaymentRo
                           onClick={() => void copy(row.ref, row.code ?? "")}
                           className="inline-flex h-8 items-center gap-1 rounded-md border border-stone-300 bg-white px-2 text-[11px] font-bold text-stone-600 hover:bg-stone-100"
                         >
-                          {copiedRef === row.ref ? <Check className="h-3.5 w-3.5 text-emerald-600" /> : <Copy className="h-3.5 w-3.5" />}
+                          {copiedRef === row.ref ? <Check className="h-3.5 w-3.5 text-emerald-600" aria-hidden="true" /> : <Copy className="h-3.5 w-3.5" aria-hidden="true" />}
                           Copier
                         </button>
                       </>
@@ -313,7 +313,7 @@ export function PhoneCardPaymentsTable({ rows }: { rows: AdminPhoneCardPaymentRo
                         onClick={() => review(row.ref, "approved", true)}
                         className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-emerald-700 px-3 text-[12px] font-bold text-white hover:bg-emerald-800 disabled:opacity-50"
                       >
-                        {isBusy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <CheckCircle2 className="h-3.5 w-3.5" />}
+                        {isBusy ? <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" /> : <CheckCircle2 className="h-3.5 w-3.5" aria-hidden="true" />}
                         Crédit vérifié — accepter et livrer
                       </button>
                       <button
@@ -322,7 +322,7 @@ export function PhoneCardPaymentsTable({ rows }: { rows: AdminPhoneCardPaymentRo
                         onClick={() => review(row.ref, "approved", false)}
                         className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-emerald-300 bg-white px-3 text-[12px] font-bold text-emerald-800 hover:bg-emerald-50 disabled:opacity-50"
                       >
-                        <Check className="h-3.5 w-3.5" />
+                        <Check className="h-3.5 w-3.5" aria-hidden="true" />
                         Accepter sans livrer
                       </button>
                       <button
@@ -331,7 +331,7 @@ export function PhoneCardPaymentsTable({ rows }: { rows: AdminPhoneCardPaymentRo
                         onClick={() => review(row.ref, "rejected")}
                         className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-red-300 bg-white px-3 text-[12px] font-bold text-red-700 hover:bg-red-50 disabled:opacity-50"
                       >
-                        <XCircle className="h-3.5 w-3.5" />
+                        <XCircle className="h-3.5 w-3.5" aria-hidden="true" />
                         Refuser la carte
                       </button>
                     </div>
@@ -360,9 +360,9 @@ export function PhoneCardPaymentsTable({ rows }: { rows: AdminPhoneCardPaymentRo
                               className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-emerald-300 bg-white px-3 text-[12px] font-bold text-emerald-800 hover:bg-emerald-50 disabled:opacity-50"
                             >
                               {isBusy ? (
-                                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" />
                               ) : (
-                                <Check className="h-3.5 w-3.5" />
+                                <Check className="h-3.5 w-3.5" aria-hidden="true" />
                               )}
                               Enregistrer le solde dû ({displayLyd(surplus)})
                             </button>
@@ -379,9 +379,9 @@ export function PhoneCardPaymentsTable({ rows }: { rows: AdminPhoneCardPaymentRo
                           className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-emerald-700 px-3 text-[12px] font-bold text-white hover:bg-emerald-800 disabled:opacity-50"
                         >
                           {isBusy ? (
-                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                            <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" />
                           ) : (
-                            <CheckCircle2 className="h-3.5 w-3.5" />
+                            <CheckCircle2 className="h-3.5 w-3.5" aria-hidden="true" />
                           )}
                           Livrer le code automatiquement
                         </button>
@@ -398,7 +398,7 @@ export function PhoneCardPaymentsTable({ rows }: { rows: AdminPhoneCardPaymentRo
                           onClick={() => openOrder(row.ref, { offPlatform: true })}
                           className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-emerald-700 px-3 text-[12px] font-bold text-white hover:bg-emerald-800"
                         >
-                          <CheckCircle2 className="h-3.5 w-3.5" />
+                          <CheckCircle2 className="h-3.5 w-3.5" aria-hidden="true" />
                           Code déjà envoyé (WhatsApp…)
                         </button>
                       </div>

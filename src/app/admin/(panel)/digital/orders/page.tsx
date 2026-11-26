@@ -81,7 +81,7 @@ export default async function AdminDigitalOrdersPage() {
           href="/admin/digital"
           className="inline-flex items-center gap-1.5 text-[12px] font-bold text-stone-500 hover:text-stone-900"
         >
-          <ArrowLeft className="h-3.5 w-3.5" />
+          <ArrowLeft className="h-3.5 w-3.5" aria-hidden="true" />
           Catalogue des codes
         </Link>
         <h1 className="mt-2 text-xl font-black tracking-tight text-stone-900">

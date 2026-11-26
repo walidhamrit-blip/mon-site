@@ -56,7 +56,7 @@ export function HomeSections({
               ["/demos", ar ? "شاهد نماذج المواقع" : "View website examples"],
               ["/pricing", ar ? "راجع الباقات والأسعار" : "Review plans & prices"],
               ["/creation-sites#lead-form", ar ? "اطلب عرض سعر لمشروعك" : "Request a project quote"],
-            ].map(([href, label]) => <Link key={href} href={href} className="flex items-center justify-between gap-3 rounded-xl bg-[var(--secondary)] px-5 py-4 text-sm font-bold hover:text-[var(--accent)]">{label}<ArrowUpRight className="h-4 w-4 rtl:rotate-[-90deg]" /></Link>)}
+            ].map(([href, label]) => <Link key={href} href={href} className="flex items-center justify-between gap-3 rounded-xl bg-[var(--secondary)] px-5 py-4 text-sm font-bold hover:text-[var(--accent)]">{label}<ArrowUpRight className="h-4 w-4 rtl:rotate-[-90deg]" aria-hidden="true" /></Link>)}
           </div>
         </div>
       </section>
@@ -69,7 +69,7 @@ export function HomeSections({
               [ar ? "مساران واضحان" : "Two clear paths", ar ? "شراء منتج رقمي أو بدء مشروع موقع — لكل طلب خطواته الخاصة." : "Buy a digital product or start a website project, each with its own clear steps."],
               [ar ? "تفاصيل قبل الطلب" : "Details before you order", ar ? "راجع نطاق المشروع، أو منطقة المنتج وتعليمات تفعيله، قبل اتخاذ قرارك." : "Review project scope, or product region and activation details, before making your choice."],
               [ar ? "تواصل مباشر" : "Direct support", ar ? "تواصل معنا عبر صفحة الاتصال أو واتساب لأي سؤال قبل الطلب." : "Reach us through the contact page or WhatsApp with questions before ordering."],
-            ].map(([title, text]) => <div key={title} className="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-6"><CheckCircle2 className="mb-4 h-6 w-6 text-[var(--accent)]" /><h3 className="font-black">{title}</h3><p className="mt-2 text-sm leading-7 text-[var(--muted-foreground)]">{text}</p></div>)}
+            ].map(([title, text]) => <div key={title} className="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-6"><CheckCircle2 className="mb-4 h-6 w-6 text-[var(--accent)]" aria-hidden="true" /><h3 className="font-black">{title}</h3><p className="mt-2 text-sm leading-7 text-[var(--muted-foreground)]">{text}</p></div>)}
           </div>
           <h2 className="mb-5 mt-12 text-2xl font-black">{ar ? "أسئلة قبل أن تبدأ" : "Before you start"}</h2>
           <div className="max-w-3xl space-y-3">

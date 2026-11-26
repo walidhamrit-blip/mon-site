@@ -47,13 +47,13 @@ export default async function AdminSearchConsolePage() {
             className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-stone-300 bg-white px-3.5 text-xs font-semibold text-stone-700 hover:bg-stone-50"
           >
             <span>Ouvrir Google Search Console</span>
-            <ExternalLink className="h-3.5 w-3.5" />
+            <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
           </a>
           <Link
             href="/admin"
             className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-stone-300 bg-white px-3.5 text-xs font-semibold text-stone-700 hover:bg-stone-50"
           >
-            <ArrowLeft className="h-3.5 w-3.5" />
+            <ArrowLeft className="h-3.5 w-3.5" aria-hidden="true" />
             <span>Tableau de bord</span>
           </Link>
         </div>
@@ -62,7 +62,7 @@ export default async function AdminSearchConsolePage() {
       {!configStatus.configured ? (
         <section className="rounded-2xl border border-amber-300 bg-amber-50 p-5 space-y-3">
           <div className="flex items-center gap-2">
-            <Sparkles className="h-4 w-4 text-amber-800" />
+            <Sparkles className="h-4 w-4 text-amber-800" aria-hidden="true" />
             <h2 className="text-sm font-black tracking-tight text-amber-950">
               Relier Google Search Console en 5 minutes (sans exposer vos clés)
             </h2>

@@ -160,15 +160,15 @@ export function ServicesHubView({
 
           <ul className="mt-8 grid sm:grid-cols-3 gap-4 text-sm">
             <li className="flex items-center gap-2">
-              <Check className="h-4 w-4 text-[var(--accent)]" />
+              <Check className="h-4 w-4 text-[var(--accent)]" aria-hidden="true" />
               {pick(s.bulletPriceAr, s.bulletPriceEn)}
             </li>
             <li className="flex items-center gap-2">
-              <Clock className="h-4 w-4 text-[var(--accent)]" />
+              <Clock className="h-4 w-4 text-[var(--accent)]" aria-hidden="true" />
               {pick(s.bulletDeliveryAr, s.bulletDeliveryEn)}
             </li>
             <li className="flex items-center gap-2">
-              <Layers className="h-4 w-4 text-[var(--accent)]" />
+              <Layers className="h-4 w-4 text-[var(--accent)]" aria-hidden="true" />
               {pick(s.bulletRevisionsAr, s.bulletRevisionsEn)}
             </li>
           </ul>
@@ -201,7 +201,7 @@ export function ServicesHubView({
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex items-center gap-2">
                       <span className="grid place-items-center h-9 w-9 rounded-full bg-[var(--accent)]/12 text-[var(--accent)]">
-                        <Sparkles className="h-4 w-4" />
+                        <Sparkles className="h-4 w-4" aria-hidden="true" />
                       </span>
                       <h3 className="font-black text-lg leading-tight">
                         <Link
@@ -231,7 +231,7 @@ export function ServicesHubView({
                   <ul className="mt-4 space-y-1.5 text-xs opacity-70">
                     {(ar ? service.featuresAr : service.featuresEn).map((feature) => (
                       <li key={feature} className="flex items-start gap-2">
-                        <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[var(--accent)]" />
+                        <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[var(--accent)]" aria-hidden="true" />
                         <span>{feature}</span>
                       </li>
                     ))}
@@ -258,7 +258,7 @@ export function ServicesHubView({
                       className="mt-4 inline-flex items-center gap-1.5 text-sm font-bold text-[var(--accent)] hover:underline"
                     >
                       {pick(s.detailsAr, s.detailsEn)}
-                      <ArrowUpRight className="h-4 w-4" />
+                      <ArrowUpRight className="h-4 w-4" aria-hidden="true" />
                     </Link>
                   </div>
                 </article>

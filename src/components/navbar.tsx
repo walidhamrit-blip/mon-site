@@ -181,7 +181,7 @@ export function Navbar() {
                 title={ar ? "فاتح / داكن" : "Light / dark"}
                 className="grid h-11 w-11 cursor-pointer place-items-center rounded-full bg-[var(--secondary)] transition-colors hover:bg-[var(--muted)]"
               >
-                {mode === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+                {mode === "dark" ? <Sun className="h-4 w-4" aria-hidden="true" /> : <Moon className="h-4 w-4" aria-hidden="true" />}
               </button>
               {/* Sélecteur des 6 thèmes classés : visible dès `lg`, sinon dans
                   le menu mobile — il ne doit jamais être inaccessible. */}
@@ -199,7 +199,7 @@ export function Navbar() {
                 className="hidden h-11 items-center gap-1.5 rounded-full bg-[var(--primary)] px-4 text-[12.5px] font-bold text-[var(--primary-foreground)] transition-opacity hover:opacity-90 sm:inline-flex"
               >
                 {ar ? "طلب عرض" : "Get quote"}
-                <ArrowUpRight className="h-3.5 w-3.5 rtl:rotate-[-90deg]" />
+                <ArrowUpRight className="h-3.5 w-3.5 rtl:rotate-[-90deg]" aria-hidden="true" />
               </Link>
 
               <button
@@ -211,7 +211,7 @@ export function Navbar() {
                 aria-label={open ? (ar ? "إغلاق القائمة" : "Close menu") : ar ? "فتح القائمة" : "Open menu"}
                 className="grid h-11 w-11 cursor-pointer place-items-center rounded-full bg-[var(--primary)] text-[var(--primary-foreground)] lg:hidden"
               >
-                {open ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
+                {open ? <X className="h-4 w-4" aria-hidden="true" /> : <Menu className="h-4 w-4" aria-hidden="true" />}
               </button>
             </div>
           </div>
@@ -242,7 +242,7 @@ export function Navbar() {
                 aria-label={ar ? "إغلاق القائمة" : "Close menu"}
                 className="grid h-11 w-11 cursor-pointer place-items-center rounded-full bg-[var(--secondary)] transition-colors hover:bg-[var(--muted)]"
               >
-                <X className="h-5 w-5" />
+                <X className="h-5 w-5" aria-hidden="true" />
               </button>
             </div>
 
@@ -259,7 +259,7 @@ export function Navbar() {
                       }`}
                     >
                       <span>{link.label}</span>
-                      <ArrowUpRight className="h-4 w-4 opacity-30 rtl:rotate-[-90deg]" />
+                      <ArrowUpRight className="h-4 w-4 opacity-30 rtl:rotate-[-90deg]" aria-hidden="true" />
                     </Link>
                   ))}
                 </nav>
@@ -272,7 +272,7 @@ export function Navbar() {
                     className="inline-flex min-h-11 w-full items-center justify-center gap-1.5 rounded-full bg-[var(--primary)] px-4 text-[14px] font-bold text-[var(--primary-foreground)]"
                   >
                     {ar ? "طلب عرض" : "Get quote"}
-                    <ArrowUpRight className="h-4 w-4 rtl:rotate-[-90deg]" />
+                    <ArrowUpRight className="h-4 w-4 rtl:rotate-[-90deg]" aria-hidden="true" />
                   </Link>
                   <WhatsAppEnquiry
                     source="navbar-mobile"
@@ -285,7 +285,7 @@ export function Navbar() {
                 <details className="group mt-5 border-t border-[var(--border)] pt-5">
                   <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between rounded-xl px-4 py-3 text-[14px] font-bold transition-colors hover:bg-[var(--secondary)] [&::-webkit-details-marker]:hidden">
                     {ar ? "تخصيص العرض" : "Customize display"}
-                    <ChevronDown className="h-4 w-4 transition-transform group-open:rotate-180" />
+                    <ChevronDown className="h-4 w-4 transition-transform group-open:rotate-180" aria-hidden="true" />
                   </summary>
                   <div className="mt-4 space-y-5">
                     <LocaleSwitcher variant="list" />

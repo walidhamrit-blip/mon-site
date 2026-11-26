@@ -311,7 +311,7 @@ export function SectorDetailView({
               {(ar ? featuresAr : featuresEn).map((feature, idx) => (
                 <div key={feature} className="flex gap-2 text-sm">
                   <span className="h-5 w-5 rounded-full bg-green-500 text-white grid place-items-center flex-shrink-0 mt-0.5">
-                    <Check className="h-3 w-3" />
+                    <Check className="h-3 w-3" aria-hidden="true" />
                   </span>
                   <span>
                     {feature}

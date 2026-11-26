@@ -43,7 +43,7 @@ export function MidPageCta() {
           <div className="relative flex flex-col gap-7 lg:flex-row lg:items-center lg:justify-between">
             <div className="max-w-[56ch]">
               <span className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1 text-[10.5px] font-black uppercase tracking-[0.18em] text-[var(--accent)]">
-                <Sparkles className="h-3 w-3" />
+                <Sparkles className="h-3 w-3" aria-hidden="true" />
                 {ar ? "ابدأ اليوم" : "Start today"}
               </span>
               <h2 className="mt-4 text-[clamp(1.6rem,1.1rem+1.8vw,2.4rem)] font-black leading-[1.1] tracking-[-0.025em]">
@@ -64,13 +64,13 @@ export function MidPageCta() {
                 className="inline-flex h-12 cursor-pointer items-center justify-center gap-2 rounded-full bg-[var(--accent)] px-6 text-[14px] font-bold text-[var(--accent-foreground)] transition-colors hover:bg-[var(--accent-hover)]"
               >
                 {ar ? "اطلب عرض سعر مجاني" : "Get a free quote"}
-                <ArrowUpRight className="h-4 w-4" />
+                <ArrowUpRight className="h-4 w-4" aria-hidden="true" />
               </button>
               <WhatsAppEnquiry
                 source="mid-page-cta"
                 className="inline-flex h-12 items-center justify-center gap-2 rounded-full border border-white/20 px-6 text-[14px] font-semibold transition-colors hover:bg-white/10"
               >
-                <MessageCircle className="h-4 w-4" />
+                <MessageCircle className="h-4 w-4" aria-hidden="true" />
                 WhatsApp
               </WhatsAppEnquiry>
             </div>

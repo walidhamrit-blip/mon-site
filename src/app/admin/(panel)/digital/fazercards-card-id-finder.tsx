@@ -174,7 +174,7 @@ export function FazercardsCardIdFinder() {
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h2 className="inline-flex items-center gap-2 text-[15px] font-black text-stone-900">
-            <Search className="h-4 w-4 text-[#B8923F]" />
+            <Search className="h-4 w-4 text-[#B8923F]" aria-hidden="true" />
             Trouver un card_id FazerCards
           </h2>
           <p className="mt-1 max-w-2xl text-[12px] leading-5 text-stone-600">
@@ -184,7 +184,7 @@ export function FazercardsCardIdFinder() {
           </p>
         </div>
         <span className="inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-[11px] font-bold text-emerald-700">
-          <ShieldCheck className="h-3.5 w-3.5" />
+          <ShieldCheck className="h-3.5 w-3.5" aria-hidden="true" />
           Lecture seule · aucun achat
         </span>
       </div>
@@ -213,7 +213,7 @@ export function FazercardsCardIdFinder() {
           disabled={busy}
           className="inline-flex h-9 items-center gap-1.5 rounded-md bg-stone-900 px-3 text-[12px] font-bold text-white disabled:opacity-60"
         >
-          {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Search className="h-3.5 w-3.5" />}
+          {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" /> : <Search className="h-3.5 w-3.5" aria-hidden="true" />}
           Rechercher
         </button>
       </div>
@@ -288,7 +288,7 @@ export function FazercardsCardIdFinder() {
               className="inline-flex items-center gap-1 rounded-md border border-stone-300 bg-white px-2.5 py-1.5 text-[11.5px] font-bold text-stone-700 hover:bg-stone-50"
             >
               Ouvrir chez FazerCards
-              <ArrowUpRight className="h-3.5 w-3.5" />
+              <ArrowUpRight className="h-3.5 w-3.5" aria-hidden="true" />
             </a>
           </div>
 
@@ -354,12 +354,12 @@ export function FazercardsCardIdFinder() {
                         >
                           {copied === offer.card_id ? (
                             <>
-                              <Check className="h-3.5 w-3.5 text-emerald-600" />
+                              <Check className="h-3.5 w-3.5 text-emerald-600" aria-hidden="true" />
                               Copié
                             </>
                           ) : (
                             <>
-                              <Copy className="h-3.5 w-3.5" />
+                              <Copy className="h-3.5 w-3.5" aria-hidden="true" />
                               Copier
                             </>
                           )}

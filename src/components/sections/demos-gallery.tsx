@@ -113,7 +113,7 @@ function InteractiveShowcase({
                 href="/demos"
                 className="inline-flex min-h-11 items-center gap-1.5 rounded-full bg-[var(--accent)] px-5 text-sm font-bold text-[var(--accent-foreground)] transition-colors hover:bg-[var(--accent-hover)]"
               >
-                {t.demos.all} <ArrowUpRight className="h-3.5 w-3.5" />
+                {t.demos.all} <ArrowUpRight className="h-3.5 w-3.5" aria-hidden="true" />
               </Link>
             ) : undefined
           }
@@ -210,7 +210,7 @@ function InteractiveShowcase({
                         onClick={() => setFullscreenDemo(d)}
                         className="min-h-11 px-3.5 rounded-full bg-[var(--primary)] text-[var(--primary-foreground)] inline-flex items-center gap-1.5 text-xs font-bold hover:opacity-90 transition-opacity cursor-pointer"
                       >
-                        <Maximize2 className="h-3.5 w-3.5" />
+                        <Maximize2 className="h-3.5 w-3.5" aria-hidden="true" />
                         {locale === "ar" ? "معاينة حية" : "Live View"}
                       </button>
                     )}
@@ -218,7 +218,7 @@ function InteractiveShowcase({
                       href={`/demos/${d.slug}`}
                       className="min-h-11 px-3.5 rounded-full border border-[var(--border)] bg-[var(--card)] inline-flex items-center gap-1 text-xs font-semibold hover:border-[var(--accent)] ms-auto"
                     >
-                      {t.demos.viewDemo} <ArrowUpRight className="h-3.5 w-3.5" />
+                      {t.demos.viewDemo} <ArrowUpRight className="h-3.5 w-3.5" aria-hidden="true" />
                     </Link>
                   </div>
                 </div>
@@ -269,7 +269,7 @@ function InteractiveShowcase({
                     : "hover:bg-[var(--card)]"
                 }`}
               >
-                <Smartphone className="h-3.5 w-3.5" /> {locale === "ar" ? "هاتف" : "Mobile"}
+                <Smartphone className="h-3.5 w-3.5" aria-hidden="true" /> {locale === "ar" ? "هاتف" : "Mobile"}
               </button>
             </div>
             {showAllDemosButton && (
@@ -277,7 +277,7 @@ function InteractiveShowcase({
                 href="/demos"
                 className="min-h-11 px-5 rounded-full bg-[var(--accent)] text-[var(--accent-foreground)] inline-flex items-center gap-1.5 text-sm font-bold hover:bg-[var(--accent-hover)]"
               >
-                {t.demos.all} <ArrowUpRight className="h-3.5 w-3.5" />
+                {t.demos.all} <ArrowUpRight className="h-3.5 w-3.5" aria-hidden="true" />
               </Link>
             )}
           </div>
@@ -321,7 +321,7 @@ function InteractiveShowcase({
                       {locale === "ar" ? "موقع حقيقي حي" : "LIVE SITE"}
                     </span>
                   ) : (
-                    <Globe className="h-3.5 w-3.5 opacity-50 flex-shrink-0" />
+                    <Globe className="h-3.5 w-3.5 opacity-50 flex-shrink-0" aria-hidden="true" />
                   )}
                   <span className="opacity-70 truncate" dir="ltr">
                     {formatHost(activeDemo.previewUrl, activeDemo.slug, siteConfig.domain)}
@@ -346,7 +346,7 @@ function InteractiveShowcase({
                       onClick={() => setFullscreenDemo(activeDemo)}
                       className="min-h-11 px-3.5 rounded-full bg-[var(--accent)] text-[var(--accent-foreground)] inline-flex items-center gap-1.5 text-xs font-black hover:bg-[var(--accent-hover)] transition-colors cursor-pointer shadow-sm"
                     >
-                      <Maximize2 className="h-3.5 w-3.5" />
+                      <Maximize2 className="h-3.5 w-3.5" aria-hidden="true" />
                       <span>
                         {locale === "ar"
                           ? "ملء الشاشة (حاسوب / هاتف)"
@@ -390,7 +390,7 @@ function InteractiveShowcase({
                           onClick={() => setLiveSlug(activeDemo.slug)}
                           className="inline-flex items-center gap-2 rounded-full bg-[var(--card)] px-5 py-3 text-sm font-bold shadow-xl cursor-pointer hover:bg-[var(--secondary)]"
                         >
-                          <Play className="h-4 w-4" />
+                          <Play className="h-4 w-4" aria-hidden="true" />
                           {locale === "ar" ? "تشغيل المعاينة التفاعلية" : "Load interactive preview"}
                         </button>
                       </div>
@@ -497,7 +497,7 @@ function InteractiveShowcase({
                       onClick={() => setFullscreenDemo(activeDemo)}
                       className="min-h-10 px-4 rounded-full bg-[var(--primary)] text-[var(--primary-foreground)] inline-flex items-center gap-1.5 whitespace-nowrap text-xs sm:text-sm font-bold hover:opacity-90 transition-opacity cursor-pointer"
                     >
-                      <Maximize2 className="h-3.5 w-3.5" />
+                      <Maximize2 className="h-3.5 w-3.5" aria-hidden="true" />
                       {locale === "ar" ? "فتح بملء الشاشة (2 عرض)" : "Fullscreen (2 Views)"}
                     </button>
                     <a
@@ -507,7 +507,7 @@ function InteractiveShowcase({
                       className="min-h-10 px-4 rounded-full border border-[var(--border)] bg-[var(--card)] text-[var(--foreground)] inline-flex items-center gap-1.5 whitespace-nowrap text-xs sm:text-sm font-bold hover:border-[var(--accent)] transition-colors shadow-sm"
                     >
                       {locale === "ar" ? "زيارة الموقع الكامل" : "Visit Real Website"}
-                      <ExternalLink className="h-3.5 w-3.5" />
+                      <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
                     </a>
                   </>
                 ) : (
@@ -515,7 +515,7 @@ function InteractiveShowcase({
                     href={`/demos/${activeDemo.slug}`}
                     className="min-h-10 px-4 rounded-full bg-[var(--primary)] text-[var(--primary-foreground)] inline-flex items-center gap-1 text-xs sm:text-sm font-semibold hover:opacity-90 transition-opacity"
                   >
-                    {t.demos.viewDemo} <ArrowUpRight className="h-3.5 w-3.5" />
+                    {t.demos.viewDemo} <ArrowUpRight className="h-3.5 w-3.5" aria-hidden="true" />
                   </Link>
                 )}
               </div>
@@ -556,7 +556,7 @@ function InteractiveShowcase({
                     </div>
                     {activeDemo.slug === d.slug && (
                       <span className="absolute end-2 top-2 grid h-6 w-6 place-items-center rounded-full bg-[var(--accent)] text-[var(--accent-foreground)] shadow">
-                        <Sparkles className="h-3 w-3" />
+                        <Sparkles className="h-3 w-3" aria-hidden="true" />
                       </span>
                     )}
                   </div>

@@ -531,13 +531,13 @@ export function G2gPanel() {
           disabled={busy}
           className="inline-flex items-center gap-1.5 rounded-lg border border-stone-300 px-3 py-1.5 text-xs font-bold text-stone-700 hover:bg-stone-50 disabled:opacity-50"
         >
-          {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
+          {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" /> : <RefreshCw className="h-3.5 w-3.5" aria-hidden="true" />}
           Tester la connexion
         </button>
       </div>
 
       <div className="mt-3 flex items-start gap-2 rounded-lg border border-amber-300 bg-amber-50 p-3 text-[11px] leading-relaxed text-amber-900">
-        <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0" />
+        <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
         <p>
           <strong>Phase 1 — aucun achat automatique.</strong> Le webhook vérifie la signature,
           journalise et alerte, mais n&apos;achète rien et ne livre rien. Gardez{" "}
@@ -586,7 +586,7 @@ export function G2gPanel() {
                       <span
                         className={`mt-0.5 inline-flex h-4 w-4 shrink-0 items-center justify-center rounded-full ${present ? "bg-emerald-100 text-emerald-700" : "bg-stone-100 text-stone-400"}`}
                       >
-                        {present ? <Check className="h-3 w-3" /> : "–"}
+                        {present ? <Check className="h-3 w-3" aria-hidden="true" /> : "–"}
                       </span>
                       <span>
                         <code className="font-mono font-semibold text-stone-800">{check.label}</code>{" "}
@@ -628,7 +628,7 @@ export function G2gPanel() {
                   disabled={probing}
                   className="inline-flex items-center gap-1.5 rounded-lg border border-stone-300 px-2.5 py-1.5 text-[11px] font-bold text-stone-700 hover:bg-stone-50 disabled:opacity-50"
                 >
-                  {probing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : null}
+                  {probing ? <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" /> : null}
                   Diagnostiquer les en-têtes
                 </button>
                 <span className="text-[11px] text-stone-500">
@@ -690,7 +690,7 @@ export function G2gPanel() {
                   onClick={() => void copyWebhookUrl(data.suggestedWebhookUrl)}
                   className="inline-flex items-center gap-1 rounded-lg border border-stone-300 px-2 py-1.5 text-[11px] font-bold text-stone-700 hover:bg-stone-50"
                 >
-                  {copied ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
+                  {copied ? <Check className="h-3 w-3" aria-hidden="true" /> : <Copy className="h-3 w-3" aria-hidden="true" />}
                   {copied ? "Copié" : "Copier"}
                 </button>
               </div>
@@ -717,9 +717,9 @@ export function G2gPanel() {
                   className="inline-flex items-center gap-1.5 rounded-lg border border-stone-300 bg-stone-900 px-2.5 py-1.5 text-[11px] font-bold text-white hover:bg-stone-800 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   {testing ? (
-                    <Loader2 className="h-3 w-3 animate-spin" />
+                    <Loader2 className="h-3 w-3 animate-spin" aria-hidden="true" />
                   ) : (
-                    <Send className="h-3 w-3" />
+                    <Send className="h-3 w-3" aria-hidden="true" />
                   )}
                   {testing ? "Envoi…" : "Envoyer un événement de test"}
                 </button>
@@ -842,7 +842,7 @@ export function G2gPanel() {
                         <div className="flex gap-1">
                           <button type="button" onClick={() => edit(mapping)} className="rounded border border-stone-300 px-1.5 py-1 hover:bg-stone-50">Éditer</button>
                           <button type="button" onClick={() => void remove(mapping.offerId)} className="rounded border border-red-200 px-1.5 py-1 text-red-700 hover:bg-red-50" aria-label={`Supprimer ${mapping.offerId}`}>
-                            <Trash2 className="h-3 w-3" />
+                            <Trash2 className="h-3 w-3" aria-hidden="true" />
                           </button>
                         </div>
                       </td>
@@ -878,7 +878,7 @@ export function G2gPanel() {
             <label className="block sm:col-span-2 lg:col-span-3"><span className={labelClass}>Note interne</span><input className={inputClass} value={form.note} onChange={(e) => field("note", e.target.value)} placeholder="Région Global, code texte, restrictions…" /></label>
             <div className="sm:col-span-2 lg:col-span-3">
               <button type="button" onClick={() => void save()} disabled={saving || !form.offerId} className="inline-flex items-center gap-1.5 rounded-lg bg-stone-900 px-3.5 py-2 text-xs font-bold text-white hover:bg-stone-800 disabled:opacity-50">
-                {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : null}
+                {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" /> : null}
                 Enregistrer la correspondance
               </button>
             </div>
@@ -948,7 +948,7 @@ export function G2gPanel() {
                   className="inline-flex items-center gap-1.5 rounded-lg border border-stone-300 px-3 py-1.5 text-xs font-bold text-stone-700 hover:bg-stone-50 disabled:opacity-50"
                 >
                   {apiQtyPatch.busy ? (
-                    <Loader2 className="h-3 w-3 animate-spin" />
+                    <Loader2 className="h-3 w-3 animate-spin" aria-hidden="true" />
                   ) : null}
                   Mettre api_qty à jour sur G2G
                 </button>

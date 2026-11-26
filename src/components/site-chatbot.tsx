@@ -348,7 +348,7 @@ function ChatShell() {
                 aria-label={ar ? "إعادة البدء" : "Restart"}
                 className="grid h-11 w-11 place-items-center rounded-full opacity-70 hover:opacity-100 cursor-pointer"
               >
-                <RotateCcw className="h-3.5 w-3.5" />
+                <RotateCcw className="h-3.5 w-3.5" aria-hidden="true" />
               </button>
               <button
                 type="button"
@@ -356,7 +356,7 @@ function ChatShell() {
                 aria-label={ar ? "إغلاق" : "Close"}
                 className="grid h-11 w-11 place-items-center rounded-full opacity-70 hover:opacity-100 cursor-pointer"
               >
-                <X className="h-4 w-4" />
+                <X className="h-4 w-4" aria-hidden="true" />
               </button>
             </header>
 
@@ -385,7 +385,7 @@ function ChatShell() {
                                 className="inline-flex items-center gap-1 rounded-full bg-[var(--accent)] px-3 py-1.5 text-[11.5px] font-black text-[var(--accent-foreground)] hover:bg-[var(--accent-hover)] transition-colors"
                               >
                                 {action.label}
-                                <ArrowRight className="h-3 w-3 rtl:rotate-180" />
+                                <ArrowRight className="h-3 w-3 rtl:rotate-180" aria-hidden="true" />
                               </WhatsAppEnquiry>
                             ) : action.external ? (
                               <a
@@ -396,7 +396,7 @@ function ChatShell() {
                                 className="inline-flex items-center gap-1 rounded-full bg-[var(--accent)] px-3 py-1.5 text-[11.5px] font-black text-[var(--accent-foreground)] hover:bg-[var(--accent-hover)] transition-colors"
                               >
                                 {action.label}
-                                <ArrowRight className="h-3 w-3 rtl:rotate-180" />
+                                <ArrowRight className="h-3 w-3 rtl:rotate-180" aria-hidden="true" />
                               </a>
                             ) : (
                               <Link
@@ -406,7 +406,7 @@ function ChatShell() {
                                 className="inline-flex items-center gap-1 rounded-full bg-[var(--accent)] px-3 py-1.5 text-[11.5px] font-black text-[var(--accent-foreground)] hover:bg-[var(--accent-hover)] transition-colors"
                               >
                                 {action.label}
-                                <ArrowRight className="h-3 w-3 rtl:rotate-180" />
+                                <ArrowRight className="h-3 w-3 rtl:rotate-180" aria-hidden="true" />
                               </Link>
                             ),
                           )}
@@ -479,7 +479,7 @@ function ChatShell() {
                 disabled={typing || input.trim().length === 0}
                 className="disabled:opacity-50 grid h-11 w-11 shrink-0 place-items-center rounded-full bg-[var(--accent)] text-[var(--accent-foreground)] hover:bg-[var(--accent-hover)] transition-colors cursor-pointer"
               >
-                <Send className="h-4 w-4 rtl:rotate-180" />
+                <Send className="h-4 w-4 rtl:rotate-180" aria-hidden="true" />
               </button>
             </form>
           </m.section>
@@ -514,7 +514,7 @@ function ChatShell() {
                 aria-label={ar ? "إغلاق رسالة الترحيب" : "Dismiss welcome message"}
                 className="grid h-9 w-9 shrink-0 cursor-pointer place-items-center rounded-full text-[var(--muted-foreground)] transition-colors hover:bg-[var(--secondary)] hover:text-[var(--foreground)]"
               >
-                <X className="h-3 w-3" />
+                <X className="h-3 w-3" aria-hidden="true" />
               </button>
             </m.div>
           )}
@@ -555,7 +555,7 @@ function ChatShell() {
           )}
           <span className="absolute -top-1 -end-1 grid h-5 w-5 place-items-center rounded-full bg-[var(--accent)] text-[var(--accent-foreground)] ring-2 ring-[var(--background)]">
             {open ? (
-              <X className="h-3 w-3" />
+              <X className="h-3 w-3" aria-hidden="true" />
             ) : (
               <span className="text-[10px] font-black">?</span>
             )}

@@ -360,7 +360,7 @@ export function DigitalCatalog({
               <RailButton
                 active={platform === "all"}
                 onClick={() => setPlatform("all")}
-                icon={<Gamepad2 className="h-3.5 w-3.5" />}
+                icon={<Gamepad2 className="h-3.5 w-3.5" aria-hidden="true" />}
                 label={ar ? "كل المنصات" : "All platforms"}
                 count={products.length}
               />
@@ -372,7 +372,7 @@ export function DigitalCatalog({
                   onClick={() =>
                     setPlatform(platform === item.value ? "all" : item.value)
                   }
-                  icon={<Gamepad2 className="h-3.5 w-3.5" />}
+                  icon={<Gamepad2 className="h-3.5 w-3.5" aria-hidden="true" />}
                   label={item.value}
                   count={item.count}
                 />
@@ -430,7 +430,7 @@ export function DigitalCatalog({
               <RailButton
                 active={priceRange === range.id}
                 onClick={() => setPriceRange(range.id)}
-                icon={<Wallet className="h-3.5 w-3.5" />}
+                icon={<Wallet className="h-3.5 w-3.5" aria-hidden="true" />}
                 label={priceRangeLabel(range.id, ar)}
                 count={priceCounts.get(range.id) ?? 0}
               />
@@ -471,7 +471,7 @@ export function DigitalCatalog({
         <div className="site-container px-4 sm:px-6 lg:px-8">
           <div className="flex items-center gap-2 py-3">
             <div className="relative min-w-0 flex-1">
-              <Search className="pointer-events-none absolute start-3.5 top-1/2 h-4 w-4 -translate-y-1/2 opacity-40" />
+              <Search className="pointer-events-none absolute start-3.5 top-1/2 h-4 w-4 -translate-y-1/2 opacity-40" aria-hidden="true" />
               <input
                 type="search"
                 name="q"
@@ -493,7 +493,7 @@ export function DigitalCatalog({
                   aria-label={ar ? "مسح البحث" : "Clear search"}
                   className="absolute end-1.5 top-1/2 grid h-9 w-9 -translate-y-1/2 cursor-pointer place-items-center rounded-full bg-[var(--secondary)] text-[var(--muted-foreground)] hover:text-[var(--foreground)]"
                 >
-                  <X className="h-3.5 w-3.5" />
+                  <X className="h-3.5 w-3.5" aria-hidden="true" />
                 </button>
               )}
             </div>
@@ -512,7 +512,7 @@ export function DigitalCatalog({
                 <option value="price-desc">{ar ? "السعر: الأعلى أولاً" : "Price: high to low"}</option>
                 <option value="name">{ar ? "الاسم (أ-ي)" : "Name (A–Z)"}</option>
               </select>
-              <ChevronDown className="pointer-events-none absolute end-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 opacity-50" />
+              <ChevronDown className="pointer-events-none absolute end-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 opacity-50" aria-hidden="true" />
             </div>
 
             {/* Filtres (mobile) */}
@@ -523,7 +523,7 @@ export function DigitalCatalog({
               aria-controls="catalog-filters"
               className="inline-flex h-11 cursor-pointer items-center gap-2 rounded-full border border-[var(--border)] bg-[var(--card)] px-4 text-[12.5px] font-bold lg:hidden"
             >
-              <SlidersHorizontal className="h-4 w-4" />
+              <SlidersHorizontal className="h-4 w-4" aria-hidden="true" />
               {ar ? "فلترة" : "Filters"}
               {activeFilters > 0 && (
                 <span className="grid h-5 min-w-5 place-items-center rounded-full bg-[var(--accent)] px-1 text-[10.5px] font-black text-[var(--accent-foreground)]">
@@ -667,7 +667,7 @@ export function DigitalCatalog({
             {filtered.length === 0 ? (
               <div className="card-surface p-10 text-center sm:p-14">
                 <div className="mx-auto grid h-12 w-12 place-items-center rounded-2xl bg-[var(--accent)]/15 text-[var(--accent)]">
-                  <Package className="h-6 w-6" />
+                  <Package className="h-6 w-6" aria-hidden="true" />
                 </div>
                 <h2 className="mt-4 text-xl font-black">
                   {ar ? "لا يوجد منتج مطابق" : "No matching product"}
@@ -788,7 +788,7 @@ export function DigitalCatalog({
 
                         <div className="absolute inset-x-2 bottom-2 flex flex-wrap items-center gap-1">
                           <span className="inline-flex items-center gap-1 rounded-md border border-white/25 bg-white/12 px-1.5 py-0.5 text-[10px] font-bold text-white backdrop-blur-sm">
-                            <Gamepad2 className="h-2.5 w-2.5" />
+                            <Gamepad2 className="h-2.5 w-2.5" aria-hidden="true" />
                             {product.platform || "—"}
                           </span>
                           <span className="inline-flex items-center gap-1 rounded-md border border-white/25 bg-white/12 px-1.5 py-0.5 text-[10px] font-bold text-white backdrop-blur-sm">
@@ -855,17 +855,17 @@ export function DigitalCatalog({
             <div className="mt-7 grid gap-2.5 sm:grid-cols-3">
               {[
                 {
-                  icon: <Zap className="h-4 w-4" />,
+                  icon: <Zap className="h-4 w-4" aria-hidden="true" />,
                   title: ar ? "تسليم إلكتروني فوري" : "Instant digital delivery",
                   text: ar ? "الكود إلى بريدك بعد تأكيد الدفع." : "Your code lands in your inbox after payment.",
                 },
                 {
-                  icon: <Layers className="h-4 w-4" />,
+                  icon: <Layers className="h-4 w-4" aria-hidden="true" />,
                   title: ar ? "أكواد أصلية" : "Genuine codes",
                   text: ar ? "من موزّع رسمي، دون وسيط." : "Sourced from the official distributor.",
                 },
                 {
-                  icon: <Check className="h-4 w-4" />,
+                  icon: <Check className="h-4 w-4" aria-hidden="true" />,
                   title: ar ? "دفع بالعملات الرقمية" : "Crypto payment",
                   text: ar ? "USDT وغيرها من الشبكات." : "USDT and other low-fee networks.",
                 },
@@ -1058,7 +1058,7 @@ function ActiveChip({ label, onRemove }: { label: string; onRemove: () => void }
       className="inline-flex min-h-9 cursor-pointer items-center gap-1 rounded-full border border-[var(--accent)]/40 bg-[var(--accent)]/12 px-2.5 py-0.5 text-[12px] font-bold text-[var(--foreground)] transition-colors hover:bg-[var(--accent)]/20"
     >
       {label}
-      <X className="h-3 w-3 opacity-60" />
+      <X className="h-3 w-3 opacity-60" aria-hidden="true" />
     </button>
   );
 }

@@ -136,7 +136,7 @@ export function CTAForm() {
               <div className="mt-8 flex flex-wrap gap-3">
                 <a href={whatsappLink(siteConfig.whatsapp, whatsappMsg)} target="_blank" rel="noopener noreferrer" className="h-11 px-5 rounded-full bg-[#0B6B3A] text-white inline-flex items-center gap-2 font-bold hover:brightness-95">
                   {locale === "ar" ? "تحدث واتساب الآن" : "Chat on WhatsApp"}
-                  <ArrowUpRight className="h-4 w-4" />
+                  <ArrowUpRight className="h-4 w-4" aria-hidden="true" />
                 </a>
                 <div className="text-xs flex items-center">
                   {heading.note || t.cta.guarantee}
@@ -272,16 +272,16 @@ export function CTAForm() {
                     )}
                     {step < totalSteps ? (
                       <button type="button" onClick={next} className="flex-1 h-11 rounded-full bg-[var(--primary)] text-[var(--primary-foreground)] font-bold inline-flex items-center justify-center gap-2 hover:opacity-90 cursor-pointer">
-                        {locale === "ar" ? "التالي" : "Next"} <ArrowUpRight className="h-4 w-4" />
+                        {locale === "ar" ? "التالي" : "Next"} <ArrowUpRight className="h-4 w-4" aria-hidden="true" />
                       </button>
                     ) : (
                       // Désactivé seulement pendant l'envoi (évite les doubles
                       // demandes), avec un indicateur de progression.
                       <button type="submit" disabled={isSubmitting} aria-busy={isSubmitting || undefined} className="flex-1 h-11 rounded-full bg-[var(--accent)] text-[var(--accent-foreground)] font-bold inline-flex items-center justify-center gap-2 hover:bg-[var(--accent-hover)] cursor-pointer disabled:cursor-wait disabled:opacity-80">
                         {isSubmitting ? (
-                          <><Loader2 className="h-4 w-4 animate-spin" /> {ar ? "جارٍ الإرسال…" : "Sending…"}</>
+                          <><Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> {ar ? "جارٍ الإرسال…" : "Sending…"}</>
                         ) : (
-                          <><Send className="h-4 w-4" /> {ar ? "إرسال الطلب" : "Send request"}</>
+                          <><Send className="h-4 w-4" aria-hidden="true" /> {ar ? "إرسال الطلب" : "Send request"}</>
                         )}
                       </button>
                     )}
@@ -295,7 +295,7 @@ export function CTAForm() {
             ) : (
               <m.div role="status" initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} className="text-center py-10">
                 <div className="h-16 w-16 rounded-full bg-green-500 text-white grid place-items-center mx-auto">
-                  <CheckCircle2 className="h-8 w-8" />
+                  <CheckCircle2 className="h-8 w-8" aria-hidden="true" />
                 </div>
                 <h3 className="mt-4 text-xl font-black">{locale === "ar" ? "تم الإرسال بنجاح!" : "Sent successfully!"}</h3>
                 <p className="mt-2 text-sm text-[var(--muted-foreground)] max-w-[32ch] mx-auto">

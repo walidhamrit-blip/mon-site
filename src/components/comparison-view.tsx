@@ -79,11 +79,11 @@ export function ComparisonView({
               href="/compare"
               className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-[var(--card)] border border-[var(--border)] hover:border-[var(--accent)]"
             >
-              <ArrowLeft className="h-3 w-3" />
+              <ArrowLeft className="h-3 w-3" aria-hidden="true" />
               {pick(c.backAr, c.backEn)}
             </Link>
             <span className="rounded-full border border-[var(--accent)]/35 bg-[var(--accent)]/12 px-3 py-1 text-[var(--accent)]">
-              <Scale className="me-1 inline h-3 w-3" />
+              <Scale className="me-1 inline h-3 w-3" aria-hidden="true" />
               {pick(c.badgeAr, c.badgeEn)}
             </span>
           </nav>
@@ -120,7 +120,7 @@ export function ComparisonView({
             <div className="rounded-[var(--radius-lg)] bg-[#C1272D] text-white p-6 sm:p-8 flex flex-col">
               <div className="flex items-center gap-3">
                 <span className="grid h-9 w-9 place-items-center rounded-full bg-white/20">
-                  <X className="h-5 w-5" />
+                  <X className="h-5 w-5" aria-hidden="true" />
                 </span>
                 <div>
                   <p className="text-lg font-black leading-tight">
@@ -143,7 +143,7 @@ export function ComparisonView({
                 {comparison.themPoints.map((point) => (
                   <li key={point.textEn} className="flex gap-2.5">
                     <span className="mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-full bg-white/20">
-                      <X className="h-3 w-3" />
+                      <X className="h-3 w-3" aria-hidden="true" />
                     </span>
                     <span>{pick(point.textAr, point.textEn)}</span>
                   </li>
@@ -155,7 +155,7 @@ export function ComparisonView({
             <div className="rounded-[var(--radius-lg)] bg-[#0E9F6E] text-white p-6 sm:p-8 flex flex-col">
               <div className="flex items-center gap-3">
                 <span className="grid h-9 w-9 place-items-center rounded-full bg-white/20">
-                  <Check className="h-5 w-5" />
+                  <Check className="h-5 w-5" aria-hidden="true" />
                 </span>
                 <div>
                   <p className="text-lg font-black leading-tight">{usName}</p>
@@ -180,7 +180,7 @@ export function ComparisonView({
                 {comparison.usPoints.map((point) => (
                   <li key={point.textEn} className="flex gap-2.5">
                     <span className="mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-full bg-white/25">
-                      <Check className="h-3 w-3" />
+                      <Check className="h-3 w-3" aria-hidden="true" />
                     </span>
                     <span>{pick(point.textAr, point.textEn)}</span>
                   </li>
@@ -254,7 +254,7 @@ export function ComparisonView({
                     <td className="p-4 opacity-75">
                       <span className="flex gap-2">
                         <span className="mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-full bg-[#C1272D]/12 text-[#C1272D]">
-                          <X className="h-3 w-3" />
+                          <X className="h-3 w-3" aria-hidden="true" />
                         </span>
                         <span>
                           {criterion.themAr
@@ -266,7 +266,7 @@ export function ComparisonView({
                     <td className="p-4">
                       <span className="flex gap-2">
                         <span className="mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-full bg-[#0E9F6E]/12 text-[#0E9F6E]">
-                          <Check className="h-3 w-3" />
+                          <Check className="h-3 w-3" aria-hidden="true" />
                         </span>
                         <span>{pick(criterion.usAr, criterion.usEn)}</span>
                       </span>
@@ -290,7 +290,7 @@ export function ComparisonView({
             <div className="rounded-[var(--radius-lg)] border border-[var(--border)] bg-[var(--card)] p-6">
               <h3 className="flex items-center gap-2 font-black">
                 <span className="grid h-7 w-7 place-items-center rounded-full bg-[#C1272D]/12 text-[#C1272D]">
-                  <X className="h-4 w-4" />
+                  <X className="h-4 w-4" aria-hidden="true" />
                 </span>
                 {pick(c.whenThemAr, c.whenThemEn).replace(
                   "{name}",
@@ -313,7 +313,7 @@ export function ComparisonView({
             <div className="rounded-[var(--radius-lg)] border border-[#0E9F6E]/35 bg-[#0E9F6E]/8 p-6">
               <h3 className="flex items-center gap-2 font-black">
                 <span className="grid h-7 w-7 place-items-center rounded-full bg-[#0E9F6E]/15 text-[#0E9F6E]">
-                  <Check className="h-4 w-4" />
+                  <Check className="h-4 w-4" aria-hidden="true" />
                 </span>
                 {pick(c.whenUsAr, c.whenUsEn)}
               </h3>
@@ -366,15 +366,15 @@ export function ComparisonView({
               <p className="mt-2 opacity-70 max-w-[60ch]">{summaryText}</p>
               <ul className="mt-4 flex flex-wrap gap-4 text-sm opacity-85">
                 <li className="flex items-center gap-1.5">
-                  <Clock className="h-4 w-4" />
+                  <Clock className="h-4 w-4" aria-hidden="true" />
                   {pick(c.deliveryAr, c.deliveryEn)}
                 </li>
                 <li className="flex items-center gap-1.5">
-                  <ShieldCheck className="h-4 w-4" />
+                  <ShieldCheck className="h-4 w-4" aria-hidden="true" />
                   {pick(c.ownershipAr, c.ownershipEn)}
                 </li>
                 <li className="flex items-center gap-1.5">
-                  <MessageCircle className="h-4 w-4" />
+                  <MessageCircle className="h-4 w-4" aria-hidden="true" />
                   {pick(c.replyAr, c.replyEn)}
                 </li>
               </ul>
@@ -411,7 +411,7 @@ export function ComparisonView({
                     className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-[var(--card)] border border-[var(--border)] text-sm font-medium hover:border-[var(--accent)] hover:bg-[var(--accent)]/10 transition-colors"
                   >
                     {pick(item.competitorAr, item.competitorEn)}
-                    <ArrowUpRight className="h-3.5 w-3.5" />
+                    <ArrowUpRight className="h-3.5 w-3.5" aria-hidden="true" />
                   </Link>
                 ))}
               </div>

@@ -112,14 +112,14 @@ export function Services() {
                   className="mt-2 inline-flex items-center gap-1 text-xs font-bold text-[var(--accent)] hover:underline"
                 >
                   {ar ? "تفاصيل الخدمة والأسعار" : "Service details & pricing"}
-                  <ArrowUpRight className="h-3.5 w-3.5" />
+                  <ArrowUpRight className="h-3.5 w-3.5" aria-hidden="true" />
                 </Link>
 
                 <ul className="mt-4 space-y-2">
                   {(ar ? service.featuresAr : service.featuresEn).map((f) => (
                     <li key={f} className="flex gap-2 text-[13px] leading-6 opacity-80">
                       <span className="mt-1 h-4 w-4 rounded-full bg-[var(--accent)] text-white grid place-items-center flex-shrink-0">
-                        <Check className="h-2.5 w-2.5" />
+                        <Check className="h-2.5 w-2.5" aria-hidden="true" />
                       </span>
                       <span>{f}</span>
                     </li>
@@ -134,7 +134,7 @@ export function Services() {
                       rel="noopener noreferrer"
                       className="h-11 rounded-full bg-[#0B6B3A] text-white font-bold text-sm inline-flex items-center justify-center gap-2 w-full hover:brightness-95 transition"
                     >
-                      <MessageCircle className="h-4 w-4" />
+                      <MessageCircle className="h-4 w-4" aria-hidden="true" />
                       {ar ? "أكمل الطلب عبر واتساب" : "Continue on WhatsApp"}
                     </a>
                   ) : (
@@ -144,7 +144,7 @@ export function Services() {
                       className="h-11 rounded-full border border-[var(--border)] font-bold text-sm inline-flex items-center justify-center gap-2 w-full hover:border-[var(--accent)] hover:bg-[var(--accent)]/10 transition-colors cursor-pointer"
                     >
                       {ar ? t.services.ctaAr : t.services.ctaEn}
-                      <ArrowUpRight className="h-4 w-4" />
+                      <ArrowUpRight className="h-4 w-4" aria-hidden="true" />
                     </button>
                   )}
                 </div>
@@ -156,7 +156,7 @@ export function Services() {
         <div className="mt-10 max-w-[760px] mx-auto rounded-[20px] border border-[var(--accent)]/30 bg-[var(--accent)]/5 p-5 flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="text-center sm:text-start">
             <div className="flex items-center justify-center sm:justify-start gap-2 text-sm font-black">
-              <Sparkles className="h-4 w-4 text-[var(--accent)]" />
+              <Sparkles className="h-4 w-4 text-[var(--accent)]" aria-hidden="true" />
               {ar ? t.services.customAr : t.services.customEn}
             </div>
             <p className="mt-1 text-xs opacity-60">
@@ -175,7 +175,7 @@ export function Services() {
               className="h-10 px-5 rounded-full bg-[var(--accent)] text-[var(--accent-foreground)] text-xs font-black inline-flex items-center gap-1.5 hover:bg-[var(--accent-hover)] transition-colors"
             >
               {ar ? "تواصل معنا" : "Contact us"}
-              <ArrowUpRight className="h-3.5 w-3.5" />
+              <ArrowUpRight className="h-3.5 w-3.5" aria-hidden="true" />
             </Link>
           </div>
         </div>

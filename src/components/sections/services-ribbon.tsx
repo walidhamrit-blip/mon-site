@@ -16,11 +16,11 @@ export function ServicesRibbon() {
     <section className="services-ribbon relative overflow-hidden border-y border-[var(--accent)]/30" aria-label={ar ? "خدماتنا ومميزاتنا" : "Our services & strengths"} data-paused={paused}>
       <div className="site-container flex items-center justify-between px-4 pt-4 sm:px-6 lg:px-8">
         <p className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--accent)]">
-          <Sparkles className="h-3.5 w-3.5" />
+          <Sparkles className="h-3.5 w-3.5" aria-hidden="true" />
           {ar ? ribbon.taglineAr : ribbon.taglineEn}
         </p>
         <button type="button" onClick={() => setPaused(!paused)} className="ribbon-pause grid h-8 w-8 cursor-pointer place-items-center rounded-full border border-[var(--accent)]/30 text-[var(--accent)] transition-colors hover:bg-[var(--accent)]/10" aria-label={paused ? (ar ? "تشغيل شريط الخدمات" : "Play services ribbon") : (ar ? "إيقاف شريط الخدمات" : "Pause services ribbon")}>
-          {paused ? <Play className="h-3 w-3" /> : <Pause className="h-3 w-3" />}
+          {paused ? <Play className="h-3 w-3" aria-hidden="true" /> : <Pause className="h-3 w-3" aria-hidden="true" />}
         </button>
       </div>
       <div className="ribbon-window overflow-hidden py-5 sm:py-6" dir="ltr">

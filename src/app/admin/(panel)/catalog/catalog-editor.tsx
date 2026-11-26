@@ -201,7 +201,7 @@ export function CatalogEditor({
               : "bg-red-600 text-white"
           }`}
         >
-          <Check className="h-3.5 w-3.5 text-[#E5CA87] shrink-0" />
+          <Check className="h-3.5 w-3.5 text-[#E5CA87] shrink-0" aria-hidden="true" />
           <span>{toast.msg}</span>
         </div>
       )}
@@ -225,7 +225,7 @@ export function CatalogEditor({
           className="h-10 px-4 rounded-xl border border-stone-300 bg-white text-stone-800 text-xs sm:text-sm font-semibold inline-flex items-center gap-1.5 hover:bg-stone-50"
         >
           Voir {tab === "apps" ? "/apps" : "/products"}{" "}
-          <ExternalLink className="h-3.5 w-3.5 text-[#8A6D2F]" />
+          <ExternalLink className="h-3.5 w-3.5 text-[#8A6D2F]" aria-hidden="true" />
         </Link>
       </div>
 
@@ -248,7 +248,7 @@ export function CatalogEditor({
                   : "bg-stone-100 text-stone-600"
               }`}
             >
-              <Smartphone className="h-5 w-5" />
+              <Smartphone className="h-5 w-5" aria-hidden="true" />
             </span>
             <div>
               <div className="text-sm font-black text-stone-900">
@@ -282,7 +282,7 @@ export function CatalogEditor({
                   : "bg-stone-100 text-stone-600"
               }`}
             >
-              <Layers className="h-5 w-5" />
+              <Layers className="h-5 w-5" aria-hidden="true" />
             </span>
             <div>
               <div className="text-sm font-black text-stone-900">
@@ -480,7 +480,7 @@ export function CatalogEditor({
             onClick={addItem}
             className="h-9 px-4 rounded-xl bg-stone-900 text-white text-xs font-bold inline-flex items-center gap-1.5 hover:bg-stone-800 cursor-pointer shadow-xs"
           >
-            <Plus className="h-4 w-4 text-[#E5CA87]" />
+            <Plus className="h-4 w-4 text-[#E5CA87]" aria-hidden="true" />
             {tab === "apps"
               ? "+ Ajouter une application"
               : "+ Ajouter un produit / logiciel"}
@@ -525,8 +525,7 @@ export function CatalogEditor({
                   <ChevronDown
                     className={`h-4 w-4 text-stone-400 transition-transform ${
                       open ? "rotate-180 text-stone-900" : ""
-                    }`}
-                  />
+                    }`} aria-hidden="true" />
                 </button>
 
                 <div className="flex items-center gap-1 shrink-0">
@@ -546,7 +545,7 @@ export function CatalogEditor({
                     }}
                     className="h-8 px-2.5 rounded-lg border border-[#C6A664] bg-[#C6A664]/15 text-[#6F5620] hover:bg-[#C6A664]/25 text-xs font-bold inline-flex items-center gap-1 cursor-pointer"
                   >
-                    <Sparkles className="h-3.5 w-3.5" />
+                    <Sparkles className="h-3.5 w-3.5" aria-hidden="true" />
                     <span className="hidden sm:inline">Optimiser SEO & GEO</span>
                   </button>
                   <button
@@ -555,7 +554,7 @@ export function CatalogEditor({
                     onClick={() => moveItem(idx, -1)}
                     className="h-8 w-8 rounded-lg border border-stone-200 bg-stone-50 grid place-items-center text-stone-600 hover:bg-stone-100 disabled:opacity-30 cursor-pointer"
                   >
-                    <ArrowUp className="h-3.5 w-3.5" />
+                    <ArrowUp className="h-3.5 w-3.5" aria-hidden="true" />
                   </button>
                   <button
                     type="button"
@@ -570,7 +569,7 @@ export function CatalogEditor({
                     onClick={() => deleteItem(idx)}
                     className="h-8 px-2.5 rounded-lg border border-red-200 bg-red-50 text-red-600 hover:bg-red-100 text-xs font-semibold inline-flex items-center gap-1 cursor-pointer"
                   >
-                    <Trash2 className="h-3.5 w-3.5" />
+                    <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
                     <span className="hidden sm:inline">Supprimer</span>
                   </button>
                 </div>
@@ -915,7 +914,7 @@ export function CatalogEditor({
               onClick={onReset}
               className="h-9 px-3.5 rounded-xl border border-stone-300 bg-stone-50 text-stone-600 text-xs font-semibold hover:bg-stone-100 inline-flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
             >
-              <RotateCcw className="h-3.5 w-3.5" />
+              <RotateCcw className="h-3.5 w-3.5" aria-hidden="true" />
               Valeurs par défaut
             </button>
             <button
@@ -924,7 +923,7 @@ export function CatalogEditor({
               onClick={onSave}
               className="h-9 px-5 rounded-xl bg-stone-900 text-white text-xs sm:text-sm font-bold hover:bg-stone-800 inline-flex items-center gap-2 cursor-pointer disabled:opacity-50 shadow-xs"
             >
-              <Check className="h-4 w-4 text-[#E5CA87]" />
+              <Check className="h-4 w-4 text-[#E5CA87]" aria-hidden="true" />
               {pending ? "Enregistrement…" : "Enregistrer la page"}
             </button>
           </div>

@@ -740,7 +740,7 @@ export function DigitalBuyDialog({ product, denominationId, onClose }: Props) {
               aria-label={ar ? "إغلاق" : "Close"}
               className="grid h-11 w-11 shrink-0 cursor-pointer place-items-center rounded-full border border-[var(--border)] text-[var(--muted-foreground)] hover:border-[var(--accent)]"
             >
-              <X className="h-4 w-4" />
+              <X className="h-4 w-4" aria-hidden="true" />
             </button>
           </div>
 
@@ -768,18 +768,18 @@ export function DigitalBuyDialog({ product, denominationId, onClose }: Props) {
             rel="noopener noreferrer"
             className="mt-4 inline-flex h-12 w-full items-center justify-center gap-2 rounded-full bg-[var(--accent)] px-4 text-sm font-black text-[var(--accent-foreground)] shadow-sm transition-colors hover:bg-[var(--accent-hover)]"
           >
-            <CreditCard className="h-4 w-4" />
+            <CreditCard className="h-4 w-4" aria-hidden="true" />
             {ar
               ? `فتح صفحة الدفع بالبطاقة · $${cardReady.billedUsd.toFixed(2)}`
               : `Open secure card checkout · $${cardReady.billedUsd.toFixed(2)}`}
-            <ExternalLink className="h-4 w-4" />
+            <ExternalLink className="h-4 w-4" aria-hidden="true" />
           </a>
 
           <a
             href={cardReady.trackingUrl}
             className="mt-2.5 inline-flex h-11 w-full items-center justify-center gap-2 rounded-full border border-[var(--border)] px-4 text-xs font-black text-[var(--foreground)] transition-colors hover:border-[var(--accent)]"
           >
-            <Loader2 className="h-3.5 w-3.5 animate-spin text-[var(--accent)]" />
+            <Loader2 className="h-3.5 w-3.5 animate-spin text-[var(--accent)]" aria-hidden="true" />
             {ar
               ? "الانتقال إلى صفحة التتبع المباشر واستلام الكود"
               : "Go to live tracking & code delivery page"}
@@ -819,7 +819,7 @@ export function DigitalBuyDialog({ product, denominationId, onClose }: Props) {
             aria-label={ar ? "إغلاق" : "Close"}
             className="grid h-11 w-11 shrink-0 cursor-pointer place-items-center rounded-full border border-[var(--border)] text-[var(--muted-foreground)] hover:border-[var(--accent)]"
           >
-            <X className="h-4 w-4" />
+            <X className="h-4 w-4" aria-hidden="true" />
           </button>
         </div>
 
@@ -892,7 +892,7 @@ export function DigitalBuyDialog({ product, denominationId, onClose }: Props) {
               aria-label={ar ? "إنقاص" : "Decrease"}
               className="grid h-11 w-11 cursor-pointer place-items-center rounded-full border border-[var(--border)] disabled:cursor-not-allowed disabled:opacity-40"
             >
-              <Minus className="h-4 w-4" />
+              <Minus className="h-4 w-4" aria-hidden="true" />
             </button>
             <span className="w-8 text-center text-[15px] font-black tabular-nums">{quantity}</span>
             <button
@@ -902,7 +902,7 @@ export function DigitalBuyDialog({ product, denominationId, onClose }: Props) {
               aria-label={ar ? "زيادة" : "Increase"}
               className="grid h-11 w-11 cursor-pointer place-items-center rounded-full border border-[var(--border)] disabled:cursor-not-allowed disabled:opacity-40"
             >
-              <Plus className="h-4 w-4" />
+              <Plus className="h-4 w-4" aria-hidden="true" />
             </button>
           </div>
         </div>
@@ -928,7 +928,7 @@ export function DigitalBuyDialog({ product, denominationId, onClose }: Props) {
                       : "border-[var(--border)] hover:border-[var(--accent)]/60"
                   }`}
                 >
-                  <CreditCard className="h-4 w-4 shrink-0" />
+                  <CreditCard className="h-4 w-4 shrink-0" aria-hidden="true" />
                   <span>{ar ? "بطاقة ومحافظ رقمية" : "Cards / wallets"}</span>
                 </button>
               )}
@@ -945,7 +945,7 @@ export function DigitalBuyDialog({ product, denominationId, onClose }: Props) {
                     : "border-[var(--border)] hover:border-[var(--accent)]/60"
                 }`}
               >
-                <Coins className="h-4 w-4 shrink-0" />
+                <Coins className="h-4 w-4 shrink-0" aria-hidden="true" />
                 {ar ? "عملات رقمية" : "Crypto"}
               </button>
               <button
@@ -962,7 +962,7 @@ export function DigitalBuyDialog({ product, denominationId, onClose }: Props) {
                     : "border-[var(--border)] hover:border-[var(--accent)]/60"
                 }`}
               >
-                <Smartphone className="h-4 w-4 shrink-0" />
+                <Smartphone className="h-4 w-4 shrink-0" aria-hidden="true" />
                 {ar ? "بطاقة / رصيد هاتف" : "Phone card / balance"}
               </button>
               {manualOptions.length > 0 && (
@@ -978,7 +978,7 @@ export function DigitalBuyDialog({ product, denominationId, onClose }: Props) {
                       : "border-[var(--border)] hover:border-[var(--accent)]/60"
                   }`}
                 >
-                  <Wallet className="h-4 w-4 shrink-0" />
+                  <Wallet className="h-4 w-4 shrink-0" aria-hidden="true" />
                   {ar ? t.checkout.manualTransferAr : t.checkout.manualTransferEn}
                 </button>
               )}
@@ -990,7 +990,7 @@ export function DigitalBuyDialog({ product, denominationId, onClose }: Props) {
                 className="mt-2.5 rounded-xl border border-amber-400/70 bg-amber-50/90 dark:bg-amber-950/35 px-3.5 py-3 text-[12px] leading-5 text-amber-950 dark:text-amber-100 space-y-2.5"
               >
                 <div className="flex items-start gap-2">
-                  <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400" />
+                  <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400" aria-hidden="true" />
                   <div>
                     <p className="font-black">
                       {ar
@@ -1019,7 +1019,7 @@ export function DigitalBuyDialog({ product, denominationId, onClose }: Props) {
                       }}
                       className="inline-flex min-h-11 flex-1 items-center justify-center gap-1.5 rounded-lg bg-amber-600 px-3 py-2 text-[11.5px] font-black text-white transition-colors hover:bg-amber-700 cursor-pointer"
                     >
-                      <CheckCircle2 className="h-3.5 w-3.5 shrink-0" />
+                      <CheckCircle2 className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
                       {ar
                         ? `تأكيد رفع الكمية إلى ${minCardQuantity} (${minCardTotal.toFixed(2)} $)`
                         : `Confirm ${minCardQuantity} units ($${minCardTotal.toFixed(2)})`}
@@ -1035,7 +1035,7 @@ export function DigitalBuyDialog({ product, denominationId, onClose }: Props) {
                       }}
                       className="inline-flex min-h-11 flex-1 items-center justify-center gap-1.5 rounded-lg bg-amber-600 px-3 py-2 text-[11.5px] font-black text-white transition-colors hover:bg-amber-700 cursor-pointer"
                     >
-                      <CheckCircle2 className="h-3.5 w-3.5 shrink-0" />
+                      <CheckCircle2 className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
                       {ar
                         ? `اختيار فئة ${denominationLabel(minEligibleCardDenom, locale)} (${minEligibleCardDenom.priceUsd.toFixed(2)} $)`
                         : `Select ${denominationLabel(minEligibleCardDenom, locale)} ($${minEligibleCardDenom.priceUsd.toFixed(2)})`}
@@ -1117,7 +1117,7 @@ export function DigitalBuyDialog({ product, denominationId, onClose }: Props) {
               </div>
               {phoneQuotePending && (
                 <p className="mt-2 flex items-center gap-2 text-[11.5px] text-[var(--muted-foreground)]">
-                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" />
                   {ar ? "جارٍ جلب سعر السوق الموازي…" : "Fetching the parallel-market rate…"}
                 </p>
               )}
@@ -1263,7 +1263,7 @@ export function DigitalBuyDialog({ product, denominationId, onClose }: Props) {
               />
             </label>
             <p className="flex items-start gap-2 text-[11px] leading-5 text-[var(--muted-foreground)]">
-              <ShieldCheck className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[var(--accent)]" />
+              <ShieldCheck className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[var(--accent)]" aria-hidden="true" />
               {ar
                 ? "يُحفظ الرمز مشفّراً ولا يظهر إلا للإدارة. لا تستخدم بطاقة مستعملة ولا ترسل الرمز عبر واتساب بعد إرسال الطلب."
                 : "The code is encrypted and only visible to authorised staff. Do not use an already redeemed card or send the code on WhatsApp after ordering."}
@@ -1309,13 +1309,13 @@ export function DigitalBuyDialog({ product, denominationId, onClose }: Props) {
 
             {idCheck.state === "checking" && (
               <p className="flex items-center gap-1.5 text-[11.5px] text-[var(--muted-foreground)]">
-                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" />
                 {ar ? "جارٍ التحقق من المعرّف…" : "Checking the ID…"}
               </p>
             )}
             {allIdFieldsFilled && idCheck.state === "ok" && (
               <p className="flex items-center gap-1.5 rounded-lg bg-emerald-500/10 px-2.5 py-2 text-[12px] font-bold text-emerald-700 dark:text-emerald-300">
-                <CheckCircle2 className="h-4 w-4" />
+                <CheckCircle2 className="h-4 w-4" aria-hidden="true" />
                 {ar ? "الحساب:" : "Account:"}{" "}
                 {idCheck.playerName || (ar ? "تم التحقق" : "verified")}
               </p>
@@ -1453,7 +1453,7 @@ export function DigitalBuyDialog({ product, denominationId, onClose }: Props) {
           }
           className="mt-4 inline-flex h-12 w-full items-center justify-center gap-2 rounded-full bg-[var(--accent)] text-sm font-black text-[var(--accent-foreground)] shadow-sm transition-colors hover:bg-[var(--accent-hover)] disabled:opacity-60"
         >
-          {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Lock className="h-4 w-4" />}
+          {busy ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> : <Lock className="h-4 w-4" aria-hidden="true" />}
           {busy
             ? ar
               ? "جارٍ إنشاء الطلب…"
@@ -1476,7 +1476,7 @@ export function DigitalBuyDialog({ product, denominationId, onClose }: Props) {
         </button>
 
         <p className="mt-3 flex items-start gap-2 text-[11px] leading-5 text-[var(--muted-foreground)]">
-          <ShieldCheck className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[var(--accent)]" />
+          <ShieldCheck className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[var(--accent)]" aria-hidden="true" />
           {paymentMethod === "manual"
             ? ar
               ? "لا يُخصم أي مبلغ من هذا الموقع: أنت تحوّل بنفسك. لا يُعد الطلب مدفوعاً ولا يُسلَّم الكود إلا بعد أن نتحقق يدوياً من وصول المبلغ؛ احتفظ بمرجع العملية."
@@ -1499,7 +1499,7 @@ export function DigitalBuyDialog({ product, denominationId, onClose }: Props) {
             à quelques centimes (liste blanche de `payment-networks.ts`). */}
         {paymentMethod === "nowpayments" && (
           <p className="mt-1.5 flex items-start gap-2 text-[11px] leading-5 text-[var(--muted-foreground)]">
-            <Zap className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[var(--accent)]" />
+            <Zap className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[var(--accent)]" aria-hidden="true" />
             {ar
               ? `لتفادي رسوم شبكة مرتفعة، استخدم: ${recommendedNetworksLabel()}`
               : `To avoid high network fees, pay on: ${recommendedNetworksLabel()}`}

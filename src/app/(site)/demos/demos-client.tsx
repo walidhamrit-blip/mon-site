@@ -125,7 +125,7 @@ export function DemosClient() {
             <Link href="/pricing#website-guide" className="inline-flex min-h-11 items-center gap-2 text-sm font-bold text-[var(--accent)] underline underline-offset-4">{ar ? "ساعدني في اختيار الوظائف وتقدير الميزانية" : "Help me choose functions & estimate my budget"}<ArrowUpRight className="h-4 w-4 shrink-0" aria-hidden="true" /></Link>
 
             <div className="relative w-full lg:w-[280px] shrink-0">
-              <Search className="absolute start-3 top-1/2 -translate-y-1/2 h-4 w-4 opacity-40" />
+              <Search className="absolute start-3 top-1/2 -translate-y-1/2 h-4 w-4 opacity-40" aria-hidden="true" />
               <input
                 value={q}
                 onChange={(e) => setQ(e.target.value)}
@@ -140,7 +140,7 @@ export function DemosClient() {
                   aria-label={ar ? "مسح البحث" : "Clear search"}
                   className="absolute end-1 top-1/2 -translate-y-1/2 grid h-9 w-9 place-items-center rounded-full opacity-60 hover:opacity-100 cursor-pointer"
                 >
-                  <X className="h-3.5 w-3.5" />
+                  <X className="h-3.5 w-3.5" aria-hidden="true" />
                 </button>
               )}
             </div>
@@ -257,7 +257,7 @@ export function DemosClient() {
                           className="inline-flex min-h-11 flex-1 items-center justify-center gap-1.5 rounded-full bg-[var(--primary)] px-3 text-xs font-bold text-[var(--primary-foreground)] hover:opacity-90 transition-opacity"
                         >
                           {ar ? "معاينة الموقع" : "View site"}
-                          <ArrowUpRight className="h-3.5 w-3.5" />
+                          <ArrowUpRight className="h-3.5 w-3.5" aria-hidden="true" />
                         </Link>
                         {live && (
                           <a
@@ -267,7 +267,7 @@ export function DemosClient() {
                             title={ar ? "فتح الموقع الكامل" : "Open full site"}
                             className="inline-flex min-h-11 items-center justify-center gap-1.5 rounded-full border border-[var(--border)] px-3 text-xs font-bold hover:border-[var(--accent)] transition-colors"
                           >
-                            <ExternalLink className="h-3.5 w-3.5" />
+                            <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
                             {ar ? "زيارة" : "Visit"}
                           </a>
                         )}

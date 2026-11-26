@@ -142,7 +142,7 @@ export default async function AdminLeadsPage({ searchParams }: Props) {
           href="/admin/leads/export"
           className="inline-flex items-center gap-2 h-10 px-4 rounded-xl border border-stone-300 bg-white text-sm font-semibold text-stone-700 hover:bg-stone-50 shadow-2xs"
         >
-          <Download className="h-4 w-4 text-stone-500" />
+          <Download className="h-4 w-4 text-stone-500" aria-hidden="true" />
           Exporter en CSV
         </a>
       </div>

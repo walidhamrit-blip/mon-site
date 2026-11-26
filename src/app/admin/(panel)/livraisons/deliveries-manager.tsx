@@ -196,7 +196,7 @@ export function DeliveriesManager({ rows }: { rows: DeliveryRow[] }) {
               disabled={pending}
               className="inline-flex items-center gap-2 rounded-xl border border-stone-300 bg-white px-3 py-2 text-xs font-semibold text-stone-700 hover:bg-stone-50 disabled:opacity-50"
             >
-              <Copy className="h-3.5 w-3.5" /> Copier le lien
+              <Copy className="h-3.5 w-3.5" aria-hidden="true" /> Copier le lien
             </button>
             <a
               href={created.url}
@@ -204,14 +204,14 @@ export function DeliveriesManager({ rows }: { rows: DeliveryRow[] }) {
               rel="noreferrer"
               className="inline-flex items-center gap-2 rounded-xl border border-stone-300 bg-white px-3 py-2 text-xs font-semibold text-stone-700 hover:bg-stone-50"
             >
-              <ExternalLink className="h-3.5 w-3.5" /> Ouvrir
+              <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" /> Ouvrir
             </a>
             <button
               type="button"
               onClick={() => setCreated(null)}
               className="inline-flex items-center gap-2 rounded-xl px-2 py-2 text-xs font-semibold text-stone-500"
             >
-              <X className="h-3.5 w-3.5" /> Masquer
+              <X className="h-3.5 w-3.5" aria-hidden="true" /> Masquer
             </button>
           </div>
           <p className="text-xs text-emerald-800">
@@ -287,7 +287,7 @@ export function DeliveriesManager({ rows }: { rows: DeliveryRow[] }) {
               onClick={() => setLinks([...links, { label: "", url: "" }])}
               className="inline-flex items-center gap-1 rounded-lg border border-stone-300 px-2 py-1 text-xs font-semibold text-stone-600 hover:bg-stone-50"
             >
-              <Plus className="h-3.5 w-3.5" /> Ajouter
+              <Plus className="h-3.5 w-3.5" aria-hidden="true" /> Ajouter
             </button>
           </div>
           {links.map((link, index) => (
@@ -318,7 +318,7 @@ export function DeliveriesManager({ rows }: { rows: DeliveryRow[] }) {
                 aria-label={`Retirer le lien ${index + 1}`}
                 className="rounded-lg border border-stone-300 px-2 py-1 text-stone-500 hover:bg-stone-50"
               >
-                <X className="h-3.5 w-3.5" />
+                <X className="h-3.5 w-3.5" aria-hidden="true" />
               </button>
             </div>
           ))}
@@ -343,7 +343,7 @@ export function DeliveriesManager({ rows }: { rows: DeliveryRow[] }) {
               onClick={() => setItems([...items, { label: "" }])}
               className="inline-flex items-center gap-1 rounded-lg border border-stone-300 px-2 py-1 text-xs font-semibold text-stone-600 hover:bg-stone-50"
             >
-              <Plus className="h-3.5 w-3.5" /> Ajouter
+              <Plus className="h-3.5 w-3.5" aria-hidden="true" /> Ajouter
             </button>
           </div>
           {items.map((item, index) => (
@@ -364,7 +364,7 @@ export function DeliveriesManager({ rows }: { rows: DeliveryRow[] }) {
                 aria-label={`Retirer l’élément ${index + 1}`}
                 className="rounded-lg border border-stone-300 px-2 py-1 text-stone-500 hover:bg-stone-50"
               >
-                <X className="h-3.5 w-3.5" />
+                <X className="h-3.5 w-3.5" aria-hidden="true" />
               </button>
             </div>
           ))}
@@ -461,7 +461,7 @@ export function DeliveriesManager({ rows }: { rows: DeliveryRow[] }) {
                           title="Copier le lien de validation"
                           className="inline-flex items-center gap-1 rounded-lg border border-stone-300 px-2 py-1 text-xs font-semibold text-stone-600 hover:bg-stone-50 disabled:opacity-50"
                         >
-                          <Copy className="h-3.5 w-3.5" /> Lien
+                          <Copy className="h-3.5 w-3.5" aria-hidden="true" /> Lien
                         </button>
                         <button
                           type="button"
@@ -470,7 +470,7 @@ export function DeliveriesManager({ rows }: { rows: DeliveryRow[] }) {
                           title={row.email ? "Renvoyer le lien par e-mail" : "Aucun e-mail client"}
                           className="inline-flex items-center gap-1 rounded-lg border border-stone-300 px-2 py-1 text-xs font-semibold text-stone-600 hover:bg-stone-50 disabled:opacity-50"
                         >
-                          <Mail className="h-3.5 w-3.5" /> <Send className="h-3 w-3" />
+                          <Mail className="h-3.5 w-3.5" aria-hidden="true" /> <Send className="h-3 w-3" aria-hidden="true" />
                         </button>
                         <button
                           type="button"
@@ -479,7 +479,7 @@ export function DeliveriesManager({ rows }: { rows: DeliveryRow[] }) {
                           title="Supprimer le dossier"
                           className="inline-flex items-center rounded-lg border border-stone-300 px-2 py-1 text-xs font-semibold text-red-600 hover:bg-red-50 disabled:opacity-50"
                         >
-                          <Trash2 className="h-3.5 w-3.5" />
+                          <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
                         </button>
                       </div>
                     </td>

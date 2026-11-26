@@ -80,7 +80,7 @@ export function CryptoQrCode({
     <div className="mt-2.5 flex flex-col items-center gap-2 rounded-xl border border-[var(--accent)]/25 bg-[var(--background)]/70 p-3 text-center">
       <div className="flex w-full items-center justify-between gap-2 text-[10.5px] font-bold text-[var(--muted-foreground)]">
         <span className="inline-flex items-center gap-1">
-          <QrCode className="h-3.5 w-3.5 text-[var(--accent)]" />
+          <QrCode className="h-3.5 w-3.5 text-[var(--accent)]" aria-hidden="true" />
           {ar ? "الدفع عبر رمز QR" : "Scan to pay (QR)"}
         </span>
         <button
@@ -99,12 +99,12 @@ export function CryptoQrCode({
         >
           {expanded ? (
             <>
-              <Minimize2 className="h-3 w-3" />
+              <Minimize2 className="h-3 w-3" aria-hidden="true" />
               {ar ? "تصغير" : "Smaller"}
             </>
           ) : (
             <>
-              <Maximize2 className="h-3 w-3" />
+              <Maximize2 className="h-3 w-3" aria-hidden="true" />
               {ar ? "تكبير" : "Enlarge"}
             </>
           )}

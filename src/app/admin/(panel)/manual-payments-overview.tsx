@@ -112,7 +112,7 @@ export function ManualPaymentsOverview({
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0 max-w-3xl">
           <h2 id={titleId} className="flex items-center gap-2 text-sm font-black text-stone-900">
-            <Wallet className="h-4 w-4 shrink-0 text-[#8A6D2F]" />
+            <Wallet className="h-4 w-4 shrink-0 text-[#8A6D2F]" aria-hidden="true" />
             Paiements manuels
           </h2>
           <p id={descriptionId} className="mt-1.5 text-xs leading-5 text-stone-600">
@@ -126,7 +126,7 @@ export function ManualPaymentsOverview({
           className="inline-flex h-10 shrink-0 items-center gap-2 rounded-xl border border-[#C6A664]/50 bg-[#C6A664]/10 px-4 text-xs font-bold text-[#8A6D2F] transition-colors hover:bg-[#C6A664]/20"
         >
           Configurer les comptes
-          <ArrowRight className="h-3.5 w-3.5" />
+          <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
         </Link>
       </div>
 
@@ -225,7 +225,7 @@ export function ManualPaymentsOverview({
                       : "bg-stone-900 text-white hover:bg-stone-800"
                   }`}
                 >
-                  {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Power className="h-3.5 w-3.5" />}
+                  {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" /> : <Power className="h-3.5 w-3.5" aria-hidden="true" />}
                   {busy ? "Enregistrement…" : enabled ? "Désactiver" : "Activer"}
                 </button>
                 <Link

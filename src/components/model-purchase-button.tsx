@@ -55,7 +55,7 @@ export function ModelPurchaseButton({
         rel="noopener noreferrer"
         className={className}
       >
-        <MessageCircle className="h-4 w-4 shrink-0" />
+        <MessageCircle className="h-4 w-4 shrink-0" aria-hidden="true" />
         {ar ? "اطلب السعر النهائي للتخصيص" : "Get final customization quote"}
       </a>
     );
@@ -68,7 +68,7 @@ export function ModelPurchaseButton({
         onClick={() => setOpen(true)}
         className={className}
       >
-        <Bitcoin className="h-4 w-4 shrink-0" />
+        <Bitcoin className="h-4 w-4 shrink-0" aria-hidden="true" />
         {ar ? "اشترِ الموقع الأساسي" : "Buy the base website"}
         <span dir="ltr">— </span>
         <Price usd={breakdown.totalPriceUsd} />

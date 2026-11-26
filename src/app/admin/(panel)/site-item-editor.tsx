@@ -229,8 +229,7 @@ export function SiteItemEditor({
           <ChevronDown
             className={`h-4 w-4 text-stone-400 shrink-0 transition-transform ${
               expanded ? "rotate-180 text-stone-900" : ""
-            }`}
-          />
+            }`} aria-hidden="true" />
         </button>
 
         {/* Actions rapides : ordre + aperçu + suppression directe */}
@@ -243,7 +242,7 @@ export function SiteItemEditor({
               title="Ouvrir le site en direct"
               className="h-8 w-8 rounded-lg border border-stone-200 bg-stone-50 grid place-items-center text-stone-600 hover:bg-stone-100 hover:text-stone-900"
             >
-              <ExternalLink className="h-3.5 w-3.5" />
+              <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
             </a>
           )}
           <button
@@ -253,7 +252,7 @@ export function SiteItemEditor({
             title="Monter ce site"
             className="h-8 w-8 rounded-lg border border-stone-200 bg-stone-50 grid place-items-center text-stone-600 hover:bg-stone-100 disabled:opacity-30 cursor-pointer"
           >
-            <ArrowUp className="h-3.5 w-3.5" />
+            <ArrowUp className="h-3.5 w-3.5" aria-hidden="true" />
           </button>
           <button
             type="button"
@@ -270,7 +269,7 @@ export function SiteItemEditor({
             title="Supprimer ce site de la section"
             className="h-8 px-2.5 rounded-lg border border-red-200 bg-red-50/70 text-red-600 hover:bg-red-100 text-xs font-semibold inline-flex items-center gap-1 cursor-pointer transition-colors"
           >
-            <Trash2 className="h-3.5 w-3.5" />
+            <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
             <span className="hidden sm:inline">Supprimer</span>
           </button>
         </div>
@@ -402,9 +401,9 @@ export function SiteItemEditor({
                   className="h-10 shrink-0 rounded-xl border border-stone-300 bg-white px-3 text-xs font-semibold text-stone-700 hover:bg-stone-50 disabled:opacity-60 inline-flex items-center gap-1.5"
                 >
                   {imageUploading ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
+                    <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
                   ) : (
-                    <Upload className="h-4 w-4" />
+                    <Upload className="h-4 w-4" aria-hidden="true" />
                   )}
                   <span className="hidden xl:inline">
                     {imageUploading ? "Import…" : "Depuis l’ordinateur"}
@@ -498,8 +497,7 @@ export function SiteItemEditor({
                 <ChevronDown
                   className={`h-3.5 w-3.5 transition-transform ${
                     seoOpen ? "rotate-180" : ""
-                  }`}
-                />
+                  }`} aria-hidden="true" />
                 <span>Référencement Google (SEO)</span>
                 <span className="px-2 py-0.5 rounded-full bg-stone-100 text-stone-700 text-[10px]">
                   {seoScore}% complété
@@ -513,9 +511,9 @@ export function SiteItemEditor({
                 className="h-8 px-3 rounded-lg bg-[#FAF6EC] border border-[#C6A664]/45 text-[#7A5D20] text-xs font-bold inline-flex items-center gap-1.5 hover:bg-[#C6A664]/20 disabled:opacity-50 cursor-pointer"
               >
                 {aiLoading ? (
-                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" />
                 ) : (
-                  <Sparkles className="h-3.5 w-3.5" />
+                  <Sparkles className="h-3.5 w-3.5" aria-hidden="true" />
                 )}
                 Générer SEO IA
               </button>

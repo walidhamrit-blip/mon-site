@@ -89,7 +89,7 @@ export function Testimonials() {
                 </figcaption>
                 <span className="ms-auto flex shrink-0 text-[var(--accent)]" aria-label={`${item.rating}/5`}>
                   {Array.from({ length: item.rating }).map((_, idx) => (
-                    <Star key={idx} className="h-3.5 w-3.5 fill-current" />
+                    <Star key={idx} className="h-3.5 w-3.5 fill-current" aria-hidden="true" />
                   ))}
                 </span>
               </div>
