@@ -226,7 +226,7 @@ export function ReservationDialog({
             className="grid h-11 w-11 shrink-0 place-items-center rounded-full border border-[var(--border)] text-[var(--muted-foreground)] transition-colors hover:border-[var(--accent)] hover:text-[var(--foreground)] cursor-pointer"
             aria-label={ar ? "إغلاق" : "Close"}
           >
-            <X className="h-4 w-4" />
+            <X className="h-4 w-4" aria-hidden="true" />
           </button>
         </div>
 
@@ -318,7 +318,7 @@ export function ReservationDialog({
               )}`}
             </button>
             <p className="flex items-center justify-center gap-1.5 text-center text-[11px] opacity-50">
-              <ShieldCheck className="h-3.5 w-3.5" />
+              <ShieldCheck className="h-3.5 w-3.5" aria-hidden="true" />
               {ar
                 ? "دفع عبر NOWPayments — لا ترسل مفاتيح المحفظة أو عبارة الاسترداد"
                 : "Payment via NOWPayments — never share private keys or recovery phrases"}
@@ -328,7 +328,7 @@ export function ReservationDialog({
 
         {step === "creating" && (
           <div className="mt-8 flex flex-col items-center gap-3 py-6">
-            <Loader2 className="h-8 w-8 animate-spin text-[var(--accent)]" />
+            <Loader2 className="h-8 w-8 animate-spin text-[var(--accent)]" aria-hidden="true" />
             <p className="text-sm opacity-70">
               {ar ? "جارٍ إنشاء حجزك…" : "Creating your reservation…"}
             </p>
@@ -338,7 +338,7 @@ export function ReservationDialog({
         {step === "ready" && payment && (
           <div className="mt-5 space-y-4">
             <div className="flex items-start gap-3 rounded-2xl border border-emerald-500/30 bg-emerald-500/10 p-4">
-              <BadgeCheck className="mt-0.5 h-5 w-5 text-emerald-600 dark:text-emerald-400 flex-shrink-0" />
+              <BadgeCheck className="mt-0.5 h-5 w-5 text-emerald-600 dark:text-emerald-400 flex-shrink-0" aria-hidden="true" />
               <p className="text-sm font-semibold text-emerald-800 dark:text-emerald-200">
                 {ar
                   ? "تم إنشاء عربون الحجز. إعادة التوجيه خلال"
@@ -409,7 +409,7 @@ export function ReservationDialog({
                 rel="noopener noreferrer"
                 className="h-11 rounded-full bg-[#0B6B3A] text-white font-bold text-sm inline-flex items-center justify-center gap-2"
               >
-                <MessageCircle className="h-4 w-4" />
+                <MessageCircle className="h-4 w-4" aria-hidden="true" />
                 {ar ? "احجز عبر واتساب" : "Reserve via WhatsApp"}
               </a>
               <div className="flex gap-2 justify-center">

@@ -113,7 +113,7 @@ function OpportunityTable({
                       className="inline-flex items-center gap-1 text-[#8A6D2F] hover:underline break-all"
                     >
                       <span>{item.page.replace(/^https?:\/\/[^/]+/, "") || "/"}</span>
-                      <ExternalLink className="h-3 w-3 shrink-0" />
+                      <ExternalLink className="h-3 w-3 shrink-0" aria-hidden="true" />
                     </a>
                   ) : (
                     "—"
@@ -257,11 +257,11 @@ export function SearchConsolePanel({
           <div className="mt-2 flex items-center gap-2">
             {configStatus.configured ? (
               <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-bold text-emerald-800">
-                <BadgeCheck className="h-3.5 w-3.5" /> Connecté
+                <BadgeCheck className="h-3.5 w-3.5" aria-hidden="true" /> Connecté
               </span>
             ) : (
               <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-2.5 py-1 text-xs font-bold text-amber-800">
-                <AlertTriangle className="h-3.5 w-3.5" /> À configurer
+                <AlertTriangle className="h-3.5 w-3.5" aria-hidden="true" /> À configurer
               </span>
             )}
           </div>
@@ -274,7 +274,7 @@ export function SearchConsolePanel({
                 title="Copier l'e-mail du compte de service"
               >
                 <span className="truncate max-w-[190px]">{configStatus.clientEmail}</span>
-                <Copy className="h-3 w-3 shrink-0" />
+                <Copy className="h-3 w-3 shrink-0" aria-hidden="true" />
                 {copiedEmail ? <span className="text-emerald-700">copié</span> : null}
               </button>
             ) : (
@@ -300,8 +300,7 @@ export function SearchConsolePanel({
               <CheckCircle2
                 className={`h-3.5 w-3.5 ${
                   googleVerificationConfigured ? "text-emerald-600" : "text-stone-400"
-                }`}
-              />
+                }`} aria-hidden="true" />
               <span>
                 Balise HTML : {googleVerificationConfigured ? "active" : "DNS / non définie"}
               </span>
@@ -310,8 +309,7 @@ export function SearchConsolePanel({
               <CheckCircle2
                 className={`h-3.5 w-3.5 ${
                   sheetsSyncConfigured ? "text-emerald-600" : "text-stone-400"
-                }`}
-              />
+                }`} aria-hidden="true" />
               <span>
                 Google Sheets : {sheetsSyncConfigured ? "synchronisé" : "optionnel"}
               </span>
@@ -361,9 +359,9 @@ export function SearchConsolePanel({
               className="inline-flex h-9 items-center gap-2 rounded-xl bg-stone-900 px-4 text-xs font-bold text-white hover:bg-stone-800 disabled:opacity-50"
             >
               {busy === "load" ? (
-                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" />
               ) : (
-                <RefreshCw className="h-3.5 w-3.5 text-[#E5CA87]" />
+                <RefreshCw className="h-3.5 w-3.5 text-[#E5CA87]" aria-hidden="true" />
               )}
               <span>Charger les données GSC</span>
             </button>
@@ -375,9 +373,9 @@ export function SearchConsolePanel({
               className="inline-flex h-9 items-center gap-2 rounded-xl border border-stone-300 bg-white px-3.5 text-xs font-bold text-stone-800 hover:bg-stone-50 disabled:opacity-50"
             >
               {busy === "sitemap" ? (
-                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" />
               ) : (
-                <Send className="h-3.5 w-3.5 text-[#8A6D2F]" />
+                <Send className="h-3.5 w-3.5 text-[#8A6D2F]" aria-hidden="true" />
               )}
               <span>Resoumettre sitemap.xml</span>
             </button>
@@ -520,7 +518,7 @@ export function SearchConsolePanel({
             </p>
           </div>
           <label className="inline-flex h-9 cursor-pointer items-center gap-2 rounded-xl border border-stone-300 bg-[#FAF9F6] px-3.5 text-xs font-semibold text-stone-800 hover:bg-stone-100">
-            <Search className="h-3.5 w-3.5 text-[#8A6D2F]" />
+            <Search className="h-3.5 w-3.5 text-[#8A6D2F]" aria-hidden="true" />
             <span>Importer un CSV</span>
             <input
               type="file"
@@ -560,7 +558,7 @@ export function SearchConsolePanel({
             onClick={handleAnalyzeCsv}
             className="inline-flex h-9 items-center gap-2 rounded-xl bg-stone-900 px-4 text-xs font-bold text-white hover:bg-stone-800 disabled:opacity-50"
           >
-            {busy === "csv" ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : null}
+            {busy === "csv" ? <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" /> : null}
             <span>Détecter les Quick Wins du CSV</span>
           </button>
         </div>

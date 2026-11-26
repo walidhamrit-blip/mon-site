@@ -96,9 +96,9 @@ export function BlogClient({ articles }: { articles: BlogCardLite[] }) {
                 href={CRYPTO_GUIDE_PATH}
                 className="mt-4 inline-flex h-10 items-center gap-1.5 rounded-full bg-[var(--primary)] px-5 text-[12.5px] font-bold text-[var(--primary-foreground)] transition-opacity hover:opacity-90"
               >
-                <Bitcoin className="h-4 w-4" />
+                <Bitcoin className="h-4 w-4" aria-hidden="true" />
                 {ar ? "ابدأ بدليل الدفع المصوّر" : "Start with the photo payment guide"}
-                <ArrowUpRight className="h-3.5 w-3.5" />
+                <ArrowUpRight className="h-3.5 w-3.5" aria-hidden="true" />
               </Link>
             </div>
           </div>
@@ -127,7 +127,7 @@ export function BlogClient({ articles }: { articles: BlogCardLite[] }) {
                   className="h-full w-full object-cover"
                 />
                 <span className="absolute top-3 start-3 inline-flex items-center gap-1.5 rounded-full bg-[var(--accent)] px-3 py-1 text-[11px] font-black text-[var(--accent-foreground)]">
-                  <Bitcoin className="h-3.5 w-3.5" />
+                  <Bitcoin className="h-3.5 w-3.5" aria-hidden="true" />
                   {ar ? "ابدأ من هنا" : "Start here"}
                 </span>
               </div>
@@ -143,7 +143,7 @@ export function BlogClient({ articles }: { articles: BlogCardLite[] }) {
                 </p>
                 <span className="mt-5 inline-flex items-center gap-1.5 text-sm font-bold text-[var(--accent)]">
                   {ar ? "اقرأ الدليل المصوّر" : "Read the photo guide"}
-                  <ArrowUpRight className="h-4 w-4 transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5 rtl:group-hover:-translate-x-0.5" />
+                  <ArrowUpRight className="h-4 w-4 transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5 rtl:group-hover:-translate-x-0.5" aria-hidden="true" />
                 </span>
               </div>
             </Link>

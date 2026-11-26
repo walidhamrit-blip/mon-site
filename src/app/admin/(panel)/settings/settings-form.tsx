@@ -200,7 +200,7 @@ export function SettingsForm({ initial, initialTab }: Props) {
               : "bg-red-600 text-white"
           }`}
         >
-          <Check className="h-3.5 w-3.5 text-[#E5CA87] shrink-0" />
+          <Check className="h-3.5 w-3.5 text-[#E5CA87] shrink-0" aria-hidden="true" />
           <span>{toast.msg}</span>
         </div>
       )}
@@ -291,7 +291,7 @@ export function SettingsForm({ initial, initialTab }: Props) {
                         />
                       </div>
                       {selected && (
-                        <Check className="h-4 w-4 text-[#8A6D2F]" />
+                        <Check className="h-4 w-4 text-[#8A6D2F]" aria-hidden="true" />
                       )}
                     </div>
                     <div className="text-xs font-bold text-stone-900">
@@ -1202,7 +1202,7 @@ export function SettingsForm({ initial, initialTab }: Props) {
               }}
               className="h-9 px-3.5 rounded-xl bg-stone-900 text-white text-xs font-bold inline-flex items-center gap-1.5 cursor-pointer"
             >
-              <Plus className="h-3.5 w-3.5" /> Ajouter un service
+              <Plus className="h-3.5 w-3.5" aria-hidden="true" /> Ajouter un service
             </button>
           </div>
 
@@ -1226,7 +1226,7 @@ export function SettingsForm({ initial, initialTab }: Props) {
                   }
                   className="h-8 px-2.5 rounded-lg border border-red-200 bg-red-50 text-red-600 text-xs font-semibold inline-flex items-center gap-1 cursor-pointer"
                 >
-                  <Trash2 className="h-3.5 w-3.5" /> Supprimer
+                  <Trash2 className="h-3.5 w-3.5" aria-hidden="true" /> Supprimer
                 </button>
               </div>
 
@@ -1616,7 +1616,7 @@ export function SettingsForm({ initial, initialTab }: Props) {
                     >
                       {workerCopied ? (
                         <>
-                          <Check className="h-3.5 w-3.5 text-emerald-400" />
+                          <Check className="h-3.5 w-3.5 text-emerald-400" aria-hidden="true" />
                           Code Worker copié !
                         </>
                       ) : (
@@ -1900,7 +1900,7 @@ export function SettingsForm({ initial, initialTab }: Props) {
               onClick={onReset}
               className="h-9 px-3.5 rounded-xl border border-stone-300 bg-stone-50 text-stone-600 text-xs font-semibold hover:bg-stone-100 inline-flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
             >
-              <RotateCcw className="h-3.5 w-3.5" />
+              <RotateCcw className="h-3.5 w-3.5" aria-hidden="true" />
               Valeurs par défaut
             </button>
             <button
@@ -1909,7 +1909,7 @@ export function SettingsForm({ initial, initialTab }: Props) {
               onClick={onSave}
               className="h-9 px-5 rounded-xl bg-stone-900 text-white text-xs sm:text-sm font-bold hover:bg-stone-800 inline-flex items-center gap-2 cursor-pointer disabled:opacity-50 shadow-xs"
             >
-              <Check className="h-4 w-4 text-[#E5CA87]" />
+              <Check className="h-4 w-4 text-[#E5CA87]" aria-hidden="true" />
               {pending ? "Enregistrement…" : "Enregistrer les réglages"}
             </button>
           </div>

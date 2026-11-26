@@ -58,7 +58,7 @@ export function WhatsAppEnquiry({ children, className, ariaLabel, initialSubject
     <dialog ref={dialog} aria-labelledby={titleId} onKeyDown={(event) => event.stopPropagation()} className="m-auto max-h-[90dvh] w-[calc(100%-1.5rem)] max-w-md overflow-y-auto overscroll-contain rounded-2xl border border-[var(--border)] bg-[var(--card)] p-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] text-[var(--foreground)] shadow-2xl backdrop:bg-black/60 sm:p-6">
       <div className="flex items-start justify-between gap-4">
         <h2 id={titleId} className="pt-1 text-lg font-bold">{ar ? "كيف يمكننا مساعدتك؟" : "How can we help?"}</h2>
-        <button type="button" onClick={() => dialog.current?.close()} aria-label={ar ? "إغلاق" : "Close"} className="grid h-11 w-11 shrink-0 cursor-pointer place-items-center rounded-full bg-[var(--secondary)] transition-colors hover:bg-[var(--muted)]"><X className="h-5 w-5" /></button>
+        <button type="button" onClick={() => dialog.current?.close()} aria-label={ar ? "إغلاق" : "Close"} className="grid h-11 w-11 shrink-0 cursor-pointer place-items-center rounded-full bg-[var(--secondary)] transition-colors hover:bg-[var(--muted)]"><X className="h-5 w-5" aria-hidden="true" /></button>
       </div>
       <div className="mt-4">
         <label htmlFor={subjectId} className="block text-sm font-semibold">{ar ? "ما المنتج أو الخدمة أو السؤال الذي تريد الاستفسار عنه؟" : "Which product, service or question would you like to ask about?"}</label>

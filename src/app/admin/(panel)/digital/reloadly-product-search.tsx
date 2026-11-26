@@ -105,7 +105,7 @@ export function ReloadlyProductSearch({
           disabled={busy}
           className="inline-flex h-9 items-center gap-1.5 rounded-md bg-stone-900 px-3 text-[12px] font-bold text-white disabled:opacity-60"
         >
-          {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Search className="h-3.5 w-3.5" />}
+          {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" /> : <Search className="h-3.5 w-3.5" aria-hidden="true" />}
           Chercher
         </button>
       </div>

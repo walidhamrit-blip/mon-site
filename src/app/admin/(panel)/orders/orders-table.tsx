@@ -39,8 +39,7 @@ export function OrdersTable({ rows }: { rows: OrderRow[] }) {
                 <ChevronDown
                   className={`h-4 w-4 text-stone-400 shrink-0 transition-transform ${
                     open ? "rotate-180 text-stone-800" : ""
-                  }`}
-                />
+                  }`} aria-hidden="true" />
                 <div className="min-w-0">
                   <div className="text-sm font-bold text-stone-900 truncate">
                     {order.planName}
@@ -161,7 +160,7 @@ export function OrdersTable({ rows }: { rows: OrderRow[] }) {
                       rel="noopener"
                       className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-xl bg-[#C6A664]/20 text-[#7A5D20] border border-[#C6A664]/45 text-xs font-semibold hover:bg-[#C6A664]/30"
                     >
-                      <ExternalLink className="h-3.5 w-3.5" />{" "}
+                      <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />{" "}
                       {order.paymentMethod === "paygate"
                         ? "Page carte PayGate"
                         : "Page NOWPayments"}
@@ -175,7 +174,7 @@ export function OrdersTable({ rows }: { rows: OrderRow[] }) {
                       rel="noopener"
                       className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-xl bg-emerald-50 text-emerald-800 border border-emerald-200 text-xs font-semibold hover:bg-emerald-100"
                     >
-                      <MessageCircle className="h-3.5 w-3.5" /> WhatsApp
+                      <MessageCircle className="h-3.5 w-3.5" aria-hidden="true" /> WhatsApp
                     </a>
                   )}
                   {order.email && (
@@ -183,7 +182,7 @@ export function OrdersTable({ rows }: { rows: OrderRow[] }) {
                       href={`mailto:${order.email}?subject=${encodeURIComponent(`Commande ${order.ref}`)}`}
                       className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-xl border border-stone-300 bg-white text-stone-700 text-xs font-semibold hover:bg-stone-50"
                     >
-                      <Mail className="h-3.5 w-3.5" /> Email
+                      <Mail className="h-3.5 w-3.5" aria-hidden="true" /> Email
                     </a>
                   )}
                 </div>

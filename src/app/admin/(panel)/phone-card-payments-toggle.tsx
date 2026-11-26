@@ -63,7 +63,7 @@ export function PhoneCardPaymentsToggle({
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div className="min-w-0 flex-1 basis-64">
           <h2 id={`${descriptionId}-title`} className="flex items-center gap-2 text-sm font-black text-stone-900">
-            <Smartphone className="h-4 w-4 shrink-0 text-[#8A6D2F]" />
+            <Smartphone className="h-4 w-4 shrink-0 text-[#8A6D2F]" aria-hidden="true" />
             Paiement manuel · carte / solde téléphonique
           </h2>
           <p id={descriptionId} className="mt-1.5 text-xs leading-5 text-stone-600">
@@ -98,7 +98,7 @@ export function PhoneCardPaymentsToggle({
                 : "bg-stone-900 text-white hover:bg-stone-800"
             }`}
           >
-            {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Power className="h-4 w-4" />}
+            {pending ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> : <Power className="h-4 w-4" aria-hidden="true" />}
             {pending ? "Enregistrement…" : enabled ? "Désactiver" : "Activer"}
           </button>
         </div>

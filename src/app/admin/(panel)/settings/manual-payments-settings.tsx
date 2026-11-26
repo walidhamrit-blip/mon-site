@@ -280,7 +280,7 @@ export function ManualPaymentsSettings({
                         </p>
                       </div>
                       <label className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-stone-300 bg-white px-2.5 py-1.5 text-[11.5px] font-bold text-stone-700 hover:border-[#8A6D2F]">
-                        <Upload className="h-3.5 w-3.5" />
+                        <Upload className="h-3.5 w-3.5" aria-hidden="true" />
                         {uploadingMethod === method ? "Envoi…" : "Importer un QR"}
                         <input
                           type="file"
@@ -311,7 +311,7 @@ export function ManualPaymentsSettings({
                           onClick={() => update(method, { qrImage: "" })}
                           className="inline-flex h-9 items-center gap-1 rounded-lg border border-stone-300 bg-white px-2.5 text-[11.5px] font-semibold text-stone-600 hover:border-red-300 hover:text-red-700"
                         >
-                          <X className="h-3.5 w-3.5" />
+                          <X className="h-3.5 w-3.5" aria-hidden="true" />
                           Retirer
                         </button>
                       )}

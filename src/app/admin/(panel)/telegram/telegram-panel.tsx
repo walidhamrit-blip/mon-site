@@ -122,7 +122,7 @@ export function TelegramPanel({
 
         {webhook.lastError ? (
           <p className="mt-3 flex items-start gap-2 rounded-xl bg-amber-50 px-3 py-2 text-[12px] text-amber-900">
-            <ShieldAlert className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+            <ShieldAlert className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden="true" />
             Dernière erreur Telegram : {webhook.lastError}
           </p>
         ) : null}
@@ -139,7 +139,7 @@ export function TelegramPanel({
                 onClick={copyLink}
                 className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-stone-300 bg-white px-2.5 text-[11px] font-semibold text-stone-700 hover:bg-stone-100"
               >
-                <Copy className="h-3 w-3" />
+                <Copy className="h-3 w-3" aria-hidden="true" />
                 {copied ? "Copié" : "Copier"}
               </button>
               <a
@@ -148,7 +148,7 @@ export function TelegramPanel({
                 rel="noopener"
                 className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-stone-300 bg-white px-2.5 text-[11px] font-semibold text-stone-700 hover:bg-stone-100"
               >
-                <ExternalLink className="h-3 w-3" />
+                <ExternalLink className="h-3 w-3" aria-hidden="true" />
                 Ouvrir
               </a>
             </div>
@@ -167,9 +167,9 @@ export function TelegramPanel({
             className="inline-flex h-9 items-center gap-1.5 rounded-xl bg-stone-900 px-3.5 text-xs font-semibold text-white hover:bg-stone-800 disabled:opacity-40"
           >
             {busy === "install" ? (
-              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" />
             ) : (
-              <Link2 className="h-3.5 w-3.5" />
+              <Link2 className="h-3.5 w-3.5" aria-hidden="true" />
             )}
             {webhook.configured ? "Réinstaller le webhook" : "Installer le webhook"}
           </button>
@@ -180,9 +180,9 @@ export function TelegramPanel({
             className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-stone-300 bg-white px-3.5 text-xs font-semibold text-stone-700 hover:bg-stone-50 disabled:opacity-40"
           >
             {busy === "test" ? (
-              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" />
             ) : (
-              <Send className="h-3.5 w-3.5" />
+              <Send className="h-3.5 w-3.5" aria-hidden="true" />
             )}
             Envoyer un test
           </button>
@@ -192,12 +192,12 @@ export function TelegramPanel({
             disabled={busy !== null || !webhook.configured}
             className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-stone-200 bg-white px-3.5 text-xs font-semibold text-stone-500 hover:bg-stone-50 disabled:opacity-40"
           >
-            <Trash2 className="h-3.5 w-3.5" />
+            <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
             Retirer
           </button>
           {webhook.configured && typeof webhook.pendingUpdates === "number" ? (
             <span className="inline-flex items-center gap-1.5 self-center text-[11px] text-stone-400">
-              <RefreshCw className="h-3 w-3" />
+              <RefreshCw className="h-3 w-3" aria-hidden="true" />
               {webhook.pendingUpdates} mise(s) à jour en attente
             </span>
           ) : null}
@@ -227,7 +227,7 @@ export function TelegramPanel({
       {/* 3 — Campagne ---------------------------------------------------------- */}
       <section className="rounded-2xl border border-stone-200 bg-white p-5">
         <header className="flex items-center gap-2">
-          <Megaphone className="h-4 w-4 text-stone-500" />
+          <Megaphone className="h-4 w-4 text-stone-500" aria-hidden="true" />
           <h2 className="text-sm font-black tracking-tight">Nouvelle campagne</h2>
         </header>
 
@@ -282,9 +282,9 @@ export function TelegramPanel({
                   className="inline-flex h-9 items-center gap-1.5 rounded-xl bg-[#7A5D20] px-3.5 text-xs font-semibold text-white hover:bg-[#664d1a] disabled:opacity-40"
                 >
                   {busy === "broadcast" ? (
-                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" />
                   ) : (
-                    <Megaphone className="h-3.5 w-3.5" />
+                    <Megaphone className="h-3.5 w-3.5" aria-hidden="true" />
                   )}
                   Confirmer l&apos;envoi
                 </button>
@@ -310,7 +310,7 @@ export function TelegramPanel({
               }
               className="inline-flex h-9 items-center gap-1.5 rounded-xl bg-stone-900 px-3.5 text-xs font-semibold text-white hover:bg-stone-800 disabled:opacity-40"
             >
-              <Megaphone className="h-3.5 w-3.5" />
+              <Megaphone className="h-3.5 w-3.5" aria-hidden="true" />
               Préparer la campagne
             </button>
           )}
@@ -345,9 +345,9 @@ function Status({
     <li className="rounded-xl border border-stone-200 bg-stone-50 px-3 py-2.5">
       <span className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-stone-500">
         {ok ? (
-          <BadgeCheck className="h-3.5 w-3.5 text-emerald-600" />
+          <BadgeCheck className="h-3.5 w-3.5 text-emerald-600" aria-hidden="true" />
         ) : (
-          <ShieldAlert className="h-3.5 w-3.5 text-amber-600" />
+          <ShieldAlert className="h-3.5 w-3.5 text-amber-600" aria-hidden="true" />
         )}
         {label}
       </span>

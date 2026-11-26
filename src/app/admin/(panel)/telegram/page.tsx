@@ -68,7 +68,7 @@ export default async function AdminTelegramPage() {
           href="/admin"
           className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-stone-300 bg-white px-3.5 text-xs font-semibold text-stone-700 hover:bg-stone-50"
         >
-          <ArrowLeft className="h-3.5 w-3.5" />
+          <ArrowLeft className="h-3.5 w-3.5" aria-hidden="true" />
           Tableau de bord
         </Link>
       </header>
@@ -117,7 +117,7 @@ export default async function AdminTelegramPage() {
       <section className="grid gap-4 lg:grid-cols-2">
         <div className="rounded-2xl border border-stone-200 bg-white p-5">
           <header className="flex items-center gap-2">
-            <Megaphone className="h-4 w-4 text-stone-500" />
+            <Megaphone className="h-4 w-4 text-stone-500" aria-hidden="true" />
             <h2 className="text-sm font-black tracking-tight">Dernières campagnes</h2>
           </header>
           {campaigns.length === 0 ? (
@@ -147,7 +147,7 @@ export default async function AdminTelegramPage() {
 
         <div className="rounded-2xl border border-stone-200 bg-white p-5">
           <header className="flex items-center gap-2">
-            <BookOpen className="h-4 w-4 text-stone-500" />
+            <BookOpen className="h-4 w-4 text-stone-500" aria-hidden="true" />
             <h2 className="text-sm font-black tracking-tight">Derniers abonnés</h2>
           </header>
           {subscribers.length === 0 ? (
@@ -202,7 +202,7 @@ export default async function AdminTelegramPage() {
       <section className="rounded-2xl border border-stone-200 bg-white p-5">
         <header className="flex flex-wrap items-center justify-between gap-2">
           <div className="flex items-center gap-2">
-            <AlertTriangle className="h-4 w-4 text-amber-600" />
+            <AlertTriangle className="h-4 w-4 text-amber-600" aria-hidden="true" />
             <h2 className="text-sm font-black tracking-tight">
               Diagnostic caisse Telegram (derniers refus &amp; incidents)
             </h2>

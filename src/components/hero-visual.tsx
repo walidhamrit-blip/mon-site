@@ -63,9 +63,9 @@ export function HeroVisual({ variant = "mixed", compact = false }: { variant?: "
           {items.map((item, i) => <button key={item.src} onClick={() => { setPaused(true); setIndex(i); }} aria-label={`${ar ? "الشريحة" : "Slide"} ${i + 1}`} aria-pressed={i === current} className={i === current ? "is-active" : ""} />)}
         </div>
         <div className="flex gap-1">
-          <button onClick={() => move(-1)} aria-label={ar ? "الشريحة السابقة" : "Previous slide"}><ChevronLeft /></button>
-          <button onClick={() => setPaused((value) => !value)} aria-label={paused ? ar ? "تشغيل العرض" : "Play slideshow" : ar ? "إيقاف العرض" : "Pause slideshow"} aria-pressed={paused}>{paused || reduced ? <Play /> : <Pause />}</button>
-          <button onClick={() => move(1)} aria-label={ar ? "الشريحة التالية" : "Next slide"}><ChevronRight /></button>
+          <button onClick={() => move(-1)} aria-label={ar ? "الشريحة السابقة" : "Previous slide"}><ChevronLeft aria-hidden="true" /></button>
+          <button onClick={() => setPaused((value) => !value)} aria-label={paused ? ar ? "تشغيل العرض" : "Play slideshow" : ar ? "إيقاف العرض" : "Pause slideshow"} aria-pressed={paused}>{paused || reduced ? <Play aria-hidden="true" /> : <Pause aria-hidden="true" />}</button>
+          <button onClick={() => move(1)} aria-label={ar ? "الشريحة التالية" : "Next slide"}><ChevronRight aria-hidden="true" /></button>
         </div>
       </div>
     </div>

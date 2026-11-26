@@ -127,7 +127,7 @@ export function AdminNav({ newLeads, paidOrders }: Props) {
             aria-label="Fermer le menu"
             className="lg:hidden h-11 w-11 rounded-lg border border-stone-200 grid place-items-center text-stone-500 hover:bg-stone-100"
           >
-            <X className="h-4 w-4" />
+            <X className="h-4 w-4" aria-hidden="true" />
           </button>
         </div>
 
@@ -208,7 +208,7 @@ export function AdminNav({ newLeads, paidOrders }: Props) {
           className="flex items-center justify-between rounded-xl px-3 py-2 text-stone-600 hover:bg-stone-100 hover:text-stone-900 font-medium"
         >
           <span>Ouvrir le site public</span>
-          <ExternalLink className="h-3.5 w-3.5" />
+          <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
         </Link>
         <form action={logout}>
           <button
@@ -248,7 +248,7 @@ export function AdminNav({ newLeads, paidOrders }: Props) {
             aria-label="Ouvrir le menu"
             className="h-11 w-11 rounded-lg border border-stone-200 bg-stone-50 grid place-items-center text-stone-700"
           >
-            <Menu className="h-4 w-4" />
+            <Menu className="h-4 w-4" aria-hidden="true" />
           </button>
         </div>
       </div>

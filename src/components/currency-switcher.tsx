@@ -73,7 +73,7 @@ export function CurrencySwitcher({
                   {currencyLongLabel(code, locale)}
                 </span>
               </span>
-              {active && <Check className="h-3.5 w-3.5 shrink-0" />}
+              {active && <Check className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />}
             </button>
           </li>
         );
@@ -85,7 +85,7 @@ export function CurrencySwitcher({
     return (
       <div>
         <div className="mb-2.5 flex items-center gap-2 text-[11px] font-black uppercase tracking-[0.16em] text-[var(--muted-foreground)]">
-          <Coins className="h-3.5 w-3.5" />
+          <Coins className="h-3.5 w-3.5" aria-hidden="true" />
           {ar ? "العملة" : "Currency"}
         </div>
         {list}
@@ -109,7 +109,7 @@ export function CurrencySwitcher({
         title={ar ? "عملة العرض" : "Display currency"}
         className="inline-flex h-11 cursor-pointer items-center gap-1.5 rounded-full bg-[var(--secondary)] px-3 text-[12.5px] font-semibold transition-colors hover:bg-[var(--muted)]"
       >
-        <Coins className="h-3.5 w-3.5" />
+        <Coins className="h-3.5 w-3.5" aria-hidden="true" />
         <span dir="ltr">{label}</span>
       </button>
       {open && (

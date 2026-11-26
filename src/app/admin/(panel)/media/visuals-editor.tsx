@@ -188,7 +188,7 @@ export function VisualsEditor({ initial }: { initial: SiteVisuals }) {
           role="status"
           className={`fixed bottom-5 right-5 z-50 flex max-w-md items-center gap-2 rounded-xl px-4 py-3 text-xs font-semibold text-white shadow-xl ${toast.kind === "ok" ? "bg-stone-900" : "bg-red-600"}`}
         >
-          <Check className="h-4 w-4 shrink-0 text-[#E5CA87]" />
+          <Check className="h-4 w-4 shrink-0 text-[#E5CA87]" aria-hidden="true" />
           <span>{toast.message}</span>
         </div>
       )}
@@ -211,7 +211,7 @@ export function VisualsEditor({ initial }: { initial: SiteVisuals }) {
           rel="noopener noreferrer"
           className="inline-flex h-10 items-center gap-2 rounded-xl border border-stone-300 bg-white px-4 text-xs font-semibold text-stone-700 hover:bg-stone-50"
         >
-          Voir le site <ExternalLink className="h-3.5 w-3.5 text-[#8A6D2F]" />
+          Voir le site <ExternalLink className="h-3.5 w-3.5 text-[#8A6D2F]" aria-hidden="true" />
         </Link>
       </div>
 
@@ -250,7 +250,7 @@ export function VisualsEditor({ initial }: { initial: SiteVisuals }) {
           <div className="text-xs text-stone-600" aria-live="polite">
             {uploading.length > 0 ? (
               <span className="inline-flex items-center gap-2 font-bold text-sky-700">
-                <Loader2 className="h-3.5 w-3.5 animate-spin" /> Optimisation de la photo…
+                <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" /> Optimisation de la photo…
               </span>
             ) : dirty ? (
               <span className="font-bold text-[#8A6D2F]">● Modifications visuelles en attente.</span>
@@ -265,7 +265,7 @@ export function VisualsEditor({ initial }: { initial: SiteVisuals }) {
               onClick={resetAll}
               className="inline-flex h-9 cursor-pointer items-center gap-1.5 rounded-xl border border-stone-300 bg-stone-50 px-3.5 text-xs font-semibold text-stone-600 hover:bg-stone-100 disabled:cursor-not-allowed disabled:opacity-50"
             >
-              <RotateCcw className="h-3.5 w-3.5" /> Tout restaurer
+              <RotateCcw className="h-3.5 w-3.5" aria-hidden="true" /> Tout restaurer
             </button>
             <button
               type="button"
@@ -273,7 +273,7 @@ export function VisualsEditor({ initial }: { initial: SiteVisuals }) {
               onClick={save}
               className="inline-flex h-9 cursor-pointer items-center gap-2 rounded-xl bg-stone-900 px-5 text-xs font-bold text-white shadow-xs hover:bg-stone-800 disabled:cursor-not-allowed disabled:opacity-50 sm:text-sm"
             >
-              {pending ? <Loader2 className="h-4 w-4 animate-spin text-[#E5CA87]" /> : <Check className="h-4 w-4 text-[#E5CA87]" />}
+              {pending ? <Loader2 className="h-4 w-4 animate-spin text-[#E5CA87]" aria-hidden="true" /> : <Check className="h-4 w-4 text-[#E5CA87]" aria-hidden="true" />}
               {pending ? "Publication…" : "Enregistrer & publier"}
             </button>
           </div>
@@ -325,12 +325,12 @@ function VisualCard({
             aria-label={`Voir la page de ${meta.title}`}
             className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-white/15 backdrop-blur hover:bg-white/25"
           >
-            <ExternalLink className="h-4 w-4" />
+            <ExternalLink className="h-4 w-4" aria-hidden="true" />
           </Link>
         </div>
         {uploading && (
           <div className="absolute inset-0 grid place-items-center bg-stone-950/55 text-sm font-bold text-white backdrop-blur-sm">
-            <span className="inline-flex items-center gap-2"><Loader2 className="h-5 w-5 animate-spin" /> Import & optimisation…</span>
+            <span className="inline-flex items-center gap-2"><Loader2 className="h-5 w-5 animate-spin" aria-hidden="true" /> Import & optimisation…</span>
           </div>
         )}
       </div>
@@ -346,7 +346,7 @@ function VisualCard({
             htmlFor={`upload-${meta.id}`}
             className={`inline-flex h-9 items-center gap-2 rounded-xl bg-stone-900 px-3.5 text-xs font-bold text-white ${disabled || uploading ? "cursor-not-allowed opacity-50" : "cursor-pointer hover:bg-stone-800"}`}
           >
-            {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4 text-[#E5CA87]" />}
+            {uploading ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> : <Upload className="h-4 w-4 text-[#E5CA87]" aria-hidden="true" />}
             Importer une photo
           </label>
           <input
@@ -367,7 +367,7 @@ function VisualCard({
             disabled={disabled || uploading}
             className="inline-flex h-9 cursor-pointer items-center gap-1.5 rounded-xl border border-stone-300 bg-white px-3 text-xs font-semibold text-stone-600 hover:bg-stone-50 disabled:opacity-50"
           >
-            <RotateCcw className="h-3.5 w-3.5" /> Photo d’origine
+            <RotateCcw className="h-3.5 w-3.5" aria-hidden="true" /> Photo d’origine
           </button>
         </div>
 

@@ -136,7 +136,7 @@ export function UpcomingShowcaseView({
               sous le titre. */}
           <div className="mt-8 flex flex-col gap-3 lg:flex-row lg:items-center lg:gap-4">
             <div className="relative w-full lg:max-w-[320px]">
-              <Search className="absolute start-3.5 top-1/2 h-4 w-4 -translate-y-1/2 opacity-40" />
+              <Search className="absolute start-3.5 top-1/2 h-4 w-4 -translate-y-1/2 opacity-40" aria-hidden="true" />
               <input
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
@@ -155,9 +155,9 @@ export function UpcomingShowcaseView({
 
             <div className="flex items-center gap-2 text-[11.5px] text-[var(--muted-foreground)] lg:order-last">
               {kind === "apps" ? (
-                <Smartphone className="h-3.5 w-3.5 text-[var(--accent)]" />
+                <Smartphone className="h-3.5 w-3.5 text-[var(--accent)]" aria-hidden="true" />
               ) : (
-                <Layers className="h-3.5 w-3.5 text-[var(--accent)]" />
+                <Layers className="h-3.5 w-3.5 text-[var(--accent)]" aria-hidden="true" />
               )}
               <span>
                 {ar
@@ -170,7 +170,7 @@ export function UpcomingShowcaseView({
               <div className="flex flex-col gap-3 rounded-[var(--radius-md)] border border-[var(--border)] bg-[var(--card)]/90 p-3 shadow-[var(--shadow-xs)] sm:flex-row sm:items-center sm:justify-between lg:ms-auto lg:max-w-[540px] lg:p-2.5 lg:ps-4">
                 <div className="flex items-start gap-2.5 text-[12.5px] leading-6">
                   <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-[var(--accent)]/15 text-[var(--accent)]">
-                    <Clock className="h-3.5 w-3.5" />
+                    <Clock className="h-3.5 w-3.5" aria-hidden="true" />
                   </span>
                   <span className="text-[var(--muted-foreground)]">
                     {ar ? page.bannerNoteAr : page.bannerNoteEn}
@@ -227,7 +227,7 @@ export function UpcomingShowcaseView({
           {filteredItems.length === 0 ? (
             <div className="card-surface p-12 text-center">
               <div className="mx-auto h-12 w-12 rounded-2xl bg-[var(--accent)]/15 text-[var(--accent)] grid place-items-center">
-                <Sparkles className="h-6 w-6" />
+                <Sparkles className="h-6 w-6" aria-hidden="true" />
               </div>
               <h2 className="mt-4 text-xl font-black">
                 {ar
@@ -349,7 +349,7 @@ export function UpcomingShowcaseView({
                                 className="flex items-center gap-2 text-xs sm:text-sm font-medium"
                               >
                                 <span className="h-5 w-5 rounded-full bg-[var(--accent)]/15 text-[var(--accent)] grid place-items-center shrink-0">
-                                  <Check className="h-3 w-3" />
+                                  <Check className="h-3 w-3" aria-hidden="true" />
                                 </span>
                                 <span className="opacity-85">{feat}</span>
                               </li>
@@ -377,7 +377,7 @@ export function UpcomingShowcaseView({
                           className="min-h-11 px-4 rounded-full bg-[var(--accent)] text-[var(--accent-foreground)] text-xs sm:text-sm font-black inline-flex items-center justify-center gap-1.5 hover:bg-[var(--accent-hover)] transition-colors"
                         >
                           {ar ? "معاينة تجريبية" : "Live Preview"}
-                          <ExternalLink className="h-3.5 w-3.5" />
+                          <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
                         </a>
                       )}
                     </div>
@@ -391,7 +391,7 @@ export function UpcomingShowcaseView({
           <div className="mt-14 rounded-[26px] border border-[var(--border)] bg-[var(--card)] p-6 sm:p-8 lg:p-10 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
             <div>
               <div className="inline-flex items-center gap-2 text-xs font-black tracking-wider uppercase text-[var(--accent)]">
-                <Sparkles className="h-3.5 w-3.5" />
+                <Sparkles className="h-3.5 w-3.5" aria-hidden="true" />
                 {ar ? "تطوير مخصّص حسب الطلب" : "BESPOKE DEVELOPMENT"}
               </div>
               <h2 className="mt-2 text-2xl sm:text-3xl font-black tracking-tight">
@@ -415,14 +415,14 @@ export function UpcomingShowcaseView({
                 className="h-11 px-5 rounded-full border border-[var(--border)] bg-[var(--secondary)] text-sm font-bold inline-flex items-center gap-1.5 hover:border-[var(--accent)] transition-colors"
               >
                 {ar ? "شاهد مواقعنا الحية" : "Explore live sites"}
-                <ArrowUpRight className="h-4 w-4" />
+                <ArrowUpRight className="h-4 w-4" aria-hidden="true" />
               </Link>
               <Link
                 href="/contact"
                 className="h-11 px-6 rounded-full bg-[var(--accent)] text-[var(--accent-foreground)] text-sm font-black inline-flex items-center gap-1.5 hover:bg-[var(--accent-hover)] transition-colors shadow-sm"
               >
                 {ar ? "اطلب استشارة مجانية" : "Request free quote"}
-                <ArrowUpRight className="h-4 w-4" />
+                <ArrowUpRight className="h-4 w-4" aria-hidden="true" />
               </Link>
             </div>
           </div>

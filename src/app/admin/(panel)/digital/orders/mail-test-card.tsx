@@ -57,7 +57,7 @@ export function MailTestCard({
               : "border-orange-200 bg-orange-50 text-orange-800"
           }`}
         >
-          {configured ? <MailCheck className="h-3.5 w-3.5" /> : <TriangleAlert className="h-3.5 w-3.5" />}
+          {configured ? <MailCheck className="h-3.5 w-3.5" aria-hidden="true" /> : <TriangleAlert className="h-3.5 w-3.5" aria-hidden="true" />}
           {configured ? `Canal : ${provider}` : "Aucun canal configuré"}
         </span>
       </div>
@@ -104,7 +104,7 @@ export function MailTestCard({
           disabled={busy}
           className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-stone-900 px-3 text-[12.5px] font-bold text-[#E5CA87] transition-opacity hover:opacity-90 disabled:opacity-60"
         >
-          {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Send className="h-3.5 w-3.5" />}
+          {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" /> : <Send className="h-3.5 w-3.5" aria-hidden="true" />}
           Envoyer le test
         </button>
       </div>

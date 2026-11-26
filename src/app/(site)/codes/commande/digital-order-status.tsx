@@ -179,11 +179,11 @@ function DeliveryProgressBar({
               className={`grid h-6 w-6 place-items-center rounded-full border-2 text-[11px] font-black ${STEP_STYLES[step.state]}`}
             >
               {step.state === "done" ? (
-                <Check className="h-3.5 w-3.5" />
+                <Check className="h-3.5 w-3.5" aria-hidden="true" />
               ) : step.state === "alert" ? (
-                <TriangleAlert className="h-3.5 w-3.5" />
+                <TriangleAlert className="h-3.5 w-3.5" aria-hidden="true" />
               ) : step.state === "current" ? (
-                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" />
               ) : (
                 index + 1
               )}
@@ -538,7 +538,7 @@ export function DigitalOrderStatus({
             disabled={loading || !formRef.trim() || !formToken.trim()}
             className="inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-[var(--accent)] px-4 text-[13px] font-black text-[var(--accent-foreground)] disabled:opacity-50"
           >
-            {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
+            {loading ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> : <Search className="h-4 w-4" aria-hidden="true" />}
             {ar ? "عرض" : "View"}
           </button>
         </div>
@@ -610,9 +610,9 @@ export function DigitalOrderStatus({
                     rel="noopener noreferrer"
                     className="mt-3 inline-flex h-11 items-center justify-center gap-2 rounded-full bg-[var(--accent)] px-5 text-[13px] font-black text-[var(--accent-foreground)] transition-colors hover:bg-[var(--accent-hover)]"
                   >
-                    <CreditCard className="h-4 w-4" />
+                    <CreditCard className="h-4 w-4" aria-hidden="true" />
                     {ar ? "فتح صفحة الدفع بالبطاقة" : "Open secure card checkout"}
-                    <ExternalLink className="h-3.5 w-3.5" />
+                    <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
                   </a>
                 </div>
               )}
@@ -631,7 +631,7 @@ export function DigitalOrderStatus({
                     href={`/api/payments/paygate/switch?ref=${encodeURIComponent(ref)}&t=${encodeURIComponent(token)}`}
                     className="mt-3 inline-flex h-11 items-center justify-center gap-2 rounded-full border border-[var(--accent)]/50 bg-transparent px-5 text-[13px] font-black text-[var(--accent)] transition-colors hover:bg-[var(--accent)]/10"
                   >
-                    <CreditCard className="h-4 w-4" />
+                    <CreditCard className="h-4 w-4" aria-hidden="true" />
                     {ar ? "الدفع بالبطاقة بدلاً من العملات الرقمية" : "Pay by card instead"}
                   </a>
                 </div>
@@ -646,7 +646,7 @@ export function DigitalOrderStatus({
             {credit && (credit.request || credit.canRequest || credit.blocked === "order_closed") && (
               <div className="rounded-xl border border-[var(--border)] bg-[var(--secondary)]/40 p-4">
                 <div className="flex items-center gap-2 text-[10.5px] font-black uppercase tracking-[0.14em] text-[var(--muted-foreground)]">
-                  <Wallet className="h-3.5 w-3.5" />
+                  <Wallet className="h-3.5 w-3.5" aria-hidden="true" />
                   {ar ? "رصيدك لدينا" : "Your balance with us"}
                 </div>
                 <p className="mt-1.5 text-[16px] font-black" dir="ltr">
@@ -703,9 +703,9 @@ export function DigitalOrderStatus({
                         className="inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-[var(--accent)] px-4 text-[12.5px] font-black text-[var(--accent-foreground)] disabled:opacity-50"
                       >
                         {creditBusy ? (
-                          <Loader2 className="h-4 w-4 animate-spin" />
+                          <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
                         ) : (
-                          <Wallet className="h-4 w-4" />
+                          <Wallet className="h-4 w-4" aria-hidden="true" />
                         )}
                         {ar
                           ? `استخدام رصيدي (${lydLabel(credit.balanceLyd)})`
@@ -779,9 +779,9 @@ export function DigitalOrderStatus({
                         className="grid h-11 w-11 shrink-0 cursor-pointer place-items-center rounded-lg border border-[var(--border)] bg-[var(--background)] hover:border-[var(--accent)]"
                       >
                         {copied === `card-${index}` ? (
-                          <Check className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+                          <Check className="h-4 w-4 text-emerald-600 dark:text-emerald-400" aria-hidden="true" />
                         ) : (
-                          <Copy className="h-4 w-4" />
+                          <Copy className="h-4 w-4" aria-hidden="true" />
                         )}
                       </button>
                     </div>
@@ -802,9 +802,9 @@ export function DigitalOrderStatus({
                             className="grid h-11 w-11 shrink-0 cursor-pointer place-items-center rounded-lg border border-[var(--border)] bg-[var(--background)] hover:border-[var(--accent)]"
                           >
                             {copied === `pin-${index}` ? (
-                              <Check className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+                              <Check className="h-4 w-4 text-emerald-600 dark:text-emerald-400" aria-hidden="true" />
                             ) : (
-                              <Copy className="h-4 w-4" />
+                              <Copy className="h-4 w-4" aria-hidden="true" />
                             )}
                           </button>
                         </div>
@@ -818,7 +818,7 @@ export function DigitalOrderStatus({
                         rel="noopener noreferrer"
                         className="mt-3 inline-flex items-center gap-1.5 text-[12.5px] font-bold text-[var(--accent)] hover:underline"
                       >
-                        <ExternalLink className="h-3.5 w-3.5" />
+                        <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
                         {ar ? "تفعيل الرمز" : "Redeem this code"}
                       </a>
                     )}
@@ -826,7 +826,7 @@ export function DigitalOrderStatus({
                 ))}
 
                 <p className="flex items-start gap-2 text-[11.5px] leading-6 text-[var(--muted-foreground)]">
-                  <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-[var(--accent)]" />
+                  <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-[var(--accent)]" aria-hidden="true" />
                   {order.region.toLowerCase() === "global"
                     ? ar
                       ? "هذا الرمز صالح عالمياً."
@@ -838,7 +838,7 @@ export function DigitalOrderStatus({
               </div>
             ) : order.status === "failed" ? (
               <div className="flex items-center gap-2.5 rounded-lg border border-red-200 bg-red-50 dark:border-red-500/40 dark:bg-red-950/40 px-3.5 py-3 text-[12.5px] text-red-800 dark:text-red-200">
-                <XCircle className="h-4 w-4 shrink-0" />
+                <XCircle className="h-4 w-4 shrink-0" aria-hidden="true" />
                 {order.paymentMethod === "phone_card"
                   ? ar
                     ? "توقف الطلب بعد التحقق من بطاقة الهاتف. تواصل معنا مع ذكر مرجع الطلب؛ لا ترسل بطاقة أخرى قبل الاتفاق معنا."
@@ -857,7 +857,7 @@ export function DigitalOrderStatus({
               // elle dit au client qu'il peut fermer l'onglet sans perdre
               // sa commande (c'est la vraie question qui le retient ici).
               <p className="flex items-start gap-2 text-[11.5px] leading-6 text-[var(--muted-foreground)]">
-                <Clock className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[var(--accent)]" />
+                <Clock className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[var(--accent)]" aria-hidden="true" />
                 {ar
                   ? "تُحدَّث هذه الصفحة تلقائياً. يمكنك إغلاقها: سيصلك الكود بالبريد الإلكتروني وعلى تيليجرام إن فعّلت الإشعارات."
                   : "This page refreshes automatically. You can close it: the code is emailed to you and, if enabled, sent on Telegram."}
@@ -876,7 +876,7 @@ export function DigitalOrderStatus({
                 rel="noopener noreferrer"
                 className="flex items-start gap-3 rounded-xl border border-[var(--accent)]/40 bg-[var(--accent)]/5 p-3.5 transition hover:border-[var(--accent)]"
               >
-                <Send className="mt-0.5 h-4 w-4 shrink-0 text-[var(--accent)]" />
+                <Send className="mt-0.5 h-4 w-4 shrink-0 text-[var(--accent)]" aria-hidden="true" />
                 <span className="min-w-0">
                   <span className="block text-[12.5px] font-black">
                     {ar

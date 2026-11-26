@@ -108,7 +108,7 @@ export function ManualPaymentsTable({ rows }: { rows: AdminManualPaymentRow[] })
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h2 className="flex items-center gap-2 text-[15px] font-black text-stone-900">
-            <Wallet className="h-4 w-4 text-[#8A6D2F]" />
+            <Wallet className="h-4 w-4 text-[#8A6D2F]" aria-hidden="true" />
             Paiements manuels à vérifier
           </h2>
           <p className="mt-1 max-w-3xl text-[12px] leading-5 text-stone-600">
@@ -241,9 +241,9 @@ export function ManualPaymentsTable({ rows }: { rows: AdminManualPaymentRow[] })
                           className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-emerald-700 px-3 text-[12px] font-bold text-white hover:bg-emerald-800 disabled:opacity-50"
                         >
                           {isBusy ? (
-                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                            <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" />
                           ) : (
-                            <CheckCircle2 className="h-3.5 w-3.5" />
+                            <CheckCircle2 className="h-3.5 w-3.5" aria-hidden="true" />
                           )}
                           Virement reçu — accepter et livrer
                         </button>
@@ -254,7 +254,7 @@ export function ManualPaymentsTable({ rows }: { rows: AdminManualPaymentRow[] })
                         onClick={() => review(row, "approved", false)}
                         className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-emerald-300 bg-white px-3 text-[12px] font-bold text-emerald-800 hover:bg-emerald-50 disabled:opacity-50"
                       >
-                        <Check className="h-3.5 w-3.5" />
+                        <Check className="h-3.5 w-3.5" aria-hidden="true" />
                         {row.kind === "subscription"
                           ? "Accepter et activer l’abonnement"
                           : "Accepter sans livrer"}
@@ -265,7 +265,7 @@ export function ManualPaymentsTable({ rows }: { rows: AdminManualPaymentRow[] })
                         onClick={() => review(row, "rejected")}
                         className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-red-300 bg-white px-3 text-[12px] font-bold text-red-700 hover:bg-red-50 disabled:opacity-50"
                       >
-                        <XCircle className="h-3.5 w-3.5" />
+                        <XCircle className="h-3.5 w-3.5" aria-hidden="true" />
                         Refuser
                       </button>
                     </div>
@@ -294,7 +294,7 @@ export function ManualPaymentsTable({ rows }: { rows: AdminManualPaymentRow[] })
                         className="inline-flex h-10 items-center gap-1.5 rounded-lg bg-emerald-700 px-3 text-[12px] font-bold text-white hover:bg-emerald-800 disabled:opacity-50"
                       >
                         {isBusy ? (
-                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" />
                         ) : (
                           <ArrowDownToLine className="h-3.5 w-3.5" />
                         )}

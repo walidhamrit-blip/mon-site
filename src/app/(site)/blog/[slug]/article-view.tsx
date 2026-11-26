@@ -97,7 +97,7 @@ export function ArticleView({
               href="/blog"
               className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-[var(--card)] border border-[var(--border)] hover:border-[var(--accent)]"
             >
-              <ArrowLeft className="h-3 w-3 rtl:-scale-x-100" />
+              <ArrowLeft className="h-3 w-3 rtl:-scale-x-100" aria-hidden="true" />
               {ar ? "كل الأدلة" : "All guides"}
             </Link>
             <span className="rounded-full border border-[var(--accent)]/35 bg-[var(--accent)]/12 px-3 py-1 text-[var(--accent)]">
@@ -115,16 +115,16 @@ export function ArticleView({
               {ar ? article.authorAr : article.authorEn}
             </span>
             <span className="inline-flex items-center gap-1.5">
-              <Calendar className="h-3.5 w-3.5" />
+              <Calendar className="h-3.5 w-3.5" aria-hidden="true" />
               {formatArticleDate(article.publishedAt, locale)}
             </span>
             <span className="inline-flex items-center gap-1.5">
-              <RefreshCw className="h-3.5 w-3.5" />
+              <RefreshCw className="h-3.5 w-3.5" aria-hidden="true" />
               {ar ? "آخر تحديث: " : "Updated: "}
               {formatArticleDate(article.updatedAt, locale)}
             </span>
             <span className="inline-flex items-center gap-1.5">
-              <Clock className="h-3.5 w-3.5" />
+              <Clock className="h-3.5 w-3.5" aria-hidden="true" />
               {article.readingMinutes} {ar ? "دقائق قراءة" : "min read"}
             </span>
           </div>
@@ -184,7 +184,7 @@ export function ArticleView({
                   <ul className="mt-4 space-y-2">
                     {bullets.map((bullet) => (
                       <li key={bullet} className="flex items-start gap-2.5 text-sm leading-7">
-                        <Check className="h-4 w-4 mt-1.5 shrink-0 text-[var(--accent)]" />
+                        <Check className="h-4 w-4 mt-1.5 shrink-0 text-[var(--accent)]" aria-hidden="true" />
                         <span className="opacity-80">{bullet}</span>
                       </li>
                     ))}
@@ -312,7 +312,7 @@ export function ArticleView({
                 rel="noopener noreferrer"
                 className="h-11 px-6 rounded-full bg-[var(--accent)] text-[var(--accent-foreground)] inline-flex items-center justify-center gap-2 font-bold"
               >
-                <MessageCircle className="h-4 w-4" />
+                <MessageCircle className="h-4 w-4" aria-hidden="true" />
                 {ar ? "واتساب مباشر" : "Direct WhatsApp"}
               </a>
               <Link
@@ -422,7 +422,7 @@ export function ArticleView({
                       href={`/demos/${demo.slug}`}
                       className="inline-flex items-center gap-1.5 opacity-75 hover:text-[var(--accent)] hover:opacity-100"
                     >
-                      <ArrowUpRight className="h-3.5 w-3.5" />
+                      <ArrowUpRight className="h-3.5 w-3.5" aria-hidden="true" />
                       {ar ? demo.title : demo.titleEn}
                     </Link>
                   </li>
@@ -448,7 +448,7 @@ export function ArticleView({
               className="mt-3 inline-flex items-center gap-1.5 text-[13px] font-black text-[var(--accent)] hover:underline"
             >
               {ar ? "تصفّح الأكواد والبطاقات" : "Browse codes & cards"}
-              <ArrowUpRight className="h-3.5 w-3.5" />
+              <ArrowUpRight className="h-3.5 w-3.5" aria-hidden="true" />
             </Link>
           </div>
         </aside>
@@ -473,7 +473,7 @@ export function ArticleView({
                   <p className="mt-2 text-xs opacity-55 line-clamp-2">{ar ? item.excerptAr : item.excerptEn}</p>
                   <span className="mt-3 inline-flex items-center gap-1 text-xs font-bold text-[var(--accent)]">
                     {ar ? "اقرأ الدليل" : "Read the guide"}
-                    <ArrowRight className="h-3 w-3 rtl:-scale-x-100" />
+                    <ArrowRight className="h-3 w-3 rtl:-scale-x-100" aria-hidden="true" />
                   </span>
                 </Link>
               ))}

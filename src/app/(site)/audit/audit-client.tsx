@@ -108,7 +108,7 @@ function Score({ label, before, after }: { label: string; before: number; after:
     <div className="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-4 text-center">
       <p className="text-xs font-bold opacity-55">{label}</p>
       <p className="mt-2 text-sm opacity-60">
-        <span className="line-through">{before}</span> <ArrowRight className="inline h-3 w-3" />{" "}
+        <span className="line-through">{before}</span> <ArrowRight className="inline h-3 w-3" aria-hidden="true" />{" "}
         <span className="text-2xl font-black text-[var(--accent)]">{after ?? "n.c."}</span>
       </p>
     </div>
@@ -146,7 +146,7 @@ export function AuditClient() {
               className="inline-flex min-h-12 items-center gap-2 rounded-full bg-[var(--accent)] px-6 text-sm font-black text-[var(--accent-foreground)]"
             >
               {t("اطلب تدقيقاً", "Request an audit")}
-              <ArrowRight className="h-4 w-4" />
+              <ArrowRight className="h-4 w-4" aria-hidden="true" />
             </a>
             <a
               href="#checklist"
@@ -244,7 +244,7 @@ export function AuditClient() {
                 <ul className="mt-3 space-y-1.5">
                   {category.items.map((item) => (
                     <li key={item.en} className="flex items-start gap-2 text-xs leading-5 opacity-75">
-                      <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[var(--accent)]" />
+                      <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[var(--accent)]" aria-hidden="true" />
                       <span>{ar ? item.ar : item.en}</span>
                     </li>
                   ))}
@@ -350,7 +350,7 @@ export function AuditClient() {
       <section id="demande" className="section-tight bg-[var(--secondary)]/25">
         <div className="site-container max-w-3xl px-4 sm:px-6 lg:px-8">
           <div className="flex items-center gap-3">
-            <Smartphone className="h-5 w-5 text-[var(--accent)]" />
+            <Smartphone className="h-5 w-5 text-[var(--accent)]" aria-hidden="true" />
             <h2 className="text-2xl font-black">{t("اطلب تدقيق موقعك", "Request your audit")}</h2>
           </div>
           <p className="mt-2 text-sm leading-6 opacity-65">

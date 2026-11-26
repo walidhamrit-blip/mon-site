@@ -58,7 +58,7 @@ function MapPanel({
         <span className="relative flex h-12 w-12 items-center justify-center">
           <span aria-hidden="true" className="absolute h-12 w-12 animate-ping rounded-full bg-[var(--accent)]/25" />
           <span className="relative grid h-10 w-10 place-items-center rounded-full bg-[var(--accent)] text-[var(--accent-foreground)] shadow-[var(--shadow-md)]">
-            <MapPin className="h-5 w-5" />
+            <MapPin className="h-5 w-5" aria-hidden="true" />
           </span>
         </span>
       </div>
@@ -76,7 +76,7 @@ function MapPanel({
           className="inline-flex h-11 shrink-0 items-center gap-1.5 rounded-full bg-[var(--primary)] px-3.5 text-[12px] font-bold text-[var(--primary-foreground)] transition-opacity hover:opacity-90"
         >
           Maps
-          <ArrowUpRight className="h-3.5 w-3.5" />
+          <ArrowUpRight className="h-3.5 w-3.5" aria-hidden="true" />
         </a>
       </div>
     </div>
@@ -144,7 +144,7 @@ export function ContactClient() {
                   source="contact"
                   className="inline-flex h-11 items-center gap-2 rounded-full bg-[#0B6B3A] px-5 text-[13.5px] font-bold text-white transition-opacity hover:opacity-95"
                 >
-                  <MessageCircle className="h-4 w-4" />
+                  <MessageCircle className="h-4 w-4" aria-hidden="true" />
                   {ar ? "واتساب مباشر" : "WhatsApp"}
                 </WhatsAppEnquiry>
                 <a
@@ -152,7 +152,7 @@ export function ContactClient() {
                   className="inline-flex h-11 items-center gap-2 rounded-full border border-[var(--border)] bg-[var(--card)] px-5 text-[13.5px] font-semibold transition-colors hover:border-[var(--accent)]"
                   dir="ltr"
                 >
-                  <Phone className="h-4 w-4" />
+                  <Phone className="h-4 w-4" aria-hidden="true" />
                   {siteConfig.phone}
                 </a>
               </div>

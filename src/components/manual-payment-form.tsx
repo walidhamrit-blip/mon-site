@@ -218,7 +218,7 @@ export function ManualPaymentForm({
             aria-label={ar ? "نسخ الحساب" : "Copy the account"}
             className="grid h-11 w-11 shrink-0 cursor-pointer place-items-center rounded-lg border border-[var(--border)] bg-[var(--background)] hover:border-[var(--accent)]"
           >
-            {copied ? <Check className="h-4 w-4 text-emerald-600 dark:text-emerald-400" /> : <Copy className="h-4 w-4" />}
+            {copied ? <Check className="h-4 w-4 text-emerald-600 dark:text-emerald-400" aria-hidden="true" /> : <Copy className="h-4 w-4" aria-hidden="true" />}
           </button>
         </div>
         {isCrypto && (
@@ -312,7 +312,7 @@ export function ManualPaymentForm({
       )}
 
       <p className="flex items-start gap-2 text-[11px] leading-5 text-[var(--muted-foreground)]">
-        <Info className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[var(--accent)]" />
+        <Info className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[var(--accent)]" aria-hidden="true" />
         {ar
           ? "لم يُقبل الدفع بعد: نتحقق يدوياً من وصول المبلغ، وقد يبقى الطلب معلّقاً حتى ذلك الحين. لا تُعد الإرسال."
           : "The payment is not accepted yet: we verify the money actually arrived by hand, and the order stays pending until then. Do not send it twice."}

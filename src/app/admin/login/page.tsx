@@ -31,7 +31,7 @@ export default async function AdminLoginPage() {
               ن
             </div>
             <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-stone-100 text-stone-600 text-xs font-medium mb-3">
-              <ShieldCheck className="h-3.5 w-3.5 text-[#9A7B38]" />
+              <ShieldCheck className="h-3.5 w-3.5 text-[#9A7B38]" aria-hidden="true" />
               Administration sécurisée
             </div>
             <h1 className="text-2xl font-black tracking-tight text-stone-900">
@@ -50,7 +50,7 @@ export default async function AdminLoginPage() {
             href="/"
             className="inline-flex items-center gap-1.5 hover:text-stone-900 font-medium transition-colors"
           >
-            <ArrowLeft className="h-3.5 w-3.5" />
+            <ArrowLeft className="h-3.5 w-3.5" aria-hidden="true" />
             Retour au site public
           </Link>
         </p>

@@ -38,7 +38,7 @@ export function ComparisonHubView({
               ← {pick(c.homeAr, c.homeEn)}
             </Link>
             <span className="rounded-full border border-[var(--accent)]/35 bg-[var(--accent)]/12 px-3 py-1 text-[var(--accent)]">
-              <Scale className="me-1 inline h-3 w-3" />
+              <Scale className="me-1 inline h-3 w-3" aria-hidden="true" />
               {pick(c.badgeAr, c.badgeEn)}
             </span>
           </div>
@@ -111,7 +111,7 @@ export function ComparisonHubView({
                     </p>
                   </div>
                   <span className="mt-0.5 grid h-8 w-8 shrink-0 place-items-center rounded-full border border-[var(--border)] text-[var(--accent)] transition-colors group-hover:bg-[var(--accent)] group-hover:text-[var(--accent-foreground)]">
-                    <ArrowUpRight className="h-4 w-4" />
+                    <ArrowUpRight className="h-4 w-4" aria-hidden="true" />
                   </span>
                 </div>
 
@@ -123,7 +123,7 @@ export function ComparisonHubView({
                 <div className="mt-4 grid grid-cols-2 gap-2 text-xs">
                   <div className="rounded-xl bg-[#C1272D]/10 p-3">
                     <p className="flex items-center gap-1 font-black text-[#C1272D]">
-                      <X className="h-3 w-3" />
+                      <X className="h-3 w-3" aria-hidden="true" />
                       {pick(comparison.competitorAr, comparison.competitorEn)}
                     </p>
                     <p dir="ltr" className="mt-1 font-black text-[#C1272D]">
@@ -132,7 +132,7 @@ export function ComparisonHubView({
                   </div>
                   <div className="rounded-xl bg-[#0E9F6E]/10 p-3">
                     <p className="flex items-center gap-1 font-black text-[#0E9F6E]">
-                      <Check className="h-3 w-3" />
+                      <Check className="h-3 w-3" aria-hidden="true" />
                       {pick(c.usNameAr, c.usNameEn)}
                     </p>
                     <p className="mt-1 font-black text-[#0E9F6E]">

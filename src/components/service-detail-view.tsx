@@ -74,7 +74,7 @@ export function ServiceDetailView({
               href="/services"
               className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-[var(--card)] border border-[var(--border)] hover:border-[var(--accent)]"
             >
-              <ArrowLeft className="h-3 w-3" />
+              <ArrowLeft className="h-3 w-3" aria-hidden="true" />
               {pick(s.allServicesAr, s.allServicesEn)}
             </Link>
             <span className="rounded-full border border-[var(--accent)]/35 bg-[var(--accent)]/12 px-3 py-1 text-[var(--accent)]">
@@ -105,7 +105,7 @@ export function ServiceDetailView({
                   rel="noopener noreferrer"
                   className="h-11 px-6 rounded-full bg-[var(--primary)] text-[var(--primary-foreground)] inline-flex items-center justify-center gap-2 text-sm font-bold"
                 >
-                  <MessageCircle className="h-4 w-4" />
+                  <MessageCircle className="h-4 w-4" aria-hidden="true" />
                   {pick(s.whatsappOrderAr, s.whatsappOrderEn)}
                 </a>
                 <Link
@@ -127,17 +127,17 @@ export function ServiceDetailView({
               </p>
               <ul className="mt-4 space-y-2 text-xs opacity-70">
                 <li className="flex items-center gap-2">
-                  <Clock className="h-3.5 w-3.5 text-[var(--accent)]" />
+                  <Clock className="h-3.5 w-3.5 text-[var(--accent)]" aria-hidden="true" />
                   {fillTemplate(pick(s.deliveryAr, s.deliveryEn), {
                     value: main(landing.deliveryAr, landing.deliveryEn),
                   })}
                 </li>
                 <li className="flex items-center gap-2">
-                  <ShieldCheck className="h-3.5 w-3.5 text-[var(--accent)]" />
+                  <ShieldCheck className="h-3.5 w-3.5 text-[var(--accent)]" aria-hidden="true" />
                   {pick(s.fixedPriceAr, s.fixedPriceEn)}
                 </li>
                 <li className="flex items-center gap-2">
-                  <Sparkles className="h-3.5 w-3.5 text-[var(--accent)]" />
+                  <Sparkles className="h-3.5 w-3.5 text-[var(--accent)]" aria-hidden="true" />
                   {pick(s.instalmentsAr, s.instalmentsEn)}
                 </li>
               </ul>
@@ -181,7 +181,7 @@ export function ServiceDetailView({
               <ul className="mt-5 space-y-2.5">
                 {main(landing.deliverablesAr, landing.deliverablesEn).map((item) => (
                   <li key={item} className="flex items-start gap-2.5 text-sm leading-6">
-                    <Check className="h-4 w-4 mt-1 shrink-0 text-[var(--accent)]" />
+                    <Check className="h-4 w-4 mt-1 shrink-0 text-[var(--accent)]" aria-hidden="true" />
                     <span className="opacity-80">{item}</span>
                   </li>
                 ))}
@@ -208,7 +208,7 @@ export function ServiceDetailView({
                     className="mt-3 inline-flex items-center gap-1.5 text-xs font-black text-[var(--accent)] hover:underline"
                   >
                     {pick("عرض التدقيق والتقرير", "View the audit and sample report")}
-                    <ArrowLeft className="h-3.5 w-3.5 rotate-180" />
+                    <ArrowLeft className="h-3.5 w-3.5 rotate-180" aria-hidden="true" />
                   </Link>
                 </div>
               )}
