@@ -1,6 +1,6 @@
 "use client";
 import { useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { m, AnimatePresence } from "framer-motion";
 import {
   Smartphone,
   Monitor,
@@ -399,7 +399,7 @@ function InteractiveShowcase({
                 ) : (
                   <div dir={locale === "ar" ? "rtl" : "ltr"} className="w-full h-full relative">
                     <AnimatePresence mode="wait">
-                      <motion.img
+                      <m.img
                         key={activeDemo.slug + mode}
                         initial={{ opacity: 0, scale: 1.02 }}
                         animate={{ opacity: 1, scale: 1 }}

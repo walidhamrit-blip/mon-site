@@ -116,7 +116,7 @@ export function ScaledLiveIframe({
           src={getIframeSrc(url)}
           title={title}
           className="w-full h-full border-0 bg-white block"
-          loading="eager"
+          loading="lazy"
           tabIndex={interactive ? undefined : -1}
           aria-hidden={interactive ? undefined : true}
           onLoad={() => {

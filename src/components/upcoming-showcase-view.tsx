@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import Image from "next/image";
 import { imageOptimizationProps } from "@/lib/image-source";
 import { LocalizedLink as Link } from "@/components/localized-link";
-import { motion } from "framer-motion";
+import { m } from "framer-motion";
 import {
   ArrowUpRight,
   BellRing,
@@ -259,7 +259,7 @@ export function UpcomingShowcaseView({
                 const hasDemoLink = isExternalUrl(item.demoUrl);
 
                 return (
-                  <motion.article
+                  <m.article
                     key={item.id}
                     initial={{ opacity: 0, y: 16 }}
                     whileInView={{ opacity: 1, y: 0 }}
@@ -381,7 +381,7 @@ export function UpcomingShowcaseView({
                         </a>
                       )}
                     </div>
-                  </motion.article>
+                  </m.article>
                 );
               })}
             </div>

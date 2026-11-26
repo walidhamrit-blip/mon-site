@@ -1,5 +1,5 @@
 "use client";
-import { motion } from "framer-motion";
+import { m } from "framer-motion";
 import { ArrowUpRight, Zap, Palette, SlidersHorizontal, Search, Headset } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import { useSectionHeading, useSiteContent } from "@/components/site-provider";
@@ -36,7 +36,7 @@ export function WhyUs() {
           {whyUs.map((item, i) => {
             const Icon = icons[item.icon] ?? Zap;
             return (
-              <motion.article
+              <m.article
                 key={item.titleAr}
                 initial={{ opacity: 0, y: 16 }}
                 whileInView={{ opacity: 1, y: 0 }}
@@ -53,13 +53,13 @@ export function WhyUs() {
                 <p className="mt-2 text-[13.5px] leading-6 text-[var(--muted-foreground)]">
                   {locale === "ar" ? item.descAr : item.descEn}
                 </p>
-              </motion.article>
+              </m.article>
             );
           })}
 
           {/* Sixième tuile : passage à l'action — complète la grille 3 × 2
               sans laisser de case vide quand il y a cinq valeurs. */}
-          <motion.a
+          <m.a
             href="/contact"
             initial={{ opacity: 0, y: 16 }}
             whileInView={{ opacity: 1, y: 0 }}
@@ -83,7 +83,7 @@ export function WhyUs() {
               {locale === "ar" ? "تحدث معنا" : "Talk to us"}
               <ArrowUpRight className="h-4 w-4 transition-transform duration-200 group-hover:-translate-y-0.5 group-hover:translate-x-0.5 rtl:group-hover:-translate-x-0.5" />
             </span>
-          </motion.a>
+          </m.a>
         </div>
       </div>
     </section>

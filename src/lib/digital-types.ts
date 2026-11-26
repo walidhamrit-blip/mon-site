@@ -382,13 +382,24 @@ export interface PublicDigitalProduct extends Omit<DigitalProduct, "deliveryNote
 /**
  * Calcule le prix d'entrée d'une fiche (en USD) : la dénomination la moins
  * chère disponible. `null` si aucune dénomination n'est vendable.
+ *
+ * Cache par `WeakMap` : la vitrine calcule ce prix à chaque itération
+ * (facettes, filtrage, tri, rendu des cartes) sur jusqu'à 2 000 fiches —
+ * sans cache, la même fiche est recomptée des dizaines de fois. Les fiches
+ * sont immuables (copie du cache partagé), d'où un cache par référence sans
+ * risque de valeurs stales — et sans fuite mémoire (`WeakMap`).
  */
+const lowestPriceCache = new WeakMap<DigitalProduct, number | null>();
+
 export function lowestPriceUsd(product: DigitalProduct): number | null {
+  const cached = lowestPriceCache.get(product);
+  if (cached !== undefined) return cached;
   const prices = product.denominations
     .filter((d) => d.available && Number.isFinite(d.priceUsd) && d.priceUsd > 0)
     .map((d) => d.priceUsd);
-  if (prices.length === 0) return null;
-  return Math.min(...prices);
+  const price = prices.length === 0 ? null : Math.min(...prices);
+  lowestPriceCache.set(product, price);
+  return price;
 }
 
 /** Prix le plus élevé d'une fiche (en USD), ou `null`. */

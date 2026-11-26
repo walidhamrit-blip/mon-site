@@ -84,7 +84,15 @@ export const maxDuration = 60;
 
 export default async function CodesPage({ searchParams }: LocalePageProps) {
   const params = await searchParams;
-  const { config } = await getSiteDataCached();
+  /**
+   * Lectures indépendantes exécutées en parallèle (point 2) : la configuration
+   * du site et le catalogue partagé ne dépendent pas l'une de l'autre — deux
+   * awaits séquentiels ne faisaient que multiplier le TTFB.
+   */
+  const [{ config }, snapshot] = await Promise.all([
+    getSiteDataCached(),
+    getPublicCatalogCached(),
+  ]);
   /**
    * Ordre commercial dès le serveur : les fiches les plus demandées (recharges
    * des jeux de la région, cartes des grandes boutiques, zones payables en
@@ -102,7 +110,6 @@ export default async function CodesPage({ searchParams }: LocalePageProps) {
    * vérifiée en base au moment du panier (`createDigitalCheckout` →
    * `checkSupplierUnitPrice`), et le prix est recalculé côté serveur.
    */
-  const snapshot = await getPublicCatalogCached();
   const products = sortByDemand(snapshot.products);
   /**
    * Filtres initiaux lus dans l'adresse (`?kind=&platform=&region=&price=&sort=&q=`),

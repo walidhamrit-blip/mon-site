@@ -2,7 +2,7 @@
 import { useEffect, useRef, useState } from "react";
 import { LocalizedLink as Link } from "@/components/localized-link";
 import { usePathname } from "next/navigation";
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, m } from "framer-motion";
 import { ArrowUpRight, ChevronDown, Menu, Moon, Sun, X } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import { useTheme } from "./theme-provider";
@@ -220,7 +220,7 @@ export function Navbar() {
 
       <AnimatePresence>
         {open && (
-          <motion.div
+          <m.div
             id="mobile-menu"
             ref={menuRef}
             role="dialog"
@@ -295,7 +295,7 @@ export function Navbar() {
                 </details>
               </div>
             </div>
-          </motion.div>
+          </m.div>
         )}
       </AnimatePresence>
     </>
