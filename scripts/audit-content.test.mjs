@@ -36,7 +36,7 @@ test("chaque point est bilingue, non vide et sans texte de remplissage", () => {
 
 test("le rapport exemple est daté, outillé et limité explicitement", () => {
   const page = read("src/app/(site)/audit/audit-client.tsx");
-  assert.match(page, /18\/11\/2026/);
+  assert.match(page, /20\/11\/2026/);
   assert.match(page, /Lighthouse 12/);
   assert.match(page, /3 runs/);
   assert.match(page, /69/);
