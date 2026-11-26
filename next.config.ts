@@ -1,6 +1,7 @@
 import { withSentryConfig } from "@sentry/nextjs/config";
 import type { NextConfig } from "next";
 import { OPTIMIZED_IMAGE_HOSTS } from "./src/lib/image-source";
+import { TELEGRAM_MINI_APP_PATH, telegramMiniAppCsp } from "./src/lib/telegram-mini-app-core";
 
 const isVercelProduction = process.env.VERCEL_ENV === "production";
 
@@ -150,6 +151,18 @@ const nextConfig: NextConfig = {
       {
         source: "/(.*)",
         headers: SECURITY_HEADERS,
+      },
+      {
+        // Mini App Telegram (`/tg`) : la SEULE route qui charge le SDK
+        // officiel (`https://telegram.org/js/telegram-web-app.js`) et qui
+        // accepte d'être embarquée par le client Telegram Web
+        // (web.telegram.org affiche les Mini Apps dans une <iframe>).
+        // Déclarée APRÈS la règle globale : Next applique la dernière valeur
+        // d'un même en-tête. Quand `frame-ancestors` est présent, les
+        // navigateurs ignorent `X-Frame-Options` (CSP niveau 2) — le reste du
+        // site garde donc son anti-clickjacking `'self'` inchangé.
+        source: TELEGRAM_MINI_APP_PATH,
+        headers: [{ key: "Content-Security-Policy", value: telegramMiniAppCsp(CSP_DIRECTIVES) }],
       },
       {
         // Démos HTML autonomes servies depuis `public/live-demos/` : ce sont
