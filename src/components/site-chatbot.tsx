@@ -363,7 +363,7 @@ function ChatShell() {
             {/* Conversation */}
             <div
               ref={listRef}
-              className="min-h-0 flex-1 space-y-2 overflow-y-auto px-3 py-3 sm:max-h-[min(52vh,360px)]"
+              className="min-h-0 flex-1 space-y-2 overflow-y-auto overscroll-contain px-3 py-3 sm:max-h-[min(52vh,360px)]"
               aria-live="polite"
             >
               {messages.map((message, messageIndex) =>

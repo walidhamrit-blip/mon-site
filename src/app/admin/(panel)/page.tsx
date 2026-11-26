@@ -289,7 +289,7 @@ export default async function AdminDashboardPage() {
           <Link
             key={label}
             href={href}
-            className="group rounded-2xl border border-stone-200/90 bg-white p-4 hover:border-[#C6A664] hover:shadow-md transition-all shadow-2xs"
+            className="group rounded-2xl border border-stone-200/90 bg-white p-4 hover:border-[#C6A664] hover:shadow-md transition-[border-color,box-shadow] shadow-2xs"
           >
             <div className="flex items-center justify-between gap-2">
               <span className="text-xs font-semibold text-stone-500">{label}</span>
@@ -320,7 +320,7 @@ export default async function AdminDashboardPage() {
               <Link
                 key={card.href}
                 href={card.href}
-                className="group rounded-2xl border border-stone-200/90 bg-white p-5 hover:border-[#C6A664] hover:shadow-md transition-all flex flex-col justify-between gap-4 shadow-2xs"
+                className="group rounded-2xl border border-stone-200/90 bg-white p-5 hover:border-[#C6A664] hover:shadow-md transition-[border-color,box-shadow] flex flex-col justify-between gap-4 shadow-2xs"
               >
                 <div>
                   <div className="flex items-center justify-between gap-2 mb-3">
@@ -364,7 +364,7 @@ export default async function AdminDashboardPage() {
                   title={`${d.day} : ${d.count}`}
                 >
                   <div
-                    className="w-full rounded-t-md bg-[#C6A664] transition-all"
+                    className="w-full rounded-t-md bg-[#C6A664] transition-[background-color]"
                     style={{
                       height: `${Math.max(d.count > 0 ? 12 : 4, (d.count / maxDay) * 100)}%`,
                       opacity: d.count > 0 ? 1 : 0.2,

@@ -654,7 +654,7 @@ export function DigitalCatalog({
                   value={sort}
                   onChange={(event) => setSort(event.target.value as SortId)}
                   aria-label={ar ? "ترتيب" : "Sort"}
-                  className="h-11 cursor-pointer rounded-full border border-[var(--border)] bg-[var(--card)] px-3.5 text-[12.5px] font-bold outline-none"
+                  className="h-11 cursor-pointer rounded-full border border-[var(--border)] bg-[var(--card)] px-3.5 text-[12.5px] font-bold outline-none transition-colors focus:border-[var(--accent)]"
                 >
                   <option value="popular">{ar ? "الأكثر طلباً" : "Popular"}</option>
                   <option value="price-asc">{ar ? "الأقل سعراً" : "Price ↑"}</option>

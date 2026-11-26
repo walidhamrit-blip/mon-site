@@ -999,6 +999,16 @@ html.dark { color-scheme: dark; }
 }
 .skip-link:focus { transform: none; }
 
+/* Interactions tactiles (Web Interface Guidelines) :
+   - `touch-action: manipulation` sur les éléments interactifs évite le délai
+     de zoom double-tap ;
+   - la couleur de surbrillance du tap est fixée explicitement (aucun flash
+     gris par défaut, qui trahit le thème). */
+:where(a, button, input, select, textarea, [role="button"], [tabindex]) {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
 /* Bandeaux défilants : bouton lecture / pause (toucher et clavier). */
 .marquee-pause-button {
   display: grid;

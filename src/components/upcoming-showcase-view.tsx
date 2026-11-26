@@ -331,7 +331,7 @@ export function UpcomingShowcaseView({
                             </div>
                             <div className="h-2 rounded-full bg-[var(--border)] overflow-hidden">
                               <div
-                                className="h-full rounded-full transition-all duration-500"
+                                className="h-full rounded-full transition-[width,background-color] duration-500"
                                 style={{
                                   width: `${Math.min(100, Math.max(5, item.progress))}%`,
                                   backgroundColor: item.color || "var(--accent)",

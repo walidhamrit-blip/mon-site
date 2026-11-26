@@ -236,7 +236,7 @@ export function ContentEditor({
               key={item.id}
               type="button"
               onClick={() => setTab(item.id)}
-              className={`px-3.5 py-2 rounded-xl text-xs font-bold inline-flex items-center gap-1.5 transition-all cursor-pointer ${
+              className={`px-3.5 py-2 rounded-xl text-xs font-bold inline-flex items-center gap-1.5 transition-[background-color,border-color,color] cursor-pointer ${
                 active
                   ? "bg-stone-900 text-white shadow-2xs"
                   : "text-stone-600 hover:bg-stone-100 hover:text-stone-900"

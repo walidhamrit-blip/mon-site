@@ -245,7 +245,7 @@ export function FullscreenLiveViewer({
           <button
             type="button"
             onClick={() => setMode("desktop")}
-            className={`min-h-9 flex-1 justify-center sm:flex-none px-3.5 sm:px-4 rounded-full text-xs sm:text-sm font-black inline-flex items-center gap-1.5 transition-all cursor-pointer ${
+            className={`min-h-9 flex-1 justify-center sm:flex-none px-3.5 sm:px-4 rounded-full text-xs sm:text-sm font-black inline-flex items-center gap-1.5 transition-[background-color,border-color,color] cursor-pointer ${
               mode === "desktop"
                 ? "bg-[var(--accent)] text-[var(--accent-foreground)] shadow"
                 : "text-zinc-300 hover:text-white"
@@ -258,7 +258,7 @@ export function FullscreenLiveViewer({
           <button
             type="button"
             onClick={() => setMode("mobile")}
-            className={`min-h-9 flex-1 justify-center sm:flex-none px-3.5 sm:px-4 rounded-full text-xs sm:text-sm font-black inline-flex items-center gap-1.5 transition-all cursor-pointer ${
+            className={`min-h-9 flex-1 justify-center sm:flex-none px-3.5 sm:px-4 rounded-full text-xs sm:text-sm font-black inline-flex items-center gap-1.5 transition-[background-color,border-color,color] cursor-pointer ${
               mode === "mobile"
                 ? "bg-[var(--accent)] text-[var(--accent-foreground)] shadow"
                 : "text-zinc-300 hover:text-white"
@@ -388,7 +388,7 @@ export function FullscreenLiveViewer({
       {(config.reservation?.enabled || classifiedPlan) && offerVisible && (
         <div
           dir={locale === "ar" ? "rtl" : "ltr"}
-          className="absolute bottom-[max(0.75rem,env(safe-area-inset-bottom))] start-3 end-3 sm:end-auto sm:w-[330px] max-h-[46dvh] overflow-y-auto z-30 rounded-2xl border border-white/15 bg-[#111116]/95 backdrop-blur-md p-4 text-white shadow-[0_18px_50px_rgba(0,0,0,0.55)]"
+          className="absolute bottom-[max(0.75rem,env(safe-area-inset-bottom))] start-3 end-3 sm:end-auto sm:w-[330px] max-h-[46dvh] overflow-y-auto overscroll-contain z-30 rounded-2xl border border-white/15 bg-[#111116]/95 backdrop-blur-md p-4 text-white shadow-[0_18px_50px_rgba(0,0,0,0.55)]"
         >
           <div className="flex items-start justify-between gap-3">
             <span className="inline-flex items-center gap-1.5 pt-1 text-[10px] font-black uppercase tracking-wider text-[var(--accent)]">

@@ -234,7 +234,7 @@ export function CatalogEditor({
         <button
           type="button"
           onClick={() => setTab("apps")}
-          className={`rounded-2xl border p-4 text-left transition-all cursor-pointer flex items-center justify-between gap-3 ${
+          className={`rounded-2xl border p-4 text-left transition-[border-color,box-shadow] cursor-pointer flex items-center justify-between gap-3 ${
             tab === "apps"
               ? "border-[#C6A664] bg-white ring-1 ring-[#C6A664]/40 shadow-sm"
               : "border-stone-200 bg-white/70 hover:bg-white"
@@ -268,7 +268,7 @@ export function CatalogEditor({
         <button
           type="button"
           onClick={() => setTab("products")}
-          className={`rounded-2xl border p-4 text-left transition-all cursor-pointer flex items-center justify-between gap-3 ${
+          className={`rounded-2xl border p-4 text-left transition-[border-color,box-shadow] cursor-pointer flex items-center justify-between gap-3 ${
             tab === "products"
               ? "border-[#C6A664] bg-white ring-1 ring-[#C6A664]/40 shadow-sm"
               : "border-stone-200 bg-white/70 hover:bg-white"
@@ -492,7 +492,7 @@ export function CatalogEditor({
           return (
             <div
               key={item.id}
-              className={`rounded-2xl border bg-white transition-all shadow-2xs ${
+              className={`rounded-2xl border bg-white transition-[border-color,box-shadow] shadow-2xs ${
                 open ? "border-[#C6A664]" : "border-stone-200/90"
               }`}
             >

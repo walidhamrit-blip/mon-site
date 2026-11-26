@@ -215,7 +215,7 @@ export function HeroShowcase() {
             <div className="scroll-x items-center gap-0.5" aria-label={ar ? "اختيار الموقع" : "Choose a website"}>
             {projects.map((demo, i) => (
               <button key={demo.slug} type="button" onClick={() => select(i)} aria-label={ar ? demo.title : demo.titleEn} aria-current={currentIndex === i ? "true" : undefined} className="group grid h-8 w-5 shrink-0 cursor-pointer place-items-center rounded-full">
-                <span className={`h-1.5 rounded-full transition-all ${currentIndex === i ? "w-5 bg-[var(--accent)]" : "w-1.5 bg-[var(--muted-foreground)]/35 group-hover:bg-[var(--accent)]"}`} />
+                <span className={`h-1.5 rounded-full transition-[width,background-color] ${currentIndex === i ? "w-5 bg-[var(--accent)]" : "w-1.5 bg-[var(--muted-foreground)]/35 group-hover:bg-[var(--accent)]"}`} />
               </button>
             ))}
             </div>

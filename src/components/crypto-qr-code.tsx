@@ -112,7 +112,7 @@ export function CryptoQrCode({
       </div>
 
       <div
-        className="rounded-xl border border-stone-200 bg-white p-2 shadow-xs transition-all"
+        className="rounded-xl border border-stone-200 bg-white p-2 shadow-xs transition-[background-color,border-color,box-shadow]"
         style={{ width: sizePx + 18, height: sizePx + 18 }}
       >
         {customImage ? (
