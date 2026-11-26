@@ -99,10 +99,24 @@ jobs:
       - name: Perte simulée puis restauration
         run: |
           file=$(ls /tmp/sauvegardes/db-*.sql.gz)
+          echo "fichier=$file taille=$(stat -c%s "$file")"
+          psql --version
+          pg_dump --version
           psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -c "DROP TABLE clients;"
-          node scripts/restore-db.mjs --file "$file" --confirm
-          count=$(psql "$DATABASE_URL" -tAc "SELECT count(*) FROM clients")
-          test "$count" = "3" || { echo "attendu 3 clients, obtenu $count"; exit 1; }
+          set +e
+          out=$(node scripts/restore-db.mjs --file "$file" --confirm 2>&1)
+          code=$?
+          set -e
+          echo "$out"
+          if [ "$code" -ne 0 ]; then
+            echo "::error::restauration code $code : $(echo "$out" | tail -3 | tr '\n' ' ')"
+            exit "$code"
+          fi
+          count=$(psql "$DATABASE_URL" -tAc "SELECT count(*) FROM clients" 2>&1)
+          if [ "$count" != "3" ]; then
+            echo "::error::attendu 3 clients, obtenu $count"
+            exit 1
+          fi
           echo "Base complète restaurée : 3 lignes."
       - name: Garde-fous
         run: |
