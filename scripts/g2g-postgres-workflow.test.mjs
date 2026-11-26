@@ -21,3 +21,13 @@ test("le workflow est uniquement manuel et le secret est limité à l'étape de 
   assert.match(workflow,/G2G_TEST_DATABASE_URL: \$\{\{ secrets\.G2G_TEST_DATABASE_URL \}\}/);
   assert.match(workflow,/persist-credentials: false/);
 });
+
+test("diagnostic : erreurs classées sans jamais afficher le message ni le secret", async () => {
+  const {safePostgresError} = await import("./g2g-postgres-diagnostic.mjs");
+  for (const [code, fragment] of [["28P01","Authentification"],["ENETUNREACH","Réseau inaccessible"],["42P01","Table prototype"],["G2G_TARGET_INVALID","URI refusée"],["SELF_SIGNED_CERT_IN_CHAIN","TLS"]]) {
+    const message = safePostgresError({code,message:"postgresql://private-secret"});
+    assert.match(message,new RegExp(fragment));
+    assert.doesNotMatch(message,/private-secret|postgresql/);
+  }
+  assert.doesNotMatch(safePostgresError({code:"private-secret",message:"private-secret"}),/private-secret/);
+});
