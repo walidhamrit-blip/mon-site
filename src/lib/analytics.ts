@@ -21,7 +21,9 @@ export type AnalyticsEvent =
   | { name: "whatsapp_click"; source: string }
   | { name: "lead_submit"; source: string }
   | { name: "checkout_start"; kind: string }
-  | { name: "audit_request"; source: string };
+  | { name: "audit_request"; source: string }
+  /** Lien « Continuer sur Telegram » : `source` = emplacement, `kind` = rayon (ou `all`). */
+  | { name: "telegram_click"; source: string; kind: string };
 
 function clean(value: string): string {
   return value

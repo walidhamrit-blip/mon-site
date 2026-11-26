@@ -5,6 +5,7 @@ import { cache } from "react";
 import { DigitalCategoryNavigation } from "@/components/digital-category-navigation";
 import { JsonLd } from "@/components/json-ld";
 import { StoreUnavailableNotice } from "@/components/store-status-notice";
+import { TelegramShopPanel, TelegramShopStrip } from "@/components/telegram-shop-cta";
 import { categoryHref, categoryProducts, CATEGORY_PAGE_SIZE, getDigitalCategory, parseCategoryPage } from "@/lib/digital-categories";
 import { productSeoName } from "@/lib/digital-seo";
 import { digitalCatalogStatus } from "@/lib/digital-store";
@@ -66,6 +67,7 @@ export default async function DigitalCategoryPage({ params, searchParams }: Prop
   const query = await searchParams;
   const { category, page, config, degraded, listing, ar, locale, name, suffix, description } = await loadCategory(kind, query);
   const path = categoryHref(category.kind, page);
+  const telegramBot = process.env.TELEGRAM_BOT_USERNAME;
   const faqs = category.faqs;
   const guideHeading = ar ? category.guideHeadingAr : category.guideHeadingEn;
   const guideParagraphs = ar ? category.guideParagraphsAr : category.guideParagraphsEn;
@@ -103,6 +105,8 @@ export default async function DigitalCategoryPage({ params, searchParams }: Prop
         <Link href="/codes" className="text-sm underline">{ar ? "كل الأكواد" : "All digital codes"}</Link>
         <h1 className="mt-4 text-3xl font-black">{name}{suffix}</h1>
         <p className="mt-4 max-w-3xl leading-7 text-[var(--muted-foreground)]">{description}</p>
+        {/* Même rayon, directement dans le bot Telegram. */}
+        <div className="mt-5"><TelegramShopStrip bot={telegramBot} ar={ar} kind={category.kind} source="category" /></div>
       </header>
       <DigitalCategoryNavigation ar={ar} current={category.kind} />
       {degraded ? <StoreUnavailableNotice ar={ar} phone={config.phone} /> : (
@@ -133,6 +137,7 @@ export default async function DigitalCategoryPage({ params, searchParams }: Prop
           )}
         </section>
       )}
+      <TelegramShopPanel bot={telegramBot} ar={ar} kind={category.kind} source="category-panel" />
       {page === 1 && (
         <section className="site-container border-t border-[var(--border)] px-4 py-10 sm:px-6 lg:px-8">
           <div className="grid gap-8 lg:grid-cols-[1.35fr_1fr]">

@@ -231,3 +231,96 @@ html.dark .public-shell [data-universe-preview="studio"] {
 .public-shell .primary-menu .nav-dropdown-panel a[aria-current="page"] { color: var(--accent); background: var(--secondary); }
 .public-shell .primary-menu .nav-dropdown-panel a[aria-current="page"]::after { display: none; }
 .public-shell .primary-menu .nav-dropdown-panel li:first-child a { color: var(--foreground); }
+
+/* 9. « Continuer sur Telegram » : boutique du bot, ouverte sur le bon rayon.
+   Bleu Telegram foncé pour le texte blanc (contraste ≥ 4.5:1). */
+.public-shell {
+  --tg-brand: #2aabee;
+  --tg-strong: #1868a0;
+  --tg-soft: color-mix(in srgb, #2aabee 12%, var(--card));
+}
+.public-shell .tg-strip {
+  display: flex; flex-wrap: wrap; align-items: center; gap: .75rem 1rem;
+  padding: .85rem 1rem; border-radius: 1rem;
+  border: 1px solid color-mix(in srgb, var(--tg-brand) 40%, var(--border));
+  background: var(--tg-soft);
+}
+.public-shell .tg-strip-icon,
+.public-shell .tg-panel-icon {
+  display: grid; place-items: center; flex: none; border-radius: 999px;
+  background: var(--tg-brand); color: #fff;
+}
+.public-shell .tg-strip-icon { width: 2.5rem; height: 2.5rem; }
+.public-shell .tg-strip-text { display: grid; gap: .1rem; flex: 1 1 16rem; min-width: 0; }
+.public-shell .tg-strip-text strong { font-size: .95rem; font-weight: 800; color: var(--foreground); }
+.public-shell .tg-strip-text span { font-size: .8rem; color: var(--muted-foreground); }
+.public-shell .tg-button {
+  display: inline-flex; align-items: center; justify-content: center; gap: .5rem;
+  min-height: 44px; padding: .55rem 1.1rem; border-radius: .75rem;
+  background: var(--tg-strong); color: #fff; font-size: .9rem; font-weight: 800;
+  text-decoration: none; white-space: nowrap; transition: background-color .15s ease, transform .15s ease;
+}
+.public-shell .tg-button:hover { background: #12557f; color: #fff; }
+.public-shell .tg-button:focus-visible,
+.public-shell .tg-chip:focus-visible,
+.public-shell .nav-tg:focus-visible { outline: 3px solid var(--tg-brand); outline-offset: 2px; }
+.public-shell .tg-button-lg { min-height: 50px; padding-inline: 1.4rem; font-size: 1rem; }
+@media (max-width: 639px) { .public-shell .tg-strip .tg-button { width: 100%; } }
+
+.public-shell .tg-panel {
+  display: grid; gap: 1.5rem; padding: clamp(1.25rem, 3vw, 2rem); border-radius: 1.25rem;
+  border: 1px solid color-mix(in srgb, var(--tg-brand) 35%, var(--border));
+  background:
+    radial-gradient(120% 80% at 100% 0%, color-mix(in srgb, var(--tg-brand) 16%, transparent), transparent 60%),
+    var(--card);
+}
+.public-shell .tg-panel-head { display: flex; gap: 1rem; align-items: flex-start; }
+.public-shell .tg-panel-icon { width: 3.25rem; height: 3.25rem; box-shadow: 0 10px 30px -12px var(--tg-brand); }
+.public-shell .tg-panel-kicker { font-size: .78rem; font-weight: 800; color: var(--tg-strong); }
+.dark .public-shell .tg-panel-kicker { color: var(--tg-brand); }
+.public-shell .tg-panel-title { margin-top: .25rem; font-size: clamp(1.3rem, 1rem + 1.2vw, 1.75rem); font-weight: 900; line-height: 1.25; }
+.public-shell .tg-panel-lead { margin-top: .5rem; max-width: 62ch; font-size: .92rem; line-height: 1.75; color: var(--muted-foreground); }
+.public-shell .tg-steps { display: grid; gap: .75rem; }
+@media (min-width: 768px) { .public-shell .tg-steps { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+.public-shell .tg-steps li {
+  display: flex; gap: .75rem; padding: 1rem; border-radius: .9rem;
+  border: 1px solid var(--border); background: var(--background);
+}
+.public-shell .tg-steps strong { display: block; font-size: .92rem; font-weight: 800; }
+.public-shell .tg-steps p { margin-top: .25rem; font-size: .82rem; line-height: 1.6; color: var(--muted-foreground); }
+.public-shell .tg-step-number {
+  display: grid; place-items: center; flex: none; width: 1.9rem; height: 1.9rem; border-radius: 999px;
+  background: var(--tg-soft); color: var(--tg-strong); font-weight: 900; font-size: .85rem;
+}
+.dark .public-shell .tg-step-number { color: var(--tg-brand); }
+.public-shell .tg-panel-actions { display: flex; flex-wrap: wrap; align-items: center; gap: .75rem 1rem; }
+.public-shell .tg-chips { display: flex; flex-wrap: wrap; gap: .5rem; }
+.public-shell .tg-chip {
+  display: inline-flex; align-items: center; gap: .4rem; min-height: 40px; padding: .4rem .85rem;
+  border-radius: 999px; border: 1px solid color-mix(in srgb, var(--tg-brand) 35%, var(--border));
+  background: var(--background); color: var(--foreground); font-size: .82rem; font-weight: 700; text-decoration: none;
+}
+.public-shell .tg-chip svg { color: var(--tg-brand); }
+.public-shell .tg-chip:hover, .public-shell .tg-chip.is-current { border-color: var(--tg-brand); background: var(--tg-soft); }
+
+/* Menu : icône Telegram à côté de chaque rayon + entrée « Continuer sur Telegram ». */
+.public-shell .primary-menu .nav-dropdown-panel a.nav-tg,
+.public-shell .nav-tg {
+  display: grid; place-items: center; flex: none; width: 44px; min-height: 44px; border-radius: .6rem;
+  color: var(--tg-brand); background: transparent;
+}
+.public-shell .primary-menu .nav-dropdown-panel a.nav-tg:hover,
+.public-shell .nav-tg:hover { background: var(--tg-soft); color: var(--tg-strong); }
+.public-shell .primary-menu .nav-dropdown-panel a.nav-tg-all {
+  display: flex; align-items: center; gap: .5rem; min-height: 44px; padding-inline: .75rem; border-radius: .6rem;
+  background: var(--tg-strong); color: #fff; font-size: 13px; font-weight: 800;
+}
+.public-shell .primary-menu .nav-dropdown-panel a.nav-tg-all:hover { background: #12557f; color: #fff; }
+/* En-tête boutique : bouton Telegram (icône seule sous xl). */
+.public-shell .tg-header-button {
+  display: inline-flex; align-items: center; justify-content: center; gap: .4rem;
+  height: 44px; min-width: 44px; padding-inline: .75rem; border-radius: 999px;
+  background: var(--tg-strong); color: #fff; font-size: 12.5px; font-weight: 800; text-decoration: none;
+}
+.public-shell .tg-header-button:hover { background: #12557f; color: #fff; }
+.public-shell .tg-header-button:focus-visible { outline: 3px solid var(--tg-brand); outline-offset: 2px; }

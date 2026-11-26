@@ -9,6 +9,7 @@ import { useSiteConfig } from "./site-provider";
 import { EditorialVisual } from "./editorial-visual";
 import { DigitalCatalog } from "./digital-catalog";
 import { StoreUnavailableNotice } from "./store-status-notice";
+import { TelegramShopPanel, TelegramShopStrip } from "./telegram-shop-cta";
 import { storeCategories } from "@/lib/site-hierarchy";
 import { storeFaqs } from "@/lib/digital-seo";
 import { lowestPriceUsd, type DigitalKind, type DigitalProduct } from "@/lib/digital-types";
@@ -26,12 +27,14 @@ import {
 const QUERY_URL_DELAY_MS = 300;
 
 /** All visible shop copy follows the live locale, including maintenance. */
-export function DigitalStoreView({ products, degraded, initialFilters, trustBadge }: {
+export function DigitalStoreView({ products, degraded, initialFilters, trustBadge, telegramBot }: {
   products: DigitalProduct[];
   degraded: boolean;
   initialFilters: CatalogFilters;
   /** Badge Trustpilot rendu côté serveur (absent tant qu'il n'y a pas d'avis). */
   trustBadge?: ReactNode;
+  /** Bot Telegram (lu côté serveur) : raccourci « Continuer sur Telegram ». */
+  telegramBot?: string;
 }) {
   const config = useSiteConfig();
   const { locale } = useI18n();
@@ -240,6 +243,10 @@ export function DigitalStoreView({ products, degraded, initialFilters, trustBadg
           selectKind(category.kind);
         }} aria-current={kind === category.kind ? "page" : undefined} className={`inline-flex min-h-11 items-center rounded-full border px-4 py-2 text-sm font-bold transition-colors ${kind === category.kind ? "border-[var(--accent)] bg-[var(--accent)] text-[var(--accent-foreground)]" : "border-[var(--border)] bg-[var(--card)] hover:border-[var(--accent)]"}`}>{ar ? category.ar : category.en}</Link>)}
       </nav>
+      {/* Raccourci Telegram : suit le filtre actif (rayon choisi → même rayon dans le bot). */}
+      <div className="site-container px-4 pb-4 sm:px-6 lg:px-8">
+        <TelegramShopStrip bot={telegramBot} ar={ar} kind={kind} source="codes" />
+      </div>
       {!degraded && (
         <DigitalCatalog
           products={products}
@@ -258,6 +265,8 @@ export function DigitalStoreView({ products, degraded, initialFilters, trustBadg
           onResetFilters={resetFilters}
         />
       )}
+
+      <TelegramShopPanel bot={telegramBot} ar={ar} kind={kind} source="codes-panel" />
 
       {/*
         Contenu de rayon : ces sections répondent aux questions réellement

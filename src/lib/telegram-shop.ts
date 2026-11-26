@@ -76,6 +76,7 @@ import {
   shopInitialQuantity,
   shopPaymentView,
   shopProductView,
+  SHOP_KINDS,
   SHOP_MAX_QUANTITY,
   type ShopDenomination,
   type ShopLinks,
@@ -137,6 +138,25 @@ export async function openTelegramShop(
     loadCatalog(),
   ]);
   await render(chatId, messageId, shopCategoriesView(catalog, language, shopLinks(ctx)), state);
+}
+
+/**
+ * Ouvre la boutique directement sur un rayon — arrivée depuis un lien
+ * « Continuer sur Telegram » du site (`/start shop-ar-gift_card`).
+ * Rayon inconnu → racine de la boutique, jamais une impasse.
+ */
+export async function openTelegramShopCategory(
+  actor: ShopActor,
+  kind: string | null,
+  language: ShopLocale,
+  ctx: ShopBotContext,
+): Promise<void> {
+  if (!kind || !(SHOP_KINDS as readonly string[]).includes(kind)) {
+    await openTelegramShop(actor.chatId, null, language, ctx);
+    return;
+  }
+  const { state } = await loadShopContext(actor.chatId);
+  await renderCategory(actor, null, kind, 1, language, ctx, state);
 }
 
 /**

@@ -206,6 +206,29 @@ que `TELEGRAM_BOT_USERNAME` est défini (lu côté serveur, sans préfixe
 `NEXT_PUBLIC_` : Vercel avertit — à raison — dès qu'une variable publique
 pourrait exposer un secret).
 
+### « Continuer sur Telegram » depuis le site (un lien par rayon)
+
+Dès que `TELEGRAM_BOT_USERNAME` est défini, le site affiche un raccourci vers la
+**boutique du bot, ouverte directement sur le bon rayon** :
+
+| Lien | Effet dans le bot |
+|---|---|
+| `t.me/<bot>?start=shop-ar` | boutique (racine), en arabe |
+| `t.me/<bot>?start=shop-ar-gift_card` | rayon « بطاقات هدايا » |
+| `t.me/<bot>?start=shop-en-software_key` | rayon « Game & software keys », en anglais |
+
+- la langue de la page sert pour un nouvel arrivant (pas d'écran de langue) ;
+  un client existant garde la langue qu'il a choisie ;
+- emplacements : sous-menu « المنتجات الرقمية » (icône par rayon + bouton),
+  bouton Telegram de l'en-tête boutique, bandeau et présentation du bot sur
+  `/codes` (suit le filtre actif) et sur chaque `/codes/category/<kind>` ;
+- mesure : événement Vercel `telegram_click` (`source` = emplacement,
+  `kind` = rayon) ; côté bot, le `start` est enregistré comme source
+  d'acquisition (`shop-ar-gift_card`…) ;
+- code : `src/lib/telegram-links.ts` (liens, lecture du `start`),
+  `src/components/telegram-shop-cta.tsx` (affichage),
+  `openTelegramShopCategory` (`src/lib/telegram-shop.ts`).
+
 ---
 
 ## 4. Alertes de commandes (le côté « commandes »)

@@ -31,7 +31,7 @@ export default async function SiteLayout({ children }: { children: ReactNode }) 
     <>
       <UniverseShell className="public-shell" agencySchema={agencySchema}>
       <SkipLink />
-      <Navbar />
+      <Navbar telegramBot={process.env.TELEGRAM_BOT_USERNAME} />
       {/* tabIndex -1 : le lien d'évitement y place réellement le focus. */}
       <main id="main-content" tabIndex={-1} className="site-main min-h-screen focus:outline-none">
         {children}

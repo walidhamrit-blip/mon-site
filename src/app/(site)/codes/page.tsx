@@ -232,6 +232,7 @@ export default async function CodesPage({ searchParams }: LocalePageProps) {
         degraded={degraded}
         initialFilters={initialFilters}
         trustBadge={<TrustpilotBadge config={config} locale={locale} height="24px" />}
+        telegramBot={process.env.TELEGRAM_BOT_USERNAME}
       />
     </>
   );

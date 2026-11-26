@@ -21,6 +21,17 @@ import {
 } from "@/lib/universes";
 import { useUniverse } from "@/components/universe-shell";
 import { WhatsAppEnquiry } from "@/components/whatsapp-enquiry";
+import { TelegramIcon, TelegramShopLink } from "@/components/telegram-shop-cta";
+import { DIGITAL_KINDS, type DigitalKind } from "@/lib/digital-types";
+
+const CATEGORY_PREFIX = "/codes/category/";
+
+/** `/codes/category/gift_card` → `gift_card` ; `null` hors d'un rayon. */
+function kindFromHref(href: string): DigitalKind | null {
+  if (!href.startsWith(CATEGORY_PREFIX)) return null;
+  const kind = href.slice(CATEGORY_PREFIX.length).split(/[/?#]/)[0];
+  return (DIGITAL_KINDS as readonly string[]).includes(kind) ? (kind as DigitalKind) : null;
+}
 
 /**
  * En-tête adapté à l'univers courant (src/lib/universes.ts) :
@@ -37,7 +48,11 @@ import { WhatsAppEnquiry } from "@/components/whatsapp-enquiry";
  * - fermeture au clavier (Échap) et au changement de page ;
  * - barre collante compacte : elle reste visible pendant le défilement.
  */
-export function Navbar() {
+/**
+ * `telegramBot` : nom du bot lu côté serveur (`TELEGRAM_BOT_USERNAME`) ; sans
+ * lui, aucun lien Telegram n'est affiché.
+ */
+export function Navbar({ telegramBot }: { telegramBot?: string } = {}) {
   const pathname = usePathname();
   const universe = useUniverse();
   const siteConfig = useSiteConfig();
@@ -162,7 +177,7 @@ export function Navbar() {
     href: link.href,
     label: ar ? link.ar : link.en,
     soon: Boolean(link.soon),
-    children: (link.children ?? []).map((child) => ({ href: child.href, label: ar ? child.ar : child.en })),
+    children: (link.children ?? []).map((child) => ({ href: child.href, label: ar ? child.ar : child.en, kind: kindFromHref(child.href) })),
   }));
   const links =
     universe === "hub"
@@ -171,7 +186,7 @@ export function Navbar() {
           href: link.href,
           label: ar ? link.ar : link.en,
           soon: Boolean(link.soon),
-          children: [] as { href: string; label: string }[],
+          children: [] as { href: string; label: string; kind: DigitalKind | null }[],
         }));
   const soonLabel = ar ? "قريباً" : "Soon";
   const brand = universeBrands[universe];
@@ -193,6 +208,9 @@ export function Navbar() {
   // contextuel), localisé par LocalizedLink comme le reste de la navigation.
   // Devis sur l'accueil et le studio, suivi de commande dans la boutique.
   const primaryAction = universePrimaryAction[universe];
+  // Boutique : raccourci Telegram toujours visible, ouvert sur le rayon en cours.
+  const telegramKind = kindFromHref(pathname ?? "");
+  const telegramLabel = ar ? "تابع على تيليجرام" : "Continue on Telegram";
   const quoteHref = primaryAction.href;
   const quoteLabel = ar ? primaryAction.ar : primaryAction.en;
 
@@ -293,16 +311,37 @@ export function Navbar() {
                           </Link>
                         </li>
                         {link.children.map((child) => (
-                          <li key={child.href}>
+                          <li key={child.href} className="flex items-center gap-1">
                             <Link
                               href={child.href}
                               aria-current={pathname === child.href ? "page" : undefined}
-                              className="flex min-h-11 items-center rounded-lg px-3 text-[13px] font-semibold text-[var(--muted-foreground)] hover:bg-[var(--secondary)] hover:text-[var(--foreground)]"
+                              className="flex min-h-11 flex-1 items-center rounded-lg px-3 text-[13px] font-semibold text-[var(--muted-foreground)] hover:bg-[var(--secondary)] hover:text-[var(--foreground)]"
                             >
                               {child.label}
                             </Link>
+                            {/* Même rayon, ouvert directement dans le bot Telegram. */}
+                            {child.kind ? (
+                              <TelegramShopLink
+                                bot={telegramBot}
+                                ar={ar}
+                                kind={child.kind}
+                                source="nav-dropdown"
+                                className="nav-tg"
+                                label={ar ? `${child.label} على تيليجرام` : `${child.label} on Telegram`}
+                              >
+                                <TelegramIcon className="h-[18px] w-[18px]" />
+                              </TelegramShopLink>
+                            ) : null}
                           </li>
                         ))}
+                        {link.children.some((child) => child.kind) ? (
+                          <li className="mt-1 border-t border-[var(--border)] pt-2 empty:hidden">
+                            <TelegramShopLink bot={telegramBot} ar={ar} source="nav-dropdown-all" className="nav-tg-all">
+                              <TelegramIcon className="h-4 w-4" />
+                              {telegramLabel}
+                            </TelegramShopLink>
+                          </li>
+                        ) : null}
                       </ul>
                     </div>
                   </div>
@@ -338,6 +377,19 @@ export function Navbar() {
               >
                 WhatsApp
               </WhatsAppEnquiry>
+              {universe === "store" ? (
+                <TelegramShopLink
+                  bot={telegramBot}
+                  ar={ar}
+                  kind={telegramKind}
+                  source="navbar-store"
+                  className="tg-header-button"
+                  label={telegramLabel}
+                >
+                  <TelegramIcon className="h-[18px] w-[18px]" />
+                  <span className="hidden xl:inline">Telegram</span>
+                </TelegramShopLink>
+              ) : null}
               <Link
                 href={quoteHref}
                 className="hidden h-11 items-center gap-1.5 rounded-full bg-[var(--primary)] px-4 text-[12.5px] font-bold text-[var(--primary-foreground)] transition-opacity hover:opacity-90 sm:inline-flex"
@@ -411,14 +463,26 @@ export function Navbar() {
                       {link.children.length > 0 ? (
                         <ul className="mb-1 ms-4 border-s border-[var(--border)] ps-2">
                           {link.children.map((child) => (
-                            <li key={child.href}>
+                            <li key={child.href} className="flex items-center gap-1">
                               <Link
                                 href={child.href}
                                 onClick={() => setOpen(false)}
-                                className="flex min-h-11 items-center rounded-lg px-3 text-[14px] font-medium text-[var(--muted-foreground)] hover:bg-[var(--secondary)] hover:text-[var(--foreground)]"
+                                className="flex min-h-11 flex-1 items-center rounded-lg px-3 text-[14px] font-medium text-[var(--muted-foreground)] hover:bg-[var(--secondary)] hover:text-[var(--foreground)]"
                               >
                                 {child.label}
                               </Link>
+                              {child.kind ? (
+                                <TelegramShopLink
+                                  bot={telegramBot}
+                                  ar={ar}
+                                  kind={child.kind}
+                                  source="nav-mobile"
+                                  className="nav-tg"
+                                  label={ar ? `${child.label} على تيليجرام` : `${child.label} on Telegram`}
+                                >
+                                  <TelegramIcon className="h-[18px] w-[18px]" />
+                                </TelegramShopLink>
+                              ) : null}
                             </li>
                           ))}
                         </ul>
@@ -437,6 +501,18 @@ export function Navbar() {
                     {quoteLabel}
                     <ArrowUpRight className="h-4 w-4 rtl:rotate-[-90deg]" aria-hidden="true" />
                   </Link>
+                  {universe === "store" ? (
+                    <TelegramShopLink
+                      bot={telegramBot}
+                      ar={ar}
+                      kind={telegramKind}
+                      source="navbar-mobile"
+                      className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-full bg-[#1868a0] px-4 text-[14px] font-bold text-white"
+                    >
+                      <TelegramIcon className="h-4 w-4" />
+                      {telegramLabel}
+                    </TelegramShopLink>
+                  ) : null}
                   <WhatsAppEnquiry
                     source="navbar-mobile"
                     className="inline-flex min-h-11 w-full items-center justify-center rounded-full bg-[#0B6B3A] px-4 text-[14px] font-bold text-white"
