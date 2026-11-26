@@ -147,6 +147,8 @@ export interface TelegramCopy {
   langSaved: string;
   langPrompt: string;
   buttons: {
+    /** Bouton Mini App (vitrine visuelle avec photos, `/tg`). */
+    miniApp: string;
     shop: string;
     catalog: string;
     orders: string;
@@ -200,6 +202,7 @@ const COPY: Record<TelegramLocale, TelegramCopy> = {
     langSaved: "Langue enregistrée : français 🇫🇷",
     langPrompt: "Choisissez votre langue :",
     buttons: {
+      miniApp: "🛍️ Ouvrir la boutique",
       shop: "🛒 Boutique",
       catalog: "🛍️ Catalogue",
       orders: "📦 Suivre une commande",
@@ -261,6 +264,7 @@ const COPY: Record<TelegramLocale, TelegramCopy> = {
     langSaved: "تم حفظ اللغة: العربية 🇱🇾",
     langPrompt: "اختر لغتك:",
     buttons: {
+      miniApp: "🛍️ افتح المتجر",
       shop: "🛒 المتجر",
       catalog: "🛍️ الكتالوج",
       orders: "📦 متابعة طلب",
@@ -322,6 +326,7 @@ const COPY: Record<TelegramLocale, TelegramCopy> = {
     langSaved: "Language saved: English 🇬🇧",
     langPrompt: "Choose your language:",
     buttons: {
+      miniApp: "🛍️ Open the store",
       shop: "🛒 Shop",
       catalog: "🛍️ Catalogue",
       orders: "📦 Track an order",
@@ -365,12 +370,42 @@ export interface TelegramButton {
   text: string;
   url?: string;
   callback_data?: string;
+  /** Ouvre une Mini App (conversations privées uniquement — le bot n'agit que là). */
+  web_app?: { url: string };
 }
 
 export interface TelegramButtonLinks {
   site: string;
   store: string;
   whatsapp: string;
+  /**
+   * URL HTTPS de la Mini App (`/tg`). Présente → une ligne « 🛍️ Ouvrir la
+   * boutique » s'ajoute en tête du menu ; absente → menu historique inchangé.
+   */
+  miniApp?: string;
+}
+
+/** URL de la Mini App (`/tg`), ou `null` si le site n'est pas servi en HTTPS (exigé par Telegram). */
+export function telegramMiniAppUrl(siteUrl: string): string | null {
+  const base = (siteUrl ?? "").trim().replace(/\/+$/, "");
+  return /^https:\/\//i.test(base) ? `${base}/tg` : null;
+}
+
+/** Ajoute la langue du chat à l'URL de la Mini App (`?lang=ar|en`). */
+export function withMiniAppLocale(url: string, lang: TelegramLocale): string {
+  const separator = url.includes("?") ? "&" : "?";
+  return `${url}${separator}lang=${lang === "en" ? "en" : "ar"}`;
+}
+
+/** Bouton menu ☰ (à gauche du champ de saisie) : ouvre la Mini App en un appui. */
+export function telegramMenuButton(siteUrl: string): {
+  type: "web_app";
+  text: string;
+  web_app: { url: string };
+} | null {
+  const url = telegramMiniAppUrl(siteUrl);
+  // Sans `?lang=` : la Mini App suit la langue de l'application Telegram.
+  return url ? { type: "web_app", text: "🛍️ المتجر · Store", web_app: { url } } : null;
 }
 
 /** Boutons du menu principal (réutilisés après presque chaque réponse). */
@@ -379,7 +414,13 @@ export function mainMenuKeyboard(
   links: TelegramButtonLinks,
 ): TelegramButton[][] {
   const copy = botCopy(lang);
+  const miniApp = links.miniApp && /^https:\/\//i.test(links.miniApp) ? links.miniApp : null;
   return [
+    // Vitrine visuelle (photos des catégories) — le clavier inline ne peut pas
+    // afficher d'image, la Mini App si. La boutique inline reste juste dessous.
+    ...(miniApp
+      ? [[{ text: copy.buttons.miniApp, web_app: { url: withMiniAppLocale(miniApp, lang) } }]]
+      : []),
     [
       { text: copy.buttons.shop, callback_data: "shop" },
       { text: copy.buttons.catalog, url: links.store },

@@ -9,12 +9,14 @@ import {
   deleteTelegramWebhook,
   installTelegramWebhook,
   publishTelegramCommands,
+  publishTelegramMenuButton,
   sendTelegramTest,
   telegramConfigured,
 } from "@/lib/telegram";
 import {
   botCommandList,
   composeBroadcast,
+  telegramMenuButton,
   validateBroadcast,
 } from "@/lib/telegram-core";
 
@@ -46,10 +48,18 @@ export async function installWebhookAction(): Promise<
   if (!result.ok) {
     return { ok: false, message: `Telegram a refusé : ${result.error ?? "erreur inconnue"}` };
   }
-  // Profite de l'occasion pour publier le menu des commandes (`/`).
+  // Profite de l'occasion pour publier le menu des commandes (`/`) et le
+  // bouton menu ☰ qui ouvre la Mini App (vitrine avec photos, `/tg`).
   await publishTelegramCommands(botCommandList());
+  const menu = await publishTelegramMenuButton(telegramMenuButton(siteBaseUrl()));
   revalidatePath("/admin/telegram");
-  return { ok: true, message: "Webhook installé et commandes publiées.", url: result.url };
+  return {
+    ok: true,
+    message: menu.ok
+      ? "Webhook installé, commandes publiées et bouton « 🛍️ Store » (Mini App) activé."
+      : `Webhook installé et commandes publiées. Bouton Mini App non activé : ${menu.error ?? "erreur inconnue"}`,
+    url: result.url,
+  };
 }
 
 export async function removeWebhookAction(): Promise<TelegramActionResult> {

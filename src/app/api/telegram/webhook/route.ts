@@ -10,6 +10,7 @@ import {
   isTelegramLocale,
   languageKeyboard,
   mainMenuKeyboard,
+  telegramMiniAppUrl,
   botCopy,
   offersKeyboard,
   orderRefFromStartPayload,
@@ -564,10 +565,13 @@ async function forwardToTeam(
 /* --------------------------------- Outils --------------------------------- */
 
 function links(ctx: BotContext) {
+  const miniApp = telegramMiniAppUrl(ctx.siteUrl);
   return {
     site: ctx.siteUrl,
     store: `${ctx.siteUrl}/codes`,
     whatsapp: ctx.whatsapp,
+    // Vitrine avec photos (Mini App `/tg`) — ajoutée en tête du menu.
+    ...(miniApp ? { miniApp } : {}),
   };
 }
 
