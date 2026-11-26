@@ -8,7 +8,8 @@
 | Donnée | Sauvegarde | Où |
 |---|---|---|
 | Table `leads` (demandes entrantes) | `npm run backup:leads` | fichier JSON local, `backups/`, ignoré par Git |
-| Reste de la base (réglages, commandes) | sauvegardes du fournisseur Postgres | tableau de bord Neon / Supabase |
+| **Base entière** (schéma + toutes les tables) | `npm run backup:db` | dump SQL compressé local, `backups/`, ignoré par Git |
+| Sauvegardes du fournisseur | **aucune sur le plan Free** | constat du 26/11/2026 : « No backups » |
 | Code et contenu du site | Git + GitHub | dépôt `walidhamrit-blip/mon-site` |
 
 La table `leads` contient des **données personnelles** (nom, téléphone,
@@ -30,6 +31,22 @@ n'a pas été altéré.
 **Rythme** : une fois par semaine, et juste avant toute opération risquée
 (migration, changement de fournisseur, restauration).
 
+### Base entière
+
+```bash
+DATABASE_URL='postgresql://…' npm run backup:db
+# → backups/db-2026-11-26T08-15-00-000Z.sql.gz
+```
+
+Le script s'appuie sur `pg_dump` (fourni avec le client PostgreSQL) et produit
+un dump **schéma + données**, compressé, lisible par `psql`. C'est la seule
+protection possible aujourd'hui : le projet Supabase est sur le plan **Free**,
+et son tableau de bord affiche « No backups » (constat du 26/11/2026).
+
+Conserver ces dumps **chiffrés** : ils contiennent les commandes, les clients
+et les réglages. Les codes numériques restent chiffrés par l'application, mais
+les noms et téléphones, eux, sont en clair.
+
 ## 3. Restaurer
 
 Le script refuse un fichier incohérent (version inconnue, compte faux,
@@ -48,12 +65,30 @@ node scripts/restore-leads.mjs --file backups/leads-….json --confirm
   réavancée pour que les prochaines demandes ne collisionnent pas.
 - En cas d'erreur en cours d'écriture, la transaction est annulée.
 
+### Restaurer un dump complet
+
+```bash
+# 1. Simulation : affiche la cible et la taille, n'écrit rien
+node scripts/restore-db.mjs --file backups/db-….sql.gz
+
+# 2. Restauration réelle (remplace le contenu de la base cible)
+node scripts/restore-db.mjs --file backups/db-….sql.gz --confirm
+```
+
+⚠️ Le dump contient des `DROP … IF EXISTS` : la restauration **remplace** les
+tables existantes. Ne jamais la lancer sur la production sans avoir vérifié la
+cible affichée.
+
 ## 4. Preuve que ça marche
 
 `.github/workflows/sauvegardes.yml` démarre un vrai PostgreSQL 16 à chaque
 pull request et à chaque push sur `main` : il crée la table, sauvegarde trois
 lignes, **vide la table**, restaure, puis vérifie que les 3 lignes sont
 revenues, que les identifiants sont intacts et que la séquence repart à 4.
+
+Le second job, « base-complete », fait le même exercice avec un dump complet :
+il crée une table, l'insère dans trois lignes, sauvegarde **toute la base**,
+la supprime, restaure, puis vérifie que les trois lignes sont revenues.
 
 Si ce workflow est rouge, la restauration n'est pas fiable : ne pas s'appuyer
 dessus en cas d'incident.
@@ -62,9 +97,12 @@ dessus en cas d'incident.
 
 - **Pas de copie hors site automatique** : le fichier reste sur la machine qui
   lance la commande. Une copie chiffrée sur un stockage externe reste à faire.
-- **Sauvegardes du fournisseur non vérifiées** : la rétention et le
-  point-in-time recovery de Neon/Supabase doivent être confirmés dans leur
-  tableau de bord, pas supposés.
+- **Aucune sauvegarde fournisseur** : le projet Supabase `g2g-test` est sur le
+  plan Free et affiche « No backups » (26/11/2026). Il n'y a donc ni rétention
+  ni point-in-time recovery à espérer : nos exports sont l'unique filet.
+- **Sauvegarde non automatique** : rien ne déclenche `backup:db` tout seul.
+  Tant que ce n'est pas planifié, la perte maximale reste celle du dernier
+  export manuel.
 - **RPO/RTO** : visés à 7 jours de perte maximale (sauvegarde hebdomadaire) et
   1 heure de remise en service. À réévaluer si le volume de commandes augmente.
 - **Restauration partielle seulement** : seule `leads` est couverte par nos
