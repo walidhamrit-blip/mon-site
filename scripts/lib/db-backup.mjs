@@ -33,3 +33,17 @@ export function parseRestoreArgs(argv) {
   }
   return { file, confirm: argv.includes("--confirm") };
 }
+
+/**
+ * Retire les instructions que les serveurs plus anciens refusent.
+ *
+ * `pg_dump` 17 écrit `SET transaction_timeout = 0` ; PostgreSQL 16 et antérieur
+ * répondent « unrecognized configuration parameter ». Le reste du dump est
+ * compatible, on ne retire donc que cette ligne.
+ */
+export function stripUnsupportedSettings(text) {
+  return text
+    .split("\n")
+    .filter((line) => !line.startsWith("SET transaction_timeout"))
+    .join("\n");
+}

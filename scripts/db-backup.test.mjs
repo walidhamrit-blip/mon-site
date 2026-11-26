@@ -6,6 +6,7 @@ import {
   maskConnection,
   parseBackupArgs,
   parseRestoreArgs,
+  stripUnsupportedSettings,
 } from "./lib/db-backup.mjs";
 
 test("le nom de sauvegarde est daté et sans caractère interdit", () => {
@@ -40,4 +41,16 @@ test("la restauration exige un fichier .sql.gz et reste en simulation par défau
   });
   assert.throws(() => parseRestoreArgs([]), /fichier/);
   assert.throws(() => parseRestoreArgs(["--file", "sauvegarde.sql"]), /\.sql\.gz/);
+});
+
+test("les réglages refusés par un serveur plus ancien sont retirés", () => {
+  const dump = [
+    "SET statement_timeout = 0;",
+    "SET transaction_timeout = 0;",
+    "CREATE TABLE clients (id integer);",
+  ].join("\n");
+  const cleaned = stripUnsupportedSettings(dump);
+  assert.doesNotMatch(cleaned, /transaction_timeout/);
+  assert.match(cleaned, /statement_timeout/);
+  assert.match(cleaned, /CREATE TABLE clients/);
 });

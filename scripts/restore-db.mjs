@@ -13,7 +13,8 @@ import { stat } from "node:fs/promises";
 import { resolve } from "node:path";
 import { createGunzip } from "node:zlib";
 import { createReadStream } from "node:fs";
-import { maskConnection, parseRestoreArgs } from "./lib/db-backup.mjs";
+import { Transform } from "node:stream";
+import { maskConnection, parseRestoreArgs, stripUnsupportedSettings } from "./lib/db-backup.mjs";
 
 async function main() {
   const { file, confirm } = parseRestoreArgs(process.argv.slice(2));
@@ -37,12 +38,25 @@ async function main() {
     ["-v", "ON_ERROR_STOP=1", "--quiet", connectionString],
     { stdio: ["pipe", "inherit", "inherit"] },
   );
+  let buffer = "";
+  const compatibility = new Transform({
+    transform(chunk, _encoding, callback) {
+      buffer += chunk.toString("utf8");
+      const lines = buffer.split("\n");
+      buffer = lines.pop() ?? "";
+      callback(null, stripUnsupportedSettings(`${lines.join("\n")}\n`));
+    },
+    flush(callback) {
+      callback(null, buffer ? stripUnsupportedSettings(buffer) : undefined);
+    },
+  });
+
   await new Promise((resolveRun, rejectRun) => {
     child.on("error", rejectRun);
     child.on("close", (code) =>
       code === 0 ? resolveRun() : rejectRun(new Error(`psql a échoué (code ${code})`)),
     );
-    createReadStream(absolute).pipe(createGunzip()).pipe(child.stdin);
+    createReadStream(absolute).pipe(createGunzip()).pipe(compatibility).pipe(child.stdin);
   });
   console.log("Restauration terminée.");
 }
