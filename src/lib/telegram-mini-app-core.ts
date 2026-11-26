@@ -21,6 +21,7 @@
  */
 
 import type { DigitalKind } from "./digital-types";
+import { BRAND_LABELS_AR, regionName, REGION_NOTES } from "./catalog-labels.ts";
 
 /** Chemin public de la Mini App (déclaré dans BotFather / `setChatMenuButton`). */
 export const TELEGRAM_MINI_APP_PATH = "/tg";
@@ -60,7 +61,7 @@ export interface MiniAppProduct {
   /** `cover` = jaquette locale 2:3 plein cadre ; `contain` = visuel admin (ratio inconnu). */
   fit: "cover" | "contain";
   color: string;
-  /** Régions de la fiche (2 au maximum, pour le badge). */
+  /** Régions de la fiche (jusqu'à 6 : filtres région + badge). */
   regions: string[];
 }
 
@@ -126,7 +127,7 @@ export function buildMiniAppProducts(
       image: visual.src,
       fit: visual.src ? visual.fit : "cover",
       color: product.color && HEX_COLOR.test(product.color) ? product.color : FALLBACK_COLOR,
-      regions: (product.regions ?? []).filter(Boolean).slice(0, 2),
+      regions: (product.regions ?? []).filter(Boolean).slice(0, 6),
     });
   }
   return items;
@@ -161,6 +162,71 @@ export function topMiniAppBrands(products: readonly MiniAppProduct[], limit = 12
     .map(([brand]) => brand);
 }
 
+/** Carte de marque d'une famille, pour la navigation catégorie → marque. */
+export interface MiniAppBrand {
+  name: string;
+  count: number;
+  /** Jaquette du produit le plus demandé de la marque (ordre serveur). */
+  image: string | null;
+  color: string;
+}
+
+/** Toutes les marques d'une sélection (triées par nombre de produits). */
+export function buildMiniAppBrands(products: readonly MiniAppProduct[]): MiniAppBrand[] {
+  const groups = new Map<string, { count: number; image: string | null; color: string }>();
+  for (const product of products) {
+    const name = product.platform;
+    if (!name) continue;
+    const group = groups.get(name);
+    if (group) group.count += 1;
+    else groups.set(name, { count: 1, image: product.image, color: product.color });
+  }
+  return Array.from(groups, ([name, group]) => ({ name, ...group })).sort(
+    (a, b) => b.count - a.count || a.name.localeCompare(b.name),
+  );
+}
+
+/** Intitulé de marque : « بلايستيشن » en arabe, nom d'origine en anglais. */
+export function miniAppBrandLabel(brand: string, locale: MiniAppLocale): string {
+  if (locale !== "ar") return brand;
+  return BRAND_LABELS_AR[brand.trim().toLowerCase()] ?? brand;
+}
+
+/** Titre de vue marque : « بلايستيشن (PlayStation) » en arabe (les deux lisible). */
+export function miniAppBrandHeading(brand: string, locale: MiniAppLocale): string {
+  if (locale !== "ar") return brand;
+  const ar = BRAND_LABELS_AR[brand.trim().toLowerCase()];
+  return ar ? `${ar} (${brand})` : brand;
+}
+
+/** Nom d'affichage d'une région : «السعودية» / «Saudi Arabia», «MENA — …». */
+export function miniAppRegionLabel(region: string, locale: MiniAppLocale): string {
+  return regionName(region, locale);
+}
+
+/**
+ * Pays couverts par un code de région qui n'est pas un pays (MENA, GLOBAL,
+ * EU…) — `null` pour un pays simple. Affiché en légende sous les filtres.
+ */
+export function miniAppRegionNote(region: string, locale: MiniAppLocale): string | null {
+  const note = REGION_NOTES[region.trim().toUpperCase()];
+  if (!note) return null;
+  return locale === "ar" ? note.ar : note.en;
+}
+
+/** Codes de région présents dans une sélection (triés par nombre de produits). */
+export function buildMiniAppRegionChips(products: readonly MiniAppProduct[]): string[] {
+  const counts = new Map<string, number>();
+  for (const product of products) {
+    for (const region of product.regions) {
+      counts.set(region, (counts.get(region) ?? 0) + 1);
+    }
+  }
+  return Array.from(counts)
+    .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+    .map(([region]) => region);
+}
+
 /** Normalise pour la recherche : minuscules, sans accents ni ponctuation. */
 export function normalizeMiniAppQuery(value: string): string {
   return (value ?? "")
@@ -174,10 +240,12 @@ export function normalizeMiniAppQuery(value: string): string {
 export interface MiniAppFilter {
   kind: string | null;
   brand: string | null;
+  /** Région exacte (`GLOBAL`, `SA`, `MENA`…) ou `null` = toutes. */
+  region: string | null;
   query: string;
 }
 
-/** Filtre combiné famille + marque + recherche (AR et EN). */
+/** Filtre combiné famille + marque + région + recherche (AR et EN). */
 export function filterMiniAppProducts(
   products: readonly MiniAppProduct[],
   filter: MiniAppFilter,
@@ -186,9 +254,15 @@ export function filterMiniAppProducts(
   return products.filter((product) => {
     if (filter.kind && product.kind !== filter.kind) return false;
     if (filter.brand && product.platform !== filter.brand) return false;
+    if (filter.region && !product.regions.includes(filter.region)) return false;
     if (!terms.length) return true;
+    // La recherche couvre aussi les noms de régions en clair
+    // («السعودية», «Saudi Arabia», «MENA»…), pas seulement les codes.
+    const regionNames = product.regions
+      .map((region) => `${regionName(region, "ar")} ${regionName(region, "en")}`)
+      .join(" ");
     const haystack = normalizeMiniAppQuery(
-      `${product.titleEn} ${product.titleAr} ${product.platform} ${product.regions.join(" ")}`,
+      `${product.titleEn} ${product.titleAr} ${product.platform} ${product.regions.join(" ")} ${regionNames}`,
     );
     return terms.every((term) => haystack.includes(term));
   });

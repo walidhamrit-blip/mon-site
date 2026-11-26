@@ -3,14 +3,19 @@
 import Script from "next/script";
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import {
+  buildMiniAppBrands,
+  buildMiniAppRegionChips,
   filterMiniAppProducts,
   formatMiniAppUsd,
+  miniAppBrandHeading,
+  miniAppBrandLabel,
   miniAppInitials,
   miniAppOpensExternally,
   miniAppProductHref,
+  miniAppRegionLabel,
+  miniAppRegionNote,
   resolveMiniAppLocale,
   TELEGRAM_WEB_APP_SCRIPT,
-  topMiniAppBrands,
   type MiniAppCategory,
   type MiniAppLocale,
   type MiniAppProduct,
@@ -75,10 +80,13 @@ const COPY = {
     heroCta: "استكشف المتجر",
     search: "ابحث عن بطاقة أو لعبة…",
     categories: "الفئات",
-    showAll: "عرض الكل",
+    results: "النتائج",
     products: "الأكثر طلباً",
+    brands: "العلامات التجارية",
+    backToCategories: "الفئات",
+    allRegions: "كل المناطق",
     count: (n: number) => `${n} منتج`,
-    allBrands: "الكل",
+    brandsCount: (n: number) => `${n} علامة`,
     from: "ابتداءً من",
     empty: "لا توجد نتائج.\nجرّب كلمة أخرى.",
     more: "عرض المزيد",
@@ -96,10 +104,13 @@ const COPY = {
     heroCta: "Explore the store",
     search: "Search a card or a game…",
     categories: "Categories",
-    showAll: "Show all",
+    results: "Results",
     products: "Most popular",
+    brands: "Brands",
+    backToCategories: "Categories",
+    allRegions: "All regions",
     count: (n: number) => `${n} product${n > 1 ? "s" : ""}`,
-    allBrands: "All",
+    brandsCount: (n: number) => `${n} brand${n > 1 ? "s" : ""}`,
     from: "From",
     empty: "No results.\nTry another word.",
     more: "Show more",
@@ -150,6 +161,7 @@ export function TelegramMiniApp({
   const [locale, setLocale] = useState<MiniAppLocale>(initialLocale);
   const [kind, setKind] = useState<string | null>(null);
   const [brand, setBrand] = useState<string | null>(null);
+  const [region, setRegion] = useState<string | null>(null);
   const [query, setQuery] = useState("");
   const [limit, setLimit] = useState(PAGE_SIZE);
   /** Thème imposé par Telegram (`null` hors Telegram → thème du système). */
@@ -193,15 +205,19 @@ export function TelegramMiniApp({
     }
   }, []);
 
-  /* ---------- Filtres ---------- */
+  /* ---------- Navigation : catégorie → marque → région → produits ---------- */
   const inKind = useMemo(
     () => (kind ? products.filter((product) => product.kind === kind) : products),
     [kind, products],
   );
-  const brands = useMemo(() => topMiniAppBrands(inKind, 14), [inKind]);
+  const brandEntries = useMemo(() => (kind ? buildMiniAppBrands(inKind) : []), [kind, inKind]);
+  const regionChips = useMemo(
+    () => (kind && brand ? buildMiniAppRegionChips(inKind.filter((p) => p.platform === brand)) : []),
+    [kind, brand, inKind],
+  );
   const visible = useMemo(
-    () => filterMiniAppProducts(products, { kind, brand, query }),
-    [products, kind, brand, query],
+    () => filterMiniAppProducts(products, { kind, brand, region, query }),
+    [products, kind, brand, region, query],
   );
   const shown = visible.slice(0, limit);
   const activeCategory = categories.find((category) => category.kind === kind) ?? null;
@@ -212,8 +228,9 @@ export function TelegramMiniApp({
 
   const pickKind = (next: string | null) => {
     haptic();
-    setKind((current) => (current === next ? null : next));
+    setKind(next);
     setBrand(null);
+    setRegion(null);
     setLimit(PAGE_SIZE);
     if (next) requestAnimationFrame(scrollToList);
   };
@@ -225,17 +242,30 @@ export function TelegramMiniApp({
       /* facultatif */
     }
     setBrand(next);
+    setRegion(null);
+    setLimit(PAGE_SIZE);
+    if (next) requestAnimationFrame(scrollToList);
+  };
+
+  const pickRegion = (next: string | null) => {
+    try {
+      telegramApp()?.HapticFeedback?.selectionChanged();
+    } catch {
+      /* facultatif */
+    }
+    setRegion((current) => (current === next ? null : next));
     setLimit(PAGE_SIZE);
   };
 
-  /* ---------- Bouton retour natif : remonte d'un niveau de filtre ---------- */
-  const filtered = Boolean(kind || brand || query);
+  /* ---------- Bouton retour natif : remonte d'un niveau ---------- */
+  const filtered = Boolean(kind || brand || region || query);
   useEffect(() => {
     const app = telegramApp();
     const back = app?.BackButton;
     if (!back) return;
     const onBack = () => {
       if (query) setQuery("");
+      else if (region) setRegion(null);
       else if (brand) setBrand(null);
       else setKind(null);
       setLimit(PAGE_SIZE);
@@ -244,7 +274,7 @@ export function TelegramMiniApp({
     else back.hide();
     back.onClick(onBack);
     return () => back.offClick(onBack);
-  }, [filtered, query, brand]);
+  }, [filtered, query, region, brand]);
 
   /* ---------- Ouverture d'une fiche ---------- */
   const openProduct = (product: MiniAppProduct) => {
@@ -273,6 +303,48 @@ export function TelegramMiniApp({
   };
 
   const title = (product: MiniAppProduct) => (ar ? product.titleAr : product.titleEn);
+
+  const productsGrid = (
+    <section className={styles.grid}>
+      {shown.length === 0 && <p className={styles.empty}>{copy.empty}</p>}
+      {shown.map((product, index) => (
+        <button
+          key={product.slug}
+          type="button"
+          className={styles.product}
+          style={{ animationDelay: `${Math.min(index % PAGE_SIZE, 12) * 30}ms` }}
+          onClick={() => openProduct(product)}
+        >
+          <span
+            className={styles.cover}
+            style={{ background: `linear-gradient(145deg, ${product.color}, #141a26)` }}
+          >
+            {product.image ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={product.image}
+                alt=""
+                loading="lazy"
+                decoding="async"
+                className={product.fit === "contain" ? styles.contain : undefined}
+              />
+            ) : (
+              <span className={styles.initials}>{miniAppInitials(product.platform || product.titleEn)}</span>
+            )}
+            {product.regions[0] && (
+              <span className={styles.region}>{miniAppRegionLabel(product.regions[0], locale)}</span>
+            )}
+          </span>
+          <span className={styles.info}>
+            <strong>{title(product)}</strong>
+            <span>
+              {copy.from} {formatMiniAppUsd(product.fromUsd, locale)}
+            </span>
+          </span>
+        </button>
+      ))}
+    </section>
+  );
 
   return (
     <div className={`${styles.app} ${dark ? styles.dark : ""}`} dir={ar ? "rtl" : "ltr"} lang={locale}>
@@ -310,21 +382,23 @@ export function TelegramMiniApp({
           </div>
         </header>
 
-        {/* Bandeau */}
-        <section className={styles.hero}>
-          <span className={styles.badge}>
-            <i />
-            {copy.badge}
-          </span>
-          <h1>{copy.heroTitle}</h1>
-          <button
-            type="button"
-            className={styles.heroBtn}
-            onClick={() => categoriesRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })}
-          >
-            {copy.heroCta} {ar ? "←" : "→"}
-          </button>
-        </section>
+        {/* Bandeau (accueil uniquement) */}
+        {kind === null && (
+          <section className={styles.hero}>
+            <span className={styles.badge}>
+              <i />
+              {copy.badge}
+            </span>
+            <h1>{copy.heroTitle}</h1>
+            <button
+              type="button"
+              className={styles.heroBtn}
+              onClick={() => categoriesRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })}
+            >
+              {copy.heroCta} {ar ? "←" : "→"}
+            </button>
+          </section>
+        )}
 
         {degraded && <p className={styles.notice}>{copy.degraded}</p>}
 
@@ -352,109 +426,173 @@ export function TelegramMiniApp({
           )}
         </label>
 
-        {/* Catégories en photos */}
-        <section ref={categoriesRef} className={styles.section}>
-          <div className={styles.head}>
-            <h2>{copy.categories}</h2>
-            {kind && (
-              <button type="button" onClick={() => pickKind(null)}>
-                {copy.showAll}
+        {kind === null ? (
+          /* ================= ACCUEIL : familles + populaires ================= */
+          <>
+            <section ref={categoriesRef} className={styles.section}>
+              <div className={styles.head}>
+                <h2>{copy.categories}</h2>
+              </div>
+              <div className={styles.cats}>
+                {categories.map((category) => (
+                  <button
+                    key={category.kind}
+                    type="button"
+                    className={styles.cat}
+                    onClick={() => pickKind(category.kind)}
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={category.image} alt="" width={400} height={400} />
+                    <span className={styles.catLabel}>
+                      <strong>{ar ? category.ar : category.en}</strong>
+                      <small>{copy.count(category.count)}</small>
+                    </span>
+                    <span className={styles.enter} aria-hidden="true">
+                      {ar ? "‹" : "›"}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </section>
+
+            <div ref={listRef} className={styles.head}>
+              <h2>{query ? copy.results : copy.products}</h2>
+              <span>{copy.count(visible.length)}</span>
+            </div>
+            {productsGrid}
+            {visible.length > shown.length && (
+              <button type="button" className={styles.more} onClick={() => setLimit((value) => value + PAGE_SIZE)}>
+                {copy.more} ({visible.length - shown.length})
               </button>
             )}
-          </div>
-          <div className={styles.cats}>
-            {categories.map((category) => (
+          </>
+        ) : (
+          /* ============ NAVIGATION : catégorie → marque → région ============ */
+          <>
+            <nav className={styles.crumbs}>
               <button
-                key={category.kind}
                 type="button"
-                className={`${styles.cat} ${kind === category.kind ? styles.catActive : ""}`}
-                onClick={() => pickKind(category.kind)}
-                aria-pressed={kind === category.kind}
+                className={styles.crumb}
+                onClick={() => (brand ? pickBrand(null) : pickKind(null))}
               >
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={category.image} alt="" width={400} height={400} />
-                <span className={styles.check} aria-hidden="true">
-                  ✓
-                </span>
-                <span className={styles.catLabel}>
-                  <strong>{ar ? category.ar : category.en}</strong>
-                  <small>{copy.count(category.count)}</small>
-                </span>
+                <span aria-hidden="true">{ar ? "→" : "←"}</span>
+                {brand ? (ar ? activeCategory?.ar : activeCategory?.en) ?? copy.categories : copy.backToCategories}
               </button>
-            ))}
-          </div>
-        </section>
+            </nav>
 
-        {/* Liste */}
-        <div ref={listRef} className={styles.head}>
-          <h2>{activeCategory ? (ar ? activeCategory.ar : activeCategory.en) : copy.products}</h2>
-          <span>{copy.count(visible.length)}</span>
-        </div>
-
-        {brands.length > 1 && (
-          <nav className={styles.chips} aria-label="brands">
-            <button
-              type="button"
-              className={`${styles.chip} ${brand === null ? styles.chipActive : ""}`}
-              onClick={() => pickBrand(null)}
-            >
-              {copy.allBrands}
-            </button>
-            {brands.map((name) => (
-              <button
-                key={name}
-                type="button"
-                className={`${styles.chip} ${brand === name ? styles.chipActive : ""}`}
-                onClick={() => pickBrand(brand === name ? null : name)}
-              >
-                {name}
-              </button>
-            ))}
-          </nav>
-        )}
-
-        <section className={styles.grid}>
-          {shown.length === 0 && <p className={styles.empty}>{copy.empty}</p>}
-          {shown.map((product, index) => (
-            <button
-              key={product.slug}
-              type="button"
-              className={styles.product}
-              style={{ animationDelay: `${Math.min(index % PAGE_SIZE, 12) * 30}ms` }}
-              onClick={() => openProduct(product)}
-            >
-              <span
-                className={styles.cover}
-                style={{ background: `linear-gradient(145deg, ${product.color}, #141a26)` }}
-              >
-                {product.image ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={product.image}
-                    alt=""
-                    loading="lazy"
-                    decoding="async"
-                    className={product.fit === "contain" ? styles.contain : undefined}
-                  />
+            {brand === null ? (
+              /* --- Niveau 2 : les marques de la famille --- */
+              <>
+                <div ref={listRef} className={styles.head}>
+                  <h2>{ar ? activeCategory?.ar : activeCategory?.en}</h2>
+                  <span>{copy.brandsCount(brandEntries.length)}</span>
+                </div>
+                {query ? (
+                  <>
+                    <div className={styles.head}>
+                      <h2>{copy.results}</h2>
+                      <span>{copy.count(visible.length)}</span>
+                    </div>
+                    {productsGrid}
+                    {visible.length > shown.length && (
+                      <button
+                        type="button"
+                        className={styles.more}
+                        onClick={() => setLimit((value) => value + PAGE_SIZE)}
+                      >
+                        {copy.more} ({visible.length - shown.length})
+                      </button>
+                    )}
+                  </>
                 ) : (
-                  <span className={styles.initials}>{miniAppInitials(product.platform || product.titleEn)}</span>
+                  <div className={styles.brands}>
+                    {brandEntries.map((entry) => (
+                      <button
+                        key={entry.name}
+                        type="button"
+                        className={styles.brandCard}
+                        style={
+                          entry.image
+                            ? undefined
+                            : { background: `linear-gradient(145deg, ${entry.color}, #141a26)` }
+                        }
+                        onClick={() => pickBrand(entry.name)}
+                      >
+                        {entry.image ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img src={entry.image} alt="" loading="lazy" decoding="async" />
+                        ) : (
+                          <span className={styles.brandFallback} aria-hidden="true">
+                            {miniAppInitials(entry.name)}
+                          </span>
+                        )}
+                        <span className={styles.brandLabel}>
+                          <strong>{miniAppBrandLabel(entry.name, locale)}</strong>
+                          {locale === "ar" && <small>{entry.name}</small>}
+                          <small>{copy.count(entry.count)}</small>
+                        </span>
+                        <span className={styles.enter} aria-hidden="true">
+                          {ar ? "‹" : "›"}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
                 )}
-                {product.regions[0] && <span className={styles.region}>{product.regions[0]}</span>}
-              </span>
-              <span className={styles.info}>
-                <strong>{title(product)}</strong>
-                <span>
-                  {copy.from} {formatMiniAppUsd(product.fromUsd, locale)}
-                </span>
-              </span>
-            </button>
-          ))}
-        </section>
+              </>
+            ) : (
+              /* --- Niveau 3 : produits de la marque, filtre par région --- */
+              <>
+                <div ref={listRef} className={styles.head}>
+                  <h2>{miniAppBrandHeading(brand, locale)}</h2>
+                  <span>{copy.count(visible.length)}</span>
+                </div>
 
-        {visible.length > shown.length && (
-          <button type="button" className={styles.more} onClick={() => setLimit((value) => value + PAGE_SIZE)}>
-            {copy.more} ({visible.length - shown.length})
-          </button>
+                {regionChips.length > 1 && (
+                  <nav className={styles.chips} aria-label="regions">
+                    <button
+                      type="button"
+                      className={`${styles.chip} ${region === null ? styles.chipActive : ""}`}
+                      onClick={() => pickRegion(null)}
+                    >
+                      {copy.allRegions}
+                    </button>
+                    {regionChips.map((code) => (
+                      <button
+                        key={code}
+                        type="button"
+                        className={`${styles.chip} ${region === code ? styles.chipActive : ""}`}
+                        onClick={() => pickRegion(code)}
+                      >
+                        {miniAppRegionLabel(code, locale)}
+                      </button>
+                    ))}
+                  </nav>
+                )}
+
+                {/* Légende : les pays couverts par chaque code non-pays (MENA, GLOBAL, EU…). */}
+                {regionChips.some((code) => miniAppRegionNote(code, locale)) && (
+                  <div className={styles.legend}>
+                    {regionChips.map((code) => {
+                      const note = miniAppRegionNote(code, locale);
+                      if (!note) return null;
+                      return (
+                        <small key={code}>
+                          🗺️ {miniAppRegionLabel(code, locale)} : {note}
+                        </small>
+                      );
+                    })}
+                  </div>
+                )}
+
+                {productsGrid}
+                {visible.length > shown.length && (
+                  <button type="button" className={styles.more} onClick={() => setLimit((value) => value + PAGE_SIZE)}>
+                    {copy.more} ({visible.length - shown.length})
+                  </button>
+                )}
+              </>
+            )}
+          </>
         )}
 
         {whatsappHref && (

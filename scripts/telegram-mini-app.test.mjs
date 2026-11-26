@@ -4,15 +4,21 @@ import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
+  buildMiniAppBrands,
   buildMiniAppCategories,
   buildMiniAppProducts,
+  buildMiniAppRegionChips,
   filterMiniAppProducts,
   formatMiniAppUsd,
   isTelegramMiniAppPath,
   MINI_APP_CATEGORY_IMAGES,
+  miniAppBrandHeading,
+  miniAppBrandLabel,
   miniAppInitials,
   miniAppOpensExternally,
   miniAppProductHref,
+  miniAppRegionLabel,
+  miniAppRegionNote,
   resolveMiniAppLocale,
   telegramMiniAppCsp,
   topMiniAppBrands,
@@ -88,7 +94,7 @@ test("la charge utile ne transporte que les champs affichés", () => {
     "titleAr",
     "titleEn",
   ]);
-  assert.deepEqual(item.regions, ["US", "CA"]);
+  assert.deepEqual(item.regions, ["US", "CA", "MX"]);
 });
 
 test("couleur invalide → couleur de repli ; pas de visuel → fit cover", () => {
@@ -128,6 +134,94 @@ test("les marques les plus représentées passent en premier", () => {
   );
   assert.deepEqual(topMiniAppBrands(items), ["Steam", "Amazon"]);
   assert.deepEqual(topMiniAppBrands(items, 1), ["Steam"]);
+});
+
+/* ------------------- Navigation catégorie → marque → région ------------------- */
+
+test("navigation : les marques d'une famille, avec le visuel du produit le plus demandé", () => {
+  const items = buildMiniAppProducts(
+    [
+      product({ slug: "psn-sa", platform: "PlayStation", titleEn: "PlayStation (SA)", regions: ["SA"] }),
+      product({ slug: "psn-jp", platform: "PlayStation", titleEn: "PlayStation (JP)", regions: ["JP"] }),
+      product({ slug: "psn-us", platform: "PlayStation", titleEn: "PlayStation (US)", regions: ["US"] }),
+      product({ slug: "steam", platform: "Steam", regions: ["GLOBAL"] }),
+      product({ slug: "no-brand", platform: "" }),
+    ],
+    ({ slug }) => ({ src: `/covers/${slug}.jpg`, fit: "cover" }),
+  );
+  const brands = buildMiniAppBrands(items);
+  assert.deepEqual(
+    brands.map((b) => [b.name, b.count, b.image]),
+    [
+      ["PlayStation", 3, "/covers/psn-sa.jpg"],
+      ["Steam", 1, "/covers/steam.jpg"],
+    ],
+  );
+});
+
+test("libellés de marques : arabe reconnaissable, anglais d'origine", () => {
+  assert.equal(miniAppBrandLabel("PlayStation", "ar"), "بلايستيشن");
+  assert.equal(miniAppBrandLabel("Steam Wallet", "ar"), "Steam Wallet");
+  assert.equal(miniAppBrandLabel("PlayStation", "en"), "PlayStation");
+  assert.equal(miniAppBrandHeading("PlayStation", "ar"), "بلايستيشن (PlayStation)");
+  assert.equal(miniAppBrandHeading("PlayStation", "en"), "PlayStation");
+});
+
+test("régions : noms complets bilingues, code inconnu affiché tel quel", () => {
+  assert.equal(miniAppRegionLabel("sa", "ar"), "السعودية");
+  assert.equal(miniAppRegionLabel("SA", "en"), "Saudi Arabia");
+  assert.equal(miniAppRegionLabel("jp", "ar"), "اليابان");
+  assert.equal(miniAppRegionLabel("jp", "en"), "Japan");
+  assert.match(miniAppRegionLabel("mena", "en"), /MENA — Middle East & North Africa/);
+  assert.match(miniAppRegionLabel("MENA", "ar"), /الشرق الأوسط وشمال إفريقيا/);
+  assert.equal(miniAppRegionLabel("xx", "en"), "XX");
+  assert.equal(miniAppRegionLabel("", "en"), "");
+});
+
+test("MENA et les codes non-pays listent l'ensemble des pays couverts", () => {
+  const menaAr = miniAppRegionNote("MENA", "ar");
+  const menaEn = miniAppRegionNote("mena", "en");
+  for (const country of ["السعودية", "الإمارات", "قطر", "الكويت", "عُمان", "البحرين", "العراق", "مصر", "الأردن", "لبنان", "المغرب", "الجزائر", "تونس", "ليبيا"]) {
+    assert.ok(menaAr.includes(country), `MENA (ar) manque ${country}`);
+  }
+  for (const country of ["Saudi Arabia", "UAE", "Qatar", "Kuwait", "Oman", "Bahrain", "Iraq", "Yemen", "Egypt", "Jordan", "Lebanon", "Morocco", "Algeria", "Tunisia", "Libya", "Mauritania"]) {
+    assert.ok(menaEn.includes(country), `MENA (en) manque ${country}`);
+  }
+  assert.match(miniAppRegionNote("GLOBAL", "en"), /any country/);
+  assert.match(miniAppRegionNote("EU", "ar"), /دولة أوروبية/);
+  assert.equal(miniAppRegionNote("SA", "en"), null, "un pays simple n'a pas de légende");
+});
+
+test("puces de région d'une sélection : triées par nombre de produits", () => {
+  const items = buildMiniAppProducts(
+    [
+      product({ slug: "a", regions: ["GLOBAL"] }),
+      product({ slug: "b", regions: ["SA"] }),
+      product({ slug: "c", regions: ["SA", "AE"] }),
+      product({ slug: "d", regions: ["MENA"] }),
+      product({ slug: "e", regions: ["SA"] }),
+    ],
+    visual,
+  );
+  assert.deepEqual(buildMiniAppRegionChips(items), ["SA", "AE", "GLOBAL", "MENA"]);
+});
+
+test("filtre par région et recherche par nom de région en clair (AR et EN)", () => {
+  const items = buildMiniAppProducts(
+    [
+      product({ slug: "psn-sa", platform: "PlayStation", regions: ["SA"] }),
+      product({ slug: "psn-jp", platform: "PlayStation", regions: ["JP"] }),
+      product({ slug: "psn-mena", platform: "PlayStation", regions: ["MENA"] }),
+    ],
+    visual,
+  );
+  const slugs = (filter) =>
+    filterMiniAppProducts(items, { kind: null, brand: null, region: null, query: "", ...filter }).map((p) => p.slug);
+  assert.deepEqual(slugs({ brand: "PlayStation", region: "SA" }), ["psn-sa"]);
+  assert.deepEqual(slugs({ region: "JP" }), ["psn-jp"]);
+  assert.deepEqual(slugs({ query: "اليابان" }), ["psn-jp"]);
+  assert.deepEqual(slugs({ query: "japan" }), ["psn-jp"]);
+  assert.deepEqual(slugs({ query: "saudi arabia" }), ["psn-sa"]);
 });
 
 test("recherche AR/EN insensible aux accents, combinée famille + marque", () => {
