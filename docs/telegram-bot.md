@@ -222,6 +222,11 @@ Telegram. Les libellés marques/régions sont partagés avec le bot dans
 - **Alternative manuelle** : @BotFather → `/mybots` → bot → *Bot Settings* →
   *Menu Button* → URL `https://nokhba.net.ly/tg`.
 - Visuels des familles : `public/telegram-mini-app/*.webp`.
+- **Performance** : le HTML de `/tg` (identique pour tous — le prénom
+  Telegram est lu côté client) est mis en cache CDN 60 s avec
+  stale-while-revalidate (`src/proxy.ts`), et les jaquettes produits passent
+  par l'optimiseur d'images (`/_next/image`, ~230 px webp) au lieu des
+  fichiers bruts de 24–140 Ko.
 
 > **ar —** واجهة متجر مصوّرة داخل تيليجرام على الرابط `/tg`: التنقل بالصور —
 > الفئة ثم العلامة التجارية ثم المنطقة (مع ذكر كل الدول التي تغطيها كل منطقة
