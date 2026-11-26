@@ -3,7 +3,7 @@
 import { useDeferredValue, useMemo, useState } from "react";
 import Image from "next/image";
 import { LocalizedLink as Link } from "@/components/localized-link";
-import { motion } from "framer-motion";
+import { m } from "framer-motion";
 import {
   ArrowUpDown,
   Check,
@@ -169,25 +169,52 @@ export function DigitalCatalog({
 
   /* ----------------------------- Facettes ----------------------------- */
 
-  const families = useMemo(() => {
-    const counts = new Map<DigitalKind, number>();
-    for (const product of products) {
-      counts.set(product.kind, (counts.get(product.kind) ?? 0) + 1);
-    }
-    return FAMILY_ORDER.filter((item) => counts.has(item)).map((item) => ({
-      kind: item,
-      count: counts.get(item) ?? 0,
-    }));
-  }, [products]);
+  /**
+   * Les quatre facettes (familles, plateformes, régions, prix) sont calculées
+   * en UNE seule itération sur le catalogue (point 2 : `js-combine-iterations`).
+   * Avant, chacune parcourait la liste — quatre passages sur jusqu'à 2 000
+   * fiches à chaque changement de données. Un seul objet `facets` donc, dont
+   * chaque facette déstructure sa partie.
+   */
+  const facets = useMemo(() => {
+    const familyCounts = new Map<DigitalKind, number>();
+    const platformCounts = new Map<string, number>();
+    const regionCounts = new Map<string, number>();
+    const priceCountsMap = new Map<PriceRangeId, number>();
+    for (const range of PRICE_RANGES) priceCountsMap.set(range.id, 0);
 
-  const platforms = useMemo(() => {
-    const counts = new Map<string, number>();
     for (const product of products) {
-      const value = (product.platform ?? "").trim();
-      if (!value) continue;
-      counts.set(value, (counts.get(value) ?? 0) + 1);
+      familyCounts.set(product.kind, (familyCounts.get(product.kind) ?? 0) + 1);
+
+      const platform = (product.platform ?? "").trim();
+      if (platform) platformCounts.set(platform, (platformCounts.get(platform) ?? 0) + 1);
+
+      const seenRegions = new Set(
+        [...product.regions, ...product.denominations.map((item) => item.region)]
+          .map((item) => (item ?? "").trim().toUpperCase())
+          .filter(Boolean),
+      );
+      for (const region of seenRegions) {
+        regionCounts.set(region, (regionCounts.get(region) ?? 0) + 1);
+      }
+
+      const price = lowestPriceUsd(product);
+      if (price == null) continue;
+      for (const range of PRICE_RANGES) {
+        if (range.id === "all") {
+          priceCountsMap.set("all", (priceCountsMap.get("all") ?? 0) + 1);
+        } else if (price >= range.min && price < range.max) {
+          priceCountsMap.set(range.id, (priceCountsMap.get(range.id) ?? 0) + 1);
+        }
+      }
     }
-    return Array.from(counts.entries())
+
+    const families = FAMILY_ORDER.filter((item) => familyCounts.has(item)).map((item) => ({
+      kind: item,
+      count: familyCounts.get(item) ?? 0,
+    }));
+
+    const platforms = Array.from(platformCounts.entries())
       .sort(
         (a, b) =>
           demandWeightFor(b[0]) - demandWeightFor(a[0]) ||
@@ -197,22 +224,15 @@ export function DigitalCatalog({
           (a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0),
       )
       .map(([value, count]) => ({ value, count }));
+
+    const regions = sortRegionsForRail(
+      Array.from(regionCounts.entries()).map(([value, count]) => ({ value, count })),
+    );
+
+    return { families, platforms, regions, priceCounts: priceCountsMap };
   }, [products]);
 
-  const regions = useMemo(() => {
-    const counts = new Map<string, number>();
-    for (const product of products) {
-      const seen = new Set(
-        [...product.regions, ...product.denominations.map((item) => item.region)]
-          .map((item) => (item ?? "").trim().toUpperCase())
-          .filter(Boolean),
-      );
-      for (const value of seen) counts.set(value, (counts.get(value) ?? 0) + 1);
-    }
-    return sortRegionsForRail(
-      Array.from(counts.entries()).map(([value, count]) => ({ value, count })),
-    );
-  }, [products]);
+  const { families, platforms, regions, priceCounts } = facets;
 
   /**
    * Fiches mises en avant : les plus demandées du catalogue, calculées sur
@@ -220,23 +240,6 @@ export function DigitalCatalog({
    * « saute » pas d'une carte à l'autre quand on filtre.
    */
   const popularSlugs = useMemo(() => new Set(topDemandSlugs(products, 8)), [products]);
-
-  const priceCounts = useMemo(() => {
-    const counts = new Map<PriceRangeId, number>();
-    for (const range of PRICE_RANGES) counts.set(range.id, 0);
-    for (const product of products) {
-      const price = lowestPriceUsd(product);
-      if (price == null) continue;
-      for (const range of PRICE_RANGES) {
-        if (range.id === "all") {
-          counts.set("all", (counts.get("all") ?? 0) + 1);
-        } else if (price >= range.min && price < range.max) {
-          counts.set(range.id, (counts.get(range.id) ?? 0) + 1);
-        }
-      }
-    }
-    return counts;
-  }, [products]);
 
   /* ----------------------------- Filtrage ----------------------------- */
 
@@ -651,7 +654,7 @@ export function DigitalCatalog({
                   value={sort}
                   onChange={(event) => setSort(event.target.value as SortId)}
                   aria-label={ar ? "ترتيب" : "Sort"}
-                  className="h-11 cursor-pointer rounded-full border border-[var(--border)] bg-[var(--card)] px-3.5 text-[12.5px] font-bold outline-none"
+                  className="h-11 cursor-pointer rounded-full border border-[var(--border)] bg-[var(--card)] px-3.5 text-[12.5px] font-bold outline-none transition-colors focus:border-[var(--accent)]"
                 >
                   <option value="popular">{ar ? "الأكثر طلباً" : "Popular"}</option>
                   <option value="price-asc">{ar ? "الأقل سعراً" : "Price ↑"}</option>
@@ -934,7 +937,7 @@ function CardShell({
     );
   }
   return (
-    <motion.article
+    <m.article
       initial={{ opacity: 0, y: 14 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, margin: "-30px" }}
@@ -943,7 +946,7 @@ function CardShell({
       style={CARD_STYLE}
     >
       {children}
-    </motion.article>
+    </m.article>
   );
 }
 

@@ -147,7 +147,7 @@ export function AdminNav({ newLeads, paidOrders }: Props) {
                       href={item.href}
                       aria-current={active ? "page" : undefined}
                       onClick={() => setOpen(false)}
-                      className={`group flex items-center justify-between gap-2.5 rounded-xl px-3 py-2.5 transition-all ${
+                      className={`group flex items-center justify-between gap-2.5 rounded-xl px-3 py-2.5 transition-[background-color,color,box-shadow,border-color] ${
                         active
                           ? "bg-[#C6A664]/16 text-stone-950 ring-1 ring-[#C6A664]/45 shadow-2xs"
                           : "text-stone-600 hover:bg-stone-100/90 hover:text-stone-900"

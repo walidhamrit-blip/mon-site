@@ -43,7 +43,7 @@ export function SectorsHubView({
                 <Link
                   key={sector.id}
                   href={`/sectors/${sector.id}`}
-                  className="group rounded-[22px] overflow-hidden bg-[var(--card)] border border-[var(--border)] hover:border-[var(--accent)]/50 hover:shadow-lg transition-all p-6 flex flex-col"
+                  className="group rounded-[22px] overflow-hidden bg-[var(--card)] border border-[var(--border)] hover:border-[var(--accent)]/50 hover:shadow-lg transition-[border-color,box-shadow] p-6 flex flex-col"
                 >
                   <div className="text-xs font-bold tracking-widest text-[var(--accent)] uppercase">
                     {pick(sector.labelAr, sector.labelEn)}

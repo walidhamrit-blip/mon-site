@@ -24,7 +24,7 @@ export function Button({ className, variant = "default", size = "md", ...props }
   return (
     <button
       className={cn(
-        "inline-flex items-center justify-center gap-2 gaming-button font-bold transition-all duration-200 disabled:opacity-50 disabled:pointer-events-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] cursor-pointer active:scale-[0.98]",
+        "inline-flex items-center justify-center gap-2 gaming-button font-bold transition-[transform,background-color,border-color,box-shadow,opacity] duration-200 disabled:opacity-50 disabled:pointer-events-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] cursor-pointer active:scale-[0.98]",
         styles[variant],
         sizes[size],
         className

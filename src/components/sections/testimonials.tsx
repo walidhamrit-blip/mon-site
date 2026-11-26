@@ -1,5 +1,5 @@
 "use client";
-import { motion } from "framer-motion";
+import { m } from "framer-motion";
 import { Star, Quote } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import { useSectionHeading, useSiteContent } from "@/components/site-provider";
@@ -64,7 +64,7 @@ export function Testimonials() {
 
         <div className="mt-10 grid gap-4 md:grid-cols-3">
           {testimonials.map((item, i) => (
-            <motion.figure
+            <m.figure
               key={item.name}
               initial={{ opacity: 0, y: 16 }}
               whileInView={{ opacity: 1, y: 0 }}
@@ -117,7 +117,7 @@ export function Testimonials() {
                   </div>
                 </div>
               </div>
-            </motion.figure>
+            </m.figure>
           ))}
         </div>
       </div>

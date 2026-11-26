@@ -598,7 +598,7 @@ export function SectionsStudio({
           return (
             <div
               key={entry.key}
-              className={`rounded-2xl border bg-white transition-all shadow-2xs ${
+              className={`rounded-2xl border bg-white transition-[border-color,box-shadow] shadow-2xs ${
                 isOpen
                   ? "border-[#C6A664] ring-1 ring-[#C6A664]/30"
                   : "border-stone-200/90 hover:border-stone-300"

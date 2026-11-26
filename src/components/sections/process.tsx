@@ -1,5 +1,5 @@
 "use client";
-import { motion } from "framer-motion";
+import { m } from "framer-motion";
 import { MessageCircle } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import { useSectionHeading, useSiteContent } from "@/components/site-provider";
@@ -58,7 +58,7 @@ export function Process() {
 
           <ol className={`grid gap-4 ${gridClass}`}>
             {processSteps.map((step, i) => (
-              <motion.li
+              <m.li
                 key={step.num}
                 initial={{ opacity: 0, y: 16 }}
                 whileInView={{ opacity: 1, y: 0 }}
@@ -80,7 +80,7 @@ export function Process() {
                 <p className="mt-2 text-[13px] leading-6 text-[var(--muted-foreground)]">
                   {locale === "ar" ? step.descAr : step.descEn}
                 </p>
-              </motion.li>
+              </m.li>
             ))}
           </ol>
         </div>

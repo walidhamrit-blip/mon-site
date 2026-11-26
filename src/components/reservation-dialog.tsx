@@ -200,7 +200,7 @@ export function ReservationDialog({
       dir={ar ? "rtl" : "ltr"}
     >
       <div
-        className="w-full max-w-md max-h-[92dvh] overflow-y-auto rounded-t-3xl border border-[var(--border)] bg-[var(--card)] p-5 pb-[max(1.5rem,env(safe-area-inset-bottom))] shadow-2xl sm:rounded-[24px] sm:p-6"
+        className="w-full max-w-md max-h-[92dvh] overflow-y-auto overscroll-contain rounded-t-3xl border border-[var(--border)] bg-[var(--card)] p-5 pb-[max(1.5rem,env(safe-area-inset-bottom))] shadow-2xl sm:rounded-[24px] sm:p-6"
         onClick={(event) => event.stopPropagation()}
       >
         {/* En-tête */}

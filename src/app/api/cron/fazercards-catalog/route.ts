@@ -1,3 +1,4 @@
+import { timingSafeEqual } from "node:crypto";
 import { NextResponse } from "next/server";
 import { getFazercardsCatalog } from "@/lib/fazercards-catalog";
 import { fazercardsConfigured } from "@/lib/fazercards";
@@ -33,13 +34,13 @@ export const maxDuration = 60;
 
 function authorized(req: Request): boolean {
   const secret = process.env.CRON_SECRET?.trim();
-  // Sans secret configuré, la route reste utilisable (Vercel cron envoie
-  // son propre en-tête d'authentification) mais ne fait rien de sensible :
-  // elle ne renvoie ni prix fournisseur ni secret.
-  if (!secret) return true;
-  const header = req.headers.get("authorization")?.trim();
-  if (header === `Bearer ${secret}`) return true;
-  return new URL(req.url).searchParams.get("secret") === secret;
+  if (!secret) return false;
+  const header = req.headers.get("authorization")?.trim() ?? "";
+  if (!header.startsWith("Bearer ")) return false;
+  const token = header.slice(7).trim();
+  const a = Buffer.from(token);
+  const b = Buffer.from(secret);
+  return a.length === b.length && timingSafeEqual(a, b);
 }
 
 export async function GET(req: Request) {

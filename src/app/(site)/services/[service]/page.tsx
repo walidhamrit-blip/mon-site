@@ -34,8 +34,12 @@ export async function generateMetadata({
 }: {
   params: Promise<{ service: string }>;
 } & LocalePageProps): Promise<Metadata> {
-  const { service: serviceId } = await params;
-  const { config } = await getSiteDataCached();
+  // `params` et la configuration sont indépendants : lectures en parallèle
+  // (point 2).
+  const [{ service: serviceId }, { config }] = await Promise.all([
+    params,
+    getSiteDataCached(),
+  ]);
   const locale = await pageLocale(config, searchParams);
   const service = findService(config.standaloneServices, serviceId);
   if (!service) {
@@ -66,8 +70,12 @@ export default async function ServicePage({
 }: {
   params: Promise<{ service: string }>;
 } & LocalePageProps) {
-  const { service: serviceId } = await params;
-  const { config, content } = await getSiteDataCached();
+  // `params` et la configuration sont indépendants : lectures en parallèle
+  // (point 2).
+  const [{ service: serviceId }, { config, content }] = await Promise.all([
+    params,
+    getSiteDataCached(),
+  ]);
   const locale = await pageLocale(config, searchParams);
   const service = findService(config.standaloneServices, serviceId);
   if (!service) notFound();

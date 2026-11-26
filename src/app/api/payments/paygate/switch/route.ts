@@ -103,8 +103,8 @@ export async function GET(req: Request) {
   // même tolérance que la page de suivi). Empreinte présente + jeton faux → refusé.
   const access = trackingAccess(order.trackingTokenHash, token);
   if (access === "denied") {
-    return new NextResponse("Payment session not found or expired.", {
-      status: 403,
+    return new NextResponse("Payment session not found.", {
+      status: 404,
       headers: { "Cache-Control": "no-store", "X-Robots-Tag": "noindex, nofollow" },
     });
   }

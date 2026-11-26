@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { requireAdmin } from "@/lib/auth";
+import { isAdminAuthenticated } from "@/lib/auth";
 import {
   generateSeoCopy,
   generateSeoCopyBatch,
@@ -23,7 +23,9 @@ const batchSchema = z.object({
 });
 
 export async function POST(request: Request) {
-  await requireAdmin();
+  if (!(await isAdminAuthenticated())) {
+    return NextResponse.json({ ok: false, error: "unauthorized" }, { status: 401 });
+  }
   let payload: unknown;
   try {
     payload = await request.json();

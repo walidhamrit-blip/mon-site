@@ -226,7 +226,7 @@ export function SettingsForm({ initial, initialTab }: Props) {
               key={item.id}
               type="button"
               onClick={() => setTab(item.id)}
-              className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+              className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-[background-color,border-color,color] cursor-pointer ${
                 active
                   ? "bg-stone-900 text-white shadow-2xs"
                   : "text-stone-600 hover:bg-stone-100 hover:text-stone-900"
@@ -269,7 +269,7 @@ export function SettingsForm({ initial, initialTab }: Props) {
                         },
                       })
                     }
-                    className={`rounded-2xl border p-3.5 text-left transition-all cursor-pointer ${
+                    className={`rounded-2xl border p-3.5 text-left transition-[background-color,border-color,color] cursor-pointer ${
                       selected
                         ? "border-[#C6A664] ring-2 ring-[#C6A664]/35 bg-[#FCFBF8]"
                         : "border-stone-200 bg-white hover:border-stone-300"
