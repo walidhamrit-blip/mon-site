@@ -1,12 +1,39 @@
 import type { Faq } from "./site-types";
 
-/** Shared labels: the same four destinations on desktop and mobile. */
-export const primaryNavigation = [
+export interface NavigationItem {
+  href: string;
+  ar: string;
+  en: string;
+  /** Rubrique annoncée mais pas encore ouverte (badge « قريباً / Soon »). */
+  soon?: boolean;
+  /** Sous-rubriques affichées dans un sous-menu (et en liste sur mobile). */
+  children?: readonly { href: string; ar: string; en: string }[];
+}
+
+/**
+ * Ordre de lecture voulu : d'abord les sites (le cœur de l'agence), puis les
+ * applications (annoncées, bientôt disponibles), puis les produits
+ * numériques, présentés comme UNE catégorie avec ses sous-catégories — ce qui
+ * reflète exactement l'arborescence indexée : /codes → /codes/category/[kind].
+ * Mêmes libellés sur ordinateur et mobile.
+ */
+export const primaryNavigation: readonly NavigationItem[] = [
   { href: "/", ar: "الرئيسية", en: "Home" },
-  { href: "/codes", ar: "المتجر الرقمي", en: "Digital store" },
-  { href: "/creation-sites", ar: "إنشاء المواقع", en: "Website creation" },
+  { href: "/creation-sites", ar: "إنشاء المواقع", en: "Websites" },
+  { href: "/apps", ar: "التطبيقات", en: "Apps", soon: true },
+  {
+    href: "/codes",
+    ar: "المنتجات الرقمية",
+    en: "Digital products",
+    children: [
+      { href: "/codes/category/gift_card", ar: "بطاقات هدايا", en: "Gift cards" },
+      { href: "/codes/category/software_key", ar: "مفاتيح ألعاب وبرامج", en: "Game & software keys" },
+      { href: "/codes/category/game_topup", ar: "شحن الألعاب", en: "Game top-ups" },
+      { href: "/codes/category/subscription_code", ar: "اشتراكات", en: "Subscriptions" },
+    ],
+  },
   { href: "/contact", ar: "تواصل معنا", en: "Contact" },
-] as const;
+];
 
 // Legacy ?kind= facets stay supported; SEO categories live under /codes/category/[kind].
 // The supplier classifies game keys and software together as software_key.

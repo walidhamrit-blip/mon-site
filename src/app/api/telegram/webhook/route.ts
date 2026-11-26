@@ -26,8 +26,10 @@ import {
   handleShopCallback,
   handleShopEmailInput,
   openTelegramShop,
+  openTelegramShopCategory,
   type ShopBotContext,
 } from "@/lib/telegram-shop";
+import { shopTargetFromStartPayload } from "@/lib/telegram-links";
 import { shopLocale, shopWhatsappUrl } from "@/lib/telegram-shop-core";
 
 import {
@@ -197,8 +199,11 @@ async function handleMessage(message: TelegramMessage): Promise<void> {
   // re-détecte pas à chaque message. Les nouveaux arrivants voient le
   // choix de langue dès /start ; un premier message libre garde la
   // détection automatique (ar par défaut, comme le site).
+  // Lien « Continuer sur Telegram » du site (`/start shop-ar-gift_card`) :
+  // la langue de la page visitée sert pour un nouvel arrivant.
+  const shopTarget = command === "start" ? shopTargetFromStartPayload(args) : null;
   const language =
-    stored?.language ?? detectTelegramLocale(command === "start" ? args : text, "ar");
+    stored?.language ?? shopTarget?.locale ?? detectTelegramLocale(command === "start" ? args : text, "ar");
 
   await saveTelegramSubscriber({
     chatId,
@@ -223,6 +228,12 @@ async function handleMessage(message: TelegramMessage): Promise<void> {
       const watchedRef = orderRefFromStartPayload(args);
       if (watchedRef) {
         await watchFromMessage(chatId, watchedRef, language, ctx);
+        return;
+      }
+      // Arrivée depuis un rayon du site : boutique ouverte directement sur
+      // ce rayon, dans la langue de la page (pas d'écran de langue).
+      if (shopTarget) {
+        await openTelegramShopCategory(actor, shopTarget.kind, shopLocale(language), shopCtx(ctx));
         return;
       }
       if (isNew) {

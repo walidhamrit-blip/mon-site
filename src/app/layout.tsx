@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";
 import "./globals.css";
 import "./gaming.css";
+import "./universes.css";
 import { I18nProvider } from "@/lib/i18n";
 import { ThemeProvider, type ThemeMode } from "@/components/theme-provider";
 import { SiteProvider } from "@/components/site-provider";
@@ -14,9 +15,7 @@ import { JsonLd } from "@/components/json-ld";
 import {
   googleSiteVerification,
   defaultMetaDescription,
-  localBusinessJsonLd,
   ogLocale,
-  offerCatalogJsonLd,
   organizationJsonLd,
   serpTitle,
   siteLocale,
@@ -149,15 +148,12 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
   const defaultPalette = resolveThemeId(appearance.themeId) ?? DEFAULT_THEME_ID;
 
   // Données structurées globales servies dans le HTML initial (sans JS requis) :
-  // Organization + WebSite + ProfessionalService (SEO local + avis) +
-  // catalogue d'offres tarifaires. Le schéma FAQPage n'est injecté que sur
-  // les pages qui affichent réellement <FAQ /> (/ et /pricing).
-  const structuredData = [
-    organizationJsonLd(config),
-    websiteJsonLd(config),
-    localBusinessJsonLd(config, content.testimonials),
-    offerCatalogJsonLd(config),
-  ];
+  // Organization (la marque mère) + WebSite. Le ProfessionalService et le
+  // catalogue des offres web sont émis par le layout public, uniquement hors
+  // boutique (voir UniverseShell) ; la boutique déclare son entité `Store`
+  // sur /codes. Le schéma FAQPage n'est injecté que sur les pages qui
+  // affichent réellement <FAQ /> (/ et /pricing).
+  const structuredData = [organizationJsonLd(config), websiteJsonLd(config)];
 
   return (
     <html
