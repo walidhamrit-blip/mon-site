@@ -115,23 +115,11 @@ function normalizeIp(ip: string): string {
   return segments.slice(0, 4).join(":") || ip;
 }
 
-/** Empreinte stable d'un UA (pour différencier deux clients derrière un NAT). */
-function userAgentFingerprint(headers: Headers): string {
-  const ua = headers.get("user-agent")?.trim() ?? "";
-  // Pas d'UA (bots, fetch server-side) : on marque `na` pour ne pas
-  // confondre plusieurs robots sans UA.
-  if (!ua) return "na";
-  // On ne garde que la « famille » + token majeur (pas de version
-  // complète : trop de bruit, fingerprint changeant à chaque update).
-  return ua.slice(0, 80);
-}
-
-/** Construit la clé complète du limiter. */
+/** Construit la clé complète du limiter (par IP normalisée uniquement). */
 function buildKey(prefix: string, headers: Headers): string {
   const ip = extractClientIp(headers);
-  const ua = userAgentFingerprint(headers);
   const net = ip ? normalizeIp(ip) : "unknown";
-  return `${prefix}:${net}:${ua}`;
+  return `${prefix}:${net}`;
 }
 
 /**

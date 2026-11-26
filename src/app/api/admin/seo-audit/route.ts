@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { requireAdmin } from "@/lib/auth";
+import { isAdminAuthenticated } from "@/lib/auth";
 import { getSiteDataCached } from "@/lib/store";
 import { runSeoAudit } from "@/lib/seo-audit";
 import { googleSiteVerification } from "@/lib/seo";
@@ -16,7 +16,9 @@ export const dynamic = "force-dynamic";
  * et contrôles techniques sont présents et cohérents.
  */
 export async function GET() {
-  await requireAdmin();
+  if (!(await isAdminAuthenticated())) {
+    return NextResponse.json({ ok: false, error: "unauthorized" }, { status: 401 });
+  }
   const { config, content } = await getSiteDataCached();
   const report = runSeoAudit(content, config, {
     openAiConfigured: Boolean(process.env.OPENAI_API_KEY?.trim()),

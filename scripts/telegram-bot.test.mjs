@@ -402,7 +402,7 @@ test("la bascule crypto → carte reprend la commande existante, sans jeton pas 
   // Authentification par jeton de suivi (empreinte) + refus strict si faux.
   assert.match(route, /trackingAccess\(/);
   assert.match(route, /"denied"/);
-  assert.match(route, /status: 403/);
+  assert.match(route, /status: 404/);
   // Une commande déjà payée ne rebascule jamais (retour au suivi).
   assert.match(route, /order\.status !== "pending"/);
   // Session carte en attente réutilisée (aucune nouvelle adresse mintée).
