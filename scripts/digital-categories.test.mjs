@@ -127,7 +127,8 @@ test("A07: discovery is wired into the store, product breadcrumbs and sitemap wi
   assert.doesNotMatch(storeView, /<DigitalCategoryNavigation ar=/);
   assert.match(storeView, /codes\?kind=/);
   assert.match(read("src/app/(site)/codes/category/[kind]/page.tsx"), /<DigitalCategoryNavigation ar=\{ar\} current=\{category\.kind\} \/>/);
-  assert.match(read("src/app/(site)/codes/page.tsx"), /storeCategories\.find/);
+  assert.match(read("src/app/(site)/codes/page.tsx"), /parseCatalogFilters\(params, \{/);
+  assert.match(read("src/lib/catalog-filters.ts"), /DIGITAL_KINDS/);
   assert.match(read("src/app/(site)/codes/[slug]/page.tsx"), /path: categoryHref\(category.kind\)/);
   const sitemap = read("src/app/sitemap.ts");
   assert.match(sitemap, /categorySitemapPaths\(catalog, digitalCatalogStatus\(\).degraded\)/);

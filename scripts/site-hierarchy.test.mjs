@@ -40,7 +40,10 @@ test("mobile menu puts commercial actions first and behaves as a modal dialog", 
 
 test("only supported supplier kinds are exposed as store facets", () => {
   assert.deepEqual(hierarchy.storeCategories.map((item) => item.kind), ["all", "gift_card", "software_key", "game_topup", "subscription_code"]);
-  assert.match(read("src/app/(site)/codes/page.tsx"), /storeCategories\.find/);
+  // La validation de `?kind=` vit dans le module partagé des filtres (même
+  // lecture côté serveur et client) ; la page l'applique à la requête.
+  assert.match(read("src/app/(site)/codes/page.tsx"), /parseCatalogFilters\(params, \{/);
+  assert.match(read("src/lib/catalog-filters.ts"), /DIGITAL_KINDS/);
 });
 
 test("home FAQ has one source for visible text and structured data", () => {
