@@ -217,6 +217,61 @@ test("marge : accepte une vente rentable, refuse marge faible, plafond et devise
   assert.equal(evaluateG2gMargin({ ...base, saleCurrency: "MYR" }).reason, "currency");
   assert.equal(evaluateG2gMargin({ ...base, unitPrice: 0 }).reason, "invalid");
   assert.equal(evaluateG2gMargin({ ...base, requestedQty: 0 }).reason, "invalid");
+
+  // Devises explicites + coût de conversion intégralement déduit après commission G2G.
+  const eur = evaluateG2gMargin({
+    unitPrice: 10,
+    saleCurrency: "EUR",
+    offerCurrency: "EUR",
+    conversionRateUsd: 1.08,
+    conversionCostUsd: 0.5,
+    costUsd: 5,
+    feePercent: 10,
+    minMarginPercent: 12,
+    maxCostUsd: 25,
+    requestedQty: 1,
+  });
+  assert.equal(eur.ok, true);
+  assert.equal(eur.netRevenueUsd, 9.22);
+  assert.equal(eur.netMarginPercent, 45.77);
+
+  // Discordance de devise ou taux USD ≠ 1 refusés.
+  assert.equal(
+    evaluateG2gMargin({ ...base, saleCurrency: "USD", offerCurrency: "EUR" }).reason,
+    "currency",
+  );
+  assert.equal(
+    evaluateG2gMargin({ ...base, saleCurrency: "USD", conversionRateUsd: 1.08 }).reason,
+    "currency",
+  );
+
+  // Sensibilité offre pilote à 1 USD / coût 0,49 USD : un coût fixe/conversion élevé bloque l'achat.
+  const pilotOptimistic = evaluateG2gMargin({
+    unitPrice: 1,
+    saleCurrency: "USD",
+    costUsd: 0.49,
+    feePercent: 5,
+    conversionCostUsd: 0,
+    minMarginPercent: 12,
+    maxCostUsd: 25,
+    requestedQty: 1,
+  });
+  assert.equal(pilotOptimistic.ok, true);
+  assert.equal(pilotOptimistic.netRevenueUsd, 0.95);
+  assert.equal(pilotOptimistic.netMarginPercent, 48.42);
+
+  const pilotErodedByFixedFee = evaluateG2gMargin({
+    unitPrice: 1,
+    saleCurrency: "USD",
+    costUsd: 0.49,
+    feePercent: 9.5,
+    conversionCostUsd: 0.35,
+    minMarginPercent: 12,
+    maxCostUsd: 25,
+    requestedQty: 1,
+  });
+  assert.equal(pilotErodedByFixedFee.ok, false);
+  assert.equal(pilotErodedByFixedFee.reason, "margin");
 });
 
 /* -------------------------------- Câblage -------------------------------- */

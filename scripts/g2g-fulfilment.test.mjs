@@ -195,10 +195,13 @@ test("le coût fournisseur ne quitte jamais le serveur", () => {
   const start = route.lastIndexOf("return noStoreJson({");
   assert.ok(start > 0, "bloc de réponse introuvable");
   const responseBlock = route.slice(start);
-  assert.doesNotMatch(responseBlock, /supplier/i);
+  assert.doesNotMatch(responseBlock, /supplier|conversionCost/i);
   // …en revanche il doit rester visible pour l'admin (logs + Telegram).
   assert.match(route, /cout=\$\{plan\.supplierCostUsd\}/);
   assert.match(route, /coût \$\{plan\.supplierCostUsd\}/);
+  // …et le webhook passe bien le taux et le coût de conversion du mapping au moteur.
+  assert.match(route, /conversionRateUsd: Number\(mapping\.conversionRateUsd/);
+  assert.match(route, /conversionCostUsd: Number\(mapping\.conversionCostUsd/);
 });
 
 test("la clé d'idempotence est déterministe et bornée", () => {

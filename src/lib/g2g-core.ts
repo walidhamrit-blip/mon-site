@@ -356,10 +356,16 @@ export function parseG2gDeliveryEvent(value: unknown): G2gEventParseResult {
 /* ------------------------------ Garde-fou de marge ------------------------------ */
 
 export interface G2gMarginInput {
-  /** Prix de vente unitaire affiché sur l'offre G2G. */
+  /** Prix de vente unitaire affiché sur l'offre G2G (dans `saleCurrency`). */
   unitPrice: number;
-  /** Devise de l'offre G2G. Seul USD est accepté en automatique. */
+  /** Devise déclarée dans la correspondance (ex. USD, EUR). */
   saleCurrency: string;
+  /** Devise réellement lue sur l'offre G2G (doit correspondre à `saleCurrency`). */
+  offerCurrency?: string;
+  /** Taux explicite : 1 unité de `saleCurrency` = X USD (obligatoire hors USD, 1 pour USD). */
+  conversionRateUsd?: number;
+  /** Coût forfaitaire de conversion / retrait en USD par livraison (défaut 0). */
+  conversionCostUsd?: number;
   /** Coût fournisseur (FazerCards) par unité, en USD. */
   costUsd: number;
   /** Commission G2G + frais de retrait estimés, en pourcentage. */
@@ -381,8 +387,10 @@ export type G2gMarginVerdict = {
 
 /**
  * Refuse par défaut (`fail-closed`) toute livraison automatique dont la
- * rentabilité n'est pas démontrable. Pas de conversion de devise : une offre
- * libellée dans une autre devise que USD passe en traitement manuel.
+ * rentabilité n'est pas démontrable. Hors USD, un taux `conversionRateUsd`
+ * explicite et la concordance `offerCurrency === saleCurrency` sont exigés ;
+ * les coûts de conversion (`conversionCostUsd`) sont intégralement déduits
+ * du revenu net après commission G2G.
  */
 export function evaluateG2gMargin(input: G2gMarginInput): G2gMarginVerdict {
   const empty: G2gMarginVerdict = {
@@ -394,22 +402,43 @@ export function evaluateG2gMargin(input: G2gMarginInput): G2gMarginVerdict {
   };
 
   const { unitPrice, costUsd, feePercent, minMarginPercent, maxCostUsd, requestedQty } = input;
+  const conversionCostUsd = input.conversionCostUsd ?? 0;
   if (
     !Number.isFinite(unitPrice) || unitPrice <= 0 ||
     !Number.isFinite(costUsd) || costUsd <= 0 ||
     !Number.isFinite(feePercent) || feePercent < 0 || feePercent >= 100 ||
     !Number.isFinite(minMarginPercent) || minMarginPercent < 0 ||
     !Number.isFinite(maxCostUsd) || maxCostUsd <= 0 ||
+    !Number.isFinite(conversionCostUsd) || conversionCostUsd < 0 ||
     !Number.isInteger(requestedQty) || requestedQty < 1 ||
     requestedQty > G2G_MAX_DELIVERY_QTY
   ) {
     return empty;
   }
-  if (input.saleCurrency.trim().toUpperCase() !== "USD") {
+
+  const saleCurrency = (input.saleCurrency ?? "").trim().toUpperCase();
+  const offerCurrency = (input.offerCurrency ?? input.saleCurrency ?? "").trim().toUpperCase();
+  if (
+    !/^[A-Z]{3}$/.test(saleCurrency) ||
+    !/^[A-Z]{3}$/.test(offerCurrency) ||
+    offerCurrency !== saleCurrency
+  ) {
+    return { ...empty, reason: "currency" };
+  }
+  if (saleCurrency !== "USD" && input.conversionRateUsd === undefined) {
+    return { ...empty, reason: "currency" };
+  }
+  const conversionRateUsd = input.conversionRateUsd ?? 1;
+  if (
+    !Number.isFinite(conversionRateUsd) ||
+    conversionRateUsd <= 0 ||
+    (saleCurrency === "USD" && conversionRateUsd !== 1)
+  ) {
     return { ...empty, reason: "currency" };
   }
 
-  const netRevenueUsd = unitPrice * requestedQty * (1 - feePercent / 100);
+  const grossRevenueUsd = unitPrice * conversionRateUsd * requestedQty;
+  const netRevenueUsd = grossRevenueUsd * (1 - feePercent / 100) - conversionCostUsd;
   const totalCostUsd = costUsd * requestedQty;
   const netMarginPercent = netRevenueUsd > 0
     ? ((netRevenueUsd - totalCostUsd) / netRevenueUsd) * 100
@@ -423,7 +452,7 @@ export function evaluateG2gMargin(input: G2gMarginInput): G2gMarginVerdict {
   };
 
   if (totalCostUsd > maxCostUsd) return { ...verdict, ok: false, reason: "cap" };
-  if (netMarginPercent < minMarginPercent) {
+  if (netRevenueUsd <= 0 || netMarginPercent < minMarginPercent) {
     return { ...verdict, ok: false, reason: "margin" };
   }
   return verdict;

@@ -91,10 +91,31 @@ export async function evaluateOfferStockPrice(
     return { kind: "skipped", reason: `Offre G2G ${offerId} introuvable.` };
   }
 
-  // Multi-devises : on convertit le prix de vente G2G en USD avant le calcul
-  // de marge, en utilisant le taux et le coût de conversion du mapping.
-  const conversionRate = Number(mapping.conversionRateUsd ?? 1) || 1;
-  const conversionCost = Number(mapping.conversionCostUsd ?? 0) || 0;
+  // Multi-devises : on vérifie que la devise de l'offre G2G correspond à celle
+  // du mapping, puis on applique le taux et le coût de conversion dans le
+  // calcul de marge (coût forfaitaire déduit après commission G2G).
+  const conversionRate = Number(mapping.conversionRateUsd ?? 1);
+  const conversionCost = Number(mapping.conversionCostUsd ?? 0);
+  const expectedCurrency = (mapping.saleCurrency ?? "").trim().toUpperCase();
+  const actualCurrency = (offer.currency ?? "").trim().toUpperCase();
+  if (!expectedCurrency || actualCurrency !== expectedCurrency) {
+    return {
+      kind: "skipped",
+      reason: `Devise G2G (${offer.currency ?? "?"}) différente du mapping (${mapping.saleCurrency}).`,
+    };
+  }
+  if (
+    !Number.isFinite(conversionRate) ||
+    conversionRate <= 0 ||
+    (expectedCurrency === "USD" && conversionRate !== 1) ||
+    !Number.isFinite(conversionCost) ||
+    conversionCost < 0
+  ) {
+    return {
+      kind: "skipped",
+      reason: "Paramètres de conversion de devise invalides sur le mapping.",
+    };
+  }
 
   // Le format de code attendu doit être connu.
   if (!offer.code_label) {
@@ -135,13 +156,13 @@ export async function evaluateOfferStockPrice(
     };
   }
 
-  // 3. Convertir le prix de vente G2G en USD (taux + coût forfaitaire).
+  // 3. Convertir le prix de vente G2G en USD et inclure les coûts de conversion.
   const offerUnitPrice = Number(offer.unit_price ?? 0);
-  const offerPriceUsd = offerUnitPrice * conversionRate - conversionCost;
-  if (!Number.isFinite(offerPriceUsd) || offerPriceUsd <= 0) {
+  const offerPriceUsd = offerUnitPrice * conversionRate;
+  if (!Number.isFinite(offerPriceUsd) || offerPriceUsd - conversionCost <= 0) {
     return {
       kind: "skipped",
-      reason: `Prix de vente après conversion invalide : ${offerUnitPrice} ${offer.currency ?? "?"} × ${conversionRate} − ${conversionCost} $ = ${offerPriceUsd} $.`,
+      reason: `Prix de vente après conversion invalide : ${offerUnitPrice} ${offer.currency ?? "?"} × ${conversionRate} − ${conversionCost} $ ≤ 0 $.`,
     };
   }
 
@@ -150,12 +171,14 @@ export async function evaluateOfferStockPrice(
     mappingEnabled: true,
     autoDeliveryEnabled: true, // calcul hypothétique : on veut juste connaître la marge
     feePercent,
-    offerUnitPrice: offerPriceUsd,
-    offerCurrency: "USD", // déjà converti au-dessus
+    offerUnitPrice,
+    offerCurrency: actualCurrency,
     offerDeliveryType: offer.delivery_type ?? null,
     offerCodeLabel: offer.code_label ?? null,
     supplierCostUsd: Number(mapping.supplierPriceUsd ?? 0) || 0,
-    saleCurrency: "USD", // déjà converti au-dessus
+    saleCurrency: expectedCurrency,
+    conversionRateUsd: conversionRate,
+    conversionCostUsd: conversionCost,
     minMarginPercent,
     maxCostUsd,
     requestedQty: 1,

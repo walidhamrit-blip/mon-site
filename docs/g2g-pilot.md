@@ -598,7 +598,8 @@ Références : [Authentication Intro](https://docs.g2g.com/authentication-intro-
 ## Sécurité stock pendant le pilote
 
 Configurer `G2G_PILOT_OFFER_ID` avec l'identifiant de l'unique offre pilote
-(par exemple `G1795076410074VF`) avant toute activation manuelle. Sans cette
+(actuellement candidate : `G1795521210943KM` ; l'ancienne offre `G1795076410074VF`
+est retirée, irrécupérable et bloquée en code) avant toute activation manuelle. Sans cette
 configuration, aucune activation depuis l'admin n'est possible. La quantité
 manuelle est limitée à 0 ou 1 ; 0 reste possible pour toute offre.
 
