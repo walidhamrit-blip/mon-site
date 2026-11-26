@@ -390,6 +390,20 @@ export async function publishTelegramCommands(
   return telegramApi("setMyCommands", { commands });
 }
 
+/**
+ * Bouton menu ☰ du bot (à gauche du champ de saisie) → Mini App `/tg`.
+ * Appliqué à tous les chats privés (pas de `chat_id`). Sans URL HTTPS,
+ * Telegram refuserait : on renvoie une erreur lisible sans appeler l'API.
+ */
+export async function publishTelegramMenuButton(
+  menuButton: { type: "web_app"; text: string; web_app: { url: string } } | null,
+): Promise<TelegramApiResult> {
+  if (!menuButton) {
+    return { ok: false, error: "URL du site non HTTPS : la Mini App exige HTTPS." };
+  }
+  return telegramApi("setChatMenuButton", { menu_button: menuButton });
+}
+
 /** Message de test depuis l'admin — prouve que le jeton et le chat marchent. */
 export async function sendTelegramTest(siteName: string): Promise<TelegramApiResult> {
   if (!telegramConfigured()) {

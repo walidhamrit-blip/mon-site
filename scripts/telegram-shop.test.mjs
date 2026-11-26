@@ -857,3 +857,15 @@ test("annulation texte, masquage d'e-mail et normalisation WhatsApp", () => {
   assert.equal(shopWhatsappUrl(""), null);
 });
 
+/* ------------------------- Mini App (vitrine photos) ---------------------- */
+
+test("/shop propose « parcourir avec photos » en tête des catégories", () => {
+  const links = { site: "https://nokhba.net.ly", store: "https://nokhba.net.ly/codes" };
+  const ar = shopCategoriesView([], "ar", links);
+  assert.deepEqual(ar.keyboard[0][0].web_app, { url: "https://nokhba.net.ly/tg?lang=ar" });
+  const en = shopCategoriesView([], "en", links);
+  assert.deepEqual(en.keyboard[0][0].web_app, { url: "https://nokhba.net.ly/tg?lang=en" });
+  assert.ok(en.keyboard.flat().some((button) => button.callback_data === "menu:home"));
+  const local = shopCategoriesView([], "en", { site: "http://localhost:3000", store: "" });
+  assert.ok(local.keyboard.flat().every((button) => !button.web_app));
+});

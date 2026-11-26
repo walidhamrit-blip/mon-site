@@ -195,6 +195,31 @@ Garde-fous :
 - il ne répond que dans les **conversations privées** ; les groupes servent
   uniquement aux alertes internes.
 
+### La vitrine en images (Mini App `/tg`)
+
+Une **Mini App Telegram** affiche le vrai catalogue du site sous forme de
+vitrine visuelle : 4 familles illustrées (cartes cadeaux, recharges de jeux,
+clés de jeux & logiciels, codes d'abonnement), filtres par marque, recherche,
+grille de jaquettes avec prix « à partir de ». Elle suit la langue (`?lang=ar|en`,
+arabe RTL par défaut) et le thème clair/sombre de Telegram.
+
+- **Accès** : bouton « 🛍️ افتح المتجر / Open the store » en tête du menu
+  principal, bouton « 🖼️ تصفّح المتجر بالصور » en tête de `/shop`, et le
+  **bouton ☰ du champ de saisie** (« 🛍️ المتجر · Store »), publié via
+  `setChatMenuButton` à chaque **Installer le webhook** du panneau admin.
+- **Achat** : un produit ouvre sa fiche `/codes/<slug>` (avec
+  `utm_source=telegram&utm_medium=mini_app`) : prix, champs joueur et
+  paiement restent ceux du site — aucune logique de caisse dupliquée.
+- **Prérequis** : `NEXT_PUBLIC_SITE_URL` en **HTTPS** (exigence Telegram).
+  Sans HTTPS, les boutons Mini App ne sont simplement pas affichés.
+- **Alternative manuelle** : @BotFather → `/mybots` → bot → *Bot Settings* →
+  *Menu Button* → URL `https://nokhba.net.ly/tg`.
+- Visuels des familles : `public/telegram-mini-app/*.webp`.
+
+> **ar —** واجهة متجر مصوّرة داخل تيليجرام على الرابط `/tg`: الفئات بالصور،
+> البحث، والعلامات التجارية. الضغط على منتج يفتح صفحته في الموقع لإتمام الدفع.
+> تُفتح من زر « افتح المتجر » أو من زر القائمة ☰ بجانب خانة الكتابة.
+
 ### Lien à partager
 
 `https://t.me/<bot>?start=site`
@@ -345,6 +370,11 @@ Journal serveur : filtre `[telegram]` dans les logs Vercel.
 - **Pas d'HTML injecté** : tout texte dynamique est échappé ; les campagnes
   partent en texte brut.
 
+- **Mini App `/tg` isolée** : seule cette route autorise le SDK
+  `https://telegram.org` (`script-src`) et l'intégration par
+  `web.telegram.org` (`frame-ancestors`, sans `X-Frame-Options`). Le reste du
+  site garde sa politique inchangée ; la page est `noindex`.
+
 ---
 
 ## 10. Fichiers concernés
@@ -363,3 +393,6 @@ Journal serveur : filtre `[telegram]` dans les logs Vercel.
 | `scripts/telegram-setup.mjs` | Diagnostic / installation en ligne de commande |
 | `scripts/telegram-bot.test.mjs` | Tests du noyau (aucun réseau) |
 | `scripts/telegram-shop.test.mjs` | Tests de la boutique inline (aucun réseau) |
+| `src/lib/telegram-mini-app-core.ts` | Mini App (pur) : catalogue/catégories, filtres, CSP de `/tg` |
+| `src/app/tg/` | Mini App Telegram (page serveur + composant client + styles) |
+| `scripts/telegram-mini-app.test.mjs` | Tests Mini App : catalogue, CSP, boutons `web_app` |

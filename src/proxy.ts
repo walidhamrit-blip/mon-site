@@ -6,6 +6,7 @@ import {
   isLocalizablePath,
   localeFromQuery,
 } from "@/lib/locale";
+import { isTelegramMiniAppPath } from "@/lib/telegram-mini-app-core";
 
 /**
  * Proxy de sécurité (convention Next.js 16, ex-« middleware ») : applique
@@ -74,7 +75,10 @@ export function proxy(request: NextRequest) {
     "max-age=31536000; includeSubDomains",
   );
   response.headers.set("X-Content-Type-Options", "nosniff");
-  if (process.env.VERCEL_ENV === "production") {
+  // La Mini App Telegram (`/tg`) est embarquée par web.telegram.org : sa CSP
+  // `frame-ancestors` (next.config.ts) remplace X-Frame-Options sur cette
+  // seule route. Partout ailleurs, l'anti-clickjacking reste SAMEORIGIN.
+  if (process.env.VERCEL_ENV === "production" && !isTelegramMiniAppPath(pathname)) {
     response.headers.set("X-Frame-Options", "SAMEORIGIN");
   }
   response.headers.set("Referrer-Policy", "strict-origin-when-cross-origin");

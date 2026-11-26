@@ -830,6 +830,8 @@ export interface ShopButton {
   text: string;
   url?: string;
   callback_data?: string;
+  /** Ouvre la Mini App (vitrine avec photos) — conversations privées uniquement. */
+  web_app?: { url: string };
 }
 
 export type ShopKeyboard = ShopButton[][];
@@ -846,11 +848,21 @@ export type ShopCatalogInput = readonly ShopProduct[];
 export function shopCategoriesView(
   catalog: ShopCatalogInput,
   locale: ShopLocale,
-  _links: ShopLinks,
+  links: ShopLinks,
 ): ShopView {
-  void _links;
   const copy = shopCopy(locale);
   const keyboard: ShopKeyboard = [];
+  // Raccourci vers la vitrine visuelle (photos des catégories, jaquettes) :
+  // le clavier inline reste texte, la Mini App `/tg` montre les images.
+  const site = links.site.trim().replace(/\/+$/, "");
+  if (/^https:\/\//i.test(site)) {
+    keyboard.push([
+      {
+        text: locale === "ar" ? "🖼️ تصفّح المتجر بالصور" : "🖼️ Browse the store with photos",
+        web_app: { url: `${site}/tg?lang=${locale === "ar" ? "ar" : "en"}` },
+      },
+    ]);
+  }
   const rows: ShopButton[] = [];
   for (const category of digitalCategories) {
     const count = shopProductsOfKind(catalog, category.kind).length;
