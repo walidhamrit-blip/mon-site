@@ -28,9 +28,14 @@ const SRC = read("src/lib/g2g-delivery.ts");
 const WEBHOOK = read("src/app/api/webhooks/g2g/route.ts");
 const CRON = read("src/app/api/cron/g2g-delivery/route.ts");
 
-test("un format inconnu exige une livraison manuelle", () => {
+test("aucune extraction heuristique et g2gDeliverCodes verrouillé derrière les 3 garde-fous", () => {
   assert.match(SRC, /kind: "manual_review"/);
-  assert.doesNotMatch(SRC, /extractCodesFromPayload|g2gDeliverCodes\(/);
+  assert.doesNotMatch(SRC, /extractCodesFromPayload/);
+  const gate1 = SRC.indexOf("if (!automaticDeliveryVerified())");
+  const gate2 = SRC.indexOf("if (!g2gAutoDeliveryEnabled(process.env.G2G_AUTO_DELIVERY))");
+  const gate3 = SRC.indexOf("configuredPilot !== PILOT_CANDIDATE_OFFER_ID");
+  const deliverAt = SRC.lastIndexOf("g2gDeliverCodes(");
+  assert.ok(gate1 > 0 && gate2 > gate1 && gate3 > gate2 && deliverAt > gate3);
 });
 
 test("la prise de possession est atomique et inclut le bail de reprise", () => {

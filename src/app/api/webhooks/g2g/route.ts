@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { eq } from "drizzle-orm";
-import { db, ensureSchema } from "@/db";
+import { db, ensureSchema, pool } from "@/db";
 import { g2gDeliveries, g2gOfferMappings, webhookEvents, type G2gOfferMapping } from "@/db/schema";
+import { parseG2gExpiresAt } from "@/lib/g2g-dispatch-intent";
 import {
   applyKillSwitch,
   g2gAutoDeliveryEnabled,
@@ -24,7 +25,13 @@ import { payloadHash, settleWebhookEvent } from "@/lib/delivery-queue";
 import { webhookEventKey } from "@/lib/delivery-queue-core";
 import { purchaseG2gDelivery, type G2gPurchaseOutcome } from "@/lib/g2g-purchase";
 import { fazercardsGiftCardCards } from "@/lib/fazercards";
-import { automaticDeliveryVerified, isSyntheticDelivery } from "@/lib/g2g-pilot";
+import {
+  PILOT_CANDIDATE_OFFER_ID,
+  automaticDeliveryVerified,
+  isRetiredG2gOffer,
+  isSyntheticDelivery,
+  pilotOfferId,
+} from "@/lib/g2g-pilot";
 import { notifyTelegramAdmin } from "@/lib/telegram";
 
 /**
@@ -265,15 +272,22 @@ export async function POST(req: Request) {
     `[g2g][webhook] order.api_delivery order=${event.orderId} offer=${event.offerId} delivery=${event.deliveryId} qty=${event.requestedQty} mapping=${mappingFound ? (mappingEnabled ? "enabled" : "disabled") : "absent"} decision=${decision}${plan ? ` hypothetique=${plan.decision}` : ""}${plan ? ` prix=${plan.unitPrice} cout=${plan.supplierCostUsd} commission=${plan.feePercent}% net=${plan.netRevenueUsd} marge=${plan.netMarginPercent}%` : ""}${offerUnreadable ? ` offer_illisible=1` : ""} coupe_circuit=${autoDeliveryEnabled ? "on" : "off"} achat=aucun`,
   );
 
+  const eligibleForAutoPurchase =
+    decision === "proceed" && !isSyntheticTest && automaticDeliveryVerified();
+
   try {
     await db.update(g2gDeliveries).set({
       decision,
-      status: offerUnreadable ? "failed" : "skipped",
+      status: offerUnreadable ? "failed" : eligibleForAutoPurchase ? "planned" : "skipped",
       unitPriceUsd: plan && plan.unitPrice > 0 ? String(plan.unitPrice) : null,
       supplierCostUsd: plan && plan.supplierCostUsd > 0 ? String(plan.supplierCostUsd) : null,
       netMarginPercent: plan ? String(plan.netMarginPercent) : null,
       detail: offerUnreadable ? `Offre G2G illisible : ${offerUnreadable}` :
-        plan ? `${plan.summary} — livraison automatique non vérifiée : intervention manuelle.` : decision,
+        plan
+          ? eligibleForAutoPurchase
+            ? `${plan.summary} — contrôle d'échéance et achat pilote en cours.`
+            : `${plan.summary} — livraison automatique non vérifiée : intervention manuelle.`
+          : decision,
       updatedAt: new Date(),
     }).where(eq(g2gDeliveries.deliveryId, event.deliveryId));
   } catch (error) {
@@ -294,29 +308,72 @@ export async function POST(req: Request) {
    */
   let purchase: G2gPurchaseOutcome | null = null;
   if (decision === "proceed" && !isSyntheticTest && automaticDeliveryVerified()) {
-    try {
-      purchase = await purchaseG2gDelivery({
-        deliveryId: event.deliveryId,
-        orderId: event.orderId,
-        offerId: event.offerId,
-        requestedQty: event.requestedQty,
-        categoryId: mapping?.categoryId,
-        cardId: mapping?.supplierSkuId,
-        plan,
-        autoDeliveryEnabled,
-      });
-      console.info(
-        `[g2g][webhook] achat delivery=${event.deliveryId} issue=${purchase.outcome}${
-          purchase.outcome === "purchased" ? ` ref=${purchase.supplierOrderRef}` : ""
-        }`,
-      );
-    } catch (error) {
-      // Ne jamais propager : l'événement a été reçu et tracé. Mieux vaut
-      // une alerte qu'un 503 qui ferait rejouer G2G sans fin.
-      console.error(
-        "[g2g][webhook] achat impossible :",
-        error instanceof Error ? error.message : error,
-      );
+    const normalizedOffer = event.offerId.trim().toUpperCase();
+    const configuredPilot = pilotOfferId(process.env.G2G_PILOT_OFFER_ID);
+    const parsedExpiresAt = parseG2gExpiresAt(event.expiredAt);
+    const pilotScopeValid =
+      configuredPilot === PILOT_CANDIDATE_OFFER_ID &&
+      !isRetiredG2gOffer(normalizedOffer) &&
+      normalizedOffer === PILOT_CANDIDATE_OFFER_ID &&
+      event.requestedQty === 1;
+    const deadlineValid =
+      parsedExpiresAt !== null && parsedExpiresAt.getTime() > Date.now() + 15_000;
+
+    if (!pilotScopeValid || !deadlineValid) {
+      const guardReason = !pilotScopeValid
+        ? "Achat refusé : commande hors périmètre strict du pilote unique."
+        : "Achat refusé : échéance G2G absente ou trop proche.";
+      purchase = { outcome: "not_eligible", reason: guardReason };
+      await db
+        .update(g2gDeliveries)
+        .set({
+          status: "skipped",
+          nextAttemptAt: null,
+          detail: guardReason,
+          updatedAt: new Date(),
+        })
+        .where(eq(g2gDeliveries.deliveryId, event.deliveryId))
+        .catch(() => {});
+    } else {
+      try {
+        // Persistance obligatoire de l'échéance G2G AVANT tout achat fournisseur.
+        // Si la migration SQL n'a pas été appliquée, cet UPDATE échoue et aucun achat n'est lancé.
+        await pool.query(
+          "UPDATE g2g_deliveries SET expires_at = $1 WHERE delivery_id = $2",
+          [parsedExpiresAt, event.deliveryId],
+        );
+        purchase = await purchaseG2gDelivery({
+          deliveryId: event.deliveryId,
+          orderId: event.orderId,
+          offerId: event.offerId,
+          requestedQty: event.requestedQty,
+          categoryId: mapping?.categoryId,
+          cardId: mapping?.supplierSkuId,
+          plan,
+          autoDeliveryEnabled,
+        });
+        console.info(
+          `[g2g][webhook] achat delivery=${event.deliveryId} issue=${purchase.outcome}${
+            purchase.outcome === "purchased" ? ` ref=${purchase.supplierOrderRef}` : ""
+          }`,
+        );
+      } catch (error) {
+        // Ne jamais propager : l'événement a été reçu et tracé. Mieux vaut
+        // une alerte qu'un 503 qui ferait rejouer G2G sans fin.
+        const errMsg = error instanceof Error ? error.message : String(error);
+        console.error("[g2g][webhook] achat impossible :", errMsg);
+        purchase = { outcome: "failed", reason: "Persistance d'échéance ou achat impossible." };
+        await db
+          .update(g2gDeliveries)
+          .set({
+            status: "failed",
+            nextAttemptAt: null,
+            detail: "Achat bloqué avant dépense (échéance non persistée ou erreur interne).",
+            updatedAt: new Date(),
+          })
+          .where(eq(g2gDeliveries.deliveryId, event.deliveryId))
+          .catch(() => {});
+      }
     }
   }
 

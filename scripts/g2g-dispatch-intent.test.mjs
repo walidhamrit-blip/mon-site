@@ -62,8 +62,11 @@ test("règles d'appelants strictes sur g2gPatchOffer et g2gDeliverCodes dans tou
     }
   }
 
-  // Tant que la livraison automatique n'est pas raccordée, même g2g-delivery.ts n'appelle pas g2gDeliverCodes.
-  assert.doesNotMatch(read("src/lib/g2g-delivery.ts"), /g2gDeliverCodes\s*\(/);
+  // Dans g2g-delivery.ts, g2gDeliverCodes est strictement en aval de automaticDeliveryVerified() === false.
+  const deliverySrc = read("src/lib/g2g-delivery.ts");
+  const verifiedGate = deliverySrc.indexOf("if (!automaticDeliveryVerified())");
+  const deliverCall = deliverySrc.lastIndexOf("g2gDeliverCodes(");
+  assert.ok(verifiedGate > 0 && deliverCall > verifiedGate);
 
   // L'ancien PATCH /api/admin/g2g répond 405 et renvoie vers /api/admin/g2g/offer-qty.
   const adminRoute = read("src/app/api/admin/g2g/route.ts");
@@ -100,7 +103,10 @@ test("brouillon SQL durable : complet, sans code ni secret, et non exécuté en 
   // Non exécuté automatiquement en production sans accord explicite.
   const dbIndex = read("src/db/index.ts");
   assert.doesNotMatch(dbIndex, /g2g_dispatch_intents/);
-  assert.doesNotMatch(read("src/lib/g2g-delivery.ts"), /g2g-dispatch-intent/);
+  const deliverySrc = read("src/lib/g2g-delivery.ts");
+  const gateIdx = deliverySrc.indexOf("if (!automaticDeliveryVerified())");
+  const readIdx = deliverySrc.indexOf("readDispatchIntent(");
+  assert.ok(gateIdx > 0 && readIdx > gateIdx);
 });
 
 test("parseG2gExpiresAt : refuse 0, valeurs négatives ou invalides", () => {

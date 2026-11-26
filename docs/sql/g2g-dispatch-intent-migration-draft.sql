@@ -23,7 +23,10 @@ ALTER TABLE g2g_deliveries
 CREATE TABLE IF NOT EXISTS g2g_dispatch_intents (
   order_id text NOT NULL CHECK (length(btrim(order_id)) BETWEEN 1 AND 128),
   delivery_id text NOT NULL UNIQUE CHECK (length(btrim(delivery_id)) BETWEEN 1 AND 128),
-  offer_id text NOT NULL CHECK (length(btrim(offer_id)) BETWEEN 1 AND 64),
+  offer_id text NOT NULL CHECK (
+    length(btrim(offer_id)) BETWEEN 1 AND 64
+    AND upper(btrim(offer_id)) <> 'G1795076410074VF'
+  ),
   supplier_order_id text NOT NULL CHECK (length(btrim(supplier_order_id)) BETWEEN 1 AND 128),
   quantity integer NOT NULL CHECK (quantity BETWEEN 1 AND 100),
   reference_id text NOT NULL UNIQUE CHECK (length(btrim(reference_id)) BETWEEN 16 AND 128),
