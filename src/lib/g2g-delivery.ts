@@ -1,14 +1,33 @@
 /**
- * Surveillance des livraisons G2G : la livraison automatique reste bloquée
- * tant que le format fournisseur n'est pas vérifié. Les commandes achetées
- * ou au résultat incertain sont orientées vers une intervention humaine.
- * Aucun code produit n'est lu, journalisé ou envoyé par cette version.
+ * File de livraison G2G : le raccordement du pilote unique (`G1795521210943KM`)
+ * est préparé derrière un triple verrou (`automaticDeliveryVerified() === false`,
+ * `G2G_AUTO_DELIVERY === "1"` et `G2G_PILOT_OFFER_ID === "G1795521210943KM"`).
+ * Tant que ces trois verrous ne sont pas explicitement levés après validation,
+ * aucun code fournisseur n'est lu ni transmis et toute commande passe en revue
+ * manuelle. Aucun code produit n'est jamais journalisé ni stocké.
  */
 
 import { and, eq, inArray, lte, or, sql } from "drizzle-orm";
 
-import { db, ensureSchema } from "@/db";
+import { db, ensureSchema, pool } from "@/db";
 import { g2gDeliveries, type G2gDelivery } from "@/db/schema";
+import { fazercardsOrder } from "@/lib/fazercards";
+import { g2gDeliverCodes, g2gGetDeliveryStatus } from "@/lib/g2g";
+import {
+  readDispatchIntent,
+  reserveDispatchIntentCommitted,
+  transitionDispatchIntentState,
+  type SqlRow,
+} from "@/lib/g2g-dispatch-intent";
+import { g2gAutoDeliveryEnabled } from "@/lib/g2g-fulfilment-core";
+import {
+  PILOT_CANDIDATE_OFFER_ID,
+  automaticDeliveryVerified,
+  isRetiredG2gOffer,
+  isSyntheticDelivery,
+  pilotOfferId,
+} from "@/lib/g2g-pilot";
+import { runPilotDeliveryAttempt } from "@/lib/g2g-pilot-delivery-orchestrator";
 import { notifyTelegramAdmin } from "@/lib/telegram";
 
 /** Nombre max de tentatives de livraison avant escalade humaine. */
@@ -31,9 +50,31 @@ const G2G_DELIVERY_LEASE_MS = 5 * 60 * 1000; // 5 min
 export type G2gDeliveryResult =
   | { kind: "delivered"; codes: number }
   | { kind: "awaiting_codes"; reason: string }
+  | { kind: "awaiting_confirmation"; reason: string }
   | { kind: "no_order_ref" }
   | { kind: "manual_review"; reason: string }
   | { kind: "failed"; reason: string };
+
+/** Marge de sécurité (5 s) soustraite à l'échéance G2G avant tout envoi réel. */
+const G2G_DISPATCH_SAFETY_BUFFER_MS = 5_000;
+
+const poolExecutor = {
+  async query(queryText: string, params: unknown[]): Promise<{ rows: SqlRow[] }> {
+    const res = await pool.query(queryText, params);
+    return { rows: res.rows as SqlRow[] };
+  },
+};
+
+async function readDeliveryExpiresAt(deliveryRowId: number): Promise<Date | null> {
+  const res = await pool.query<{ expires_at: Date | string | null }>(
+    "SELECT expires_at FROM g2g_deliveries WHERE id = $1",
+    [deliveryRowId],
+  );
+  const raw = res.rows[0]?.expires_at;
+  if (!raw) return null;
+  const date = raw instanceof Date ? raw : new Date(raw);
+  return Number.isFinite(date.getTime()) ? date : null;
+}
 
 /** Délai avant la prochaine tentative, avec backoff borné. */
 function nextDeliveryDelayMs(attempts: number): number {
@@ -42,8 +83,11 @@ function nextDeliveryDelayMs(attempts: number): number {
 }
 
 /**
- * Évalue une livraison : sans format fournisseur vérifié, ne rien livrer
- * automatiquement et demander un rapprochement ou une livraison manuelle.
+ * Évalue et exécute (uniquement si tous les garde-fous sont ouverts) une
+ * livraison du pilote unique :
+ * 1. `automaticDeliveryVerified()` reste `false` jusqu'à validation complète ;
+ * 2. `G2G_AUTO_DELIVERY` doit valoir exactement `"1"` ;
+ * 3. seule l'offre pilote `G1795521210943KM` en quantité `1` est autorisée.
  */
 export async function attemptG2gDelivery(
   delivery: G2gDelivery,
@@ -53,9 +97,92 @@ export async function attemptG2gDelivery(
     return { kind: "no_order_ref" };
   }
 
-  // Le schéma exact du code fournisseur n'est pas vérifié. Ne jamais
-  // deviner ni transmettre une chaîne arbitraire : intervention humaine.
-  return { kind: "manual_review", reason: "Format des codes fournisseur non vérifié : livraison manuelle requise." };
+  // Verrou 1 (code) : bloque tout accès à g2g_dispatch_intents, FazerCards et G2G
+  // tant que la migration et le pilote n'ont pas été validés et approuvés.
+  if (!automaticDeliveryVerified()) {
+    return {
+      kind: "manual_review",
+      reason: "Livraison automatique verrouillée (automaticDeliveryVerified = false) : intervention manuelle requise.",
+    };
+  }
+
+  // Verrou 2 (coupe-circuit d'environnement).
+  if (!g2gAutoDeliveryEnabled(process.env.G2G_AUTO_DELIVERY)) {
+    return {
+      kind: "manual_review",
+      reason: "Coupe-circuit G2G_AUTO_DELIVERY désarmé : intervention manuelle requise.",
+    };
+  }
+
+  // Verrou 3 (offre pilote unique G1795521210943KM, hors offres retirées et tests synthétiques).
+  const configuredPilot = pilotOfferId(process.env.G2G_PILOT_OFFER_ID);
+  const normalizedOffer = (delivery.offerId ?? "").trim().toUpperCase();
+  if (
+    configuredPilot !== PILOT_CANDIDATE_OFFER_ID ||
+    isRetiredG2gOffer(normalizedOffer) ||
+    normalizedOffer !== PILOT_CANDIDATE_OFFER_ID ||
+    delivery.requestedQty !== 1 ||
+    isSyntheticDelivery(delivery.deliveryId, delivery.orderId)
+  ) {
+    return {
+      kind: "manual_review",
+      reason: "Commande hors périmètre strict du pilote unique : intervention manuelle requise.",
+    };
+  }
+
+  let expiresAt: Date | null = null;
+  try {
+    expiresAt = await readDeliveryExpiresAt(delivery.id);
+  } catch {
+    return {
+      kind: "manual_review",
+      reason: "Lecture de l'échéance G2G impossible (migration non appliquée ou base indisponible).",
+    };
+  }
+
+  return runPilotDeliveryAttempt(
+    {
+      orderId: delivery.orderId,
+      deliveryId: delivery.deliveryId,
+      offerId: normalizedOffer,
+      requestedQty: delivery.requestedQty,
+      supplierOrderRef,
+      expiresAt,
+    },
+    {
+      now: () => Date.now(),
+      readDispatchIntent: (expected) => readDispatchIntent(poolExecutor, expected),
+      reserveDispatchIntent: async (reserveInput) => {
+        const client = await pool.connect();
+        let destroyConnection = false;
+        try {
+          const outcome = await reserveDispatchIntentCommitted(
+            {
+              async query(queryText: string, params: unknown[]) {
+                const r = await client.query(queryText, params);
+                return { rows: r.rows as SqlRow[] };
+              },
+            },
+            reserveInput,
+          );
+          if (outcome.status === "uncertain") destroyConnection = true;
+          return outcome;
+        } catch {
+          destroyConnection = true;
+          return { status: "uncertain" };
+        } finally {
+          client.release(destroyConnection);
+        }
+      },
+      transitionDispatchIntent: (transitionInput) =>
+        transitionDispatchIntentState(poolExecutor, transitionInput),
+      getDeliveryStatus: (orderId, deliveryId) =>
+        g2gGetDeliveryStatus(orderId, deliveryId),
+      getSupplierOrder: (supplierOrderId) => fazercardsOrder(supplierOrderId),
+      deliverCodes: (deliverInput) => g2gDeliverCodes(deliverInput),
+    },
+    { safetyBufferMs: G2G_DISPATCH_SAFETY_BUFFER_MS },
+  );
 }
 
 /**
@@ -262,6 +389,52 @@ export async function processG2gDeliveryQueue(limit = 20): Promise<{
         results.push({
           deliveryId: delivery.deliveryId,
           kind: "failed",
+          attempts,
+          reason: result.reason,
+        });
+        break;
+      }
+
+      case "awaiting_confirmation": {
+        if (attempts >= G2G_DELIVERY_MAX_ATTEMPTS) {
+          const escalationNote = `${result.reason} — Vérifier d'abord le statut sur G2G avant toute action manuelle (aucune réémission effectuée).`;
+          await db
+            .update(g2gDeliveries)
+            .set({
+              status: "failed",
+              deliveryAttempts: attempts,
+              nextAttemptAt: null,
+              deliveryClaimedAt: null,
+              detail: escalationNote,
+              updatedAt: new Date(),
+            })
+            .where(owned);
+          await escalateDelivery(delivery, escalationNote, attempts);
+          results.push({
+            deliveryId: delivery.deliveryId,
+            kind: "failed",
+            attempts,
+            reason: escalationNote,
+          });
+          break;
+        }
+        const nextAttemptAt = new Date(
+          Date.now() + nextDeliveryDelayMs(attempts),
+        );
+        await db
+          .update(g2gDeliveries)
+          .set({
+            status: "purchased",
+            deliveryAttempts: attempts,
+            nextAttemptAt,
+            deliveryClaimedAt: null,
+            detail: `Confirmation G2G en attente (tentative ${attempts}, sans réémission) : ${result.reason}`,
+            updatedAt: new Date(),
+          })
+          .where(owned);
+        results.push({
+          deliveryId: delivery.deliveryId,
+          kind: "awaiting_confirmation",
           attempts,
           reason: result.reason,
         });

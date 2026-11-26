@@ -93,3 +93,30 @@ Les paragraphes précédents décrivent des étapes historiques. Depuis, le work
 `g2g-delivery-request-prototype.ts` prépare uniquement la forme d'entrée du client G2G pour l'offre `G1795521210943KM` et une unité, après vérification stricte des données fictives et de l'échéance fournie. La charge retournée contient un code : ne jamais la journaliser, la stocker ou la renvoyer au webhook. La référence doit être fournie par un futur mécanisme durable ; aucune référence n'est créée ni persistée ici. Le résultat n'est pas une autorisation d'envoi. Le module n'est raccordé ni à la file ni aux API.
 
 Bloquants avant raccordement : l'échéance de l'événement n'est pas actuellement persistée dans `g2g_deliveries`, la réservation prototype existe seulement sur `g2g-test`, et il faut une migration avec gestion durable de l'intention, des droits, de la référence et des états incertains ; il faut aussi vérifier une source fiable d'annulation et traiter la course entre dernière lecture et POST. Le bail existant de la file, récupérable après cinq minutes, ne suffit pas à empêcher un double envoi. Les formats réels et la confirmation G2G restent à valider. Ne pas activer la livraison ni le stock sur la base de ces essais.
+
+### Étapes 1 à 4 : persistance durable, câblage derrière verrous et tests sur g2g-test
+
+1. **Étape 1 fusionnée sur `main` (PR #294)** :
+   - fermeture de `PATCH /api/admin/g2g` (`405`), appelants de `g2gPatchOffer` limités à `/api/admin/g2g/offer-qty` et `src/lib/g2g-stock-price.ts` ;
+   - blocage explicite de l'offre retirée `G1795076410074VF` dans tout le code et au niveau SQL (`CHECK`) ;
+   - calcul unifié des devises et coûts de conversion (`conversionRateUsd`, `conversionCostUsd`) ;
+   - conception durable `docs/sql/g2g-dispatch-intent-migration-draft.sql` + `src/lib/g2g-dispatch-intent.ts` (échéance `expires_at`, référence déterministe `g2g-ref-...`, états monotones `dispatching` / `acknowledged` / `unknown` / `confirmed` / `aborted` / `manual_review`, `RLS` + `REVOKE ALL ... FROM anon, authenticated`). Migration non appliquée en production sans accord explicite.
+
+2. **Étape 2 : câblage préparé derrière triple verrou (sans activation)** :
+   - `src/lib/g2g-pilot-delivery-orchestrator.ts` orchestre dans l'ordre : contrôle d'intention antérieure (`readDispatchIntent`, interdisant toute relecture de code et tout second `POST` même après expiration du bail de 5 min), contrôle d'échéance (`safetyBufferMs = 5000`), statut G2G pré-vol (`g2gGetDeliveryStatus`), lecture stricte FazerCards (`fazercardsOrder` + `assessSupplierGiftCard`, `kind === "gift_card"`, `order.code` unitaire à l'état `completed`), réservation durable commitée sur client PostgreSQL exclusif (`reserveDispatchIntentCommitted`), relecture fraîche d'annulation/horloge entre `COMMIT` et `POST` (`aborted` si course détectée), unique `POST` (`g2gDeliverCodes`), puis confirmation séparée obligatoire par `g2gGetDeliveryStatus` (`delivered`, `delivered_qty === 1`).
+   - `src/lib/g2g-delivery.ts` est le seul appelant de `g2gDeliverCodes` hors `src/lib/g2g.ts`, verrouillé derrière `automaticDeliveryVerified() === false`, `G2G_AUTO_DELIVERY === "1"` et `G2G_PILOT_OFFER_ID === "G1795521210943KM"` (`requestedQty === 1`).
+   - `src/app/api/webhooks/g2g/route.ts` (uniquement derrière `automaticDeliveryVerified()`) contrôle l'échéance `expired_at` et persiste `expires_at` dans `g2g_deliveries` avant tout appel `purchaseG2gDelivery`. Tant que `automaticDeliveryVerified()` vaut `false`, aucun SQL non migré n'est exécuté en production.
+
+3. **Étape 3 : ce que prouvent les tests (fakes + PostgreSQL réel `g2g-test`) et ce qu'ils ne prouvent pas** :
+   - `scripts/g2g-pilot-delivery-orchestrator.test.mjs` et `scripts/g2g-postgres-integration.mjs` (exécuté avec succès sur la base dédiée `g2g-test` : https://github.com/walidhamrit-blip/mon-site/actions/runs/45901134488) prouvent : application idempotente du brouillon SQL, activation RLS et révocation `anon`/`authenticated`, rejet SQL de `G1795076410074VF` (`23514`), exclusion mutuelle de deux connexions PostgreSQL concurrentes (`1 committed` / `1 not_reserved` -> `1 POST`), refus d'échéance expirée par `clock_timestamp()`, `ROLLBACK` propre avant commit, survie de l'intention après arrêt brutal (`process.exit(0)`) d'un worker post-`COMMIT` sans second `POST`, annulation entre `COMMIT` et `POST` (`aborted`, `0 POST`), timeout `POST` (`unknown`) suivi de réconciliation par `GET` sans réémission, et escalade immédiate sur `partial_delivered` ou réponse fournisseur non conforme.
+   - Ces tests **ne prouvent pas** la réponse JSON réelle en production d'une commande FazerCards `google_play_tr` / `25_try` payée ni l'acceptation HTTP réelle par G2G d'un `POST /v2/orders/{order_id}/delivery` sur une vraie commande acheteur (aucun achat ni envoi réel n'ayant été déclenché).
+
+4. **Étape 4 : vérification économique de `G1795521210943KM` avant pilote réel** :
+   - Coût fournisseur déclaré : `0,49 USD` (`google_play_tr` / `25_try`), devise de l'offre : `USD` (`conversionRateUsd = 1`, `conversionCostUsd = 0` si règlement USD sans change).
+   - À `1,00 USD` de prix de vente ponctuel :
+     - la marge nette de `0,46 USD` (`48,42 %` du net) suppose exactement `5 %` de commission G2G (`0,95 USD` net) et `0,00 USD` de frais fixes/retrait ;
+     - à `9,99 %` de commission G2G sans frais fixe : net `0,9001 USD`, marge `0,4101 USD` (`45,56 %`) ;
+     - à `9,99 % + 0,10 USD` (ou `10 %` + frais fixe de retrait) : net `0,80 USD`, marge `0,31 USD` (`38,75 %`) ;
+     - au-delà de `51,0 %` de prélèvement total (commission + frais fixe par commande de `1 USD`), la vente devient déficitaire (`net <= 0,49 USD`).
+   - Il faut donc confirmer le barème exact G2G *Gift Cards* du compte vendeur (pourcentage + éventuel forfait fixe par ordre + frais de conversion/retrait) et paramétrer `G2G_FEE_PERCENT` + `conversionCostUsd` avant d'ouvrir `api_qty = 1`.
+
