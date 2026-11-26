@@ -198,10 +198,17 @@ Garde-fous :
 ### La vitrine en images (Mini App `/tg`)
 
 Une **Mini App Telegram** affiche le vrai catalogue du site sous forme de
-vitrine visuelle : 4 familles illustrées (cartes cadeaux, recharges de jeux,
-clés de jeux & logiciels, codes d'abonnement), filtres par marque, recherche,
-grille de jaquettes avec prix « à partir de ». Elle suit la langue (`?lang=ar|en`,
-arabe RTL par défaut) et le thème clair/sombre de Telegram.
+vitrine visuelle : navigation en **trois niveaux** — famille illustrée
+(cartes cadeaux, recharges de jeux, clés de jeux & logiciels, codes
+d'abonnement) → **marque** (PlayStation, Steam, Amazon…, chaque marque avec
+le visuel de son produit le plus demandé) → **région** (filtre avec noms
+complets bilingues : «السعودية» / «Saudi Arabia», et pour les codes non-pays
+la liste explicite des pays couverts — « MENA = … », « GLOBAL », « EU ») — puis
+grille de jaquettes avec prix « à partir de ». Recherche AR/EN disponible à
+chaque niveau (elle couvre aussi les noms de régions en clair). Elle suit la
+langue (`?lang=ar|en`, arabe RTL par défaut) et le thème clair/sombre de
+Telegram. Les libellés marques/régions sont partagés avec le bot dans
+`src/lib/catalog-labels.ts`.
 
 - **Accès** : bouton « 🛍️ افتح المتجر / Open the store » en tête du menu
   principal, bouton « 🖼️ تصفّح المتجر بالصور » en tête de `/shop`, et le
@@ -216,9 +223,10 @@ arabe RTL par défaut) et le thème clair/sombre de Telegram.
   *Menu Button* → URL `https://nokhba.net.ly/tg`.
 - Visuels des familles : `public/telegram-mini-app/*.webp`.
 
-> **ar —** واجهة متجر مصوّرة داخل تيليجرام على الرابط `/tg`: الفئات بالصور،
-> البحث، والعلامات التجارية. الضغط على منتج يفتح صفحته في الموقع لإتمام الدفع.
-> تُفتح من زر « افتح المتجر » أو من زر القائمة ☰ بجانب خانة الكتابة.
+> **ar —** واجهة متجر مصوّرة داخل تيليجرام على الرابط `/tg`: التنقل بالصور —
+> الفئة ثم العلامة التجارية ثم المنطقة (مع ذكر كل الدول التي تغطيها كل منطقة
+> مثل MENA)، والبحث بالعربية والإنجليزية. الضغط على منتج يفتح صفحته في الموقع
+> لإتمام الدفع. تُفتح من زر « افتح المتجر » أو من زر القائمة ☰ بجانب خانة الكتابة.
 
 ### Lien à partager
 
