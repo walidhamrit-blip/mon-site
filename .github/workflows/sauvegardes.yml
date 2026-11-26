@@ -64,3 +64,48 @@ jobs:
           if node scripts/restore-leads.mjs --file /tmp/sauvegardes/absent.json; then
             echo "une restauration depuis un fichier absent aurait dû échouer"; exit 1
           fi
+
+  base-complete:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+      - name: Installation des dépendances
+        run: npm ci --ignore-scripts
+      - name: Peupler une base
+        run: |
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -c "CREATE TABLE clients (id serial PRIMARY KEY, nom text NOT NULL);"
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -c "INSERT INTO clients (nom) VALUES ('Amina'), ('Walid'), ('Sara');"
+      - name: Sauvegarde complète
+        run: node scripts/backup-db.mjs --out /tmp/sauvegardes
+      - name: Perte simulée puis restauration
+        run: |
+          file=$(ls /tmp/sauvegardes/db-*.sql.gz)
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -c "DROP TABLE clients;"
+          node scripts/restore-db.mjs --file "$file" --confirm
+          count=$(psql "$DATABASE_URL" -tAc "SELECT count(*) FROM clients")
+          test "$count" = "3" || { echo "attendu 3 clients, obtenu $count"; exit 1; }
+          echo "Base complète restaurée : 3 lignes."
+      - name: Garde-fous
+        run: |
+          if node scripts/restore-db.mjs --file /tmp/sauvegardes/absent.sql.gz; then
+            echo "un fichier absent aurait dû échouer"; exit 1
+          fi

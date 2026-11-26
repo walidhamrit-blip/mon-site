@@ -484,9 +484,15 @@ script Vercel. Test de comportement : `scripts/analytics-runtime.test.mjs`
   à chaque PR et sur `main` — table vidée puis restaurée, identifiants et
   séquence vérifiés.
 - `docs/runbook-sauvegardes.md` : procédure, limites, exercice trimestriel.
-- **Reste à faire (propriétaire)** : confirmer la rétention et le PITR du
-  fournisseur Postgres, et déposer une copie chiffrée hors site. Les scripts
-  ne couvrent que `leads`, pas `orders` ni `settings`.
+- **Constat du 26/11/2026** : le projet Supabase (`g2g-test`, plan Free)
+  affiche **« No backups »**. Il n'y a donc aucune sauvegarde fournisseur à
+  espérer, ni rétention ni PITR.
+- `scripts/backup-db.mjs` / `restore-db.mjs` : dump **complet** (schéma +
+  données) via `pg_dump`, compressé, restauration en simulation par défaut ;
+  second job CI (« base-complete ») qui supprime une table puis la restaure.
+- **Reste à faire (propriétaire)** : planifier `backup:db` (cron ou tâche
+  locale) et déposer les dumps chiffrés hors site. Aujourd'hui la perte
+  maximale reste celle du dernier export manuel.
 
 ---
 
