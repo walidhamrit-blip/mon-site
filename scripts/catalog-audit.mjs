@@ -37,9 +37,14 @@ const shop = await get("/codes");
 if (shop.status !== 200) {
   note("/codes", `HTTP ${shop.status}`);
 } else {
+  // Routes de service de la boutique (pas des fiches produit) : le suivi de
+  // commande est lié depuis l'en-tête et le pied de page de l'univers boutique.
+  const NON_PRODUCT_SEGMENTS = new Set(["commande", "category"]);
   const links = [
     ...new Set(
-      [...shop.body.matchAll(/href="\/codes\/([a-z0-9][a-z0-9-]*)"/g)].map((m) => m[1]),
+      [...shop.body.matchAll(/href="\/codes\/([a-z0-9][a-z0-9-]*)"/g)]
+        .map((m) => m[1])
+        .filter((slug) => !NON_PRODUCT_SEGMENTS.has(slug)),
     ),
   ];
   const jsonLd = [...shop.body.matchAll(/<script[^>]+application\/ld\+json[^>]*>([\s\S]*?)<\/script>/g)]
