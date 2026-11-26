@@ -10,6 +10,7 @@ import { diagnosticError, safePostgresError } from "./g2g-postgres-diagnostic.mj
 import { reserveCommittedPrototype, reserveDispatchPrototype } from "../src/lib/g2g-dispatch-reservation-prototype.ts";
 import { assessSupplierGiftCard } from "../src/lib/g2g-delivery-assessment.ts";
 import { planDelivery } from "../src/lib/g2g-delivery-plan.ts";
+import { runIsolatedDelivery } from "./g2g-isolated-delivery.mjs";
 
 const PROJECT = "tghunxntbjtkvvmyvxwh";
 function configFromEnvironment() {
@@ -54,7 +55,7 @@ async function runChild(id) {
   });
 }
 async function main() {
-  const ids = Array.from({length:6},() => randomUUID());
+  const ids = Array.from({length:7},() => randomUUID());
   const [a,b,c] = [client(),client(),client()];
   let connected = false, writesAttempted = false;
   try {
@@ -116,7 +117,25 @@ async function main() {
     assert.equal(timeoutFakeSends,1);
     assert.equal(plan("completed","unknown"),"check_delivery");
     assert.equal(plan("completed","unknown","partial_delivered",0),"manual_review");
-    process.stdout.write("OK : concurrence, expiration, rollback, arrêt et parcours fictif avec réservation PostgreSQL. Aucun transport réel.\n");
+    phase = "orchestrateur isolé avec réservation PostgreSQL";
+    const labFixture = inputFor(ids[6]);
+    const labRemote = (state, count = 0) => ({code:"20000001",payload:{order_id:labFixture.orderId,delivery_summary:{delivery_id:labFixture.deliveryId,requested_qty:1,delivered_qty:count,delivery_status:state}}});
+    const labInput = {...labFixture,expiresAt:labFixture.expiresAt.getTime(),dispatchState:"not_sent"};
+    let labSends = 0;
+    const labPorts = db => ({
+      now:() => Date.now(),
+      readDelivery:async () => labRemote("pending"),
+      readSupplier:async () => ({ok:true,order:{id:labFixture.supplierOrderId,status:"completed",code:"FAKE-CODE"}}),
+      reserve:async value => reserveCommittedPrototype(db,value),
+      readFreshOrder:async () => ({active:true,delivery:labRemote("pending")}),
+      sendFake:async ({codes}) => {assert.deepEqual(codes,["FAKE-CODE"]); labSends++;},
+    });
+    assert.deepEqual((await Promise.all([runIsolatedDelivery(labInput,labPorts(a)),runIsolatedDelivery(labInput,labPorts(b))])).sort(),["check_delivery","manual_review"]);
+    assert.equal(labSends,1);
+    assert.equal(await runIsolatedDelivery(labInput,labPorts(a)),"manual_review");
+    assert.equal(labSends,1);
+    assert.equal(await runIsolatedDelivery({...labInput,dispatchState:"unknown"},{...labPorts(c),readDelivery:async () => labRemote("delivered",1)}),"confirmed");
+    process.stdout.write("OK : concurrence, expiration, rollback, arrêt et orchestrateur isolé avec réservation PostgreSQL. Aucun transport réel.\n");
   } finally {
     // Suppression uniquement des lignes aléatoires créées par cette exécution.
     if (writesAttempted && connected) {
