@@ -96,7 +96,7 @@ export function ReloadlyPriceCheck({
   if (!productId) {
     return (
       <p className="mt-2 flex items-start gap-1.5 rounded-lg border border-stone-200 bg-stone-50 px-3 py-2 text-[11.5px] leading-5 text-stone-600">
-        <Info className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+        <Info className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden="true" />
         Aucun produit Reloadly relié : la fiche reste en livraison manuelle.
         Choisissez un produit ci-dessus pour activer l&apos;achat automatique.
       </p>
@@ -107,7 +107,7 @@ export function ReloadlyPriceCheck({
   if (lookup.productId !== productId) {
     return (
       <p className="mt-2 flex items-center gap-1.5 text-[11.5px] text-stone-500">
-        <Loader2 className="h-3.5 w-3.5 animate-spin" /> Vérification des valeurs
+        <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" /> Vérification des valeurs
         faciales et des frais auprès de Reloadly…
       </p>
     );
@@ -116,7 +116,7 @@ export function ReloadlyPriceCheck({
   if (lookup.error || !lookup.product) {
     return (
       <p className="mt-2 flex items-start gap-1.5 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-[11.5px] leading-5 text-amber-800">
-        <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+        <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden="true" />
         {lookup.error || "Produit Reloadly illisible."} Les valeurs faciales ne
         peuvent pas être vérifiées : contrôlez-les dans le tableau Reloadly.
       </p>
@@ -193,9 +193,9 @@ export function ReloadlyPriceCheck({
             }`}
           >
             {!check.ok || belowCost ? (
-              <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+              <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden="true" />
             ) : (
-              <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-emerald-600" />
+              <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-emerald-600" aria-hidden="true" />
             )}
             <span>
               <strong>{denomination.label}</strong>{" "}

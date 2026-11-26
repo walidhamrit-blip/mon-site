@@ -93,7 +93,7 @@ export function DemoViewer({ demo, allDemos }: { demo: Demo; allDemos: Demo[] })
                     : "hover:bg-[var(--card)]"
                 }`}
               >
-                <Smartphone className="h-3.5 w-3.5" /> {locale === "ar" ? "هاتف" : "Mobile"}
+                <Smartphone className="h-3.5 w-3.5" aria-hidden="true" /> {locale === "ar" ? "هاتف" : "Mobile"}
               </button>
             </div>
           </div>
@@ -131,14 +131,14 @@ export function DemoViewer({ demo, allDemos }: { demo: Demo; allDemos: Demo[] })
                 {locale === "ar"
                   ? "متجاوب 100% — موبايل وحاسوب"
                   : "100% Responsive — Mobile & Desktop"}
-                <Smartphone className="h-4 w-4" />
+                <Smartphone className="h-4 w-4" aria-hidden="true" />
               </div>
             </div>
 
             <div className="space-y-6">
               <div className="card-surface p-6">
                 <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[var(--accent)] text-[var(--accent-foreground)] text-xs font-bold">
-                  <Sparkles className="h-3.5 w-3.5" />
+                  <Sparkles className="h-3.5 w-3.5" aria-hidden="true" />
                   {locale === "ar" ? "معرض حي — قابل للتخصيص" : "Live Demo — Customizable"}
                 </div>
                 <h2 className="mt-3 text-2xl font-black">
@@ -150,7 +150,7 @@ export function DemoViewer({ demo, allDemos }: { demo: Demo; allDemos: Demo[] })
                   {features.map((f) => (
                     <li key={f} className="flex gap-2 text-sm">
                       <span className="h-5 w-5 rounded-full bg-green-500 text-white grid place-items-center flex-shrink-0">
-                        <Check className="h-3 w-3" />
+                        <Check className="h-3 w-3" aria-hidden="true" />
                       </span>
                       {f}
                     </li>
@@ -241,7 +241,7 @@ export function DemoViewer({ demo, allDemos }: { demo: Demo; allDemos: Demo[] })
                             {locale === "ar" ? item.sectorAr : item.sectorEn}
                           </div>
                         </div>
-                        <ArrowUpRight className="h-4 w-4 opacity-50 flex-shrink-0" />
+                        <ArrowUpRight className="h-4 w-4 opacity-50 flex-shrink-0" aria-hidden="true" />
                       </Link>
                     ))}
                   </div>

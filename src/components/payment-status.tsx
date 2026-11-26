@@ -266,7 +266,7 @@ export function PaymentStatus({
   if (notFound) {
     return (
       <div className="rounded-[24px] border border-[var(--border)] bg-[var(--card)] p-8 text-center">
-        <XCircle className="mx-auto h-10 w-10 text-red-400" />
+        <XCircle className="mx-auto h-10 w-10 text-red-400" aria-hidden="true" />
         <h2 className="mt-4 text-xl font-black">
           {ar ? t.pay.notFoundAr : t.pay.notFoundEn}
         </h2>
@@ -279,7 +279,7 @@ export function PaymentStatus({
       {status === "paid" && (
         <>
           <span className="mx-auto grid h-16 w-16 place-items-center rounded-full bg-emerald-500/15">
-            <BadgeCheck className="h-8 w-8 text-emerald-400" />
+            <BadgeCheck className="h-8 w-8 text-emerald-400" aria-hidden="true" />
           </span>
           <h2 className="mt-4 text-2xl font-black text-emerald-400">
             {ar ? t.pay.paidTitleAr : t.pay.paidTitleEn}
@@ -294,9 +294,9 @@ export function PaymentStatus({
         <>
           <span className="mx-auto grid h-16 w-16 place-items-center rounded-full bg-[var(--accent)]/15">
             {order ? (
-              <Clock className="h-8 w-8 text-[var(--accent)]" />
+              <Clock className="h-8 w-8 text-[var(--accent)]" aria-hidden="true" />
             ) : (
-              <Loader2 className="h-8 w-8 animate-spin text-[var(--accent)]" />
+              <Loader2 className="h-8 w-8 animate-spin text-[var(--accent)]" aria-hidden="true" />
             )}
           </span>
           <h2 className="mt-4 text-2xl font-black">
@@ -306,7 +306,7 @@ export function PaymentStatus({
             {ar ? t.pay.pendingNoteAr : t.pay.pendingNoteEn}
           </p>
           <span className="mt-4 inline-flex items-center gap-1.5 text-xs opacity-60">
-            <Loader2 className="h-3 w-3 animate-spin" />
+            <Loader2 className="h-3 w-3 animate-spin" aria-hidden="true" />
             {ar ? t.pay.liveAr : t.pay.liveEn}
           </span>
         </>
@@ -315,7 +315,7 @@ export function PaymentStatus({
       {(status === "failed" || status === "expired") && (
         <>
           <span className="mx-auto grid h-16 w-16 place-items-center rounded-full bg-red-500/15">
-            <XCircle className="h-8 w-8 text-red-400" />
+            <XCircle className="h-8 w-8 text-red-400" aria-hidden="true" />
           </span>
           <h2 className="mt-4 text-2xl font-black">
             {ar
@@ -392,9 +392,9 @@ export function PaymentStatus({
               rel="noopener noreferrer"
               className="mt-3 inline-flex h-11 w-full items-center justify-center gap-2 rounded-full bg-[var(--accent)] px-4 text-xs font-black text-[var(--accent-foreground)] transition-colors hover:bg-[var(--accent-hover)]"
             >
-              <CreditCard className="h-4 w-4" />
+              <CreditCard className="h-4 w-4" aria-hidden="true" />
               {ar ? "فتح صفحة الدفع بالبطاقة" : "Open secure card checkout"}
-              <ExternalLink className="h-3.5 w-3.5" />
+              <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
             </a>
           </div>
         )}
@@ -417,7 +417,7 @@ export function PaymentStatus({
 
           {allPaid ? (
             <p className="mt-2 inline-flex items-center gap-1.5 text-sm font-semibold text-emerald-400">
-              <BadgeCheck className="h-4 w-4" />
+              <BadgeCheck className="h-4 w-4" aria-hidden="true" />
               {ar ? t.pay.allTranchesPaidAr : t.pay.allTranchesPaidEn}
             </p>
           ) : (
@@ -439,7 +439,7 @@ export function PaymentStatus({
 
                   {tranche.status === "paid" ? (
                     <span className="inline-flex items-center gap-1 text-xs font-bold text-emerald-400">
-                      <BadgeCheck className="h-3.5 w-3.5" />
+                      <BadgeCheck className="h-3.5 w-3.5" aria-hidden="true" />
                       {ar ? t.pay.tranchePaidAr : t.pay.tranchePaidEn}
                     </span>
                   ) : tranche.status === "pending" && tranche.paymentUrl ? (
@@ -457,7 +457,7 @@ export function PaymentStatus({
                       className="h-8 px-3 rounded-full bg-[var(--accent)] text-[var(--accent-foreground)] text-xs font-bold inline-flex items-center gap-1.5 disabled:opacity-60 hover:bg-[var(--accent-hover)] transition-colors cursor-pointer"
                     >
                       {paying === tranche.ref && (
-                        <Loader2 className="h-3 w-3 animate-spin" />
+                        <Loader2 className="h-3 w-3 animate-spin" aria-hidden="true" />
                       )}
                       {manualMode
                         ? ar

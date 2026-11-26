@@ -116,7 +116,7 @@ function RankBadge({ theme, tone = "muted" }: { theme: SiteTheme; tone?: "muted"
             : "bg-[var(--secondary)] text-[var(--muted-foreground)]"
       }`}
     >
-      {featured && <Star className="h-2.5 w-2.5" />}
+      {featured && <Star className="h-2.5 w-2.5" aria-hidden="true" />}
       {themeRankLabel(theme, locale)}
     </span>
   );
@@ -163,7 +163,7 @@ export function ThemeGallery({ className = "" }: { className?: string }) {
             </div>
             {active && (
               <span className="absolute top-1.5 end-1.5 grid h-4 w-4 place-items-center rounded-full bg-[var(--accent)] text-[var(--accent-foreground)] shadow-sm">
-                <Check className="h-2.5 w-2.5" />
+                <Check className="h-2.5 w-2.5" aria-hidden="true" />
               </span>
             )}
           </button>
@@ -209,7 +209,7 @@ export function ThemeSwitcher() {
         className="relative grid h-11 w-11 cursor-pointer place-items-center rounded-full bg-[var(--secondary)] transition-colors hover:bg-[var(--muted)]"
       >
         <span className="relative grid place-items-center">
-          <Palette className="h-4 w-4" />
+          <Palette className="h-4 w-4" aria-hidden="true" />
           <span
             className="absolute -bottom-1 -end-1 h-3 w-3 rounded-full border-2 border-[var(--secondary)]"
             style={{ background: current.light.accent }}
@@ -236,7 +236,7 @@ export function ThemeSwitcher() {
               aria-label={ar ? "إغلاق" : "Close"}
               className="grid h-9 w-9 shrink-0 cursor-pointer place-items-center rounded-full bg-[var(--secondary)] hover:bg-[var(--muted)]"
             >
-              <X className="h-3 w-3" />
+              <X className="h-3 w-3" aria-hidden="true" />
             </button>
           </div>
 
@@ -265,7 +265,7 @@ export function ThemeSwitcher() {
                       {ar ? t.labelAr : t.labelEn}
                     </span>
                     {active && (
-                      <Check className="h-3 w-3 flex-shrink-0 text-[var(--accent)]" />
+                      <Check className="h-3 w-3 flex-shrink-0 text-[var(--accent)]" aria-hidden="true" />
                     )}
                   </span>
                   <span className="flex w-full items-center justify-between gap-1">
@@ -299,7 +299,7 @@ export function ThemeList() {
   return (
     <div>
       <div className="mb-2.5 flex items-center gap-2 text-[11px] font-black uppercase tracking-[0.16em] text-[var(--muted-foreground)]">
-        <Palette className="h-3.5 w-3.5" />
+        <Palette className="h-3.5 w-3.5" aria-hidden="true" />
         {ar ? `${THEME_COUNT} لوحات ألعاب` : `${THEME_COUNT} gaming palettes`}
       </div>
       <div className="grid grid-cols-2 gap-1.5">
@@ -323,7 +323,7 @@ export function ThemeList() {
                   {ar ? t.labelAr : t.labelEn}
                 </span>
                 {active && (
-                  <Check className="h-3 w-3 flex-shrink-0 text-[var(--accent)]" />
+                  <Check className="h-3 w-3 flex-shrink-0 text-[var(--accent)]" aria-hidden="true" />
                 )}
               </span>
               <RankBadge theme={t} />

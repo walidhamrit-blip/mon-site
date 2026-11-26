@@ -534,7 +534,7 @@ export function BoutiqueProductsManager({
               : "bg-red-600 text-white"
           }`}
         >
-          <Check className="h-3.5 w-3.5 text-[#E5CA87] shrink-0" />
+          <Check className="h-3.5 w-3.5 text-[#E5CA87] shrink-0" aria-hidden="true" />
           <span>{toast.msg}</span>
         </div>
       )}
@@ -588,7 +588,7 @@ export function BoutiqueProductsManager({
             className="h-9 px-3.5 rounded-xl border border-stone-200 bg-white text-xs font-semibold text-stone-700 hover:bg-stone-50 inline-flex items-center gap-1.5"
           >
             Voir /codes
-            <ExternalLink className="h-3.5 w-3.5" />
+            <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
           </Link>
           <Link
             href="/admin/digital"
@@ -601,7 +601,7 @@ export function BoutiqueProductsManager({
             onClick={addNewProduct}
             className="h-9 px-4 rounded-xl bg-stone-900 text-white text-xs font-bold hover:bg-stone-800 inline-flex items-center gap-1.5 cursor-pointer shadow-xs"
           >
-            <Plus className="h-3.5 w-3.5 text-[#E5CA87]" />
+            <Plus className="h-3.5 w-3.5 text-[#E5CA87]" aria-hidden="true" />
             Nouveau produit
           </button>
         </div>
@@ -673,7 +673,7 @@ export function BoutiqueProductsManager({
       <div className="rounded-2xl border border-stone-200 bg-white p-4 shadow-xs space-y-3">
         <div className="grid gap-3 md:grid-cols-[1fr_auto_auto_auto]">
           <div className="relative">
-            <Search className="h-4 w-4 text-stone-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+            <Search className="h-4 w-4 text-stone-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" aria-hidden="true" />
             <input
               value={search}
               onChange={(e) => {
@@ -757,9 +757,9 @@ export function BoutiqueProductsManager({
                 className="h-9 px-3.5 rounded-xl border border-[#C6A664] bg-[#C6A664]/15 text-[#6F5620] text-xs font-bold hover:bg-[#C6A664]/25 inline-flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
               >
                 {batchOptimizing ? (
-                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" />
                 ) : (
-                  <Sparkles className="h-3.5 w-3.5" />
+                  <Sparkles className="h-3.5 w-3.5" aria-hidden="true" />
                 )}
                 Optimiser SEO & GEO de la page ({pageItems.length})
               </button>
@@ -798,7 +798,7 @@ export function BoutiqueProductsManager({
                   onClick={() => restoreDeleted(product)}
                   className="h-9 px-3.5 rounded-xl bg-stone-900 text-white text-xs font-bold hover:bg-stone-800 inline-flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
                 >
-                  <Undo2 className="h-3.5 w-3.5 text-[#E5CA87]" />
+                  <Undo2 className="h-3.5 w-3.5 text-[#E5CA87]" aria-hidden="true" />
                   Restaurer dans la boutique
                 </button>
               </div>
@@ -926,9 +926,9 @@ export function BoutiqueProductsManager({
                       className="h-8 px-3 rounded-xl border border-[#C6A664] bg-[#C6A664]/15 text-[#6F5620] text-xs font-bold hover:bg-[#C6A664]/25 inline-flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
                     >
                       {optimizingId === product.id ? (
-                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                        <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" />
                       ) : (
-                        <Sparkles className="h-3.5 w-3.5" />
+                        <Sparkles className="h-3.5 w-3.5" aria-hidden="true" />
                       )}
                       Optimiser SEO & GEO
                     </button>
@@ -941,9 +941,9 @@ export function BoutiqueProductsManager({
                         className="h-8 px-3 rounded-xl bg-stone-900 text-white text-xs font-bold hover:bg-stone-800 inline-flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
                       >
                         {savingId === product.id ? (
-                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" />
                         ) : (
-                          <Check className="h-3.5 w-3.5 text-[#E5CA87]" />
+                          <Check className="h-3.5 w-3.5 text-[#E5CA87]" aria-hidden="true" />
                         )}
                         Enregistrer
                       </button>
@@ -962,7 +962,7 @@ export function BoutiqueProductsManager({
                         </>
                       ) : (
                         <>
-                          Modifier <ChevronDown className="h-3.5 w-3.5" />
+                          Modifier <ChevronDown className="h-3.5 w-3.5" aria-hidden="true" />
                         </>
                       )}
                     </button>
@@ -1028,7 +1028,7 @@ export function BoutiqueProductsManager({
                           className="h-8 px-2.5 rounded-xl border border-stone-200 bg-white text-xs font-semibold text-stone-700 hover:bg-stone-100 inline-flex items-center gap-1"
                         >
                           Voir la fiche
-                          <ExternalLink className="h-3 w-3" />
+                          <ExternalLink className="h-3 w-3" aria-hidden="true" />
                         </Link>
 
                         {isOverridden && baseById[product.id] && (
@@ -1038,7 +1038,7 @@ export function BoutiqueProductsManager({
                             onClick={() => resetToSupplier(product)}
                             className="h-8 px-2.5 rounded-xl border border-stone-200 bg-white text-xs font-semibold text-stone-600 hover:bg-stone-100 inline-flex items-center gap-1 cursor-pointer"
                           >
-                            <RotateCcw className="h-3 w-3" />
+                            <RotateCcw className="h-3 w-3" aria-hidden="true" />
                             Réinitialiser fournisseur
                           </button>
                         )}
@@ -1051,7 +1051,7 @@ export function BoutiqueProductsManager({
                         >
                           {isCustom ? (
                             <>
-                              <Trash2 className="h-3 w-3" /> Supprimer
+                              <Trash2 className="h-3 w-3" aria-hidden="true" /> Supprimer
                             </>
                           ) : (
                             <>
@@ -1216,9 +1216,9 @@ export function BoutiqueProductsManager({
                                 className="grid h-9 w-9 shrink-0 cursor-pointer place-items-center rounded-lg border border-stone-300 bg-white text-stone-600 transition-colors hover:border-[#E5CA87] hover:text-[#8A6D2F]"
                               >
                                 {uploadingImageId === product.id ? (
-                                  <Loader2 className="h-4 w-4 animate-spin" />
+                                  <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
                                 ) : (
-                                  <Upload className="h-4 w-4" />
+                                  <Upload className="h-4 w-4" aria-hidden="true" />
                                 )}
                                 <input
                                   type="file"
@@ -1561,9 +1561,9 @@ export function BoutiqueProductsManager({
                           className="h-9 px-4 rounded-xl border border-[#C6A664] bg-[#C6A664]/15 text-[#6F5620] text-xs font-bold hover:bg-[#C6A664]/25 inline-flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
                         >
                           {optimizingId === product.id ? (
-                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                            <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" />
                           ) : (
-                            <Sparkles className="h-3.5 w-3.5" />
+                            <Sparkles className="h-3.5 w-3.5" aria-hidden="true" />
                           )}
                           Optimiser SEO & GEO
                         </button>
@@ -1574,9 +1574,9 @@ export function BoutiqueProductsManager({
                           className="h-9 px-5 rounded-xl bg-stone-900 text-white text-xs sm:text-sm font-bold hover:bg-stone-800 inline-flex items-center gap-2 cursor-pointer disabled:opacity-50 shadow-xs"
                         >
                           {savingId === product.id ? (
-                            <Loader2 className="h-4 w-4 animate-spin" />
+                            <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
                           ) : (
-                            <Check className="h-4 w-4 text-[#E5CA87]" />
+                            <Check className="h-4 w-4 text-[#E5CA87]" aria-hidden="true" />
                           )}
                           Enregistrer cette fiche
                         </button>
@@ -1792,7 +1792,7 @@ function DenominationsEditor({
             onClick={addDenom}
             className="h-8 px-3 rounded-xl bg-stone-900 text-white text-xs font-bold hover:bg-stone-800 inline-flex items-center gap-1 cursor-pointer"
           >
-            <Plus className="h-3.5 w-3.5 text-[#E5CA87]" />
+            <Plus className="h-3.5 w-3.5 text-[#E5CA87]" aria-hidden="true" />
             Ajouter un montant
           </button>
         </div>
@@ -1854,7 +1854,7 @@ function DenominationsEditor({
                     )}
                     {loss && (
                       <span className="inline-flex items-center gap-1 text-[11px] font-bold text-red-700">
-                        <AlertTriangle className="h-3.5 w-3.5" />
+                        <AlertTriangle className="h-3.5 w-3.5" aria-hidden="true" />
                         Prix inférieur au coût fournisseur !
                       </span>
                     )}
@@ -1867,7 +1867,7 @@ function DenominationsEditor({
                       disabled={idx === 0}
                       className="p-1 rounded-lg border border-stone-200 bg-white text-stone-600 hover:bg-stone-100 disabled:opacity-30 cursor-pointer"
                     >
-                      <ArrowUp className="h-3.5 w-3.5" />
+                      <ArrowUp className="h-3.5 w-3.5" aria-hidden="true" />
                     </button>
                     <button
                       type="button"
@@ -1882,7 +1882,7 @@ function DenominationsEditor({
                       onClick={() => removeDenom(idx)}
                       className="p-1 rounded-lg border border-red-200 bg-white text-red-600 hover:bg-red-50 cursor-pointer"
                     >
-                      <Trash2 className="h-3.5 w-3.5" />
+                      <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
                     </button>
                   </div>
                 </div>
@@ -2073,7 +2073,7 @@ function DenominationsEditor({
                           }
                           className="px-2 rounded-lg border border-red-200 text-red-600 hover:bg-red-50 cursor-pointer"
                         >
-                          <Trash2 className="h-3.5 w-3.5" />
+                          <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
                         </button>
                       </div>
                     ))}
@@ -2122,9 +2122,9 @@ function SeoGeoEditor({
           className="h-9 px-4 rounded-xl border border-[#C6A664] bg-[#C6A664]/15 text-[#6F5620] text-xs font-bold hover:bg-[#C6A664]/25 inline-flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
         >
           {optimizing ? (
-            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" />
           ) : (
-            <Sparkles className="h-3.5 w-3.5" />
+            <Sparkles className="h-3.5 w-3.5" aria-hidden="true" />
           )}
           Générer / Optimiser SEO & GEO
         </button>
@@ -2360,7 +2360,7 @@ function StepsAndFaqEditor({
             onClick={onOptimize}
             className="h-8 px-3 rounded-xl border border-[#C6A664] bg-[#C6A664]/15 text-[#6F5620] text-xs font-bold hover:bg-[#C6A664]/25 inline-flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
           >
-            <Sparkles className="h-3.5 w-3.5" />
+            <Sparkles className="h-3.5 w-3.5" aria-hidden="true" />
             Pré-remplir via SEO & GEO
           </button>
           <button
@@ -2368,7 +2368,7 @@ function StepsAndFaqEditor({
             onClick={addFaq}
             className="h-8 px-3 rounded-xl bg-stone-900 text-white text-xs font-bold hover:bg-stone-800 inline-flex items-center gap-1 cursor-pointer"
           >
-            <Plus className="h-3.5 w-3.5 text-[#E5CA87]" />
+            <Plus className="h-3.5 w-3.5 text-[#E5CA87]" aria-hidden="true" />
             Ajouter une FAQ
           </button>
         </div>
@@ -2439,7 +2439,7 @@ function StepsAndFaqEditor({
                   onClick={() => removeFaq(idx)}
                   className="text-xs font-semibold text-red-600 hover:underline inline-flex items-center gap-1 cursor-pointer"
                 >
-                  <Trash2 className="h-3 w-3" /> Supprimer
+                  <Trash2 className="h-3 w-3" aria-hidden="true" /> Supprimer
                 </button>
               </div>
               <div className="grid sm:grid-cols-2 gap-2.5">

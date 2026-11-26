@@ -473,7 +473,7 @@ export function CheckoutDialog({
         <div className="flex items-start justify-between gap-4">
           <div className="flex min-w-0 items-center gap-3">
             <span className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-[var(--accent)] text-[var(--accent-foreground)]">
-              <Bitcoin className="h-5 w-5" />
+              <Bitcoin className="h-5 w-5" aria-hidden="true" />
             </span>
             <div className="min-w-0">
               <h2 className="text-lg font-black">
@@ -494,7 +494,7 @@ export function CheckoutDialog({
             className="grid h-11 w-11 shrink-0 place-items-center rounded-full border border-[var(--border)] text-[var(--muted-foreground)] transition-colors hover:border-[var(--accent)] hover:text-[var(--foreground)] cursor-pointer"
             aria-label={ar ? "إغلاق" : "Close"}
           >
-            <X className="h-4 w-4" />
+            <X className="h-4 w-4" aria-hidden="true" />
           </button>
         </div>
 
@@ -677,7 +677,7 @@ export function CheckoutDialog({
                           : "border-[var(--border)] hover:border-[var(--accent)]/60"
                       }`}
                     >
-                      <CreditCard className="h-4 w-4 shrink-0" />
+                      <CreditCard className="h-4 w-4 shrink-0" aria-hidden="true" />
                       <span>{ar ? "بطاقة ومحافظ رقمية" : "Cards / wallets"}</span>
                     </button>
                   )}
@@ -694,7 +694,7 @@ export function CheckoutDialog({
                         : "border-[var(--border)] hover:border-[var(--accent)]/60"
                     }`}
                   >
-                    <Bitcoin className="h-4 w-4 shrink-0" />
+                    <Bitcoin className="h-4 w-4 shrink-0" aria-hidden="true" />
                     {ar ? t.checkout.manualCryptoAr : t.checkout.manualCryptoEn}
                   </button>
                   {manualOptions.length > 0 && (
@@ -711,7 +711,7 @@ export function CheckoutDialog({
                           : "border-[var(--border)] hover:border-[var(--accent)]/60"
                       }`}
                     >
-                      <Landmark className="h-4 w-4 shrink-0" />
+                      <Landmark className="h-4 w-4 shrink-0" aria-hidden="true" />
                       {ar ? t.checkout.manualTransferAr : t.checkout.manualTransferEn}
                     </button>
                   )}
@@ -768,11 +768,11 @@ export function CheckoutDialog({
               className="h-12 w-full rounded-full bg-[var(--accent)] font-black text-[var(--accent-foreground)] hover:bg-[var(--accent-hover)] transition-colors cursor-pointer inline-flex items-center justify-center gap-2 disabled:opacity-50"
             >
               {manualMode ? (
-                <Landmark className="h-4 w-4" />
+                <Landmark className="h-4 w-4" aria-hidden="true" />
               ) : cardMode ? (
-                <CreditCard className="h-4 w-4" />
+                <CreditCard className="h-4 w-4" aria-hidden="true" />
               ) : (
-                <Bitcoin className="h-4 w-4" />
+                <Bitcoin className="h-4 w-4" aria-hidden="true" />
               )}
               {manualMode
                 ? ar
@@ -799,7 +799,7 @@ export function CheckoutDialog({
                 href={CRYPTO_GUIDE_PATH}
                 className="inline-flex items-center gap-1.5 text-[11px] font-bold text-[var(--accent)] underline-offset-4 hover:underline"
               >
-                <BookOpen className="h-3.5 w-3.5" />
+                <BookOpen className="h-3.5 w-3.5" aria-hidden="true" />
                 {ar
                   ? "أول مرة تدفع بالكريبتو؟ دليل USDT المصوّر خطوة بخطوة"
                   : "First crypto payment? Read the step-by-step USDT photo guide"}
@@ -811,7 +811,7 @@ export function CheckoutDialog({
 
         {step === "creating" && (
           <div className="mt-8 flex flex-col items-center gap-3 py-6">
-            <Loader2 className="h-8 w-8 animate-spin text-[var(--accent)]" />
+            <Loader2 className="h-8 w-8 animate-spin text-[var(--accent)]" aria-hidden="true" />
             <p className="text-sm opacity-70">
               {ar ? t.checkout.creatingAr : t.checkout.creatingEn}
             </p>
@@ -821,7 +821,7 @@ export function CheckoutDialog({
         {step === "ready" && payment && (
           <div className="mt-5 space-y-4">
             <div className="flex items-start gap-3 rounded-2xl border border-emerald-500/30 bg-emerald-500/10 p-4">
-              <BadgeCheck className="mt-0.5 h-5 w-5 text-emerald-600 dark:text-emerald-400 flex-shrink-0" />
+              <BadgeCheck className="mt-0.5 h-5 w-5 text-emerald-600 dark:text-emerald-400 flex-shrink-0" aria-hidden="true" />
               {payment.manualPayment ? (
                 <p className="text-sm font-semibold text-emerald-800 dark:text-emerald-200">
                   {ar
@@ -862,16 +862,16 @@ export function CheckoutDialog({
                   rel="noopener noreferrer"
                   className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-full bg-[var(--accent)] px-4 font-black text-[var(--accent-foreground)] transition-colors hover:bg-[var(--accent-hover)]"
                 >
-                  <CreditCard className="h-4 w-4" />
+                  <CreditCard className="h-4 w-4" aria-hidden="true" />
                   {ar ? t.checkout.openAr : t.checkout.openEn}
-                  <ExternalLink className="h-4 w-4" />
+                  <ExternalLink className="h-4 w-4" aria-hidden="true" />
                 </a>
                 {payment.trackingUrl && (
                   <a
                     href={payment.trackingUrl}
                     className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-full border border-[var(--border)] px-4 text-xs font-black transition-colors hover:border-[var(--accent)]"
                   >
-                    <Loader2 className="h-3.5 w-3.5 animate-spin text-[var(--accent)]" />
+                    <Loader2 className="h-3.5 w-3.5 animate-spin text-[var(--accent)]" aria-hidden="true" />
                     {ar ? t.checkout.manualTrackAr : t.checkout.manualTrackEn}
                   </a>
                 )}
@@ -915,7 +915,7 @@ export function CheckoutDialog({
                       }
                       className="inline-flex min-h-10 items-center gap-1 rounded-lg border border-[var(--border)] px-2.5 text-xs font-semibold opacity-80 hover:border-[var(--accent)] hover:opacity-100 cursor-pointer"
                     >
-                      <Copy className="h-3.5 w-3.5" />
+                      <Copy className="h-3.5 w-3.5" aria-hidden="true" />
                       {copied === "amount"
                         ? ar
                           ? t.checkout.copiedAr
@@ -939,7 +939,7 @@ export function CheckoutDialog({
                       onClick={() => copy(payment.payAddress ?? "", "address")}
                       className="inline-flex min-h-10 flex-shrink-0 items-center gap-1 rounded-lg border border-[var(--border)] px-2.5 text-xs font-semibold opacity-80 hover:border-[var(--accent)] hover:opacity-100 cursor-pointer"
                     >
-                      <Copy className="h-3.5 w-3.5" />
+                      <Copy className="h-3.5 w-3.5" aria-hidden="true" />
                       {copied === "address"
                         ? ar
                           ? t.checkout.copiedAr

@@ -115,7 +115,7 @@ export function ReloadlySync({ paymentFeePercent }: { paymentFeePercent: number 
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h2 className="inline-flex items-center gap-2 text-[15px] font-black text-stone-900">
-            <Sparkles className="h-4 w-4 text-[#8A6D2F]" />
+            <Sparkles className="h-4 w-4 text-[#8A6D2F]" aria-hidden="true" />
             Réviser le catalogue depuis Reloadly
           </h2>
           <p className="mt-1 max-w-[70ch] text-[12.5px] leading-5 text-stone-600">
@@ -183,7 +183,7 @@ export function ReloadlySync({ paymentFeePercent }: { paymentFeePercent: number 
           disabled={busy}
           className="ml-auto inline-flex h-9 items-center gap-1.5 rounded-lg bg-[#C6A664] px-3 text-[12.5px] font-bold text-stone-900 transition-opacity hover:opacity-90 disabled:opacity-60"
         >
-          {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
+          {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" /> : <RefreshCw className="h-3.5 w-3.5" aria-hidden="true" />}
           Analyser
         </button>
       </div>
@@ -236,7 +236,7 @@ export function ReloadlySync({ paymentFeePercent }: { paymentFeePercent: number 
                   disabled={busy || selected.size === 0}
                   className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-stone-900 px-3 text-[12.5px] font-bold text-[#E5CA87] transition-opacity hover:opacity-90 disabled:opacity-60"
                 >
-                  {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <CheckSquare className="h-3.5 w-3.5" />}
+                  {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" /> : <CheckSquare className="h-3.5 w-3.5" aria-hidden="true" />}
                   Appliquer la sélection
                 </button>
               </div>
@@ -293,7 +293,7 @@ export function ReloadlySync({ paymentFeePercent }: { paymentFeePercent: number 
 
                           {proposal.disabledLabels.length > 0 && (
                             <span className="mt-1 flex items-start gap-1 text-[11px] leading-5 text-orange-800">
-                              <TriangleAlert className="mt-0.5 h-3 w-3 shrink-0" />
+                              <TriangleAlert className="mt-0.5 h-3 w-3 shrink-0" aria-hidden="true" />
                               Désactivés (refusés par Reloadly) : {proposal.disabledLabels.join(", ")}
                             </span>
                           )}

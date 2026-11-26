@@ -41,7 +41,7 @@ export default async function DigitalOrderPage({
           href="/codes"
           className="inline-flex items-center gap-1.5 text-[12.5px] font-bold text-[var(--muted-foreground)] transition-colors hover:text-[var(--accent)]"
         >
-          <ChevronLeft className="h-4 w-4 rtl:rotate-180" />
+          <ChevronLeft className="h-4 w-4 rtl:rotate-180" aria-hidden="true" />
           {ar ? "الأكواد وبطاقات الهدايا" : "Codes & gift cards"}
         </Link>
 

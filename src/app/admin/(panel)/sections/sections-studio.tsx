@@ -417,7 +417,7 @@ export function SectionsStudio({
               : "bg-red-600 text-white"
           }`}
         >
-          <Check className="h-3.5 w-3.5 text-[#E5CA87] shrink-0" />
+          <Check className="h-3.5 w-3.5 text-[#E5CA87] shrink-0" aria-hidden="true" />
           <span>{toast.msg}</span>
         </div>
       )}
@@ -450,7 +450,7 @@ export function SectionsStudio({
             target="_blank"
             className="h-10 px-3.5 rounded-xl border border-stone-300 bg-white text-stone-700 text-xs sm:text-sm font-semibold inline-flex items-center gap-1.5 hover:bg-stone-50"
           >
-            Voir l’accueil <ExternalLink className="h-3.5 w-3.5" />
+            Voir l’accueil <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
           </Link>
         </div>
       </div>
@@ -559,7 +559,7 @@ export function SectionsStudio({
               onClick={createCustomSection}
               className="h-10 px-5 rounded-xl bg-[#B8923F] text-white text-xs font-bold inline-flex items-center gap-1.5 hover:bg-[#A37F31] cursor-pointer shadow-xs"
             >
-              <Plus className="h-4 w-4" /> Créer la section maintenant
+              <Plus className="h-4 w-4" aria-hidden="true" /> Créer la section maintenant
             </button>
           </div>
         </div>
@@ -629,7 +629,7 @@ export function SectionsStudio({
                       )}
                       {hasSites && (
                         <span className="px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200 text-[11px] font-bold inline-flex items-center gap-1">
-                          <Globe className="h-3 w-3" />
+                          <Globe className="h-3 w-3" aria-hidden="true" />
                           {sitesCount} site{sitesCount > 1 ? "s" : ""}
                         </span>
                       )}
@@ -666,8 +666,7 @@ export function SectionsStudio({
                       <ChevronDown
                         className={`h-3.5 w-3.5 transition-transform ${
                           isOpen ? "rotate-180" : ""
-                        }`}
-                      />
+                        }`} aria-hidden="true" />
                     </button>
                   )}
 
@@ -687,7 +686,7 @@ export function SectionsStudio({
                     title="Monter cette section"
                     className="h-8 w-8 rounded-lg border border-stone-200 bg-stone-50 grid place-items-center text-stone-600 hover:bg-stone-100 disabled:opacity-30 cursor-pointer"
                   >
-                    <ArrowUp className="h-3.5 w-3.5" />
+                    <ArrowUp className="h-3.5 w-3.5" aria-hidden="true" />
                   </button>
                   <button
                     type="button"
@@ -721,7 +720,7 @@ export function SectionsStudio({
                         title="Supprimer définitivement cette section"
                         className="h-8 px-2.5 rounded-lg border border-red-200 bg-red-50 text-red-600 hover:bg-red-100 text-xs font-semibold inline-flex items-center gap-1 cursor-pointer"
                       >
-                        <Trash2 className="h-3.5 w-3.5" />
+                        <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
                         <span>Supprimer</span>
                       </button>
                     </>
@@ -732,7 +731,7 @@ export function SectionsStudio({
                       title="Désactiver cette section dans l’ancien constructeur"
                       className="h-8 px-2.5 rounded-lg border border-red-200 bg-red-50/70 text-red-600 hover:bg-red-100 text-xs font-semibold inline-flex items-center gap-1 cursor-pointer"
                     >
-                      <Trash2 className="h-3.5 w-3.5" />
+                      <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
                       <span>Supprimer</span>
                     </button>
                   )}
@@ -919,7 +918,7 @@ export function SectionsStudio({
                         }
                         className="h-9 px-3.5 rounded-xl bg-stone-900 text-white text-xs font-bold inline-flex items-center gap-1.5 hover:bg-stone-800 cursor-pointer shadow-2xs"
                       >
-                        <Plus className="h-3.5 w-3.5 text-[#E5CA87]" />
+                        <Plus className="h-3.5 w-3.5 text-[#E5CA87]" aria-hidden="true" />
                         Ajouter un site dans cette section
                       </button>
                     </div>
@@ -1049,7 +1048,7 @@ export function SectionsStudio({
                         }
                         className="h-7 px-2 rounded-lg text-red-600 hover:bg-red-50 text-xs font-semibold cursor-pointer"
                       >
-                        <Trash2 className="h-3.5 w-3.5" />
+                        <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
                       </button>
                     )}
                   </div>
@@ -1082,7 +1081,7 @@ export function SectionsStudio({
               onClick={onResetAll}
               className="h-9 px-3.5 rounded-xl border border-stone-300 bg-stone-50 text-stone-600 text-xs font-semibold hover:bg-stone-100 inline-flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
             >
-              <RotateCcw className="h-3.5 w-3.5" />
+              <RotateCcw className="h-3.5 w-3.5" aria-hidden="true" />
               Valeurs par défaut
             </button>
             <button
@@ -1091,7 +1090,7 @@ export function SectionsStudio({
               onClick={onSaveAll}
               className="h-9 px-5 rounded-xl bg-stone-900 text-white text-xs sm:text-sm font-bold hover:bg-stone-800 inline-flex items-center gap-2 cursor-pointer disabled:opacity-50 shadow-xs"
             >
-              <Check className="h-4 w-4 text-[#E5CA87]" />
+              <Check className="h-4 w-4 text-[#E5CA87]" aria-hidden="true" />
               {pending ? "Enregistrement…" : "Enregistrer sur le site"}
             </button>
           </div>

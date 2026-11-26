@@ -209,7 +209,7 @@ export function FullscreenLiveViewer({
               aria-label={locale === "ar" ? "إغلاق العرض الكامل" : "Exit Fullscreen"}
               className="min-h-10 px-3.5 rounded-full bg-white/10 hover:bg-white/20 text-xs font-bold inline-flex items-center gap-1.5 transition-colors cursor-pointer flex-shrink-0"
             >
-              <Minimize2 className="h-3.5 w-3.5" />
+              <Minimize2 className="h-3.5 w-3.5" aria-hidden="true" />
               <span className="hidden sm:inline">
                 {locale === "ar" ? "إغلاق العرض الكامل" : "Exit Fullscreen"}
               </span>
@@ -221,9 +221,9 @@ export function FullscreenLiveViewer({
               className="min-h-10 px-3.5 rounded-full bg-white/10 hover:bg-white/20 text-xs font-bold inline-flex items-center gap-1.5 transition-colors flex-shrink-0"
             >
               {locale === "ar" ? (
-                <ArrowRight className="h-3.5 w-3.5" />
+                <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
               ) : (
-                <ArrowLeft className="h-3.5 w-3.5" />
+                <ArrowLeft className="h-3.5 w-3.5" aria-hidden="true" />
               )}
               <span className="hidden sm:inline">
                 {locale === "ar" ? "الرجوع للمعارض" : "Back to Demos"}
@@ -264,7 +264,7 @@ export function FullscreenLiveViewer({
                 : "text-zinc-300 hover:text-white"
             }`}
           >
-            <Smartphone className="h-4 w-4 shrink-0" />
+            <Smartphone className="h-4 w-4 shrink-0" aria-hidden="true" />
             <span className="sm:hidden">{locale === "ar" ? "هاتف" : "Mobile"}</span>
             <span className="hidden sm:inline">{locale === "ar" ? "عرض هاتف (Mobile)" : "Mobile View"}</span>
           </button>
@@ -324,7 +324,7 @@ export function FullscreenLiveViewer({
             onClick={() => onClose?.()}
             className="hidden lg:inline-flex h-10 px-4 rounded-full bg-white/10 hover:bg-white/20 text-xs font-bold items-center gap-1.5 transition-colors"
           >
-            <Sparkles className="h-3.5 w-3.5 text-[var(--accent)]" />
+            <Sparkles className="h-3.5 w-3.5 text-[var(--accent)]" aria-hidden="true" />
             <span>{locale === "ar" ? "اطلب موقعاً مماثلاً" : "Order Similar Site"}</span>
           </Link>
 
@@ -338,7 +338,7 @@ export function FullscreenLiveViewer({
             <span className="hidden sm:inline">
               {locale === "ar" ? "فتح في نافذة جديدة" : "Open in New Tab"}
             </span>
-            <ExternalLink className="h-3.5 w-3.5" />
+            <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
           </a>
         </div>
       </div>
@@ -392,7 +392,7 @@ export function FullscreenLiveViewer({
         >
           <div className="flex items-start justify-between gap-3">
             <span className="inline-flex items-center gap-1.5 pt-1 text-[10px] font-black uppercase tracking-wider text-[var(--accent)]">
-              <Sparkles className="h-3 w-3" />
+              <Sparkles className="h-3 w-3" aria-hidden="true" />
               {locale === "ar" ? "عرض الموقع الأساسي" : "Base website offer"}
             </span>
             <button
@@ -401,7 +401,7 @@ export function FullscreenLiveViewer({
               className="h-10 w-10 -mt-1.5 -me-1.5 grid shrink-0 place-items-center rounded-full text-zinc-400 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
               aria-label={locale === "ar" ? "إخفاء العرض" : "Dismiss offer"}
             >
-              <X className="h-4 w-4" />
+              <X className="h-4 w-4" aria-hidden="true" />
             </button>
           </div>
 

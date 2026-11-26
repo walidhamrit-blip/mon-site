@@ -84,7 +84,7 @@ export function LocaleSwitcher({ variant = "compact" }: { variant?: "compact" | 
                   </span>
                 )}
               </span>
-              {active && <Check className="h-3.5 w-3.5 shrink-0" />}
+              {active && <Check className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />}
             </Link>
           </li>
         );
@@ -96,7 +96,7 @@ export function LocaleSwitcher({ variant = "compact" }: { variant?: "compact" | 
     return (
       <div>
         <div className="mb-2.5 flex items-center gap-2 text-[11px] font-black uppercase tracking-[0.16em] text-[var(--muted-foreground)]">
-          <Globe className="h-3.5 w-3.5" />
+          <Globe className="h-3.5 w-3.5" aria-hidden="true" />
           {ar ? "اللغة" : "Language"}
         </div>
         {options}
@@ -115,7 +115,7 @@ export function LocaleSwitcher({ variant = "compact" }: { variant?: "compact" | 
         title={ar ? "لغة الموقع" : "Site language"}
         className="inline-flex h-11 cursor-pointer items-center gap-1.5 rounded-full bg-[var(--secondary)] px-2.5 text-[12.5px] font-semibold transition-colors hover:bg-[var(--muted)]"
       >
-        <Globe className="h-3.5 w-3.5" />
+        <Globe className="h-3.5 w-3.5" aria-hidden="true" />
         <span className="hidden sm:inline">{ar ? "العربية" : "English"}</span>
         <span className="sm:hidden">{ar ? "ع" : "EN"}</span>
       </button>
@@ -134,7 +134,7 @@ export function LocaleSwitcher({ variant = "compact" }: { variant?: "compact" | 
               aria-label={ar ? "إغلاق" : "Close"}
               className="grid h-11 w-11 cursor-pointer place-items-center rounded-full bg-[var(--secondary)] hover:bg-[var(--muted)]"
             >
-              <X className="h-3.5 w-3.5" />
+              <X className="h-3.5 w-3.5" aria-hidden="true" />
             </button>
           </div>
           {options}

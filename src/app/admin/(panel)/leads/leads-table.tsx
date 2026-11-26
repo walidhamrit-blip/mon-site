@@ -116,7 +116,7 @@ export function LeadsTable({ rows }: { rows: LeadRow[] }) {
     <div className="space-y-3">
       {feedback && (
         <div className="fixed bottom-5 right-5 z-50 rounded-xl bg-stone-900 text-white px-4 py-2.5 text-xs font-semibold shadow-xl flex items-center gap-2">
-          <Check className="h-3.5 w-3.5 text-[#E5CA87]" /> {feedback}
+          <Check className="h-3.5 w-3.5 text-[#E5CA87]" aria-hidden="true" /> {feedback}
         </div>
       )}
 
@@ -126,7 +126,7 @@ export function LeadsTable({ rows }: { rows: LeadRow[] }) {
             <div className="flex items-start justify-between gap-3">
               <div>
                 <span className="inline-flex items-center gap-1.5 text-xs font-bold text-[#8A6D2F]">
-                  <Sparkles className="h-3.5 w-3.5" /> Projet livré → Avis + Fiche démo
+                  <Sparkles className="h-3.5 w-3.5" aria-hidden="true" /> Projet livré → Avis + Fiche démo
                 </span>
                 <h3 className="text-base font-black text-stone-900 mt-1">
                   {reviewModal.message ?? "Fiche créée avec succès"}
@@ -137,7 +137,7 @@ export function LeadsTable({ rows }: { rows: LeadRow[] }) {
                 onClick={() => setReviewModal(null)}
                 className="text-stone-400 hover:text-stone-800 p-1"
               >
-                <X className="h-4 w-4" />
+                <X className="h-4 w-4" aria-hidden="true" />
               </button>
             </div>
 
@@ -153,7 +153,7 @@ export function LeadsTable({ rows }: { rows: LeadRow[] }) {
                   rel="noopener"
                   className="inline-flex items-center gap-1 text-[#8A6D2F] font-semibold hover:underline shrink-0"
                 >
-                  Voir <ExternalLink className="h-3 w-3" />
+                  Voir <ExternalLink className="h-3 w-3" aria-hidden="true" />
                 </a>
               </div>
             )}
@@ -179,11 +179,11 @@ export function LeadsTable({ rows }: { rows: LeadRow[] }) {
               >
                 {copiedWa ? (
                   <>
-                    <Check className="h-3.5 w-3.5 text-emerald-600" /> Copié !
+                    <Check className="h-3.5 w-3.5 text-emerald-600" aria-hidden="true" /> Copié !
                   </>
                 ) : (
                   <>
-                    <Copy className="h-3.5 w-3.5" /> Copier le texte
+                    <Copy className="h-3.5 w-3.5" aria-hidden="true" /> Copier le texte
                   </>
                 )}
               </button>
@@ -202,7 +202,7 @@ export function LeadsTable({ rows }: { rows: LeadRow[] }) {
                     rel="noopener"
                     className="inline-flex items-center gap-1.5 h-9 px-4 rounded-xl bg-[#0B6B3A] text-white text-xs font-bold hover:brightness-95 shadow-xs"
                   >
-                    <MessageCircle className="h-3.5 w-3.5" /> Envoyer sur WhatsApp
+                    <MessageCircle className="h-3.5 w-3.5" aria-hidden="true" /> Envoyer sur WhatsApp
                   </a>
                 )}
               </div>
@@ -226,8 +226,7 @@ export function LeadsTable({ rows }: { rows: LeadRow[] }) {
                   <ChevronDown
                     className={`h-4 w-4 text-stone-400 shrink-0 transition-transform ${
                       open ? "rotate-180 text-stone-800" : ""
-                    }`}
-                  />
+                    }`} aria-hidden="true" />
                   <div className="min-w-0">
                     <div className="text-sm font-bold text-stone-900 truncate">
                       {lead.business}
@@ -327,14 +326,14 @@ export function LeadsTable({ rows }: { rows: LeadRow[] }) {
                         rel="noopener"
                         className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-xl bg-emerald-50 text-emerald-800 border border-emerald-200 text-xs font-semibold hover:bg-emerald-100"
                       >
-                        <MessageCircle className="h-3.5 w-3.5" /> WhatsApp
+                        <MessageCircle className="h-3.5 w-3.5" aria-hidden="true" /> WhatsApp
                       </a>
                       {lead.email && (
                         <a
                           href={`mailto:${lead.email}`}
                           className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-xl border border-stone-300 bg-white text-stone-700 text-xs font-semibold hover:bg-stone-50"
                         >
-                          <Mail className="h-3.5 w-3.5" /> Email
+                          <Mail className="h-3.5 w-3.5" aria-hidden="true" /> Email
                         </a>
                       )}
                       <button
@@ -343,7 +342,7 @@ export function LeadsTable({ rows }: { rows: LeadRow[] }) {
                         onClick={() => onDeliverAndReview(lead)}
                         className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-xl bg-[#C6A664]/20 text-[#7A5D20] border border-[#C6A664]/45 text-xs font-bold hover:bg-[#C6A664]/30 disabled:opacity-50 cursor-pointer"
                       >
-                        <Sparkles className="h-3.5 w-3.5" /> Projet livré → Avis + Démo
+                        <Sparkles className="h-3.5 w-3.5" aria-hidden="true" /> Projet livré → Avis + Démo
                       </button>
                     </div>
 
@@ -353,7 +352,7 @@ export function LeadsTable({ rows }: { rows: LeadRow[] }) {
                       onClick={() => onDelete(lead)}
                       className="inline-flex items-center gap-1.5 h-9 px-3 rounded-xl text-red-600 hover:bg-red-50 text-xs font-semibold disabled:opacity-50 cursor-pointer"
                     >
-                      <Trash2 className="h-3.5 w-3.5" /> Supprimer
+                      <Trash2 className="h-3.5 w-3.5" aria-hidden="true" /> Supprimer
                     </button>
                   </div>
                 </div>

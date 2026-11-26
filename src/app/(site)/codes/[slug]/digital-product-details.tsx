@@ -105,7 +105,7 @@ export function DigitalProductDetails({
             href="/codes"
             className="inline-flex items-center gap-1.5 text-[12.5px] font-bold text-[var(--muted-foreground)] transition-colors hover:text-[var(--accent)]"
           >
-            <ChevronLeft className="h-4 w-4 rtl:rotate-180" />
+            <ChevronLeft className="h-4 w-4 rtl:rotate-180" aria-hidden="true" />
             {ar ? "كل الأكواد والبطاقات" : "All codes & cards"}
           </Link>
 
@@ -147,7 +147,7 @@ export function DigitalProductDetails({
                   {ar ? DIGITAL_KIND_LABELS[product.kind].ar : DIGITAL_KIND_LABELS[product.kind].en}
                 </span>
                 <span className="chip">
-                  <Clock className="h-3 w-3" />
+                  <Clock className="h-3 w-3" aria-hidden="true" />
                   {ar
                     ? DIGITAL_STATUS_LABELS[product.status].ar
                     : DIGITAL_STATUS_LABELS[product.status].en}
@@ -213,7 +213,7 @@ export function DigitalProductDetails({
                   {features.map((feature) => (
                     <li key={feature} className="flex items-start gap-2 text-sm leading-6">
                       <span className="mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-full bg-[var(--accent)]/15 text-[var(--accent)]">
-                        <Check className="h-3 w-3" />
+                        <Check className="h-3 w-3" aria-hidden="true" />
                       </span>
                       <span className="opacity-85">{feature}</span>
                     </li>
@@ -244,7 +244,7 @@ export function DigitalProductDetails({
 
               {(product.deliveryNoteAr || product.deliveryNoteEn) && (
                 <p className="mt-6 flex items-start gap-2.5 rounded-[var(--radius-md)] border border-[var(--border)] bg-[var(--card)] p-4 text-[13px] leading-6 text-[var(--muted-foreground)]">
-                  <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-[var(--accent)]" />
+                  <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-[var(--accent)]" aria-hidden="true" />
                   {ar ? product.deliveryNoteAr : product.deliveryNoteEn}
                 </p>
               )}
@@ -346,7 +346,7 @@ export function DigitalProductDetails({
                 className="mt-4 inline-flex h-11 w-full items-center justify-center gap-1.5 rounded-full border border-[var(--border)] text-[13px] font-bold transition-colors hover:border-[var(--accent)]"
               >
                 {ar ? "اطلب عرض سعر مخصص" : "Request a custom quote"}
-                <ArrowUpRight className="h-4 w-4" />
+                <ArrowUpRight className="h-4 w-4" aria-hidden="true" />
               </Link>
             </aside>
           </div>

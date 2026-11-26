@@ -19,7 +19,7 @@ export function LoginForm() {
           Mot de passe administrateur
         </label>
         <div className="relative">
-          <Lock className="h-4 w-4 text-stone-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+          <Lock className="h-4 w-4 text-stone-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" aria-hidden="true" />
           <input
             id="password"
             name="password"

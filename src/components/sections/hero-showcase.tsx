@@ -201,7 +201,7 @@ export function HeroShowcase() {
             />
           )}
           <a href={project.previewUrl} target="_blank" rel="noopener noreferrer" className="inline-flex shrink-0 items-center gap-2 rounded-full border border-[var(--border)] bg-[var(--card)] px-3 py-2.5 text-xs font-bold transition-colors hover:border-[var(--accent)]">
-            {ar ? "زيارة الموقع" : "Visit site"}<ExternalLink className="h-3.5 w-3.5" />
+            {ar ? "زيارة الموقع" : "Visit site"}<ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
           </a>
         </div>
       </div>
@@ -221,9 +221,9 @@ export function HeroShowcase() {
             </div>
           </div>
           <div className="flex shrink-0 items-center gap-1" dir="ltr">
-            <button type="button" onClick={() => step(-1)} aria-label={ar ? "الموقع السابق" : "Previous website"} className="showcase-control"><ArrowLeft className="h-4 w-4" /></button>
-            {!reducedMotion && <button type="button" onClick={() => setPaused(!paused)} aria-label={paused ? (ar ? "تشغيل العرض" : "Play slideshow") : (ar ? "إيقاف العرض مؤقتاً" : "Pause slideshow")} className="showcase-control">{paused ? <Play className="h-3.5 w-3.5" /> : <Pause className="h-3.5 w-3.5" />}</button>}
-            <button type="button" onClick={() => step(1)} aria-label={ar ? "الموقع التالي" : "Next website"} className="showcase-control"><ArrowRight className="h-4 w-4" /></button>
+            <button type="button" onClick={() => step(-1)} aria-label={ar ? "الموقع السابق" : "Previous website"} className="showcase-control"><ArrowLeft className="h-4 w-4" aria-hidden="true" /></button>
+            {!reducedMotion && <button type="button" onClick={() => setPaused(!paused)} aria-label={paused ? (ar ? "تشغيل العرض" : "Play slideshow") : (ar ? "إيقاف العرض مؤقتاً" : "Pause slideshow")} className="showcase-control">{paused ? <Play className="h-3.5 w-3.5" aria-hidden="true" /> : <Pause className="h-3.5 w-3.5" aria-hidden="true" />}</button>}
+            <button type="button" onClick={() => step(1)} aria-label={ar ? "الموقع التالي" : "Next website"} className="showcase-control"><ArrowRight className="h-4 w-4" aria-hidden="true" /></button>
           </div>
         </div>
       )}

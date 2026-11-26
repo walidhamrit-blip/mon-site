@@ -79,14 +79,14 @@ export function TrackingLinkButton({
           rel="noopener"
           className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-xl border border-stone-300 bg-white text-stone-700 text-xs font-semibold hover:bg-stone-50"
         >
-          <ExternalLink className="h-3.5 w-3.5" /> Ouvrir
+          <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" /> Ouvrir
         </a>
         <button
           type="button"
           onClick={copy}
           className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-xl bg-[#C6A664]/20 text-[#7A5D20] border border-[#C6A664]/45 text-xs font-semibold hover:bg-[#C6A664]/30"
         >
-          {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
+          {copied ? <Check className="h-3.5 w-3.5" aria-hidden="true" /> : <Copy className="h-3.5 w-3.5" aria-hidden="true" />}
           {copied ? "Copié" : "Copier le lien"}
         </button>
         <button
@@ -94,7 +94,7 @@ export function TrackingLinkButton({
           onClick={regenerate}
           className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-xl border border-stone-300 bg-white text-stone-500 text-xs font-semibold hover:bg-stone-50"
         >
-          <Link2 className="h-3.5 w-3.5" /> Régénérer
+          <Link2 className="h-3.5 w-3.5" aria-hidden="true" /> Régénérer
         </button>
         <span className="w-full text-[11px] text-stone-400 break-all">{url}</span>
       </div>
@@ -110,9 +110,9 @@ export function TrackingLinkButton({
         className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-xl border border-stone-300 bg-white text-stone-700 text-xs font-semibold hover:bg-stone-50 disabled:opacity-50"
       >
         {state === "busy" ? (
-          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+          <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" />
         ) : (
-          <Link2 className="h-3.5 w-3.5" />
+          <Link2 className="h-3.5 w-3.5" aria-hidden="true" />
         )}
         {state === "busy" ? "Génération…" : label}
       </button>

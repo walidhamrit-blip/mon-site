@@ -276,7 +276,7 @@ export function DigitalEditor({
           onClick={addProduct}
           className="inline-flex h-10 items-center gap-1.5 rounded-lg bg-stone-900 px-4 text-sm font-bold text-[#E5CA87] transition-opacity hover:opacity-90"
         >
-          <Plus className="h-4 w-4" />
+          <Plus className="h-4 w-4" aria-hidden="true" />
           Nouvelle fiche
         </button>
       </header>
@@ -355,7 +355,7 @@ export function DigitalEditor({
                   aria-label={open ? "Replier" : "Modifier"}
                   className="grid h-8 w-8 place-items-center rounded-lg border border-stone-200 text-stone-600 hover:bg-stone-50"
                 >
-                  {open ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                  {open ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" aria-hidden="true" />}
                 </button>
                 <button
                   type="button"
@@ -363,7 +363,7 @@ export function DigitalEditor({
                   aria-label="Supprimer"
                   className="grid h-8 w-8 place-items-center rounded-lg border border-stone-200 text-red-600 hover:bg-red-50"
                 >
-                  <Trash2 className="h-4 w-4" />
+                  <Trash2 className="h-4 w-4" aria-hidden="true" />
                 </button>
               </div>
 
@@ -677,7 +677,7 @@ export function DigitalEditor({
                         onClick={() => addDenomination(product.id)}
                         className="inline-flex h-8 items-center gap-1 rounded-lg border border-stone-300 bg-white px-3 text-[12px] font-bold text-stone-700 hover:bg-stone-50"
                       >
-                        <Plus className="h-3.5 w-3.5" />
+                        <Plus className="h-3.5 w-3.5" aria-hidden="true" />
                         Montant
                       </button>
                     </div>
@@ -781,11 +781,11 @@ export function DigitalEditor({
                               >
                                 {denomination.available ? (
                                   <>
-                                    <Check className="h-3.5 w-3.5" /> Oui
+                                    <Check className="h-3.5 w-3.5" aria-hidden="true" /> Oui
                                   </>
                                 ) : (
                                   <>
-                                    <X className="h-3.5 w-3.5" /> Non
+                                    <X className="h-3.5 w-3.5" aria-hidden="true" /> Non
                                   </>
                                 )}
                               </button>
@@ -798,7 +798,7 @@ export function DigitalEditor({
                               aria-label="Retirer le montant"
                               className="grid h-9 w-9 place-items-center rounded-md border border-stone-200 text-red-600 hover:bg-red-50"
                             >
-                              <Trash2 className="h-4 w-4" />
+                              <Trash2 className="h-4 w-4" aria-hidden="true" />
                             </button>
                           </div>
                         ))}

@@ -180,7 +180,7 @@ export function SitesManager({ initialDemos, plans, currency }: Props) {
               : "bg-red-600 text-white"
           }`}
         >
-          <Check className="h-3.5 w-3.5 text-[#E5CA87] shrink-0" />
+          <Check className="h-3.5 w-3.5 text-[#E5CA87] shrink-0" aria-hidden="true" />
           <span>{toast.msg}</span>
         </div>
       )}
@@ -212,9 +212,9 @@ export function SitesManager({ initialDemos, plans, currency }: Props) {
             className="h-10 px-3.5 rounded-xl bg-[#FAF6EC] border border-[#C6A664]/50 text-[#7A5D20] text-xs font-bold inline-flex items-center gap-1.5 hover:bg-[#C6A664]/20 disabled:opacity-50 cursor-pointer"
           >
             {aiBatchLoading ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
+              <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
             ) : (
-              <Sparkles className="h-4 w-4" />
+              <Sparkles className="h-4 w-4" aria-hidden="true" />
             )}
             Compléter tout le SEO IA
           </button>
@@ -224,7 +224,7 @@ export function SitesManager({ initialDemos, plans, currency }: Props) {
             onClick={addDemo}
             className="h-10 px-4 rounded-xl bg-stone-900 text-white text-xs sm:text-sm font-bold inline-flex items-center gap-1.5 hover:bg-stone-800 cursor-pointer shadow-xs"
           >
-            <Plus className="h-4 w-4 text-[#E5CA87]" />
+            <Plus className="h-4 w-4 text-[#E5CA87]" aria-hidden="true" />
             Ajouter un site
           </button>
 
@@ -233,7 +233,7 @@ export function SitesManager({ initialDemos, plans, currency }: Props) {
             target="_blank"
             className="h-10 px-3.5 rounded-xl border border-stone-300 bg-white text-stone-700 text-xs font-semibold inline-flex items-center gap-1.5 hover:bg-stone-50"
           >
-            Page /demos <ExternalLink className="h-3.5 w-3.5" />
+            Page /demos <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
           </Link>
         </div>
       </div>
@@ -241,7 +241,7 @@ export function SitesManager({ initialDemos, plans, currency }: Props) {
       {/* Recherche + filtre secteur */}
       <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-stone-200 bg-white p-3.5 shadow-2xs">
         <div className="relative flex-1 min-w-[220px]">
-          <Search className="h-4 w-4 text-stone-400 absolute left-3 top-1/2 -translate-y-1/2" />
+          <Search className="h-4 w-4 text-stone-400 absolute left-3 top-1/2 -translate-y-1/2" aria-hidden="true" />
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
@@ -318,7 +318,7 @@ export function SitesManager({ initialDemos, plans, currency }: Props) {
               onClick={onReset}
               className="h-9 px-3.5 rounded-xl border border-stone-300 bg-stone-50 text-stone-600 text-xs font-semibold hover:bg-stone-100 inline-flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
             >
-              <RotateCcw className="h-3.5 w-3.5" />
+              <RotateCcw className="h-3.5 w-3.5" aria-hidden="true" />
               Valeurs par défaut
             </button>
             <button
@@ -327,7 +327,7 @@ export function SitesManager({ initialDemos, plans, currency }: Props) {
               onClick={onSave}
               className="h-9 px-5 rounded-xl bg-stone-900 text-white text-xs sm:text-sm font-bold hover:bg-stone-800 inline-flex items-center gap-2 cursor-pointer disabled:opacity-50 shadow-xs"
             >
-              <Check className="h-4 w-4 text-[#E5CA87]" />
+              <Check className="h-4 w-4 text-[#E5CA87]" aria-hidden="true" />
               {pending ? "Enregistrement…" : "Enregistrer la galerie"}
             </button>
           </div>

@@ -33,7 +33,7 @@ export function PaymentGuarantee({
       <div
         className={`flex items-start gap-2.5 rounded-2xl border border-emerald-500/30 bg-emerald-500/10 p-3.5 ${className}`}
       >
-        <ShieldCheck className="mt-0.5 h-4.5 w-4.5 flex-shrink-0 text-emerald-400" />
+        <ShieldCheck className="mt-0.5 h-4.5 w-4.5 flex-shrink-0 text-emerald-400" aria-hidden="true" />
         <div><p className="text-xs leading-relaxed text-emerald-300">
           <strong className="font-black">{title}</strong>
           {" — "}
@@ -48,13 +48,13 @@ export function PaymentGuarantee({
       className={`rounded-2xl border border-emerald-500/30 bg-emerald-500/10 p-4 ${className}`}
     >
       <div className="flex items-center gap-2">
-        <ShieldCheck className="h-4.5 w-4.5 flex-shrink-0 text-emerald-400" />
+        <ShieldCheck className="h-4.5 w-4.5 flex-shrink-0 text-emerald-400" aria-hidden="true" />
         <p className="text-sm font-black text-emerald-300">{title}</p>
       </div>
       <ul className="mt-2.5 space-y-1.5">
         {points.map((point) => (
           <li key={point} className="flex items-start gap-2">
-            <BadgeCheck className="mt-0.5 h-3.5 w-3.5 flex-shrink-0 text-emerald-400" />
+            <BadgeCheck className="mt-0.5 h-3.5 w-3.5 flex-shrink-0 text-emerald-400" aria-hidden="true" />
             <span className="text-xs leading-relaxed text-emerald-300/90">{point}</span>
           </li>
         ))}

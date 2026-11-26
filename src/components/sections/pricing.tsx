@@ -35,7 +35,7 @@ export function Pricing() {
           <div className="my-6 rounded-2xl bg-[var(--secondary)]/50 p-4"><ModelPriceBreakdown breakdown={resolvePlanPriceBreakdown(plan)} /></div>
           <ul className="space-y-3">{(ar ? plan.features : plan.featuresEn).map(feature => <li key={feature} className="flex gap-3 text-sm leading-6"><Check className="mt-1 h-4 w-4 shrink-0 text-[var(--accent)]" aria-hidden="true" /><span>{feature}</span></li>)}</ul>
           <ModelPurchaseButton plan={plan} className="mt-6 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-full bg-[var(--accent)] px-5 py-3 text-center text-sm font-black text-[var(--accent-foreground)] hover:bg-[var(--accent-hover)]" />
-          <Link href="/demos" className="mt-4 flex min-h-11 items-center justify-center gap-2 text-sm font-bold underline underline-offset-4">{ar ? "اختر تصميمك من المعرض" : "Choose your design in the gallery"}<ArrowUpRight className="h-4 w-4" /></Link>
+          <Link href="/demos" className="mt-4 flex min-h-11 items-center justify-center gap-2 text-sm font-bold underline underline-offset-4">{ar ? "اختر تصميمك من المعرض" : "Choose your design in the gallery"}<ArrowUpRight className="h-4 w-4" aria-hidden="true" /></Link>
         </article>
 
         <article id="website-options" className="scroll-mt-24 rounded-[var(--radius-lg)] border border-[var(--border)] bg-[var(--card)] p-6 sm:p-8">

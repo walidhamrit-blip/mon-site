@@ -169,9 +169,9 @@ export function ClientCreditsManager({
                       className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-emerald-700 px-3 text-[12px] font-bold text-white hover:bg-emerald-800 disabled:opacity-50"
                     >
                       {busy ? (
-                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                        <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" />
                       ) : (
-                        <CheckCircle2 className="h-3.5 w-3.5" />
+                        <CheckCircle2 className="h-3.5 w-3.5" aria-hidden="true" />
                       )}
                       Valider l&rsquo;utilisation
                     </button>
@@ -181,7 +181,7 @@ export function ClientCreditsManager({
                       onClick={() => decide(request.id, "reject", request.orderRef)}
                       className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-red-300 bg-white px-3 text-[12px] font-bold text-red-700 hover:bg-red-50 disabled:opacity-50"
                     >
-                      <XCircle className="h-3.5 w-3.5" />
+                      <XCircle className="h-3.5 w-3.5" aria-hidden="true" />
                       Refuser
                     </button>
                   </div>
@@ -254,7 +254,7 @@ export function ClientCreditsManager({
                         }}
                         className="inline-flex items-center gap-1.5 rounded-lg border border-stone-300 bg-white px-3 py-1.5 text-[12px] font-bold text-stone-700 hover:bg-stone-50"
                       >
-                        <Coins className="h-3.5 w-3.5" />
+                        <Coins className="h-3.5 w-3.5" aria-hidden="true" />
                         Mouvement
                       </button>
                     </div>
@@ -326,7 +326,7 @@ export function ClientCreditsManager({
                         disabled={busy || !amount.trim()}
                         className="inline-flex items-center gap-1.5 rounded-lg bg-stone-900 px-3 py-2 text-[12px] font-bold text-white hover:bg-stone-800 disabled:opacity-50"
                       >
-                        {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Plus className="h-3.5 w-3.5" />}
+                        {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" /> : <Plus className="h-3.5 w-3.5" aria-hidden="true" />}
                         Enregistrer le mouvement
                       </button>
                     </div>
@@ -340,7 +340,7 @@ export function ClientCreditsManager({
 
       <section className="overflow-hidden rounded-2xl border border-stone-200/90 bg-white shadow-2xs">
         <div className="flex items-center gap-2 border-b border-stone-100 px-4 py-3 text-[12px] font-bold uppercase tracking-wide text-stone-500">
-          <Wallet className="h-3.5 w-3.5" /> Derniers mouvements
+          <Wallet className="h-3.5 w-3.5" aria-hidden="true" /> Derniers mouvements
         </div>
         {movements.length === 0 ? (
           <p className="px-4 py-6 text-center text-sm text-stone-500">Aucun mouvement.</p>
@@ -384,7 +384,7 @@ export function ClientCreditsManager({
           </ul>
         )}
         <p className="border-t border-stone-100 px-4 py-2 text-[11px] text-stone-500">
-          <Undo2 className="mr-1 inline h-3 w-3" />
+          <Undo2 className="mr-1 inline h-3 w-3" aria-hidden="true" />
           Un mouvement ne s&rsquo;efface pas : une erreur se corrige par un ajustement opposé.
         </p>
       </section>

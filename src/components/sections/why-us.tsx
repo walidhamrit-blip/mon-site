@@ -81,7 +81,7 @@ export function WhyUs() {
             </span>
             <span className="relative mt-5 inline-flex items-center gap-2 text-[13px] font-bold text-[var(--accent)]">
               {locale === "ar" ? "تحدث معنا" : "Talk to us"}
-              <ArrowUpRight className="h-4 w-4 transition-transform duration-200 group-hover:-translate-y-0.5 group-hover:translate-x-0.5 rtl:group-hover:-translate-x-0.5" />
+              <ArrowUpRight className="h-4 w-4 transition-transform duration-200 group-hover:-translate-y-0.5 group-hover:translate-x-0.5 rtl:group-hover:-translate-x-0.5" aria-hidden="true" />
             </span>
           </m.a>
         </div>

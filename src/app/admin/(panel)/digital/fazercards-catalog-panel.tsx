@@ -57,7 +57,7 @@ export function FazercardsCatalogPanel({
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h2 className="inline-flex items-center gap-2 text-[15px] font-black text-stone-900">
-            <Package className="h-4 w-4 text-[#B8923F]" />
+            <Package className="h-4 w-4 text-[#B8923F]" aria-hidden="true" />
             Catalogue réellement vendu — FazerCards
           </h2>
           <p className="mt-1 max-w-2xl text-[12px] leading-5 text-stone-600">
@@ -83,7 +83,7 @@ export function FazercardsCatalogPanel({
             className="inline-flex items-center gap-1 rounded-lg border border-stone-300 px-3 py-2 text-[12px] font-bold text-stone-700 hover:bg-stone-50"
           >
             Voir la boutique
-            <ArrowUpRight className="h-3.5 w-3.5" />
+            <ArrowUpRight className="h-3.5 w-3.5" aria-hidden="true" />
           </Link>
         </div>
       </div>
@@ -128,7 +128,7 @@ export function FazercardsCatalogPanel({
       </dl>
 
       <p className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-stone-500">
-        <ShieldCheck className="h-3.5 w-3.5 text-emerald-600" />
+        <ShieldCheck className="h-3.5 w-3.5 text-emerald-600" aria-hidden="true" />
         Prix public minimum {MIN_RETAIL_USD.toFixed(2)} $. Barème :
         {tiers.map((tier) => (
           <span key={tier.marginPercent} className="font-bold text-stone-700">

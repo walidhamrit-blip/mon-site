@@ -205,7 +205,7 @@ export function ContentEditor({
               : "bg-red-600 text-white"
           }`}
         >
-          <Check className="h-3.5 w-3.5 text-[#E5CA87] shrink-0" />
+          <Check className="h-3.5 w-3.5 text-[#E5CA87] shrink-0" aria-hidden="true" />
           <span>{toast.msg}</span>
         </div>
       )}
@@ -562,7 +562,7 @@ export function ContentEditor({
                 }}
                 className="h-8 px-3 rounded-lg bg-stone-900 text-white text-xs font-bold inline-flex items-center gap-1 cursor-pointer"
               >
-                <Plus className="h-3.5 w-3.5" /> Ajouter
+                <Plus className="h-3.5 w-3.5" aria-hidden="true" /> Ajouter
               </button>
             </div>
 
@@ -604,7 +604,7 @@ export function ContentEditor({
                     }}
                     className="h-10 px-3 rounded-xl border border-red-200 bg-red-50 text-red-600 hover:bg-red-100 text-xs font-semibold cursor-pointer"
                   >
-                    <Trash2 className="h-3.5 w-3.5" />
+                    <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
                   </button>
                 </div>
               ))}
@@ -637,7 +637,7 @@ export function ContentEditor({
               }}
               className="h-9 px-3.5 rounded-xl bg-stone-900 text-white text-xs font-bold inline-flex items-center gap-1.5 cursor-pointer"
             >
-              <Plus className="h-3.5 w-3.5" /> Ajouter une carte
+              <Plus className="h-3.5 w-3.5" aria-hidden="true" /> Ajouter une carte
             </button>
           </div>
 
@@ -662,7 +662,7 @@ export function ContentEditor({
                     }}
                     className="h-8 w-8 rounded-lg border border-stone-200 bg-stone-50 grid place-items-center disabled:opacity-30 cursor-pointer"
                   >
-                    <ArrowUp className="h-3.5 w-3.5" />
+                    <ArrowUp className="h-3.5 w-3.5" aria-hidden="true" />
                   </button>
                   <button
                     type="button"
@@ -685,7 +685,7 @@ export function ContentEditor({
                     }}
                     className="h-8 px-2.5 rounded-lg border border-red-200 bg-red-50 text-red-600 text-xs font-semibold inline-flex items-center gap-1 cursor-pointer"
                   >
-                    <Trash2 className="h-3.5 w-3.5" /> Supprimer
+                    <Trash2 className="h-3.5 w-3.5" aria-hidden="true" /> Supprimer
                   </button>
                 </div>
               </div>
@@ -796,7 +796,7 @@ export function ContentEditor({
               }}
               className="h-9 px-3.5 rounded-xl bg-stone-900 text-white text-xs font-bold inline-flex items-center gap-1.5 cursor-pointer"
             >
-              <Plus className="h-3.5 w-3.5" /> Ajouter une étape
+              <Plus className="h-3.5 w-3.5" aria-hidden="true" /> Ajouter une étape
             </button>
           </div>
 
@@ -821,7 +821,7 @@ export function ContentEditor({
                     }}
                     className="h-8 w-8 rounded-lg border border-stone-200 bg-stone-50 grid place-items-center disabled:opacity-30 cursor-pointer"
                   >
-                    <ArrowUp className="h-3.5 w-3.5" />
+                    <ArrowUp className="h-3.5 w-3.5" aria-hidden="true" />
                   </button>
                   <button
                     type="button"
@@ -844,7 +844,7 @@ export function ContentEditor({
                     }}
                     className="h-8 px-2.5 rounded-lg border border-red-200 bg-red-50 text-red-600 text-xs font-semibold inline-flex items-center gap-1 cursor-pointer"
                   >
-                    <Trash2 className="h-3.5 w-3.5" /> Supprimer
+                    <Trash2 className="h-3.5 w-3.5" aria-hidden="true" /> Supprimer
                   </button>
                 </div>
               </div>
@@ -981,7 +981,7 @@ export function ContentEditor({
               }}
               className="h-9 px-3.5 rounded-xl bg-stone-900 text-white text-xs font-bold inline-flex items-center gap-1.5 cursor-pointer"
             >
-              <Plus className="h-3.5 w-3.5" /> Ajouter un avis
+              <Plus className="h-3.5 w-3.5" aria-hidden="true" /> Ajouter un avis
             </button>
           </div>
 
@@ -1002,7 +1002,7 @@ export function ContentEditor({
                   }}
                   className="h-8 px-2.5 rounded-lg border border-red-200 bg-red-50 text-red-600 text-xs font-semibold inline-flex items-center gap-1 cursor-pointer"
                 >
-                  <Trash2 className="h-3.5 w-3.5" /> Supprimer
+                  <Trash2 className="h-3.5 w-3.5" aria-hidden="true" /> Supprimer
                 </button>
               </div>
 
@@ -1214,7 +1214,7 @@ export function ContentEditor({
               }}
               className="h-9 px-3.5 rounded-xl bg-stone-900 text-white text-xs font-bold inline-flex items-center gap-1.5 cursor-pointer"
             >
-              <Plus className="h-3.5 w-3.5" /> Ajouter une question
+              <Plus className="h-3.5 w-3.5" aria-hidden="true" /> Ajouter une question
             </button>
           </div>
 
@@ -1235,7 +1235,7 @@ export function ContentEditor({
                   }}
                   className="h-8 px-2.5 rounded-lg border border-red-200 bg-red-50 text-red-600 text-xs font-semibold inline-flex items-center gap-1 cursor-pointer"
                 >
-                  <Trash2 className="h-3.5 w-3.5" /> Supprimer
+                  <Trash2 className="h-3.5 w-3.5" aria-hidden="true" /> Supprimer
                 </button>
               </div>
 
@@ -1427,7 +1427,7 @@ export function ContentEditor({
               }}
               className="h-9 px-3.5 rounded-xl bg-stone-900 text-white text-xs font-bold inline-flex items-center gap-1.5 cursor-pointer"
             >
-              <Plus className="h-3.5 w-3.5" /> Ajouter un site
+              <Plus className="h-3.5 w-3.5" aria-hidden="true" /> Ajouter un site
             </button>
           </div>
 
@@ -1496,7 +1496,7 @@ export function ContentEditor({
               onClick={onReset}
               className="h-9 px-3.5 rounded-xl border border-stone-300 bg-stone-50 text-stone-600 text-xs font-semibold hover:bg-stone-100 inline-flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
             >
-              <RotateCcw className="h-3.5 w-3.5" />
+              <RotateCcw className="h-3.5 w-3.5" aria-hidden="true" />
               Valeurs par défaut
             </button>
             <button
@@ -1505,7 +1505,7 @@ export function ContentEditor({
               onClick={onSave}
               className="h-9 px-5 rounded-xl bg-stone-900 text-white text-xs sm:text-sm font-bold hover:bg-stone-800 inline-flex items-center gap-2 cursor-pointer disabled:opacity-50 shadow-xs"
             >
-              <Check className="h-4 w-4 text-[#E5CA87]" />
+              <Check className="h-4 w-4 text-[#E5CA87]" aria-hidden="true" />
               {pending ? "Enregistrement…" : "Enregistrer l’onglet"}
             </button>
           </div>

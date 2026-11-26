@@ -43,11 +43,11 @@ export function ArticleCard({
           {ar ? categoryAr : categoryEn || categoryAr}
         </span>
         <span className="inline-flex items-center gap-1 text-[var(--muted-foreground)]">
-          <Calendar className="h-3 w-3" />
+          <Calendar className="h-3 w-3" aria-hidden="true" />
           {formatArticleDate(updatedAt, locale)}
         </span>
         <span className="inline-flex items-center gap-1 text-[var(--muted-foreground)]">
-          <Clock className="h-3 w-3" />
+          <Clock className="h-3 w-3" aria-hidden="true" />
           {readingMinutes} {ar ? "د" : "min"}
         </span>
       </div>
@@ -66,7 +66,7 @@ export function ArticleCard({
         className="mt-4 inline-flex items-center gap-1.5 text-[12.5px] font-bold text-[var(--accent)]"
       >
         {ar ? "اقرأ الدليل" : "Read the guide"}
-        <ArrowUpRight className="h-3.5 w-3.5 transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5 rtl:group-hover:-translate-x-0.5" />
+        <ArrowUpRight className="h-3.5 w-3.5 transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5 rtl:group-hover:-translate-x-0.5" aria-hidden="true" />
       </Link>
     </article>
   );

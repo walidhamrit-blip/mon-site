@@ -261,7 +261,7 @@ export function IdentityStudio() {
                     }
                     className="grid h-5 w-5 place-items-center rounded-full bg-white/10 text-white hover:bg-white/20 cursor-pointer"
                   >
-                    {paused ? <Play className="h-2.5 w-2.5" /> : <Pause className="h-2.5 w-2.5" />}
+                    {paused ? <Play className="h-2.5 w-2.5" aria-hidden="true" /> : <Pause className="h-2.5 w-2.5" aria-hidden="true" />}
                   </button>
                   <button
                     type="button"
@@ -269,7 +269,7 @@ export function IdentityStudio() {
                     aria-label={ar ? "الشريحة السابقة" : "Previous slide"}
                     className="grid h-5 w-5 place-items-center rounded-full bg-white/10 text-white hover:bg-white/20 cursor-pointer"
                   >
-                    <ChevronLeft className="h-3 w-3" />
+                    <ChevronLeft className="h-3 w-3" aria-hidden="true" />
                   </button>
                   <button
                     type="button"
@@ -277,7 +277,7 @@ export function IdentityStudio() {
                     aria-label={ar ? "الشريحة التالية" : "Next slide"}
                     className="grid h-5 w-5 place-items-center rounded-full bg-white/10 text-white hover:bg-white/20 cursor-pointer"
                   >
-                    <ChevronRight className="h-3 w-3" />
+                    <ChevronRight className="h-3 w-3" aria-hidden="true" />
                   </button>
                 </div>
               </div>
@@ -325,7 +325,7 @@ export function IdentityStudio() {
                       aria-label={ar ? "ملء الشاشة" : "Fullscreen"}
                       className="inline-flex h-6 items-center gap-1 rounded-full border border-white/25 bg-white/15 px-2 text-[10px] font-bold text-white backdrop-blur hover:bg-white/25 cursor-pointer"
                     >
-                      <Maximize2 className="h-2.5 w-2.5" />
+                      <Maximize2 className="h-2.5 w-2.5" aria-hidden="true" />
                       {ar ? "معاينة" : "Preview"}
                     </button>
                     <a
@@ -336,7 +336,7 @@ export function IdentityStudio() {
                       style={{ background: accent.hex }}
                     >
                       {ar ? "زيارة" : "Visit"}
-                      <ExternalLink className="h-2.5 w-2.5" />
+                      <ExternalLink className="h-2.5 w-2.5" aria-hidden="true" />
                     </a>
                   </div>
                 </div>
@@ -360,7 +360,7 @@ export function IdentityStudio() {
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div className="min-w-0">
               <div className="flex items-center gap-1.5">
-                <Palette className="h-3.5 w-3.5 shrink-0 text-[var(--accent)]" />
+                <Palette className="h-3.5 w-3.5 shrink-0 text-[var(--accent)]" aria-hidden="true" />
                 <h3 className="text-base sm:text-lg font-black leading-snug tracking-tight truncate">
                   {themesHeading.title}
                 </h3>
@@ -375,7 +375,7 @@ export function IdentityStudio() {
               onClick={toggle}
               className="h-7 px-2.5 rounded-full bg-[var(--secondary)] border border-[var(--border)] text-[var(--foreground)] inline-flex items-center gap-1.5 text-[11px] font-bold hover:border-[var(--accent)] transition-colors cursor-pointer shrink-0"
             >
-              {mode === "dark" ? <Sun className="h-3 w-3" /> : <Moon className="h-3 w-3" />}
+              {mode === "dark" ? <Sun className="h-3 w-3" aria-hidden="true" /> : <Moon className="h-3 w-3" aria-hidden="true" />}
               <span>
                 {mode === "dark"
                   ? ar
@@ -391,7 +391,7 @@ export function IdentityStudio() {
           <ThemeGallery className="mt-3" />
 
           <p className="mt-2.5 flex items-center gap-1.5 text-[11px] text-[var(--muted-foreground)]">
-            <Palette className="h-3 w-3 shrink-0 text-[var(--accent)]" />
+            <Palette className="h-3 w-3 shrink-0 text-[var(--accent)]" aria-hidden="true" />
             <span className="line-clamp-1">{t.themes.note}</span>
           </p>
         </div>

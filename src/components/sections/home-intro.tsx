@@ -33,15 +33,15 @@ export function HomeIntro() {
             href="/codes"
             className="inline-flex min-h-12 items-center justify-center gap-2 rounded-full bg-[var(--primary)] px-6 text-[14px] font-bold text-[var(--primary-foreground)] transition-opacity hover:opacity-90"
           >
-            <Gamepad2 className="h-4 w-4" />
+            <Gamepad2 className="h-4 w-4" aria-hidden="true" />
             {ar ? "استكشف المتجر الرقمي" : "Explore the digital store"}
-            <ArrowUpRight className="h-4 w-4 rtl:rotate-[-90deg]" />
+            <ArrowUpRight className="h-4 w-4 rtl:rotate-[-90deg]" aria-hidden="true" />
           </Link>
           <Link
             href="/creation-sites"
             className="inline-flex min-h-12 items-center justify-center gap-2 rounded-full border border-[var(--border)] bg-[var(--card)] px-6 text-[14px] font-bold transition-colors hover:border-[var(--accent)] hover:text-[var(--accent)]"
           >
-            <Code2 className="h-4 w-4" />
+            <Code2 className="h-4 w-4" aria-hidden="true" />
             {ar ? "أنشئ موقعك" : "Build your website"}
           </Link>
         </div>

@@ -380,8 +380,7 @@ export function DigitalOrdersTable({ rows }: { rows: AdminDigitalOrderRow[] }) {
                   <ChevronDown
                     className={`h-4 w-4 shrink-0 text-stone-400 transition-transform ${
                       open ? "rotate-180 text-stone-800" : ""
-                    }`}
-                  />
+                    }`} aria-hidden="true" />
                   <span className="block min-w-0">
                     <span className="block truncate text-sm font-bold text-stone-900">
                       {row.productTitle}
@@ -516,9 +515,9 @@ export function DigitalOrdersTable({ rows }: { rows: AdminDigitalOrderRow[] }) {
                                   aria-label={`Copier ${key}`}
                                 >
                                   {copied === `${row.ref}-${key}` ? (
-                                    <Check className="h-3 w-3 text-emerald-600" />
+                                    <Check className="h-3 w-3 text-emerald-600" aria-hidden="true" />
                                   ) : (
-                                    <Copy className="h-3 w-3" />
+                                    <Copy className="h-3 w-3" aria-hidden="true" />
                                   )}
                                 </button>
                               </span>
@@ -629,9 +628,9 @@ export function DigitalOrdersTable({ rows }: { rows: AdminDigitalOrderRow[] }) {
                             className="ml-auto inline-flex items-center gap-1 rounded-md border border-stone-200 px-2 py-1 text-[11px] font-bold text-stone-600 hover:bg-stone-50"
                           >
                             {copied === `${row.ref}-${index}` ? (
-                              <Check className="h-3 w-3 text-emerald-600" />
+                              <Check className="h-3 w-3 text-emerald-600" aria-hidden="true" />
                             ) : (
-                              <Copy className="h-3 w-3" />
+                              <Copy className="h-3 w-3" aria-hidden="true" />
                             )}
                             Copier
                           </button>
@@ -642,7 +641,7 @@ export function DigitalOrdersTable({ rows }: { rows: AdminDigitalOrderRow[] }) {
                               rel="noopener noreferrer"
                               className="inline-flex items-center gap-1 rounded-md border border-stone-200 px-2 py-1 text-[11px] font-bold text-stone-600 hover:bg-stone-50"
                             >
-                              <ExternalLink className="h-3 w-3" />
+                              <ExternalLink className="h-3 w-3" aria-hidden="true" />
                               Activer
                             </a>
                           )}
@@ -660,9 +659,9 @@ export function DigitalOrdersTable({ rows }: { rows: AdminDigitalOrderRow[] }) {
                         className="inline-flex items-center gap-1.5 rounded-lg bg-[#C6A664] px-3 py-2 text-[12px] font-bold text-stone-900 hover:bg-[#B8923F] disabled:opacity-60"
                       >
                         {isBusy ? (
-                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" />
                         ) : (
-                          <RefreshCw className="h-3.5 w-3.5" />
+                          <RefreshCw className="h-3.5 w-3.5" aria-hidden="true" />
                         )}
                         Relancer la livraison
                       </button>
@@ -674,7 +673,7 @@ export function DigitalOrdersTable({ rows }: { rows: AdminDigitalOrderRow[] }) {
                         disabled={isBusy}
                         className="inline-flex items-center gap-1.5 rounded-lg border border-stone-300 bg-white px-3 py-2 text-[12px] font-bold text-stone-700 hover:bg-stone-50 disabled:opacity-60"
                       >
-                        <Mail className="h-3.5 w-3.5" />
+                        <Mail className="h-3.5 w-3.5" aria-hidden="true" />
                         Renvoyer l&apos;e-mail
                       </button>
                     )}
@@ -701,7 +700,7 @@ export function DigitalOrdersTable({ rows }: { rows: AdminDigitalOrderRow[] }) {
                         }}
                         className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-300 bg-emerald-50 px-3 py-2 text-[12px] font-bold text-emerald-800 hover:bg-emerald-100"
                       >
-                        <MessageCircle className="h-3.5 w-3.5" />
+                        <MessageCircle className="h-3.5 w-3.5" aria-hidden="true" />
                         Livré hors système (WhatsApp…)
                       </button>
                     )}
@@ -768,9 +767,9 @@ export function DigitalOrdersTable({ rows }: { rows: AdminDigitalOrderRow[] }) {
                         className="mt-2 inline-flex items-center gap-1.5 rounded-lg bg-emerald-700 px-3 py-2 text-[12px] font-bold text-white hover:bg-emerald-800 disabled:opacity-60"
                       >
                         {isBusy ? (
-                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" />
                         ) : (
-                          <Check className="h-3.5 w-3.5" />
+                          <Check className="h-3.5 w-3.5" aria-hidden="true" />
                         )}
                         Marquer livré et prévenir le client
                       </button>
@@ -802,9 +801,9 @@ export function DigitalOrdersTable({ rows }: { rows: AdminDigitalOrderRow[] }) {
                         className="mt-2 inline-flex items-center gap-1.5 rounded-lg bg-stone-900 px-3 py-2 text-[12px] font-bold text-white hover:bg-stone-800 disabled:opacity-60"
                       >
                         {isBusy ? (
-                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" />
                         ) : (
-                          <Check className="h-3.5 w-3.5" />
+                          <Check className="h-3.5 w-3.5" aria-hidden="true" />
                         )}
                         Enregistrer et envoyer au client
                       </button>
@@ -819,7 +818,7 @@ export function DigitalOrdersTable({ rows }: { rows: AdminDigitalOrderRow[] }) {
                           disabled={isBusy}
                           className="mt-2 ms-2 inline-flex items-center gap-1.5 rounded-lg border border-emerald-300 bg-emerald-50 px-3 py-2 text-[12px] font-bold text-emerald-800 hover:bg-emerald-100 disabled:opacity-60"
                         >
-                          <Check className="h-3.5 w-3.5" />
+                          <Check className="h-3.5 w-3.5" aria-hidden="true" />
                           Recharge créditée (aucun code)
                         </button>
                       )}

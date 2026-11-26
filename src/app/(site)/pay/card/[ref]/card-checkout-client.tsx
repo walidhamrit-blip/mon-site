@@ -112,7 +112,7 @@ export function CardCheckoutClient({
     return (
       <div className="mx-auto max-w-lg rounded-3xl border border-emerald-500/35 bg-[var(--card)] p-6 sm:p-8 text-center shadow-lg">
         <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-500/15 text-emerald-500">
-          <CheckCircle2 className="h-8 w-8" />
+          <CheckCircle2 className="h-8 w-8" aria-hidden="true" />
         </div>
         <h1 className="mt-4 text-xl font-black text-[var(--foreground)]">
           {ar ? "تم تأكيد الدفع بنجاح!" : "Payment confirmed!"}
@@ -145,7 +145,7 @@ export function CardCheckoutClient({
       <div className="flex items-start justify-between gap-3 border-b border-[var(--border)] pb-4">
         <div className="flex items-center gap-3">
           <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[var(--accent)]/15 text-[var(--accent)]">
-            <CreditCard className="h-5 w-5" />
+            <CreditCard className="h-5 w-5" aria-hidden="true" />
           </div>
           <div className="min-w-0">
             <h1 className="text-base sm:text-lg font-black text-[var(--foreground)]">
@@ -219,7 +219,7 @@ export function CardCheckoutClient({
       {/* Alerte uniquement si une passerelle spécifique n'a pas répondu */}
       {errorCode === "provider_unavailable" && (
         <div className="mt-4 flex items-start gap-2.5 rounded-2xl border border-amber-400/50 bg-amber-500/10 p-3.5 text-xs leading-5 text-amber-800 dark:text-amber-200">
-          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
           <div>
             {ar
               ? "البوابة المختارة غير متاحة مؤقتاً لبلدك أو لهذا المبلغ. اخترنا لك بوابة بديلة جاهزة أدناه، اضغط للمتابعة."
@@ -235,7 +235,7 @@ export function CardCheckoutClient({
         rel="noopener noreferrer"
         className="mt-5 inline-flex h-12 w-full items-center justify-center gap-2 rounded-full bg-[var(--accent)] px-6 text-sm font-black text-[var(--accent-foreground)] shadow-sm transition-colors hover:bg-[var(--accent-hover)]"
       >
-        <Lock className="h-4 w-4" />
+        <Lock className="h-4 w-4" aria-hidden="true" />
         {manualGateway
           ? ar
             ? `المتابعة للدفع الآمن (${manualGateway.name}) · $${billedUsd.toFixed(2)}`
@@ -243,12 +243,12 @@ export function CardCheckoutClient({
           : ar
             ? `المتابعة للدفع الآمن · $${billedUsd.toFixed(2)}`
             : `Continue to secure payment · $${billedUsd.toFixed(2)}`}
-        <ExternalLink className="h-3.5 w-3.5" />
+        <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
       </a>
 
       {/* Attente temps réel */}
       <div className="mt-3.5 flex items-center justify-center gap-2 text-xs text-[var(--muted-foreground)]">
-        <Loader2 className="h-3.5 w-3.5 animate-spin text-[var(--accent)]" />
+        <Loader2 className="h-3.5 w-3.5 animate-spin text-[var(--accent)]" aria-hidden="true" />
         <span>
           {ar
             ? "هذه الصفحة تتحدث تلقائياً فور إتمام الدفع…"
@@ -259,7 +259,7 @@ export function CardCheckoutClient({
       {/* Mention discrète en petits caractères des prestataires agréés + option de secours repliée */}
       <div className="mt-4 rounded-xl border border-[var(--border)] bg-[var(--background)] p-3 text-[11px] leading-5 text-[var(--muted-foreground)]">
         <div className="flex items-start gap-2">
-          <ShieldCheck className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[var(--accent)]" />
+          <ShieldCheck className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[var(--accent)]" aria-hidden="true" />
           <p>
             {ar ? (
               <>
@@ -298,8 +298,7 @@ export function CardCheckoutClient({
               <ChevronDown
                 className={`h-3.5 w-3.5 transition-transform ${
                   showFallbackGateways ? "rotate-180" : ""
-                }`}
-              />
+                }`} aria-hidden="true" />
             </button>
 
             {showFallbackGateways && (

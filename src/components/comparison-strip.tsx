@@ -28,7 +28,7 @@ export function ComparisonStrip({
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="max-w-[62ch]">
             <span className="inline-flex items-center gap-1.5 rounded-full border border-[var(--accent)]/35 bg-[var(--accent)]/12 px-3 py-1 text-xs font-bold text-[var(--accent)]">
-              <Scale className="h-3 w-3" />
+              <Scale className="h-3 w-3" aria-hidden="true" />
               {pick(c.badgeAr, c.badgeEn)}
             </span>
             <h2 className="mt-3 text-xl font-black sm:text-2xl">
@@ -43,7 +43,7 @@ export function ComparisonStrip({
             className="h-11 px-5 rounded-full bg-[var(--primary)] text-[var(--primary-foreground)] inline-flex items-center justify-center text-sm font-bold shrink-0"
           >
             {pick(c.stripCtaAr, c.stripCtaEn)}
-            <ArrowUpRight className="ms-1.5 h-4 w-4" />
+            <ArrowUpRight className="ms-1.5 h-4 w-4" aria-hidden="true" />
           </Link>
         </div>
 
@@ -58,17 +58,17 @@ export function ComparisonStrip({
                 <p className="text-sm font-black leading-snug">
                   {pick(comparison.h1Ar, comparison.h1En)}
                 </p>
-                <ArrowUpRight className="h-4 w-4 shrink-0 text-[var(--accent)] opacity-0 transition-opacity group-hover:opacity-100" />
+                <ArrowUpRight className="h-4 w-4 shrink-0 text-[var(--accent)] opacity-0 transition-opacity group-hover:opacity-100" aria-hidden="true" />
               </div>
               <div className="mt-3 grid grid-cols-2 gap-2 text-[11px]">
                 <span className="flex items-center gap-1 rounded-lg bg-[#C1272D]/10 px-2 py-1.5 font-bold text-[#C1272D]">
-                  <X className="h-3 w-3 shrink-0" />
+                  <X className="h-3 w-3 shrink-0" aria-hidden="true" />
                   <span className="truncate" dir="ltr">
                     {comparison.themPriceLabel}
                   </span>
                 </span>
                 <span className="flex items-center gap-1 rounded-lg bg-[#0E9F6E]/10 px-2 py-1.5 font-bold text-[#0E9F6E]">
-                  <Check className="h-3 w-3 shrink-0" />
+                  <Check className="h-3 w-3 shrink-0" aria-hidden="true" />
                   <span className="truncate">
                     {pick(comparison.usPriceLabelAr, comparison.usPriceLabelEn)}
                   </span>
