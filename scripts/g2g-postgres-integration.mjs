@@ -8,6 +8,8 @@ import { spawn } from "node:child_process";
 import pg from "pg";
 import { diagnosticError, safePostgresError } from "./g2g-postgres-diagnostic.mjs";
 import { reserveCommittedPrototype, reserveDispatchPrototype } from "../src/lib/g2g-dispatch-reservation-prototype.ts";
+import { assessSupplierGiftCard } from "../src/lib/g2g-delivery-assessment.ts";
+import { planDelivery } from "../src/lib/g2g-delivery-plan.ts";
 
 const PROJECT = "tghunxntbjtkvvmyvxwh";
 function configFromEnvironment() {
@@ -52,7 +54,7 @@ async function runChild(id) {
   });
 }
 async function main() {
-  const ids = Array.from({length:4},() => randomUUID());
+  const ids = Array.from({length:6},() => randomUUID());
   const [a,b,c] = [client(),client(),client()];
   let connected = false, writesAttempted = false;
   try {
@@ -82,7 +84,39 @@ async function main() {
     // la même réservation ne doit pas pouvoir être prise une deuxième fois.
     await runChild(ids[3]);
     assert.equal(await reserveCommittedPrototype(c,inputFor(ids[3])),"not_reserved");
-    process.stdout.write("OK : concurrence, expiration, rollback et reprise après arrêt du worker. Aucun transport réel.\n");
+    phase = "parcours simulé avec réservation PostgreSQL";
+    // Les réponses et le transport sont des doubles locaux : jamais de réseau
+    // fournisseur/G2G. Seule la réservation est enregistrée dans g2g-test.
+    const fixture = inputFor(ids[4]);
+    const remote = (status, count) => ({code:"20000001",payload:{order_id:fixture.orderId,delivery_summary:{delivery_id:fixture.deliveryId,requested_qty:1,delivered_qty:count,delivery_status:status}}});
+    const supplier = status => ({ok:true,order:{id:fixture.supplierOrderId,status,...(status === "completed" ? {code:"FAKE-CODE"} : {})}});
+    const plan = (status, state, remoteStatus = "pending", count = 0) => planDelivery({supplierResponse:supplier(status),g2gResponse:remote(remoteStatus,count),supplierOrderId:fixture.supplierOrderId,orderId:fixture.orderId,deliveryId:fixture.deliveryId,quantity:1,dispatchState:state,now:Date.now(),expiresAt:fixture.expiresAt.getTime()});
+    assert.equal(plan("processing","not_sent"),"wait_supplier");
+    assert.equal(plan("completed","not_sent"),"reserve_dispatch");
+    let fakeSends = 0;
+    const worker = async db => {
+      const reservation = await reserveCommittedPrototype(db,fixture);
+      if (reservation !== "committed") return reservation;
+      // Le code fictif ne sort pas du processus et n'est jamais écrit en base.
+      assert.deepEqual(assessSupplierGiftCard(supplier("completed"),fixture.supplierOrderId,1),{kind:"ready",codes:["FAKE-CODE"]});
+      fakeSends++;
+      return "fake_ack";
+    };
+    assert.deepEqual((await Promise.all([worker(a),worker(b)])).sort(),["fake_ack","not_reserved"]);
+    assert.equal(fakeSends,1);
+    assert.equal(await worker(a),"not_reserved");
+    assert.equal(plan("completed","acknowledged"),"check_delivery");
+    assert.equal(plan("completed","acknowledged","delivered",1),"confirmed");
+    // Timeout fictif : même après résultat incertain, le claim persiste et un
+    // traitement répété n'est pas autorisé à simuler un nouvel envoi.
+    const timeoutFixture = inputFor(ids[5]);
+    assert.equal(await reserveCommittedPrototype(a,timeoutFixture),"committed");
+    let timeoutFakeSends = 1;
+    if (await reserveCommittedPrototype(b,timeoutFixture) === "committed") timeoutFakeSends++;
+    assert.equal(timeoutFakeSends,1);
+    assert.equal(plan("completed","unknown"),"check_delivery");
+    assert.equal(plan("completed","unknown","partial_delivered",0),"manual_review");
+    process.stdout.write("OK : concurrence, expiration, rollback, arrêt et parcours fictif avec réservation PostgreSQL. Aucun transport réel.\n");
   } finally {
     // Suppression uniquement des lignes aléatoires créées par cette exécution.
     if (writesAttempted && connected) {
