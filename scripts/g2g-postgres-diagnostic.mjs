@@ -1,6 +1,7 @@
 // Ne jamais afficher error.message, stack, URL, valeurs SQL ou paramètres.
 export function safePostgresError(error) {
   const descriptions = {
+    G2G_CA_INVALID: "Certificat CA invalide : fournir le certificat public téléchargé depuis Supabase.",
     G2G_SECRET_MISSING: "Secret G2G_TEST_DATABASE_URL absent ou vide.",
     G2G_URL_INVALID: "URI PostgreSQL invalide ou paramètres encodés incorrectement.",
     G2G_TARGET_INVALID: "URI refusée : cible différente de g2g-test, format/port/base incorrect ou paramètres URL présents.",

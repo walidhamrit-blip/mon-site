@@ -31,3 +31,13 @@ test("diagnostic : erreurs classées sans jamais afficher le message ni le secre
   }
   assert.doesNotMatch(safePostgresError({code:"private-secret",message:"private-secret"}),/private-secret/);
 });
+
+
+test("certificat invalide refusé avant connexion sans en afficher le contenu", () => {
+  const result = spawnSync(process.execPath,["scripts/g2g-postgres-integration.mjs"],{
+    env:{...process.env,G2G_TEST_DATABASE_URL:"postgresql://postgres.tghunxntbjtkvvmyvxwh:fake-password@aws-0-eu-west-1.pooler.supabase.com:5432/postgres",G2G_TEST_DATABASE_CA:"not-a-certificate-secret"},encoding:"utf8",timeout:10000
+  });
+  assert.equal(result.status,1);
+  assert.match(result.stderr,/Certificat CA invalide/);
+  assert.doesNotMatch(result.stderr,/fake-password|not-a-certificate-secret/);
+});

@@ -2,7 +2,8 @@
 // La chaîne de connexion n'est jamais affichée. Les écritures sont limitées
 // à la table prototype existante et à des identifiants aléatoires fictifs.
 import assert from "node:assert/strict";
-import { randomUUID } from "node:crypto";
+import { randomUUID, X509Certificate } from "node:crypto";
+import { rootCertificates } from "node:tls";
 import { spawn } from "node:child_process";
 import pg from "pg";
 import { diagnosticError, safePostgresError } from "./g2g-postgres-diagnostic.mjs";
@@ -17,7 +18,16 @@ function configFromEnvironment() {
   const direct = url.hostname === `db.${PROJECT}.supabase.co` && decodeURIComponent(url.username) === "postgres";
   const pooler = /^[a-z0-9-]+\.pooler\.supabase\.com$/.test(url.hostname) && decodeURIComponent(url.username) === `postgres.${PROJECT}`;
   if (!(["postgres:","postgresql:"].includes(url.protocol)) || !(direct || pooler) || url.pathname !== "/postgres" || url.search || url.hash || !url.password || (url.port && !["5432","6543"].includes(url.port))) throw diagnosticError("G2G_TARGET_INVALID");
-  return {host:url.hostname,port:Number(url.port || 5432),database:"postgres",user:decodeURIComponent(url.username),password:decodeURIComponent(url.password),ssl:{rejectUnauthorized:true},connectionTimeoutMillis:10000,statement_timeout:10000};
+  const ca = process.env.G2G_TEST_DATABASE_CA;
+  let ssl = {rejectUnauthorized:true};
+  if (ca) {
+    try {
+      const cert = new X509Certificate(ca);
+      if (!cert.ca || !/^\s*-----BEGIN CERTIFICATE-----\s+[A-Za-z0-9+/=\r\n]+\s*-----END CERTIFICATE-----\s*$/.test(ca)) throw Error();
+      ssl = {rejectUnauthorized:true, ca:[...rootCertificates, ca]};
+    } catch { throw diagnosticError("G2G_CA_INVALID"); }
+  }
+  return {host:url.hostname,port:Number(url.port || 5432),database:"postgres",user:decodeURIComponent(url.username),password:decodeURIComponent(url.password),ssl,connectionTimeoutMillis:10000,statement_timeout:10000};
 }
 let config;
 let phase = "validation du secret";
