@@ -180,7 +180,7 @@ export function UpcomingShowcaseView({
                   href={whatsappLink(siteConfig.whatsapp, headerWhatsappMsg)}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex h-9 shrink-0 items-center justify-center gap-1.5 rounded-full bg-[var(--accent)] px-4 text-[12px] font-black text-[var(--accent-foreground)] shadow-sm transition-colors hover:bg-[var(--accent-hover)]"
+                  className="inline-flex min-h-11 shrink-0 items-center justify-center gap-1.5 rounded-full bg-[var(--accent)] px-4 text-[12px] font-black text-[var(--accent-foreground)] shadow-sm transition-colors hover:bg-[var(--accent-hover)]"
                 >
                   <BellRing className="h-3.5 w-3.5" />
                   {ar ? page.ctaLabelAr : page.ctaLabelEn}
@@ -194,7 +194,7 @@ export function UpcomingShowcaseView({
               <button
                 type="button"
                 onClick={() => setSelectedCategory("all")}
-                className={`chip shrink-0 cursor-pointer transition-colors ${
+                className={`chip min-h-10 shrink-0 cursor-pointer transition-colors ${
                   selectedCategory === "all"
                     ? "!border-[var(--primary)] !bg-[var(--primary)] !text-[var(--primary-foreground)]"
                     : "hover:border-[var(--accent)]"
@@ -207,7 +207,7 @@ export function UpcomingShowcaseView({
                   key={cat.id}
                   type="button"
                   onClick={() => setSelectedCategory(cat.id)}
-                  className={`chip shrink-0 cursor-pointer transition-colors ${
+                  className={`chip min-h-10 shrink-0 cursor-pointer transition-colors ${
                     selectedCategory === cat.id
                       ? "!border-[var(--primary)] !bg-[var(--primary)] !text-[var(--primary-foreground)]"
                       : "hover:border-[var(--accent)]"
@@ -311,7 +311,7 @@ export function UpcomingShowcaseView({
                         )}
                       </div>
 
-                      <div className="p-6 sm:p-7">
+                      <div className="p-5 sm:p-7">
                         <h2 className="text-[19px] font-black leading-snug tracking-[-0.02em] sm:text-[21px]">
                           {ar ? item.titleAr : item.titleEn}
                         </h2>
@@ -359,12 +359,12 @@ export function UpcomingShowcaseView({
                       </div>
                     </div>
 
-                    <div className="px-6 pb-6 pt-3 border-t border-[var(--border)]/60 flex flex-wrap items-center gap-2.5">
+                    <div className="px-5 pb-5 pt-3 border-t border-[var(--border)]/60 flex flex-wrap items-center gap-2.5 sm:px-6 sm:pb-6">
                       <a
                         href={whatsappLink(siteConfig.whatsapp, itemWhatsappMsg(item))}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="flex-1 h-10 px-4 rounded-full bg-[var(--primary)] text-[var(--primary-foreground)] text-xs sm:text-sm font-bold inline-flex items-center justify-center gap-1.5 hover:opacity-90 transition-opacity"
+                        className="flex-1 min-h-11 px-4 rounded-full bg-[var(--primary)] text-[var(--primary-foreground)] text-xs sm:text-sm font-bold inline-flex items-center justify-center gap-1.5 hover:opacity-90 transition-opacity"
                       >
                         <BellRing className="h-3.5 w-3.5" />
                         {ar ? page.ctaLabelAr : page.ctaLabelEn}
@@ -374,7 +374,7 @@ export function UpcomingShowcaseView({
                           href={item.demoUrl}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="h-10 px-4 rounded-full bg-[var(--accent)] text-[var(--accent-foreground)] text-xs sm:text-sm font-black inline-flex items-center justify-center gap-1.5 hover:bg-[var(--accent-hover)] transition-colors"
+                          className="min-h-11 px-4 rounded-full bg-[var(--accent)] text-[var(--accent-foreground)] text-xs sm:text-sm font-black inline-flex items-center justify-center gap-1.5 hover:bg-[var(--accent-hover)] transition-colors"
                         >
                           {ar ? "معاينة تجريبية" : "Live Preview"}
                           <ExternalLink className="h-3.5 w-3.5" />
@@ -486,11 +486,13 @@ function ShowcaseImage({
         src={src}
         {...imageOptimizationProps(src)}
         alt={alt}
-        fill
+        width={1200}
+        height={750}
         sizes="(max-width: 768px) 100vw, 50vw"
         loading={priority ? "eager" : "lazy"}
+        fetchPriority={priority ? "high" : "auto"}
         decoding="async"
-        className="object-cover transition-transform duration-500 group-hover:scale-[1.04]"
+        className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.04]"
         onError={() => setFailed(true)}
       />
       {/* Voile de lisibilité, uniquement sur une vraie photo : sur le visuel

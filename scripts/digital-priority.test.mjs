@@ -267,8 +267,13 @@ const catalogComponent = read("src/components/digital-catalog.tsx");
 const page = read("src/app/(site)/codes/page.tsx");
 
 test("la vitrine s'ouvre sur l'ordre « les plus demandés »", () => {
-  assert.match(catalogComponent, /type SortId = "popular"/);
-  assert.match(catalogComponent, /useState<SortId>\("popular"\)/);
+  // Le tri par défaut vit dans l'état partagé des filtres (adresse de la
+  // page) ; le catalogue le reçoit en prop contrôlée.
+  assert.match(read("src/lib/catalog-filters.ts"), /SORT_IDS = \["popular", "price-asc", "price-desc", "name"\]/);
+  assert.match(read("src/lib/catalog-filters.ts"), /sort: "popular"/);
+  assert.match(catalogComponent, /sort: SortId;/);
+  assert.match(catalogComponent, /onSortChange: \(sort: SortId\) => void/);
+  assert.doesNotMatch(catalogComponent, /useState<SortId>\("popular"\)/);
   // Les deux sélecteurs (barre collante + tiroir mobile) proposent l'option.
   assert.equal(
     (catalogComponent.match(/<option value="popular">/g) ?? []).length,

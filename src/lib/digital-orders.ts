@@ -97,6 +97,7 @@ import {
 import { telegramOrderUrlFromEnv } from "@/lib/telegram-core";
 
 import { deliverPaidFazercardsOrder } from "@/lib/fazercards-orders";
+import { reconcilePayGateOrder } from "@/lib/paygate";
 import { sendPaymentConfirmedEmail } from "@/lib/order-emails";
 import { phoneCardDeliveryGate } from "@/lib/phone-card-payments";
 import { manualPaymentDeliveryGate } from "@/lib/manual-payments";
@@ -168,6 +169,16 @@ export interface CreateDigitalCheckoutInput {
   name?: string;
   phone?: string;
   locale?: "ar" | "en";
+  /**
+   * Identité Telegram quand la commande vient du bot : stockée sur les
+   * deux tables pour le suivi et la livraison (l'équipe retrouve le chat,
+   * les codes peuvent être poussés dans Telegram avec consentement).
+   */
+  telegram?: {
+    chatId: string;
+    username?: string | null;
+    firstName?: string | null;
+  };
 }
 
 export interface DigitalCheckoutResult {
@@ -187,7 +198,7 @@ export interface DigitalCheckoutResult {
  */
 export async function createDigitalCheckout(
   input: CreateDigitalCheckoutInput,
-  req: Request,
+  req?: Request,
 ): Promise<DigitalCheckoutResult> {
   if (LEGACY_SUPPLIER_RETIRED) {
     throw new DigitalOrderError("supplier_retired", 410, RETIRED_SUPPLIER_MESSAGE);
@@ -272,6 +283,8 @@ export async function createDigitalCheckout(
       recipientName: input.name?.trim() || null,
       recipientPhone: input.phone?.trim() || null,
       locale,
+      telegramChatId: input.telegram?.chatId?.trim() || null,
+      telegramUsername: input.telegram?.username?.trim() || null,
       status: "pending",
       fulfillment,
       reloadlyProductId: product.reloadlyProductId ?? null,
@@ -295,10 +308,12 @@ export async function createDigitalCheckout(
       currency: "usd",
       installments: 1,
       installmentIndex: 1,
-      clientName: input.name?.trim() || null,
+      clientName: input.name?.trim() || input.telegram?.firstName?.trim() || null,
       email: input.email,
       phone: input.phone?.trim() || null,
       locale,
+      telegramChatId: input.telegram?.chatId?.trim() || null,
+      telegramUsername: input.telegram?.username?.trim() || null,
       digitalOrderId: digitalOrderId ?? null,
     });
   } catch (error) {
@@ -969,7 +984,9 @@ export interface PublicDigitalOrder {
   deliveredAt: string | null;
   reloadlyStatus: string | null;
   codes: PublicDigitalCode[];
-  paymentMethod: "nowpayments" | "phone_card" | "manual";
+  paymentMethod: "nowpayments" | "paygate" | "phone_card" | "manual";
+  /** URL de la page de paiement par carte ou crypto (exposée uniquement au porteur du jeton tant que la commande est en attente). */
+  paymentUrl?: string | null;
   phoneCardStatus: "pending" | "approved" | "rejected" | null;
   /** Moyen manuel utilisé (skrill | neteller | airtm | d17 | advcash | webmoney | kashy), si applicable. */
   manualPaymentMethod: string | null;
@@ -1033,6 +1050,10 @@ async function reconcileDigitalOrderOnPoll(order: DigitalOrder): Promise<Digital
       .limit(1);
     let payment = paymentRows[0];
     if (!payment) return order;
+
+    if (payment.status === "pending" && payment.paymentMethod === "paygate") {
+      payment = await reconcilePayGateOrder(payment);
+    }
 
     if (payment.status === "pending" && payment.paymentId && nowPaymentsConfigured()) {
       // ── Deux garde-fous AVANT tout appel sortant ────────────────────────
@@ -1172,6 +1193,8 @@ export async function getPublicDigitalOrder(
       ipnStatus: orders.ipnStatus,
       payCurrency: orders.payCurrency,
       status: orders.status,
+      paymentMethod: orders.paymentMethod,
+      paymentUrl: orders.paymentUrl,
     })
     .from(orders)
     .where(eq(orders.ref, order.ref))
@@ -1183,6 +1206,14 @@ export async function getPublicDigitalOrder(
     status === "delivered" && codes.length === 0
       ? offPlatformNotice(order.deliveryChannel, order.deliveredAt, locale)
       : null;
+
+  const resolvedPaymentMethod = phoneGate.isPhoneCard
+    ? "phone_card"
+    : manualGate.isManual
+      ? "manual"
+      : payment?.paymentMethod === "paygate"
+        ? "paygate"
+        : "nowpayments";
 
   return {
     ref: order.ref,
@@ -1201,11 +1232,11 @@ export async function getPublicDigitalOrder(
     deliveredAt: order.deliveredAt ? order.deliveredAt.toISOString() : null,
     reloadlyStatus: order.reloadlyStatus,
     codes,
-    paymentMethod: phoneGate.isPhoneCard
-      ? "phone_card"
-      : manualGate.isManual
-        ? "manual"
-        : "nowpayments",
+    paymentMethod: resolvedPaymentMethod,
+    paymentUrl:
+      status === "pending" && payment?.status === "pending"
+        ? (payment?.paymentUrl ?? null)
+        : null,
     phoneCardStatus: phoneGate.isPhoneCard ? phoneGate.status : null,
     manualPaymentMethod: manualGate.isManual ? manualGate.method : null,
     manualPaymentStatus: manualGate.isManual ? manualGate.status : null,

@@ -12,6 +12,7 @@ import {
 import { getSiteData } from "@/lib/store";
 import { sendPaymentConfirmedEmail } from "@/lib/order-emails";
 import { deliverPaidDigitalOrder } from "@/lib/digital-orders";
+import { reconcilePayGateOrder } from "@/lib/paygate";
 import { baseRefOf } from "@/lib/installments";
 import {
   claimProviderBudget,
@@ -72,6 +73,10 @@ export async function GET(
       return NextResponse.json({ ok: false, error: "order_not_found" }, { status: 404 });
     }
     const canUsePaymentLinks = access === "granted";
+
+    if (order.status === "pending" && order.paymentMethod === "paygate") {
+      order = await reconcilePayGateOrder(order);
+    }
 
     if (order.status === "pending" && order.paymentId && nowPaymentsConfigured()) {
       // Même garde-fou que le suivi des codes : cette route est publique (tout
@@ -219,6 +224,7 @@ export async function GET(
         emailMasked: maskEmail(order.email),
         payCurrency: order.payCurrency,
         payAmount: order.payAmount,
+        paymentMethod: order.paymentMethod,
         status: order.status,
         ipnStatus: order.ipnStatus,
         createdAt: order.createdAt.toISOString(),

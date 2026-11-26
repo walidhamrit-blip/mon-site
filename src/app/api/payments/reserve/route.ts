@@ -30,6 +30,7 @@ import {
   MANUAL_PAYMENT_LIMITS,
   MANUAL_PAYMENT_METHODS,
 } from "@/lib/manual-payment-core";
+import { createPayGateCardSession, isPayGateError } from "@/lib/paygate";
 import { sendManualPaymentReviewNotice } from "@/lib/digital-emails";
 import { enforceSameOrigin } from "@/lib/csrf";
 import { localizedPath } from "@/lib/locale";
@@ -91,6 +92,7 @@ const reserveSchema = z.object({
   phone: z.string().max(40).optional(),
   locale: z.enum(["ar", "en"]).optional(),
   utm: z.string().max(500).optional(),
+  paymentMethod: z.enum(["nowpayments", "paygate", "manual"]).optional(),
   /**
    * Acompte réglé par virement manuel (Skrill / Neteller / Airtm / D17 / Volet / WebMoney / Kashy).
    * Aucune facture crypto n'est alors créée et la réservation n'est
@@ -195,7 +197,9 @@ export async function POST(req: Request) {
     });
   }
 
-  if (!nowPaymentsConfigured() && !data.manualPayment) {
+  const usesPayGate = data.paymentMethod === "paygate" && !data.manualPayment;
+
+  if (!nowPaymentsConfigured() && !data.manualPayment && !usesPayGate) {
     return errorResponse("gateway_not_configured", 503, {
       source: "config",
       status: null,
@@ -238,7 +242,11 @@ export async function POST(req: Request) {
         phone: data.phone?.trim() || null,
         utm: data.utm || null,
         locale: data.locale ?? null,
-        ...(data.manualPayment ? { paymentMethod: "manual" } : {}),
+        ...(data.manualPayment
+          ? { paymentMethod: "manual" }
+          : usesPayGate
+            ? { paymentMethod: "paygate" }
+            : {}),
       })
       .returning({ id: orders.id });
     orderId = inserted[0]?.id ?? 0;
@@ -330,11 +338,60 @@ export async function POST(req: Request) {
     );
   }
 
+  const baseUrl = siteBaseUrl(req);
+  const trackingParams = trackingQuery(ref, tracking.token);
+  const trackingUrl = `${baseUrl}${localizedPath(`/pay/success?${trackingParams}`, data.locale ?? "ar")}`;
+
+  if (usesPayGate) {
+    let session;
+    try {
+      session = await createPayGateCardSession({
+        orderRef: ref,
+        baseAmountUsd: depositUsd,
+        customerEmail: data.email.trim(),
+        baseOrigin: baseUrl,
+        locale: data.locale ?? "ar",
+        accentColor: config.theme?.accent,
+      });
+    } catch (error) {
+      await db.delete(orders).where(eq(orders.id, orderId)).catch(() => null);
+      if (isPayGateError(error)) {
+        return errorResponse(error.code, error.status, {
+          source: error.status >= 500 ? "config" : "input",
+          status: error.status,
+          message: error.message,
+        });
+      }
+      return errorResponse("gateway_error", 502, gatewayDetail(error));
+    }
+
+    await db
+      .update(orders)
+      .set({
+        paymentMethod: "paygate",
+        payAddress: session.polygonAddressIn,
+        paymentUrl: session.checkoutUrl,
+        updatedAt: new Date(),
+      })
+      .where(eq(orders.id, orderId))
+      .catch(() => null);
+
+    return NextResponse.json({
+      ok: true,
+      orderRef: ref,
+      trackingToken: tracking.token,
+      trackingUrl,
+      demoSlug: demo.slug,
+      depositUsd,
+      paymentUrl: session.checkoutUrl,
+      priceAmount: session.quote.billedUsd,
+      priceCurrency: "usd",
+    });
+  }
+
   // 2) Facture NOWPayments à 1 $ (page de paiement hébergée).
   //    Les URLs de retour (succès/annulation/IPN) pointent vers
   //    l'environnement réellement utilisé (voir src/lib/site-url.ts).
-  const baseUrl = siteBaseUrl(req);
-  const trackingParams = trackingQuery(ref, tracking.token);
   let invoice: CreatedInvoice;
   try {
     invoice = await createInvoice({

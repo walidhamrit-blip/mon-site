@@ -105,10 +105,10 @@ function ChatShell() {
     {
       key: 0,
       role: "bot",
-      text:
-        locale === "ar"
-          ? "مرحبًا 👋 أنا مساعد نخبة. اسألني أي شيء عن الموقع: الأسعار، الدفع، الاشتراكات، الخدمات، متجر الأكواد، معرض الأعمال، الشروط… أو اختر سؤالًا."
-          : "Hi 👋 I'm the Nukhba assistant. Ask me anything about the site: pricing, payment, subscriptions, services, the codes store, portfolio, terms… or pick a question.",
+        text:
+          locale === "ar"
+            ? "مرحبًا 👋 أنا مساعد نخبة. اسألني أي شيء عن الموقع: الأسعار، الدفع، الاشتراكات، الخدمات، متجر الأكواد، بطاقات الهدايا، مفاتيح الألعاب والبرامج، معرض الأعمال، الشروط… أو اختر سؤالًا."
+            : "Hi 👋 I'm the Nukhba assistant. Ask me anything about the site: pricing, payment, subscriptions, services, the codes store, gift cards, game & software keys, portfolio, terms… or pick a question.",
     },
   ]);
   const [online, setOnline] = useState(true);
@@ -310,7 +310,11 @@ function ChatShell() {
   };
 
   return (
-    <div className="site-chatbot fixed bottom-[92px] end-5 z-[70] flex flex-col items-end gap-2 print:hidden">
+    <div
+      className={`site-chatbot fixed bottom-[calc(5.75rem+env(safe-area-inset-bottom))] end-4 z-[70] flex flex-col items-end gap-2 sm:end-5 print:hidden ${
+        open ? "max-sm:inset-x-3 max-sm:bottom-[max(0.75rem,env(safe-area-inset-bottom))] max-sm:items-stretch" : ""
+      }`}
+    >
       <AnimatePresence>
         {open && (
           <motion.section
@@ -321,10 +325,10 @@ function ChatShell() {
             role="dialog"
             aria-label={ar ? "مساعد نخبة" : "Nukhba assistant"}
             dir={ar ? "rtl" : "ltr"}
-            className="mb-1 flex w-[calc(100vw-2rem)] max-w-[350px] flex-col overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--card)] shadow-[0_18px_45px_rgba(0,0,0,0.18)]"
+            className="mb-1 flex max-h-[calc(100dvh-var(--public-header-height,68px)-1.25rem-env(safe-area-inset-bottom))] w-full flex-col overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--card)] shadow-[0_18px_45px_rgba(0,0,0,0.18)] sm:max-h-[min(560px,calc(100dvh-10rem))] sm:w-[calc(100vw-2rem)] sm:max-w-[360px]"
           >
             {/* En-tête */}
-            <header className="flex items-center gap-2.5 border-b border-[var(--border)] bg-[var(--primary)] px-3 py-2.5 text-[var(--primary-foreground)]">
+            <header className="flex shrink-0 items-center gap-2.5 border-b border-[var(--border)] bg-[var(--primary)] px-3 py-2.5 text-[var(--primary-foreground)]">
               <EinsteinAvatar className="h-9 w-9 shrink-0 ring-2 ring-[var(--accent)]" />
               <div className="min-w-0 flex-1 leading-tight">
                 <div className="text-[13px] font-black">
@@ -359,7 +363,7 @@ function ChatShell() {
             {/* Conversation */}
             <div
               ref={listRef}
-              className="max-h-[min(52vh,360px)] space-y-2 overflow-y-auto px-3 py-3"
+              className="min-h-0 flex-1 space-y-2 overflow-y-auto px-3 py-3 sm:max-h-[min(52vh,360px)]"
               aria-live="polite"
             >
               {messages.map((message, messageIndex) =>
@@ -437,13 +441,13 @@ function ChatShell() {
 
             {/* Questions proposées */}
             {suggestions.length > 0 && !typing && (
-              <div className="flex max-h-[104px] flex-wrap gap-1.5 overflow-y-auto border-t border-[var(--border)] px-3 pb-2.5 pt-2">
+              <div className="flex max-h-[104px] shrink-0 flex-wrap gap-1.5 overflow-y-auto border-t border-[var(--border)] px-3 pb-2.5 pt-2">
                 {suggestions.map((suggestion) => (
                   <button
                     key={(suggestion.nodeId ?? "q:") + suggestion.label}
                     type="button"
                     onClick={() => pick(suggestion)}
-                    className="rounded-full border border-[var(--border)] bg-[var(--card)] px-2.5 py-1.5 text-[11.5px] font-semibold hover:border-[var(--accent)] hover:bg-[var(--accent)]/10 transition-colors cursor-pointer"
+                    className="min-h-9 rounded-full border border-[var(--border)] bg-[var(--card)] px-3 py-1.5 text-[11.5px] font-semibold hover:border-[var(--accent)] hover:bg-[var(--accent)]/10 transition-colors cursor-pointer"
                   >
                     {suggestion.label}
                   </button>
@@ -454,7 +458,7 @@ function ChatShell() {
             {/* Saisie libre */}
             <form
               onSubmit={send}
-              className="flex items-center gap-1.5 border-t border-[var(--border)] px-2.5 py-2"
+              className="flex shrink-0 items-center gap-1.5 border-t border-[var(--border)] px-2.5 py-2"
             >
               <input
                 ref={inputRef}
@@ -463,8 +467,11 @@ function ChatShell() {
                 placeholder={ar ? "اسأل سؤالك…" : "Ask your question…"}
                 aria-label={ar ? "اكتب سؤالك" : "Type your question"}
                 maxLength={MAX_INPUT_CHARS}
-                disabled={typing}
-                className="h-11 min-w-0 flex-1 rounded-full border border-[var(--border)] bg-[var(--secondary)]/50 px-3 text-[13px] outline-none focus:border-[var(--accent)]"
+                name="question"
+                autoComplete="off"
+                /* Le champ reste actif pendant la réponse (le focus n'est pas
+                   perdu) : c'est `send` et le bouton qui bloquent l'envoi. */
+                className="h-11 min-w-0 flex-1 rounded-full border border-[var(--border)] bg-[var(--secondary)]/50 px-3 text-[13px] focus:border-[var(--accent)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--ring)]"
               />
               <button
                 type="submit"
@@ -482,7 +489,7 @@ function ChatShell() {
       {/* Lanceur — avatar Einstein flottant : lévitation douce, halo
           aux couleurs du thème, dandinement au survol et bulle d'accueil
           unique (fermable, sans boucle). */}
-      <div className={`relative ${open ? "" : "chatbot-float"}`}>
+      <div className={`relative ${open ? "max-sm:hidden" : "chatbot-float"}`}>
         {!open && (
           <span
             aria-hidden="true"
@@ -498,14 +505,14 @@ function ChatShell() {
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.9 }}
               transition={{ duration: 0.22, ease: "easeOut" }}
-              className="absolute bottom-2.5 end-[calc(100%+12px)] flex items-center gap-2 whitespace-nowrap rounded-full border border-[var(--border)] bg-[var(--popover)] px-3 py-1.5 text-[12px] font-bold text-[var(--popover-foreground)] shadow-[0_10px_25px_rgba(0,0,0,0.18)]"
+              className="absolute bottom-2 end-[calc(100%+10px)] flex max-w-[calc(100vw-6rem)] items-center gap-1.5 rounded-full border border-[var(--border)] bg-[var(--popover)] py-1 pe-1 ps-3 text-[12px] font-bold text-[var(--popover-foreground)] shadow-[0_10px_25px_rgba(0,0,0,0.18)]"
             >
-              {ar ? "مرحبًا 👋 عندك سؤال؟" : "Hi 👋 Got a question?"}
+              <span className="truncate">{ar ? "مرحبًا 👋 عندك سؤال؟" : "Hi 👋 Got a question?"}</span>
               <button
                 type="button"
                 onClick={dismissBubble}
                 aria-label={ar ? "إغلاق رسالة الترحيب" : "Dismiss welcome message"}
-                className="grid h-9 w-9 cursor-pointer place-items-center rounded-full text-[var(--muted-foreground)] transition-colors hover:bg-[var(--secondary)] hover:text-[var(--foreground)]"
+                className="grid h-9 w-9 shrink-0 cursor-pointer place-items-center rounded-full text-[var(--muted-foreground)] transition-colors hover:bg-[var(--secondary)] hover:text-[var(--foreground)]"
               >
                 <X className="h-3 w-3" />
               </button>
@@ -524,11 +531,13 @@ function ChatShell() {
                 } catch {
                   // ignore
                 }
+                if (typeof window !== "undefined" && window.matchMedia("(pointer: fine)").matches) {
+                  window.setTimeout(() => inputRef.current?.focus(), 120);
+                }
               }
               return !v;
             });
             setBubble(false);
-            window.setTimeout(() => inputRef.current?.focus(), 120);
           }}
           aria-expanded={open}
           aria-label={ar ? "افتح مساعد نخبة" : "Open the Nukhba assistant"}

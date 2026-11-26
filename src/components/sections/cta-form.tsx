@@ -6,7 +6,7 @@ import { motion } from "framer-motion";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { ArrowUpRight, Send, CheckCircle2, ShieldCheck, Clock, Headset } from "lucide-react";
+import { ArrowUpRight, Send, CheckCircle2, ShieldCheck, Clock, Headset, Loader2 } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import { useSectionHeading, useSiteConfig } from "@/components/site-provider";
 import { whatsappLink } from "@/lib/utils";
@@ -57,9 +57,9 @@ export function CTAForm() {
   const [submitError, setSubmitError] = useState(false);
   const totalSteps = 3;
 
-  const { register, handleSubmit, watch, trigger, formState: { errors } } = useForm<FormData>({
+  const { register, handleSubmit, watch, trigger, formState: { errors, isSubmitting } } = useForm<FormData>({
     resolver: zodResolver(schema),
-    defaultValues: { sector: "restaurant", need: "vitrine", budget: "300-600", deadline: "7-14" },
+    defaultValues: { sector: "restaurant", need: "static-site", budget: "35-50", deadline: "flexible" },
   });
 
   const onSubmit = async (data: FormData) => {
@@ -119,7 +119,7 @@ export function CTAForm() {
 
               <div className="mt-7 space-y-2.5">
                 {[
-                  { icon: Clock, title: locale === "ar" ? "رد خلال ساعتين" : "Reply in 2 hours", desc: locale === "ar" ? "حتى في المساء وعطلة نهاية الأسبوع" : "Even evenings & weekends" },
+                  { icon: Clock, title: locale === "ar" ? "رد في أوقات العمل" : "Replies during opening hours", desc: locale === "ar" ? "حسب الأوقات المنشورة في الموقع" : "See the opening hours published on the site" },
                   { icon: ShieldCheck, title: locale === "ar" ? "بدون التزام" : "No commitment", desc: locale === "ar" ? "عرض سعر مجاني وشفاف" : "Free & transparent quote" },
                   { icon: Headset, title: locale === "ar" ? "دعم واتساب مباشر" : "Direct WhatsApp", desc: siteConfig.phone },
                 ].map((item) => (
@@ -134,7 +134,7 @@ export function CTAForm() {
               </div>
 
               <div className="mt-8 flex flex-wrap gap-3">
-                <a href={whatsappLink(siteConfig.whatsapp, whatsappMsg)} target="_blank" className="h-11 px-5 rounded-full bg-[#0B6B3A] text-white inline-flex items-center gap-2 font-bold hover:brightness-95">
+                <a href={whatsappLink(siteConfig.whatsapp, whatsappMsg)} target="_blank" rel="noopener noreferrer" className="h-11 px-5 rounded-full bg-[#0B6B3A] text-white inline-flex items-center gap-2 font-bold hover:brightness-95">
                   {locale === "ar" ? "تحدث واتساب الآن" : "Chat on WhatsApp"}
                   <ArrowUpRight className="h-4 w-4" />
                 </a>
@@ -153,9 +153,9 @@ export function CTAForm() {
                   <h3 className="font-black text-lg">{t.cta.formTitle}</h3>
                   <div className="flex items-center gap-1.5">
                     {[1,2,3].map(n=> (
-                      <span key={n} className={`h-1.5 rounded-full transition-all ${n===step ? "w-8 bg-[var(--accent)]" : n<step ? "w-6 bg-[var(--primary)]" : "w-6 bg-[var(--border)]"}`} />
+                      <span key={n} aria-hidden="true" className={`h-1.5 rounded-full transition-[width,background-color] ${n===step ? "w-8 bg-[var(--accent)]" : n<step ? "w-6 bg-[var(--primary)]" : "w-6 bg-[var(--border)]"}`} />
                     ))}
-                    <span className="ms-2 text-xs text-[var(--muted-foreground)]">{step}/{totalSteps}</span>
+                    <span aria-live="polite" className="ms-2 text-xs tabular-nums text-[var(--muted-foreground)]"><span className="sr-only">{ar ? "الخطوة " : "Step "}</span>{step}/{totalSteps}</span>
                   </div>
                 </div>
 
@@ -164,7 +164,7 @@ export function CTAForm() {
                     <motion.div initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} className="space-y-4">
                       <div>
                         <label htmlFor="lead-business" className="text-sm font-semibold">{locale === "ar" ? "اسم النشاط" : "Business name"} *</label>
-                        <input id="lead-business" {...register("business")} aria-invalid={!!errors.business} aria-describedby={errors.business ? "lead-business-error" : undefined} placeholder={locale === "ar" ? "مثال: مطعم السرايا" : "e.g. Saraya Restaurant"} className="mt-2 h-11 w-full rounded-full border border-[var(--border)] bg-[var(--secondary)]/50 px-4 outline-none transition-colors focus:border-[var(--accent)] focus:bg-[var(--card)]" />
+                        <input id="lead-business" {...register("business")} autoComplete="organization" aria-invalid={!!errors.business} aria-describedby={errors.business ? "lead-business-error" : undefined} placeholder={locale === "ar" ? "مثال: مطعم السرايا" : "e.g. Saraya Restaurant"} className="mt-2 h-11 w-full rounded-full border border-[var(--border)] bg-[var(--secondary)]/50 px-4 outline-none transition-colors focus:border-[var(--accent)] focus:bg-[var(--card)]" />
                         {errors.business && <p id="lead-business-error" role="alert" className="mt-1 text-xs font-semibold text-red-600 dark:text-red-400">{fieldError(errors.business.message)}</p>}
                       </div>
                       <div>
@@ -188,21 +188,23 @@ export function CTAForm() {
                       <div>
                         <label htmlFor="lead-need" className="text-sm font-semibold">{locale === "ar" ? "ماذا تحتاج؟" : "What do you need?"} *</label>
                         <select id="lead-need" {...register("need")} aria-invalid={!!errors.need} aria-describedby={errors.need ? "lead-need-error" : undefined} className="mt-2 h-11 w-full rounded-full border border-[var(--border)] bg-[var(--secondary)]/50 px-4 outline-none transition-colors focus:border-[var(--accent)]">
-                          <option value="vitrine">{locale === "ar" ? "موقع واجهة" : "Vitrine site"}</option>
-                          <option value="vitrine-plus">{locale === "ar" ? "واجهة بلس + حجز" : "Vitrine+ + booking"}</option>
-                          <option value="shop">{locale === "ar" ? "متجر / حجز كامل" : "Full shop / booking"}</option>
+                          <option value="static-site">{ar ? "موقع ثابت — 35 $" : "Static website — $35"}</option>
+                          <option value="content">{ar ? "موقع + إدارة المحتوى" : "Website + content management"}</option>
+                          <option value="booking">{ar ? "موقع + إدارة الحجوزات" : "Website + booking management"}</option>
+                          <option value="shop">{ar ? "موقع + متجر إلكتروني" : "Website + online store"}</option>
+                          <option value="language">{ar ? "إضافة لغة" : "Add a language"}</option>
                           <option value="redesign">{locale === "ar" ? "إعادة تصميم" : "Redesign"}</option>
                         </select>
                         {errors.need && <p id="lead-need-error" role="alert" className="mt-1 text-xs font-semibold text-red-600 dark:text-red-400">{fieldError(errors.need.message)}</p>}
                       </div>
-                      <div className="grid grid-cols-2 gap-3">
+                      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                         <div>
                           <label htmlFor="lead-budget" className="text-sm font-semibold">{locale === "ar" ? "الميزانية" : "Budget"} *</label>
                           <select id="lead-budget" {...register("budget")} aria-invalid={!!errors.budget} aria-describedby={errors.budget ? "lead-budget-error" : undefined} className="mt-2 h-11 w-full rounded-full border border-[var(--border)] bg-[var(--secondary)]/50 px-4 outline-none transition-colors focus:border-[var(--accent)]">
-                            <option value="under-300">{locale === "ar" ? "أقل من 300 $" : "Under $300"}</option>
-                            <option value="300-600">$300–600</option>
-                            <option value="600-1000">$600–1,000</option>
-                            <option value="1000+">{locale === "ar" ? "أكثر من 1000 $" : "$1,000+"}</option>
+                            <option value="35-50">$35–50</option>
+                            <option value="50-100">$50–100</option>
+                            <option value="100+">{ar ? "100 $ أو أكثر — حسب الوظائف" : "$100+ — depending on functions"}</option>
+                            <option value="quote">{ar ? "أحتاج عرض سعر" : "I need a quote"}</option>
                           </select>
                           {errors.budget && <p id="lead-budget-error" role="alert" className="mt-1 text-xs font-semibold text-red-600 dark:text-red-400">{fieldError(errors.budget.message)}</p>}
                         </div>
@@ -224,30 +226,30 @@ export function CTAForm() {
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <div>
                           <label htmlFor="lead-name" className="text-sm font-semibold">{locale === "ar" ? "الاسم" : "Name"} *</label>
-                          <input id="lead-name" {...register("name")} aria-invalid={!!errors.name} aria-describedby={errors.name ? "lead-name-error" : undefined} placeholder={locale === "ar" ? "الاسم الكامل" : "Full name"} className="mt-2 h-11 w-full rounded-full border border-[var(--border)] bg-[var(--secondary)]/50 px-4 outline-none transition-colors focus:border-[var(--accent)]" />
+                          <input id="lead-name" {...register("name")} autoComplete="name" aria-invalid={!!errors.name} aria-describedby={errors.name ? "lead-name-error" : undefined} placeholder={locale === "ar" ? "الاسم الكامل" : "Full name"} className="mt-2 h-11 w-full rounded-full border border-[var(--border)] bg-[var(--secondary)]/50 px-4 outline-none transition-colors focus:border-[var(--accent)]" />
                           {errors.name && <p id="lead-name-error" role="alert" className="mt-1 text-xs font-semibold text-red-600 dark:text-red-400">{fieldError(errors.name.message)}</p>}
                         </div>
                         <div>
                           <label htmlFor="lead-phone" className="text-sm font-semibold">{locale === "ar" ? "واتساب / هاتف" : "WhatsApp / Phone"} *</label>
-                          <input id="lead-phone" {...register("phone")} aria-invalid={!!errors.phone} aria-describedby={errors.phone ? "lead-phone-error" : undefined} placeholder="+218 9X XXX XXXX" className="mt-2 h-11 w-full rounded-full border border-[var(--border)] bg-[var(--secondary)]/50 px-4 outline-none transition-colors focus:border-[var(--accent)]" dir="ltr" />
+                          <input id="lead-phone" {...register("phone")} type="tel" inputMode="tel" autoComplete="tel" aria-invalid={!!errors.phone} aria-describedby={errors.phone ? "lead-phone-error" : undefined} placeholder="+218 9X XXX XXXX" className="mt-2 h-11 w-full rounded-full border border-[var(--border)] bg-[var(--secondary)]/50 px-4 outline-none transition-colors focus:border-[var(--accent)]" dir="ltr" />
                           {errors.phone && <p id="lead-phone-error" role="alert" className="mt-1 text-xs font-semibold text-red-600 dark:text-red-400">{fieldError(errors.phone.message)}</p>}
                         </div>
                       </div>
                       <div>
                         <label htmlFor="lead-email" className="text-sm font-semibold">{locale === "ar" ? "البريد (اختياري)" : "Email (optional)"}</label>
-                        <input id="lead-email" {...register("email")} aria-invalid={!!errors.email} aria-describedby={errors.email ? "lead-email-error" : undefined} placeholder="you@example.com" className="mt-2 h-11 w-full rounded-full border border-[var(--border)] bg-[var(--secondary)]/50 px-4 outline-none transition-colors focus:border-[var(--accent)]" dir="ltr" />
+                        <input id="lead-email" {...register("email")} type="email" inputMode="email" autoComplete="email" spellCheck={false} aria-invalid={!!errors.email} aria-describedby={errors.email ? "lead-email-error" : undefined} placeholder="you@example.com" className="mt-2 h-11 w-full rounded-full border border-[var(--border)] bg-[var(--secondary)]/50 px-4 outline-none transition-colors focus:border-[var(--accent)]" dir="ltr" />
                         {errors.email && <p id="lead-email-error" role="alert" className="mt-1 text-xs font-semibold text-red-600 dark:text-red-400">{fieldError(errors.email.message)}</p>}
                       </div>
                       <div>
                         <label htmlFor="lead-message" className="text-sm font-semibold">{locale === "ar" ? "تفاصيل إضافية" : "Extra details"}</label>
-                        <textarea id="lead-message" {...register("message")} rows={3} placeholder={locale === "ar" ? "أخبرنا أكثر عن فكرتك..." : "Tell us more..."} className="mt-2 w-full resize-none rounded-[var(--radius-sm)] border border-[var(--border)] bg-[var(--secondary)]/50 px-4 py-3 outline-none transition-colors focus:border-[var(--accent)]" />
+                        <textarea id="lead-message" {...register("message")} rows={3} placeholder={locale === "ar" ? "أخبرنا أكثر عن فكرتك…" : "Tell us more…"} className="mt-2 w-full resize-none rounded-[var(--radius-sm)] border border-[var(--border)] bg-[var(--secondary)]/50 px-4 py-3 outline-none transition-colors focus:border-[var(--accent)]" />
                       </div>
                     </motion.div>
                   )}
 
                   <div className="flex flex-wrap gap-3 pt-2">
                     {submitError && (
-                      <div className="w-full rounded-2xl border border-red-500/40 bg-red-500/10 px-4 py-2.5 text-xs text-red-600 dark:text-red-400 text-center">
+                      <div role="alert" className="w-full rounded-2xl border border-red-500/40 bg-red-500/10 px-4 py-2.5 text-xs text-red-600 dark:text-red-400 text-center">
                         {locale === "ar"
                           ? "تعذّر إرسال الطلب — أعد المحاولة أو"
                           : "Sending failed — try again or"}{" "}
@@ -273,8 +275,14 @@ export function CTAForm() {
                         {locale === "ar" ? "التالي" : "Next"} <ArrowUpRight className="h-4 w-4" />
                       </button>
                     ) : (
-                      <button type="submit" className="flex-1 h-11 rounded-full bg-[var(--accent)] text-[var(--accent-foreground)] font-bold inline-flex items-center justify-center gap-2 hover:bg-[var(--accent-hover)] cursor-pointer">
-                        <Send className="h-4 w-4" /> {locale === "ar" ? "إرسال الطلب" : "Send request"}
+                      // Désactivé seulement pendant l'envoi (évite les doubles
+                      // demandes), avec un indicateur de progression.
+                      <button type="submit" disabled={isSubmitting} aria-busy={isSubmitting || undefined} className="flex-1 h-11 rounded-full bg-[var(--accent)] text-[var(--accent-foreground)] font-bold inline-flex items-center justify-center gap-2 hover:bg-[var(--accent-hover)] cursor-pointer disabled:cursor-wait disabled:opacity-80">
+                        {isSubmitting ? (
+                          <><Loader2 className="h-4 w-4 animate-spin" /> {ar ? "جارٍ الإرسال…" : "Sending…"}</>
+                        ) : (
+                          <><Send className="h-4 w-4" /> {ar ? "إرسال الطلب" : "Send request"}</>
+                        )}
                       </button>
                     )}
                   </div>
@@ -285,15 +293,15 @@ export function CTAForm() {
                 </form>
               </>
             ) : (
-              <motion.div initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} className="text-center py-10">
+              <motion.div role="status" initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} className="text-center py-10">
                 <div className="h-16 w-16 rounded-full bg-green-500 text-white grid place-items-center mx-auto">
                   <CheckCircle2 className="h-8 w-8" />
                 </div>
                 <h3 className="mt-4 text-xl font-black">{locale === "ar" ? "تم الإرسال بنجاح!" : "Sent successfully!"}</h3>
                 <p className="mt-2 text-sm text-[var(--muted-foreground)] max-w-[32ch] mx-auto">
-                  {locale === "ar" ? "سنرد عليك عبر واتساب خلال ساعتين. شكراً لثقتك بنخبة." : "We'll reply on WhatsApp within 2 hours. Thanks for trusting Nukhba."}
+                  {locale === "ar" ? "سنرد عليك عبر واتساب خلال أوقات العمل. شكراً لثقتك بنخبة." : "We'll reply on WhatsApp during opening hours. Thanks for trusting Nukhba."}
                 </p>
-                <a href={whatsappLink(siteConfig.whatsapp, whatsappMsg)} target="_blank" className="mt-6 inline-flex h-10 px-5 rounded-full bg-[#0B6B3A] text-white font-bold items-center gap-2">
+                <a href={whatsappLink(siteConfig.whatsapp, whatsappMsg)} target="_blank" rel="noopener noreferrer" className="mt-6 inline-flex h-11 px-5 rounded-full bg-[#0B6B3A] text-white font-bold items-center gap-2">
                   {locale === "ar" ? "متابعة على واتساب" : "Continue on WhatsApp"}
                 </a>
               </motion.div>

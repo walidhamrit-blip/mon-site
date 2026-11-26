@@ -92,8 +92,8 @@ export function Process() {
             <MessageCircle className="mt-0.5 h-5 w-5 shrink-0 text-[#0B6B3A]" aria-hidden="true" />
             <span>
               {locale === "ar"
-                ? "فور الدفع، يصلك موقع مثال مباشر على الإنترنت. ثم نقوم بتخصيصه لمتجرك: ألوانك، شعارك، منتجاتك."
-                : "As soon as you pay, you receive a live example website. Then we customize it for your shop: your colors, your logo, your products."}
+                ? "بعد تأكيد الطلب واستلام المحتوى، نخصص النموذج قبل التسليم الأول ونؤكد موعد النشر. لوحة الإدارة والحجز والمتجر تحتاج وحداتها الإضافية؛ الدفع لا يعني تفعيلها أو نشر موقع مخصص فوراً."
+                : "After order confirmation and receipt of your content, we personalize the model before initial delivery and confirm deployment timing. Admin, booking and store functions need their additional modules; payment does not instantly activate them or publish a personalized website."}
             </span>
           </p>
           <p className="mt-4 text-center text-sm">

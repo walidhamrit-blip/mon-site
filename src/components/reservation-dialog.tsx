@@ -1,4 +1,5 @@
 "use client";
+import { websiteDepositNote } from "@/lib/website-offer";
 
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
@@ -74,8 +75,10 @@ export function ReservationDialog({
   useEffect(() => {
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
+    document.documentElement.setAttribute("data-dialog", "open");
     return () => {
       document.body.style.overflow = previousOverflow;
+      document.documentElement.removeAttribute("data-dialog");
     };
   }, []);
 
@@ -146,8 +149,8 @@ export function ReservationDialog({
 
   const whatsappNumber = config.whatsapp.replace(/\D/g, "");
   const whatsappText = ar
-    ? `أريد حجز أولوية لموقع « ${demo.title} » — الفئة ${classification?.tier ?? "؟"}. العربون ${formatUsd(depositUsd)} $ (= ${formatUsd(depositUsd)} USDT).`
-    : `I'd like to reserve a priority slot for "${demo.titleEn}" — category ${classification?.tier ?? "?"}. Deposit $${formatUsd(depositUsd)} (= ${formatUsd(depositUsd)} USDT).`;
+    ? `أريد حجز أولوية لموقع « ${demo.title} » — العرض الأساسي. العربون ${formatUsd(depositUsd)} $ (= ${formatUsd(depositUsd)} USDT).`
+    : `I'd like to reserve a priority slot for "${demo.titleEn}" — base website offer. Deposit $${formatUsd(depositUsd)} (= ${formatUsd(depositUsd)} USDT).`;
   const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(whatsappText)}`;
 
   const failureHint = (): string => {
@@ -186,27 +189,27 @@ export function ReservationDialog({
   };
 
   const inputCls =
-    "w-full h-11 px-4 rounded-xl border border-[var(--border)] bg-black/30 text-sm outline-none focus:border-[var(--accent)] transition-colors";
+    "w-full h-11 px-4 rounded-xl border border-[var(--border)] bg-[var(--background)] text-[var(--foreground)] text-sm outline-none focus:border-[var(--accent)] transition-colors";
 
   const content = (
     <div
-      className="fixed inset-0 z-[10000] grid place-items-center bg-black/75 backdrop-blur-sm p-4"
+      className="fixed inset-0 z-[10000] flex items-end justify-center bg-black/75 p-0 backdrop-blur-sm sm:grid sm:place-items-center sm:p-4"
       onClick={onClose}
       role="dialog"
       aria-modal="true"
       dir={ar ? "rtl" : "ltr"}
     >
       <div
-        className="w-full max-w-md max-h-[92vh] overflow-y-auto rounded-[24px] border border-[var(--border)] bg-[var(--card)] p-6 shadow-2xl"
+        className="w-full max-w-md max-h-[92dvh] overflow-y-auto rounded-t-3xl border border-[var(--border)] bg-[var(--card)] p-5 pb-[max(1.5rem,env(safe-area-inset-bottom))] shadow-2xl sm:rounded-[24px] sm:p-6"
         onClick={(event) => event.stopPropagation()}
       >
         {/* En-tête */}
         <div className="flex items-start justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <span className="grid h-10 w-10 place-items-center rounded-2xl bg-[var(--accent)] text-[var(--accent-foreground)]">
+          <div className="flex min-w-0 items-center gap-3">
+            <span className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-[var(--accent)] text-[var(--accent-foreground)]">
               <CalendarCheck className="h-5 w-5" />
             </span>
-            <div>
+            <div className="min-w-0">
               <h2 className="text-lg font-black">
                 {ar ? "احجز مكانك مسبقاً" : "Reserve your place in advance"}
               </h2>
@@ -220,7 +223,7 @@ export function ReservationDialog({
           <button
             type="button"
             onClick={onClose}
-            className="grid h-8 w-8 place-items-center rounded-full opacity-60 hover:opacity-100 cursor-pointer"
+            className="grid h-11 w-11 shrink-0 place-items-center rounded-full border border-[var(--border)] text-[var(--muted-foreground)] transition-colors hover:border-[var(--accent)] hover:text-[var(--foreground)] cursor-pointer"
             aria-label={ar ? "إغلاق" : "Close"}
           >
             <X className="h-4 w-4" />
@@ -259,8 +262,8 @@ export function ReservationDialog({
                   </div>
                   <div className="text-[10px] opacity-60">
                     {ar
-                      ? "يُخصم من الإجمالي النهائي بعد اعتماد عرض التخصيص"
-                      : "Deducted from the approved final total after the customization quote"}
+                      ? "يُحتسب في فاتورة رصيد مؤكدة، وليس تلقائياً في الدفع المباشر"
+                      : "Credited on a separately confirmed balance invoice — not automatically at checkout"}
                   </div>
                 </div>
                 <div className="text-end">
@@ -317,8 +320,8 @@ export function ReservationDialog({
             <p className="flex items-center justify-center gap-1.5 text-center text-[11px] opacity-50">
               <ShieldCheck className="h-3.5 w-3.5" />
               {ar
-                ? "دفع آمن عبر NOWPayments — لن نخزن أي بيانات دفع"
-                : "Secure payment via NOWPayments — we never store payment data"}
+                ? "دفع عبر NOWPayments — لا ترسل مفاتيح المحفظة أو عبارة الاسترداد"
+                : "Payment via NOWPayments — never share private keys or recovery phrases"}
             </p>
           </form>
         )}
@@ -335,8 +338,8 @@ export function ReservationDialog({
         {step === "ready" && payment && (
           <div className="mt-5 space-y-4">
             <div className="flex items-start gap-3 rounded-2xl border border-emerald-500/30 bg-emerald-500/10 p-4">
-              <BadgeCheck className="mt-0.5 h-5 w-5 text-emerald-400 flex-shrink-0" />
-              <p className="text-sm font-semibold text-emerald-300">
+              <BadgeCheck className="mt-0.5 h-5 w-5 text-emerald-600 dark:text-emerald-400 flex-shrink-0" />
+              <p className="text-sm font-semibold text-emerald-800 dark:text-emerald-200">
                 {ar
                   ? "تم إنشاء عربون الحجز. إعادة التوجيه خلال"
                   : "Reservation deposit created. Redirecting in"}{" "}
@@ -365,15 +368,16 @@ export function ReservationDialog({
 
             <p className="text-[11px] opacity-50 leading-relaxed">
               {ar
-                ? "بعد تأكيد الدفع، تُحجز لك أولوية في جدولنا ويُخصم العربون من سعر المشروع. سنتواصل معك خلال ساعتين."
-                : "Once the payment is confirmed, your priority slot is reserved and the deposit is deducted from the project price. We'll contact you within 2 hours."}
+                ? "بعد تأكيد الدفع، تُحجز لك أولوية في جدولنا ويُخصم العربون من سعر المشروع. سنتواصل معك خلال أوقات العمل."
+                : "Once the payment is confirmed, your priority slot is reserved and the deposit is deducted from the project price. We'll contact you during opening hours."}
             </p>
           </div>
         )}
 
+        <p className="mt-4 rounded-xl border border-amber-500/40 p-3 text-xs leading-6">{websiteDepositNote(locale)}</p>
         {step === "error" && (
           <div className="mt-6 space-y-4 text-center">
-            <p className="text-sm font-semibold text-red-300">
+            <p className="text-sm font-semibold text-red-600 dark:text-red-300">
               {ar ? "تعذر إنشاء الحجز" : "Reservation could not be created"}
             </p>
             <p className="text-xs opacity-80 leading-relaxed">{failureHint()}</p>
@@ -381,7 +385,7 @@ export function ReservationDialog({
             {failure && (failure.status != null || failure.message) && (
               <div
                 dir="ltr"
-                className="rounded-xl border border-red-400/30 bg-black/40 p-3 text-left"
+                className="rounded-xl border border-red-400/30 bg-red-950 p-3 text-left text-red-100"
               >
                 <p className="text-[10px] uppercase tracking-wider opacity-60">
                   {ar ? "تفاصيل تقنية" : "Technical details"}
@@ -472,7 +476,7 @@ export function ReservationButton({
         onClick={() => setOpen(true)}
         className={
           className ??
-          "h-10 px-4 rounded-full bg-[var(--accent)] text-[var(--accent-foreground)] text-xs font-black inline-flex items-center justify-center gap-1.5 hover:bg-[var(--accent-hover)] transition-colors cursor-pointer"
+          "min-h-11 px-4 rounded-full bg-[var(--accent)] text-[var(--accent-foreground)] text-xs font-black inline-flex items-center justify-center gap-1.5 hover:bg-[var(--accent-hover)] transition-colors cursor-pointer"
         }
       >
         <CalendarCheck className="h-3.5 w-3.5" />

@@ -197,10 +197,13 @@ export function ArticleView({
                       <Image
                         src={section.image.src}
                         alt={ar ? section.image.altAr : section.image.altEn}
-                        fill
+                        width={1280}
+                        height={720}
                         sizes="(max-width: 1024px) 100vw, 760px"
                         quality={88}
-                        className="object-cover"
+                        loading={index === 0 ? "eager" : "lazy"}
+                        fetchPriority={index === 0 ? "high" : "auto"}
+                        className="h-full w-full object-cover"
                       />
                     </div>
                     {(ar ? section.image.captionAr : section.image.captionEn) && (
@@ -225,7 +228,7 @@ export function ArticleView({
           {article.includePricing && (
             <section id="pricing-live" className="mt-12 scroll-mt-28">
               <h2 className="text-2xl font-black">
-                {ar ? "الأسعار الحالية — محدثة من لوحة الإدارة" : "Current pricing — synced with the admin panel"}
+                {ar ? "السعر الأساسي الحالي — عرض موحد" : "Current base price — one unified offer"}
               </h2>
               <p className="mt-1 text-xs font-bold opacity-50">
                 {ar ? "كل المبالغ بالدولار — تدفع نفس المبلغ بـ USDT" : "All amounts in USD — pay the same amount in USDT"}

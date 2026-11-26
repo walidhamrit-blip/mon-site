@@ -244,9 +244,14 @@ export function blogCollectionJsonLd(
     "@context": "https://schema.org",
     "@type": "CollectionPage",
     "@id": `${url}#collection`,
-    name: "Nukhba Blog — Website, E-Commerce & Crypto Payment Guides",
+    name:
+      locale === "ar"
+        ? "مدونة وأدلة نخبة — الدفع بـ USDT وتكلفة المواقع والتجارة الإلكترونية"
+        : "Nukhba Blog — Website, E-Commerce & Crypto Payment Guides",
     description:
-      "Practical English and Arabic guides for business owners worldwide: paying with USDT step by step, website costs in USD, choosing an agency, online stores and AI search visibility.",
+      locale === "ar"
+        ? "أدلة عملية بالعربية والإنجليزية لأصحاب الأعمال: الدفع بـ USDT خطوة بخطوة بالصور، تكلفة المواقع بالدولار، اختيار الوكالة، إطلاق المتاجر، والظهور في محركات الذكاء الاصطناعي."
+        : "Practical English and Arabic guides for business owners worldwide: paying with USDT step by step, website costs in USD, choosing an agency, online stores and AI search visibility.",
     url,
     inLanguage: locale ?? ["en", "ar"],
     isPartOf: { "@id": `${base}/#website` },

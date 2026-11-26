@@ -157,6 +157,7 @@ html[dir="rtl"] .public-shell .site-main :is(h1,h2,h3) { line-height: 1.5; lette
   .public-shell .home-gateway { margin-top: 0; padding-bottom: 2.5rem; }
   .public-shell .gateway-art { height: 150px; }
   .public-shell .gaming-brand { width: 34px; height: 34px; font-size: 1rem; }
+  .public-shell .store-preview-card > span:nth-last-child(2) { padding: .85rem; }
   .public-shell .gaming-footer-grid { gap: 2rem 1.2rem; }
   .public-shell .gaming-footer-grid > div:first-child { grid-column: 1/-1; }
   .public-shell .gaming-footer-grid > nav:last-child { grid-column: 1/-1; }

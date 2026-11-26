@@ -11,7 +11,6 @@ import {
   type DemoClassification,
   type PlanPriceBreakdown,
 } from "@/lib/classification";
-import { Price } from "@/components/price";
 import { ModelPriceBreakdown } from "@/components/model-price-breakdown";
 import { ModelPurchaseButton } from "@/components/model-purchase-button";
 import { ProjectPreview } from "@/components/project-preview";
@@ -40,13 +39,7 @@ interface Group {
   entries: Entry[];
 }
 
-/**
- * Galerie classée par CATÉGORIE TARIFAIRE (et non par secteur) :
- * une section par formule, avec son prix, puis les sites de la catégorie.
- * Sous chaque site : prix du modèle, frais de personnalisation et total (ou devis).
- * Le filtre par secteur a été retiré pour garder une lecture simple ;
- * seule la recherche reste disponible.
- */
+/** One catalog, no design-based price categories. */
 export function DemosClient() {
   const siteContent = useSiteContent();
   const demos = collectAllDemos(siteContent);
@@ -54,7 +47,6 @@ export function DemosClient() {
   const { locale } = useI18n();
   const ar = locale === "ar";
   const [q, setQ] = useState("");
-  const [tier, setTier] = useState<number | "all">("all");
 
   const entries = useMemo<Entry[]>(
     () =>
@@ -101,7 +93,7 @@ export function DemosClient() {
     .map((group) => ({
       ...group,
       entries: group.entries.filter(
-        (entry) => (tier === "all" || group.tier === tier) && matches(entry),
+        (entry) => matches(entry),
       ),
     }))
     .filter((group) => group.entries.length > 0);
@@ -116,19 +108,21 @@ export function DemosClient() {
           <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-5">
             <div>
               <h1 className="text-[32px] lg:text-[44px] font-black tracking-tight leading-none">
-                {ar ? "مواقعنا حسب الفئة السعرية" : "Our sites by price category"}
+                {ar ? "اختر تصميم موقعك" : "Choose your website design"}
               </h1>
               <p className="mt-2.5 text-sm sm:text-base opacity-60 max-w-[58ch]">
                 {ar
-                  ? "اعرف سعر نموذج الموقع أولاً، ثم تكلفة تخصيصه لهويتك. يظهر الإجمالي قبل الدفع؛ وإذا لم يُحدد السعر بعد، نرسل لك عرضاً مكتوباً للموافقة."
-                  : "See each website model price and its separate brand-customization fee. The full total appears before checkout; if a fee is not set yet, request a written quote first."}
+                  ? "أعمال حية ومواقع صمّمتها نخبة: كل النماذج بنفس السعر الأساسي مع تخصيص المحتوى المقدم عند التسليم الأول. أضف الوظائف حسب حاجتك."
+                  : "Live portfolio of websites built by Nukhba: every model has the same base price, with initial personalization of your supplied content included. Add functions as needed."}
               </p>
               <p className="mt-2 inline-flex items-center gap-2 rounded-full border border-[#0B6B3A]/35 bg-[#0B6B3A]/10 px-4 py-1.5 text-xs font-bold text-[#0B6B3A]">
                 {ar
-                  ? "كل النماذج هنا يمكن أن تكون تصميم أي باقة من الباقات الثلاث — ما يتغير هو التفعيل الديناميكي وقاعدة البيانات، لا التصميم."
-                  : "Every model here can be the design of any of the 3 plans — what changes is the dynamization & database, not the design."}
+                  ? "لغة واحدة وبدون قاعدة بيانات. وظائف الحجز والمتجر في المعاينة تحتاج إلى تفعيل وحداتها الإضافية."
+                  : "One language, no database. Booking and store functions shown in previews require their additional modules."}
               </p>
             </div>
+
+            <Link href="/pricing#website-guide" className="inline-flex min-h-11 items-center gap-2 text-sm font-bold text-[var(--accent)] underline underline-offset-4">{ar ? "ساعدني في اختيار الوظائف وتقدير الميزانية" : "Help me choose functions & estimate my budget"}<ArrowUpRight className="h-4 w-4 shrink-0" aria-hidden="true" /></Link>
 
             <div className="relative w-full lg:w-[280px] shrink-0">
               <Search className="absolute start-3 top-1/2 -translate-y-1/2 h-4 w-4 opacity-40" />
@@ -144,7 +138,7 @@ export function DemosClient() {
                   type="button"
                   onClick={() => setQ("")}
                   aria-label={ar ? "مسح البحث" : "Clear search"}
-                  className="absolute end-2 top-1/2 -translate-y-1/2 grid h-7 w-7 place-items-center rounded-full opacity-60 hover:opacity-100 cursor-pointer"
+                  className="absolute end-1 top-1/2 -translate-y-1/2 grid h-9 w-9 place-items-center rounded-full opacity-60 hover:opacity-100 cursor-pointer"
                 >
                   <X className="h-3.5 w-3.5" />
                 </button>
@@ -152,54 +146,7 @@ export function DemosClient() {
             </div>
           </div>
 
-          {/* Accès direct aux catégories (avec leur prix). */}
-          <div className="mt-5 flex flex-wrap items-center gap-2">
-            <button
-              type="button"
-              onClick={() => setTier("all")}
-              aria-pressed={tier === "all"}
-              className={`h-9 px-4 rounded-full text-xs sm:text-sm font-bold border transition-colors cursor-pointer ${
-                tier === "all"
-                  ? "bg-[var(--primary)] text-[var(--primary-foreground)] border-[var(--primary)]"
-                  : "bg-[var(--card)] border-[var(--border)] hover:border-[var(--accent)]/60"
-              }`}
-            >
-              {ar ? "كل الفئات" : "All categories"}
-            </button>
-            {groups.map((group) => {
-              const active = tier === group.tier;
-              return (
-                <button
-                  key={group.tier}
-                  type="button"
-                  onClick={() => setTier(group.tier)}
-                  aria-pressed={active}
-                  className={`h-9 px-4 rounded-full text-xs sm:text-sm font-bold border transition-colors cursor-pointer ${
-                    active
-                      ? "bg-[var(--accent)] text-[var(--accent-foreground)] border-[var(--accent)]"
-                      : "bg-[var(--card)] border-[var(--border)] hover:border-[var(--accent)]/60"
-                  }`}
-                >
-                  {ar ? group.name : group.nameEn}
-                  {group.priceUsd != null && (
-                    <span className="ms-1.5 opacity-70" dir="ltr">
-                      {group.breakdown.totalPriceUsd != null ? (
-                        <Price usd={group.breakdown.totalPriceUsd} />
-                      ) : (
-                        <>
-                          {ar ? "النموذج" : "model"}{" "}
-                          <Price usd={group.priceUsd} />
-                        </>
-                      )}
-                    </span>
-                  )}
-                </button>
-              );
-            })}
-            <span className="ms-auto text-xs opacity-50">
-              {ar ? `${totalVisible} موقع` : `${totalVisible} sites`}
-            </span>
-          </div>
+          <p className="mt-5 text-xs text-[var(--muted-foreground)]">{ar ? `${totalVisible} نموذج — نفس السعر الأساسي` : `${totalVisible} models — the same base price`}</p>
         </div>
       </section>
 
@@ -213,12 +160,9 @@ export function DemosClient() {
           >
             <div className="mb-5 flex flex-wrap items-end justify-between gap-x-6 gap-y-3 border-b border-[var(--border)] pb-4">
               <div className="flex items-center gap-3">
-                <span className="grid h-10 w-10 sm:h-11 sm:w-11 shrink-0 place-items-center rounded-full bg-[var(--accent)]/15 text-[var(--accent)] text-sm font-black">
-                  {group.tier}
-                </span>
                 <div>
                   <div className="text-[10px] font-black uppercase tracking-[0.16em] opacity-45">
-                    {ar ? `الفئة ${group.tier}` : `Category ${group.tier}`}
+                    {ar ? "كل التصاميم، نفس العرض" : "Every design, one offer"}
                   </div>
                   <h2
                     id={`tier-${group.tier}`}
@@ -242,8 +186,8 @@ export function DemosClient() {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-5 sm:grid-cols-2 lg:grid-cols-3">
-              {group.entries.map(({ demo, classification }) => {
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5 lg:grid-cols-3">
+              {group.entries.map(({ demo, classification }, entryIndex) => {
                 const live = isRealUrl(demo.previewUrl);
                 // Une catégorie peut ne contenir qu'un seul site : sur trois
                 // colonnes, la carte seule laissait les deux tiers de la ligne
@@ -266,7 +210,7 @@ export function DemosClient() {
                         solo ? "aspect-[16/10] lg:aspect-auto lg:w-[52%]" : "aspect-[16/10]"
                       }`}
                     >
-                      <ProjectPreview demo={demo} />
+                      <ProjectPreview demo={demo} priority={index === 0 && entryIndex === 0} />
                       <div className="absolute inset-0 bg-gradient-to-t from-black/45 via-transparent to-transparent" />
                       <span className="absolute top-2.5 start-2.5 rounded-full bg-white px-2.5 py-1 text-[11px] font-bold text-black">
                         {ar ? demo.sectorAr : demo.sectorEn}
@@ -303,14 +247,14 @@ export function DemosClient() {
                         <ModelPurchaseButton
                           plan={plan}
                           demo={demo}
-                          className="mt-3 inline-flex min-h-9 w-full flex-wrap items-center justify-center gap-1.5 rounded-full border border-[var(--accent)]/50 bg-[var(--accent)]/10 px-3 py-2 text-center text-[11px] font-black hover:bg-[var(--accent)]/20 transition-colors"
+                          className="mt-3 inline-flex min-h-11 w-full flex-wrap items-center justify-center gap-1.5 rounded-full border border-[var(--accent)]/50 bg-[var(--accent)]/10 px-3 py-2 text-center text-[11.5px] font-black hover:bg-[var(--accent)]/20 transition-colors"
                         />
                       )}
 
                       <div className="mt-3 flex items-center gap-2 pt-3 border-t border-[var(--border)]/70">
                         <Link
                           href={`/demos/${demo.slug}`}
-                          className="inline-flex h-9 flex-1 items-center justify-center gap-1.5 rounded-full bg-[var(--primary)] px-3 text-xs font-bold text-[var(--primary-foreground)] hover:opacity-90 transition-opacity"
+                          className="inline-flex min-h-11 flex-1 items-center justify-center gap-1.5 rounded-full bg-[var(--primary)] px-3 text-xs font-bold text-[var(--primary-foreground)] hover:opacity-90 transition-opacity"
                         >
                           {ar ? "معاينة الموقع" : "View site"}
                           <ArrowUpRight className="h-3.5 w-3.5" />
@@ -321,7 +265,7 @@ export function DemosClient() {
                             target="_blank"
                             rel="noopener noreferrer"
                             title={ar ? "فتح الموقع الكامل" : "Open full site"}
-                            className="inline-flex h-9 items-center justify-center gap-1.5 rounded-full border border-[var(--border)] px-3 text-xs font-bold hover:border-[var(--accent)] transition-colors"
+                            className="inline-flex min-h-11 items-center justify-center gap-1.5 rounded-full border border-[var(--border)] px-3 text-xs font-bold hover:border-[var(--accent)] transition-colors"
                           >
                             <ExternalLink className="h-3.5 w-3.5" />
                             {ar ? "زيارة" : "Visit"}

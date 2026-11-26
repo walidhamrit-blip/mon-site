@@ -1,9 +1,13 @@
 "use client";
+import { websiteDepositNote } from "@/lib/website-offer";
 
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import {
   BadgeCheck,
   Bitcoin,
+  CreditCard,
+  ExternalLink,
   Landmark,
   BookOpen,
   Copy,
@@ -26,6 +30,10 @@ import {
   type ManualPaymentDraft,
 } from "@/components/manual-payment-form";
 import type { PublicManualPaymentOption } from "@/lib/manual-payment-public";
+import {
+  calculatePayGateCardQuote,
+  type PublicPayGateOption,
+} from "@/lib/paygate-core";
 import { Price } from "@/components/price";
 import { useCurrency } from "@/components/currency-provider";
 import type { Demo } from "@/lib/site-types";
@@ -37,6 +45,7 @@ import {
   type InstallmentCount,
 } from "@/lib/installments";
 import { PaymentGuarantee } from "@/components/payment-guarantee";
+import { PaymentBrandLogos } from "@/components/payment-methods";
 import { trackEvent } from "@/lib/analytics";
 
 interface CreatePaymentResponse {
@@ -49,6 +58,8 @@ interface CreatePaymentResponse {
     message?: string;
   };
   orderRef?: string;
+  trackingToken?: string;
+  trackingUrl?: string;
   installments?: number;
   installmentIndex?: number;
   trancheAmountUsd?: number;
@@ -122,9 +133,12 @@ export function CheckoutDialog({
    * (comptes, taux) n'est jamais embarquée dans la page.
    */
   const [manualOptions, setManualOptions] = useState<PublicManualPaymentOption[]>([]);
+  const [cardGateway, setCardGateway] = useState<PublicPayGateOption | null>(null);
   const [manualDraft, setManualDraft] = useState<ManualPaymentDraft>(EMPTY_MANUAL_PAYMENT_DRAFT);
   const [manualAccepted, setManualAccepted] = useState(false);
-  const [manualMode, setManualMode] = useState(false);
+  const [gatewayChoice, setGatewayChoice] = useState<"crypto" | "paygate" | "manual">("crypto");
+  const manualMode = gatewayChoice === "manual" && manualOptions.length > 0;
+  const cardMode = gatewayChoice === "paygate" && cardGateway?.enabled === true;
   const [error, setError] = useState("");
   const [failure, setFailure] = useState<Failure | null>(null);
   const [countdown, setCountdown] = useState(3);
@@ -133,25 +147,64 @@ export function CheckoutDialog({
   // Source unique : le montant choisi dans la section, jamais modifiable ici.
   const flexAmount = Math.round((Number(flex?.amountUsd) || 0) * 100) / 100;
 
-  // Compte à rebours avant redirection vers NOWPayments.
+  // Compte à rebours avant redirection vers NOWPayments / page de suivi manuelle.
+  // Pour PayGate (qui n'a pas de success_url auto-retour), on laisse l'onglet Nukhba
+  // ouvert et on sonde le statut en arrière-plan pendant que le client paie dans un nouvel onglet.
   useEffect(() => {
-    if (step !== "ready" || !payment?.paymentUrl) return;
+    if (step !== "ready" || !payment?.paymentUrl || cardMode) return;
     if (countdown <= 0) {
       window.location.href = payment.paymentUrl;
       return;
     }
     const timer = setTimeout(() => setCountdown((s) => s - 1), 1000);
     return () => clearTimeout(timer);
-  }, [step, countdown, payment]);
+  }, [step, countdown, payment, cardMode]);
 
-  // Échap pour fermer.
+  useEffect(() => {
+    if (step !== "ready" || !cardMode || !payment?.orderRef || !payment.trackingUrl) return;
+    let stopped = false;
+    const poll = async () => {
+      try {
+        const tokenParam = payment.trackingToken
+          ? `?t=${encodeURIComponent(payment.trackingToken)}`
+          : "";
+        const res = await fetch(
+          `/api/payments/order/${encodeURIComponent(payment.orderRef!)}${tokenParam}`,
+          { cache: "no-store" },
+        );
+        const payload = (await res.json().catch(() => ({}))) as {
+          ok?: boolean;
+          order?: { status?: string };
+        };
+        if (!stopped && res.ok && payload.ok && payload.order?.status === "paid") {
+          window.location.href = payment.trackingUrl!;
+        }
+      } catch {
+        // Ignoré : le prochain tick réessaiera.
+      }
+    };
+    const interval = setInterval(() => void poll(), 5000);
+    return () => {
+      stopped = true;
+      clearInterval(interval);
+    };
+  }, [step, cardMode, payment]);
+
+  // Échap pour fermer + verrouillage du défilement arrière-plan + masquage des flotteurs.
   useEffect(() => {
     if (!plan && !flex) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    document.documentElement.setAttribute("data-dialog", "open");
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
     };
     window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      document.documentElement.removeAttribute("data-dialog");
+      window.removeEventListener("keydown", onKey);
+    };
   }, [plan, flex, onClose]);
 
   // Moyens manuels réellement proposables (aucun si tout est fermé).
@@ -163,8 +216,14 @@ export function CheckoutDialog({
         const payload = (await response.json().catch(() => ({}))) as {
           ok?: boolean;
           options?: PublicManualPaymentOption[];
+          cardGateway?: PublicPayGateOption | null;
         };
         if (cancelled) return;
+        setCardGateway(
+          response.ok && payload.ok && payload.cardGateway?.enabled
+            ? payload.cardGateway
+            : null,
+        );
         const list = response.ok && Array.isArray(payload.options) ? payload.options : [];
         setManualOptions(list);
         if (list.length > 0) {
@@ -175,7 +234,10 @@ export function CheckoutDialog({
           );
         }
       } catch {
-        if (!cancelled) setManualOptions([]);
+        if (!cancelled) {
+          setManualOptions([]);
+          setCardGateway(null);
+        }
       }
     })();
     return () => {
@@ -208,11 +270,28 @@ export function CheckoutDialog({
     ? [totalUsd]
     : splitAmount(totalUsd, installments);
   const dueNow = trancheAmounts[0] ?? totalUsd;
+  const cardQuote =
+    cardGateway && dueNow > 0
+      ? calculatePayGateCardQuote(dueNow, {
+          feePercent: cardGateway.feePercent,
+          minReceivedRatio: 0.8,
+        })
+      : null;
+  const belowCardMinimum =
+    cardMode && cardGateway != null && dueNow + 1e-6 < cardGateway.minOrderUsd;
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email.includes("@")) {
       setError(ar ? "البريد الإلكتروني مطلوب" : "Email required");
+      return;
+    }
+    if (belowCardMinimum && cardGateway) {
+      setError(
+        ar
+          ? `الحد الأدنى للدفع بالبطاقة البنكية هو ${cardGateway.minOrderUsd.toFixed(2)} $.`
+          : `Minimum card payment is $${cardGateway.minOrderUsd.toFixed(2)}.`,
+      );
       return;
     }
     if (manualMode) {
@@ -259,6 +338,7 @@ export function CheckoutDialog({
                 email: email.trim() || undefined,
                 phone: phone.trim() || undefined,
                 locale,
+                ...(cardMode ? { paymentMethod: "paygate" as const } : {}),
                 ...(manualMode
                   ? {
                       manualPayment: {
@@ -288,6 +368,7 @@ export function CheckoutDialog({
                 email: email.trim() || undefined,
                 phone: phone.trim() || undefined,
                 locale,
+                ...(cardMode ? { paymentMethod: "paygate" as const } : {}),
                 ...(manualMode
                   ? {
                       manualPayment: {
@@ -374,27 +455,27 @@ export function CheckoutDialog({
   };
 
   const inputCls =
-    "w-full h-11 px-4 rounded-xl border border-[var(--border)] bg-black/30 text-sm outline-none focus:border-[var(--accent)] transition-colors";
+    "w-full h-11 px-4 rounded-xl border border-[var(--border)] bg-[var(--background)] text-[var(--foreground)] text-sm outline-none focus:border-[var(--accent)] transition-colors";
 
-  return (
+  const dialogNode = (
     <div
-      className="fixed inset-0 z-[100] grid place-items-center bg-black/75 backdrop-blur-sm p-4"
+      className="fixed inset-0 z-[10000] flex items-end justify-center bg-black/75 p-0 backdrop-blur-sm sm:grid sm:place-items-center sm:p-4"
       onClick={onClose}
       role="dialog"
       aria-modal="true"
       dir={ar ? "rtl" : "ltr"}
     >
       <div
-        className="w-full max-w-md rounded-[24px] border border-[var(--border)] bg-[var(--card)] p-6 shadow-2xl"
+        className="w-full max-w-md max-h-[92dvh] overflow-y-auto rounded-t-3xl border border-[var(--border)] bg-[var(--card)] p-5 pb-[max(1.5rem,env(safe-area-inset-bottom))] shadow-2xl sm:rounded-[24px] sm:p-6"
         onClick={(e) => e.stopPropagation()}
       >
         {/* En-tête */}
         <div className="flex items-start justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <span className="grid h-10 w-10 place-items-center rounded-2xl bg-[var(--accent)] text-[var(--accent-foreground)]">
+          <div className="flex min-w-0 items-center gap-3">
+            <span className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-[var(--accent)] text-[var(--accent-foreground)]">
               <Bitcoin className="h-5 w-5" />
             </span>
-            <div>
+            <div className="min-w-0">
               <h2 className="text-lg font-black">
                 {ar
                   ? t.checkout.titleAr
@@ -410,8 +491,8 @@ export function CheckoutDialog({
           <button
             type="button"
             onClick={onClose}
-            className="grid h-8 w-8 place-items-center rounded-full opacity-60 hover:opacity-100 cursor-pointer"
-            aria-label="Fermer"
+            className="grid h-11 w-11 shrink-0 place-items-center rounded-full border border-[var(--border)] text-[var(--muted-foreground)] transition-colors hover:border-[var(--accent)] hover:text-[var(--foreground)] cursor-pointer"
+            aria-label={ar ? "إغلاق" : "Close"}
           >
             <X className="h-4 w-4" />
           </button>
@@ -447,6 +528,8 @@ export function CheckoutDialog({
                   </span>
                 )}
               </div>
+              {!flexMode && <p className="mt-3 text-xs leading-6 opacity-75">{ar ? "الموقع الأساسي فقط: لغة واحدة، دون قاعدة بيانات أو إدارة. تخصيص المحتوى المقدم عند التسليم الأول مشمول. نشر vercel.app وفق أهلية وحدود Vercel؛ الدومين الخاص غير مشمول. اللغات والوظائف الإضافية والتكاليف الخارجية تؤكد وتفوتر بشكل منفصل قبل الموافقة." : "Base website only: one language, no database or admin. Initial personalization with your supplied content is included. Deployment to vercel.app is subject to Vercel eligibility and limits; custom domain excluded. Extra languages, modules and external costs are confirmed and billed separately with your approval."}</p>}
+              {!flexMode && <p className="mt-3 rounded-xl border border-amber-500/40 bg-amber-500/10 p-3 text-xs leading-6">{websiteDepositNote(locale)} <Link href="/contact" className="font-bold underline">{ar ? "تواصل معنا" : "Contact us"}</Link></p>}
               {!flexMode && planBreakdown && (
                 <div className="mt-2 border-t border-[var(--border)]/70 pt-2 space-y-1 text-xs">
                   <div className="flex items-center justify-between gap-3">
@@ -457,11 +540,7 @@ export function CheckoutDialog({
                   </div>
                   <div className="flex items-center justify-between gap-3">
                     <span className="opacity-60">
-                      {planBreakdown.customizationPercent == null
-                        ? (ar ? "تكلفة التخصيص" : "Customization")
-                        : ar
-                          ? `التخصيص (${planBreakdown.customizationPercent}٪)`
-                          : `Customization (${planBreakdown.customizationPercent}%)`}
+                      {ar ? "تخصيص المحتوى الأولي — مشمول" : "Initial content personalization — included"}
                     </span>
                     <strong>
                       <Price usd={planBreakdown.customizationUsd ?? 0} />
@@ -491,7 +570,7 @@ export function CheckoutDialog({
               <div className="mb-1.5 text-[11px] font-semibold uppercase tracking-wider opacity-50">
                 {ar ? t.checkout.modeAr : t.checkout.modeEn}
               </div>
-              <div className="grid grid-cols-3 gap-2">
+              <div className="grid grid-cols-1 gap-2 min-[360px]:grid-cols-3">
                 {INSTALLMENT_COUNTS.map((count) => {
                   const per = splitAmount(totalUsd, count)[0] ?? totalUsd;
                   const active = installments === count;
@@ -501,7 +580,7 @@ export function CheckoutDialog({
                       type="button"
                       onClick={() => setInstallments(count)}
                       aria-pressed={active}
-                      className={`rounded-xl border px-2 py-2.5 text-center transition-colors cursor-pointer ${
+                      className={`min-h-11 rounded-xl border px-2 py-2.5 text-center transition-colors cursor-pointer ${
                         active
                           ? "border-[var(--accent)] bg-[var(--accent)]/15"
                           : "border-[var(--border)] hover:border-[var(--accent)]/60"
@@ -575,42 +654,92 @@ export function CheckoutDialog({
               dir="ltr"
             />
 
-            {manualOptions.length > 0 && (
-              <div className="rounded-xl border border-[var(--border)] p-2.5">
-                <div className="grid grid-cols-2 gap-2">
+            {(cardGateway?.enabled || manualOptions.length > 0) && (
+              <div className="rounded-xl border border-[var(--border)] p-2.5 space-y-2.5">
+                <div
+                  className={`grid gap-2 ${
+                    cardGateway?.enabled && manualOptions.length > 0
+                      ? "grid-cols-1 min-[420px]:grid-cols-3"
+                      : "grid-cols-1 min-[340px]:grid-cols-2"
+                  }`}
+                >
+                  {cardGateway?.enabled && (
+                    <button
+                      type="button"
+                      aria-pressed={cardMode}
+                      onClick={() => {
+                        setGatewayChoice("paygate");
+                        setError("");
+                      }}
+                      className={`flex min-h-11 items-center justify-center gap-1.5 rounded-lg border px-2 text-[11.5px] font-black ${
+                        cardMode
+                          ? "border-[var(--accent)] bg-[var(--accent)]/10 text-[var(--accent)]"
+                          : "border-[var(--border)] hover:border-[var(--accent)]/60"
+                      }`}
+                    >
+                      <CreditCard className="h-4 w-4 shrink-0" />
+                      <span>{ar ? "بطاقة ومحافظ رقمية" : "Cards / wallets"}</span>
+                    </button>
+                  )}
                   <button
                     type="button"
-                    aria-pressed={!manualMode}
+                    aria-pressed={!manualMode && !cardMode}
                     onClick={() => {
-                      setManualMode(false);
+                      setGatewayChoice("crypto");
                       setError("");
                     }}
                     className={`flex min-h-11 items-center justify-center gap-1.5 rounded-lg border px-2 text-[11.5px] font-black ${
-                      !manualMode
+                      !manualMode && !cardMode
                         ? "border-[var(--accent)] bg-[var(--accent)]/10 text-[var(--accent)]"
                         : "border-[var(--border)] hover:border-[var(--accent)]/60"
                     }`}
                   >
-                    <Bitcoin className="h-4 w-4" />
+                    <Bitcoin className="h-4 w-4 shrink-0" />
                     {ar ? t.checkout.manualCryptoAr : t.checkout.manualCryptoEn}
                   </button>
-                  <button
-                    type="button"
-                    aria-pressed={manualMode}
-                    onClick={() => {
-                      setManualMode(true);
-                      setError("");
-                    }}
-                    className={`flex min-h-11 items-center justify-center gap-1.5 rounded-lg border px-2 text-[11.5px] font-black ${
-                      manualMode
-                        ? "border-[var(--accent)] bg-[var(--accent)]/10 text-[var(--accent)]"
-                        : "border-[var(--border)] hover:border-[var(--accent)]/60"
-                    }`}
-                  >
-                    <Landmark className="h-4 w-4" />
-                    {ar ? t.checkout.manualTransferAr : t.checkout.manualTransferEn}
-                  </button>
+                  {manualOptions.length > 0 && (
+                    <button
+                      type="button"
+                      aria-pressed={manualMode}
+                      onClick={() => {
+                        setGatewayChoice("manual");
+                        setError("");
+                      }}
+                      className={`flex min-h-11 items-center justify-center gap-1.5 rounded-lg border px-2 text-[11.5px] font-black ${
+                        manualMode
+                          ? "border-[var(--accent)] bg-[var(--accent)]/10 text-[var(--accent)]"
+                          : "border-[var(--border)] hover:border-[var(--accent)]/60"
+                      }`}
+                    >
+                      <Landmark className="h-4 w-4 shrink-0" />
+                      {ar ? t.checkout.manualTransferAr : t.checkout.manualTransferEn}
+                    </button>
+                  )}
                 </div>
+
+                {cardMode && cardGateway && cardQuote && (
+                  <div className="rounded-lg border border-[var(--accent)]/40 bg-[var(--accent)]/5 px-3 py-2 text-[11.5px] leading-5">
+                    <div className="flex items-center justify-between font-black">
+                      <span>{ar ? "بطاقة أو محفظة رقمية" : "Card or digital wallet"}</span>
+                      <span dir="ltr">${cardQuote.billedUsd.toFixed(2)} USD</span>
+                    </div>
+                    <PaymentBrandLogos className="mt-2" />
+                    {cardGateway.feePercent > 0 && (
+                      <p className="mt-0.5 text-[11px] opacity-75">
+                        {ar
+                          ? `يشمل ${cardGateway.feePercent}% رسوم معالجة البطاقة (${cardQuote.feeUsd.toFixed(2)} $).`
+                          : `Includes ${cardGateway.feePercent}% card processing fee ($${cardQuote.feeUsd.toFixed(2)}).`}
+                      </p>
+                    )}
+                    {belowCardMinimum && (
+                      <p className="mt-1 font-bold text-amber-700 dark:text-amber-300">
+                        {ar
+                          ? `الحد الأدنى للدفع بالبطاقة ${cardGateway.minOrderUsd.toFixed(2)} $.`
+                          : `Minimum card payment is $${cardGateway.minOrderUsd.toFixed(2)}.`}
+                      </p>
+                    )}
+                  </div>
+                )}
               </div>
             )}
 
@@ -627,7 +756,7 @@ export function CheckoutDialog({
             )}
 
             {error && (
-              <p className="text-xs font-semibold text-red-400">{error}</p>
+              <p className="text-xs font-semibold text-red-600 dark:text-red-400">{error}</p>
             )}
 
             {/* Garantie du service — rassure avant le paiement via la passerelle */}
@@ -635,22 +764,36 @@ export function CheckoutDialog({
 
             <button
               type="submit"
-              className="h-12 w-full rounded-full bg-[var(--accent)] font-black text-[var(--accent-foreground)] hover:bg-[var(--accent-hover)] transition-colors cursor-pointer inline-flex items-center justify-center gap-2"
+              disabled={belowCardMinimum}
+              className="h-12 w-full rounded-full bg-[var(--accent)] font-black text-[var(--accent-foreground)] hover:bg-[var(--accent-hover)] transition-colors cursor-pointer inline-flex items-center justify-center gap-2 disabled:opacity-50"
             >
-              {manualMode ? <Landmark className="h-4 w-4" /> : <Bitcoin className="h-4 w-4" />}
+              {manualMode ? (
+                <Landmark className="h-4 w-4" />
+              ) : cardMode ? (
+                <CreditCard className="h-4 w-4" />
+              ) : (
+                <Bitcoin className="h-4 w-4" />
+              )}
               {manualMode
                 ? ar
                   ? t.checkout.manualSubmitAr
                   : t.checkout.manualSubmitEn
-                : ar
-                  ? t.checkout.continueAr
-                  : t.checkout.continueEn}
-              {" — "}${formatUsd(dueNow)}
+                : cardMode
+                  ? ar
+                    ? "الدفع بالبطاقة"
+                    : "Pay by card"
+                  : ar
+                    ? t.checkout.continueAr
+                    : t.checkout.continueEn}
+              {" — "}$
+              {cardMode && cardQuote
+                ? formatUsd(cardQuote.billedUsd)
+                : formatUsd(dueNow)}
             </button>
             <p className="text-center text-[11px] opacity-50">
               {ar ? t.checkout.secureAr : t.checkout.secureEn}
             </p>
-            {!manualMode && (
+            {!manualMode && !cardMode && (
             <p className="text-center">
               <Link
                 href={CRYPTO_GUIDE_PATH}
@@ -678,15 +821,21 @@ export function CheckoutDialog({
         {step === "ready" && payment && (
           <div className="mt-5 space-y-4">
             <div className="flex items-start gap-3 rounded-2xl border border-emerald-500/30 bg-emerald-500/10 p-4">
-              <BadgeCheck className="mt-0.5 h-5 w-5 text-emerald-400 flex-shrink-0" />
+              <BadgeCheck className="mt-0.5 h-5 w-5 text-emerald-600 dark:text-emerald-400 flex-shrink-0" />
               {payment.manualPayment ? (
-                <p className="text-sm font-semibold text-emerald-300">
+                <p className="text-sm font-semibold text-emerald-800 dark:text-emerald-200">
                   {ar
                     ? `${t.checkout.manualPendingAr} (${payment.manualPayment.payAmount} ${payment.manualPayment.payCurrency})`
                     : `${t.checkout.manualPendingEn} (${payment.manualPayment.payAmount} ${payment.manualPayment.payCurrency})`}
                 </p>
+              ) : cardMode ? (
+                <p className="text-sm font-semibold text-emerald-800 dark:text-emerald-200">
+                  {ar
+                    ? "جلسة الدفع بالبطاقة جاهزة. افتح صفحة الدفع الآمنة لإتمام العملية؛ ستتحدّث هذه الصفحة تلقائياً فور تأكيد الدفع."
+                    : "Your secure card session is ready. Open the hosted payment page to complete payment; this tab updates automatically once confirmed."}
+                </p>
               ) : (
-                <p className="text-sm font-semibold text-emerald-300">
+                <p className="text-sm font-semibold text-emerald-800 dark:text-emerald-200">
                   {ar ? t.checkout.readyAr : t.checkout.readyEn}{" "}
                   <strong>{countdown}</strong>
                 </p>
@@ -705,21 +854,45 @@ export function CheckoutDialog({
               </div>
             )}
 
-            <button
-              type="button"
-              onClick={() => {
-                if (payment.paymentUrl) window.location.href = payment.paymentUrl;
-              }}
-              className="h-12 w-full rounded-full bg-[var(--accent)] font-black text-[var(--accent-foreground)] hover:bg-[var(--accent-hover)] transition-colors cursor-pointer"
-            >
-              {payment.manualPayment
-                ? ar
-                  ? t.checkout.manualTrackAr
-                  : t.checkout.manualTrackEn
-                : ar
-                  ? t.checkout.openAr
-                  : t.checkout.openEn}
-            </button>
+            {cardMode && payment.paymentUrl ? (
+              <div className="space-y-2.5">
+                <a
+                  href={payment.paymentUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-full bg-[var(--accent)] px-4 font-black text-[var(--accent-foreground)] transition-colors hover:bg-[var(--accent-hover)]"
+                >
+                  <CreditCard className="h-4 w-4" />
+                  {ar ? t.checkout.openAr : t.checkout.openEn}
+                  <ExternalLink className="h-4 w-4" />
+                </a>
+                {payment.trackingUrl && (
+                  <a
+                    href={payment.trackingUrl}
+                    className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-full border border-[var(--border)] px-4 text-xs font-black transition-colors hover:border-[var(--accent)]"
+                  >
+                    <Loader2 className="h-3.5 w-3.5 animate-spin text-[var(--accent)]" />
+                    {ar ? t.checkout.manualTrackAr : t.checkout.manualTrackEn}
+                  </a>
+                )}
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => {
+                  if (payment.paymentUrl) window.location.href = payment.paymentUrl;
+                }}
+                className="h-12 w-full rounded-full bg-[var(--accent)] font-black text-[var(--accent-foreground)] hover:bg-[var(--accent-hover)] transition-colors cursor-pointer"
+              >
+                {payment.manualPayment
+                  ? ar
+                    ? t.checkout.manualTrackAr
+                    : t.checkout.manualTrackEn
+                  : ar
+                    ? t.checkout.openAr
+                    : t.checkout.openEn}
+              </button>
+            )}
 
             {payment.payAddress && (
               <div className="rounded-2xl border border-[var(--border)] p-4 space-y-3 text-sm">
@@ -740,9 +913,9 @@ export function CheckoutDialog({
                         payment.payAmount &&
                         copy(String(payment.payAmount), "amount")
                       }
-                      className="text-xs opacity-70 hover:opacity-100 inline-flex items-center gap-1 cursor-pointer"
+                      className="inline-flex min-h-10 items-center gap-1 rounded-lg border border-[var(--border)] px-2.5 text-xs font-semibold opacity-80 hover:border-[var(--accent)] hover:opacity-100 cursor-pointer"
                     >
-                      <Copy className="h-3 w-3" />
+                      <Copy className="h-3.5 w-3.5" />
                       {copied === "amount"
                         ? ar
                           ? t.checkout.copiedAr
@@ -764,9 +937,9 @@ export function CheckoutDialog({
                     <button
                       type="button"
                       onClick={() => copy(payment.payAddress ?? "", "address")}
-                      className="text-xs opacity-70 hover:opacity-100 inline-flex items-center gap-1 flex-shrink-0 cursor-pointer"
+                      className="inline-flex min-h-10 flex-shrink-0 items-center gap-1 rounded-lg border border-[var(--border)] px-2.5 text-xs font-semibold opacity-80 hover:border-[var(--accent)] hover:opacity-100 cursor-pointer"
                     >
-                      <Copy className="h-3 w-3" />
+                      <Copy className="h-3.5 w-3.5" />
                       {copied === "address"
                         ? ar
                           ? t.checkout.copiedAr
@@ -794,7 +967,7 @@ export function CheckoutDialog({
 
         {step === "error" && (
           <div className="mt-6 space-y-4 text-center">
-            <p className="text-sm text-red-300 font-semibold">
+            <p className="text-sm text-red-600 dark:text-red-300 font-semibold">
               {ar ? t.checkout.errorAr : t.checkout.errorEn}
             </p>
             <p className="text-xs opacity-80 leading-relaxed">{failureHint()}</p>
@@ -812,7 +985,7 @@ export function CheckoutDialog({
                 <button
                   type="button"
                   onClick={onClose}
-                  className="h-9 px-4 rounded-full border border-[var(--accent)]/50 text-xs font-bold hover:bg-[var(--accent)]/10 cursor-pointer"
+                  className="min-h-11 px-4 rounded-full border border-[var(--accent)]/50 text-xs font-bold hover:bg-[var(--accent)]/10 cursor-pointer"
                 >
                   {ar ? "العودة لاختيار المبلغ" : "Back to amount selection"}
                 </button>
@@ -822,9 +995,9 @@ export function CheckoutDialog({
             {failure && (
               <div
                 dir="ltr"
-                className="rounded-xl border border-red-400/30 bg-black/40 p-3 text-left"
+                className="rounded-xl border border-red-400/30 bg-red-950 p-3 text-left text-red-100"
               >
-                <p className="text-[10px] uppercase tracking-wider opacity-60">
+                <p className="text-[10px] uppercase tracking-wider opacity-70">
                   {ar ? t.checkout.diagTitleAr : t.checkout.diagTitleEn}
                 </p>
                 <p className="mt-1 font-mono text-[11px] text-red-200 break-all">
@@ -832,7 +1005,7 @@ export function CheckoutDialog({
                   {failure.status != null ? ` · HTTP ${failure.status}` : ""}
                 </p>
                 {failure.message && (
-                  <p className="mt-1 font-mono text-[10px] opacity-70 break-all">
+                  <p className="mt-1 font-mono text-[10px] opacity-80 break-all">
                     {failure.message}
                   </p>
                 )}
@@ -848,7 +1021,7 @@ export function CheckoutDialog({
               {ar ? t.checkout.healthLinkAr : t.checkout.healthLinkEn}
             </a>
 
-            <div className="flex gap-2 justify-center">
+            <div className="flex flex-wrap gap-2 justify-center">
               <button
                 type="button"
                 onClick={() => setStep("form")}
@@ -869,4 +1042,7 @@ export function CheckoutDialog({
       </div>
     </div>
   );
+
+  if (typeof document === "undefined") return dialogNode;
+  return createPortal(dialogNode, document.body);
 }

@@ -1,3 +1,5 @@
+import { websiteOfferSummary } from "@/lib/website-offer";
+import { resolveAutopilotOverride } from "@/lib/seo-autopilot";
 import type { Metadata } from "next";
 import { resolveDemoClassification, resolvePlanPriceBreakdown } from "@/lib/classification";
 import { getDemoCapturedAt, getDemoPreviewImages } from "@/lib/preview-manifest";
@@ -105,7 +107,7 @@ const BUSINESS_ID = "#business";
  * en produit une variante adossée au marché configuré.
  */
 export const DEFAULT_META_DESCRIPTION =
-  "Nukhba builds premium websites, e-commerce stores and booking systems for clients worldwide — delivered in 7 days, 90+ speed, SEO + AI-search ready, USD pricing payable in USDT.";
+  "Nukhba builds premium websites, e-commerce stores and booking systems for clients worldwide — static base $35 with optional modules, delivery confirmed by scope, USD pricing payable in USDT.";
 
 /**
  * Description meta par défaut, adossée au marché actif.
@@ -131,8 +133,8 @@ export function defaultMetaDescription(
   // ≤ 155 caractères, phrase complète : une description coupée au milieu
   // d'un mot (« … مع متجر… ») gaspille la seule accroche de la SERP.
   return lang === "ar"
-    ? `وكالة نخبة في ${labels.city}: مواقع ومتاجر إلكترونية بأسعار بالدولار${reach}، تسليم في 7 أيام، تحسين SEO — ومتجر أكواد ألعاب وبرامج وبطاقات هدايا.`
-    : `Nukhba in ${labels.city}: websites and online stores priced in USD${reach}, delivered in 7 days, SEO-ready — plus a digital store for game keys, software and gift cards.`;
+    ? `وكالة نخبة في ${labels.city}: مواقع ومتاجر بالدولار${reach}، عرض ثابت بـ35$ مع وظائف اختيارية، ومتجر بطاقات هدايا وأكواد ألعاب وبرامج.`
+    : `Nukhba in ${labels.city}: websites and online stores in USD${reach}, $35 static base with optional modules, plus gift cards and game codes.`;
 }
 
 /**
@@ -267,8 +269,8 @@ export function organizationJsonLd(config: SiteConfig) {
     email: config.email,
     telephone: config.phone,
     description: globalReach
-      ? `وكالة تصميم وتطوير مواقع${market.id === "global" ? "" : ` في ${ar.city}`} تعمل لأسواق عربية وعالمية: مواقع واجهة، متاجر إلكترونية، أنظمة حجز، تحسين SEO وتسليم في 7 أيام — ومتجر رقمي لأكواد الألعاب والبرامج وبطاقات الهدايا.`
-      : `وكالة تصميم وتطوير مواقع في ${ar.city} — ${ar.country}: مواقع واجهة، متاجر إلكترونية، أنظمة حجز، تحسين SEO وتسليم في 7 أيام — ومتجر رقمي لأكواد الألعاب والبرامج وبطاقات الهدايا.`,
+      ? `وكالة تصميم وتطوير مواقع${market.id === "global" ? "" : ` في ${ar.city}`} تعمل لأسواق عربية وعالمية: مواقع واجهة، متاجر إلكترونية، أنظمة حجز، أسس SEO وموعد تسليم حسب النطاق — ومتجر رقمي لأكواد الألعاب والبرامج وبطاقات الهدايا.`
+      : `وكالة تصميم وتطوير مواقع في ${ar.city} — ${ar.country}: مواقع واجهة، متاجر إلكترونية، أنظمة حجز، أسس SEO وموعد تسليم حسب النطاق — ومتجر رقمي لأكواد الألعاب والبرامج وبطاقات الهدايا.`,
     inLanguage: marketLanguages(market),
     sameAs: sameAsLinks(config),
   };
@@ -326,7 +328,7 @@ export function localBusinessJsonLd(
     url: absoluteUrl(config, "/"),
     logo: absoluteUrl(config, "/icon.svg"),
     image: absoluteUrl(config, "/og.jpg"),
-    slogan: `مواقع ومتاجر إلكترونية فاخرة تُسلَّم في 7 أيام — ${ar.city}${globalReach ? " وللعالم" : ""}`,
+    slogan: `نماذج مواقع بسعر أساسي موحد ووظائف اختيارية — ${ar.city}${globalReach ? " وللعالم" : ""}`,
     telephone: config.phone,
     email: config.email,
     priceRange: "$$",
@@ -656,11 +658,10 @@ export function howToJsonLd(
     "@context": "https://schema.org",
     "@type": "HowTo",
     "@id": `${absoluteUrl(config, "/")}#howto`,
-    name: "كيف نصمم ونطلق موقعك الاحترافي في 7 إلى 14 يوماً — How Nukhba builds your website",
+    name: "كيف نخصص ونسلم نموذج موقعك — How Nukhba personalizes and delivers your website",
     description:
-      "6 خطوات واضحة من جلسة الاكتشاف والتصميم الحي إلى التسليم والضمان.",
+      "6 خطوات واضحة: اختيار النموذج وتأكيد النطاق وتخصيص المحتوى والنشر والتسليم حسب الاتفاق.",
     inLanguage: marketLanguages(resolveMarket(config.market)),
-    totalTime: "P14D",
     step: steps.map((s, idx) => ({
       "@type": "HowToStep",
       position: idx + 1,
@@ -810,7 +811,8 @@ export function demoJsonLd(config: SiteConfig, demo: Demo, locale?: Locale) {
       ? {
           offers: {
             "@type": "Offer",
-            name: `${cls.name} — ${cls.nameEn} (model + customization)`,
+            name: `${cls.name} — ${cls.nameEn} (static base; initial personalization included)`,
+            description: websiteOfferSummary(ar ? "ar" : "en"),
             priceCurrency: "USD",
             price: String(cls.totalPriceUsd),
             availability: "https://schema.org/InStock",
@@ -1016,14 +1018,15 @@ export function pageMetadata(config: SiteConfig, opts: PageSeoOptions): Metadata
   // Chaque langue a sa canonique auto-référente. Une page noindex (suivi,
   // paiement, ressource absente) ne doit pas entrer dans un cluster hreflang.
   const canonical = localizedAbsoluteUrl(config.url, opts.path, locale, defaultLocale);
+  const autoOverride = !opts.noindex ? resolveAutopilotOverride(opts.path, locale) : null;
   // Titre borné à 60 caractères, suffixe de marque ajouté une seule fois.
-  const title = serpTitle(applyMarketTokens(opts.title, market, locale), locale);
+  const title = serpTitle(
+    applyMarketTokens(autoOverride?.title ?? opts.title, market, locale),
+    locale,
+  );
   // Description bornée à ~155 caractères (largeur d'affichage Google).
   const description = serpDescription(
-    applyMarketTokens(opts.description, market, locale),
-  );
-  const keywords = opts.keywords?.map((keyword) =>
-    applyMarketTokens(keyword, market, locale),
+    applyMarketTokens(autoOverride?.description ?? opts.description, market, locale),
   );
   // undefined = pas d'images déclarées manuellement (la page s'appuie sur
   // les fichiers opengraph-image / twitter-image du segment de route).
@@ -1039,23 +1042,18 @@ export function pageMetadata(config: SiteConfig, opts: PageSeoOptions): Metadata
   return {
     title,
     description,
-    keywords,
     alternates: {
       canonical,
       ...(!opts.noindex ? { languages: languageAlternates(config.url, opts.path, defaultLocale) } : {}),
     },
     robots: opts.noindex
-      ? { index: false, follow: false, googleBot: { index: false, follow: false } }
+      ? { index: false, follow: false }
       : {
           index: true,
           follow: true,
-          googleBot: {
-            index: true,
-            follow: true,
-            "max-image-preview": "large",
-            "max-snippet": -1,
-            "max-video-preview": -1,
-          },
+          "max-image-preview": "large",
+          "max-snippet": -1,
+          "max-video-preview": -1,
         },
     openGraph: {
       title,
@@ -1089,9 +1087,6 @@ export function pageMetadata(config: SiteConfig, opts: PageSeoOptions): Metadata
     },
     twitter: {
       card: "summary_large_image",
-      title,
-      description,
-      ...(ogImage ? { images: [ogImage] } : {}),
     },
   };
 }

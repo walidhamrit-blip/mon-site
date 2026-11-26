@@ -298,12 +298,20 @@ test("les boutons restent cohérents dans les trois langues", () => {
         `${lang} : bouton ni URL ni callback`,
       );
     }
-    assert.equal(mainMenuKeyboard(lang, links)[0][0].url, links.store);
+    // Le premier bouton ouvre la boutique inline (navigation par clavier) ;
+    // le lien web vers /codes reste proposé juste à côté.
+    assert.equal(mainMenuKeyboard(lang, links)[0][0].callback_data, "shop");
+    assert.equal(mainMenuKeyboard(lang, links)[0][1].url, links.store);
     assert.ok(offersKeyboard(lang).flat().some((b) => b.callback_data === "offers:on"));
   }
+  // Choix de langue bilingue, avec drapeaux, dès /start.
   assert.deepEqual(
     languageKeyboard().flat().map((b) => b.callback_data),
-    ["lang:ar", "lang:fr", "lang:en"],
+    ["lang:en", "lang:ar"],
+  );
+  assert.deepEqual(
+    languageKeyboard().flat().map((b) => b.text),
+    ["🇬🇧 English", "🇱🇾 العربية"],
   );
   assert.ok(botCommandList().every((c) => /^[a-z]+$/.test(c.command)));
 });
@@ -345,6 +353,68 @@ test("le webhook exige le secret Telegram et répond toujours 200", () => {
   assert.match(route, /return NextResponse\.json\(\{ ok: true \}\)/);
   // Un groupe n'est jamais interrogé : il sert aux alertes internes.
   assert.match(route, /message\.chat\.type !== "private"/);
+});
+
+test("l'URL setWebhook canonique est /api/telegram-webhook (alias conservé)", () => {
+  const lib = code(read("src/lib/telegram.ts"));
+  assert.match(lib, /\/api\/telegram-webhook/);
+  assert.doesNotMatch(lib, /api\/telegram\/webhook`/);
+  // next.config expose l'ancien chemin via une rewrite : aucune installation
+  // existante n'est cassée par le changement d'URL canonique.
+  const nextConfig = read("next.config.ts");
+  assert.match(nextConfig, /source: "\/api\/telegram-webhook"/);
+  assert.match(nextConfig, /destination: "\/api\/telegram\/webhook"/);
+  const setup = read("scripts/telegram-setup.mjs");
+  assert.match(setup, /api\/telegram-webhook/);
+});
+
+test("cartes cadeaux du bot : hiérarchie type de carte → région", () => {
+  const shopMod = code(read("src/lib/telegram-shop.ts"));
+  // Cascade déclenchée uniquement pour la famille cartes cadeaux.
+  assert.match(shopMod, /kind === "gift_card"/);
+  assert.match(shopMod, /shopBrandsOfKind\(/);
+  assert.match(shopMod, /shopRegionsOfBrand\(/);
+  // Tous les nouveaux callbacks sont câblés dans le switch boutique.
+  assert.match(shopMod, /case "brands":/);
+  assert.match(shopMod, /case "brand":/);
+  assert.match(shopMod, /case "regionPage":/);
+  assert.match(shopMod, /case "region":/);
+  assert.match(shopMod, /case "regionAll":/);
+  assert.match(shopMod, /case "brandProductsPage":/);
+  // Index périmé (catalogue changé) : réouverture de la boutique, jamais de crash.
+  assert.match(shopMod, /if \(!brand \|\| !kind\)/);
+  assert.match(shopMod, /if \(!kind \|\| !brand\)/);
+  // Le retour d'une fiche produit remonte la hiérarchie (régions ou marques).
+  assert.match(shopMod, /regionPage.*brands|brands.*regionPage/s);
+});
+
+test("le /start des nouveaux arrivants propose le choix de langue", () => {
+  const route = code(read("src/app/api/telegram/webhook/route.ts"));
+  assert.match(route, /isNew/);
+  assert.match(route, /welcomeChoice/);
+  assert.match(route, /languageKeyboard\(\)/);
+  // La commande /codes ouvre la boutique inline plutôt qu'un simple lien.
+  assert.match(route, /openTelegramShop\(/);
+});
+
+test("la bascule crypto → carte reprend la commande existante, sans jeton pas de bascule", () => {
+  const route = code(read("src/app/api/payments/paygate/switch/route.ts"));
+  // Authentification par jeton de suivi (empreinte) + refus strict si faux.
+  assert.match(route, /trackingAccess\(/);
+  assert.match(route, /"denied"/);
+  assert.match(route, /status: 403/);
+  // Une commande déjà payée ne rebascule jamais (retour au suivi).
+  assert.match(route, /order\.status !== "pending"/);
+  // Session carte en attente réutilisée (aucune nouvelle adresse mintée).
+  assert.match(route, /eq\(paygatePayments\.status, "pending"\)/);
+  // Redirections sans cache ni indexation (motifs du projet).
+  assert.match(route, /noindex, nofollow/);
+  // La commande bascule vers paygate pour les routes aval (/pay/card, callback).
+  assert.match(route, /paymentMethod: "paygate"/);
+  // La page de suivi propose la bascule aux commandes crypto en attente.
+  const status = code(read("src/app/(site)/codes/commande/digital-order-status.tsx"));
+  assert.match(status, /api\/payments\/paygate\/switch/);
+  assert.match(status, /paymentMethod === "nowpayments"/);
 });
 
 test("aucun composant client n'importe le module serveur du bot", () => {

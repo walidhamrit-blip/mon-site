@@ -16,8 +16,9 @@ await build({
     import { renderToStaticMarkup } from "react-dom/server";
     import { I18nProvider } from "@/lib/i18n";
     import { DigitalStoreView } from "@/components/digital-store-view";
+    import { DEFAULT_CATALOG_FILTERS } from "@/lib/catalog-filters";
     export function render(locale, degraded) {
-      return renderToStaticMarkup(createElement(I18nProvider, {defaultLocale:locale}, createElement(DigitalStoreView, {products:[], degraded, initialKind:"all"})));
+      return renderToStaticMarkup(createElement(I18nProvider, {defaultLocale:locale}, createElement(DigitalStoreView, {products:[], degraded, initialFilters:DEFAULT_CATALOG_FILTERS})));
     }`, resolveDir: root, loader: "tsx" },
   outfile, bundle: true, platform: "node", format: "cjs", packages: "external", jsx: "automatic",
 });

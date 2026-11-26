@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 import { LocalizedLink as Link } from "@/components/localized-link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import { ArrowUpRight, ChevronDown, Menu, Moon, Sun, X } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
@@ -13,7 +13,6 @@ import { useSiteConfig } from "@/components/site-provider";
 import { marketLabels, resolveMarket } from "@/lib/market";
 import { primaryNavigation } from "@/lib/site-hierarchy";
 import { WhatsAppEnquiry } from "@/components/whatsapp-enquiry";
-import { localizedPath } from "@/lib/locale";
 
 /**
  * Quatre destinations principales, identiques sur ordinateur et mobile.
@@ -24,10 +23,9 @@ import { localizedPath } from "@/lib/locale";
  * - barre collante compacte : elle reste visible pendant le défilement.
  */
 export function Navbar() {
-  const router = useRouter();
   const pathname = usePathname();
   const siteConfig = useSiteConfig();
-  const { locale, defaultLocale } = useI18n();
+  const { locale } = useI18n();
   const { mode, toggle } = useTheme();
   const [open, setOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement | null>(null);
@@ -122,24 +120,22 @@ export function Navbar() {
   const isActive = (href: string) =>
     href === "/" ? pathname === "/" : pathname === href || pathname.startsWith(`${href}/`);
 
-
-  const quote = () => {
-    setOpen(false);
-    router.push(localizedPath("/creation-sites#lead-form", locale, defaultLocale));
-  };
+  // Demande de devis : un vrai lien (Ctrl/Cmd+clic, clic du milieu, menu
+  // contextuel), localisé par LocalizedLink comme le reste de la navigation.
+  const quoteHref = "/creation-sites#lead-form";
 
   return (
     <>
       <header ref={headerRef} className="public-header sticky top-0 z-50 border-b border-[var(--border)] bg-[var(--background)]/95 py-3 backdrop-blur-md">
         <div className="site-container px-4 sm:px-6">
           <div className="flex items-center justify-between gap-3 px-1 py-2 sm:px-4">
-            <Link href="/" className="group flex min-h-11 shrink-0 items-center gap-2.5">
-              <span className="gaming-brand grid h-9 w-9 place-items-center bg-[var(--primary)] text-sm font-black text-[var(--primary-foreground)] transition-transform group-hover:scale-105">
+            <Link href="/" className="group flex min-h-11 min-w-0 items-center gap-2.5">
+              <span className="gaming-brand grid h-9 w-9 shrink-0 place-items-center bg-[var(--primary)] text-sm font-black text-[var(--primary-foreground)] transition-transform group-hover:scale-105">
                 {ar ? "ن" : "N"}
               </span>
-              <span className="leading-none">
+              <span className="min-w-0 leading-none">
                 <span className="flex items-center gap-1.5 text-[16px] font-black tracking-tight">
-                  {siteConfig.name}
+                  <span className="truncate">{siteConfig.name}</span>
                   <span className="hidden text-[10px] font-normal tracking-[0.2em] text-[var(--muted-foreground)] sm:inline">
                     {ar ? "نخبة" : "NUKHBA"}
                   </span>
@@ -198,13 +194,13 @@ export function Navbar() {
               >
                 WhatsApp
               </WhatsAppEnquiry>
-              <button
-                onClick={quote}
-                className="hidden h-11 cursor-pointer items-center gap-1.5 rounded-full bg-[var(--primary)] px-4 text-[12.5px] font-bold text-[var(--primary-foreground)] transition-opacity hover:opacity-90 sm:inline-flex"
+              <Link
+                href={quoteHref}
+                className="hidden h-11 items-center gap-1.5 rounded-full bg-[var(--primary)] px-4 text-[12.5px] font-bold text-[var(--primary-foreground)] transition-opacity hover:opacity-90 sm:inline-flex"
               >
                 {ar ? "طلب عرض" : "Get quote"}
-                <ArrowUpRight className="h-3.5 w-3.5" />
-              </button>
+                <ArrowUpRight className="h-3.5 w-3.5 rtl:rotate-[-90deg]" />
+              </Link>
 
               <button
                 ref={toggleRef}
@@ -250,7 +246,7 @@ export function Navbar() {
               </button>
             </div>
 
-            <div className="site-container flex-1 overflow-y-auto px-4 py-4 sm:px-6">
+            <div className="site-container flex-1 overflow-y-auto px-4 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-4 sm:px-6">
               <div className="rounded-[var(--radius-lg)] border border-[var(--border)] bg-[var(--card)] p-4 shadow-[var(--shadow-lg)] sm:p-6">
                 <nav aria-label={ar ? "قائمة الجوال" : "Mobile menu"} className="flex flex-col gap-1">
                   {links.map((link) => (
@@ -263,21 +259,21 @@ export function Navbar() {
                       }`}
                     >
                       <span>{link.label}</span>
-                      <ArrowUpRight className="h-4 w-4 opacity-30 rtl:rotate-180" />
+                      <ArrowUpRight className="h-4 w-4 opacity-30 rtl:rotate-[-90deg]" />
                     </Link>
                   ))}
                 </nav>
 
                 {/* Actions commerciales avant les préférences secondaires. */}
                 <div className="mt-5 grid gap-2.5">
-                  <button
-                    type="button"
-                    onClick={quote}
-                    className="inline-flex min-h-11 w-full cursor-pointer items-center justify-center gap-1.5 rounded-full bg-[var(--primary)] px-4 text-[14px] font-bold text-[var(--primary-foreground)]"
+                  <Link
+                    href={quoteHref}
+                    onClick={() => setOpen(false)}
+                    className="inline-flex min-h-11 w-full items-center justify-center gap-1.5 rounded-full bg-[var(--primary)] px-4 text-[14px] font-bold text-[var(--primary-foreground)]"
                   >
                     {ar ? "طلب عرض" : "Get quote"}
-                    <ArrowUpRight className="h-4 w-4 rtl:rotate-180" />
-                  </button>
+                    <ArrowUpRight className="h-4 w-4 rtl:rotate-[-90deg]" />
+                  </Link>
                   <WhatsAppEnquiry
                     source="navbar-mobile"
                     className="inline-flex min-h-11 w-full items-center justify-center rounded-full bg-[#0B6B3A] px-4 text-[14px] font-bold text-white"

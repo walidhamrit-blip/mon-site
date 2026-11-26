@@ -7,6 +7,7 @@ import {
   Check,
   Clock,
   Copy,
+  CreditCard,
   ExternalLink,
   Loader2,
   Search,
@@ -60,7 +61,8 @@ interface PublicDigitalOrder {
   deliveredAt: string | null;
   reloadlyStatus: string | null;
   codes: DigitalCode[];
-  paymentMethod: "nowpayments" | "phone_card" | "manual";
+  paymentMethod: "nowpayments" | "paygate" | "phone_card" | "manual";
+  paymentUrl?: string | null;
   phoneCardStatus: "pending" | "approved" | "rejected" | null;
   manualPaymentMethod?: string | null;
   manualPaymentStatus?: "pending" | "approved" | "rejected" | null;
@@ -202,9 +204,9 @@ function DeliveryProgressBar({
       <p
         className={`mt-2.5 text-[12px] leading-6 ${
           tone === "failed"
-            ? "text-red-800"
+            ? "text-red-800 dark:text-red-300"
             : tone === "alert"
-              ? "text-orange-900"
+              ? "text-orange-900 dark:text-orange-200"
               : "text-[var(--foreground)]"
         }`}
       >
@@ -404,15 +406,15 @@ export function DigitalOrderStatus({
       case "delivered":
         return {
           icon: BadgeCheck,
-          tone: "text-emerald-600",
-          chip: "border-emerald-200 bg-emerald-50 text-emerald-800",
+          tone: "text-emerald-600 dark:text-emerald-400",
+          chip: "border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-500/40 dark:bg-emerald-950/50 dark:text-emerald-200",
           label: ar ? "تم التسليم" : "Delivered",
         };
       case "failed":
         return {
           icon: XCircle,
-          tone: "text-red-600",
-          chip: "border-red-200 bg-red-50 text-red-800",
+          tone: "text-red-600 dark:text-red-400",
+          chip: "border-red-200 bg-red-50 text-red-800 dark:border-red-500/40 dark:bg-red-950/50 dark:text-red-200",
           label:
             order?.paymentMethod === "phone_card"
               ? ar ? "بطاقة الهاتف مرفوضة" : "Phone card rejected"
@@ -423,8 +425,8 @@ export function DigitalOrderStatus({
       case "manual":
         return {
           icon: TriangleAlert,
-          tone: "text-orange-600",
-          chip: "border-orange-200 bg-orange-50 text-orange-800",
+          tone: "text-orange-600 dark:text-orange-400",
+          chip: "border-orange-200 bg-orange-50 text-orange-800 dark:border-orange-500/40 dark:bg-orange-950/50 dark:text-orange-200",
           label: ar ? "قيد التحضير" : "Being prepared",
         };
       case "paid":
@@ -435,23 +437,23 @@ export function DigitalOrderStatus({
         return order?.fulfillmentStatus === "manual_review"
           ? {
               icon: TriangleAlert,
-              tone: "text-orange-600",
-              chip: "border-orange-200 bg-orange-50 text-orange-800",
+              tone: "text-orange-600 dark:text-orange-400",
+              chip: "border-orange-200 bg-orange-50 text-orange-800 dark:border-orange-500/40 dark:bg-orange-950/50 dark:text-orange-200",
               label: ar
                 ? "تم الدفع — فريقنا يتولى الأمر"
                 : "Paid — our team is handling it",
             }
           : {
               icon: Loader2,
-              tone: "text-sky-600",
-              chip: "border-sky-200 bg-sky-50 text-sky-800",
+              tone: "text-sky-600 dark:text-sky-400",
+              chip: "border-sky-200 bg-sky-50 text-sky-800 dark:border-sky-500/40 dark:bg-sky-950/50 dark:text-sky-200",
               label: ar ? "تم الدفع — جارٍ الإصدار" : "Paid — issuing",
             };
       default:
         return {
           icon: Clock,
-          tone: "text-amber-600",
-          chip: "border-amber-200 bg-amber-50 text-amber-800",
+          tone: "text-amber-600 dark:text-amber-400",
+          chip: "border-amber-200 bg-amber-50 text-amber-800 dark:border-amber-500/40 dark:bg-amber-950/50 dark:text-amber-200",
           label:
             order?.paymentMethod === "phone_card"
               ? ar ? "التحقق من بطاقة الهاتف" : "Verifying phone card"
@@ -543,14 +545,14 @@ export function DigitalOrderStatus({
       </form>
 
       {notFound && (
-        <div className="rounded-xl border border-amber-300/70 bg-amber-50 p-4 text-[13px] leading-6 text-amber-900">
+        <div className="rounded-xl border border-amber-300/70 bg-amber-50 dark:border-amber-500/40 dark:bg-amber-950/40 p-4 text-[13px] leading-6 text-amber-900 dark:text-amber-200">
           {ar
             ? "لم يتم العثور على طلب بهذه البيانات. تحقق من الرقم والرمز (كلاهما حسّاس لحالة الأحرف)."
             : "No order matches these details. Check the reference and token (both are case-sensitive)."}
         </div>
       )}
       {error && (
-        <div className="rounded-xl border border-red-300/70 bg-red-50 p-4 text-[13px] text-red-800">
+        <div className="rounded-xl border border-red-300/70 bg-red-50 dark:border-red-500/40 dark:bg-red-950/40 p-4 text-[13px] text-red-800 dark:text-red-200">
           {error}
         </div>
       )}
@@ -593,6 +595,48 @@ export function DigitalOrderStatus({
               />
             )}
 
+            {order.status === "pending" &&
+              order.paymentMethod === "paygate" &&
+              order.paymentUrl && (
+                <div className="rounded-xl border border-[var(--accent)]/40 bg-[var(--accent)]/5 p-4">
+                  <p className="text-[12.5px] leading-5 text-[var(--foreground)]">
+                    {ar
+                      ? "لم يكتمل الدفع بالبطاقة بعد؟ يمكنك فتح صفحة الدفع الآمنة (Visa / Mastercard / Apple Pay / Google Pay) أدناه — ستتحدّث هذه الصفحة تلقائياً فور تأكيد العملية."
+                      : "Haven't finished paying by card yet? Open the secure card checkout below — this page updates automatically as soon as your payment is confirmed."}
+                  </p>
+                  <a
+                    href={order.paymentUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="mt-3 inline-flex h-11 items-center justify-center gap-2 rounded-full bg-[var(--accent)] px-5 text-[13px] font-black text-[var(--accent-foreground)] transition-colors hover:bg-[var(--accent-hover)]"
+                  >
+                    <CreditCard className="h-4 w-4" />
+                    {ar ? "فتح صفحة الدفع بالبطاقة" : "Open secure card checkout"}
+                    <ExternalLink className="h-3.5 w-3.5" />
+                  </a>
+                </div>
+              )}
+
+            {order.status === "pending" &&
+              order.paymentMethod === "nowpayments" &&
+              order.paymentUrl &&
+              token && (
+                <div className="rounded-xl border border-[var(--border)] bg-[var(--secondary)]/30 p-4">
+                  <p className="text-[12.5px] leading-5 text-[var(--muted-foreground)]">
+                    {ar
+                      ? "لقد أنشأتم فاتورة بالعملات الرقمية لهذا الطلب. تفضلون الدفع بالبطاقة بدلاً من ذلك؟ تُستكمل الطلب الحالي — دون البدء من جديد."
+                      : "A crypto invoice is open for this order. Prefer paying by card instead? Your current order continues — no need to start over."}
+                  </p>
+                  <a
+                    href={`/api/payments/paygate/switch?ref=${encodeURIComponent(ref)}&t=${encodeURIComponent(token)}`}
+                    className="mt-3 inline-flex h-11 items-center justify-center gap-2 rounded-full border border-[var(--accent)]/50 bg-transparent px-5 text-[13px] font-black text-[var(--accent)] transition-colors hover:bg-[var(--accent)]/10"
+                  >
+                    <CreditCard className="h-4 w-4" />
+                    {ar ? "الدفع بالبطاقة بدلاً من العملات الرقمية" : "Pay by card instead"}
+                  </a>
+                </div>
+              )}
+
             {order.notice && (
               <p className="rounded-lg border border-[var(--border)] bg-[var(--secondary)]/40 px-3.5 py-3 text-[12.5px] leading-6 text-[var(--muted-foreground)]">
                 {order.notice}
@@ -613,21 +657,21 @@ export function DigitalOrderStatus({
                 </p>
 
                 {credit.request?.status === "pending" && (
-                  <p className="mt-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-[12.5px] leading-6 text-amber-900">
+                  <p className="mt-2 rounded-lg border border-amber-200 bg-amber-50 dark:border-amber-500/40 dark:bg-amber-950/40 px-3 py-2 text-[12.5px] leading-6 text-amber-900 dark:text-amber-200">
                     {ar
                       ? `طلب استخدام ${lydLabel(credit.request.amountLyd)} من رصيدك على هذا الطلب — بانتظار موافقة الفريق. لا يُخصم أي مبلغ قبل الموافقة.`
                       : `Request to use ${lydLabel(credit.request.amountLyd)} of your balance on this order — waiting for the team. Nothing is deducted before approval.`}
                   </p>
                 )}
                 {credit.request?.status === "approved" && (
-                  <p className="mt-2 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-[12.5px] leading-6 text-emerald-900">
+                  <p className="mt-2 rounded-lg border border-emerald-200 bg-emerald-50 dark:border-emerald-500/40 dark:bg-emerald-950/40 px-3 py-2 text-[12.5px] leading-6 text-emerald-900 dark:text-emerald-200">
                     {ar
                       ? `تمت الموافقة: استُخدم ${lydLabel(credit.request.amountLyd)} من رصيدك على هذا الطلب.`
                       : `Approved: ${lydLabel(credit.request.amountLyd)} of your balance was used on this order.`}
                   </p>
                 )}
                 {credit.request?.status === "rejected" && (
-                  <p className="mt-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-[12.5px] leading-6 text-red-800">
+                  <p className="mt-2 rounded-lg border border-red-200 bg-red-50 dark:border-red-500/40 dark:bg-red-950/40 px-3 py-2 text-[12.5px] leading-6 text-red-800 dark:text-red-200">
                     {ar
                       ? "لم يُقبل طلب استخدام الرصيد. رصيدك ما زال محفوظاً لدى الفريق."
                       : "The balance request was declined. Your balance stays with us, untouched."}
@@ -683,8 +727,8 @@ export function DigitalOrderStatus({
                   <p
                     className={`mt-2 rounded-lg border px-3 py-2 text-[12px] font-bold ${
                       creditMessage.ok
-                        ? "border-emerald-200 bg-emerald-50 text-emerald-800"
-                        : "border-red-200 bg-red-50 text-red-800"
+                        ? "border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-500/40 dark:bg-emerald-950/40 dark:text-emerald-200"
+                        : "border-red-200 bg-red-50 text-red-800 dark:border-red-500/40 dark:bg-red-950/40 dark:text-red-200"
                     }`}
                   >
                     {creditMessage.text}
@@ -732,12 +776,12 @@ export function DigitalOrderStatus({
                         type="button"
                         onClick={() => copy(code.cardNumber, `card-${index}`)}
                         aria-label={ar ? "نسخ" : "Copy"}
-                        className="grid h-8 w-8 shrink-0 place-items-center rounded-lg border border-[var(--border)] hover:border-[var(--accent)]"
+                        className="grid h-11 w-11 shrink-0 cursor-pointer place-items-center rounded-lg border border-[var(--border)] bg-[var(--background)] hover:border-[var(--accent)]"
                       >
                         {copied === `card-${index}` ? (
-                          <Check className="h-4 w-4 text-emerald-600" />
+                          <Check className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
                         ) : (
-                          <Copy className="h-3.5 w-3.5" />
+                          <Copy className="h-4 w-4" />
                         )}
                       </button>
                     </div>
@@ -755,12 +799,12 @@ export function DigitalOrderStatus({
                             type="button"
                             onClick={() => copy(code.pinCode ?? "", `pin-${index}`)}
                             aria-label={ar ? "نسخ" : "Copy"}
-                            className="grid h-8 w-8 shrink-0 place-items-center rounded-lg border border-[var(--border)] hover:border-[var(--accent)]"
+                            className="grid h-11 w-11 shrink-0 cursor-pointer place-items-center rounded-lg border border-[var(--border)] bg-[var(--background)] hover:border-[var(--accent)]"
                           >
                             {copied === `pin-${index}` ? (
-                              <Check className="h-4 w-4 text-emerald-600" />
+                              <Check className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
                             ) : (
-                              <Copy className="h-3.5 w-3.5" />
+                              <Copy className="h-4 w-4" />
                             )}
                           </button>
                         </div>
@@ -793,7 +837,7 @@ export function DigitalOrderStatus({
                 </p>
               </div>
             ) : order.status === "failed" ? (
-              <div className="flex items-center gap-2.5 rounded-lg border border-red-200 bg-red-50 px-3.5 py-3 text-[12.5px] text-red-800">
+              <div className="flex items-center gap-2.5 rounded-lg border border-red-200 bg-red-50 dark:border-red-500/40 dark:bg-red-950/40 px-3.5 py-3 text-[12.5px] text-red-800 dark:text-red-200">
                 <XCircle className="h-4 w-4 shrink-0" />
                 {order.paymentMethod === "phone_card"
                   ? ar
@@ -837,12 +881,12 @@ export function DigitalOrderStatus({
                   <span className="block text-[12.5px] font-black">
                     {ar
                       ? "استلم الكود أيضاً على تيليجرام"
-                      : "Recevez aussi le code sur Telegram"}
+                      : "Also receive your code on Telegram"}
                   </span>
                   <span className="mt-0.5 block text-[11.5px] leading-5 text-[var(--muted-foreground)]">
                     {ar
                       ? "اضغط مرة واحدة: يفتح البوت هذه الطلب ويرسل لك الكود هنا بمجرد أن يصبح جاهزاً — بالإضافة إلى البريد الإلكتروني."
-                      : "Un seul appui : le bot suit cette commande et vous envoie le code ici dès qu'il est prêt — en plus de l'e-mail."}
+                      : "One tap: our bot follows this order and sends your code here as soon as it is ready — in addition to email."}
                   </span>
                 </span>
               </a>

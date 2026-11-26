@@ -62,25 +62,27 @@ export default async function CompareHubPage({ searchParams }: LocalePageProps) 
     .filter((item): item is NonNullable<typeof item> => Boolean(item))
     .map((item) => resolveComparisonTokens(item, config.market));
 
+  const ar = locale === "ar";
   return (
     <>
       <JsonLd
         data={[
           breadcrumbJsonLd(config, [
-            { name: "الرئيسية", path: "/" },
-            { name: "المقارنات", path: "/compare" },
+            { name: ar ? "الرئيسية" : "Home", path: "/" },
+            { name: ar ? "المقارنات" : "Comparisons", path: "/compare" },
           ], locale),
           webPageJsonLd(config, {
             path: "/compare",
             locale,
-            name: "مقارنات صريحة — نخبة Nukhba",
-            description:
-              "مقارنات صريحة: إعلانات جوجل وفيسبوك ومنشئات المواقع والمستقلون واشتراكات SEO، مقابل موقع نخبة. التكلفة والملكية والسرعة والأثر بعد المشروع.",
+            name: ar ? "مقارنات صريحة — نخبة" : "Honest Comparisons — Nukhba",
+            description: ar
+              ? "مقارنات صريحة: إعلانات جوجل وفيسبوك ومنشئات المواقع والمستقلون واشتراكات SEO، مقابل موقع نخبة. التكلفة والملكية والسرعة والأثر بعد المشروع."
+              : "Honest side-by-side comparisons: Google Ads, Facebook ads, website builders, freelancers and SEO retainers vs a custom Nukhba site.",
             speakable: ["h1", "#compare-answer"],
-            about: "مقارنات تصميم المواقع والإعلانات",
+            about: ar ? "مقارنات تصميم المواقع والإعلانات" : "Website design and marketing comparisons",
           }),
-          comparisonsCollectionJsonLd(config, items),
-          faqJsonLd(comparisonsHubFaqs),
+          comparisonsCollectionJsonLd(config, items, locale),
+          faqJsonLd(comparisonsHubFaqs, config.market, locale),
         ]}
       />
 

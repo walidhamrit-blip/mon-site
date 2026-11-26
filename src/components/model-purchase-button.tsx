@@ -69,7 +69,7 @@ export function ModelPurchaseButton({
         className={className}
       >
         <Bitcoin className="h-4 w-4 shrink-0" />
-        {ar ? "اشترِ الموقع والتخصيص" : "Buy model + customization"}
+        {ar ? "اشترِ الموقع الأساسي" : "Buy the base website"}
         <span dir="ltr">— </span>
         <Price usd={breakdown.totalPriceUsd} />
       </button>

@@ -39,6 +39,7 @@ export async function generateMetadata({ searchParams }: LocalePageProps): Promi
 export default async function AuditPage({ searchParams }: LocalePageProps) {
   const { config } = await getSiteDataCached();
   const locale = await pageLocale(config, searchParams);
+  const ar = locale === "ar";
 
   return (
     <>
@@ -47,8 +48,8 @@ export default async function AuditPage({ searchParams }: LocalePageProps) {
           breadcrumbJsonLd(
             config,
             [
-              { name: "Home", path: "/" },
-              { name: "Audit", path: "/audit" },
+              { name: ar ? "الرئيسية" : "Home", path: "/" },
+              { name: ar ? "تدقيق الموقع" : "Audit", path: "/audit" },
             ],
             locale,
           ),

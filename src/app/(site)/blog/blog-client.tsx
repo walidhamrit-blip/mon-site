@@ -89,8 +89,8 @@ export function BlogClient({ articles }: { articles: BlogCardLite[] }) {
               <span className="section-eyebrow">{ar ? "باختصار" : "In short"}</span>
               <p className="mt-2 text-[13.5px] leading-7 text-[var(--foreground)]/80">
                 {ar
-                  ? `تجمع المدونة ${articles.length} أدلة مجانية — في مقدّمتها دليل الدفع بـ USDT خطوة بخطوة وبالصور (1 دولار = 1 USDT)، ثم تكلفة المواقع من 300 $، اختيار الوكالة، وإطلاق متجر إلكتروني — كلها مبنية على أسعار ومواعيد تسليم حقيقية.`
-                  : `The blog collects ${articles.length} free guides — led by the step-by-step USDT photo payment guide (1 USD = 1 USDT), then website costs from $300, choosing an agency, and launching an online store — all built on real prices and delivery times.`}
+                  ? `تجمع المدونة ${articles.length} أدلة مجانية — في مقدّمتها دليل الدفع بـ USDT خطوة بخطوة وبالصور (1 دولار = 1 USDT)، ثم تكلفة الموقع الثابت من 35 $، اختيار الوكالة، وإطلاق متجر إلكتروني — كلها مبنية على أسعار ومواعيد تسليم حقيقية.`
+                  : `The blog collects ${articles.length} free guides — led by the step-by-step USDT photo payment guide (1 USD = 1 USDT), then static website costs from $35, choosing an agency, and launching an online store — all built on real prices and delivery times.`}
               </p>
               <Link
                 href={CRYPTO_GUIDE_PATH}
@@ -117,11 +117,14 @@ export function BlogClient({ articles }: { articles: BlogCardLite[] }) {
                 <Image
                   src="/guide-crypto/step-2-invoice-usdt.jpg"
                   alt={ar ? "فاتورة دفع USDT على الهاتف مع رمز QR" : "USDT payment invoice on a phone with QR code"}
-                  fill
+                  width={1280}
+                  height={720}
                   sizes="(max-width: 1024px) 100vw, 50vw"
                   quality={88}
-                  priority
-                  className="object-cover"
+                  preload
+                  loading="eager"
+                  fetchPriority="high"
+                  className="h-full w-full object-cover"
                 />
                 <span className="absolute top-3 start-3 inline-flex items-center gap-1.5 rounded-full bg-[var(--accent)] px-3 py-1 text-[11px] font-black text-[var(--accent-foreground)]">
                   <Bitcoin className="h-3.5 w-3.5" />
@@ -160,7 +163,7 @@ export function BlogClient({ articles }: { articles: BlogCardLite[] }) {
             </span>
           </div>
 
-          <div className="grid grid-cols-2 gap-5 md:grid-cols-3 lg:grid-cols-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5 md:grid-cols-3 lg:grid-cols-4">
             {featured && (
               <ArticleCard
                 slug={featured.slug}

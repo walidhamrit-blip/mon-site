@@ -1,3 +1,4 @@
+import { websiteDemoNote } from "@/lib/website-offer";
 import { LocalizedLink as Link } from "@/components/localized-link";
 import { ArrowUpRight, Check } from "lucide-react";
 import type { Demo } from "@/lib/site-types";
@@ -62,6 +63,7 @@ export function DemoDetails({
               </p>
             </div>
 
+            <aside className="rounded-xl border border-[var(--accent)]/30 p-4 text-sm leading-7"><p>{websiteDemoNote("ar")}</p><p lang="en" className="mt-2">{websiteDemoNote("en")}</p></aside>
             {/* Contexte sectoriel */}
             {sector && (
               <div>
@@ -92,7 +94,7 @@ export function DemoDetails({
                 </h3>
                 <p className="mt-2 opacity-70 leading-7 text-sm max-w-[70ch]">
                   {plan.description} — {plan.descriptionEn}.{" "}
-                  هذا المشروع من الفئة {classification?.tier}، وتشمل الباقة:
+                  يشمل العرض الأساسي:
                 </p>
                 <ul className="mt-4 grid sm:grid-cols-2 gap-x-6 gap-y-2.5">
                   {plan.features.map((feature, idx) => (
@@ -113,7 +115,7 @@ export function DemoDetails({
                   href="/pricing"
                   className="mt-4 inline-flex items-center gap-1.5 text-sm font-bold text-[var(--accent)] hover:underline"
                 >
-                  قارن كل الباقات والأسعار
+                  تفاصيل العرض والخيارات
                   <ArrowUpRight className="h-4 w-4" />
                 </Link>
               </div>
@@ -143,9 +145,9 @@ export function DemoDetails({
               </div>
               {classification && (
                 <div className="flex items-center justify-between gap-3">
-                  <dt className="opacity-60">الفئة</dt>
+                  <dt className="opacity-60">العرض</dt>
                   <dd className="font-bold text-end">
-                    {classification.tier} · {classification.name}
+                    {classification.name}
                   </dd>
                 </div>
               )}
@@ -192,7 +194,7 @@ export function DemoDetails({
               </Link>
             </div>
             <p className="mt-3 text-[11px] opacity-70 leading-relaxed">
-              تسليم في 7–14 يوماً، تحسين SEO وظهور في محركات الذكاء الاصطناعي،
+              موعد تسليم حسب النطاق، أسس SEO دون ضمان ترتيب أو فهرسة،
               ودعم عبر واتساب — من طرابلس، ليبيا.
             </p>
           </aside>

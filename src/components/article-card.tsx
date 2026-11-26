@@ -37,7 +37,7 @@ export function ArticleCard({
   const ar = locale === "ar";
 
   return (
-    <article className="card-surface card-interactive group flex flex-col p-6">
+    <article className="card-surface card-interactive group flex flex-col p-4 sm:p-6">
       <div className="flex flex-wrap items-center gap-2 text-[11px] font-bold">
         <span className="rounded-full bg-[var(--accent)]/12 px-2.5 py-1 text-[var(--accent)]">
           {ar ? categoryAr : categoryEn || categoryAr}

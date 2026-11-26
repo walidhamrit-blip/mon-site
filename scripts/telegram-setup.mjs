@@ -151,7 +151,7 @@ async function main() {
     }
     const secret = (process.env.TELEGRAM_WEBHOOK_SECRET ?? "").trim() || randomBytes(32).toString("hex");
     const set = await call("setWebhook", {
-      url: `${url}/api/telegram/webhook`,
+      url: `${url}/api/telegram-webhook`,
       secret_token: secret,
       allowed_updates: ["message", "callback_query"],
       drop_pending_updates: true,
@@ -161,7 +161,7 @@ async function main() {
       process.exitCode = 1;
       return;
     }
-    ok(`Webhook installé : ${url}/api/telegram/webhook`);
+    ok(`Webhook installé : ${url}/api/telegram-webhook`);
     if (!process.env.TELEGRAM_WEBHOOK_SECRET) {
       console.log(
         "\n  ⚠️  Secret généré (à coller dans Vercel → TELEGRAM_WEBHOOK_SECRET) :\n" +

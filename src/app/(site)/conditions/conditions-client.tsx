@@ -13,7 +13,7 @@ interface Section {
 const CONTENT: Record<"ar" | "en", { title: string; updated: string; intro: string; sections: Section[]; contactTitle: string; contactText: string }> = {
   ar: {
     title: "الشروط العامة للبيع والخدمة",
-    updated: "آخر تحديث: 05/11/2026",
+    updated: "آخر تحديث: 23/11/2026",
     intro:
       "تحدد هذه الشروط الأحكام التي تنظم العلاقة بين نخبة Nukhba Studio («نخبة») وكل عميل يطلب موقعاً إلكترونياً أو يشترك في إحدى باقاتنا عبر هذا الموقع.",
     sections: [
@@ -32,7 +32,7 @@ const CONTENT: Record<"ar" | "en", { title: string; updated: string; intro: stri
       {
         title: "2. الحجز والعربون",
         items: [
-          "الحجز يتطلب دفع عربون يُخصم من إجمالي المشروع.",
+          "الحجز يتطلب دفع عربون يُحتسب في فاتورة الرصيد بعد تأكيدنا. الدفع المباشر للسعر الكامل لا يخصمه تلقائياً؛ تواصل معنا بمرجع الحجز قبل دفع الباقي.",
           "لا يُسترد العربون بعد بدء العمل، إلا في حال تقصير ثابت من نخبة.",
         ],
       },
@@ -48,7 +48,7 @@ const CONTENT: Record<"ar" | "en", { title: string; updated: string; intro: stri
       {
         title: "4. النطاق والاستضافة",
         paragraphs: [
-          "تحدد عروض الأسعار والاتفاق الكتابي من يملك اسم النطاق (الدومين) والاستضافة، ومن يدفع تكلفة تجديدهما.",
+          "العرض الأساسي بسعر 35 دولاراً يشمل كوداً ثابتاً ولغة واحدة وتخصيص المحتوى المقدم عند التسليم الأول ونشر vercel.app وفق أهلية وحدود Vercel. الدومين الخاص غير مشمول. الإدارة بقاعدة بيانات واللغات والوظائف الإضافية خدمات منفصلة. التكاليف الخارجية والمتكررة وملكية الحسابات تؤكد كتابياً قبل الموافقة.",
         ],
       },
       {
@@ -102,7 +102,7 @@ const CONTENT: Record<"ar" | "en", { title: string; updated: string; intro: stri
   },
   en: {
     title: "Terms & conditions of sale",
-    updated: "Last updated: November 5, 2026",
+    updated: "Last updated: November 23, 2026",
     intro:
       "These terms set out the rules that govern the relationship between Nukhba Studio (\"Nukhba\") and each client who orders a website or subscribes to one of our plans through this site.",
     sections: [
@@ -121,7 +121,7 @@ const CONTENT: Record<"ar" | "en", { title: string; updated: string; intro: stri
       {
         title: "2. Booking and deposit",
         items: [
-          "Booking requires a deposit, which is deducted from the total project price.",
+          "Booking requires a deposit credited on a confirmed balance invoice. Direct full-price checkout does not deduct it automatically; contact us with your reservation reference before paying the balance.",
           "The deposit is not refunded once work has started, unless Nukhba is clearly at fault.",
         ],
       },
@@ -137,7 +137,7 @@ const CONTENT: Record<"ar" | "en", { title: string; updated: string; intro: stri
       {
         title: "4. Domain name and hosting",
         paragraphs: [
-          "The quote and the written agreement state who owns the domain name and the hosting, and who pays for their renewal.",
+          "The $35 base offer includes static source code, one language, initial personalization with supplied content and vercel.app deployment subject to Vercel eligibility and limits. A custom domain is excluded. Database-backed management, extra languages and other modules are additional services. External and recurring costs and account ownership are confirmed in writing before approval.",
         ],
       },
       {

@@ -165,6 +165,16 @@ const nextConfig: NextConfig = {
       },
     ];
   },
+  // Webhook du bot Telegram : l'URL canonique demandée par Telegram est
+  // `/api/telegram-webhook` (voir installTelegramWebhook) ; le gestionnaire
+  // réel vit dans `src/app/api/telegram/webhook/route.ts`. La rewrite
+  // préserve aussi les installations existantes déjà pointées sur l'ancien
+  // chemin — un seul et même handler, deux URL équivalentes.
+  async rewrites() {
+    return [
+      { source: "/api/telegram-webhook", destination: "/api/telegram/webhook" },
+    ];
+  },
   async redirects() {
     return [
       // Anciens alias de langue : ils rejoignent une URL explicitement

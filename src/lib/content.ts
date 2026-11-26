@@ -67,6 +67,14 @@ export const demos = [
     previewUrl: "https://al-manhaj-company.vercel.app/",
     planId: "boutique",
     categoryTier: 3,
+    metaTitle: "شركة المنهج للقرطاسية والتقنية طرابلس — متجر جملة وتجزئة",
+    metaTitleEn: "Al-Manhaj Stationery & Tech Tripoli — B2B & Retail Store",
+    metaDescription:
+      "موقع ومتجر شركة المنهج للقرطاسية والتقنية في طرابلس ليبيا — تسوق تجزئة وحاسبة خصومات الجملة للمدارس والشركات مع تتبع فوري للطلبات.",
+    metaDescriptionEn:
+      "Al-Manhaj Stationery & Tech online store in Tripoli, Libya — retail & B2B wholesale pricing calculator for schools and offices with live order tracking.",
+    imageAltAr: "واجهة متجر شركة المنهج للقرطاسية والتقنية في طرابلس لتجارة الجملة والتجزئة",
+    imageAltEn: "Al-Manhaj Stationery & Tech B2B and retail online store in Tripoli, Libya",
   },
   {
     slug: "tripo-teck-outillage",
@@ -78,7 +86,7 @@ export const demos = [
     description:
       "متجر متكامل للعدد الكهربائية واليدوية ومواد البناء والدهانات ومعدات السلامة في طرابلس — سلة تسوق وعروض أسعار للمقاولين والورشات",
     descriptionEn:
-      "Power tools, construction materials, paints & safety equipment store in Tripoli — online cart & B2B contractor quotes",
+      "Power tools, building materials, paints and safety gear store — online cart and B2B contractor quotes.",
     image: "https://m-et-outillage-modele-3.vercel.app/images/hero1.jpg",
     color: "#D97706",
     features: ["عدد ومواد بناء", "سلة وطلب فوري", "عروض أسعار للمقاولين", "8 أقسام متخصصة"],
@@ -97,7 +105,7 @@ export const demos = [
     description:
       "معرض ومتجر إلكتروني للبضائع الأوروبية في طرابلس — أثاث منزلي، أجهزة كهربائية أصلية، وعدة بريكولاج مع سلة وطلب عبر واتساب",
     descriptionEn:
-      "European furniture, home appliances & DIY store in Tripoli — 8 categories, countdown deals, cart & WhatsApp ordering",
+      "European furniture, home appliances and DIY store — 8 categories, countdown deals, cart and WhatsApp checkout.",
     image: "https://images.pexels.com/photos/6585763/pexels-photo-6585763.jpeg?auto=compress&cs=tinysrgb&fit=crop&w=1200&h=800",
     color: "#0F766E",
     features: ["8 أقسام منزلية", "عروض بعدّاد تنازلي", "سلة وطلب واتساب", "توصيل 22 مدينة"],
@@ -124,6 +132,14 @@ export const demos = [
     previewUrl: "https://pizzeria-demo1.vercel.app/",
     planId: "boutique",
     categoryTier: 3,
+    metaTitle: "بيتزا فورنو طرابلس — منيو بيتزا على الحطب وطلب توصيل",
+    metaTitleEn: "Pizza Forno Tripoli — Wood-Fired Pizza & Delivery",
+    metaDescription:
+      "معاينة موقع مطعم بيتزا فورنو الإيطالي في حي الأندلس طرابلس — منيو تفاعلي، استوديو تخصيص البيتزا على الحطب، باقات عائلية وسلة توصيل سريع.",
+    metaDescriptionEn:
+      "Live Pizza Forno Italian restaurant website in Hay Al-Andalus, Tripoli — wood-fired menu, custom Pizza Studio builder, family deals & fast delivery cart.",
+    imageAltAr: "واجهة موقع مطعم بيتزا فورنو الإيطالي على الحطب في حي الأندلس طرابلس مع منيو وطلب توصيل",
+    imageAltEn: "Pizza Forno wood-fired Italian pizzeria website in Tripoli with interactive menu and delivery cart",
   },
   {
     slug: "maison-tripoli-meubles",
@@ -135,7 +151,7 @@ export const demos = [
     description:
       "معرض مفروشات فاخرة وتصميم داخلي حسب الطلب — كتالوج تفاعلي، اختيار الخامات والأخشاب، طلب تسعير وحجز زيارة خاصة للمعرض",
     descriptionEn:
-      "Bespoke luxury furniture & interior architecture showroom — interactive wood/stone selector, custom quote cart & private showroom booking",
+      "Bespoke furniture and interior showroom — wood and stone selector, custom quote cart and private visit booking.",
     image: "https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?auto=format&fit=crop&w=1600&q=90",
     color: "#8B5A2B",
     features: ["تخصيص الأخشاب والرخام", "طلب تسعير ومقاسات خاصة", "حجز زيارة خاصة للمعرض", "معرض أعمال القصور والفلل"],
@@ -154,7 +170,7 @@ export const demos = [
     description:
       "متجر عطور ومستحضرات تجميل وعناية بالبشرة — باقات «3 بسعر واحد»، أكواد خصم داخل المتجر، مجموعات هدايا، وتجربة ثنائية اللغة",
     descriptionEn:
-      "Luxury fragrances, cosmetics & skincare e-commerce — Mix & Match bundles, promo codes, gift sets & bilingual AR/EN experience",
+      "Luxury fragrances, cosmetics and skincare store — Mix & Match bundles, promo codes, gift sets and AR/EN checkout.",
     image: "https://hala-dun.vercel.app/images/hero-perfume.jpg",
     color: "#9D174D",
     features: ["عروض Mix & Match", "عطور ومكياج وعناية", "أكواد خصم وسلة ذكية", "عربي + إنجليزي"],
@@ -200,6 +216,14 @@ export const demos = [
     previewUrl: "https://demo-jouets.vercel.app/",
     planId: "boutique",
     categoryTier: 3,
+    metaTitle: "توي ستور طرابلس (Toy Store) — متجر ألعاب وهدايا أطفال",
+    metaTitleEn: "Toy Store Tripoli — Kids Toys, LEGO & Scooters in Libya",
+    metaDescription:
+      "متجر توي ستور طرابلس لألعاب وهدايا الأطفال في ليبيا — ليغو، باربي، سكوترات كهربائية وألعاب تعليمية مع فروع طرابلس والدفع عند الاستلام.",
+    metaDescriptionEn:
+      "Toy Store Tripoli kids & toys mega-store in Libya — LEGO, Barbie, electric scooters, bikes & educational games with Cash on Delivery across Tripoli.",
+    imageAltAr: "واجهة متجر توي ستور طرابلس لألعاب وهدايا الأطفال وليغو والسكوترات في ليبيا",
+    imageAltEn: "Toy Store Tripoli kids toys, LEGO and electric scooters online store in Libya",
   },
   {
     slug: "al-bay-family-restaurant",
@@ -280,36 +304,36 @@ export const whyUs = [
     icon: "zap",
     titleAr: "سرعة تذهل",
     titleEn: "Blazing Fast",
-    descAr: "موقعك جاهز في 7 أيام. نستخدم Next.js الأسرع في السوق — نقاط Lighthouse فوق 90 حتى على 3G.",
-    descEn: "Your site ready in 7 days. Built with Next.js — 90+ Lighthouse even on 3G.",
+    descAr: "نموذج متجاوب يخصص بالمحتوى الذي تقدمه. موعد التسليم يؤكد قبل الطلب.",
+    descEn: "A responsive model, personalized with your supplied content. Delivery is confirmed before ordering.",
   },
   {
     icon: "palette",
     titleAr: "تصميم نخبوي",
     titleEn: "Elite Design",
-    descAr: "لسنا قوالب جاهزة. كل بيكسل مصمم على هويتك — فاخر، نظيف، ويترك أثراً.",
-    descEn: "No templates. Every pixel crafted on your brand — luxurious, clean, memorable.",
+    descAr: "اختر نموذجاً من المعرض. كل التصاميم بنفس السعر الأساسي.",
+    descEn: "Choose a model from our gallery. Every design has the same base price.",
   },
   {
     icon: "sliders",
-    titleAr: "تخصيص كامل",
-    titleEn: "Fully Bespoke",
-    descAr: "ألوانك، خطوطك، أقسامك. غيّر كل شيء في دقائق — نحن نبرمج رؤيتك كما هي.",
-    descEn: "Your colors, fonts, sections. Change everything in minutes — we code your vision.",
+    titleAr: "تخصيص المحتوى الأولي مشمول",
+    titleEn: "Initial Personalization Included",
+    descAr: "ندمج شعارك ونصوصك وصورك وبياناتك المقدمة قبل التسليم الأول.",
+    descEn: "Your supplied logo, text, images and contact details are integrated before initial delivery.",
   },
   {
     icon: "search",
     titleAr: "ظهور في جوجل",
     titleEn: "Google Ready",
-    descAr: "هيكلة SEO احترافية، خرائط، بيانات منظمة — عملاؤك يجدونك قبل منافسيك.",
-    descEn: "Pro SEO structure, maps, structured data — clients find you before competitors.",
+    descAr: "الأسس التقنية الموجودة في النموذج مشمولة. لا نضمن الفهرسة أو ترتيباً محدداً في البحث.",
+    descEn: "Technical foundations included in the model. Search indexing and rankings are not guaranteed.",
   },
   {
     icon: "headset",
     titleAr: "دعم حقيقي",
     titleEn: "Real Support",
-    descAr: "واتساب مباشر، تدريب، وتحديثات. لسنا شركة تختفي بعد التسليم.",
-    descEn: "Direct WhatsApp, training & updates. We don’t disappear after delivery.",
+    descAr: "تواصل مباشر عبر واتساب. التعديلات اللاحقة والصيانة خدمات منفصلة بنطاق متفق عليه.",
+    descEn: "Contact us on WhatsApp. Later changes and maintenance are separate services with an agreed scope.",
   },
 ] as const;
 
@@ -320,17 +344,17 @@ export const processSteps = [
     titleEn: "Discovery Call",
     descAr: "30 دقيقة نفهم نشاطك، جمهورك، وأهدافك. نخرج بخارطة طريق واضحة.",
     descEn: "30 min to understand your business, audience & goals. Clear roadmap out.",
-    durationAr: "يوم واحد",
-    durationEn: "1 day",
+    durationAr: "حسب النطاق",
+    durationEn: "By agreed scope",
   },
   {
     num: "02",
-    titleAr: "التصميم الحي",
-    titleEn: "Live Design",
-    descAr: "نصمم صفحتك الرئيسية أمامك — ترى وتعلّق فوراً. لا مفاجآت.",
-    descEn: "We design your homepage live — you see & comment instantly. No surprises.",
-    durationAr: "2-3 أيام",
-    durationEn: "2-3 days",
+    titleAr: "اختيار النموذج",
+    titleEn: "Choose Your Model",
+    descAr: "اختر نموذجك وأرسل الشعار والنصوص والصور وبيانات التواصل.",
+    descEn: "Choose your model and send your logo, text, images and contact details.",
+    durationAr: "حسب النطاق",
+    durationEn: "By agreed scope",
   },
   {
     num: "03",
@@ -338,35 +362,35 @@ export const processSteps = [
     titleEn: "Rapid Build",
     descAr: "نحوّل التصميم إلى موقع سريع، متجاوب، ومحسّن. تحديث يومي على واتساب.",
     descEn: "Design to fast, responsive, optimized site. Daily WhatsApp updates.",
-    durationAr: "3-5 أيام",
-    durationEn: "3-5 days",
+    durationAr: "حسب النطاق",
+    durationEn: "By agreed scope",
   },
   {
     num: "04",
     titleAr: "المراجعة الدقيقة",
     titleEn: "Refinement",
-    descAr: "جولتان من التعديلات مشمولة. نضبط حتى ترضى 100%.",
-    descEn: "Two revision rounds included. We tweak until 100% satisfied.",
-    durationAr: "1-2 أيام",
-    durationEn: "1-2 days",
+    descAr: "راجع تخصيص المحتوى الأولي المتفق عليه. تغيير الهيكل والصفحات الإضافية يحتاج عرضاً منفصلاً.",
+    descEn: "Review the agreed initial content personalization. Structural changes and extra pages require a separate quote.",
+    durationAr: "حسب النطاق",
+    durationEn: "By agreed scope",
   },
   {
     num: "05",
     titleAr: "الإطلاق والتدريب",
     titleEn: "Launch & Train",
-    descAr: "نرفع موقعك، نربط الدومين، وندرّبك على إدارة المحتوى بنفسك.",
-    descEn: "We deploy, connect domain & train you to manage content yourself.",
-    durationAr: "يوم واحد",
-    durationEn: "1 day",
+    descAr: "ننشر على vercel.app وفق أهلية وحدود Vercel. تدريب الإدارة يخص وحدات الإدارة المشتراة فقط.",
+    descEn: "We deploy to vercel.app subject to Vercel eligibility and limits. Admin training applies only to purchased management modules.",
+    durationAr: "حسب النطاق",
+    durationEn: "By agreed scope",
   },
   {
     num: "06",
     titleAr: "التسليم والضمان",
     titleEn: "Handover & Warranty",
-    descAr: "رابط تسليم واحد يجمع موقعك ولوحة التحكم والكود وملفاتك، مع تدريب مسجّل. تعتمد الاستلام بنقرة، ويبدأ الضمان (30-90 يوماً حسب الباقة).",
-    descEn: "One handover link with your site, admin panel, code and files, plus recorded training. Accept in one click and the warranty starts (30-90 days by plan).",
-    durationAr: "يوم واحد",
-    durationEn: "1 day",
+    descAr: "تستلم الموقع والكود والملفات المتفق عليها. وصول الإدارة مشمول فقط مع وحدات الإدارة المشتراة؛ الصيانة منفصلة.",
+    descEn: "Receive the site, source code and agreed files. Admin access is included only with purchased management modules; maintenance is separate.",
+    durationAr: "حسب النطاق",
+    durationEn: "By agreed scope",
   },
 ] as const;
 
@@ -410,48 +434,33 @@ export const testimonials = [
 ] as const;
 
 export const faqs = [
-  {
-    qAr: "كم يستغرق إنجاز موقعي؟",
-    qEn: "How long to build my site?",
-    aAr: "من 7 إلى 21 يوماً حسب الباقة. الواجهة البسيطة 7 أيام، المتجر حتى 21 يوماً. نلتزم بجدول واضح وترى التقدم يومياً على واتساب.",
-    aEn: "7 to 21 days by plan. Simple Vitrine 7 days, Shop up to 21. Clear timeline with daily WhatsApp updates.",
-  },
-  {
-    qAr: "هل السعر يشمل الاستضافة والدومين؟",
-    qEn: "Does price include hosting & domain?",
-    aAr: "السعر يشمل سنة استضافة فائقة السرعة (Vercel) + ربط الدومين. الدومين نفسه (~12 $/سنة) تشتريه باسمك ونحن نربطه مجاناً.",
-    aEn: "Includes 1 year ultra-fast hosting (Vercel) + domain connect. Domain itself (~$12/year) you own, we connect free.",
-  },
-  {
-    qAr: "هل أستطيع تعديل المحتوى بنفسي؟",
-    qEn: "Can I edit content myself?",
-    aAr: "نعم 100%. ندربك على لوحة سهلة لتغيير النصوص، الصور، الأسعار، وإضافة منتجات/مقالات بدون مبرمج.",
-    aEn: "Yes 100%. We train you on easy dashboard to change texts, images, prices & add products/posts without dev.",
-  },
-  {
-    qAr: "ماذا عن الدفع؟ تقسيط؟",
-    qEn: "Payment? Installments?",
-    aAr: "يمكنك أولاً حجز مكانك بعربون 1 $ (يُخصم من سعر المشروع). ثم تدفع الإجمالي بالدولار عبر العملات الرقمية — نفس المبلغ بـ USDT (1 دولار = 1 USDT) — دفعة واحدة أو على 2–3 أقساط عبر NOWPayments.",
-    aEn: "You can first reserve your slot with a $1 deposit (deducted from the project price). Then pay the USD total in crypto — the same amount in USDT (1 USD = 1 USDT) — in one payment or 2–3 installments via NOWPayments.",
-  },
-  {
-    qAr: "ماذا لو لم يعجبني التصميم؟",
-    qEn: "What if I don't like design?",
-    aAr: "نصمم أمامك مباشرة من اليوم الثاني — تعلّق وتعدّل فوراً. مع جولتين مراجعة مشمولة، الرضا مضمون.",
-    aEn: "We design live from day 2 — you comment instantly. With 2 revision rounds, satisfaction guaranteed.",
-  },
-  {
-    qAr: "هل الموقع يظهر في جوجل؟",
-    qEn: "Will site show on Google?",
-    aAr: "نعم. نبني هيكلة SEO احترافية: عناوين، خرائط، بيانات منظمة، وسرعة 90+. موقعك جاهز ليتصدر نتائج سوقك أينما كنت.",
-    aEn: "Yes. Pro SEO structure: titles, sitemaps, structured data & 90+ speed. Ready to rank in your market, anywhere in the world.",
-  },
-  {
-    qAr: "ماذا بعد التسليم؟ صيانة؟",
-    qEn: "After delivery? Maintenance?",
-    aAr: "دعم مجاني 30-90 يوم حسب الباقة. بعدها صيانة اختيارية 19 $/شهر تشمل تحديثات، نسخ احتياطي، وحماية.",
-    aEn: "Free 30-90 days support by plan. Then optional $19/mo for updates, backups & security.",
-  },
+  { qAr: "ماذا يشمل سعر 35 دولاراً؟", qEn: "What is included in the $35 base offer?",
+    aAr: "كود النموذج المختار، لغة واحدة، تصميم متجاوب، وتخصيص مجاني للمحتوى الذي تقدمه قبل التسليم الأول ضمن صفحات وأقسام النموذج. لا يشمل قاعدة بيانات أو لوحة إدارة. كل التصاميم بنفس السعر.",
+    aEn: "Your chosen model’s source code, one language, responsive layout and free initial personalization with your supplied content within the model’s existing pages and sections. No database or admin panel. Every design has the same price." },
+  { qAr: "كم يستغرق إنجاز موقعي؟", qEn: "How long to build my site?",
+    aAr: "نؤكد الموعد قبل الطلب حسب النموذج والمحتوى المتوفر والوظائف الإضافية. لا توجد مدد مختلفة حسب فئة التصميم.",
+    aEn: "We confirm the timeline before ordering, according to the model, content availability and extra functions. There are no design-based delivery tiers." },
+  { qAr: "هل السعر يشمل الاستضافة والدومين؟", qEn: "Does price include hosting & domain?",
+    aAr: "النشر على عنوان vercel.app مشمول وفق أهلية وحدود خطة Vercel المستخدمة، وليس ضمان استضافة مجانية مدى الحياة. الدومين المخصص غير مشمول. أي تكاليف خارجية أو متكررة توضّح قبل موافقتك.",
+    aEn: "Deployment to a vercel.app address is included, subject to Vercel plan eligibility and limits, not a lifetime free-hosting guarantee. A custom domain is not included. Any external or recurring costs are disclosed before approval." },
+  { qAr: "هل أستطيع تعديل المحتوى بنفسي؟", qEn: "Can I edit content myself?",
+    aAr: "الموقع الأساسي ثابت ولا يضم إدارة. إدارة المحتوى خيار يبدأ من 10 دولارات إضافية مع قاعدة البيانات ولوحة الإدارة اللازمة، ضمن نطاق محدد في عرض السعر. وحدات الحجز والمتجر تشمل إدارة وظائفها دون احتساب البنية الأساسية مرتين.",
+    aEn: "The base website is static with no admin panel. Content management starts at an extra $10, including the required database and admin panel, with scope defined in your quote. Booking and store modules include their own management tools, without charging for the foundation twice." },
+  { qAr: "كيف أضيف لغة أو حجوزات أو متجراً؟", qEn: "How do I add languages, bookings or a store?",
+    aAr: "اللغة الإضافية 10 دولارات لكل لغة، والترجمة يقدمها العميل. الحجوزات والمتجر والدفع الإلكتروني بعرض سعر مكتوب. الوظائف الظاهرة في المعاينة غير مفعّلة في العرض الثابت. زر واتساب يعني معالجة الطلبات يدوياً.",
+    aEn: "Each additional language costs $10 with client-supplied translation. Booking, store and online payment modules require a written quote. Functions shown in previews are not activated in the static offer. A WhatsApp button means requests are handled manually." },
+  { qAr: "ماذا عن الدفع؟ تقسيط؟", qEn: "Payment? Installments?",
+    aAr: "الدفع المباشر يخص الموقع الأساسي بسعر 35 دولاراً، دفعة واحدة أو حسب خيارات التقسيط المتاحة. اللغات والوظائف الإضافية تؤكد قبل فوترتها منفصلة. سعر الدولار يساوي نفس المبلغ بـ USDT عند الدفع بالكريبتو.",
+    aEn: "Direct checkout covers the $35 base website, paid in full or using the available installment options. Extra languages and modules are confirmed before separate billing. USD prices are payable at the same amount in USDT at crypto checkout." },
+  { qAr: "ماذا لو لم يعجبني التصميم؟", qEn: "What if I don't like design?",
+    aAr: "اختر النموذج من المعرض قبل الطلب. التخصيص المجاني يخص محتواك ضمن هيكل النموذج. تغيير الهيكل أو إضافة صفحات أو تعديلات بعد التسليم يحتاج اتفاقاً منفصلاً.",
+    aEn: "Choose your model in the gallery before ordering. Free personalization covers your content within the model’s structure. Structural changes, new pages and post-delivery changes require a separate agreement." },
+  { qAr: "هل الموقع يظهر في جوجل؟", qEn: "Will site show on Google?",
+    aAr: "يتضمن النموذج أسسه التقنية، لكن الفهرسة والترتيب يقررهما محرك البحث ولا نضمن مركزاً محدداً. تحسين المحتوى وSEO المخصص خدمات منفصلة.",
+    aEn: "The model includes its technical foundations, but indexing and ranking are determined by search engines. No position is guaranteed. Dedicated content and SEO work are separate services." },
+  { qAr: "ماذا بعد التسليم؟ صيانة؟", qEn: "After delivery? Maintenance?",
+    aAr: "التعديلات اللاحقة والصيانة خدمات اختيارية منفصلة. تصحيح عيب يخالف النطاق المتفق عليه يختلف عن طلب تغيير جديد. تكاليف الأدوات الخارجية توضح قبل الموافقة.",
+    aEn: "Later changes and maintenance are separate optional services. Fixing a defect against the agreed scope is different from a new change request. External tool costs are disclosed before approval." },
 ] as const;
 
 /* ---------- Sections éditables de la page d'accueil ---------- */
@@ -467,9 +476,9 @@ export const heroContent: HeroContent = {
   title3Ar: "وليس شهور",
   title3En: "not months",
   subtitleAr:
-    "نحوّل فكرتك إلى موقع فاخر، سريع، ويبيع — مصمم على هويتك، محسّن لجوجل، وجاهز ليستقبل عملاءك من أول يوم.",
+    "موقعك الثابت المخصص من 35 دولاراً: الكود، لغة واحدة، ونشر vercel.app وفق أهلية Vercel. أضف وظائف الإدارة حسب حاجتك.",
   subtitleEn:
-    "We turn your idea into a luxurious, fast, selling machine — crafted on your brand, optimized for Google, ready from day one.",
+    "Your personalized static website from $35: source code, one language and vercel.app deployment subject to Vercel eligibility. Add management functions as needed.",
   ctaPrimaryAr: "اطلب عرض سعر مجاني",
   ctaPrimaryEn: "Get free quote",
   ctaSecondaryAr: "شاهد المعارض الحية",
@@ -479,8 +488,8 @@ export const heroContent: HeroContent = {
   trustedEn: "Real websites published in our portfolio",
   ratingAr: "شهادات عملاء منشورة في الموقع",
   ratingEn: "Client testimonials published on this site",
-  chipsAr: ["✓ تسليم 7 أيام", "✓ بدون دفعة كبيرة", "✓ دعم واتساب"],
-  chipsEn: ["✓ 7-day delivery", "✓ No big upfront", "✓ WhatsApp support"],
+  chipsAr: ["✓ كل التصاميم من 35 $", "✓ تخصيص أولي مشمول", "✓ لغة واحدة"],
+  chipsEn: ["✓ Every design from $35", "✓ Initial personalization included", "✓ One language"],
 };
 
 /** Bandeau défilant « services / points forts » (modifiable dans l'admin). */
@@ -542,16 +551,16 @@ export const defaultSectionHeadings: SectionHeadings = {
     titleEn: "From idea to launch",
     subtitleAr: "6 خطوات واضحة — تعرف أين نحن كل يوم",
     subtitleEn: "6 clear steps — you know where we are every day",
-    noteAr: "إجمالي المدة: 7-14 يوم",
-    noteEn: "Total: 7-14 days",
+    noteAr: "المدة تؤكد حسب نطاق الطلب",
+    noteEn: "Timeline confirmed according to scope",
   },
   pricing: {
     titleAr: "استثمار يعود أضعافاً",
     titleEn: "Investment that pays back",
     subtitleAr: "أسعار واضحة بالدولار، بلا مفاجآت — وكل دولار محسوب ليجلب عملاء",
-    subtitleEn: "Clear pricing, no surprises — every dinar calculated to bring clients",
-    noteAr: "دفع مرة واحدة + استضافة سنة مجاناً",
-    noteEn: "One-time + 1 year hosting free",
+    subtitleEn: "One base price for every design; add functions as needed",
+    noteAr: "سعر أساسي مرة واحدة؛ وفق أهلية وحدود خطة Vercel",
+    noteEn: "One-time base price; Vercel plan eligibility and limits apply",
   },
   flexPay: {
     titleAr: "ادفع ما تشاء — 1 دولار أو أكثر",
@@ -584,10 +593,10 @@ export const defaultSectionHeadings: SectionHeadings = {
   cta: {
     titleAr: "جاهز لتنطلق؟",
     titleEn: "Ready to launch?",
-    subtitleAr: "احجز استشارتك المجانية اليوم — نرد في أقل من ساعتين",
-    subtitleEn: "Book your free consult today — we reply within 2 hours",
-    noteAr: "✓ رد خلال ساعتين  ✓ بدون التزام  ✓ استشارة مجانية",
-    noteEn: "✓ Reply in 2h  ✓ No commitment  ✓ Free consult",
+    subtitleAr: "احجز استشارتك المجانية — نرد خلال أوقات العمل",
+    subtitleEn: "Book your free consult — replies during opening hours",
+    noteAr: "✓ رد في أوقات العمل  ✓ بدون التزام  ✓ استشارة مجانية",
+    noteEn: "✓ Replies during opening hours  ✓ No commitment  ✓ Free consult",
   },
 };
 

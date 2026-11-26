@@ -1,4 +1,5 @@
 "use client";
+import { websiteTimelineNote } from "@/lib/website-offer";
 import React, { createContext, useContext, useState, useEffect } from "react";
 import {
   LOCALE_STORAGE_KEY,
@@ -44,12 +45,12 @@ export const compareLabels = {
   summaryTitleEn: "The bottom line",
   summaryTextAr: "{note} — موقع من {site} مع تحسين SEO وبيانات منظمة، أو خدمة واحدة من {service}. الاستشارة مجانية والسعر مكتوب قبل البدء.",
   summaryTextEn: "{note} — a website from {site} with SEO and structured data, or a single service from {service}. The consultation is free and the price is written before we start.",
-  deliveryAr: "تسليم من 7 أيام",
-  deliveryEn: "Delivery in 7 days",
+  deliveryAr: websiteTimelineNote("ar"),
+  deliveryEn: websiteTimelineNote("en"),
   ownershipAr: "ملكية كاملة للملفات",
   ownershipEn: "Full file ownership",
-  replyAr: "رد خلال ساعتين",
-  replyEn: "Reply within two hours",
+  replyAr: "رد في أوقات العمل",
+  replyEn: "Replies during opening hours",
   freeQuoteAr: "اطلب عرض سعر مجاني",
   freeQuoteEn: "Get a free quote",
   quoteAr: "اطلب عرض سعر",
@@ -66,16 +67,16 @@ export const compareLabels = {
   hubTitleEn: "An honest comparison: Nukhba vs every alternative",
   hubSubtitleAr: "لا نبيع الأوهام. في كل مقارنة نضع التكلفة والسرعة وملكية العملاء والأثر بعد المشروع — مع الإشارة إلى الحالات التي يكون فيها الخيار الآخر منطقياً.",
   hubSubtitleEn: "No hype: every comparison lays out cost, speed, customer ownership and what survives after the project ends — including the cases where the other option makes sense.",
-  hubShortAr: "الإعلانات المدفوعة تشتري زيارات مؤقتة، ومنشئات المواقع الجاهزة تفرض تجديداً سنوياً، والمستقل لا يضمن موعداً ولا دعماً. نخبة تبني أصلاً تملكه: دفعة واحدة، تسليم من 7 أيام، و SEO مدمج من اليوم الأول.",
-  hubShortEn: "Paid ads buy temporary traffic, ready-made builders force an annual renewal, and a freelancer guarantees neither a date nor support. Nukhba builds an asset you own: one payment, delivery in 7 days, and SEO built in from day one.",
+  hubShortAr: "قارن النطاق والملكية والتكاليف المتكررة. عرض نخبة الأساسي موقع ثابت بلغة واحدة مع تخصيص المحتوى الأولي؛ الإدارة واللغات والوظائف الإضافية منفصلة.",
+  hubShortEn: "Compare scope, ownership and recurring costs. Nukhba’s base offer is a static site in one language with initial content personalization; admin tools, extra languages and functions are separate.",
   hubAllAr: "كل المقارنات",
   hubAllEn: "All comparisons",
   hubReadAr: "اقرأ المقارنة كاملة",
   hubReadEn: "Read the full comparison",
   hubFaqTitleAr: "أسئلة شائعة عن المقارنات",
   hubFaqTitleEn: "Questions about these comparisons",
-  hubCtaTitleAr: "بعد المقارنة: عرض سعر خلال ساعتين",
-  hubCtaTitleEn: "Read the comparison, then get a quote within two hours",
+  hubCtaTitleAr: "بعد المقارنة: عرض سعر حسب النطاق",
+  hubCtaTitleEn: "Read the comparison, then request a scoped quote",
   hubCtaTextAr: "أرسل لنا نشاطك وميزانيتك التقريبية، ونرد بعرض سعر مكتوب ومدّة تسليم — دون التزام.",
   hubCtaTextEn: "Send us your business and rough budget, and we reply with a written quote and a delivery date — no commitment.",
   openServicesAr: "الخدمات السريعة",
@@ -116,19 +117,19 @@ export const servicesHubLabels = {
   shortAr: "باختصار:",
   shortEn: "In short:",
   answerAr:
-    "نخبة تقدم {count} خدمات رقمية جاهزة للتنفيذ عن بُعد حول العالم — إعادة تصميم موقع ({restyle})، إضافة قسم جديد ({addSection})، عروض تقديمية ({slides})، هوية بصرية ({branding})، صفحة هبوط ({landing})، وإصلاح وتحسين ({fix}). كل الأسعار بالدولار فقط وتُدفع بنفس المبلغ بـ USDT، كاملة أو على دفعتين/ثلاث.",
+    "نخبة تقدم {count} خدمات رقمية جاهزة للتنفيذ عن بُعد حول العالم — إعادة تصميم موقع ({restyle})، إضافة قسم جديد ({addSection})، عروض تقديمية ({slides})، هوية بصرية ({branding})، صفحة هبوط ({landing})، وإصلاح وتحسين ({fix}). الفوترة بالدولار؛ الدفع بالكريبتو بنفس المبلغ بـ USDT. جدول الدفعات والوسائل المتاحة تؤكد قبل العمل.",
   answerEn:
-    "Nukhba delivers {count} ready-to-run digital services remotely, worldwide — site restyle ({restyle}), new section ({addSection}), presentation decks ({slides}), visual identity ({branding}), landing page ({landing}), and fix & optimise ({fix}). All prices are in dollars only and paid 1:1 in USDT, in full or in two/three instalments.",
+    "Nukhba delivers {count} ready-to-run digital services remotely, worldwide — site restyle ({restyle}), new section ({addSection}), presentation decks ({slides}), visual identity ({branding}), landing page ({landing}), and fix & optimise ({fix}). Billing is in USD; crypto is payable 1:1 in USDT. Payment schedule and available methods are confirmed before work starts.",
   ctaQuoteAr: "اطلب عرض سعر مجاني",
   ctaQuoteEn: "Get a free quote",
-  ctaPricingAr: "شاهد باقات المواقع الكاملة",
-  ctaPricingEn: "See the full website plans",
+  ctaPricingAr: "شاهد عرض الموقع الأساسي والخيارات",
+  ctaPricingEn: "See the base website offer & options",
   bulletPriceAr: "سعر ثابت مكتوب قبل البدء",
   bulletPriceEn: "A fixed price written down before we start",
-  bulletDeliveryAr: "تسليم 24 – 72 ساعة",
-  bulletDeliveryEn: "Delivery in 24 – 72 hours",
-  bulletRevisionsAr: "مراجعتان مجانيتان",
-  bulletRevisionsEn: "Two free revisions",
+  bulletDeliveryAr: "الموعد حسب الخدمة والنطاق",
+  bulletDeliveryEn: "Timing depends on the service and scope",
+  bulletRevisionsAr: "المراجعات وفق عرض الخدمة",
+  bulletRevisionsEn: "Revisions defined in the service quote",
   gridTitleAr: "كل الخدمات — {count} مهمة جاهزة للتنفيذ",
   gridTitleEn: "All services — {count} ready-to-run tasks",
   gridSubAr: "أسعار بالدولار فقط — 1 دولار = 1 USDT",
@@ -146,21 +147,21 @@ export const servicesHubLabels = {
   step1TitleAr: "أرسل التفاصيل",
   step1TitleEn: "Send the details",
   step1DescAr:
-    "رابط موقعك أو ملف العرض + ما تريد الوصول إليه. الرد خلال ساعتين في أوقات العمل.",
+    "رابط موقعك أو ملف العرض + ما تريد الوصول إليه. الرد في أوقات العمل.",
   step1DescEn:
-    "Your site link or deck file + what you want to achieve. Reply within two hours during working hours.",
+    "Your site link or deck file + what you want to achieve. Replies during opening hours.",
   step2TitleAr: "عرض سعر ثابت",
   step2TitleEn: "A fixed-price quote",
   step2DescAr:
-    "نحدد النطاق والمدة والسعر كتابياً. نبدأ بعد دفعة مقدمة 50% — الباقي عند التسليم.",
+    "نحدد النطاق والمدة والسعر وجدول الدفعات كتابياً، ثم نبدأ بعد تأكيد الدفعة الأولى المتفق عليها.",
   step2DescEn:
-    "We agree on scope, timing and price in writing. We start after a 50% deposit — the rest on delivery.",
+    "We agree on scope, timing, price and payment schedule in writing, then start after the agreed first payment.",
   step3TitleAr: "تسليم ومراجعة",
   step3TitleEn: "Delivery and review",
   step3DescAr:
-    "نسلّم الملفات أو النشر، ثم مراجعتان مجانيتان حتى الرضا الكامل — ودعم 14 يوماً بعدها.",
+    "نسلم النطاق المتفق عليه ونراجعه معك. عدد المراجعات وفترة المتابعة يحددان في عرض الخدمة؛ الطلبات الإضافية والصيانة منفصلة.",
   step3DescEn:
-    "We hand over the files or the go-live, then two free revisions until you're satisfied — plus 14 days of support after.",
+    "We deliver and review the agreed scope. Revision rounds and follow-up are defined in the service quote; extra requests and maintenance are separate.",
   faqTitleAr: "أسئلة شائعة عن الخدمات المفتوحة",
   faqTitleEn: "FAQ about open services",
   faqSubAr: "الخدمات المفتوحة — أسئلة شائعة",
@@ -201,12 +202,12 @@ export const serviceDetailLabels = {
   startingAtEn: "STARTING AT",
   deliveryAr: "التسليم: {value}",
   deliveryEn: "Delivery: {value}",
-  fixedPriceAr: "سعر ثابت + مراجعتان مجانيتان",
-  fixedPriceEn: "Fixed price + two free revisions",
+  fixedPriceAr: "سعر ونطاق ومراجعات حسب الاتفاق",
+  fixedPriceEn: "Price, scope & revisions agreed in advance",
   instalmentsAr: "دفع كامل أو 2–3 أقساط",
   instalmentsEn: "Pay in full or in 2–3 instalments",
-  comparePlansAr: "مقارنة الباقات الكاملة",
-  comparePlansEn: "Compare the full plans",
+  comparePlansAr: "العرض الأساسي والوظائف الاختيارية",
+  comparePlansEn: "Base offer & optional functions",
   shortAr: "باختصار:",
   shortEn: "In short:",
   includedAr: "ما الذي تحصل عليه؟",
@@ -216,9 +217,9 @@ export const serviceDetailLabels = {
   pricingAr: "الأسعار والدفع",
   pricingEn: "Pricing and payment",
   pricingTextAr:
-    "تبدأ الخدمة من {price}. السعر النهائي يعتمد على حجم العمل ويُثبَّت كتابياً قبل البدء. نعمل بدفعة مقدمة 50% والباقي عند التسليم، مع إمكانية الدفع بالتحويل البنكي أو نقداً أو بالعملات الرقمية عبر NOWPayments — كاملاً أو على دفعتين/ثلاث.",
+    "تبدأ الخدمة من {price}. النطاق والسعر النهائي وجدول الدفعات والتسليم تؤكد كتابياً قبل البدء. استخدم الكريبتو عبر NOWPayments أو وسيلة يدوية فقط إذا كانت متاحة في الدفع؛ لا نفترض إتاحة النقد أو التحويل البنكي.",
   pricingTextEn:
-    "The service starts from {price}. The final price depends on the scope and is fixed in writing before we start. We work with a 50% deposit and the balance on delivery, paid by bank transfer, cash or crypto via NOWPayments — in full or in two/three instalments.",
+    "The service starts from {price}. Scope, final price, payment schedule and delivery are confirmed in writing before work starts. Use crypto via NOWPayments or a manual method only when available at checkout; no cash or bank transfer is promised unless explicitly offered.",
   sectorsAr: "قطاعات نخدمها بهذه الخدمة",
   sectorsEn: "Sectors we serve with this service",
   faqAr: "أسئلة شائعة — {title}",
@@ -232,7 +233,7 @@ export const serviceDetailLabels = {
   readyAr: "جاهز لتبدأ؟",
   readyEn: "Ready to start?",
   readyTextAr:
-    "أرسل رابط موقعك أو ملفك، ونرد خلال ساعتين في أوقات العمل بعرض سعر ثابت ومدة تسليم واضحة. لا التزام قبل الموافقة.",
+    "أرسل رابط موقعك أو ملفك، ونرد في أوقات العمل بعرض سعر ثابت ومدة تسليم واضحة. لا التزام قبل الموافقة.",
   readyTextEn:
     "Send your site link or file and we reply within two hours during working hours, with a fixed quote and a clear delivery time. No commitment before you approve.",
   whatsappDirectAr: "واتساب مباشر",
@@ -302,15 +303,15 @@ export const sectorDetailLabels = {
   ctaTitleAr: "جاهز لموقع {label} احترافي؟",
   ctaTitleEn: "Ready for a professional site for {label}?",
   ctaTextAr:
-    "نطلق موقعك في 7-14 يوم مع حجز/بيع أونلاين، SEO محلي، ومتابعة واتساب — احجز استشارتك المجانية اليوم.",
+    "اختر نموذجك بسعر أساسي موحد مع تخصيص المحتوى الأولي. الحجز والمتجر والإدارة خيارات منفصلة، وموعد التسليم يؤكد حسب النطاق.",
   ctaTextEn:
-    "We launch your site in 7-14 days with booking and online sales, local SEO and WhatsApp follow-up — book your free consultation today.",
+    "Choose any model at one base price with initial content personalization. Booking, store and admin tools are separate options; delivery is confirmed according to scope.",
   ctaQuoteAr: "اطلب عرض سعر",
   ctaQuoteEn: "Request a quote",
   ctaPlansAr: "شاهد الباقات",
   ctaPlansEn: "See the plans",
-  includesTitleAr: "ماذا يشمل موقع {label} من نخبة؟",
-  includesTitleEn: "What a Nukhba website for {label} includes",
+  includesTitleAr: "وظائف معروضة في نماذج {label} — الخيارات حسب النطاق",
+  includesTitleEn: "Functions shown in our {label} demos — options depend on scope",
   priceFromAr: "مواقع {label} لدينا تبدأ من {price} حسب الحجم والميزات —",
   priceFromEn: "Our {label} sites start from {price} depending on size and features —",
   comparePlansAr: "قارن الباقات والأسعار",
@@ -337,8 +338,8 @@ export const pricingTableLabels = {
   rowBlogEn: "Blog",
   rowBookingAr: "حجز / متجر",
   rowBookingEn: "Booking / store",
-  rowLanguagesAr: "لغتين",
-  rowLanguagesEn: "Two languages",
+  rowLanguagesAr: "لغة واحدة؛ الإضافية خيار منفصل",
+  rowLanguagesEn: "One language; extra languages optional",
   rowSeoAr: "تحسين SEO",
   rowSeoEn: "SEO",
   seoBasicAr: "أساسي",
@@ -420,13 +421,13 @@ const translations = {
     process: {
       title: "من الفكرة إلى الإطلاق",
       subtitle: "6 خطوات واضحة — تعرف أين نحن كل يوم",
-      total: "إجمالي المدة: 7-14 يوم",
+      total: "المدة تؤكد حسب النطاق",
     },
     pricing: {
       title: "استثمار يعود أضعافاً",
       subtitle: "أسعار واضحة بالدولار، بلا مفاجآت — وكل دولار محسوب ليجلب عملاء",
       compare: "قارن الباقات",
-      perMonthNote: "دفع مرة واحدة + استضافة سنة مجاناً",
+      perMonthNote: "سعر أساسي مرة واحدة؛ وفق أهلية وحدود Vercel",
       popular: "الأكثر اختياراً",
       contactUs: "تحدث معنا",
     },
@@ -442,9 +443,9 @@ const translations = {
     },
     cta: {
       title: "جاهز لتنطلق؟",
-      subtitle: "احجز استشارتك المجانية اليوم — نرد في أقل من ساعتين",
+      subtitle: "احجز استشارتك المجانية — نرد خلال أوقات العمل",
       formTitle: "اطلب عرضك المجاني",
-      guarantee: "✓ رد خلال ساعتين  ✓ بدون التزام  ✓ استشارة مجانية",
+      guarantee: "✓ رد في أوقات العمل  ✓ بدون التزام  ✓ استشارة مجانية",
     },
     footer: {
       desc: "نصنع مواقع تبيع — فاخرة، سريعة، ومصممة على مقاس طموحك في {place}، وأينما كنت في العالم.",
@@ -456,7 +457,7 @@ const translations = {
     },
     contactPage: {
       title: "لنتحدث عن مشروعك",
-      subtitle: "نرد خلال ساعتين — واتساب أو نموذج، كما تفضل",
+      subtitle: "نرد في أوقات العمل — واتساب أو نموذج، كما تفضل",
       form: "أرسل رسالة",
       info: "معلومات التواصل",
       visit: "زرنا",
@@ -484,8 +485,8 @@ const translations = {
       phoneEn: "Phone (optional)",
       continueAr: "متابعة إلى الدفع",
       continueEn: "Continue to payment",
-      secureAr: "🔒 تشفير كامل — لا نخزن أي بيانات دفع",
-      secureEn: "🔒 Fully encrypted — we never store payment data",
+      secureAr: "🔒 لا ترسل كلمات مرور المحفظة أو المفاتيح الخاصة",
+      secureEn: "🔒 Never share wallet passwords or private keys",
       guaranteeTitleAr: "🛡️ ضمان الخدمة — دفعك محمي",
       guaranteeTitleEn: "🛡️ Service guarantee — your payment is protected",
       guarantee1Ar:
@@ -493,13 +494,13 @@ const translations = {
       guarantee1En:
         "We deliver the agreed specifications in full — if the service is not delivered as agreed, you get a full refund.",
       guarantee2Ar:
-        "دفع آمن عبر بوابة NOWPayments الرسمية — تشفير كامل، ولا نصل إلى بيانات محفظتك أو بطاقتك ولا نخزّنها إطلاقاً.",
+        "الدفع بالكريبتو عبر NOWPayments. لا نطلب مفاتيح خاصة أو عبارات استرداد. بيانات الدفع اليدوي تحفظ للتحقق عند اختيار هذه الوسيلة.",
       guarantee2En:
-        "Secure payment through the official NOWPayments gateway — fully encrypted, we never access or store your wallet or card data.",
+        "Crypto payment uses NOWPayments. We never ask for private keys or recovery phrases. Manual payment details are stored for verification when that method is selected.",
       guarantee3Ar:
-        "إيصال تأكيد فوري يصلك بالبريد الإلكتروني، وطلبك يُفعَّل فور تأكيد الشبكة — مع متابعتنا لك خلال ساعتين.",
+        "تأكيد الدفع والإيصال بعد التحقق. تخصيص الموقع ونشره حسب الموعد المتفق عليه؛ التحويل اليدوي يحتاج قبولاً.",
       guarantee3En:
-        "Instant email receipt, your order activates as soon as the network confirms — and we follow up within 2 hours.",
+        "Payment confirmation and a receipt follow verification. Website personalization and deployment follow the agreed schedule; manual transfers need approval.",
       manualMethodAr: "طريقة الدفع",
       manualMethodEn: "Payment method",
       manualCryptoAr: "عملات رقمية",
@@ -531,9 +532,9 @@ const translations = {
       copiedAr: "تم النسخ ✓",
       copiedEn: "Copied ✓",
       waitNoteAr:
-        "يظهر طلبك كمدفوع على صفحتنا فور تأكيد الشبكة (عادة أقل من 10 دقائق). سنتواصل معك خلال ساعتين.",
+        "يظهر طلبك كمدفوع على صفحتنا فور تأكيد الشبكة (عادة أقل من 10 دقائق). سنتواصل معك خلال أوقات العمل.",
       waitNoteEn:
-        "Your order shows as paid on our side once the network confirms it (usually under 10 minutes). We'll contact you within 2 hours.",
+        "Your order shows as paid on our side once the network confirms it (usually under 10 minutes). We'll contact you during opening hours.",
       errorAr: "تعذر إنشاء الدفع حالياً — حاول مجدداً.",
       errorEn: "Payment could not be created — please retry.",
       retryAr: "إعادة المحاولة",
@@ -584,15 +585,15 @@ const translations = {
       pendingTitleAr: "بانتظار تأكيد الدفع…",
       pendingTitleEn: "Waiting for payment confirmation…",
       pendingNoteAr:
-        "بمجرد تأكيد الشبكة، سيظهر طلبك كمدفوع. سنتواصل معك خلال ساعتين لبدء مشروعك.",
+        "بمجرد تأكيد الشبكة، سيظهر طلبك كمدفوع. سنتواصل معك خلال أوقات العمل لبدء مشروعك.",
       pendingNoteEn:
-        "Once the network confirms, your order will show as paid. We'll contact you within 2 hours to start your project.",
+        "Once the network confirms, your order will show as paid. We'll contact you during opening hours to start your project.",
       liveAr: "تحديث مباشر كل بضع ثوانٍ",
       liveEn: "Live updates every few seconds",
       paidTitleAr: "تم استلام الدفع ✓",
       paidTitleEn: "Payment received ✓",
       paidNoteAr:
-        "شكراً لثقتك بنخبة! أكملنا طلبك وسنتواصل معك خلال ساعتين لبدء مشروعك.",
+        "شكراً لثقتك بنخبة! أكملنا طلبك وسنتواصل معك خلال أوقات العمل لبدء مشروعك.",
       paidNoteEn:
         "Thank you for trusting Nukhba! Your order is confirmed and we'll contact you within 2 hours to start your project.",
       failedTitleAr: "الدفع لم يكتمل",
@@ -733,13 +734,13 @@ const translations = {
     process: {
       title: "From idea to launch",
       subtitle: "5 clear steps — you know where we are every day",
-      total: "Total: 7-14 days",
+      total: "Timeline confirmed by scope",
     },
     pricing: {
       title: "Investment that pays back",
       subtitle: "Clear USD pricing, no surprises — every dollar calculated to bring clients",
       compare: "Compare plans",
-      perMonthNote: "One-time + 1 year hosting free",
+      perMonthNote: "One-time base price; Vercel eligibility and limits apply",
       popular: "Most popular",
       contactUs: "Talk to us",
     },
@@ -755,9 +756,9 @@ const translations = {
     },
     cta: {
       title: "Ready to launch?",
-      subtitle: "Book your free consult today — we reply within 2 hours",
+      subtitle: "Book your free consult — replies during opening hours",
       formTitle: "Get your free quote",
-      guarantee: "✓ Reply in 2h  ✓ No commitment  ✓ Free consult",
+      guarantee: "✓ Replies during opening hours  ✓ No commitment  ✓ Free consult",
     },
     footer: {
       desc: "We build sites that sell — luxurious, fast & tailored to your ambition in {place}, and wherever you are in the world.",
@@ -769,7 +770,7 @@ const translations = {
     },
     contactPage: {
       title: "Let's talk about your project",
-      subtitle: "We reply in 2 hours — WhatsApp or form, your choice",
+      subtitle: "We reply during opening hours — WhatsApp or form, your choice",
       form: "Send message",
       info: "Contact info",
       visit: "Visit us",
@@ -797,8 +798,8 @@ const translations = {
       phoneEn: "Phone (optional)",
       continueAr: "Continue to payment",
       continueEn: "Continue to payment",
-      secureAr: "🔒 Fully encrypted — we never store payment data",
-      secureEn: "🔒 Fully encrypted — we never store payment data",
+      secureAr: "🔒 Never share wallet passwords or private keys",
+      secureEn: "🔒 Never share wallet passwords or private keys",
       guaranteeTitleAr: "🛡️ Service guarantee — your payment is protected",
       guaranteeTitleEn: "🛡️ Service guarantee — your payment is protected",
       guarantee1Ar:
@@ -806,13 +807,13 @@ const translations = {
       guarantee1En:
         "We deliver the agreed specifications in full — if the service is not delivered as agreed, you get a full refund.",
       guarantee2Ar:
-        "Secure payment through the official NOWPayments gateway — fully encrypted, we never access or store your wallet or card data.",
+        "Crypto payment uses NOWPayments. We never ask for private keys or recovery phrases. Manual payment details are stored for verification when that method is selected.",
       guarantee2En:
-        "Secure payment through the official NOWPayments gateway — fully encrypted, we never access or store your wallet or card data.",
+        "Crypto payment uses NOWPayments. We never ask for private keys or recovery phrases. Manual payment details are stored for verification when that method is selected.",
       guarantee3Ar:
-        "Instant email receipt, your order activates as soon as the network confirms — and we follow up within 2 hours.",
+        "Payment confirmation and a receipt follow verification. Website personalization and deployment follow the agreed schedule; manual transfers need approval.",
       guarantee3En:
-        "Instant email receipt, your order activates as soon as the network confirms — and we follow up within 2 hours.",
+        "Payment confirmation and a receipt follow verification. Website personalization and deployment follow the agreed schedule; manual transfers need approval.",
       manualMethodAr: "Payment method",
       manualMethodEn: "Payment method",
       manualCryptoAr: "Crypto",
@@ -844,9 +845,9 @@ const translations = {
       copiedAr: "Copied ✓",
       copiedEn: "Copied ✓",
       waitNoteAr:
-        "Your order shows as paid on our side once the network confirms it (usually under 10 minutes). We'll contact you within 2 hours.",
+        "Your order shows as paid on our side once the network confirms it (usually under 10 minutes). We'll contact you during opening hours.",
       waitNoteEn:
-        "Your order shows as paid on our side once the network confirms it (usually under 10 minutes). We'll contact you within 2 hours.",
+        "Your order shows as paid on our side once the network confirms it (usually under 10 minutes). We'll contact you during opening hours.",
       errorAr: "Payment could not be created — please retry.",
       errorEn: "Payment could not be created — please retry.",
       retryAr: "Retry",
@@ -897,9 +898,9 @@ const translations = {
       pendingTitleAr: "Waiting for payment confirmation…",
       pendingTitleEn: "Waiting for payment confirmation…",
       pendingNoteAr:
-        "Once the network confirms, your order will show as paid. We'll contact you within 2 hours to start your project.",
+        "Once the network confirms, your order will show as paid. We'll contact you during opening hours to start your project.",
       pendingNoteEn:
-        "Once the network confirms, your order will show as paid. We'll contact you within 2 hours to start your project.",
+        "Once the network confirms, your order will show as paid. We'll contact you during opening hours to start your project.",
       liveAr: "Live updates every few seconds",
       liveEn: "Live updates every few seconds",
       paidTitleAr: "Payment received ✓",

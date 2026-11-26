@@ -1,3 +1,4 @@
+import { normalizeLegacyWebsiteContent } from "@/lib/website-content-migration";
 import { cache } from "react";
 import { eq } from "drizzle-orm";
 import { db, ensureSchema } from "@/db";
@@ -5,8 +6,9 @@ import { settings } from "@/db/schema";
 import { siteConfig } from "@/lib/config";
 import { normalizePhoneCardPaymentsEnabled } from "@/lib/phone-card-core";
 import { normalizeManualPaymentsConfig } from "@/lib/manual-payment-core";
+import { normalizePayGateConfig } from "@/lib/paygate-core";
 import { fazercardsMaxOrderUsd } from "@/lib/fazercards";
-import { ensureDemoSeoFields } from "@/lib/ai/seo-generator";
+import { ensureDemoSeoFields, templateSeoCopy } from "@/lib/ai/seo-generator";
 import {
   PROCESS_STEP_06_MARKER,
   migrateProcessHeading,
@@ -119,47 +121,10 @@ export function mergeConfig(override: unknown, phoneCardPaymentsEnabled?: unknow
       continue;
     }
 
-    if (
-      key === "pricing" &&
-      value !== null &&
-      typeof value === "object" &&
-      !Array.isArray(value) &&
-      baseValue !== null &&
-      typeof baseValue === "object" &&
-      !Array.isArray(baseValue)
-    ) {
-      const basePricing = baseValue as Record<string, unknown>;
-      const storedPricing = value as Record<string, unknown>;
-      const defaultPlans = Array.isArray(basePricing.plans) ? basePricing.plans : [];
-      const storedPlans = Array.isArray(storedPricing.plans) ? storedPricing.plans : [];
-      const mergedPlans = storedPlans.map((storedPlan, index) => {
-        if (!storedPlan || typeof storedPlan !== "object" || Array.isArray(storedPlan)) {
-          return storedPlan;
-        }
-        const plan = storedPlan as Record<string, unknown>;
-        const fallback =
-          defaultPlans.find(
-            (candidate) =>
-              candidate &&
-              typeof candidate === "object" &&
-              !Array.isArray(candidate) &&
-              (candidate as Record<string, unknown>).id === plan.id,
-          ) ?? defaultPlans[index];
-        if (!fallback || typeof fallback !== "object" || Array.isArray(fallback)) return plan;
-        const defaults = fallback as Record<string, unknown>;
-        return {
-          ...defaults,
-          ...plan,
-          ...(!("priceUsd" in plan) && defaults.priceUsd !== undefined
-            ? { priceUsd: defaults.priceUsd }
-            : {}),
-        };
-      });
-      merged[key] = {
-        ...(basePricing as object),
-        ...(storedPricing as object),
-        plans: storedPlans.length > 0 ? mergedPlans : defaultPlans,
-      };
+    // The unified offer supersedes legacy persisted tiers/20% fees. This is
+    // read-time normalization only: existing orders and subscriptions are untouched.
+    if (key === "pricing") {
+      merged.pricing = siteConfig.pricing;
     } else if (
       value !== null &&
       typeof value === "object" &&
@@ -173,6 +138,19 @@ export function mergeConfig(override: unknown, phoneCardPaymentsEnabled?: unknow
       merged[key] = value;
     }
   }
+  // Owner confirmed 22:00 closing (2026-11-23). Correct known old defaults,
+  // including the English 18:00 value observed publicly; leave bespoke schedules
+  // and historical records untouched. No database write is performed here.
+  if (merged.hours === "السبت - الخميس: 9:00 - 23:00") {
+    merged.hours = siteConfig.hours;
+  }
+  if (merged.hoursEn === "Sat - Thu: 9:00 AM - 6:00 PM" ||
+      merged.hoursEn === "Sat - Thu: 9:00 AM - 11:00 PM") {
+    merged.hoursEn = siteConfig.hoursEn;
+  }
+  const stats = merged.stats as Record<string, unknown>;
+  if (stats.delivery === "7 أيام") stats.delivery = siteConfig.stats.delivery;
+  if (stats.deliveryEn === "7 days") stats.deliveryEn = siteConfig.stats.deliveryEn;
   const fzrRaw = merged.fazercards as {
     maxOrderUsd?: unknown;
     phoneCardRateMode?: unknown;
@@ -204,6 +182,7 @@ export function mergeConfig(override: unknown, phoneCardPaymentsEnabled?: unknow
   // ancienne (bloc absent) retombe sur « tout désactivé, tout vide » — aucune
   // méthode n'est jamais supposée configurée.
   merged.manualPayments = normalizeManualPaymentsConfig(merged.manualPayments);
+  merged.paygate = normalizePayGateConfig(merged.paygate);
   return merged as unknown as typeof siteConfig;
 }
 
@@ -306,12 +285,52 @@ const LEGACY_PLACEHOLDER_SLUGS = new Set([
   "safir-hotel",
 ]);
 
+const DEMO_SEO_KEYS = [
+  "metaTitle",
+  "metaDescription",
+  "metaTitleEn",
+  "metaDescriptionEn",
+  "imageAltAr",
+  "imageAltEn",
+] as const;
+
+function pickDemoSeoField(
+  key: (typeof DEMO_SEO_KEYS)[number],
+  base: Demo,
+  stored: Demo,
+  storedTemplate: ReturnType<typeof templateSeoCopy>,
+  baseTemplate: ReturnType<typeof templateSeoCopy>,
+): string | undefined {
+  const rawStored = stored[key]?.trim();
+  const rawBase = base[key]?.trim();
+  if (!rawStored) return rawBase;
+  // Promeut le texte SEO optimisé en code lorsque la base ne contient que
+  // le gabarit mécanique auto-généré, sans jamais écraser une saisie admin.
+  if (
+    rawBase &&
+    rawBase !== storedTemplate[key] &&
+    rawBase !== baseTemplate[key] &&
+    (rawStored === storedTemplate[key] || rawStored === baseTemplate[key])
+  ) {
+    return rawBase;
+  }
+  return stored[key];
+}
+
 function backfillClassification(base: Demo, stored: Demo): Demo {
+  const storedTemplate = templateSeoCopy(stored);
+  const baseTemplate = templateSeoCopy(base);
   return {
     ...stored,
     planId: stored.planId ?? base.planId,
     categoryTier: stored.categoryTier ?? base.categoryTier,
     priceUsd: stored.priceUsd !== undefined ? stored.priceUsd : base.priceUsd,
+    metaTitle: pickDemoSeoField("metaTitle", base, stored, storedTemplate, baseTemplate),
+    metaDescription: pickDemoSeoField("metaDescription", base, stored, storedTemplate, baseTemplate),
+    metaTitleEn: pickDemoSeoField("metaTitleEn", base, stored, storedTemplate, baseTemplate),
+    metaDescriptionEn: pickDemoSeoField("metaDescriptionEn", base, stored, storedTemplate, baseTemplate),
+    imageAltAr: pickDemoSeoField("imageAltAr", base, stored, storedTemplate, baseTemplate),
+    imageAltEn: pickDemoSeoField("imageAltEn", base, stored, storedTemplate, baseTemplate),
   };
 }
 
@@ -479,9 +498,10 @@ function persistProcessStep06(payload: {
  * par `getSiteDataCached()`, ce qui permet de mettre en cache
  * l'assemblage sans mettre en cache la fonction qui touche à la base.
  */
-function buildSiteData(rows: { key: string; value: unknown }[]): SiteData {
+export function buildSiteData(rows: { key: string; value: unknown }[]): SiteData {
     const map = new Map<string, unknown>(
-      rows.map((r) => [r.key, r.value] as [string, unknown]),
+      rows.map((r) => [r.key, ([KEY_HERO, KEY_WHY_US, KEY_PROCESS, KEY_HEADINGS, KEY_RIBBON, KEY_FAQS] as string[]).includes(r.key)
+        ? normalizeLegacyWebsiteContent(r.value) : r.value] as [string, unknown]),
     );
     const headings = resolveHeadings(map.get(KEY_HEADINGS));
     const storedProcess = resolveStoredList<ProcessStep>(
@@ -504,13 +524,18 @@ function buildSiteData(rows: { key: string; value: unknown }[]): SiteData {
       config: mergeConfig(map.get(KEY_CONFIG), map.get(KEY_PHONE_CARD_PAYMENTS_ENABLED)),
       content: {
         demos: resolveDemos(map, defaultDemos),
-        faqs: resolveStoredList<Faq>(map, KEY_FAQS, defaultFaqs),
+        faqs: [
+          ...defaultFaqs,
+          ...resolveStoredList<Faq>(map, KEY_FAQS, []).filter(faq =>
+            !defaultFaqs.some(base => base.qEn === faq.qEn || base.qAr === faq.qAr)),
+        ],
         testimonials: resolveStoredList<Testimonial>(
           map,
           KEY_TESTIMONIALS,
           defaultTestimonials,
         ),
-        hero: resolveHero(map.get(KEY_HERO)),
+        hero: { ...resolveHero(map.get(KEY_HERO)), subtitleAr: defaultHero.subtitleAr,
+          subtitleEn: defaultHero.subtitleEn, chipsAr: defaultHero.chipsAr, chipsEn: defaultHero.chipsEn },
         ribbon: resolveRibbon(map),
         whyUs: resolveStoredList<WhyUsItem>(map, KEY_WHY_US, defaultWhyUs),
         process: step06.steps,

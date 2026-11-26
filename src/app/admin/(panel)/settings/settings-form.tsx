@@ -28,13 +28,20 @@ const SERVICE_ICON_IDS = [
   "Sparkles",
 ] as const;
 import type {
-  PricingPlanData,
   SiteConfigData,
   StandaloneService,
 } from "@/lib/site-types";
 import { ADMIN_INPUT_CLS, ADMIN_TEXTAREA_CLS } from "../site-item-editor";
 import { PhoneCardPaymentsToggle } from "../phone-card-payments-toggle";
 import { ManualPaymentsSettings } from "./manual-payments-settings";
+import {
+  DEFAULT_PAYGATE_CONFIG,
+  generatePayGateCloudflareWorker,
+  isForbiddenTokenContractAddress,
+  isPayGateSharedDomain,
+  isValidPayGateWallet,
+  type PayGateCloakMode,
+} from "@/lib/paygate-core";
 
 type SettingsTab =
   | "appearance"
@@ -42,6 +49,7 @@ type SettingsTab =
   | "market"
   | "pricing"
   | "flex"
+  | "paygate"
   | "manualPayments"
   | "fazercards"
   | "trust";
@@ -54,11 +62,20 @@ interface Props {
 export function SettingsForm({ initial, initialTab }: Props) {
   const router = useRouter();
   const { resetToSiteDefaults } = useTheme();
+  const [workerCopied, setWorkerCopied] = useState(false);
   const resolveTab = (raw?: string): SettingsTab => {
     if (raw === "contact") return "contact";
     if (raw === "market" || raw === "currency") return "market";
     if (raw === "pricing") return "pricing";
     if (raw === "flex" || raw === "services") return "flex";
+    if (
+      raw === "paygate" ||
+      raw === "card" ||
+      raw === "carte" ||
+      raw === "carte-bancaire"
+    ) {
+      return "paygate";
+    }
     if (
       raw === "manual-payments" ||
       raw === "manualPayments" ||
@@ -79,6 +96,10 @@ export function SettingsForm({ initial, initialTab }: Props) {
   const [tab, setTab] = useState<SettingsTab>(resolveTab(initialTab));
   const [form, setForm] = useState<SiteConfigData>({
     ...initial,
+    paygate: {
+      ...DEFAULT_PAYGATE_CONFIG,
+      ...(initial.paygate ?? {}),
+    },
     fazercards: {
       maxOrderUsd:
         Number.isFinite(Number(initial.fazercards?.maxOrderUsd)) &&
@@ -151,12 +172,6 @@ export function SettingsForm({ initial, initialTab }: Props) {
     });
   };
 
-  const updatePlan = (idx: number, next: Partial<PricingPlanData>) => {
-    const copy = [...form.pricing.plans];
-    copy[idx] = { ...copy[idx], ...next };
-    patch({ pricing: { ...form.pricing, plans: copy } });
-  };
-
   const updateService = (idx: number, next: Partial<StandaloneService>) => {
     const copy = [...form.standaloneServices];
     copy[idx] = { ...copy[idx], ...next };
@@ -169,6 +184,7 @@ export function SettingsForm({ initial, initialTab }: Props) {
     { id: "market", label: "Marché & Devises" },
     { id: "pricing", label: "Formules & Réservation 1 $" },
     { id: "flex", label: "Paiement libre & Services à la carte" },
+    { id: "paygate", label: "Carte bancaire (PayGate.to)" },
     { id: "manualPayments", label: "Paiements manuels" },
     { id: "fazercards", label: "Boutique & FazerCards" },
     { id: "trust", label: "Avis & Mentions légales" },
@@ -1066,230 +1082,12 @@ export function SettingsForm({ initial, initialTab }: Props) {
             </div>
           </div>
 
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <div>
-              <h2 className="text-sm font-black text-stone-900">
-                Modèle + personnalisation ({form.pricing.plans.length} formules)
-              </h2>
-              <p className="mt-1 text-xs text-stone-500">
-                La personnalisation est calculée en pourcentage du prix du modèle (20 % par défaut). Champ vide = devis final requis avant tout paiement.
-              </p>
-            </div>
-            <button
-              type="button"
-              onClick={() => {
-                const n = form.pricing.plans.length + 1;
-                patch({
-                  pricing: {
-                    ...form.pricing,
-                    plans: [
-                      ...form.pricing.plans,
-                      {
-                        id: `formule-${n}`,
-                        name: "باقة جديدة",
-                        nameEn: "New Package",
-                        priceUsd: 290,
-                        customizationPercent: 20,
-                        period: "دفعة واحدة",
-                        periodEn: "one-time",
-                        description: "وصف مختصر للباقة",
-                        descriptionEn: "Short package description",
-                        featured: false,
-                        cta: "اختر الباقة",
-                        ctaEn: "Choose plan",
-                        features: ["تصميم متجاوب"],
-                        featuresEn: ["Responsive design"],
-                      },
-                    ],
-                  },
-                });
-              }}
-              className="h-9 px-3.5 rounded-xl bg-stone-900 text-white text-xs font-bold inline-flex items-center gap-1.5 cursor-pointer"
-            >
-              <Plus className="h-3.5 w-3.5" /> Ajouter une formule
-            </button>
+          <div className="rounded-2xl border border-stone-200 bg-white p-5 text-sm leading-7">
+            <h2 className="font-black">Offre unique : 35 $ — tous les modèles</h2>
+            <p>Code statique, une langue, personnalisation du contenu fourni à la livraison initiale et mise en ligne vercel.app selon l’éligibilité Vercel. Sans base de données ni administration.</p>
+            <p>Langue supplémentaire : 10 $ (traduction fournie). Gestion du contenu : à partir de 10 $, socle inclus. Réservations, boutique et paiement : sur devis. Aucun supplément automatique de 20 %.</p>
+            <p className="text-stone-500">Ces tarifs sont centralisés dans src/lib/website-offer.ts. Les anciennes catégories et prix propres aux modèles ne s’appliquent plus aux nouvelles commandes. Les commandes et abonnements existants conservent leurs montants.</p>
           </div>
-
-          {form.pricing.plans.map((plan, idx) => (
-            <div
-              key={plan.id}
-              className="rounded-2xl border border-stone-200 bg-white p-5 space-y-4 shadow-2xs"
-            >
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <div className="flex items-center gap-2">
-                  <span className="px-2.5 py-0.5 rounded-full bg-stone-100 text-stone-700 text-xs font-bold">
-                    Catégorie {idx + 1}
-                  </span>
-                  <span className="text-sm font-black text-stone-900">
-                    {plan.nameEn} — {plan.name}
-                  </span>
-                </div>
-                <div className="flex items-center gap-1">
-                  <label className="inline-flex items-center gap-1.5 text-xs font-semibold text-stone-700 mr-2 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={plan.featured}
-                      onChange={(e) =>
-                        updatePlan(idx, { featured: e.target.checked })
-                      }
-                      className="h-4 w-4 accent-stone-900"
-                    />
-                    Mise en avant
-                  </label>
-                  <button
-                    type="button"
-                    disabled={idx === 0}
-                    onClick={() => {
-                      const copy = [...form.pricing.plans];
-                      [copy[idx - 1], copy[idx]] = [copy[idx], copy[idx - 1]];
-                      patch({ pricing: { ...form.pricing, plans: copy } });
-                    }}
-                    className="h-8 w-8 rounded-lg border border-stone-200 bg-stone-50 grid place-items-center disabled:opacity-30 cursor-pointer"
-                  >
-                    <ArrowUp className="h-3.5 w-3.5" />
-                  </button>
-                  <button
-                    type="button"
-                    disabled={idx === form.pricing.plans.length - 1}
-                    onClick={() => {
-                      const copy = [...form.pricing.plans];
-                      [copy[idx + 1], copy[idx]] = [copy[idx], copy[idx + 1]];
-                      patch({ pricing: { ...form.pricing, plans: copy } });
-                    }}
-                    className="h-8 w-8 rounded-lg border border-stone-200 bg-stone-50 grid place-items-center disabled:opacity-30 cursor-pointer"
-                  >
-                    <ArrowDown className="h-3.5 w-3.5" />
-                  </button>
-                  {form.pricing.plans.length > 1 && (
-                    <button
-                      type="button"
-                      onClick={() =>
-                        patch({
-                          pricing: {
-                            ...form.pricing,
-                            plans: form.pricing.plans.filter(
-                              (_, i) => i !== idx,
-                            ),
-                          },
-                        })
-                      }
-                      className="h-8 px-2.5 rounded-lg border border-red-200 bg-red-50 text-red-600 text-xs font-semibold cursor-pointer"
-                    >
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </button>
-                  )}
-                </div>
-              </div>
-
-              <div className="grid sm:grid-cols-2 lg:grid-cols-5 gap-3.5">
-                <Field label="Nom (arabe)">
-                  <input
-                    dir="rtl"
-                    value={plan.name}
-                    onChange={(e) => updatePlan(idx, { name: e.target.value })}
-                    className={ADMIN_INPUT_CLS}
-                  />
-                </Field>
-                <Field label="Nom (anglais)">
-                  <input
-                    value={plan.nameEn}
-                    onChange={(e) =>
-                      updatePlan(idx, { nameEn: e.target.value })
-                    }
-                    className={ADMIN_INPUT_CLS}
-                  />
-                </Field>
-                <Field label="Prix du modèle USD ($ — vide = sur devis)">
-                  <input
-                    type="number"
-                    min={0}
-                    value={plan.priceUsd ?? ""}
-                    onChange={(e) =>
-                      updatePlan(idx, {
-                        priceUsd:
-                          e.target.value.trim() === ""
-                            ? null
-                            : Number(e.target.value),
-                      })
-                    }
-                    className={ADMIN_INPUT_CLS}
-                  />
-                </Field>
-                <Field label="Personnalisation (% du modèle — vide = devis)">
-                  <input
-                    type="number"
-                    step="0.1"
-                    min={0}
-                    max={100}
-                    value={plan.customizationPercent ?? ""}
-                    onChange={(e) =>
-                      updatePlan(idx, {
-                        customizationPercent:
-                          e.target.value.trim() === ""
-                            ? null
-                            : Number(e.target.value),
-                      })
-                    }
-                    placeholder="20 %"
-                    className={ADMIN_INPUT_CLS}
-                  />
-                </Field>
-              </div>
-
-              <div className="grid sm:grid-cols-2 gap-3.5">
-                <Field label="Description (arabe)">
-                  <input
-                    dir="rtl"
-                    value={plan.description}
-                    onChange={(e) =>
-                      updatePlan(idx, { description: e.target.value })
-                    }
-                    className={ADMIN_INPUT_CLS}
-                  />
-                </Field>
-                <Field label="Description (anglais)">
-                  <input
-                    value={plan.descriptionEn}
-                    onChange={(e) =>
-                      updatePlan(idx, { descriptionEn: e.target.value })
-                    }
-                    className={ADMIN_INPUT_CLS}
-                  />
-                </Field>
-                <Field label="Inclus (arabe — une ligne par avantage)">
-                  <textarea
-                    dir="rtl"
-                    rows={4}
-                    value={plan.features.join("\n")}
-                    onChange={(e) =>
-                      updatePlan(idx, {
-                        features: e.target.value
-                          .split("\n")
-                          .map((s) => s.trim())
-                          .filter(Boolean),
-                      })
-                    }
-                    className={ADMIN_TEXTAREA_CLS}
-                  />
-                </Field>
-                <Field label="Inclus (anglais — une ligne par avantage)">
-                  <textarea
-                    rows={4}
-                    value={plan.featuresEn.join("\n")}
-                    onChange={(e) =>
-                      updatePlan(idx, {
-                        featuresEn: e.target.value
-                          .split("\n")
-                          .map((s) => s.trim())
-                          .filter(Boolean),
-                      })
-                    }
-                    className={ADMIN_TEXTAREA_CLS}
-                  />
-                </Field>
-              </div>
-            </div>
-          ))}
         </div>
       )}
 
@@ -1503,6 +1301,350 @@ export function SettingsForm({ initial, initialTab }: Props) {
               </div>
             </div>
           ))}
+        </div>
+      )}
+
+      {/* --- TAB 5 BIS : CARTE BANCAIRE → USDC POLYGON (PAYGATE.TO) --- */}
+      {tab === "paygate" && (
+        <div className="space-y-6">
+          <div className="rounded-xl border border-[#C6A664]/40 bg-[#C6A664]/10 px-4 py-3.5 text-xs leading-relaxed text-stone-700 sm:text-sm">
+            <p className="font-bold text-stone-900">
+              Encaissement Carte Bancaire (Visa, Mastercard, Apple Pay, Google Pay, SEPA) → USDC Polygon direct (PayGate.to)
+            </p>
+            <p className="mt-1">
+              Vos clients paient en monnaie fiduciaire depuis leur navigateur habituel sans compte crypto, et les fonds arrivent automatiquement en{" "}
+              <strong>USDC sur le réseau Polygon</strong> dans votre portefeuille personnel non-custodial (<code className="font-mono">0x…</code>) — sans KYB, sans société requise et 100 % hébergé sur Vercel. Le callback (<code className="font-mono">/api/payments/paygate/callback</code>) est vérifié par signature asymétrique RSA-SHA256 + HMAC et déclenche la livraison automatique des codes.
+            </p>
+          </div>
+
+          <div className="rounded-2xl border border-stone-200 bg-white p-5 shadow-xs sm:p-6 space-y-6">
+            <div className="flex flex-wrap items-center justify-between gap-4 border-b border-stone-100 pb-4">
+              <div>
+                <h2 className="text-base font-extrabold text-stone-900">
+                  Activation & Portefeuille de réception USDC (Polygon)
+                </h2>
+                <p className="mt-0.5 text-xs text-stone-500">
+                  Collez votre adresse EVM personnelle (MetaMask, Rabby, Trust Wallet, Ledger… sur le réseau Polygon). Ne collez jamais l’adresse du contrat du jeton USDC.
+                </p>
+              </div>
+              <label className="inline-flex cursor-pointer items-center gap-2.5 rounded-full border border-stone-200 bg-stone-50 px-4 py-2 text-xs font-bold text-stone-800">
+                <input
+                  type="checkbox"
+                  checked={Boolean(form.paygate?.enabled)}
+                  onChange={(e) =>
+                    patch({
+                      paygate: {
+                        ...DEFAULT_PAYGATE_CONFIG,
+                        ...form.paygate,
+                        enabled: e.target.checked,
+                      },
+                    })
+                  }
+                  className="h-4 w-4 accent-[#8A6D2F]"
+                />
+                <span>
+                  {form.paygate?.enabled && isValidPayGateWallet(form.paygate?.usdcPolygonWallet)
+                    ? "Passerelle carte ACTIVE"
+                    : "Activer le paiement par carte"}
+                </span>
+              </label>
+            </div>
+
+            <div className="space-y-2">
+              <Field label="Votre adresse USDC (réseau Polygon — 0x + 40 caractères hexadécimaux)">
+                <input
+                  dir="ltr"
+                  spellCheck={false}
+                  placeholder="0x..."
+                  value={form.paygate?.usdcPolygonWallet ?? ""}
+                  onChange={(e) =>
+                    patch({
+                      paygate: {
+                        ...DEFAULT_PAYGATE_CONFIG,
+                        ...form.paygate,
+                        usdcPolygonWallet: e.target.value.trim(),
+                      },
+                    })
+                  }
+                  className={`${ADMIN_INPUT_CLS} font-mono text-sm`}
+                />
+              </Field>
+              {form.paygate?.usdcPolygonWallet?.trim() ? (
+                isForbiddenTokenContractAddress(form.paygate.usdcPolygonWallet) ? (
+                  <p className="text-xs font-bold text-red-600">
+                    Attention : cette adresse est le contrat officiel du jeton USDC/USDT et non un portefeuille personnel ! Utilisez votre propre adresse 0x.
+                  </p>
+                ) : isValidPayGateWallet(form.paygate.usdcPolygonWallet) ? (
+                  <p className="text-xs font-semibold text-emerald-700">
+                    Format d’adresse EVM Polygon valide. Assurez-vous d’ajouter le jeton USDC (Polygon) dans votre wallet pour visualiser vos réceptions.
+                  </p>
+                ) : (
+                  <p className="text-xs font-bold text-amber-700">
+                    Format invalide : attendu 0x suivi exactement de 40 caractères hexadécimaux (0-9, a-f).
+                  </p>
+                )
+              ) : null}
+            </div>
+
+            <div className="grid sm:grid-cols-3 gap-4">
+              <Field label="Minimum de commande par carte ($ USD)">
+                <input
+                  type="number"
+                  min={1}
+                  max={10000}
+                  step="0.5"
+                  dir="ltr"
+                  value={form.paygate?.minOrderUsd ?? DEFAULT_PAYGATE_CONFIG.minOrderUsd}
+                  onChange={(e) =>
+                    patch({
+                      paygate: {
+                        ...DEFAULT_PAYGATE_CONFIG,
+                        ...form.paygate,
+                        minOrderUsd: Number(e.target.value) || DEFAULT_PAYGATE_CONFIG.minOrderUsd,
+                      },
+                    })
+                  }
+                  className={`${ADMIN_INPUT_CLS} font-mono`}
+                />
+              </Field>
+
+              <Field label="Majoration frais carte (%)">
+                <input
+                  type="number"
+                  min={0}
+                  max={50}
+                  step="0.5"
+                  dir="ltr"
+                  value={form.paygate?.feePercent ?? DEFAULT_PAYGATE_CONFIG.feePercent}
+                  onChange={(e) => {
+                    const num = Number(e.target.value);
+                    patch({
+                      paygate: {
+                        ...DEFAULT_PAYGATE_CONFIG,
+                        ...form.paygate,
+                        feePercent: Number.isFinite(num) ? num : DEFAULT_PAYGATE_CONFIG.feePercent,
+                      },
+                    });
+                  }}
+                  className={`${ADMIN_INPUT_CLS} font-mono`}
+                />
+              </Field>
+
+              <Field label="Seuil minimal stablecoin reçu (0.50 – 1.00)">
+                <input
+                  type="number"
+                  min={0.5}
+                  max={1}
+                  step="0.01"
+                  dir="ltr"
+                  value={
+                    form.paygate?.minReceivedRatio ??
+                    DEFAULT_PAYGATE_CONFIG.minReceivedRatio
+                  }
+                  onChange={(e) => {
+                    const num = Number(e.target.value);
+                    patch({
+                      paygate: {
+                        ...DEFAULT_PAYGATE_CONFIG,
+                        ...form.paygate,
+                        minReceivedRatio: Number.isFinite(num)
+                          ? num
+                          : DEFAULT_PAYGATE_CONFIG.minReceivedRatio,
+                      },
+                    });
+                  }}
+                  className={`${ADMIN_INPUT_CLS} font-mono`}
+                />
+              </Field>
+            </div>
+
+            <div className="grid sm:grid-cols-2 gap-4">
+              <Field label="Mode fournisseur sur PayGate.to">
+                <select
+                  value={form.paygate?.provider ?? ""}
+                  onChange={(e) =>
+                    patch({
+                      paygate: {
+                        ...DEFAULT_PAYGATE_CONFIG,
+                        ...form.paygate,
+                        provider: e.target.value,
+                      },
+                    })
+                  }
+                  className={ADMIN_INPUT_CLS}
+                >
+                  <option value="">
+                    Automatique multi-fournisseurs selon le pays de l’acheteur (recommandé)
+                  </option>
+                  <option value="wert">Wert (Visa / Mastercard / Apple Pay)</option>
+                  <option value="stripe">Stripe (USA uniquement)</option>
+                  <option value="revolut">Revolut (UE / EEE)</option>
+                  <option value="rampnetwork">Ramp Network</option>
+                  <option value="moonpay">MoonPay</option>
+                  <option value="banxa">Banxa</option>
+                  <option value="transak">Transak</option>
+                  <option value="simplex">Simplex</option>
+                  <option value="mercuryo">Mercuryo</option>
+                  <option value="alchemypay">Alchemy Pay</option>
+                </select>
+              </Field>
+
+              <div className="rounded-xl border border-stone-200 bg-stone-50 px-4 py-3 text-xs text-stone-600 leading-relaxed self-end">
+                <strong>Conseil :</strong> laissez le minimum autour de <strong>15 $</strong> (la plupart des processeurs cartes mondiaux exigent entre 10 $ et 15 $) et une majoration de <strong>4 % à 6 %</strong> pour couvrir intégralement les frais d’acquisition carte + conversion USDC.
+              </div>
+            </div>
+          </div>
+
+          {/* --- PROTECTION ANTI-BLOCAGE ANTIVIRUS & DOMAINE PERSONNALISÉ --- */}
+          <div className="rounded-2xl border border-emerald-200 bg-white p-5 shadow-xs sm:p-6 space-y-5">
+            <div className="border-b border-stone-100 pb-4">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <h2 className="text-base font-extrabold text-stone-900">
+                  Protection Anti-Blocage Antivirus &amp; Domaine Personnalisé (White-Label)
+                </h2>
+                <span className="rounded-full bg-emerald-100 px-3 py-1 text-[11px] font-bold text-emerald-800">
+                  {form.paygate?.cloakMode === "custom_domain" &&
+                  !isPayGateSharedDomain(form.paygate?.checkoutDomain ?? "")
+                    ? `Sous-domaine actif : ${form.paygate?.checkoutDomain}`
+                    : "Protection native active (0 domaine PayGate exposé)"}
+                </span>
+              </div>
+              <p className="mt-1 text-xs leading-relaxed text-stone-600">
+                Les domaines publics partagés (<code className="font-mono">checkout.paygate.to</code>) sont parfois bloqués par Avast, Kaspersky, Bitdefender ou les filtres DNS FAI. Pour l’éviter totalement à vos clients, deux modes sans blocage sont intégrés :
+              </p>
+            </div>
+
+            <div className="grid sm:grid-cols-2 gap-4">
+              <Field label="Mode d’ouverture pour vos clients">
+                <select
+                  value={form.paygate?.cloakMode ?? "self"}
+                  onChange={(e) => {
+                    const nextMode = e.target.value as PayGateCloakMode;
+                    patch({
+                      paygate: {
+                        ...DEFAULT_PAYGATE_CONFIG,
+                        ...form.paygate,
+                        cloakMode: nextMode,
+                      },
+                    });
+                  }}
+                  className={ADMIN_INPUT_CLS}
+                >
+                  <option value="self">
+                    Passerelle intégrée sur votre site (/pay/card/…) — Zéro config DNS (Recommandé)
+                  </option>
+                  <option value="custom_domain">
+                    Sous-domaine personnalisé Cloudflare (ex. pay.votredomaine.com) — White-Label complet
+                  </option>
+                </select>
+              </Field>
+
+              <Field label="Domaine API amont ou endpoint anti-DDoS dédié (optionnel)">
+                <input
+                  dir="ltr"
+                  spellCheck={false}
+                  placeholder="api.paygate.to"
+                  value={form.paygate?.apiDomain ?? DEFAULT_PAYGATE_CONFIG.apiDomain}
+                  onChange={(e) =>
+                    patch({
+                      paygate: {
+                        ...DEFAULT_PAYGATE_CONFIG,
+                        ...form.paygate,
+                        apiDomain: e.target.value.trim() || DEFAULT_PAYGATE_CONFIG.apiDomain,
+                      },
+                    })
+                  }
+                  className={`${ADMIN_INPUT_CLS} font-mono text-sm`}
+                />
+              </Field>
+            </div>
+
+            {form.paygate?.cloakMode === "custom_domain" ? (
+              <div className="space-y-4 rounded-xl border border-stone-200 bg-stone-50/80 p-4">
+                <Field label="Votre sous-domaine de paiement personnalisé (relié au Cloudflare Worker)">
+                  <input
+                    dir="ltr"
+                    spellCheck={false}
+                    placeholder={`pay.${form.domain || "votredomaine.com"}`}
+                    value={
+                      isPayGateSharedDomain(form.paygate?.checkoutDomain ?? "")
+                        ? ""
+                        : (form.paygate?.checkoutDomain ?? "")
+                    }
+                    onChange={(e) =>
+                      patch({
+                        paygate: {
+                          ...DEFAULT_PAYGATE_CONFIG,
+                          ...form.paygate,
+                          checkoutDomain: e.target.value.trim(),
+                        },
+                      })
+                    }
+                    className={`${ADMIN_INPUT_CLS} font-mono text-sm bg-white`}
+                  />
+                </Field>
+
+                {isPayGateSharedDomain(form.paygate?.checkoutDomain ?? "") && (
+                  <p className="text-xs font-bold text-amber-700">
+                    Saisissez votre propre sous-domaine (ex. <code className="font-mono">{`pay.${form.domain || "votredomaine.com"}`}</code>). Tant qu’il est vide, le site utilisera automatiquement la passerelle interne <code className="font-mono">/pay/card/…</code> pour protéger vos clients.
+                  </p>
+                )}
+
+                <div className="space-y-2">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <span className="text-xs font-bold text-stone-800">
+                      Script Cloudflare Worker prêt à coller (gratuit · 100 000 req/jour) :
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const code = generatePayGateCloudflareWorker({
+                          customCheckoutDomain:
+                            !isPayGateSharedDomain(form.paygate?.checkoutDomain ?? "") &&
+                            form.paygate?.checkoutDomain
+                              ? form.paygate.checkoutDomain
+                              : `pay.${form.domain || "votredomaine.com"}`,
+                          upstreamApiDomain: form.paygate?.apiDomain,
+                          fallbackUrl: form.url,
+                        });
+                        void navigator.clipboard.writeText(code).then(() => {
+                          setWorkerCopied(true);
+                          setTimeout(() => setWorkerCopied(false), 2500);
+                        });
+                      }}
+                      className="inline-flex items-center gap-1.5 rounded-lg bg-stone-900 px-3 py-1.5 text-xs font-bold text-white hover:bg-stone-700 cursor-pointer"
+                    >
+                      {workerCopied ? (
+                        <>
+                          <Check className="h-3.5 w-3.5 text-emerald-400" />
+                          Code Worker copié !
+                        </>
+                      ) : (
+                        "Copier le code Cloudflare Worker"
+                      )}
+                    </button>
+                  </div>
+                  <ol className="list-decimal pl-5 text-xs text-stone-600 space-y-1 leading-relaxed">
+                    <li>
+                      Dans Cloudflare (gratuit) : <strong>Compute → Workers &amp; Pages → Create application → Hello World → Deploy</strong>.
+                    </li>
+                    <li>
+                      Cliquez sur <strong>Edit code</strong>, remplacez tout par le code copié ci-dessus puis cliquez sur <strong>Deploy</strong>.
+                    </li>
+                    <li>
+                      Dans l’onglet <strong>Settings → Domains &amp; Routes → Add → Custom Domain</strong> du Worker, saisissez votre sous-domaine (ex. <code className="font-mono">{`pay.${form.domain || "votredomaine.com"}`}</code>) : Cloudflare crée le certificat SSL automatiquement.
+                    </li>
+                  </ol>
+                </div>
+              </div>
+            ) : (
+              <div className="rounded-xl border border-emerald-200 bg-emerald-50/60 px-4 py-3 text-xs text-emerald-900 leading-relaxed">
+                <strong>Actif immédiatement sans configuration DNS :</strong> vos clients ouvrent uniquement{" "}
+                <code className="font-mono font-bold">{form.url.replace(/\/+$/, "")}/pay/card/…</code>{" "}
+                sur votre propre certificat HTTPS, choisissent leur processeur agréé (Wert, Guardarian, MoonPay, Ramp, Transak…), et notre serveur les redirige directement vers l’institution financière officielle sans jamais contacter <code className="font-mono">*.paygate.to</code> depuis leur navigateur.
+              </div>
+            )}
+          </div>
         </div>
       )}
 

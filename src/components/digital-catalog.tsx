@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useDeferredValue, useMemo, useState } from "react";
 import Image from "next/image";
 import { LocalizedLink as Link } from "@/components/localized-link";
 import { motion } from "framer-motion";
@@ -48,6 +48,11 @@ import {
   topDemandSlugs,
 } from "@/lib/digital-priority";
 import { productVisual, productVisualFit } from "@/lib/game-covers";
+import {
+  PRICE_RANGES,
+  type PriceRangeId,
+  type SortId,
+} from "@/lib/catalog-filters";
 
 /* ------------------------------- Constantes ------------------------------- */
 
@@ -72,29 +77,11 @@ const FAMILY_ICONS: Record<DigitalKind, typeof KeyRound> = {
   subscription_code: Sparkles,
 };
 
-/** Tranches de prix (en USD, devise de facturation) et leurs libellés. */
-const PRICE_RANGES = [
-  { id: "all", min: 0, max: Infinity, ar: "كل الأسعار", en: "Any price" },
-  { id: "u10", min: 0, max: 10, ar: "أقل من 10 $", en: "Under $10" },
-  { id: "10-30", min: 10, max: 30, ar: "10 – 30 $", en: "$10 – $30" },
-  { id: "30-100", min: 30, max: 100, ar: "30 – 100 $", en: "$30 – $100" },
-  { id: "100+", min: 100, max: Infinity, ar: "أكثر من 100 $", en: "$100 & up" },
-] as const;
-
-type PriceRangeId = (typeof PRICE_RANGES)[number]["id"];
-
 /** Libellé d'une tranche de prix dans la langue active. */
 function priceRangeLabel(id: PriceRangeId, ar: boolean): string {
   const range = PRICE_RANGES.find((item) => item.id === id) ?? PRICE_RANGES[0];
   return ar ? range.ar : range.en;
 }
-/**
- * `popular` = ordre commercial (voir `@/lib/digital-priority`) : les recharges
- * des jeux qui tournent dans la région et les cartes des grandes boutiques
- * d'abord, à zone équivalente les zones payables en USDT avant les autres.
- * C'est l'ordre par défaut — celui du fournisseur n'a aucun sens commercial.
- */
-type SortId = "popular" | "price-asc" | "price-desc" | "name";
 
 /** Prix d'entrée d'une fiche (0 si aucun montant : la fiche passe en dernier). */
 function entryPrice(product: DigitalProduct): number {
@@ -131,17 +118,49 @@ function initialsOf(product: DigitalProduct): string {
  * le fournisseur en publiera, ils apparaîtront dans « Codes logiciels » sans
  * toucher au code de cette page.
  */
-export function DigitalCatalog({ products, kind, onKindChange }: { products: DigitalProduct[]; kind: DigitalKind | "all"; onKindChange: (kind: DigitalKind | "all") => void }) {
+export function DigitalCatalog({
+  products,
+  kind,
+  onKindChange,
+  query,
+  onQueryChange,
+  platform,
+  onPlatformChange,
+  region,
+  onRegionChange,
+  priceRange,
+  onPriceRangeChange,
+  sort,
+  onSortChange,
+  onResetFilters,
+}: {
+  products: DigitalProduct[];
+  kind: DigitalKind | "all";
+  onKindChange: (kind: DigitalKind | "all") => void;
+  query: string;
+  onQueryChange: (q: string) => void;
+  platform: string;
+  onPlatformChange: (platform: string) => void;
+  region: string;
+  onRegionChange: (region: string) => void;
+  priceRange: PriceRangeId;
+  onPriceRangeChange: (price: PriceRangeId) => void;
+  sort: SortId;
+  onSortChange: (sort: SortId) => void;
+  onResetFilters: () => void;
+}) {
   const siteConfig = useSiteConfig();
   const { locale } = useI18n();
   const ar = locale === "ar";
 
-  const [query, setQuery] = useState("");
+  // Filtres contrôlés par la vue (`digital-store-view.tsx`), qui les tient
+  // aussi dans l'adresse : ce composant ne garde que l'état d'interface.
+  const setQuery = onQueryChange;
   const setKind = onKindChange;
-  const [platform, setPlatform] = useState("all");
-  const [region, setRegion] = useState("all");
-  const [priceRange, setPriceRange] = useState<PriceRangeId>("all");
-  const [sort, setSort] = useState<SortId>("popular");
+  const setPlatform = onPlatformChange;
+  const setRegion = onRegionChange;
+  const setPriceRange = onPriceRangeChange;
+  const setSort = onSortChange;
   const [filtersOpen, setFiltersOpen] = useState(false);
   // Nom commercial nettoyé, identique au H1 de la fiche : le catalogue ne
   // doit pas afficher « Game Top-Up — PUBG Mobile (Auto) » quand la page
@@ -221,8 +240,14 @@ export function DigitalCatalog({ products, kind, onKindChange }: { products: Dig
 
   /* ----------------------------- Filtrage ----------------------------- */
 
+  // La recherche est recalculée sur tout le catalogue (jusqu'à 2 000 fiches) :
+  // la valeur différée garde le champ de saisie réactif à chaque frappe, la
+  // grille suit juste après. Le compteur de filtres actifs, lui, suit la
+  // frappe immédiate.
+  const deferredQuery = useDeferredValue(query);
+
   const filtered = useMemo(() => {
-    const needle = query.trim().toLowerCase();
+    const needle = deferredQuery.trim().toLowerCase();
     const range = PRICE_RANGES.find((item) => item.id === priceRange) ?? PRICE_RANGES[0];
 
     const rows = products.filter((product) => {
@@ -266,7 +291,7 @@ export function DigitalCatalog({ products, kind, onKindChange }: { products: Dig
       );
     }
     return rows;
-  }, [products, query, kind, platform, region, priceRange, sort, ar]);
+  }, [products, deferredQuery, kind, platform, region, priceRange, sort, ar]);
 
   const activeFilters =
     (kind !== "all" ? 1 : 0) +
@@ -275,13 +300,9 @@ export function DigitalCatalog({ products, kind, onKindChange }: { products: Dig
     (priceRange !== "all" ? 1 : 0) +
     (query.trim() ? 1 : 0);
 
-  const resetFilters = () => {
-    setQuery("");
-    setKind("all");
-    setPlatform("all");
-    setRegion("all");
-    setPriceRange("all");
-  };
+  // Réinitialisation en une seule écriture d'adresse (voir la vue) : le tri
+  // est volontairement conservé, comme avant.
+  const resetFilters = onResetFilters;
 
   const requestMessage = ar
     ? "مرحبا نخبة 👋 أبحث عن كود أو بطاقة هدايا غير مدرجة في الكتالوج."
@@ -431,7 +452,7 @@ export function DigitalCatalog({ products, kind, onKindChange }: { products: Dig
             href={whatsappLink(siteConfig.whatsapp, requestMessage)}
             target="_blank"
             rel="noopener noreferrer"
-            className="mt-2.5 inline-flex h-8 items-center gap-1.5 rounded-full bg-[var(--accent)] px-3 text-[11.5px] font-black text-[var(--accent-foreground)] transition-colors hover:bg-[var(--accent-hover)]"
+            className="mt-2.5 inline-flex min-h-10 items-center gap-1.5 rounded-full bg-[var(--accent)] px-3.5 text-[11.5px] font-black text-[var(--accent-foreground)] transition-colors hover:bg-[var(--accent-hover)]"
           >
             {ar ? "اطلبها عبر واتساب" : "Request on WhatsApp"}
           </a>
@@ -449,6 +470,11 @@ export function DigitalCatalog({ products, kind, onKindChange }: { products: Dig
             <div className="relative min-w-0 flex-1">
               <Search className="pointer-events-none absolute start-3.5 top-1/2 h-4 w-4 -translate-y-1/2 opacity-40" />
               <input
+                type="search"
+                name="q"
+                autoComplete="off"
+                spellCheck={false}
+                enterKeyHint="search"
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
                 placeholder={
@@ -462,9 +488,9 @@ export function DigitalCatalog({ products, kind, onKindChange }: { products: Dig
                   type="button"
                   onClick={() => setQuery("")}
                   aria-label={ar ? "مسح البحث" : "Clear search"}
-                  className="absolute end-3 top-1/2 grid h-5 w-5 -translate-y-1/2 cursor-pointer place-items-center rounded-full bg-[var(--secondary)] text-[var(--muted-foreground)] hover:text-[var(--foreground)]"
+                  className="absolute end-1.5 top-1/2 grid h-9 w-9 -translate-y-1/2 cursor-pointer place-items-center rounded-full bg-[var(--secondary)] text-[var(--muted-foreground)] hover:text-[var(--foreground)]"
                 >
-                  <X className="h-3 w-3" />
+                  <X className="h-3.5 w-3.5" />
                 </button>
               )}
             </div>
@@ -491,6 +517,7 @@ export function DigitalCatalog({ products, kind, onKindChange }: { products: Dig
               type="button"
               onClick={() => setFiltersOpen((open) => !open)}
               aria-expanded={filtersOpen}
+              aria-controls="catalog-filters"
               className="inline-flex h-11 cursor-pointer items-center gap-2 rounded-full border border-[var(--border)] bg-[var(--card)] px-4 text-[12.5px] font-bold lg:hidden"
             >
               <SlidersHorizontal className="h-4 w-4" />
@@ -537,6 +564,7 @@ export function DigitalCatalog({ products, kind, onKindChange }: { products: Dig
         <div className="lg:grid lg:grid-cols-[250px_minmax(0,1fr)] lg:items-start lg:gap-7">
           {/* Rail vertical : premier dans le DOM → gauche en LTR, droite en RTL */}
           <aside
+            id="catalog-filters"
             className={`${
               filtersOpen ? "block" : "hidden"
             } mb-5 lg:sticky lg:top-[calc(var(--public-header-height,4.25rem)+7.5rem)] lg:mb-0 lg:block`}
@@ -557,8 +585,17 @@ export function DigitalCatalog({ products, kind, onKindChange }: { products: Dig
                   </button>
                 )}
               </div>
-              <div className="max-h-[60vh] overflow-y-auto lg:max-h-[calc(100vh-13rem)]">
+              <div className="max-h-[60dvh] overflow-y-auto overscroll-contain lg:max-h-[calc(100vh-13rem)]">
                 {railSections}
+              </div>
+              <div className="border-t border-[var(--border)]/70 p-3 lg:hidden">
+                <button
+                  type="button"
+                  onClick={() => setFiltersOpen(false)}
+                  className="inline-flex h-11 w-full cursor-pointer items-center justify-center rounded-full bg-[var(--primary)] px-4 text-[12.5px] font-black text-[var(--primary-foreground)]"
+                >
+                  {ar ? `عرض النتائج (${filtered.length})` : `Show results (${filtered.length})`}
+                </button>
               </div>
             </div>
           </aside>
@@ -567,7 +604,8 @@ export function DigitalCatalog({ products, kind, onKindChange }: { products: Dig
           <div className="min-w-0">
             <h2 className="sr-only">{ar ? "المنتجات" : "Products"}</h2>
             <div className="mb-4 flex flex-wrap items-center gap-x-3 gap-y-2">
-              <p className="text-[12.5px] font-bold text-[var(--muted-foreground)]">
+              {/* Annoncé par les lecteurs d'écran à chaque changement de filtre. */}
+              <p role="status" aria-live="polite" className="text-[12.5px] font-bold tabular-nums text-[var(--muted-foreground)]">
                 {ar
                   ? `${filtered.length} منتج من ${products.length}`
                   : `${filtered.length} of ${products.length} products`}
@@ -613,7 +651,7 @@ export function DigitalCatalog({ products, kind, onKindChange }: { products: Dig
                   value={sort}
                   onChange={(event) => setSort(event.target.value as SortId)}
                   aria-label={ar ? "ترتيب" : "Sort"}
-                  className="h-9 cursor-pointer rounded-full border border-[var(--border)] bg-[var(--card)] px-3 text-[12px] font-bold outline-none"
+                  className="h-11 cursor-pointer rounded-full border border-[var(--border)] bg-[var(--card)] px-3.5 text-[12.5px] font-bold outline-none"
                 >
                   <option value="popular">{ar ? "الأكثر طلباً" : "Popular"}</option>
                   <option value="price-asc">{ar ? "الأقل سعراً" : "Price ↑"}</option>
@@ -669,8 +707,12 @@ export function DigitalCatalog({ products, kind, onKindChange }: { products: Dig
                   return (
                     <CardShell key={product.id} index={index}>
                       {/* Jaquette */}
+                      {/* Doublon du lien « Détails » : retiré du parcours clavier
+                          et des lecteurs d'écran (un seul arrêt par carte). */}
                       <Link
                         href={`/codes/${product.slug}`}
+                        tabIndex={-1}
+                        aria-hidden="true"
                         className="relative block aspect-[2/3] overflow-hidden bg-[#0b1220]"
                       >
                         {visual ? (
@@ -695,11 +737,13 @@ export function DigitalCatalog({ products, kind, onKindChange }: { products: Dig
                                   ? `غلاف ${displayName(product)}`
                                   : `${displayName(product)} cover art`
                               }
-                              fill
+                              width={600}
+                              height={900}
                               sizes="(max-width: 359px) 100vw, (max-width: 767px) 50vw, (max-width: 1023px) 33vw, 22vw"
                               quality={88}
-                              priority={index < 4}
-                              className="object-cover transition-transform duration-500 ease-out group-hover:scale-[1.045]"
+                              loading={index < 4 ? "eager" : "lazy"}
+                              fetchPriority={index === 0 ? "high" : "auto"}
+                              className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 ease-out group-hover:scale-[1.045]"
                             />
                           )
                         ) : (
@@ -794,6 +838,7 @@ export function DigitalCatalog({ products, kind, onKindChange }: { products: Dig
                             className="inline-flex min-h-11 w-full shrink-0 items-center justify-center gap-1 rounded-full bg-[var(--primary)] px-4 text-[12px] font-black text-[var(--primary-foreground)] transition-opacity hover:opacity-90 sm:w-auto"
                           >
                             {ar ? "التفاصيل" : "Details"}
+                            <span className="sr-only"> — {displayName(product)}</span>
                           </Link>
                         </div>
                       </div>
@@ -1001,10 +1046,12 @@ function FamilyChip({
 
 /** Filtre actif retirable (ligne de résultats). */
 function ActiveChip({ label, onRemove }: { label: string; onRemove: () => void }) {
+  const { locale } = useI18n();
   return (
     <button
       type="button"
       onClick={onRemove}
+      aria-label={locale === "ar" ? `إزالة الفلتر: ${label}` : `Remove filter: ${label}`}
       className="inline-flex min-h-9 cursor-pointer items-center gap-1 rounded-full border border-[var(--accent)]/40 bg-[var(--accent)]/12 px-2.5 py-0.5 text-[12px] font-bold text-[var(--foreground)] transition-colors hover:bg-[var(--accent)]/20"
     >
       {label}
@@ -1080,19 +1127,22 @@ function AdminCoverImage({
         src={src}
         alt=""
         aria-hidden="true"
-        fill
+        width={600}
+        height={900}
         sizes={sizes}
         quality={75}
-        className="scale-110 object-cover opacity-55 blur-xl"
+        className="absolute inset-0 h-full w-full scale-110 object-cover opacity-55 blur-xl"
       />
       <div aria-hidden="true" className="absolute inset-0 bg-black/25" />
       <Image
         src={src}
         alt={alt}
-        fill
+        width={600}
+        height={900}
         sizes={sizes}
         quality={88}
-        priority={priority}
+        loading={priority ? "eager" : "lazy"}
+        fetchPriority={priority ? "high" : "auto"}
         onLoad={(event) => {
           const img = event.currentTarget;
           if (img.naturalWidth > 0 && img.naturalHeight > 0) {
@@ -1102,8 +1152,8 @@ function AdminCoverImage({
         }}
         className={
           offRatio
-            ? "object-contain p-2.5 transition-transform duration-500 ease-out group-hover:scale-[1.045]"
-            : "object-cover transition-transform duration-500 ease-out group-hover:scale-[1.045]"
+            ? "absolute inset-0 h-full w-full object-contain p-2.5 transition-transform duration-500 ease-out group-hover:scale-[1.045]"
+            : "absolute inset-0 h-full w-full object-cover transition-transform duration-500 ease-out group-hover:scale-[1.045]"
         }
       />
     </>

@@ -55,6 +55,9 @@ export interface AdminDigitalOrderRow {
   recipientEmail: string;
   recipientName: string | null;
   recipientPhone: string | null;
+  /** Identité Telegram quand la commande vient du bot (suivi & livraison). */
+  telegramChatId: string | null;
+  telegramUsername: string | null;
   status: DigitalOrderStatus;
   paymentMethod: "nowpayments" | "phone_card";
   phoneCardStatus: "pending" | "approved" | "rejected" | null;
@@ -461,6 +464,9 @@ export function DigitalOrdersTable({ rows }: { rows: AdminDigitalOrderRow[] }) {
                       <dd className="min-w-0 break-words">
                         {row.recipientName || "—"} · {row.recipientEmail}
                         {row.recipientPhone ? ` · ${row.recipientPhone}` : ""}
+                        {row.telegramChatId
+                          ? ` · Telegram @${row.telegramUsername || "id" + row.telegramChatId}`
+                          : ""}
                       </dd>
                     </div>
                     <div className="flex gap-2">
