@@ -175,7 +175,7 @@ export function SiteItemEditor({
 
   return (
     <div
-      className={`rounded-2xl border transition-all ${
+      className={`rounded-2xl border transition-[border-color,box-shadow] ${
         expanded
           ? "border-[#C6A664] bg-white shadow-sm"
           : "border-stone-200/90 bg-white hover:border-stone-300"

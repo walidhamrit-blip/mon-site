@@ -64,12 +64,16 @@ export async function generateMetadata({
   params: Promise<{ slug: string }>;
 } & LocalePageProps): Promise<Metadata> {
   const { slug } = await params;
-  const { config } = await getSiteDataCached();
+  // Lectures indépendantes en parallèle (point 2) : la configuration et la
+  // fiche produit (catalogue partagé) ne dépendent pas l'une de l'autre.
+  const [{ config }, product] = await Promise.all([
+    getSiteDataCached(),
+    productFromSharedCatalog(slug),
+  ]);
   // Les métadonnées suivent la langue principale du site (/admin → Réglages) :
   // une fiche produit ne doit pas s'annoncer en arabe dans la version
   // anglaise (elle est indexée sur le mot-clé de la plateforme).
   const locale = await pageLocale(config, searchParams);
-  const product = await productFromSharedCatalog(slug);
   if (!product) {
     return pageMetadata(config, {
     locale,
@@ -103,8 +107,11 @@ export default async function DigitalProductPage({
   params: Promise<{ slug: string }>;
 } & LocalePageProps) {
   const { slug } = await params;
-  const { config } = await getSiteDataCached();
-  const product = await productFromSharedCatalog(slug);
+  // Lectures indépendantes en parallèle (point 2) : configuration + fiche.
+  const [{ config }, product] = await Promise.all([
+    getSiteDataCached(),
+    productFromSharedCatalog(slug),
+  ]);
   if (!product) {
     // A05 : panne déclarée (base + fournisseur down) → JAMAIS de 404, qui
     // ferait désindexer une fiche encore existante. On rend une page

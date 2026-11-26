@@ -25,8 +25,9 @@ export async function generateMetadata({
 }: {
   params: Promise<{ slug: string }>;
 } & LocalePageProps): Promise<Metadata> {
-  const { slug } = await params;
-  const { config, content } = await getSiteDataCached();
+  // `params` et la configuration sont indépendants : lectures en parallèle
+  // (point 2).
+  const [{ slug }, { config, content }] = await Promise.all([params, getSiteDataCached()]);
   const locale = await pageLocale(config, searchParams);
   const allDemos = getAllKnownDemos(content);
   const demo = allDemos.find((d) => d.slug === slug);
@@ -56,8 +57,9 @@ export async function generateMetadata({
 }
 
 export default async function DemoPage({ params, searchParams }: { params: Promise<{ slug: string }> } & LocalePageProps) {
-  const { slug } = await params;
-  const { config, content } = await getSiteDataCached();
+  // `params` et la configuration sont indépendants : lectures en parallèle
+  // (point 2).
+  const [{ slug }, { config, content }] = await Promise.all([params, getSiteDataCached()]);
   const locale = await pageLocale(config, searchParams);
   const allDemos = getAllKnownDemos(content);
   const demo = allDemos.find((d) => d.slug === slug);

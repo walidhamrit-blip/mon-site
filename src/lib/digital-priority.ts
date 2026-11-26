@@ -259,8 +259,24 @@ export function demandTextFor(product: Demandable): string {
  * pas question de « meilleures ventes » au sens statistique (les commandes
  * sont encore peu nombreuses) mais d'un ordre commercial assumé, réglable
  * ici en une ligne.
+ *
+ * Le score est cached par `WeakMap` : le tri de la vitrine (jusqu'à 2 000
+ * fiches) le recalcule à chaque comparaison, soit O(n·log n) fois le même
+ * calcul pour une même fiche. Les fiches sont immuables (copie du cache
+ * partagé), d'où un cache par référence sans risque de valeurs stales —
+ * et sans fuite mémoire (`WeakMap`).
  */
+const demandScoreCache = new WeakMap<Demandable, number>();
+
 export function digitalDemandScore(product: Demandable): number {
+  const cached = demandScoreCache.get(product);
+  if (cached !== undefined) return cached;
+  const score = computeDemandScore(product);
+  demandScoreCache.set(product, score);
+  return score;
+}
+
+function computeDemandScore(product: Demandable): number {
   const weight = demandWeightFor(demandTextFor(product));
   const kindBonus = KIND_BONUS[(product.kind ?? "").trim()] ?? 0;
   // Zone du libellé d'abord : elle est précise (« (SA) », « (MENA) »). À

@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { LocalizedLink as Link } from "@/components/localized-link";
-import { AnimatePresence, motion, useInView, useReducedMotion } from "framer-motion";
+import { AnimatePresence, m, useInView, useReducedMotion } from "framer-motion";
 import { ArrowUpRight, ChevronLeft, ChevronRight, Pause, Play } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 
@@ -45,9 +45,9 @@ export function HeroVisual({ variant = "mixed", compact = false }: { variant?: "
     <div ref={ref} className={`hero-visual ${compact ? "is-compact" : ""}`} data-playing={playing} role="region" aria-roledescription={ar ? "عرض شرائح" : "carousel"} aria-label={ar ? "اكتشف خدماتنا ومنتجاتنا" : "Explore our services and products"} onMouseEnter={() => setInteracting(true)} onMouseLeave={() => setInteracting(false)} onFocusCapture={() => setInteracting(true)} onBlurCapture={(event) => { if (!event.currentTarget.contains(event.relatedTarget)) setInteracting(false); }}>
       <div className="hero-visual-stage">
         <AnimatePresence initial={false} mode="sync">
-          <motion.div key={slide.src} className="hero-visual-frame" initial={{ opacity: 0, x: reduced ? 0 : 35 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: reduced ? 0 : -35 }} transition={{ duration: reduced ? 0 : 0.65 }}>
+          <m.div key={slide.src} className="hero-visual-frame" initial={{ opacity: 0, x: reduced ? 0 : 35 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: reduced ? 0 : -35 }} transition={{ duration: reduced ? 0 : 0.65 }}>
             <Image src={slide.src} alt={ar ? slide.altAr : slide.altEn} width={1600} height={900} sizes={compact ? "(max-width: 768px) 92vw, 70vw" : "(max-width: 1024px) 92vw, 52vw"} preload={current === 0} loading={current === 0 ? "eager" : "lazy"} fetchPriority={current === 0 ? "high" : "auto"} className={`hero-visual-image h-full w-full ${slide.type === "web" ? "is-website" : ""}`} />
-          </motion.div>
+          </m.div>
         </AnimatePresence>
         <div className="hero-visual-shade" />
         <span className="hero-visual-label"><span />{ar ? "اكتشف الإمكانيات" : "EXPLORE THE POSSIBILITIES"}</span>

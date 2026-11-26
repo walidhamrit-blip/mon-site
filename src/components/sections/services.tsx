@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
 import { LocalizedLink as Link } from "@/components/localized-link";
-import { motion } from "framer-motion";
+import { m } from "framer-motion";
 import {
   ArrowUpRight,
   Check,
@@ -68,7 +68,7 @@ export function Services() {
             const Icon = ICONS[service.icon] ?? Sparkles;
             const title = ar ? service.titleAr : service.titleEn;
             return (
-              <motion.div
+              <m.div
                 key={service.id}
                 initial={{ opacity: 0, y: 16 }}
                 whileInView={{ opacity: 1, y: 0 }}
@@ -148,7 +148,7 @@ export function Services() {
                     </button>
                   )}
                 </div>
-              </motion.div>
+              </m.div>
             );
           })}
         </div>

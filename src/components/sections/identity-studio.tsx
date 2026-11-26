@@ -228,7 +228,7 @@ export function IdentityStudio() {
               aria-label={ar ? "معاينة التخصيص" : "Customization preview"}
               onMouseEnter={() => setHovered(true)}
               onMouseLeave={() => setHovered(false)}
-              className="mx-auto w-full max-w-[300px] sm:max-w-[310px] border bg-zinc-950 p-1.5 text-white shadow-md transition-all"
+              className="mx-auto w-full max-w-[300px] sm:max-w-[310px] border bg-zinc-950 p-1.5 text-white shadow-md transition-[border-color,box-shadow]"
               style={{
                 borderRadius: radius,
                 fontFamily: font.family,

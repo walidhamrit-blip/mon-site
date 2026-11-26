@@ -101,7 +101,7 @@ export function DemoViewer({ demo, allDemos }: { demo: Demo; allDemos: Demo[] })
           <div className="mt-5 grid lg:grid-cols-[1.2fr_0.8fr] gap-8 items-start">
             <div className="rounded-[24px] overflow-hidden bg-zinc-950 p-3 shadow-2xl">
               <div
-                className={`mx-auto rounded-[16px] overflow-hidden bg-white relative transition-all duration-300 ${
+                className={`mx-auto rounded-[16px] overflow-hidden bg-white relative transition-[width,max-width,aspect-ratio] duration-300 ${
                   mode === "mobile" ? "max-w-[340px] aspect-[9/16]" : "w-full aspect-[16/11]"
                 }`}
               >

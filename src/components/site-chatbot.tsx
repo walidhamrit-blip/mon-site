@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
 import { LocalizedLink as Link } from "@/components/localized-link";
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, m } from "framer-motion";
 import { ArrowRight, RotateCcw, Send, X } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import { useSiteConfig } from "@/components/site-provider";
@@ -317,7 +317,7 @@ function ChatShell() {
     >
       <AnimatePresence>
         {open && (
-          <motion.section
+          <m.section
             initial={{ opacity: 0, y: 12, scale: 0.97 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 12, scale: 0.97 }}
@@ -363,7 +363,7 @@ function ChatShell() {
             {/* Conversation */}
             <div
               ref={listRef}
-              className="min-h-0 flex-1 space-y-2 overflow-y-auto px-3 py-3 sm:max-h-[min(52vh,360px)]"
+              className="min-h-0 flex-1 space-y-2 overflow-y-auto overscroll-contain px-3 py-3 sm:max-h-[min(52vh,360px)]"
               aria-live="polite"
             >
               {messages.map((message, messageIndex) =>
@@ -482,7 +482,7 @@ function ChatShell() {
                 <Send className="h-4 w-4 rtl:rotate-180" />
               </button>
             </form>
-          </motion.section>
+          </m.section>
         )}
       </AnimatePresence>
 
@@ -500,7 +500,7 @@ function ChatShell() {
         {/* Bulle d'accueil */}
         <AnimatePresence>
           {bubble && !open && (
-            <motion.div
+            <m.div
               initial={{ opacity: 0, scale: 0.85 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.9 }}
@@ -516,7 +516,7 @@ function ChatShell() {
               >
                 <X className="h-3 w-3" />
               </button>
-            </motion.div>
+            </m.div>
           )}
         </AnimatePresence>
 

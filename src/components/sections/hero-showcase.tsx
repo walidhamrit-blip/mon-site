@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { motion, useInView, useReducedMotion } from "framer-motion";
+import { m, useInView, useReducedMotion } from "framer-motion";
 import { ArrowLeft, ArrowRight, ExternalLink, Pause, Play } from "lucide-react";
 import { useSiteConfig, useSiteContent } from "@/components/site-provider";
 import { isRealUrl } from "@/components/live-site-frames";
@@ -131,7 +131,7 @@ export function HeroShowcase() {
               </div>
             </div>
             <div className="relative aspect-[16/10] overflow-hidden rounded-[8px] bg-white">
-              <motion.div
+              <m.div
                 key={project.slug}
                 initial={reducedMotion ? false : { opacity: 0, x: 20 }}
                 animate={{ opacity: 1, x: 0 }}
@@ -139,7 +139,7 @@ export function HeroShowcase() {
                 className="absolute inset-0 pointer-events-none"
               >
                 <ProjectPreview demo={project} mode="desktop" priority={currentIndex === 0} label sizes="(max-width: 1024px) 94vw, 920px" />
-              </motion.div>
+              </m.div>
             </div>
           </div>
           <div className="mx-auto h-4 w-[22%] bg-gradient-to-b from-[#757579] to-[#b6b4b0] sm:h-6" />
@@ -151,7 +151,7 @@ export function HeroShowcase() {
           <div className="relative overflow-hidden rounded-[19px] bg-white pt-3 sm:rounded-[27px] sm:pt-4">
             <span className="absolute left-1/2 top-1 z-10 h-1.5 w-[28%] -translate-x-1/2 rounded-full bg-[#19191c] sm:h-2" />
             <div className="relative aspect-[390/693] overflow-hidden">
-              <motion.div
+              <m.div
                 key={project.slug}
                 initial={reducedMotion ? false : { opacity: 0, x: 12 }}
                 animate={{ opacity: 1, x: 0 }}
@@ -159,7 +159,7 @@ export function HeroShowcase() {
                 className="absolute inset-0 pointer-events-none"
               >
                 <ProjectPreview demo={project} mode="mobile" priority={currentIndex === 0} label sizes="(max-width: 640px) 34vw, 270px" />
-              </motion.div>
+              </m.div>
             </div>
             <div className="flex h-3 items-center justify-center bg-white sm:h-4">
               <span className="h-1 w-[30%] rounded-full bg-[#19191c]" />
@@ -215,7 +215,7 @@ export function HeroShowcase() {
             <div className="scroll-x items-center gap-0.5" aria-label={ar ? "اختيار الموقع" : "Choose a website"}>
             {projects.map((demo, i) => (
               <button key={demo.slug} type="button" onClick={() => select(i)} aria-label={ar ? demo.title : demo.titleEn} aria-current={currentIndex === i ? "true" : undefined} className="group grid h-8 w-5 shrink-0 cursor-pointer place-items-center rounded-full">
-                <span className={`h-1.5 rounded-full transition-all ${currentIndex === i ? "w-5 bg-[var(--accent)]" : "w-1.5 bg-[var(--muted-foreground)]/35 group-hover:bg-[var(--accent)]"}`} />
+                <span className={`h-1.5 rounded-full transition-[width,background-color] ${currentIndex === i ? "w-5 bg-[var(--accent)]" : "w-1.5 bg-[var(--muted-foreground)]/35 group-hover:bg-[var(--accent)]"}`} />
               </button>
             ))}
             </div>

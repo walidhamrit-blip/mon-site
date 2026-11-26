@@ -61,15 +61,19 @@ export async function generateMetadata({ searchParams }: LocalePageProps): Promi
 }
 
 export default async function HomePage({ searchParams }: LocalePageProps) {
-  const { config } = await getSiteDataCached();
+  // Lectures indépendantes en parallèle (point 2) : configuration + catalogue
+  // partagé. La langue dépend de la configuration, elle est lue après.
+  const [{ config }, catalogSnapshot] = await Promise.all([
+    getSiteDataCached(),
+    getPublicCatalogCached(),
+  ]);
   const locale = await pageLocale(config, searchParams);
   // Vitrine de la boutique : les six produits les plus demandés, ordonnés
   // côté serveur. Le maillage vers /codes et les fiches est ainsi présent
   // dans le HTML initial de la page d'accueil.
   // Même cache de données partagé que /codes : la page d'accueil ne paie
   // plus une lecture Neon complète à chaque visite (ISR horaire sinon).
-  const { products: catalogProducts, degraded: catalogDegraded } =
-    await getPublicCatalogCached();
+  const { products: catalogProducts, degraded: catalogDegraded } = catalogSnapshot;
   const catalog = sortByDemand(catalogProducts);
   const showcase = catalog.slice(0, 6).map((product) => ({
     slug: product.slug,
