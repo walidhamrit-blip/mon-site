@@ -179,9 +179,10 @@ html[dir="rtl"] .public-shell .site-main :is(h1,h2,h3) { line-height: 1.5; lette
   margin-top: 1rem; background: var(--accent); border-radius: 1px;
 }
 
-/* Royal Gold: a restrained metallic highlight, without tinting the canvas.
+/* Royal Gold (store universe only — the studio keeps its fixed sober identity):
+   a restrained metallic highlight, without tinting the canvas.
    Static lighting avoids distracting motion and respects reduced-motion users. */
-html.dark[data-theme="royal-gold"] .public-shell :is(
+html.dark[data-theme="royal-gold"] .public-shell[data-universe="store"] :is(
   .gaming-brand,
   .vivid-button:not(.is-secondary),
   a[class*="bg-[var(--accent)]"],
@@ -194,7 +195,7 @@ html.dark[data-theme="royal-gold"] .public-shell :is(
   color: var(--accent-foreground);
   box-shadow: inset 0 1px 0 #FFF4D1A6, inset 0 -1px 0 #9A701D66, 0 0 18px -8px #F0CE7873;
 }
-html.dark[data-theme="royal-gold"] .public-shell :is(
+html.dark[data-theme="royal-gold"] .public-shell[data-universe="store"] :is(
   .vivid-button:not(.is-secondary),
   a[class*="bg-[var(--accent)]"],
   button[class*="bg-[var(--accent)]"],
@@ -203,6 +204,6 @@ html.dark[data-theme="royal-gold"] .public-shell :is(
 ):is(:hover, :focus-visible):not(:disabled):not([aria-disabled="true"]) {
   box-shadow: inset 0 1px 0 #FFF4D1CC, inset 0 -1px 0 #9A701D66, 0 0 24px -6px #F0CE7880;
 }
-html.dark[data-theme="royal-gold"] .public-shell :is(.gaming-kicker, .section-eyebrow) {
+html.dark[data-theme="royal-gold"] .public-shell[data-universe="store"] :is(.gaming-kicker, .section-eyebrow) {
   text-shadow: 0 0 14px #F0CE7833;
 }

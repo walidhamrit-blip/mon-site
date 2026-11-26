@@ -12,10 +12,25 @@ import { CurrencySwitcher } from "./currency-switcher";
 import { useSiteConfig } from "@/components/site-provider";
 import { marketLabels, resolveMarket } from "@/lib/market";
 import { primaryNavigation } from "@/lib/site-hierarchy";
+import {
+  universeBrands,
+  universeNavigation,
+  universePrimaryAction,
+  universeSwitcher,
+  universeUsesVisitorPalette,
+} from "@/lib/universes";
+import { useUniverse } from "@/components/universe-shell";
 import { WhatsAppEnquiry } from "@/components/whatsapp-enquiry";
 
 /**
- * Quatre destinations principales, identiques sur ordinateur et mobile.
+ * En-tête adapté à l'univers courant (src/lib/universes.ts) :
+ *
+ * - accueil / pages communes : quatre destinations principales ;
+ * - boutique : catégories du catalogue + « Suivre ma commande » ;
+ * - studio web : offres, exemples, tarifs + « Demander un devis ».
+ *
+ * Une barre de marque discrète (au-dessus, non collante) rappelle que les
+ * deux univers sont des services Nukhba et permet de passer de l'un à l'autre.
  *
  * - un seul lien actif surligné (`usePathname`) ;
  * - menu mobile en panneau plein écran, défilement de la page verrouillé ;
@@ -24,6 +39,7 @@ import { WhatsAppEnquiry } from "@/components/whatsapp-enquiry";
  */
 export function Navbar() {
   const pathname = usePathname();
+  const universe = useUniverse();
   const siteConfig = useSiteConfig();
   const { locale } = useI18n();
   const { mode, toggle } = useTheme();
@@ -115,36 +131,70 @@ export function Navbar() {
     if (open) setOpen(false);
   }
 
-  const links = primaryNavigation.map((link) => ({ href: link.href, label: ar ? link.ar : link.en }));
+  const hubLinks = primaryNavigation.map((link) => ({ href: link.href, label: ar ? link.ar : link.en }));
+  const links =
+    universe === "hub"
+      ? hubLinks
+      : universeNavigation[universe].map((link) => ({ href: link.href, label: ar ? link.ar : link.en }));
+  const brand = universeBrands[universe];
+  const tagline = (ar ? brand.taglineAr : brand.taglineEn).replace("{city}", marketText.city);
+  // Le sélecteur de palette ne concerne que la boutique : le studio et
+  // l'accueil gardent une identité sobre et fixe (le mode clair/sombre reste).
+  const showPalette = universeUsesVisitorPalette(universe);
 
-  const isActive = (href: string) =>
-    href === "/" ? pathname === "/" : pathname === href || pathname.startsWith(`${href}/`);
+  // Un lien est actif sur son chemin exact ; l'accueil d'univers (`/codes`,
+  // `/creation-sites`) l'est aussi sur ses sous-pages non listées au menu.
+  const isActive = (href: string) => {
+    if (href === "/") return pathname === "/";
+    if (pathname === href) return true;
+    if (!pathname.startsWith(`${href}/`)) return false;
+    return !links.some((link) => link.href !== href && link.href.startsWith(`${href}/`) && (pathname === link.href || pathname.startsWith(`${link.href}/`)));
+  };
 
-  // Demande de devis : un vrai lien (Ctrl/Cmd+clic, clic du milieu, menu
+  // Action principale : un vrai lien (Ctrl/Cmd+clic, clic du milieu, menu
   // contextuel), localisé par LocalizedLink comme le reste de la navigation.
-  const quoteHref = "/creation-sites#lead-form";
+  // Devis sur l'accueil et le studio, suivi de commande dans la boutique.
+  const primaryAction = universePrimaryAction[universe];
+  const quoteHref = primaryAction.href;
+  const quoteLabel = ar ? primaryAction.ar : primaryAction.en;
 
   return (
     <>
+      <nav
+        aria-label={ar ? "خدمات نخبة" : "Nukhba services"}
+        className="universe-bar border-b border-[var(--border)] bg-[var(--secondary)] text-[12px]"
+      >
+        <div className="site-container flex items-center gap-1 overflow-x-auto px-4 sm:px-6">
+          {universeSwitcher.map((item) => (
+            <Link
+              key={item.universe}
+              href={item.href}
+              aria-current={item.universe === universe ? "true" : undefined}
+              data-universe-link={item.universe}
+              className="universe-bar-link inline-flex min-h-9 shrink-0 items-center whitespace-nowrap px-3 font-semibold text-[var(--muted-foreground)] transition-colors hover:text-[var(--foreground)]"
+            >
+              {ar ? item.ar : item.en}
+            </Link>
+          ))}
+        </div>
+      </nav>
       <header ref={headerRef} className="public-header sticky top-0 z-50 border-b border-[var(--border)] bg-[var(--background)]/95 py-3 backdrop-blur-md">
         <div className="site-container px-4 sm:px-6">
           <div className="flex items-center justify-between gap-3 px-1 py-2 sm:px-4">
-            <Link href="/" className="group flex min-h-11 min-w-0 items-center gap-2.5">
+            <Link href={brand.home} className="group flex min-h-11 min-w-0 items-center gap-2.5">
               <span className="gaming-brand grid h-9 w-9 shrink-0 place-items-center bg-[var(--primary)] text-sm font-black text-[var(--primary-foreground)] transition-transform group-hover:scale-105">
                 {ar ? "ن" : "N"}
               </span>
               <span className="min-w-0 leading-none">
                 <span className="flex items-center gap-1.5 text-[16px] font-black tracking-tight">
-                  <span className="truncate">{siteConfig.name}</span>
-                  <span className="hidden text-[10px] font-normal tracking-[0.2em] text-[var(--muted-foreground)] sm:inline">
-                    {ar ? "نخبة" : "NUKHBA"}
-                  </span>
+                  <span className="truncate">{universe === "hub" ? siteConfig.name : ar ? brand.nameAr : brand.nameEn}</span>
+                  {universe === "hub" ? (
+                    <span className="hidden text-[10px] font-normal tracking-[0.2em] text-[var(--muted-foreground)] sm:inline">
+                      {ar ? "نخبة" : "NUKHBA"}
+                    </span>
+                  ) : null}
                 </span>
-                <span className="mt-1 hidden text-[10.5px] text-[var(--muted-foreground)] sm:block">
-                  {ar
-                    ? `${marketText.city} · خدمات رقمية`
-                    : `${marketText.city} · Digital services`}
-                </span>
+                <span className="mt-1 hidden text-[10.5px] text-[var(--muted-foreground)] sm:block">{tagline}</span>
               </span>
             </Link>
 
@@ -185,9 +235,11 @@ export function Navbar() {
               </button>
               {/* Sélecteur des 6 thèmes classés : visible dès `lg`, sinon dans
                   le menu mobile — il ne doit jamais être inaccessible. */}
-              <div className="hidden lg:block">
-                <ThemeSwitcher />
-              </div>
+              {showPalette ? (
+                <div className="hidden lg:block">
+                  <ThemeSwitcher />
+                </div>
+              ) : null}
               <WhatsAppEnquiry
                 source="navbar-desktop"
                 className="hidden h-11 items-center gap-1.5 rounded-full bg-[var(--secondary)] px-4 text-[12.5px] font-semibold text-[var(--foreground)] transition-colors hover:bg-[var(--muted)] 2xl:inline-flex"
@@ -198,7 +250,7 @@ export function Navbar() {
                 href={quoteHref}
                 className="hidden h-11 items-center gap-1.5 rounded-full bg-[var(--primary)] px-4 text-[12.5px] font-bold text-[var(--primary-foreground)] transition-opacity hover:opacity-90 sm:inline-flex"
               >
-                {ar ? "طلب عرض" : "Get quote"}
+                {quoteLabel}
                 <ArrowUpRight className="h-3.5 w-3.5 rtl:rotate-[-90deg]" aria-hidden="true" />
               </Link>
 
@@ -271,7 +323,7 @@ export function Navbar() {
                     onClick={() => setOpen(false)}
                     className="inline-flex min-h-11 w-full items-center justify-center gap-1.5 rounded-full bg-[var(--primary)] px-4 text-[14px] font-bold text-[var(--primary-foreground)]"
                   >
-                    {ar ? "طلب عرض" : "Get quote"}
+                    {quoteLabel}
                     <ArrowUpRight className="h-4 w-4 rtl:rotate-[-90deg]" aria-hidden="true" />
                   </Link>
                   <WhatsAppEnquiry
@@ -289,7 +341,7 @@ export function Navbar() {
                   </summary>
                   <div className="mt-4 space-y-5">
                     <LocaleSwitcher variant="list" />
-                    <ThemeList />
+                    {showPalette ? <ThemeList /> : null}
                     <CurrencySwitcher variant="list" />
                   </div>
                 </details>

@@ -58,3 +58,10 @@ and existing saved preferences are unchanged.
 Dark Royal Gold controls also use a static metallic highlight and a restrained
 gold halo, strengthened on hover/focus. Secondary controls, other palettes and
 light mode are unaffected; no animated shimmer is used.
+
+## Scope since the two-universe split
+
+The gaming identity now applies to the **store universe** (`/codes…`). The
+studio (`/creation-sites`, `/demos`, `/pricing`…) and brand pages (home,
+contact, legal) use a fixed sober identity defined in `src/app/universes.css`.
+See `docs/architecture-deux-univers.md`.

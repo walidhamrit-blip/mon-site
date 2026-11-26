@@ -7,7 +7,9 @@ import { useI18n } from "@/lib/i18n";
 /**
  * L'offre est expliquée AVANT la bannière visuelle : un GROS titre visible
  * (compris en 5 secondes), le bouton WhatsApp vert en premier, puis les
- * deux chemins clairs (boutique / création de site).
+ * deux chemins clairs (boutique / création de site). Le bouton boutique
+ * adopte la palette gaming (`data-universe-preview`), le bouton studio reste
+ * dans l'identité sobre de la marque.
  */
 export function HomeIntro() {
   const { locale } = useI18n();
@@ -31,6 +33,7 @@ export function HomeIntro() {
         <div className="mt-6 flex flex-col gap-3 sm:flex-row">
           <Link
             href="/codes"
+            data-universe-preview="store"
             className="inline-flex min-h-12 items-center justify-center gap-2 rounded-full bg-[var(--primary)] px-6 text-[14px] font-bold text-[var(--primary-foreground)] transition-opacity hover:opacity-90"
           >
             <Gamepad2 className="h-4 w-4" aria-hidden="true" />

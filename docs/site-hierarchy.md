@@ -43,3 +43,9 @@ sortie de maintenance ; la boutique affiche 775 produits. La validation des
 livraisons et des commandes reste distincte de cette sonde technique (voir
 `admin-revision-2026-11-01.md`). Cette refonte ne modifie pas le paiement ni la
 synchronisation.
+
+## Deux univers (novembre 2026)
+
+Les parcours boutique et studio ont désormais chacun leur en-tête, leur pied
+de page, leur action principale et leur identité visuelle, sans changement
+d'URL. Voir [`architecture-deux-univers.md`](architecture-deux-univers.md).

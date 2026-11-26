@@ -1,0 +1,204 @@
+/* Deux univers, une marque mère (voir src/lib/universes.ts et
+   docs/architecture-deux-univers.md).
+
+   - [data-universe="store"]  : Nukhba Store — identité gaming inchangée,
+     palette choisie par le visiteur (7 palettes, src/lib/themes.ts).
+   - [data-universe="studio"] : Nukhba Studio — identité sobre et FIXE
+     (encre + or), indépendante de la palette gaming du visiteur.
+   - [data-universe="hub"]    : la marque Nukhba (accueil, contact, légal) —
+     même identité sobre que le studio ; les « portes » de l'accueil
+     prévisualisent chaque univers via [data-universe-preview].
+
+   Le fichier est chargé globalement (comme gaming.css) : en navigation
+   client, Next.js ne décharge pas une feuille de style, le cloisonnement se
+   fait donc par sélecteur, jamais par lieu d'import. */
+
+/* 1. Copie de la palette du visiteur, AVANT toute surcharge : `body` hérite
+      des variables de <html data-theme>, la valeur est résolue ici puis
+      héritée telle quelle par les aperçus « boutique ». */
+body {
+  --store-background: var(--background);
+  --store-foreground: var(--foreground);
+  --store-card: var(--card);
+  --store-card-foreground: var(--card-foreground);
+  --store-popover: var(--popover);
+  --store-popover-foreground: var(--popover-foreground);
+  --store-primary: var(--primary);
+  --store-primary-foreground: var(--primary-foreground);
+  --store-secondary: var(--secondary);
+  --store-secondary-foreground: var(--secondary-foreground);
+  --store-muted: var(--muted);
+  --store-muted-foreground: var(--muted-foreground);
+  --store-accent: var(--accent);
+  --store-accent-foreground: var(--accent-foreground);
+  --store-accent-hover: var(--accent-hover);
+  --store-border: var(--border);
+  --store-input: var(--input);
+  --store-ring: var(--ring);
+  --store-chart-1: var(--chart-1);
+}
+
+/* 2. Identité sobre du studio et de la marque (jour). Contrastes vérifiés
+      par scripts/universes.test.mjs (≥ 4.5:1 pour textes et boutons). */
+.public-shell:not([data-universe="store"]),
+.public-shell [data-universe-preview="studio"] {
+  --background: #FFFFFF;
+  --foreground: #16181D;
+  --card: #FFFFFF;
+  --card-foreground: #16181D;
+  --popover: #FFFFFF;
+  --popover-foreground: #16181D;
+  --primary: #1B2B48;
+  --primary-foreground: #FFFFFF;
+  --secondary: #F6F5F1;
+  --secondary-foreground: #1F2430;
+  --muted: #ECEAE3;
+  --muted-foreground: #575A63;
+  --accent: #1B2B48;
+  --accent-foreground: #FFFFFF;
+  --accent-hover: #0F1B31;
+  --border: #E3E0D8;
+  --input: #C9C4B8;
+  --ring: #1B2B48;
+  --chart-1: #8A620C;
+  --brand-gold: #8A620C;
+}
+
+/* 3. Identité sobre (nuit) : or chaud sur noir, sans néon. */
+html.dark .public-shell:not([data-universe="store"]),
+html.dark .public-shell [data-universe-preview="studio"] {
+  --background: #000000;
+  --foreground: #F4F2EC;
+  --card: #111113;
+  --card-foreground: #F4F2EC;
+  --popover: #111113;
+  --popover-foreground: #F4F2EC;
+  --primary: #E9C77B;
+  --primary-foreground: #0C0D10;
+  --secondary: #17171A;
+  --secondary-foreground: #F4F2EC;
+  --muted: #232327;
+  --muted-foreground: #ABA79D;
+  --accent: #E9C77B;
+  --accent-foreground: #0C0D10;
+  --accent-hover: #F6DDA3;
+  --border: #2C2C31;
+  --input: #46464D;
+  --ring: #E9C77B;
+  --chart-1: #E9C77B;
+  --brand-gold: #E9C77B;
+}
+
+/* 4. Aperçu « boutique » (portes de l'accueil, bloc catalogue) : on
+      restaure la palette gaming du visiteur dans ce sous-arbre. */
+.public-shell [data-universe-preview="store"] {
+  --background: var(--store-background);
+  --foreground: var(--store-foreground);
+  --card: var(--store-card);
+  --card-foreground: var(--store-card-foreground);
+  --popover: var(--store-popover);
+  --popover-foreground: var(--store-popover-foreground);
+  --primary: var(--store-primary);
+  --primary-foreground: var(--store-primary-foreground);
+  --secondary: var(--store-secondary);
+  --secondary-foreground: var(--store-secondary-foreground);
+  --muted: var(--store-muted);
+  --muted-foreground: var(--store-muted-foreground);
+  --accent: var(--store-accent);
+  --accent-foreground: var(--store-accent-foreground);
+  --accent-hover: var(--store-accent-hover);
+  --border: var(--store-border);
+  --input: var(--store-input);
+  --ring: var(--store-ring);
+  --chart-1: var(--store-chart-1);
+}
+
+/* 5. Studio et marque : on retire les marqueurs « gaming » (angles
+      asymétriques, barres inclinées, relief 3D, halos néon). */
+.public-shell:not([data-universe="store"]) .gaming-brand {
+  border-radius: .7rem;
+  box-shadow: inset 0 -3px 0 var(--brand-gold);
+}
+.public-shell:not([data-universe="store"]) .site-main h1:not(.sr-only) { font-weight: 800; letter-spacing: -.025em; }
+.public-shell:not([data-universe="store"]) .site-main h2 { font-weight: 800; }
+.public-shell:not([data-universe="store"]) .site-main section h1:not(.sr-only)::after {
+  width: 40px; height: 2px; background: var(--brand-gold);
+}
+.public-shell:not([data-universe="store"]) :is(.gaming-kicker, .section-eyebrow) {
+  color: var(--brand-gold); letter-spacing: .16em; font-weight: 800;
+}
+.public-shell:not([data-universe="store"]) :is(.gaming-kicker, .section-eyebrow)::before {
+  width: 18px; height: 2px; transform: none; background: var(--brand-gold);
+}
+.public-shell:not([data-universe="store"]) .vivid-button { box-shadow: none; }
+.public-shell:not([data-universe="store"]) .vivid-button:hover { transform: translateY(-1px); box-shadow: var(--shadow-sm); }
+.public-shell:not([data-universe="store"]) .vivid-button.is-secondary:hover { box-shadow: none; }
+.public-shell:not([data-universe="store"]) .site-main section:not(.panoramic-hero):has(h1:not(.sr-only)) {
+  background-image: linear-gradient(120deg, transparent 65%, color-mix(in srgb, var(--brand-gold) 6%, transparent));
+}
+.dark .public-shell:not([data-universe="store"]) :is(
+  .gaming-brand,
+  .public-header .gaming-brand,
+  .vivid-button:not(.is-secondary),
+  .card-interactive:hover,
+  .store-preview-card:hover
+) { box-shadow: none; }
+.dark .public-shell:not([data-universe="store"]) .gaming-brand { box-shadow: inset 0 -3px 0 #0C0D1040; }
+
+/* 6. Barre de marque : « un service Nukhba », avec une pastille par univers. */
+.public-shell .universe-bar { scrollbar-width: none; }
+.public-shell .universe-bar::-webkit-scrollbar { display: none; }
+.public-shell .universe-bar-link { position: relative; gap: .45rem; }
+.public-shell .universe-bar-link::before {
+  content: ""; width: 7px; height: 7px; border-radius: 999px; background: var(--muted-foreground);
+}
+.public-shell .universe-bar-link[data-universe-link="store"]::before { background: var(--store-accent); }
+.public-shell .universe-bar-link[data-universe-link="studio"]::before { background: var(--brand-gold, #8A620C); }
+.public-shell .universe-bar-link[aria-current="true"] { color: var(--foreground); }
+.public-shell .universe-bar-link[aria-current="true"]::after {
+  content: ""; position: absolute; bottom: 0; inset-inline: .75rem; height: 2px; background: var(--accent);
+}
+.public-shell .universe-bar-link:focus-visible { outline: 3px solid var(--ring); outline-offset: -3px; }
+
+/* 7. Accueil : deux portes, chacune dans l'identité de son univers. */
+.public-shell .universe-door {
+  display: flex; flex-direction: column; overflow: hidden;
+  border: 1px solid var(--border); border-radius: 1rem;
+  background: var(--card); color: var(--card-foreground);
+  box-shadow: var(--shadow-md);
+  transition: transform .25s, border-color .25s, box-shadow .25s;
+}
+.public-shell .universe-door:hover { transform: translateY(-4px); border-color: var(--accent); box-shadow: var(--shadow-lg); }
+.public-shell .universe-door-art { position: relative; display: grid; height: 210px; overflow: hidden; background: var(--secondary); }
+.public-shell .universe-door-art.is-split { grid-template-columns: 1fr 1fr; gap: 2px; }
+.public-shell .universe-door-badge {
+  position: absolute; inset-block-start: 14px; inset-inline-start: 14px;
+  display: inline-flex; align-items: center; gap: .45rem;
+  padding: .35rem .7rem; border-radius: .5rem;
+  background: var(--accent); color: var(--accent-foreground);
+  font-size: .72rem; font-weight: 800;
+}
+.public-shell .universe-door-body { display: flex; flex: 1; flex-direction: column; padding: 1.4rem 1.5rem 1.5rem; }
+.public-shell .universe-door-body h2 { font-size: clamp(1.25rem, 1.6vw, 1.5rem); line-height: 1.4; }
+.public-shell .universe-door-points { display: flex; flex-wrap: wrap; gap: .5rem; margin-top: 1rem; }
+.public-shell .universe-door-points li {
+  border: 1px solid var(--border); border-radius: .45rem; padding: .3rem .65rem;
+  background: var(--secondary); color: var(--secondary-foreground); font-size: .75rem; font-weight: 700;
+}
+.public-shell .universe-door-action {
+  display: inline-flex; align-items: center; justify-content: center; gap: .5rem;
+  min-height: 48px; margin-top: auto; border-radius: .65rem;
+  background: var(--accent); color: var(--accent-foreground); font-size: .9rem; font-weight: 800;
+}
+.public-shell .universe-door:hover .universe-door-action { background: var(--accent-hover); }
+/* Porte boutique : énergie gaming (angles, halo de nuit). */
+.public-shell [data-universe-preview="store"].universe-door { border-radius: 1rem .3rem 1rem .3rem; }
+.dark .public-shell [data-universe-preview="store"].universe-door:hover { box-shadow: 0 0 32px -16px var(--accent); }
+/* Porte studio : sobriété, liseré or. */
+.public-shell [data-universe-preview="studio"].universe-door { border-top: 3px solid var(--brand-gold); }
+@media (max-width: 767px) {
+  .public-shell .universe-door-art { height: 170px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .public-shell .universe-door, .public-shell .universe-door:hover { transition: none; transform: none; }
+}
