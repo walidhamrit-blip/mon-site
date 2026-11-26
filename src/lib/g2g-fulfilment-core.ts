@@ -70,8 +70,12 @@ export interface G2gFulfilmentInput {
   /** `code_label` : ce que l'acheteur doit recevoir. */
   offerCodeLabel?: string | null;
   supplierCostUsd: number;
-  /** Devise déclarée dans la correspondance (USD exigé). */
+  /** Devise déclarée dans la correspondance (ex. USD, EUR). */
   saleCurrency: string;
+  /** Taux explicite : 1 unité de `saleCurrency` = X USD (obligatoire hors USD, 1 pour USD). */
+  conversionRateUsd?: number;
+  /** Coût forfaitaire de conversion / retrait en USD par livraison (défaut 0). */
+  conversionCostUsd?: number;
   minMarginPercent: number;
   maxCostUsd: number;
   requestedQty: number;
@@ -227,7 +231,10 @@ export function planG2gFulfilment(input: G2gFulfilmentInput): G2gFulfilmentPlan 
 
   const verdict = evaluateG2gMargin({
     unitPrice: price,
-    saleCurrency: input.offerCurrency,
+    saleCurrency: input.saleCurrency,
+    offerCurrency: input.offerCurrency,
+    ...(input.conversionRateUsd !== undefined ? { conversionRateUsd: input.conversionRateUsd } : {}),
+    ...(input.conversionCostUsd !== undefined ? { conversionCostUsd: input.conversionCostUsd } : {}),
     costUsd: cost,
     feePercent: fee,
     minMarginPercent: input.minMarginPercent,
@@ -235,10 +242,19 @@ export function planG2gFulfilment(input: G2gFulfilmentInput): G2gFulfilmentPlan 
     requestedQty: qty,
   });
 
+  const rate = input.conversionRateUsd ?? 1;
+  const unitPriceUsd =
+    Number.isFinite(rate) && rate > 0 && rate !== 1
+      ? Math.round(price * rate * 100) / 100
+      : price;
+
   if (!verdict.ok) {
     const decision = marginReasonToDecision(verdict.reason);
     return {
-      ...refuse(decision, `Garde-fou de marge : ${decision}.`, input),
+      ...refuse(decision, `Garde-fou de marge : ${decision}.`, {
+        ...input,
+        offerUnitPrice: unitPriceUsd,
+      }),
       netRevenueUsd: verdict.netRevenueUsd,
       totalCostUsd: verdict.totalCostUsd,
       netMarginPercent: verdict.netMarginPercent,
@@ -249,7 +265,7 @@ export function planG2gFulfilment(input: G2gFulfilmentInput): G2gFulfilmentPlan 
   return {
     decision: "proceed",
     shouldPurchase: true,
-    unitPrice: price,
+    unitPrice: unitPriceUsd,
     supplierCostUsd: cost,
     requestedQty: qty,
     netRevenueUsd: verdict.netRevenueUsd,

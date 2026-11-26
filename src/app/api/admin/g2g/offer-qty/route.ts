@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { eq } from "drizzle-orm";
 import { db, ensureSchema } from "@/db";
-import { g2gOfferMappings } from "@/db/schema";
+import { g2gOfferMappings, type G2gOfferMapping } from "@/db/schema";
 import { automaticDeliveryVerified, pilotQuantityAllowed } from "@/lib/g2g-pilot";
 import { isAdminAuthenticated } from "@/lib/auth";
 import { g2gConfigured, g2gErrorMessage, g2gGetOffer, g2gPatchOffer } from "@/lib/g2g";
@@ -82,6 +82,7 @@ export async function PATCH(req: Request) {
 
   // Si on active (api_qty > 0), le mapping doit exister et être activé :
   // autrement un client paierait une commande que rien ne livre.
+  let mapping: G2gOfferMapping | undefined;
   if (apiQty > 0) {
     await ensureSchema();
     const rows = await db
@@ -89,7 +90,7 @@ export async function PATCH(req: Request) {
       .from(g2gOfferMappings)
       .where(eq(g2gOfferMappings.offerId, offerId))
       .limit(1);
-    const mapping = rows[0];
+    mapping = rows[0];
     if (!mapping) {
       return noStoreJson(
         {
@@ -112,7 +113,7 @@ export async function PATCH(req: Request) {
     }
   }
 
-  // Lire l'offre chez G2G pour vérifier qu'elle existe et est libellée en USD.
+  // Lire l'offre chez G2G pour vérifier qu'elle existe et que sa devise concorde avec le mapping.
   let offer: { currency?: string; status?: string; unit_price?: number } | null = null;
   if (g2gConfigured()) {
     try {
@@ -141,15 +142,37 @@ export async function PATCH(req: Request) {
       404,
     );
   }
-  if (apiQty > 0 && offer.currency !== "USD") {
-    return noStoreJson(
-      {
-        ok: false,
-        error: "currency_not_usd",
-        message: `Offre ${offerId} libellée en ${offer.currency ?? "?"} : l'automation exige USD (pas de conversion implicite).`,
-      },
-      400,
-    );
+  if (apiQty > 0 && mapping) {
+    const offerCurrency = (offer.currency ?? "").trim().toUpperCase();
+    const saleCurrency = mapping.saleCurrency.trim().toUpperCase();
+    const rate = Number(mapping.conversionRateUsd ?? 1);
+    const convCost = Number(mapping.conversionCostUsd ?? 0);
+    if (offerCurrency !== saleCurrency) {
+      return noStoreJson(
+        {
+          ok: false,
+          error: "currency_mismatch",
+          message: `Offre ${offerId} libellée en ${offer.currency ?? "?"} alors que le mapping attend ${mapping.saleCurrency}.`,
+        },
+        400,
+      );
+    }
+    if (
+      !Number.isFinite(rate) ||
+      rate <= 0 ||
+      (saleCurrency === "USD" && rate !== 1) ||
+      !Number.isFinite(convCost) ||
+      convCost < 0
+    ) {
+      return noStoreJson(
+        {
+          ok: false,
+          error: "invalid_conversion",
+          message: `Paramètres de conversion invalides pour ${offerId}.`,
+        },
+        400,
+      );
+    }
   }
 
   try {

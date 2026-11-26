@@ -4,7 +4,7 @@ import { and, eq, inArray, isNull, sql } from "drizzle-orm";
 import { db, ensureSchema } from "@/db";
 import { g2gDeliveries } from "@/db/schema";
 import { fazercardsBalance, fazercardsGiftCardOrder } from "@/lib/fazercards";
-import { automaticDeliveryVerified } from "@/lib/g2g-pilot";
+import { automaticDeliveryVerified, isRetiredG2gOffer } from "@/lib/g2g-pilot";
 import {
   shouldPurchaseNow,
   type G2gFulfilmentPlan,
@@ -80,6 +80,9 @@ export async function purchaseG2gDelivery(
    */
   if (!automaticDeliveryVerified()) {
     return { outcome: "not_eligible", reason: "delivery_not_verified" };
+  }
+  if (isRetiredG2gOffer(input.offerId)) {
+    return { outcome: "not_eligible", reason: "retired_offer" };
   }
   if (!shouldPurchaseNow(input.plan, input.autoDeliveryEnabled)) {
     return { outcome: "not_eligible", reason: input.plan?.decision ?? "no_plan" };

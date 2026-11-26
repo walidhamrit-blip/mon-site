@@ -33,7 +33,10 @@ const sources = {
       return { returning: async () => match ? [{...row}] : [], then: (resolve) => resolve() };
     } }; } }; } };
   `,
-  "@/lib/g2g-pilot": `export const automaticDeliveryVerified = () => globalThis.__g2gTest.verified;`,
+  "@/lib/g2g-pilot": `
+    export const automaticDeliveryVerified = () => globalThis.__g2gTest.verified;
+    export const isRetiredG2gOffer = (id) => String(id ?? "").trim().toUpperCase() === "G1795076410074VF";
+  `,
   "@/lib/g2g-fulfilment-core": `export const shouldPurchaseNow = (_plan, enabled) => enabled;`,
   "@/lib/fazercards": `
     export async function fazercardsBalance() { return {balance: 100}; }
@@ -53,7 +56,7 @@ const plugin = { name: "fake-g2g-dependencies", setup(b) {
 const outfile = join(dir, "purchase.mjs");
 await build({entryPoints: [join(root, "src/lib/g2g-purchase.ts")], outfile, bundle: true, platform: "node", format: "esm", plugins: [plugin], logLevel: "silent"});
 const { purchaseG2gDelivery } = await import(pathToFileURL(outfile).href);
-const input = {deliveryId: "fake-delivery", orderId: "fake-order", offerId: "G1795076410074VF", requestedQty: 1, categoryId: "google_play_tr", cardId: "25_try", plan: {totalCostUsd: 1}, autoDeliveryEnabled: true};
+const input = {deliveryId: "fake-delivery", orderId: "fake-order", offerId: "G1795521210943KM", requestedQty: 1, categoryId: "google_play_tr", cardId: "25_try", plan: {totalCostUsd: 1}, autoDeliveryEnabled: true};
 function reset({verified = true, timeout = false} = {}) {
   globalThis.__g2gTest = {verified, timeout, calls: [], row: {id: 1, deliveryId: input.deliveryId, orderId: input.orderId, offerId: input.offerId, requestedQty: 1, status: "planned", attempts: 0, supplierIdempotencyKey: null, supplierPurchasePayload: null, supplierPurchaseStartedAt: null}};
 }
@@ -85,9 +88,12 @@ test("timeout simulé : l'intention subsiste, aucun nouvel achat automatique", a
   assert.equal(fake.calls.length, 1);
 });
 
-test("garde de livraison, ligne incohérente, ancienne tentative et base en panne bloquent le POST", async () => {
+test("garde de livraison, offre retirée, ligne incohérente, ancienne tentative et base en panne bloquent le POST", async () => {
   reset({verified: false});
   assert.equal((await purchaseG2gDelivery(input)).reason, "delivery_not_verified");
+  assert.equal(globalThis.__g2gTest.calls.length, 0);
+  reset();
+  assert.equal((await purchaseG2gDelivery({...input, offerId: "G1795076410074VF"})).reason, "retired_offer");
   assert.equal(globalThis.__g2gTest.calls.length, 0);
   reset(); globalThis.__g2gTest.row.requestedQty = 2;
   assert.equal((await purchaseG2gDelivery(input)).outcome, "already_handled");
