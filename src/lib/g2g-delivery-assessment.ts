@@ -1,7 +1,8 @@
 /**
- * Prototype pur, non raccordé à la file ni aux API : les structures de code
- * FazerCards ne sont pas confirmées par un exemple de réponse GET. Les tests
- * emploient exclusivement des données fictives ; aucune vente n'est activée.
+ * Prototype pur, non raccordé à la file ni aux API. Le support FazerCards
+ * indique par écrit les champs order.code et order.codes selon la quantité,
+ * mais aucun exemple JSON complet ou test réel ne les a encore validés.
+ * Les tests sont fictifs ; aucune vente n'est activée.
  */
 type Obj = Record<string, unknown>;
 const object = (value: unknown): Obj | null => value !== null && typeof value === "object" && !Array.isArray(value) ? value as Obj : null;
@@ -11,7 +12,7 @@ export type SupplierAssessment =
   | { kind: "manual_review" }
   | { kind: "ready"; codes: string[] };
 
-/** Vérifie uniquement une hypothèse de forme `order.code` ou `order.codes`. */
+/** Contrôle les champs confirmés par écrit par le support, sans heuristique. */
 export function assessSupplierGiftCard(value: unknown, expectedId: string, qty: number): SupplierAssessment {
   const root = object(value);
   const order = object(root?.order);
@@ -22,7 +23,7 @@ export function assessSupplierGiftCard(value: unknown, expectedId: string, qty: 
   // choisir entre deux champs contradictoires. Aucun code n'est journalisé.
   const hasCode = order.code !== undefined && order.code !== null;
   const hasCodes = order.codes !== undefined && order.codes !== null;
-  if (hasCode === hasCodes) return { kind: "manual_review" };
+  if (hasCode === hasCodes || (qty === 1 && !hasCode) || (qty > 1 && !hasCodes)) return { kind: "manual_review" };
   const raw = hasCode ? [order.code] : order.codes;
   if (!Array.isArray(raw) || raw.length !== qty || raw.some(code => typeof code !== "string" || !code || code !== code.trim() || /[\x00-\x1f\x7f]/.test(code))) return { kind: "manual_review" };
   const codes = raw as string[];

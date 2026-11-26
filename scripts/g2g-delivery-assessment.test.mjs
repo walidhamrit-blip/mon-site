@@ -18,6 +18,7 @@ test("prototype fournisseur : seul completed, id exact et codes fictifs cohéren
     [supplier({status:"completed",code:"FAKE\n"}), "ord-fake", 1],
     [supplier({status:"completed",code:{value:"FAKE"}}), "ord-fake", 1],
     [supplier({status:"completed",codes:[]}), "ord-fake", 1],
+    [supplier({status:"completed",codes:["FAKE"]}), "ord-fake", 1],
     [supplier({status:"completed",code:"FAKE"}), "ord-fake", 2],
     [{ok:false, order:{id:"ord-fake",status:"completed",code:"FAKE"}}, "ord-fake", 1],
   ]) assert.equal(assessSupplierGiftCard(v,id,qty).kind, "manual_review");

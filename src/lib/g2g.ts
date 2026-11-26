@@ -423,6 +423,18 @@ export async function g2gPatchOffer(
   });
 }
 
+/** Lecture seule d'une opération de livraison. Ne confirme rien sans contrôle
+ * des identifiants, du statut et des quantités côté appelant. Non raccordé à la file. */
+export async function g2gGetDeliveryStatus(orderId: string, deliveryId: string): Promise<G2gEnvelope<unknown>> {
+  if (!orderId || !deliveryId || orderId.length > 128 || deliveryId.length > 128 || /[\x00-\x20\x7f]/.test(orderId + deliveryId)) {
+    throw new G2gError("Identifiants de livraison invalides.");
+  }
+  return g2gRequest<unknown>({
+    path: `/v2/orders/${encodeURIComponent(orderId)}/delivery/${encodeURIComponent(deliveryId)}`,
+    timeoutMs: 12000,
+  });
+}
+
 /** Livraison des codes à l'acheteur (phase 2, non câblée pour l'instant). */
 export async function g2gDeliverCodes(input: {
   orderId: string;
