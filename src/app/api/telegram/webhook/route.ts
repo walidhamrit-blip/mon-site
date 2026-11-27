@@ -206,9 +206,15 @@ async function handleMessage(message: TelegramMessage): Promise<void> {
   const language =
     stored?.language ?? shopTarget?.locale ?? detectTelegramLocale(command === "start" ? args : text, "ar");
 
-  // Écriture abonné uniquement si nouveau chat ou langue changée (même
-  // optimisation que handleCallback) : évite un upsert à chaque message.
-  if (!stored || stored.language !== language) {
+  // Écriture abonné uniquement si nouveau chat, langue, pseudo ou prénom
+  // changé (même optimisation que handleCallback, comparaison sur les champs
+  // renvoyés par getTelegramSubscriber) : évite un upsert à chaque message.
+  if (
+    !stored ||
+    stored.language !== language ||
+    stored.username !== (message.from?.username ?? null) ||
+    stored.firstName !== (message.from?.first_name ?? null)
+  ) {
     await saveTelegramSubscriber({
       chatId,
       username: message.from?.username ?? null,
@@ -352,10 +358,17 @@ async function handleCallback(query: TelegramCallbackQuery): Promise<void> {
   // message du clavier au lieu d'empiler des bulles.
   const messageId = query.message?.message_id ?? null;
 
-  // 2) Écriture abonné uniquement si nécessaire : nouveau chat, ou langue
-  //    changée (seul champ lisible sans lecture complémentaire). Évite un
+  // 2) Écriture abonné uniquement si nécessaire : nouveau chat, ou l'un des
+  //    champs utiles a changé (langue / pseudo / prénom). On compare sur le
+  //    retour de getTelegramSubscriber (qui renvoie désormais ces champs)
+  //    afin de ne pas perdre une mise à jour d'information tout en évitant un
   //    upsert PostgreSQL à chaque navigation de bout en bout.
-  if (!stored || stored.language !== language) {
+  if (
+    !stored ||
+    stored.language !== language ||
+    stored.username !== fromUsername ||
+    stored.firstName !== fromFirstName
+  ) {
     await saveTelegramSubscriber({
       chatId,
       username: fromUsername,
