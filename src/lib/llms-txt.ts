@@ -142,8 +142,15 @@ export function buildLlmsTxt({
   lines.push(
     `- **Preferred citation (AR)**: «${config.nameAr} (${config.name}) — وكالة تصميم مواقع في طرابلس، ليبيا: ${cleanUrl(base, "/")}»`,
   );
+  // La liste peut être vidée depuis /admin (suppression service par service,
+  // aucune contrainte de non-vidité dans le schéma) : sans garde,
+  // `Math.min()` de un tableau vide publierait « $Infinity ».
+  const openServicesClause =
+    config.standaloneServices.length > 0
+      ? `open services from $${lowestServicePrice(config.standaloneServices)} USD`
+      : "no open services listed";
   lines.push(
-    `- **Price range**: website model from $${config.pricing.plans[0]?.priceUsd ?? WEBSITE_BASE_PRICE_USD} USD, with initial content personalization included; extra functions quoted separately; open services from $${Math.min(...config.standaloneServices.map((s) => s.priceFromUsd))} USD`,
+    `- **Price range**: website model from $${config.pricing.plans[0]?.priceUsd ?? WEBSITE_BASE_PRICE_USD} USD, with initial content personalization included; extra functions quoted separately; ${openServicesClause}`,
   );
   lines.push(
     `- **Contact**: ${config.phone} · ${config.email} · WhatsApp ${whatsappLink(config.whatsapp)}`,
