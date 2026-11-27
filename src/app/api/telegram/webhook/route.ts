@@ -206,13 +206,17 @@ async function handleMessage(message: TelegramMessage): Promise<void> {
   const language =
     stored?.language ?? shopTarget?.locale ?? detectTelegramLocale(command === "start" ? args : text, "ar");
 
-  await saveTelegramSubscriber({
-    chatId,
-    username: message.from?.username ?? null,
-    firstName: message.from?.first_name ?? null,
-    language,
-    source: command === "start" ? sanitizeStartPayload(args) || null : stored ? undefined : "telegram",
-  });
+  // Écriture abonné uniquement si nouveau chat ou langue changée (même
+  // optimisation que handleCallback) : évite un upsert à chaque message.
+  if (!stored || stored.language !== language) {
+    await saveTelegramSubscriber({
+      chatId,
+      username: message.from?.username ?? null,
+      firstName: message.from?.first_name ?? null,
+      language,
+      source: command === "start" ? sanitizeStartPayload(args) || null : stored ? undefined : "telegram",
+    });
+  }
 
   // Toute commande explicite (`/start`, `/aide`, `/commande`…) sort d'une
   // éventuelle attente d'e-mail pour éviter un état « pending » fantôme.
@@ -331,6 +335,15 @@ async function handleMessage(message: TelegramMessage): Promise<void> {
 async function handleCallback(query: TelegramCallbackQuery): Promise<void> {
   const chatId = String(query.from.id);
   const data = (query.data ?? "").trim();
+  const fromUsername = query.from.username ?? null;
+  const fromFirstName = query.from.first_name ?? null;
+
+  // 1) On acquitte le callback Telegram AVANT tout traitement long (lecture
+  //    du site, base, boutique inline) : le spinner du bouton s'arrête
+  //    immédiatement. answerCallbackQuery est indépendant de la réponse/edit
+  //    qui suit, et la route renvoie 200 quoi qu'il arrive.
+  await telegramAnswerCallback(query.id);
+
   const ctx = await botContext();
   const stored = await getTelegramSubscriber(chatId);
   const language: TelegramLocale = stored?.language ?? "ar";
@@ -339,14 +352,17 @@ async function handleCallback(query: TelegramCallbackQuery): Promise<void> {
   // message du clavier au lieu d'empiler des bulles.
   const messageId = query.message?.message_id ?? null;
 
-  await telegramAnswerCallback(query.id);
-
-  await saveTelegramSubscriber({
-    chatId,
-    username: query.from.username ?? null,
-    firstName: query.from.first_name ?? null,
-    language,
-  });
+  // 2) Écriture abonné uniquement si nécessaire : nouveau chat, ou langue
+  //    changée (seul champ lisible sans lecture complémentaire). Évite un
+  //    upsert PostgreSQL à chaque navigation de bout en bout.
+  if (!stored || stored.language !== language) {
+    await saveTelegramSubscriber({
+      chatId,
+      username: fromUsername,
+      firstName: fromFirstName,
+      language,
+    });
+  }
 
   const actor = {
     chatId,
