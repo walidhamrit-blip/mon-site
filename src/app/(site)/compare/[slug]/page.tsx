@@ -17,6 +17,8 @@ import {
 import { JsonLd } from "@/components/json-ld";
 import { ComparisonView } from "@/components/comparison-view";
 import { findService } from "@/lib/services";
+import { lowestServicePrice } from "@/lib/service-pricing";
+import { WEBSITE_BASE_PRICE_USD } from "@/lib/website-offer";
 
 /**
  * Page comparative (/compare/[slug]) — l'« annonce » SEO du site.
@@ -87,19 +89,19 @@ export default async function ComparisonPage({
 
   // Prix vivants : le site part du modèle le moins cher, les services à la
   // carte du service le moins cher. Ils sont pilotables depuis /admin.
-  const sitePriceUsd = config.pricing.plans[0]?.priceUsd ?? 300;
-  const servicePriceUsd = config.standaloneServices.reduce(
-    (min, service) => Math.min(min, service.priceFromUsd),
-    Number.POSITIVE_INFINITY,
-  );
-  const lowestServiceUsd = Number.isFinite(servicePriceUsd) ? servicePriceUsd : 15;
+  const sitePriceUsd = config.pricing.plans[0]?.priceUsd ?? WEBSITE_BASE_PRICE_USD;
+  const lowestServiceUsd = lowestServicePrice(config.standaloneServices, 19);
 
-  // Texte prêt à afficher (jetons de marché résolus) pour le composant
-  // client ; les schémas JSON-LD gardent la donnée brute et la résolvent
-  // eux-mêmes.
-  const resolved = resolveComparisonTokens(comparison, config.market);
+  // Texte prêt à afficher pour le composant client : jetons de marché
+  // ({city}…) ET prix de services ({price:…}) résolus avec la configuration
+  // vivante de /admin. Le schéma FAQPage publie la même valeur que le HTML.
+  const resolved = resolveComparisonTokens(
+    comparison,
+    config.market,
+    config.standaloneServices,
+  );
   const related = relatedComparisons(comparison.id).map((item) =>
-    resolveComparisonTokens(item, config.market),
+    resolveComparisonTokens(item, config.market, config.standaloneServices),
   );
   const relatedServices = comparison.relatedServices
     .map((id) => findService(config.standaloneServices, id))
@@ -130,7 +132,7 @@ export default async function ComparisonPage({
           }),
           comparisonServiceJsonLd(config, comparison, sitePriceUsd, locale),
           comparisonCriteriaJsonLd(config, comparison, locale),
-          comparisonFaqJsonLd(comparison, locale),
+          comparisonFaqJsonLd(resolved, locale),
         ]}
       />
 

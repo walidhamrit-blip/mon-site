@@ -1,4 +1,9 @@
-import { websiteOfferSummary } from "@/lib/website-offer";
+import {
+  websiteOfferSummary,
+  WEBSITE_BASE_PRICE_USD,
+  WEBSITE_CONTENT_FROM_USD,
+  WEBSITE_LANGUAGE_PRICE_USD,
+} from "@/lib/website-offer";
 import type { BlogArticle } from "./blog";
 
 /**
@@ -72,11 +77,11 @@ export const blogArticles: BlogArticle[] = [
         headingAr: "1. ما هو USDT ولماذا الأسعار بالدولار؟",
         headingEn: "1. What Is USDT, and Why Are Prices in USD?",
         paragraphsAr: [
-          "USDT (تيثر) عملة رقمية «مستقرة» مربوطة بالدولار الأمريكي: قيمتها تبقى 1 دولار تقريباً دائماً، بخلاف بيتكوين المتقلبة. لهذا نعرض كل أسعارنا بالدولار فقط — سعر 35 $ يعني أنك ترسل 35 USDT، بدون أي حسابات تحويل وبدون مفاجآت في يوم الدفع.",
+          `USDT (تيثر) عملة رقمية «مستقرة» مربوطة بالدولار الأمريكي: قيمتها تبقى 1 دولار تقريباً دائماً، بخلاف بيتكوين المتقلبة. لهذا نعرض كل أسعارنا بالدولار فقط — سعر ${WEBSITE_BASE_PRICE_USD} $ يعني أنك ترسل ${WEBSITE_BASE_PRICE_USD} USDT، بدون أي حسابات تحويل وبدون مفاجآت في يوم الدفع.`,
           "تحتاج فقط إلى محفظة أو حساب منصة فيه رصيد USDT (مثل تطبيق محفظة على هاتفك أو حساب منصة تداول). إن لم يكن لديك USDT بعد، اشترِ مبلغاً يغطي الفاتورة زائد نحو 1–2 USDT لرسوم الشبكة. لا تحتاج بطاقة بنكية دولية ولا حساباً بنكياً أجنبياً.",
         ],
         paragraphsEn: [
-          "USDT (Tether) is a «stablecoin» pegged to the US dollar: its value stays at roughly $1 at all times, unlike volatile Bitcoin. That is why all our prices are in USD only — a $35 price means you send 35 USDT, with no conversion maths and no surprises on payment day.",
+          `USDT (Tether) is a «stablecoin» pegged to the US dollar: its value stays at roughly $1 at all times, unlike volatile Bitcoin. That is why all our prices are in USD only — a $${WEBSITE_BASE_PRICE_USD} price means you send ${WEBSITE_BASE_PRICE_USD} USDT, with no conversion maths and no surprises on payment day.`,
           "You only need a wallet or an exchange account holding USDT (a wallet app on your phone, or an exchange account). If you do not hold USDT yet, buy enough to cover the invoice plus about 1–2 USDT for network fees. No international bank card or foreign bank account is required.",
         ],
         bulletsAr: [
@@ -251,8 +256,8 @@ export const blogArticles: BlogArticle[] = [
     titleEn: "How Much Does a Website Cost in 2026? Real Prices in USD",
     h1Ar: "كم تكلفة تصميم موقع إلكتروني في 2026؟",
     h1En: "What Does a Website Really Cost in 2026?",
-    descriptionAr: "موقع ثابت من 35 دولاراً مع تخصيص المحتوى الأولي. لغة إضافية 10 دولارات وإدارة المحتوى من 10 دولارات؛ الحجز والمتجر بعرض سعر.",
-    descriptionEn: "Static websites from $35 with initial personalization. Extra languages $10; content management from $10. Booking and store modules are quoted.",
+    descriptionAr: `موقع ثابت من ${WEBSITE_BASE_PRICE_USD} دولاراً مع تخصيص المحتوى الأولي. لغة إضافية ${WEBSITE_LANGUAGE_PRICE_USD} دولارات وإدارة المحتوى من ${WEBSITE_CONTENT_FROM_USD} دولارات؛ الحجز والمتجر بعرض سعر.`,
+    descriptionEn: `Static websites from $${WEBSITE_BASE_PRICE_USD} with initial personalization. Extra languages $${WEBSITE_LANGUAGE_PRICE_USD}; content management from $${WEBSITE_CONTENT_FROM_USD}. Booking and store modules are quoted.`,
     excerptAr: "عرض أساسي واحد لكل التصاميم، ثم لغات ووظائف إضافية حسب حاجتك.",
     excerptEn: "One base offer for every design, then extra languages and functions as needed.",
     answerAr: websiteOfferSummary("ar"),
@@ -277,19 +282,19 @@ export const blogArticles: BlogArticle[] = [
       "how much does a website cost 2026",
     ],
     keyFacts: [
-      { labelAr: "الموقع الثابت", labelEn: "Static website", valueAr: "35 $", valueEn: "$35" },
+      { labelAr: "الموقع الثابت", labelEn: "Static website", valueAr: `${WEBSITE_BASE_PRICE_USD} $`, valueEn: `$${WEBSITE_BASE_PRICE_USD}` },
       { labelAr: "التخصيص الأولي", labelEn: "Initial personalization", valueAr: "مشمول", valueEn: "Included" },
-      { labelAr: "لغة إضافية", labelEn: "Additional language", valueAr: "10 $ / لغة", valueEn: "$10 / language" },
-      { labelAr: "إدارة المحتوى", labelEn: "Content management", valueAr: "من 10 $ إضافية", valueEn: "From an extra $10" },
+      { labelAr: "لغة إضافية", labelEn: "Additional language", valueAr: `${WEBSITE_LANGUAGE_PRICE_USD} $ / لغة`, valueEn: `$${WEBSITE_LANGUAGE_PRICE_USD} / language` },
+      { labelAr: "إدارة المحتوى", labelEn: "Content management", valueAr: `من ${WEBSITE_CONTENT_FROM_USD} $ إضافية`, valueEn: `From an extra $${WEBSITE_CONTENT_FROM_USD}` },
       { labelAr: "الحجوزات والمتجر", labelEn: "Bookings and store", valueAr: "بعرض سعر", valueEn: "On quote" },
     ],
     sections: [
       { id: "ce-qui-determine-le-prix", headingAr: "ما الذي يحدد السعر؟", headingEn: "What Determines the Price?",
-        paragraphsAr: ["كل التصاميم بنفس السعر الأساسي: 35 دولاراً. التخصيص الأولي للمحتوى الذي تقدمه ضمن صفحات وأقسام النموذج مشمول. إنشاء محتوى أو صفحات جديدة أو تغيير الهيكل خدمات منفصلة.", "السعر يتغير حسب اللغات والوظائف المطلوبة، لا حسب القطاع أو مظهر التصميم."],
-        paragraphsEn: ["Every design has the same $35 base price. Initial personalization with your supplied content within the model’s pages and sections is included. Creating content, new pages or structural changes are separate services.", "Languages and requested functions change the price, not the industry or visual style."] },
+        paragraphsAr: [`كل التصاميم بنفس السعر الأساسي: ${WEBSITE_BASE_PRICE_USD} دولاراً. التخصيص الأولي للمحتوى الذي تقدمه ضمن صفحات وأقسام النموذج مشمول. إنشاء محتوى أو صفحات جديدة أو تغيير الهيكل خدمات منفصلة.`, "السعر يتغير حسب اللغات والوظائف المطلوبة، لا حسب القطاع أو مظهر التصميم."],
+        paragraphsEn: [`Every design has the same $${WEBSITE_BASE_PRICE_USD} base price. Initial personalization with your supplied content within the model’s pages and sections is included. Creating content, new pages or structural changes are separate services.`, "Languages and requested functions change the price, not the industry or visual style."] },
       { id: "trois-niveaux", headingAr: "بدون قاعدة بيانات أو مع وحدات إدارة", headingEn: "Without a Database, or With Management Modules",
-        paragraphsAr: ["الموقع الأساسي ثابت، بلغة واحدة وبدون لوحة إدارة. طلبات واتساب تعالج يدوياً.", "إدارة المحتوى تبدأ من 10 دولارات إضافية، وتشمل قاعدة البيانات ولوحة الإدارة اللازمة ضمن نطاق متفق عليه. وحدات الحجز والمتجر بعرض سعر وتشمل شاشات إدارتها، دون احتساب البنية الأساسية مرتين."],
-        paragraphsEn: ["The base site is static, with one language and no admin panel. WhatsApp requests are handled manually.", "Content management starts at an extra $10, including the required database and admin panel for an agreed scope. Booking and store modules are quoted with their own management screens, without charging for the foundation twice."] },
+        paragraphsAr: ["الموقع الأساسي ثابت، بلغة واحدة وبدون لوحة إدارة. طلبات واتساب تعالج يدوياً.", `إدارة المحتوى تبدأ من ${WEBSITE_CONTENT_FROM_USD} دولارات إضافية، وتشمل قاعدة البيانات ولوحة الإدارة اللازمة ضمن نطاق متفق عليه. وحدات الحجز والمتجر بعرض سعر وتشمل شاشات إدارتها، دون احتساب البنية الأساسية مرتين.`],
+        paragraphsEn: ["The base site is static, with one language and no admin panel. WhatsApp requests are handled manually.", `Content management starts at an extra $${WEBSITE_CONTENT_FROM_USD}, including the required database and admin panel for an agreed scope. Booking and store modules are quoted with their own management screens, without charging for the foundation twice.`] },
       { id: "couts-caches", headingAr: "التكاليف الخارجية", headingEn: "External Costs",
         paragraphsAr: ["النشر على vercel.app وفق أهلية وحدود Vercel، وليس ضمان استضافة مجانية مدى الحياة. الدومين المخصص غير مشمول. أي تكاليف متكررة للاستضافة وقاعدة البيانات والإرسال والدفع تؤكد قبل الموافقة."],
         paragraphsEn: ["Deployment to vercel.app is subject to Vercel eligibility and limits, not a lifetime free-hosting guarantee. Custom domains are excluded. Any recurring hosting, database, messaging or payment costs are confirmed before approval."] },
@@ -298,8 +303,8 @@ export const blogArticles: BlogArticle[] = [
         paragraphsEn: ["Choose a model, prepare your content and add only the functions you need. Direct checkout covers the base offer; options are confirmed in writing before separate billing."] },
     ],
     faqs: [
-      { qAr: "هل كل التصاميم بنفس السعر؟", qEn: "Does every design cost the same?", aAr: "نعم، السعر الأساسي 35 دولاراً لكل التصاميم. اللغات ووظائف الإدارة إضافات منفصلة.", aEn: "Yes. Every design has a $35 base price. Extra languages and management functions are separate additions." },
-      { qAr: "هل قاعدة البيانات مشمولة في العرض الأساسي؟", qEn: "Does the base offer include a database?", aAr: "لا، العرض الأساسي ثابت وبلغة واحدة. إدارة المحتوى تبدأ من 10 دولارات إضافية مع قاعدة البيانات والإدارة اللازمة ضمن النطاق المتفق عليه.", aEn: "No. The base offer is static and includes one language. Content management starts at an extra $10, including the required database and admin tools for an agreed scope." },
+      { qAr: "هل كل التصاميم بنفس السعر؟", qEn: "Does every design cost the same?", aAr: `نعم، السعر الأساسي ${WEBSITE_BASE_PRICE_USD} دولاراً لكل التصاميم. اللغات ووظائف الإدارة إضافات منفصلة.`, aEn: `Yes. Every design has a $${WEBSITE_BASE_PRICE_USD} base price. Extra languages and management functions are separate additions.` },
+      { qAr: "هل قاعدة البيانات مشمولة في العرض الأساسي؟", qEn: "Does the base offer include a database?", aAr: `لا، العرض الأساسي ثابت وبلغة واحدة. إدارة المحتوى تبدأ من ${WEBSITE_CONTENT_FROM_USD} دولارات إضافية مع قاعدة البيانات والإدارة اللازمة ضمن النطاق المتفق عليه.`, aEn: `No. The base offer is static and includes one language. Content management starts at an extra $${WEBSITE_CONTENT_FROM_USD}, including the required database and admin tools for an agreed scope.` },
       { qAr: "هل التعديلات بعد التسليم مشمولة؟", qEn: "Are later changes included?", aAr: "التخصيص المجاني للمحتوى المقدم قبل التسليم الأول فقط. التعديلات اللاحقة خدمات منفصلة؛ تصحيح عيب يخالف النطاق المتفق عليه يختلف عن طلب جديد.", aEn: "Free personalization covers supplied content before initial delivery only. Later changes are separate services; correcting a defect against the agreed scope is different from a new request." },
     ],
     includePricing: true,
@@ -436,11 +441,11 @@ export const blogArticles: BlogArticle[] = [
         headingEn: "5. After-Delivery Support Is the Real Test",
         paragraphsAr: [
           "الموقع ليس منتجاً يُسلَّم مرة واحدة. اسأل: من يرد إن تعطّل النموذج يوم الجمعة؟ كم يوماً من الدعم مشمولة؟ هل هناك تكلفة سنوية للتحديثات؟ الوكالة التي تختفي بعد التسليم تكلّفك أضعاف ما وفّرته.",
-          "في نخبة، التخصيص الأولي للمحتوى المقدم مشمول. الإدارة الذاتية تبدأ من 10 دولارات إضافية ضمن نطاق متفق عليه، والصيانة اللاحقة خدمة منفصلة.",
+          `في نخبة، التخصيص الأولي للمحتوى المقدم مشمول. الإدارة الذاتية تبدأ من ${WEBSITE_CONTENT_FROM_USD} دولارات إضافية ضمن نطاق متفق عليه، والصيانة اللاحقة خدمة منفصلة.`,
         ],
         paragraphsEn: [
           "A website is not a one-off delivery. Ask: who answers if the form breaks on Friday? How many support days are included? Is there an annual update cost? An agency that disappears after delivery costs you several times what you saved.",
-          "At Nukhba initial personalization of supplied content is included. Self-service content management starts at an extra $10 for an agreed scope; later maintenance is separate.",
+          `At Nukhba initial personalization of supplied content is included. Self-service content management starts at an extra $${WEBSITE_CONTENT_FROM_USD} for an agreed scope; later maintenance is separate.`,
         ],
       },
     ],
@@ -478,7 +483,7 @@ export const blogArticles: BlogArticle[] = [
     descriptionAr:
       "دليل عملي لإطلاق متجر إلكتروني: الدفع بالكريبتو وعند الاستلام، الطلب عبر واتساب، التوصيل، التصوير، والتكلفة بعرض سعر للمتجر الكامل — مع أخطاء شائعة يجب تجنبها.",
     descriptionEn:
-      "Launch an online store: WhatsApp orders, shipping, photography and payment options. Start with a $35 static site; database-backed store functions are quoted separately.",
+      `Launch an online store: WhatsApp orders, shipping, photography and payment options. Start with a $${WEBSITE_BASE_PRICE_USD} static site; database-backed store functions are quoted separately.`,
     excerptAr:
       "من اختيار المنتجات إلى أول 100 طلب: البنية التي تعمل فعلاً في السوق الليبي، بأرقام وتكاليف واقعية.",
     excerptEn:
@@ -597,8 +602,8 @@ export const blogArticles: BlogArticle[] = [
       {
         qAr: "كم أحتاج من المال لإطلاق متجر؟",
         qEn: "How much money do I need to launch a store?",
-        aAr: "الموقع الثابت 35 دولاراً؛ المتجر الكامل بقاعدة بيانات ولوحة إدارة بعرض سعر. أضف ميزانية تصوير 100–200 دولار، ومخزوناً أولياً، وميزانية إعلانات تجريبية 100 دولار للشهر الأول.",
-        aEn: "The static site is $35; a full database-backed store with administration is quoted separately. Add a $100–200 photography budget, initial stock, and a $100 test-ads budget for month one.",
+        aAr: `الموقع الثابت ${WEBSITE_BASE_PRICE_USD} دولاراً؛ المتجر الكامل بقاعدة بيانات ولوحة إدارة بعرض سعر. أضف ميزانية تصوير 100–200 دولار، ومخزوناً أولياً، وميزانية إعلانات تجريبية 100 دولار للشهر الأول.`,
+        aEn: `The static site is $${WEBSITE_BASE_PRICE_USD}; a full database-backed store with administration is quoted separately. Add a $100–200 photography budget, initial stock, and a $100 test-ads budget for month one.`,
       },
       {
         qAr: "هل أحتاج شركة شحن أم أوصّل بنفسي؟",
@@ -715,11 +720,11 @@ export const blogArticles: BlogArticle[] = [
         headingAr: "2. المحتوى الذي يُقتبس: إجابة أولاً، ثم تفصيل",
         headingEn: "2. Content That Gets Quoted: Answer First, Detail After",
         paragraphsAr: [
-          "لكل صفحة مهمة، ابدأ بجملة تُجيب على السؤال مباشرة، ثم اشرح. هذا هو نمط «answer-first» الذي يعمل مع Google AI Overviews ومع ChatGPT على السواء. اكتب أرقاماً: «من 35 دولاراً» أفضل من «بأسعار تنافسية».",
+          `لكل صفحة مهمة، ابدأ بجملة تُجيب على السؤال مباشرة، ثم اشرح. هذا هو نمط «answer-first» الذي يعمل مع Google AI Overviews ومع ChatGPT على السواء. اكتب أرقاماً: «من ${WEBSITE_BASE_PRICE_USD} دولاراً» أفضل من «بأسعار تنافسية».`,
           "أنشئ صفحة لكل خدمة ولكل قطاع ولكل سؤال متكرر. الصفحة المتخصصة تُقتبس أسرع من الصفحة العامة، وتستهدف عبارة واحدة بوضوح.",
         ],
         paragraphsEn: [
-          "For every important page, start with a sentence that answers the question directly, then explain. That answer-first pattern works with both Google AI Overviews and ChatGPT. Use numbers: 'from $35' beats 'competitive prices'.",
+          `For every important page, start with a sentence that answers the question directly, then explain. That answer-first pattern works with both Google AI Overviews and ChatGPT. Use numbers: 'from $${WEBSITE_BASE_PRICE_USD}' beats 'competitive prices'.`,
           "Create a page for each service, each sector and each recurring question. A focused page gets cited faster than a general one and targets a single phrase clearly.",
         ],
       },
@@ -813,7 +818,7 @@ export const blogArticles: BlogArticle[] = [
       "clinic marketing Libya",
     ],
     keyFacts: [
-      { labelAr: "تكلفة موقع العيادة", labelEn: "Clinic website cost", valueAr: "35 $ أساسي؛ الحجز بعرض سعر", valueEn: "$35 base; connected booking on quote" },
+      { labelAr: "تكلفة موقع العيادة", labelEn: "Clinic website cost", valueAr: `${WEBSITE_BASE_PRICE_USD} $ أساسي؛ الحجز بعرض سعر`, valueEn: `$${WEBSITE_BASE_PRICE_USD} base; connected booking on quote` },
       { labelAr: "زيادة الحجوزات المتوقعة", labelEn: "Expected booking lift", valueAr: "+20% إلى +40%", valueEn: "+20% to +40%" },
       { labelAr: "الحجز متاح", labelEn: "Booking availability", valueAr: "24/7", valueEn: "24/7" },
       { labelAr: "مدة التسليم", labelEn: "Delivery", valueAr: "حسب النطاق", valueEn: "Confirmed by scope" },

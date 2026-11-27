@@ -1,4 +1,4 @@
-import { websiteOfferSummary, paymentAvailabilityNote, websiteDepositNote, websiteDemoNote } from "@/lib/website-offer";
+import { websiteOfferSummary, paymentAvailabilityNote, websiteDepositNote, websiteDemoNote, WEBSITE_LANGUAGE_PRICE_USD } from "@/lib/website-offer";
 // Moteur de connaissance de l'assistant du site.
 //
 // Objectif : permettre à l'assistant (bulle « Einstein » en bas de page) de
@@ -29,7 +29,7 @@ import { MAX_DIGITAL_ORDER_USD, MAX_GIFT_CARD_PRICE_USD } from "@/lib/digital-sa
 import { SUBSCRIPTION_PLANS, SUBSCRIPTION_GRACE_DAYS } from "@/lib/subscription-plans";
 import { resolveServiceLanding, servicesHubFaqs } from "@/lib/services";
 import { sectorSeo } from "@/lib/sectors";
-import { comparisons, comparisonText } from "@/lib/comparisons";
+import { comparisons, comparisonText, resolveComparisonTokens } from "@/lib/comparisons";
 import { blogArticles } from "@/lib/blog-articles";
 import { CRYPTO_GUIDE_PATH } from "@/lib/blog";
 import { whatsappLink } from "@/lib/utils";
@@ -651,7 +651,9 @@ function sectorDocs(): KnowledgeDoc[] {
 }
 
 function comparisonDocs(config: AssistantConfig): KnowledgeDoc[] {
-  const list = Object.values(comparisons);
+  const list = Object.values(comparisons).map((comparison) =>
+    resolveComparisonTokens(comparison, config.market, config.standaloneServices),
+  );
   const overview: KnowledgeDoc = {
     id: "compare-overview",
     section: "compare",
@@ -756,8 +758,8 @@ function generalDocs(config: AssistantConfig, content: SiteContent): KnowledgeDo
       path: "/creation-sites",
       title: { ar: `من نحن — ${config.nameAr} ${config.name}`, en: `About — ${config.nameAr} ${config.name}` },
       body: {
-        ar: `${config.nameAr} (${config.name}) وكالة مواقع فاخرة مقرها ${market.cityAr}، ${market.countryAr}، وتخدم عملاء من كل العالم عن بُعد. ${content.hero.subtitleAr}\nلماذا نخبة؟\n${content.whyUs.map((w) => `• ${w.titleAr}: ${w.descAr}`).join("\n")}\nالموقع الأساسي بلغة واحدة؛ اللغة الإضافية 10 دولارات بترجمة يقدمها العميل.`,
-        en: `${config.nameAr} (${config.name}) is a premium web agency based in ${market.cityEn}, ${market.countryEn}, serving clients worldwide remotely. ${content.hero.subtitleEn}\nWhy Nukhba?\n${content.whyUs.map((w) => `• ${w.titleEn}: ${w.descEn}`).join("\n")}\nThe base website includes one language. Each additional language costs $10 with client-supplied translation.`,
+        ar: `${config.nameAr} (${config.name}) وكالة مواقع فاخرة مقرها ${market.cityAr}، ${market.countryAr}، وتخدم عملاء من كل العالم عن بُعد. ${content.hero.subtitleAr}\nلماذا نخبة؟\n${content.whyUs.map((w) => `• ${w.titleAr}: ${w.descAr}`).join("\n")}\nالموقع الأساسي بلغة واحدة؛ اللغة الإضافية ${WEBSITE_LANGUAGE_PRICE_USD} دولارات بترجمة يقدمها العميل.`,
+        en: `${config.nameAr} (${config.name}) is a premium web agency based in ${market.cityEn}, ${market.countryEn}, serving clients worldwide remotely. ${content.hero.subtitleEn}\nWhy Nukhba?\n${content.whyUs.map((w) => `• ${w.titleEn}: ${w.descEn}`).join("\n")}\nThe base website includes one language. Each additional language costs $${WEBSITE_LANGUAGE_PRICE_USD} with client-supplied translation.`,
       },
       keywords: kw("about", "who", "qui", "من انتم", "من أنتم", "نخبة", "nukhba", "agency", "agence", "وكالة", "why", "pourquoi", "لماذا", "website creation", "création de site", "إنشاء موقع", "تصميم موقع", "create", "créer", "build", "design", "language", "langue", "bilingual", "arabic", "english", "عربي", "انجليزي", "theme", "dark", "داكن", "ثيم", "responsive", "mobile"),
       weight: 1.1,

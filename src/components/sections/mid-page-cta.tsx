@@ -3,6 +3,7 @@
 import { ArrowUpRight, MessageCircle, Sparkles } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import { WhatsAppEnquiry } from "@/components/whatsapp-enquiry";
+import { WEBSITE_BASE_PRICE_USD } from "@/lib/website-offer";
 
 /**
  * Bandeau d'appel à l'action au milieu de la page d'accueil.
@@ -48,8 +49,8 @@ export function MidPageCta() {
               </span>
               <h2 className="mt-4 text-[clamp(1.6rem,1.1rem+1.8vw,2.4rem)] font-black leading-[1.1] tracking-[-0.025em]">
                 {ar
-                  ? "موقع ثابت من 35 دولاراً — والوظائف الإضافية حسب حاجتك."
-                  : "A static website from $35 — extra functions as needed."}
+                  ? `موقع ثابت من ${WEBSITE_BASE_PRICE_USD} دولاراً — والوظائف الإضافية حسب حاجتك.`
+                  : `A static website from $${WEBSITE_BASE_PRICE_USD} — extra functions as needed.`}
               </h2>
               <p className="mt-3 text-[14px] leading-7 opacity-70">
                 {ar

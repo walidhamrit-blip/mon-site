@@ -4,6 +4,8 @@
 // « vitrine-plus », « 4500+ »…). On les traduit ici en arabe et en anglais
 // pour les e-mails, et on réutilise ces libellés côté administration.
 
+import { WEBSITE_BASE_PRICE_USD } from "@/lib/website-offer";
+
 export type LeadLocale = "ar" | "en";
 
 export type LeadField = "sector" | "need" | "budget" | "deadline";
@@ -21,7 +23,7 @@ const SECTOR: Record<string, Labels> = {
 };
 
 const NEED: Record<string, Labels> = {
-  "static-site": { ar: "موقع ثابت — 35 $", en: "Static website — $35" },
+  "static-site": { ar: `موقع ثابت — ${WEBSITE_BASE_PRICE_USD} $`, en: `Static website — $${WEBSITE_BASE_PRICE_USD}` },
   content: { ar: "موقع + إدارة المحتوى", en: "Website + content management" },
   booking: { ar: "موقع + إدارة الحجوزات", en: "Website + booking management" },
   language: { ar: "لغة إضافية", en: "Additional language" },

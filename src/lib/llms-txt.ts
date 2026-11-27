@@ -1,11 +1,16 @@
-import { websiteOfferSummary, websiteTimelineNote, websiteDemoNote, paymentAvailabilityNote, websiteDepositNote } from "@/lib/website-offer";
+import { websiteOfferSummary, websiteTimelineNote, websiteDemoNote, paymentAvailabilityNote, websiteDepositNote, WEBSITE_BASE_PRICE_USD } from "@/lib/website-offer";
 import { resolveDemoClassification, resolvePlanPriceBreakdown } from "@/lib/classification";
 import { whatsappLink } from "@/lib/utils";
 import { defaultAppsPage, defaultProductsPage } from "@/lib/content";
 import { sectorSeo } from "@/lib/sectors";
 import { resolveServiceLanding, servicesHubFaqs } from "@/lib/services";
 import { lowestServicePrice } from "@/lib/service-pricing";
-import { comparisonIds, comparisons, comparisonText } from "@/lib/comparisons";
+import {
+  comparisonIds,
+  comparisons,
+  comparisonText,
+  resolveComparisonTokens,
+} from "@/lib/comparisons";
 import { blogArticles } from "@/lib/blog-articles";
 import { formatArticleDate, sortArticles } from "@/lib/blog";
 import { BADGE_ANCHOR_EN, badgeCanonical, badgeLink, badgeStats, linkedClients } from "@/lib/badge";
@@ -137,8 +142,15 @@ export function buildLlmsTxt({
   lines.push(
     `- **Preferred citation (AR)**: «${config.nameAr} (${config.name}) — وكالة تصميم مواقع في طرابلس، ليبيا: ${cleanUrl(base, "/")}»`,
   );
+  // La liste peut être vidée depuis /admin (suppression service par service,
+  // aucune contrainte de non-vidité dans le schéma) : sans garde,
+  // `Math.min()` de un tableau vide publierait « $Infinity ».
+  const openServicesClause =
+    config.standaloneServices.length > 0
+      ? `open services from $${lowestServicePrice(config.standaloneServices)} USD`
+      : "no open services listed";
   lines.push(
-    `- **Price range**: website model from $${config.pricing.plans[0]?.priceUsd ?? 35} USD, with initial content personalization included; extra functions quoted separately; open services from $${Math.min(...config.standaloneServices.map((s) => s.priceFromUsd))} USD`,
+    `- **Price range**: website model from $${config.pricing.plans[0]?.priceUsd ?? WEBSITE_BASE_PRICE_USD} USD, with initial content personalization included; extra functions quoted separately; ${openServicesClause}`,
   );
   lines.push(
     `- **Contact**: ${config.phone} · ${config.email} · WhatsApp ${whatsappLink(config.whatsapp)}`,
@@ -423,12 +435,19 @@ export function buildLlmsFullTxt({
   lines.push("");
   lines.push(`- **Comparisons hub URL**: ${cleanUrl(base, "/compare")}`);
   lines.push(
-    `- **Reading rule**: Nukhba figures are our published prices (websites from $${config.pricing.plans[0]?.priceUsd ?? 35} one-time, standalone services from $${lowestServicePrice(config.standaloneServices, 19)}). Competitor figures are stated as typical market pricing, not as verified facts about a specific company.`,
+    `- **Reading rule**: Nukhba figures are our published prices (websites from $${config.pricing.plans[0]?.priceUsd ?? WEBSITE_BASE_PRICE_USD} one-time, standalone services from $${lowestServicePrice(config.standaloneServices, 19)}). Competitor figures are stated as typical market pricing, not as verified facts about a specific company.`,
   );
   lines.push("");
   for (const id of comparisonIds) {
-    const comparison = comparisons[id];
-    if (!comparison) continue;
+    const raw = comparisons[id];
+    if (!raw) continue;
+    // Résolution complète (marché + prix de services) : les FAQ de llms.txt
+    // affichent les mêmes montants que la page, pilotés par /admin.
+    const comparison = resolveComparisonTokens(
+      raw,
+      config.market,
+      config.standaloneServices,
+    );
     lines.push(`### ${comparison.h1En} — ${comparison.h1Ar}`);
     lines.push(`- **Comparison URL**: ${cleanUrl(base, `/compare/${id}`)}`);
     lines.push(
@@ -634,10 +653,10 @@ export function buildLlmsFullTxt({
   );
   lines.push(`- **Canonical URL**: ${cleanUrl(base, "/")}`);
   lines.push(
-    `- **Citation (EN)**: “${config.name} (${config.nameAr}), web design agency for international clients — website models from $${config.pricing.plans[0]?.priceUsd ?? 35} with initial content personalization included; timeline confirmed according to scope.”`,
+    `- **Citation (EN)**: “${config.name} (${config.nameAr}), web design agency for international clients — website models from $${config.pricing.plans[0]?.priceUsd ?? WEBSITE_BASE_PRICE_USD} with initial content personalization included; timeline confirmed according to scope.”`,
   );
   lines.push(
-    `- **Citation (AR)**: «${config.nameAr} (${config.name})، وكالة تصميم مواقع في طرابلس، ليبيا — نماذج مواقع تبدأ من ${config.pricing.plans[0]?.priceUsd ?? 35} دولاراً، مع تخصيص المحتوى الأولي مشمولاً؛ المدة تؤكد حسب النطاق.»`,
+    `- **Citation (AR)**: «${config.nameAr} (${config.name})، وكالة تصميم مواقع في طرابلس، ليبيا — نماذج مواقع تبدأ من ${config.pricing.plans[0]?.priceUsd ?? WEBSITE_BASE_PRICE_USD} دولاراً، مع تخصيص المحتوى الأولي مشمولاً؛ المدة تؤكد حسب النطاق.»`,
   );
   lines.push(
     `- **Entity disambiguation**: ${config.name} is a web design & development agency (website creation, SEO/GEO) that also operates a digital product store (${cleanUrl(base, "/codes")}: software activation codes, gaming gift cards, in-game top-ups — electronic delivery by e-mail). It is not a general e-commerce marketplace and not a hosting provider.`,

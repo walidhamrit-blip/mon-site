@@ -322,6 +322,37 @@ test("buildLlmsTxt et buildLlmsFullTxt synchronisent dynamiquement toutes les r�
   assert.ok(llmsFull.includes("Preferred Citations & Entity Facts"));
 });
 
+test("llms.txt et llms-full.txt restent lisibles si tous les services sont supprimés", () => {
+  // /admin autorise à vider standaloneServices (bouton « Supprimer » sans
+  // garde-fou, schéma sans .min(1)) : le flux court ne doit jamais publier
+  // « $Infinity » (Math.min d'un tableau vide).
+  const content = {
+    demos: defaultDemos.map((d) => ensureDemoSeoFields(d)),
+    faqs: defaultFaqs,
+    testimonials: defaultTestimonials,
+    hero: defaultHero,
+    ribbon: defaultRibbon,
+    whyUs: defaultWhyUs,
+    process: defaultProcess,
+    headings: defaultSectionHeadings,
+  };
+  const emptyConfig = { ...siteConfig, standaloneServices: [] };
+  const llms = buildLlmsTxt({ config: emptyConfig, content });
+  const llmsFull = buildLlmsFullTxt({ config: emptyConfig, content });
+
+  assert.ok(!llms.includes("Infinity"), "llms.txt ne doit jamais publier $Infinity");
+  assert.ok(!llmsFull.includes("Infinity"), "llms-full.txt ne doit jamais publier $Infinity");
+  assert.ok(llms.includes("no open services listed"), "clause honnête quand le catalogue est vide");
+  assert.ok(
+    llms.includes(`from $${siteConfig.pricing.plans[0].priceUsd}`),
+    "le prix du site reste publié",
+  );
+  assert.ok(
+    !llms.includes("open services from $"),
+    "aucun prix de service inventé sans catalogue",
+  );
+});
+
 test("llms.txt et llms-full.txt décrivent la même entité : langue principale réelle et boutique digitale admise (audit A04)", () => {
   const content = {
     demos: defaultDemos.map((d) => ensureDemoSeoFields(d)),

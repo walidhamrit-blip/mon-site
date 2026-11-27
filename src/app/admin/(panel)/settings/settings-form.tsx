@@ -32,6 +32,7 @@ import type {
   StandaloneService,
 } from "@/lib/site-types";
 import { ADMIN_INPUT_CLS, ADMIN_TEXTAREA_CLS } from "../site-item-editor";
+import { WEBSITE_BASE_PRICE_USD, WEBSITE_CONTENT_FROM_USD, WEBSITE_LANGUAGE_PRICE_USD } from "@/lib/website-offer";
 import { PhoneCardPaymentsToggle } from "../phone-card-payments-toggle";
 import { ManualPaymentsSettings } from "./manual-payments-settings";
 import {
@@ -1083,9 +1084,9 @@ export function SettingsForm({ initial, initialTab }: Props) {
           </div>
 
           <div className="rounded-2xl border border-stone-200 bg-white p-5 text-sm leading-7">
-            <h2 className="font-black">Offre unique : 35 $ — tous les modèles</h2>
+            <h2 className="font-black">{`Offre unique : ${WEBSITE_BASE_PRICE_USD} $ — tous les modèles`}</h2>
             <p>Code statique, une langue, personnalisation du contenu fourni à la livraison initiale et mise en ligne vercel.app selon l’éligibilité Vercel. Sans base de données ni administration.</p>
-            <p>Langue supplémentaire : 10 $ (traduction fournie). Gestion du contenu : à partir de 10 $, socle inclus. Réservations, boutique et paiement : sur devis. Aucun supplément automatique de 20 %.</p>
+            <p>{`Langue supplémentaire : ${WEBSITE_LANGUAGE_PRICE_USD} $ (traduction fournie). Gestion du contenu : à partir de ${WEBSITE_CONTENT_FROM_USD} $, socle inclus. Réservations, boutique et paiement : sur devis. Aucun supplément automatique de 20 %.`}</p>
             <p className="text-stone-500">Ces tarifs sont centralisés dans src/lib/website-offer.ts. Les anciennes catégories et prix propres aux modèles ne s’appliquent plus aux nouvelles commandes. Les commandes et abonnements existants conservent leurs montants.</p>
           </div>
         </div>

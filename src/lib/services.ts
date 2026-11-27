@@ -2,6 +2,7 @@ import { paymentAvailabilityNote, WEBSITE_LANGUAGE_PRICE_USD } from "@/lib/websi
 import type { Faq } from "./site-types";
 import { absoluteUrl } from "./seo";
 import { fillPriceTokens } from "./service-pricing";
+import { AUDIT_ITEM_COUNT } from "./audit-checklist";
 import { localizedAbsoluteUrl, type Locale } from "@/lib/locale";
 
 /**
@@ -500,9 +501,9 @@ const serviceLandingDefaults: Record<string, ServiceLandingContent> = {
     titleAr: "تدقيق وإصلاح الموقع: سرعة، أخطاء، SEO وأمان — طرابلس",
     titleEn: "Website Audit, Speed Fix & SEO Cleanup — Tripoli",
     descriptionAr:
-      "تدقيق 40+ نقطة وإصلاح فوري: بطء التحميل، أخطاء الموبايل، مشاكل SEO، روابط مكسورة وأمان — تقرير قبل/بعد واضح من {price}.",
+      `تدقيق ${AUDIT_ITEM_COUNT} نقطة وإصلاح فوري: بطء التحميل، أخطاء الموبايل، مشاكل SEO، روابط مكسورة وأمان — تقرير قبل/بعد واضح من {price}.`,
     descriptionEn:
-      "40+ point audit and immediate fixes: slow loading, mobile bugs, SEO issues, broken links and security — a clear before/after report from {price}.",
+      `${AUDIT_ITEM_COUNT}-point audit and immediate fixes: slow loading, mobile bugs, SEO issues, broken links and security — a clear before/after report from {price}.`,
     h1Ar: "أصلح موقعك: سرعة، أخطاء، SEO وأمان في تقرير واحد",
     h1En: "Fix Your Website: Speed, Bugs, SEO and Security in One Report",
     subtitleAr:
@@ -526,7 +527,7 @@ const serviceLandingDefaults: Record<string, ServiceLandingContent> = {
       "website speed optimisation",
     ],
     deliverablesAr: [
-      "تدقيق 40+ نقطة: سرعة، موبايل، SEO، أمان",
+      `تدقيق ${AUDIT_ITEM_COUNT} نقطة: سرعة، موبايل، SEO، أمان`,
       "إصلاح فوري للأخطاء المرصودة",
       "ضغط الصور وتحسين التحميل",
       "تصحيح العناوين والأوصاف والبيانات المنظمة",
@@ -534,7 +535,7 @@ const serviceLandingDefaults: Record<string, ServiceLandingContent> = {
       "تقرير قبل/بعد بلغة واضحة مع أولويات",
     ],
     deliverablesEn: [
-      "40+ point audit: speed, mobile, SEO, security",
+      `${AUDIT_ITEM_COUNT} point audit: speed, mobile, SEO, security`,
       "Immediate fixes for detected issues",
       "Image compression and loading optimisation",
       "Title, description and structured-data corrections",

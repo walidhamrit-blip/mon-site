@@ -6,6 +6,7 @@ import { getSiteDataCached } from "@/lib/store";
 import { absoluteUrl, breadcrumbJsonLd, pageMetadata, siteLocale } from "@/lib/seo";
 import { JsonLd } from "@/components/json-ld";
 import { ContactClient } from "./contact-client";
+import { WEBSITE_BASE_PRICE_USD } from "@/lib/website-offer";
 
 export async function generateMetadata({ searchParams }: LocalePageProps): Promise<Metadata> {
   const { config } = await getSiteDataCached();
@@ -19,8 +20,8 @@ export async function generateMetadata({ searchParams }: LocalePageProps): Promi
         : "Contact Nukhba ({cityEn}) — Free Quote & WhatsApp",
     description:
       locale === "ar"
-        ? "تواصل مباشرة عبر واتساب أو الهاتف أو البريد في {city}: عرض سعر مجاني لتصميم موقعك أو متجرك بـ35$ ودعم فوري لطلبات البطاقات والأكواد الرقمية."
-        : "Message Nukhba in {cityEn} on WhatsApp, phone or email: get a free quote for your $35 website or online store and fast support for digital code orders.",
+        ? `تواصل مباشرة عبر واتساب أو الهاتف أو البريد في {city}: عرض سعر مجاني لتصميم موقعك أو متجرك بـ${WEBSITE_BASE_PRICE_USD}$ ودعم فوري لطلبات البطاقات والأكواد الرقمية.`
+        : `Message Nukhba in {cityEn} on WhatsApp, phone or email: get a free quote for your $${WEBSITE_BASE_PRICE_USD} website or online store and fast support for digital code orders.`,
     keywords: [
       "تواصل وكالة تصميم مواقع {city}",
       "شركة ويب {country} واتساب",

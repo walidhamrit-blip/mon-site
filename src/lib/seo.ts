@@ -1,4 +1,4 @@
-import { websiteOfferSummary } from "@/lib/website-offer";
+import { websiteOfferSummary, WEBSITE_BASE_PRICE_USD } from "@/lib/website-offer";
 import { resolveAutopilotOverride } from "@/lib/seo-autopilot";
 import type { Metadata } from "next";
 import { resolveDemoClassification, resolvePlanPriceBreakdown } from "@/lib/classification";
@@ -107,7 +107,7 @@ const BUSINESS_ID = "#business";
  * en produit une variante adossée au marché configuré.
  */
 export const DEFAULT_META_DESCRIPTION =
-  "Nukhba builds premium websites, e-commerce stores and booking systems for clients worldwide — static base $35 with optional modules, delivery confirmed by scope, USD pricing payable in USDT.";
+  `Nukhba builds premium websites, e-commerce stores and booking systems for clients worldwide — static base $${WEBSITE_BASE_PRICE_USD} with optional modules, delivery confirmed by scope, USD pricing payable in USDT.`;
 
 /**
  * Description meta par défaut, adossée au marché actif.
@@ -133,8 +133,8 @@ export function defaultMetaDescription(
   // ≤ 155 caractères, phrase complète : une description coupée au milieu
   // d'un mot (« … مع متجر… ») gaspille la seule accroche de la SERP.
   return lang === "ar"
-    ? `وكالة نخبة في ${labels.city}: مواقع ومتاجر بالدولار${reach}، عرض ثابت بـ35$ مع وظائف اختيارية، ومتجر بطاقات هدايا وأكواد ألعاب وبرامج.`
-    : `Nukhba in ${labels.city}: websites and online stores in USD${reach}, $35 static base with optional modules, plus gift cards and game codes.`;
+    ? `وكالة نخبة في ${labels.city}: مواقع ومتاجر بالدولار${reach}، عرض ثابت بـ${WEBSITE_BASE_PRICE_USD}$ مع وظائف اختيارية، ومتجر بطاقات هدايا وأكواد ألعاب وبرامج.`
+    : `Nukhba in ${labels.city}: websites and online stores in USD${reach}, $${WEBSITE_BASE_PRICE_USD} static base with optional modules, plus gift cards and game codes.`;
 }
 
 /**

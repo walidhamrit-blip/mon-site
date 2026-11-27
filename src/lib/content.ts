@@ -9,6 +9,11 @@ import type {
   ProcessStep,
 } from "./site-types";
 import { BUILTIN_SECTION_IDS } from "./site-types";
+import {
+  WEBSITE_BASE_PRICE_USD,
+  WEBSITE_CONTENT_FROM_USD,
+  WEBSITE_LANGUAGE_PRICE_USD,
+} from "./website-offer";
 
 export const demos = [
   {
@@ -434,7 +439,7 @@ export const testimonials = [
 ] as const;
 
 export const faqs = [
-  { qAr: "ماذا يشمل سعر 35 دولاراً؟", qEn: "What is included in the $35 base offer?",
+  { qAr: `ماذا يشمل سعر ${WEBSITE_BASE_PRICE_USD} دولاراً؟`, qEn: `What is included in the $${WEBSITE_BASE_PRICE_USD} base offer?`,
     aAr: "كود النموذج المختار، لغة واحدة، تصميم متجاوب، وتخصيص مجاني للمحتوى الذي تقدمه قبل التسليم الأول ضمن صفحات وأقسام النموذج. لا يشمل قاعدة بيانات أو لوحة إدارة. كل التصاميم بنفس السعر.",
     aEn: "Your chosen model’s source code, one language, responsive layout and free initial personalization with your supplied content within the model’s existing pages and sections. No database or admin panel. Every design has the same price." },
   { qAr: "كم يستغرق إنجاز موقعي؟", qEn: "How long to build my site?",
@@ -444,14 +449,14 @@ export const faqs = [
     aAr: "النشر على عنوان vercel.app مشمول وفق أهلية وحدود خطة Vercel المستخدمة، وليس ضمان استضافة مجانية مدى الحياة. الدومين المخصص غير مشمول. أي تكاليف خارجية أو متكررة توضّح قبل موافقتك.",
     aEn: "Deployment to a vercel.app address is included, subject to Vercel plan eligibility and limits, not a lifetime free-hosting guarantee. A custom domain is not included. Any external or recurring costs are disclosed before approval." },
   { qAr: "هل أستطيع تعديل المحتوى بنفسي؟", qEn: "Can I edit content myself?",
-    aAr: "الموقع الأساسي ثابت ولا يضم إدارة. إدارة المحتوى خيار يبدأ من 10 دولارات إضافية مع قاعدة البيانات ولوحة الإدارة اللازمة، ضمن نطاق محدد في عرض السعر. وحدات الحجز والمتجر تشمل إدارة وظائفها دون احتساب البنية الأساسية مرتين.",
-    aEn: "The base website is static with no admin panel. Content management starts at an extra $10, including the required database and admin panel, with scope defined in your quote. Booking and store modules include their own management tools, without charging for the foundation twice." },
+    aAr: `الموقع الأساسي ثابت ولا يضم إدارة. إدارة المحتوى خيار يبدأ من ${WEBSITE_CONTENT_FROM_USD} دولارات إضافية مع قاعدة البيانات ولوحة الإدارة اللازمة، ضمن نطاق محدد في عرض السعر. وحدات الحجز والمتجر تشمل إدارة وظائفها دون احتساب البنية الأساسية مرتين.`,
+    aEn: `The base website is static with no admin panel. Content management starts at an extra $${WEBSITE_CONTENT_FROM_USD}, including the required database and admin panel, with scope defined in your quote. Booking and store modules include their own management tools, without charging for the foundation twice.` },
   { qAr: "كيف أضيف لغة أو حجوزات أو متجراً؟", qEn: "How do I add languages, bookings or a store?",
-    aAr: "اللغة الإضافية 10 دولارات لكل لغة، والترجمة يقدمها العميل. الحجوزات والمتجر والدفع الإلكتروني بعرض سعر مكتوب. الوظائف الظاهرة في المعاينة غير مفعّلة في العرض الثابت. زر واتساب يعني معالجة الطلبات يدوياً.",
-    aEn: "Each additional language costs $10 with client-supplied translation. Booking, store and online payment modules require a written quote. Functions shown in previews are not activated in the static offer. A WhatsApp button means requests are handled manually." },
+    aAr: `اللغة الإضافية ${WEBSITE_LANGUAGE_PRICE_USD} دولارات لكل لغة، والترجمة يقدمها العميل. الحجوزات والمتجر والدفع الإلكتروني بعرض سعر مكتوب. الوظائف الظاهرة في المعاينة غير مفعّلة في العرض الثابت. زر واتساب يعني معالجة الطلبات يدوياً.`,
+    aEn: `Each additional language costs $${WEBSITE_LANGUAGE_PRICE_USD} with client-supplied translation. Booking, store and online payment modules require a written quote. Functions shown in previews are not activated in the static offer. A WhatsApp button means requests are handled manually.` },
   { qAr: "ماذا عن الدفع؟ تقسيط؟", qEn: "Payment? Installments?",
-    aAr: "الدفع المباشر يخص الموقع الأساسي بسعر 35 دولاراً، دفعة واحدة أو حسب خيارات التقسيط المتاحة. اللغات والوظائف الإضافية تؤكد قبل فوترتها منفصلة. سعر الدولار يساوي نفس المبلغ بـ USDT عند الدفع بالكريبتو.",
-    aEn: "Direct checkout covers the $35 base website, paid in full or using the available installment options. Extra languages and modules are confirmed before separate billing. USD prices are payable at the same amount in USDT at crypto checkout." },
+    aAr: `الدفع المباشر يخص الموقع الأساسي بسعر ${WEBSITE_BASE_PRICE_USD} دولاراً، دفعة واحدة أو حسب خيارات التقسيط المتاحة. اللغات والوظائف الإضافية تؤكد قبل فوترتها منفصلة. سعر الدولار يساوي نفس المبلغ بـ USDT عند الدفع بالكريبتو.`,
+    aEn: `Direct checkout covers the $${WEBSITE_BASE_PRICE_USD} base website, paid in full or using the available installment options. Extra languages and modules are confirmed before separate billing. USD prices are payable at the same amount in USDT at crypto checkout.` },
   { qAr: "ماذا لو لم يعجبني التصميم؟", qEn: "What if I don't like design?",
     aAr: "اختر النموذج من المعرض قبل الطلب. التخصيص المجاني يخص محتواك ضمن هيكل النموذج. تغيير الهيكل أو إضافة صفحات أو تعديلات بعد التسليم يحتاج اتفاقاً منفصلاً.",
     aEn: "Choose your model in the gallery before ordering. Free personalization covers your content within the model’s structure. Structural changes, new pages and post-delivery changes require a separate agreement." },
@@ -476,9 +481,9 @@ export const heroContent: HeroContent = {
   title3Ar: "وليس شهور",
   title3En: "not months",
   subtitleAr:
-    "موقعك الثابت المخصص من 35 دولاراً: الكود، لغة واحدة، ونشر vercel.app وفق أهلية Vercel. أضف وظائف الإدارة حسب حاجتك.",
+    `موقعك الثابت المخصص من ${WEBSITE_BASE_PRICE_USD} دولاراً: الكود، لغة واحدة، ونشر vercel.app وفق أهلية Vercel. أضف وظائف الإدارة حسب حاجتك.`,
   subtitleEn:
-    "Your personalized static website from $35: source code, one language and vercel.app deployment subject to Vercel eligibility. Add management functions as needed.",
+    `Your personalized static website from $${WEBSITE_BASE_PRICE_USD}: source code, one language and vercel.app deployment subject to Vercel eligibility. Add management functions as needed.`,
   ctaPrimaryAr: "اطلب عرض سعر مجاني",
   ctaPrimaryEn: "Get free quote",
   ctaSecondaryAr: "شاهد المعارض الحية",
@@ -488,8 +493,8 @@ export const heroContent: HeroContent = {
   trustedEn: "Real websites published in our portfolio",
   ratingAr: "شهادات عملاء منشورة في الموقع",
   ratingEn: "Client testimonials published on this site",
-  chipsAr: ["✓ كل التصاميم من 35 $", "✓ تخصيص أولي مشمول", "✓ لغة واحدة"],
-  chipsEn: ["✓ Every design from $35", "✓ Initial personalization included", "✓ One language"],
+  chipsAr: [`✓ كل التصاميم من ${WEBSITE_BASE_PRICE_USD} $`, "✓ تخصيص أولي مشمول", "✓ لغة واحدة"],
+  chipsEn: [`✓ Every design from $${WEBSITE_BASE_PRICE_USD}`, "✓ Initial personalization included", "✓ One language"],
 };
 
 /** Bandeau défilant « services / points forts » (modifiable dans l'admin). */
