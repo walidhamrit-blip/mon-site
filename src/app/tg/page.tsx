@@ -33,6 +33,7 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 1,
   viewportFit: "cover",
+  themeColor: "#0b1020",
 };
 
 /** Même règle que `/codes` : jamais figée au build sur le catalogue de repli. */

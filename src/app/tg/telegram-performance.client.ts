@@ -26,9 +26,11 @@ export function startMiniAppDiagnostics(): () => void {
       .map((entry) => {
         const url = new URL(entry.name);
         const image = entry.initiatorType === "img" || /\.(webp|png|jpe?g|avif)$/.test(url.pathname);
+        const original = url.pathname === "/_next/image" ? url.searchParams.get("url") : null;
+        const publicAsset = original && /^\/(game-covers|digital-products|telegram-mini-app)\/[^?#]+$/.test(original) ? original : null;
         return {
           // Strip queries and remote paths: never expose signed URLs or tokens.
-          resource: url.origin === location.origin ? url.pathname : url.hostname,
+          resource: publicAsset ?? (url.origin === location.origin ? url.pathname : url.hostname),
           kind: image ? "image" : entry.initiatorType,
           durationMs: entry.duration, startMs: entry.startTime,
           bytes: entry.transferSize, responseEndMs: entry.responseEnd,

@@ -3,6 +3,8 @@
  * Measures authenticated menu:orders callbacks. Never calls Telegram or a DB.
  */
 const esbuild = require('esbuild');
+const {execFileSync} = require('node:child_process');
+const ref=process.argv[3];
 const fs = require('node:fs/promises');
 const path = require('node:path');
 const assert = require('node:assert/strict');
@@ -42,6 +44,7 @@ await esbuild.build({entryPoints:['src/app/api/telegram/webhook/route.ts'],bundl
   return stub.file?{path:stub.file}:{path:args.path,namespace:'stub'};
  });
  build.onLoad({filter:/.*/,namespace:'stub'},args=>({contents:stubs[args.path].code,loader:'ts'}));
+ if(ref)build.onLoad({filter:/src\/app\/api\/telegram\/webhook\/route\.ts$/},args=>({contents:execFileSync('git',['show',ref+':src/app/api/telegram/webhook/route.ts'],{encoding:'utf8'}),loader:'ts',resolveDir:path.dirname(args.path)}));
 }}]});
 const {POST}=require(path.join(dir,'webhook.cjs'));
 const samples=[];
@@ -55,7 +58,7 @@ for(let i=0;i<21;i++){
 assert.equal((await POST(new Request('http://localhost/api/telegram-webhook',{method:'POST',headers:{'x-telegram-bot-api-secret-token':'wrong'},body:'{}'}))).status,401);
 assert.equal((await POST(new Request('http://localhost/api/telegram-webhook',{method:'POST',headers:{'x-telegram-bot-api-secret-token':'test-secret'},body:'broken'}))).status,400);
 const ordered=samples.slice(1).map(s=>s.ms).sort((a,b)=>a-b);
-const result={label,scope:'Actual route handler, menu:orders; simulated I/O: secret 20ms, callback ACK 120ms, site 100ms, subscriber 80ms, edit 100ms. NO real Telegram/DB latency.',runs:ordered.length,medianMs:ordered[Math.floor(ordered.length/2)],p95Ms:ordered[Math.ceil(ordered.length*.95)-1],samples};
+const result={label,ref:ref||'working-tree',scope:'Actual route handler, menu:orders; simulated I/O: secret 20ms, callback ACK 120ms, site 100ms, subscriber 80ms, edit 100ms. NO real Telegram/DB latency.',runs:ordered.length,medianMs:ordered[Math.floor(ordered.length/2)],p95Ms:ordered[Math.ceil(ordered.length*.95)-1],samples};
 await fs.writeFile(path.join(dir,`${label}.webhook.json`),JSON.stringify(result,null,2));
 console.log(JSON.stringify(result,null,2));
 })().catch(e=>{console.error(e);process.exitCode=1});

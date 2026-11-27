@@ -143,7 +143,7 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
         <head>
           <link rel="preload" href="/fonts/cairo-arabic-var.woff2" as="font" type="font/woff2" crossOrigin="anonymous" />
         </head>
-        <body className="antialiased" style={{ margin: 0, background: "#0b1020", fontFamily: "var(--font-cairo), var(--font-plex-ar), system-ui" }}>
+        <body className="antialiased" style={{ margin: 0, background: "#0b1020", color: "#f3f5fc", fontFamily: "Cairo, system-ui, sans-serif" }}>
           {children}
         </body>
       </html>

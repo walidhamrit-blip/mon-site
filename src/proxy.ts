@@ -86,11 +86,9 @@ export function proxy(request: NextRequest) {
   response.headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
   response.headers.set("Permissions-Policy", buildPermissionPolicy());
   response.headers.set("X-Security-Middleware", "nukhba");
-  // Mini App `/tg` : le HTML est identique pour tous (aucune donnée
-  // personnelle — le prénom Telegram est lu côté client par le SDK) et la
-  // page est ré-ouverte en boucle depuis le bot. Cache CDN court avec
-  // stale-while-revalidate : ré-affichage quasi instantané et une seule
-  // rendue serveur par minute (au lieu d'un SSR complet par ouverture).
+  // Cache hint for the public, non-personalized Mini App document. The
+  // force-dynamic renderer/hosting may override it: this is NOT evidence
+  // of an actual CDN hit. Verify final headers and real navigation timings.
   if (isTelegramMiniAppPath(pathname)) {
     response.headers.set(
       "Cache-Control",
