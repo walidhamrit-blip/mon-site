@@ -457,13 +457,21 @@ export async function saveTelegramSubscriber(input: SubscriberInput): Promise<vo
 
 export async function getTelegramSubscriber(
   chatId: string,
-): Promise<{ language: TelegramLocale; marketingOptIn: boolean; status: string } | null> {
+): Promise<{
+  language: TelegramLocale;
+  marketingOptIn: boolean;
+  status: string;
+  username: string | null;
+  firstName: string | null;
+} | null> {
   try {
     const [row] = await db
       .select({
         language: telegramSubscribers.language,
         marketingOptIn: telegramSubscribers.marketingOptIn,
         status: telegramSubscribers.status,
+        username: telegramSubscribers.username,
+        firstName: telegramSubscribers.firstName,
       })
       .from(telegramSubscribers)
       .where(eq(telegramSubscribers.chatId, chatId))
@@ -473,6 +481,8 @@ export async function getTelegramSubscriber(
       language: isTelegramLocale(row.language) ? row.language : "ar",
       marketingOptIn: row.marketingOptIn,
       status: row.status,
+      username: row.username || null,
+      firstName: row.firstName || null,
     };
   } catch {
     return null;

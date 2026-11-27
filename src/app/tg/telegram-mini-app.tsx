@@ -306,7 +306,7 @@ export function TelegramMiniApp({
   const title = (product: MiniAppProduct) => (ar ? product.titleAr : product.titleEn);
 
   const productsGrid = (
-    <section className={styles.grid}>
+    <section className={`${styles.grid}${shown.length === 1 ? ` ${styles.gridSingle}` : ""}`}>
       {shown.length === 0 && <p className={styles.empty}>{copy.empty}</p>}
       {shown.map((product, index) => (
         <button
@@ -509,37 +509,48 @@ export function TelegramMiniApp({
                     )}
                   </>
                 ) : (
-                  <div className={styles.brands}>
-                    {brandEntries.map((entry) => (
-                      <button
-                        key={entry.name}
-                        type="button"
-                        className={styles.brandCard}
+                <div className={styles.brands}>
+                  {brandEntries.map((entry) => (
+                    <button
+                      key={entry.name}
+                      type="button"
+                      className={styles.brandCard}
+                      onClick={() => pickBrand(entry.name)}
+                    >
+                      <span
+                        className={styles.brandThumb}
                         style={
                           entry.image
                             ? undefined
                             : { background: `linear-gradient(145deg, ${entry.color}, #141a26)` }
                         }
-                        onClick={() => pickBrand(entry.name)}
                       >
                         {entry.image ? (
-                          <Image src={entry.image} alt="" fill sizes="(max-width: 479px) 46vw, 32vw" quality={70} />
+                          <Image
+                            src={entry.image}
+                            alt=""
+                            fill
+                            sizes="56px"
+                            quality={70}
+                            className={styles.brandThumbImg}
+                          />
                         ) : (
                           <span className={styles.brandFallback} aria-hidden="true">
                             {miniAppInitials(entry.name)}
                           </span>
                         )}
-                        <span className={styles.brandLabel}>
-                          <strong>{miniAppBrandLabel(entry.name, locale)}</strong>
-                          {locale === "ar" && <small>{entry.name}</small>}
-                          <small>{copy.count(entry.count)}</small>
-                        </span>
-                        <span className={styles.enter} aria-hidden="true">
-                          {ar ? "‹" : "›"}
-                        </span>
-                      </button>
-                    ))}
-                  </div>
+                      </span>
+                      <span className={styles.brandLabel}>
+                        <strong>{miniAppBrandLabel(entry.name, locale)}</strong>
+                        {locale === "ar" && <small>{entry.name}</small>}
+                      </span>
+                      <span className={styles.brandCount}>{copy.count(entry.count)}</span>
+                      <span className={styles.brandEnter} aria-hidden="true">
+                        {ar ? "‹" : "›"}
+                      </span>
+                    </button>
+                  ))}
+                </div>
                 )}
               </>
             ) : (
