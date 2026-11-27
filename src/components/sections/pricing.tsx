@@ -9,7 +9,7 @@ import { ModelPurchaseButton } from "@/components/model-purchase-button";
 import { ModelPriceBreakdown } from "@/components/model-price-breakdown";
 import { Price } from "@/components/price";
 import { resolvePlanPriceBreakdown } from "@/lib/classification";
-import { websiteOptions } from "@/lib/website-offer";
+import { websiteOptions, WEBSITE_BASE_PRICE_USD } from "@/lib/website-offer";
 import { whatsappLink } from "@/lib/utils";
 
 export function Pricing() {
@@ -23,7 +23,7 @@ export function Pricing() {
     <div className="site-container px-4 sm:px-6 lg:px-8">
       <header className="mx-auto max-w-3xl text-center">
         <p className="section-eyebrow justify-center">{ar ? "عرض واحد، خيارات حسب حاجتك" : "One base offer. Only the options you need."}</p>
-        <h2 className="section-title">{ar ? "موقعك المخصص ابتداءً من " : "Your personalized website from "}<Price usd={plan.priceUsd ?? 35} /></h2>
+        <h2 className="section-title">{ar ? "موقعك المخصص ابتداءً من " : "Your personalized website from "}<Price usd={plan.priceUsd ?? WEBSITE_BASE_PRICE_USD} /></h2>
         <p className="section-lead">{ar ? "كل التصاميم بنفس السعر. ما يغيّر المبلغ هو الوظائف التي تختارها، وليس مظهر الموقع." : "Every design costs the same. Your selected functions change the price — not the appearance of your site."}</p>
       </header>
 

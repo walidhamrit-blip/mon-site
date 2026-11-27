@@ -3,7 +3,9 @@
 import { ArrowRight, Check, ClipboardCheck, FileText, Gauge, ShieldCheck, Smartphone } from "lucide-react";
 import { LocalizedLink as Link } from "@/components/localized-link";
 import { AuditRequestForm } from "@/components/audit-request-form";
+import { useSiteConfig } from "@/components/site-provider";
 import { AUDIT_CATEGORIES, AUDIT_ITEM_COUNT } from "@/lib/audit-checklist";
+import { formatServicePrice, serviceStartingPrice } from "@/lib/service-pricing";
 import { useI18n } from "@/lib/i18n";
 
 /** Mesures réelles — Lighthouse 12 mobile, 3 runs, médiane, 20/11/2026. */
@@ -117,8 +119,16 @@ function Score({ label, before, after }: { label: string; before: number; after:
 
 export function AuditClient() {
   const { locale } = useI18n();
+  const config = useSiteConfig();
   const ar = locale === "ar";
   const t = (arText: string, enText: string) => (ar ? arText : enText);
+  // Prix vivant du service « Fix & Optimize » : la page /audit affiche le
+  // même tarif que /services/fix-optimize, y compris après une modification
+  // dans /admin → Réglages.
+  const price = formatServicePrice(
+    serviceStartingPrice(config.standaloneServices, "fix-optimize", 90),
+    ar ? "ar" : "en",
+  );
 
   return (
     <div className="pt-6">
@@ -130,14 +140,14 @@ export function AuditClient() {
           </p>
           <h1 className="mt-3 max-w-4xl text-3xl font-black leading-tight sm:text-4xl lg:text-5xl">
             {t(
-              "تدقيق موقعك في 46 نقطة — وتقرير واضح قبل/بعد",
-              "Your site audited across 46 points — with a clear before/after report",
+              `تدقيق موقعك في ${AUDIT_ITEM_COUNT} نقطة — وتقرير واضح قبل/بعد`,
+              `Your site audited across ${AUDIT_ITEM_COUNT} points — with a clear before/after report`,
             )}
           </h1>
           <p className="mt-4 max-w-3xl text-base leading-7 opacity-75">
             {t(
-              "من 90 دولاراً. تقرير مفهوم، إصلاحات فورية لما يمكن إصلاحه، وقائمة صريحة بما لم يُصلح ولماذا. خلال 24 إلى 48 ساعة.",
-              "From $90. A plain-language report, immediate fixes where possible, and an explicit list of what was not fixed and why. Within 24–48 hours.",
+              `من ${price}. تقرير مفهوم، إصلاحات فورية لما يمكن إصلاحه، وقائمة صريحة بما لم يُصلح ولماذا. خلال 24 إلى 48 ساعة.`,
+              `From ${price}. A plain-language report, immediate fixes where possible, and an explicit list of what was not fixed and why. Within 24–48 hours.`,
             )}
           </p>
           <div className="mt-6 flex flex-wrap gap-3 print:hidden">
@@ -152,14 +162,14 @@ export function AuditClient() {
               href="#checklist"
               className="inline-flex min-h-12 items-center gap-2 rounded-full border border-[var(--border)] px-6 text-sm font-bold"
             >
-              {t("اطّلع على 46 نقطة", "See the 46 points")}
+              {t(`اطّلع على ${AUDIT_ITEM_COUNT} نقطة`, `See the ${AUDIT_ITEM_COUNT} points`)}
             </a>
           </div>
           <dl className="mt-8 grid grid-cols-2 gap-4 sm:grid-cols-4">
             {[
-              { k: "46", v: t("نقطة فحص", "checkpoints") },
+              { k: String(AUDIT_ITEM_COUNT), v: t("نقطة فحص", "checkpoints") },
               { k: "8", v: t("فئات", "categories") },
-              { k: "90 $", v: t("السعر", "price") },
+              { k: price, v: t("السعر", "price") },
               { k: "24–48 h", v: t("التسليم", "delivery") },
             ].map((item) => (
               <div key={item.v} className="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-4">
@@ -187,7 +197,7 @@ export function AuditClient() {
               },
               {
                 icon: ClipboardCheck,
-                title: t("46 نقطة موثّقة", "46 documented points"),
+                title: t(`${AUDIT_ITEM_COUNT} نقطة موثّقة`, `${AUDIT_ITEM_COUNT} documented points`),
                 body: t(
                   "كل نقطة مصنّفة: ناجحة، فاشلة، أو غير منطبقة. لا نقاط مخفية.",
                   "Every point is classified: pass, fail, or not applicable. No hidden items.",

@@ -11,6 +11,7 @@ import {
   resolveComparisonTokens,
 } from "@/lib/comparisons";
 import { JsonLd } from "@/components/json-ld";
+import { WEBSITE_BASE_PRICE_USD } from "@/lib/website-offer";
 import { ComparisonHubView } from "@/components/comparison-hub-view";
 
 /**
@@ -54,13 +55,15 @@ export async function generateMetadata({ searchParams }: LocalePageProps): Promi
 export default async function CompareHubPage({ searchParams }: LocalePageProps) {
   const { config } = await getSiteDataCached();
   const locale = await pageLocale(config, searchParams);
-  const sitePriceUsd = config.pricing.plans[0]?.priceUsd ?? 300;
+  const sitePriceUsd = config.pricing.plans[0]?.priceUsd ?? WEBSITE_BASE_PRICE_USD;
   // Les jetons de marché ({city}, {cityEn}…) sont résolus ici : le
   // composant client reçoit du texte prêt à afficher.
   const items = comparisonIds
     .map((id) => getComparison(id))
     .filter((item): item is NonNullable<typeof item> => Boolean(item))
-    .map((item) => resolveComparisonTokens(item, config.market));
+    .map((item) =>
+      resolveComparisonTokens(item, config.market, config.standaloneServices),
+    );
 
   const ar = locale === "ar";
   return (

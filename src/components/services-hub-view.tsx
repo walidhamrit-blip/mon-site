@@ -5,7 +5,7 @@ import { ArrowUpRight, Check, Clock, Layers, Sparkles } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import { Price } from "@/components/price";
 import { formatMainPrice } from "@/lib/installments";
-import { formatServicePrice, lowestServicePrice } from "@/lib/service-pricing";
+import { formatServicePrice, lowestServicePrice, serviceStartingPrice } from "@/lib/service-pricing";
 import { renderTemplate } from "@/lib/text-template";
 import { resolveServiceLanding, servicePath, type ServiceLike } from "@/lib/services";
 import { ComparisonStrip } from "@/components/comparison-strip";
@@ -39,10 +39,7 @@ export function ServicesHubView({
   const fromLabel = formatServicePrice(lowestPrice, ar ? "ar" : "en");
 
   const price = (id: string, fallback: number) =>
-    formatMainPrice(
-      services.find((service) => service.id === id)?.priceFromUsd ?? fallback,
-      "$",
-    );
+    formatMainPrice(serviceStartingPrice(services, id, fallback), "$");
 
   const fill = (template: string, values: Record<string, string | number>) =>
     Object.entries(values).reduce(

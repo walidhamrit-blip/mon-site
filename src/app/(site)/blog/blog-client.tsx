@@ -6,6 +6,7 @@ import { ArrowUpRight, Bitcoin } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import { CRYPTO_GUIDE_PATH, CRYPTO_GUIDE_SLUG } from "@/lib/blog";
 import { ArticleCard } from "@/components/article-card";
+import { WEBSITE_BASE_PRICE_USD } from "@/lib/website-offer";
 
 export interface BlogCardLite {
   slug: string;
@@ -89,8 +90,8 @@ export function BlogClient({ articles }: { articles: BlogCardLite[] }) {
               <span className="section-eyebrow">{ar ? "باختصار" : "In short"}</span>
               <p className="mt-2 text-[13.5px] leading-7 text-[var(--foreground)]/80">
                 {ar
-                  ? `تجمع المدونة ${articles.length} أدلة مجانية — في مقدّمتها دليل الدفع بـ USDT خطوة بخطوة وبالصور (1 دولار = 1 USDT)، ثم تكلفة الموقع الثابت من 35 $، اختيار الوكالة، وإطلاق متجر إلكتروني — كلها مبنية على أسعار ومواعيد تسليم حقيقية.`
-                  : `The blog collects ${articles.length} free guides — led by the step-by-step USDT photo payment guide (1 USD = 1 USDT), then static website costs from $35, choosing an agency, and launching an online store — all built on real prices and delivery times.`}
+                  ? `تجمع المدونة ${articles.length} أدلة مجانية — في مقدّمتها دليل الدفع بـ USDT خطوة بخطوة وبالصور (1 دولار = 1 USDT)، ثم تكلفة الموقع الثابت من ${WEBSITE_BASE_PRICE_USD} $، اختيار الوكالة، وإطلاق متجر إلكتروني — كلها مبنية على أسعار ومواعيد تسليم حقيقية.`
+                  : `The blog collects ${articles.length} free guides — led by the step-by-step USDT photo payment guide (1 USD = 1 USDT), then static website costs from $${WEBSITE_BASE_PRICE_USD}, choosing an agency, and launching an online store — all built on real prices and delivery times.`}
               </p>
               <Link
                 href={CRYPTO_GUIDE_PATH}

@@ -1,4 +1,4 @@
-import { websiteOfferSummary, websiteTimelineNote, websiteDemoNote } from "@/lib/website-offer";
+import { websiteOfferSummary, websiteTimelineNote, websiteDemoNote, WEBSITE_LANGUAGE_PRICE_USD } from "@/lib/website-offer";
 import type { Demo, Faq } from "./site-types";
 import { localizedAbsoluteUrl, type Locale } from "@/lib/locale";
 
@@ -68,8 +68,8 @@ export const sectorSeo: Record<string, SectorSeo> = {
       {
         qAr: "هل الموقع يعمل بالعربية والإنجليزية والفرنسية؟",
         qEn: "Is it trilingual?",
-        aAr: "الأساس لغة واحدة. كل لغة إضافية 10 دولارات بترجمة يقدمها العميل؛ العربية والإنجليزية والفرنسية ممكنة حسب الاتفاق.",
-        aEn: "The base includes one language. Each extra language is $10 with client-supplied translation; AR, EN and FR can be agreed.",
+        aAr: `الأساس لغة واحدة. كل لغة إضافية ${WEBSITE_LANGUAGE_PRICE_USD} دولارات بترجمة يقدمها العميل؛ العربية والإنجليزية والفرنسية ممكنة حسب الاتفاق.`,
+        aEn: `The base includes one language. Each extra language is $${WEBSITE_LANGUAGE_PRICE_USD} with client-supplied translation; AR, EN and FR can be agreed.`,
       },
       {
         qAr: "هل يظهر موقع العيادة في جوجل بسرعة؟",

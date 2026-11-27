@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { sectors } from "@/lib/content";
 import { resolveDemoClassification } from "@/lib/classification";
+import { WEBSITE_BASE_PRICE_USD } from "@/lib/website-offer";
 import type { Demo, PricingPlanData } from "@/lib/site-types";
 
 export const ADMIN_INPUT_CLS =
@@ -329,7 +330,7 @@ export function SiteItemEditor({
               </div>
             </Field>
 
-            <p className="text-xs leading-6 text-stone-500">Offre unique pour tous les designs : 35 $, personnalisation initiale incluse. Aucun prix propre au modèle ; les modules de gestion sont chiffrés séparément.</p>
+            <p className="text-xs leading-6 text-stone-500">{`Offre unique pour tous les designs : ${WEBSITE_BASE_PRICE_USD} $, personnalisation initiale incluse. Aucun prix propre au modèle ; les modules de gestion sont chiffrés séparément.`}</p>
 
             <Field label="URL du site en direct (https://... ou #)">
               <input

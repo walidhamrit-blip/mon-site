@@ -12,6 +12,7 @@ import {
   maintenanceTiers,
 } from "@/lib/subscription-plans";
 import { AbonnementsClient } from "./abonnements-client";
+import { WEBSITE_BASE_PRICE_USD } from "@/lib/website-offer";
 
 export async function generateMetadata({ searchParams }: LocalePageProps): Promise<Metadata> {
   const { config } = await getSiteDataCached();
@@ -67,7 +68,7 @@ export default async function AbonnementsPage({ searchParams }: LocalePageProps)
     ? [
         {
           q: "ما الفرق بين الاشتراك والدفعة الواحدة؟",
-          a: "اشتراكات الصيانة خدمات اختيارية منفصلة وليست فئات لتسعير التصميم. الموقع الثابت بسعر 35 دولاراً يشمل لغة واحدة وتخصيص المحتوى الأولي. نشر Vercel وفق أهلية وحدود الخطة؛ الدومين والتكاليف الخارجية منفصلة. الاشتراكات القائمة تحتفظ بشروطها المتفق عليها.",
+          a: `اشتراكات الصيانة خدمات اختيارية منفصلة وليست فئات لتسعير التصميم. الموقع الثابت بسعر ${WEBSITE_BASE_PRICE_USD} دولاراً يشمل لغة واحدة وتخصيص المحتوى الأولي. نشر Vercel وفق أهلية وحدود الخطة؛ الدومين والتكاليف الخارجية منفصلة. الاشتراكات القائمة تحتفظ بشروطها المتفق عليها.`,
 
         },
         {
@@ -90,7 +91,7 @@ export default async function AbonnementsPage({ searchParams }: LocalePageProps)
     : [
         {
           q: "How is a subscription different from a one-off payment?",
-          a: "Maintenance subscriptions are separate optional services, not website price categories. The $35 static website includes one language and initial personalization. Vercel deployment depends on plan eligibility and limits; custom domains and external recurring costs are separate. Existing subscriptions retain their agreed terms.",
+          a: `Maintenance subscriptions are separate optional services, not website price categories. The $${WEBSITE_BASE_PRICE_USD} static website includes one language and initial personalization. Vercel deployment depends on plan eligibility and limits; custom domains and external recurring costs are separate. Existing subscriptions retain their agreed terms.`,
         },
         {
           q: "How does renewal work?",

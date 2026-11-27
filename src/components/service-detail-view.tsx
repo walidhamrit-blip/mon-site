@@ -9,6 +9,7 @@ import { Price } from "@/components/price";
 import { fillTemplate, renderTemplate } from "@/lib/text-template";
 import { servicePath, type ServiceLike, type ServiceLandingContent } from "@/lib/services";
 import { trackEvent } from "@/lib/analytics";
+import { AUDIT_ITEM_COUNT } from "@/lib/audit-checklist";
 
 /**
  * Page d'un service (/services/[service]) — composant client.
@@ -195,7 +196,7 @@ export function ServiceDetailView({
               {service.id === "fix-optimize" && (
                 <div className="mt-6 rounded-2xl border border-[var(--accent)]/40 bg-[var(--accent)]/10 p-5">
                   <p className="text-sm font-black">
-                    {pick("46 نقطة موثّقة وتقرير مثال حقيقي", "46 documented points and a real sample report")}
+                    {pick(`${AUDIT_ITEM_COUNT} نقطة موثّقة وتقرير مثال حقيقي`, `${AUDIT_ITEM_COUNT} documented points and a real sample report`)}
                   </p>
                   <p className="mt-1 text-xs leading-5 opacity-70">
                     {pick(

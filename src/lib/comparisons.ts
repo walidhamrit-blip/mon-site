@@ -1,8 +1,39 @@
-import { websiteOfferSummary, websiteTimelineNote, paymentAvailabilityNote } from "@/lib/website-offer";
+import {
+  websiteOfferSummary,
+  websiteTimelineNote,
+  paymentAvailabilityNote,
+  WEBSITE_BASE_PRICE_USD,
+  WEBSITE_CONTENT_FROM_USD,
+} from "@/lib/website-offer";
+import { siteConfig } from "@/lib/config";
+import { AUDIT_ITEM_COUNT } from "@/lib/audit-checklist";
 import type { Faq } from "./site-types";
 import { absoluteUrl, applyMarketTokens } from "./seo";
 import { resolveMarket } from "./market";
 import { localizedAbsoluteUrl, type Locale } from "@/lib/locale";
+import { formatServicePrice, type PriceLang, type PricedService } from "@/lib/service-pricing";
+
+const PRICE_TOKEN_RE = /\{price:([a-z0-9-]+)\}/g;
+
+/**
+ * Résout les jetons `{price:<id-de-service>}` avec la liste de services
+ * fournie — en pratique `config.standaloneServices`, la configuration
+ * vivante modifiable dans /admin. Le montant n'est donc jamais écrit en
+ * dur dans la FAQ : changer un tarif dans /admin se reflète dans le HTML
+ * initial, les schémas FAQPage et llms.txt. Si l'id n'existe plus, le
+ * jeton devient vide — aucun prix de remplacement n'est inventé.
+ */
+function resolvePriceTokens(
+  text: string,
+  services: ReadonlyArray<PricedService>,
+  lang: PriceLang,
+): string {
+  if (!text.includes("{price:")) return text;
+  return text.replace(PRICE_TOKEN_RE, (_token, id: string) => {
+    const service = services.find((entry) => entry.id === id);
+    return service ? formatServicePrice(service.priceFromUsd, lang) : "";
+  });
+}
 
 /**
  * Moteur de pages comparatives (/compare et /compare/[slug]).
@@ -150,8 +181,8 @@ export const comparisons: Record<string, ComparisonSeo> = {
       {
         labelAr: "التكلفة الشهرية",
         labelEn: "Monthly cost",
-        usAr: "موقع ثابت 35 $ مرة واحدة؛ التكاليف الخارجية المتكررة منفصلة",
-        usEn: "Static website $35 once; external recurring costs separate",
+        usAr: `موقع ثابت ${WEBSITE_BASE_PRICE_USD} $ مرة واحدة؛ التكاليف الخارجية المتكررة منفصلة`,
+        usEn: `Static website $${WEBSITE_BASE_PRICE_USD} once; external recurring costs separate`,
         themAr: "عادةً $500 – $2,000+ شهرياً حسب السوق والمنافسة",
         themEn: "Typically $500–$2,000+/month depending on market and competition",
         winner: "us",
@@ -244,8 +275,8 @@ export const comparisons: Record<string, ComparisonSeo> = {
       {
         qAr: "ماذا لو كان عندي موقع قديم بالفعل؟",
         qEn: "What if I already have an old website?",
-        aAr: "نبدأ من الموقع القائم: نعيد تصميمه على هويتك مع الحفاظ على روابطك وتحويلات 301، أو نضيف له قسماً واحداً من 19 دولاراً. المهم أن تبقى القيمة التي بنيتها سابقاً، وتُضاف إليها أسس أداء تقنية وSEO جاهز للذكاء الاصطناعي.",
-        aEn: "We start from what you have: we redesign it on your brand while preserving your URLs and 301 redirects, or add a single section from $19. The point is to keep the value you already built and add technical performance foundations and AI-ready SEO on top.",
+        aAr: `نبدأ من الموقع القائم: نعيد تصميمه على هويتك مع الحفاظ على روابطك وتحويلات 301، أو نضيف له قسماً واحداً من {price:add-section}. المهم أن تبقى القيمة التي بنيتها سابقاً، وتُضاف إليها أسس أداء تقنية وSEO جاهز للذكاء الاصطناعي.`,
+        aEn: `We start from what you have: we redesign it on your brand while preserving your URLs and 301 redirects, or add a single section from {price:add-section}. The point is to keep the value you already built and add technical performance foundations and AI-ready SEO on top.`,
       },
     ],
     relatedServices: ["landing", "restyle", "fix-optimize"],
@@ -301,8 +332,8 @@ export const comparisons: Record<string, ComparisonSeo> = {
       {
         labelAr: "التكلفة",
         labelEn: "Cost",
-        usAr: "دفعة واحدة من $35 (خدمات بأسعار منشورة)",
-        usEn: "One payment from $35 (services at published prices)",
+        usAr: `دفعة واحدة من $${WEBSITE_BASE_PRICE_USD} (خدمات بأسعار منشورة)`,
+        usEn: `One payment from $${WEBSITE_BASE_PRICE_USD} (services at published prices)`,
         themAr: "متوسط $500 – $2,000 شهرياً لتغطية الجمهور",
         themEn: "On average $500–$2,000/month to cover the audience",
         winner: "us",
@@ -377,8 +408,8 @@ export const comparisons: Record<string, ComparisonSeo> = {
       {
         qAr: "هل يغني الإعلان عن إنشاء الموقع؟",
         qEn: "Does an ad replace building the website?",
-        aAr: "لا، بل وظيفتان مختلفتان: الإعلان يجلب الانتباه، والموقع يحوّل الانتباه إلى طلبات منظّمة. أكثر عملائنا يبدؤون بصفحة هبوط واحدة من 59 دولاراً ثم يطوّرونها إلى موقع كامل.",
-        aEn: "No, they do different jobs. An ad brings attention; the website turns that attention into structured enquiries. Many of our clients start with a single landing page at $59 and grow it into a full site later.",
+        aAr: `لا، بل وظيفتان مختلفتان: الإعلان يجلب الانتباه، والموقع يحوّل الانتباه إلى طلبات منظّمة. أكثر عملائنا يبدؤون بصفحة هبوط واحدة من {price:landing} ثم يطوّرونها إلى موقع كامل.`,
+        aEn: `No, they do different jobs. An ad brings attention; the website turns that attention into structured enquiries. Many of our clients start with a single landing page at {price:landing} and grow it into a full site later.`,
       },
       {
         qAr: "كم ميزانية الإعلان المعقولة لنشاط صغير؟",
@@ -444,18 +475,18 @@ export const comparisons: Record<string, ComparisonSeo> = {
       { textAr: "تصميم حصري على هويتك", textEn: "A design built only for your brand" },
       // A03 : ne jamais nier le renouvellement — l'hébergement n'est inclus
       // que la première année (voir la section tarifs), puis il se renouvelle.
-      { textAr: "موقع ثابت 35 $؛ نشر vercel.app وفق أهلية وحدود Vercel", textEn: "Static site $35; vercel.app deployment subject to Vercel eligibility and limits" },
+      { textAr: `موقع ثابت ${WEBSITE_BASE_PRICE_USD} $؛ نشر vercel.app وفق أهلية وحدود Vercel`, textEn: `Static site $${WEBSITE_BASE_PRICE_USD}; vercel.app deployment subject to Vercel eligibility and limits` },
       { textAr: "قياس الأداء حسب النطاق المتفق عليه", textEn: "Performance measured for the agreed scope" },
       { textAr: "SEO و بحث الذكاء الاصطناعي جاهز", textEn: "SEO and AI-search ready" },
-      { textAr: "إدارة محتوى اختيارية من 10 $ إضافية", textEn: "Optional content management from an extra $10" },
+      { textAr: `إدارة محتوى اختيارية من ${WEBSITE_CONTENT_FROM_USD} $ إضافية`, textEn: `Optional content management from an extra $${WEBSITE_CONTENT_FROM_USD}` },
       { textAr: "ملكية كاملة للملفات والكود", textEn: "Full ownership of files and code" },
     ],
     criteria: [
       {
         labelAr: "التكلفة على 3 سنوات",
         labelEn: "Cost over 3 years",
-        usAr: "موقع ثابت من 35 $؛ التكاليف الخارجية المتكررة منفصلة",
-        usEn: "Static site from $35; external recurring costs disclosed separately",
+        usAr: `موقع ثابت من ${WEBSITE_BASE_PRICE_USD} $؛ التكاليف الخارجية المتكررة منفصلة`,
+        usEn: `Static site from $${WEBSITE_BASE_PRICE_USD}; external recurring costs disclosed separately`,
         themAr: "اشتراك شهري يتكرر 36 مرة",
         themEn: "A monthly fee repeated 36 times",
         winner: "us",
@@ -548,8 +579,8 @@ export const comparisons: Record<string, ComparisonSeo> = {
       {
         qAr: "هل يمكنني تعديل المحتوى بنفسي بعد التسليم؟",
         qEn: "Can I edit the content myself after delivery?",
-        aAr: "الموقع الأساسي ثابت، ولا يشمل لوحة إدارة. إدارة المحتوى تبدأ من 10 دولارات إضافية وتشمل قاعدة البيانات والإدارة اللازمة ضمن نطاق محدد. التعديلات الكبيرة والصيانة اللاحقة منفصلة.",
-        aEn: "The base website is static with no admin panel. Content management starts at an extra $10, including the required database and admin tools for an agreed scope. Structural changes and later maintenance are separate.",
+        aAr: `الموقع الأساسي ثابت، ولا يشمل لوحة إدارة. إدارة المحتوى تبدأ من ${WEBSITE_CONTENT_FROM_USD} دولارات إضافية وتشمل قاعدة البيانات والإدارة اللازمة ضمن نطاق محدد. التعديلات الكبيرة والصيانة اللاحقة منفصلة.`,
+        aEn: `The base website is static with no admin panel. Content management starts at an extra $${WEBSITE_CONTENT_FROM_USD}, including the required database and admin tools for an agreed scope. Structural changes and later maintenance are separate.`,
       },
     ],
     relatedServices: ["restyle", "landing", "fix-optimize"],
@@ -756,8 +787,8 @@ export const comparisons: Record<string, ComparisonSeo> = {
       {
         labelAr: "الكلفة السنوية",
         labelEn: "Yearly cost",
-        usAr: "قاعدة ثابتة من 35 $ مرة واحدة؛ التكاليف الخارجية منفصلة",
-        usEn: "One-time static base from $35; external costs separate",
+        usAr: `قاعدة ثابتة من ${WEBSITE_BASE_PRICE_USD} $ مرة واحدة؛ التكاليف الخارجية منفصلة`,
+        usEn: `One-time static base from $${WEBSITE_BASE_PRICE_USD}; external costs separate`,
         themAr: "12 × اشتراك شهري (من $1,000) = $12,000+",
         themEn: "12 × monthly retainer (from $1,000) = $12,000+",
         winner: "us",
@@ -850,8 +881,8 @@ export const comparisons: Record<string, ComparisonSeo> = {
       {
         qAr: "هل يمكن شراء خدمة SEO فقط دون موقع؟",
         qEn: "Can I buy SEO alone without a website?",
-        aAr: "نعم، عبر خدمة التدقيق والإصلاح (السعر المنشور على صفحة الخدمة): تقرير من 40+ نقطة عن السرعة والموبايل والـ SEO والأمان، مع إصلاح فوري. لكن الإصلاح بلا أساس تقني صحيح يبقى حلاً مؤقتاً — ولهذا نوصي ببناء الأساس أولاً.",
-        aEn: "Yes, through the audit & fix service (its price is published on the service page): a 40+ point report on speed, mobile, SEO and security, with immediate fixes. But fixes without a correct technical base stay a temporary solution — which is why we recommend building the base first.",
+        aAr: `نعم، عبر خدمة التدقيق والإصلاح (السعر المنشور على صفحة الخدمة): تقرير من ${AUDIT_ITEM_COUNT} نقطة عن السرعة والموبايل والـ SEO والأمان، مع إصلاح فوري. لكن الإصلاح بلا أساس تقني صحيح يبقى حلاً مؤقتاً — ولهذا نوصي ببناء الأساس أولاً.`,
+        aEn: `Yes, through the audit & fix service (its price is published on the service page): a ${AUDIT_ITEM_COUNT}-point report on speed, mobile, SEO and security, with immediate fixes. But fixes without a correct technical base stay a temporary solution — which is why we recommend building the base first.`,
       },
     ],
     relatedServices: ["fix-optimize", "restyle", "add-section"],
@@ -894,9 +925,12 @@ export function comparisonText(
 export function resolveComparisonTokens(
   comparison: ComparisonSeo,
   market?: Parameters<typeof resolveMarket>[0],
+  services: ReadonlyArray<PricedService> = siteConfig.standaloneServices,
 ): ComparisonSeo {
-  const ar = (value: string) => comparisonText(value, market, "ar");
-  const en = (value: string) => comparisonText(value, market, "en");
+  const ar = (value: string) =>
+    resolvePriceTokens(comparisonText(value, market, "ar"), services, "ar");
+  const en = (value: string) =>
+    resolvePriceTokens(comparisonText(value, market, "en"), services, "en");
   return {
     ...comparison,
     titleAr: ar(comparison.titleAr),

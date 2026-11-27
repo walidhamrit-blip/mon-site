@@ -3,6 +3,7 @@
 import { useI18n } from "@/lib/i18n";
 import { ProfessionalContact } from "@/components/professional-contact";
 import { LegalLinks } from "@/components/legal-links";
+import { WEBSITE_BASE_PRICE_USD } from "@/lib/website-offer";
 
 interface Section {
   title: string;
@@ -48,7 +49,7 @@ const CONTENT: Record<"ar" | "en", { title: string; updated: string; intro: stri
       {
         title: "4. النطاق والاستضافة",
         paragraphs: [
-          "العرض الأساسي بسعر 35 دولاراً يشمل كوداً ثابتاً ولغة واحدة وتخصيص المحتوى المقدم عند التسليم الأول ونشر vercel.app وفق أهلية وحدود Vercel. الدومين الخاص غير مشمول. الإدارة بقاعدة بيانات واللغات والوظائف الإضافية خدمات منفصلة. التكاليف الخارجية والمتكررة وملكية الحسابات تؤكد كتابياً قبل الموافقة.",
+          `العرض الأساسي بسعر ${WEBSITE_BASE_PRICE_USD} دولاراً يشمل كوداً ثابتاً ولغة واحدة وتخصيص المحتوى المقدم عند التسليم الأول ونشر vercel.app وفق أهلية وحدود Vercel. الدومين الخاص غير مشمول. الإدارة بقاعدة بيانات واللغات والوظائف الإضافية خدمات منفصلة. التكاليف الخارجية والمتكررة وملكية الحسابات تؤكد كتابياً قبل الموافقة.`,
         ],
       },
       {
@@ -137,7 +138,7 @@ const CONTENT: Record<"ar" | "en", { title: string; updated: string; intro: stri
       {
         title: "4. Domain name and hosting",
         paragraphs: [
-          "The $35 base offer includes static source code, one language, initial personalization with supplied content and vercel.app deployment subject to Vercel eligibility and limits. A custom domain is excluded. Database-backed management, extra languages and other modules are additional services. External and recurring costs and account ownership are confirmed in writing before approval.",
+          `The $${WEBSITE_BASE_PRICE_USD} base offer includes static source code, one language, initial personalization with supplied content and vercel.app deployment subject to Vercel eligibility and limits. A custom domain is excluded. Database-backed management, extra languages and other modules are additional services. External and recurring costs and account ownership are confirmed in writing before approval.`,
         ],
       },
       {

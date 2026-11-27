@@ -10,6 +10,7 @@ import { ArrowUpRight, Send, CheckCircle2, ShieldCheck, Clock, Headset, Loader2 
 import { useI18n } from "@/lib/i18n";
 import { useSectionHeading, useSiteConfig } from "@/components/site-provider";
 import { whatsappLink } from "@/lib/utils";
+import { WEBSITE_BASE_PRICE_USD } from "@/lib/website-offer";
 
 const schema = z.object({
   business: z.string().min(2, "businessMin"),
@@ -188,7 +189,7 @@ export function CTAForm() {
                       <div>
                         <label htmlFor="lead-need" className="text-sm font-semibold">{locale === "ar" ? "ماذا تحتاج؟" : "What do you need?"} *</label>
                         <select id="lead-need" {...register("need")} aria-invalid={!!errors.need} aria-describedby={errors.need ? "lead-need-error" : undefined} className="mt-2 h-11 w-full rounded-full border border-[var(--border)] bg-[var(--secondary)]/50 px-4 outline-none transition-colors focus:border-[var(--accent)]">
-                          <option value="static-site">{ar ? "موقع ثابت — 35 $" : "Static website — $35"}</option>
+                          <option value="static-site">{ar ? `موقع ثابت — ${WEBSITE_BASE_PRICE_USD} $` : `Static website — $${WEBSITE_BASE_PRICE_USD}`}</option>
                           <option value="content">{ar ? "موقع + إدارة المحتوى" : "Website + content management"}</option>
                           <option value="booking">{ar ? "موقع + إدارة الحجوزات" : "Website + booking management"}</option>
                           <option value="shop">{ar ? "موقع + متجر إلكتروني" : "Website + online store"}</option>

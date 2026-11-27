@@ -196,8 +196,10 @@ test("aucun jeton de marché ni caractère parasite ne subsiste", () => {
         `${id}: jeton de marché non résolu dans « ${field.slice(0, 40)} »`,
       );
       // Aucun caractère hors alphabet latin / arabe (garde-fou anti-texte
-      // corrompu : le moteur ne doit publier que du texte propre).
-      const stray = [...field].filter((char) => {
+      // corrompu : le moteur ne doit publier que du texte propre). Les
+      // jetons {price:<id>} sont autorisés dans la donnée brute : ils sont
+      // résolus en prix vivant au rendu (resolveComparisonTokens).
+      const stray = [...field.replace(/\{price:[a-z0-9-]+\}/g, "")].filter((char) => {
         const code = char.codePointAt(0);
         const arabic =
           (code >= 0x0600 && code <= 0x06ff) ||

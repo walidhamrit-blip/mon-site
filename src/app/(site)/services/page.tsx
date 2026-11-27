@@ -13,21 +13,13 @@ import { JsonLd } from "@/components/json-ld";
 import { ServicesHubView } from "@/components/services-hub-view";
 import { comparisonIds, getComparison, resolveComparisonTokens } from "@/lib/comparisons";
 import { formatMainPrice } from "@/lib/installments";
-
-/** Prix « à partir de » d'un service, lu dans la configuration vivante. */
-function startingPrice(
-  services: ReadonlyArray<ServiceLike>,
-  id: string,
-  fallback: number,
-): number {
-  return services.find((service) => service.id === id)?.priceFromUsd ?? fallback;
-}
+import { lowestServicePrice, serviceStartingPrice } from "@/lib/service-pricing";
 
 export async function generateMetadata({ searchParams }: LocalePageProps): Promise<Metadata> {
   const { config } = await getSiteDataCached();
   const services: ReadonlyArray<ServiceLike> = config.standaloneServices;
   const price = (id: string, fallback: number) =>
-    formatMainPrice(startingPrice(services, id, fallback), "$");
+    formatMainPrice(serviceStartingPrice(services, id, fallback), "$");
 
   // La langue des métadonnées suit la langue principale du site
   // (/admin → Réglages) : une seule version servie par URL, cohérente avec
@@ -68,19 +60,17 @@ export default async function ServicesPage({ searchParams }: LocalePageProps) {
   const { config } = await getSiteDataCached();
   const locale = await pageLocale(config, searchParams);
   const services: ReadonlyArray<ServiceLike> = config.standaloneServices;
-  const lowestPrice = services.reduce(
-    (min, service) => Math.min(min, service.priceFromUsd),
-    Number.POSITIVE_INFINITY,
-  );
   // Comparaisons affichées en haut de page (bandeau « pas sûr entre deux
   // options ? ») : même source de données que les pages /compare.
   const comparisons = comparisonIds
     .map((id) => getComparison(id))
     .filter((item): item is NonNullable<typeof item> => Boolean(item))
-    .map((item) => resolveComparisonTokens(item, config.market));
+    .map((item) =>
+      resolveComparisonTokens(item, config.market, config.standaloneServices),
+    );
 
   const ar = locale === "ar";
-  const minUsd = Number.isFinite(lowestPrice) ? lowestPrice : 15;
+  const minUsd = lowestServicePrice(services, 19);
   const webPage = webPageJsonLd(config, {
     path: "/services",
     locale,
