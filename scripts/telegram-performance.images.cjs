@@ -14,7 +14,7 @@ const ref=process.argv[3];
 const root=process.cwd();
 const baseURL=process.env.TG_PERF_URL||'http://localhost:3950';
 if(!['localhost','127.0.0.1'].includes(new URL(baseURL).hostname))throw Error('Local fixture only');
-const median=xs=>[...xs].sort((a,b)=>a-b)[Math.floor(xs.length/2)];
+const median=xs=>{const a=[...xs].sort((x,y)=>x-y),m=Math.floor(a.length/2);return a.length%2?a[m]:(a[m-1]+a[m])/2;};
 (async()=>{
  const outdir=path.resolve('.scratch/telegram-performance',label+'-images');await fs.mkdir(outdir,{recursive:true});
  const images=(await fs.readdir('public/game-covers')).filter(p=>p.endsWith('.jpg')).sort().slice(0,26);

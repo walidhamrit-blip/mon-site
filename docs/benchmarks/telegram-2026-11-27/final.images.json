@@ -1,0 +1,413 @@
+{
+  "label": "optimized",
+  "ref": "working-tree",
+  "scope": "Synthetic 26-product catalog, actual component/next-image, actual local image responses; browser cache off, optimizer server cache warm after first run; no DB",
+  "summary": {
+    "visibleCategoryImagesReadyMs": 633.4000000001397,
+    "imageTransferBytes": 74030,
+    "imageRequests": 7,
+    "eagerProductImages": 0
+  },
+  "samples": [
+    {
+      "run": 1,
+      "visibleReadyMs": 600.7999999998137,
+      "images": [
+        {
+          "path": "/telegram-mini-app/gift-card.webp",
+          "startMs": 214.20000000018626,
+          "durationMs": 173.1999999997206,
+          "bytes": 5434,
+          "endMs": 387.39999999990687
+        },
+        {
+          "path": "/telegram-mini-app/game-topup.webp",
+          "startMs": 214.60000000009313,
+          "durationMs": 195,
+          "bytes": 8658,
+          "endMs": 409.60000000009313
+        },
+        {
+          "path": "/telegram-mini-app/software-key.webp",
+          "startMs": 301.79999999981374,
+          "durationMs": 258.3000000002794,
+          "bytes": 7320,
+          "endMs": 560.1000000000931
+        },
+        {
+          "path": "/telegram-mini-app/subscription-code.webp",
+          "startMs": 301.89999999990687,
+          "durationMs": 272.89999999990687,
+          "bytes": 5746,
+          "endMs": 574.7999999998137
+        },
+        {
+          "path": "/_next/image",
+          "startMs": 302,
+          "durationMs": 347.60000000009313,
+          "bytes": 9622,
+          "endMs": 649.6000000000931
+        },
+        {
+          "path": "/_next/image",
+          "startMs": 302,
+          "durationMs": 647.6000000000931,
+          "bytes": 16740,
+          "endMs": 949.6000000000931
+        },
+        {
+          "path": "/_next/image",
+          "startMs": 302,
+          "durationMs": 655,
+          "bytes": 20510,
+          "endMs": 957
+        }
+      ],
+      "highPriorityProducts": 0,
+      "overflow": false
+    },
+    {
+      "run": 2,
+      "visibleReadyMs": 600.3999999999069,
+      "images": [
+        {
+          "path": "/telegram-mini-app/gift-card.webp",
+          "startMs": 214.1999999997206,
+          "durationMs": 173.70000000018626,
+          "bytes": 5434,
+          "endMs": 387.89999999990687
+        },
+        {
+          "path": "/telegram-mini-app/game-topup.webp",
+          "startMs": 214.29999999981374,
+          "durationMs": 197,
+          "bytes": 8658,
+          "endMs": 411.29999999981374
+        },
+        {
+          "path": "/telegram-mini-app/software-key.webp",
+          "startMs": 296.6999999997206,
+          "durationMs": 293.90000000037253,
+          "bytes": 7320,
+          "endMs": 590.6000000000931
+        },
+        {
+          "path": "/telegram-mini-app/subscription-code.webp",
+          "startMs": 296.89999999990687,
+          "durationMs": 264.20000000018626,
+          "bytes": 5746,
+          "endMs": 561.1000000000931
+        },
+        {
+          "path": "/_next/image",
+          "startMs": 296.89999999990687,
+          "durationMs": 353.79999999981374,
+          "bytes": 9622,
+          "endMs": 650.6999999997206
+        },
+        {
+          "path": "/_next/image",
+          "startMs": 296.89999999990687,
+          "durationMs": 661.3999999999069,
+          "bytes": 20510,
+          "endMs": 958.2999999998137
+        },
+        {
+          "path": "/_next/image",
+          "startMs": 297,
+          "durationMs": 654.1999999997206,
+          "bytes": 16740,
+          "endMs": 951.1999999997206
+        }
+      ],
+      "highPriorityProducts": 0,
+      "overflow": false
+    },
+    {
+      "run": 3,
+      "visibleReadyMs": 644.3999999999069,
+      "images": [
+        {
+          "path": "/telegram-mini-app/gift-card.webp",
+          "startMs": 237.39999999990687,
+          "durationMs": 165.8000000002794,
+          "bytes": 5434,
+          "endMs": 403.20000000018626
+        },
+        {
+          "path": "/telegram-mini-app/game-topup.webp",
+          "startMs": 237.5,
+          "durationMs": 188.39999999990687,
+          "bytes": 8658,
+          "endMs": 425.89999999990687
+        },
+        {
+          "path": "/telegram-mini-app/software-key.webp",
+          "startMs": 334.20000000018626,
+          "durationMs": 286.89999999990687,
+          "bytes": 7320,
+          "endMs": 621.1000000000931
+        },
+        {
+          "path": "/telegram-mini-app/subscription-code.webp",
+          "startMs": 334.39999999990687,
+          "durationMs": 256.60000000009313,
+          "bytes": 5746,
+          "endMs": 591
+        },
+        {
+          "path": "/_next/image",
+          "startMs": 334.5,
+          "durationMs": 361.5,
+          "bytes": 9622,
+          "endMs": 696
+        },
+        {
+          "path": "/_next/image",
+          "startMs": 334.5,
+          "durationMs": 654.1000000000931,
+          "bytes": 20510,
+          "endMs": 988.6000000000931
+        },
+        {
+          "path": "/_next/image",
+          "startMs": 334.60000000009313,
+          "durationMs": 623.8999999999069,
+          "bytes": 16740,
+          "endMs": 958.5
+        }
+      ],
+      "highPriorityProducts": 0,
+      "overflow": false
+    },
+    {
+      "run": 4,
+      "visibleReadyMs": 606.5,
+      "images": [
+        {
+          "path": "/telegram-mini-app/gift-card.webp",
+          "startMs": 226.89999999990687,
+          "durationMs": 168.3000000002794,
+          "bytes": 5434,
+          "endMs": 395.20000000018626
+        },
+        {
+          "path": "/telegram-mini-app/game-topup.webp",
+          "startMs": 227,
+          "durationMs": 191.20000000018626,
+          "bytes": 8658,
+          "endMs": 418.20000000018626
+        },
+        {
+          "path": "/telegram-mini-app/software-key.webp",
+          "startMs": 311.3000000002794,
+          "durationMs": 286.59999999962747,
+          "bytes": 7320,
+          "endMs": 597.8999999999069
+        },
+        {
+          "path": "/telegram-mini-app/subscription-code.webp",
+          "startMs": 311.5,
+          "durationMs": 256.5,
+          "bytes": 5746,
+          "endMs": 568
+        },
+        {
+          "path": "/_next/image",
+          "startMs": 313.39999999990687,
+          "durationMs": 344.90000000037253,
+          "bytes": 9622,
+          "endMs": 658.3000000002794
+        },
+        {
+          "path": "/_next/image",
+          "startMs": 313.39999999990687,
+          "durationMs": 652.2000000001863,
+          "bytes": 20510,
+          "endMs": 965.6000000000931
+        },
+        {
+          "path": "/_next/image",
+          "startMs": 313.5,
+          "durationMs": 644.5,
+          "bytes": 16740,
+          "endMs": 958
+        }
+      ],
+      "highPriorityProducts": 0,
+      "overflow": false
+    },
+    {
+      "run": 5,
+      "visibleReadyMs": 641.3999999999069,
+      "images": [
+        {
+          "path": "/telegram-mini-app/gift-card.webp",
+          "startMs": 219.5,
+          "durationMs": 176.39999999990687,
+          "bytes": 5434,
+          "endMs": 395.89999999990687
+        },
+        {
+          "path": "/telegram-mini-app/game-topup.webp",
+          "startMs": 219.60000000009313,
+          "durationMs": 199.1999999997206,
+          "bytes": 8658,
+          "endMs": 418.79999999981374
+        },
+        {
+          "path": "/telegram-mini-app/software-key.webp",
+          "startMs": 316.79999999981374,
+          "durationMs": 311.5,
+          "bytes": 7320,
+          "endMs": 628.2999999998137
+        },
+        {
+          "path": "/telegram-mini-app/subscription-code.webp",
+          "startMs": 316.89999999990687,
+          "durationMs": 274.70000000018626,
+          "bytes": 5746,
+          "endMs": 591.6000000000931
+        },
+        {
+          "path": "/_next/image",
+          "startMs": 316.89999999990687,
+          "durationMs": 364.10000000009313,
+          "bytes": 9622,
+          "endMs": 681
+        },
+        {
+          "path": "/_next/image",
+          "startMs": 316.89999999990687,
+          "durationMs": 656.3999999999069,
+          "bytes": 20510,
+          "endMs": 973.2999999998137
+        },
+        {
+          "path": "/_next/image",
+          "startMs": 317,
+          "durationMs": 633.8999999999069,
+          "bytes": 16740,
+          "endMs": 950.8999999999069
+        }
+      ],
+      "highPriorityProducts": 0,
+      "overflow": false
+    },
+    {
+      "run": 6,
+      "visibleReadyMs": 641,
+      "images": [
+        {
+          "path": "/telegram-mini-app/gift-card.webp",
+          "startMs": 224,
+          "durationMs": 172.3000000002794,
+          "bytes": 5434,
+          "endMs": 396.3000000002794
+        },
+        {
+          "path": "/telegram-mini-app/game-topup.webp",
+          "startMs": 224.10000000009313,
+          "durationMs": 194.3000000002794,
+          "bytes": 8658,
+          "endMs": 418.40000000037253
+        },
+        {
+          "path": "/telegram-mini-app/software-key.webp",
+          "startMs": 314.10000000009313,
+          "durationMs": 314.10000000009313,
+          "bytes": 7320,
+          "endMs": 628.2000000001863
+        },
+        {
+          "path": "/telegram-mini-app/subscription-code.webp",
+          "startMs": 316,
+          "durationMs": 274.40000000037253,
+          "bytes": 5746,
+          "endMs": 590.4000000003725
+        },
+        {
+          "path": "/_next/image",
+          "startMs": 316.40000000037253,
+          "durationMs": 656.6999999997206,
+          "bytes": 20510,
+          "endMs": 973.1000000000931
+        },
+        {
+          "path": "/_next/image",
+          "startMs": 316.90000000037253,
+          "durationMs": 363.39999999990687,
+          "bytes": 9622,
+          "endMs": 680.3000000002794
+        },
+        {
+          "path": "/_next/image",
+          "startMs": 317.3000000002794,
+          "durationMs": 633,
+          "bytes": 16740,
+          "endMs": 950.3000000002794
+        }
+      ],
+      "highPriorityProducts": 0,
+      "overflow": false
+    },
+    {
+      "run": 7,
+      "visibleReadyMs": 625.8000000002794,
+      "images": [
+        {
+          "path": "/telegram-mini-app/gift-card.webp",
+          "startMs": 213.60000000009313,
+          "durationMs": 166.79999999981374,
+          "bytes": 5434,
+          "endMs": 380.39999999990687
+        },
+        {
+          "path": "/telegram-mini-app/game-topup.webp",
+          "startMs": 214.20000000018626,
+          "durationMs": 189.39999999990687,
+          "bytes": 8658,
+          "endMs": 403.60000000009313
+        },
+        {
+          "path": "/telegram-mini-app/software-key.webp",
+          "startMs": 304,
+          "durationMs": 294.3000000002794,
+          "bytes": 7320,
+          "endMs": 598.3000000002794
+        },
+        {
+          "path": "/telegram-mini-app/subscription-code.webp",
+          "startMs": 308.5,
+          "durationMs": 304.8000000002794,
+          "bytes": 5746,
+          "endMs": 613.3000000002794
+        },
+        {
+          "path": "/_next/image",
+          "startMs": 314.10000000009313,
+          "durationMs": 673.7000000001863,
+          "bytes": 20510,
+          "endMs": 987.8000000002794
+        },
+        {
+          "path": "/_next/image",
+          "startMs": 317.20000000018626,
+          "durationMs": 370.89999999990687,
+          "bytes": 9622,
+          "endMs": 688.1000000000931
+        },
+        {
+          "path": "/_next/image",
+          "startMs": 320.5,
+          "durationMs": 622.6000000000931,
+          "bytes": 16740,
+          "endMs": 943.1000000000931
+        }
+      ],
+      "highPriorityProducts": 0,
+      "overflow": false
+    }
+  ],
+  "statistic": "Median of samples excluding first run. For even counts: mean of the two central values."
+}

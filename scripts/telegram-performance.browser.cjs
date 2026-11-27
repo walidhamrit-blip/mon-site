@@ -13,7 +13,7 @@ if (!['localhost', '127.0.0.1'].includes(new URL(baseURL).hostname) && process.e
   throw new Error('Use a local build, or explicitly set TG_PERF_ALLOW_REMOTE=1 for an authorized Preview.');
 }
 const runs = Number(process.env.TG_PERF_RUNS || 7);
-const median = xs => [...xs].sort((a,b)=>a-b)[Math.floor(xs.length/2)];
+const median = xs => { const a=[...xs].sort((x,y)=>x-y), m=Math.floor(a.length/2); return a.length%2?a[m]:(a[m-1]+a[m])/2; };
 (async () => {
   const browser = await chromium.launch({
     executablePath: process.env.CHROMIUM_EXECUTABLE_PATH || undefined,
@@ -57,7 +57,7 @@ const median = xs => [...xs].sort((a,b)=>a-b)[Math.floor(xs.length/2)];
     jsTransferBytes: median(warm.map(s=>s.jsBytes)),
     errors:samples.flatMap(s=>s.errors),
   };
-  const result = {label, date:new Date().toISOString(), environment:'Local Next production build; DATABASE_URL absent; fallback catalog; fixed SDK stub; no real Telegram/DB latency', conditions:{runs, viewport:'360x740 DPR2',latencyMs:100,downloadBytesPerSecond:200000,cpuSlowdown:4,browserCache:'disabled'}, summary,samples};
+  const result = {label, date:new Date().toISOString(), environment:process.env.TG_PERF_ENV_NOTE || 'Read-only build benchmark; confirm catalog/DB mode from server logs. Fixed SDK stub: no real Telegram network latency.', conditions:{runs, viewport:'360x740 DPR2',latencyMs:100,downloadBytesPerSecond:200000,cpuSlowdown:4,browserCache:'disabled'}, summary,samples};
   await fs.mkdir('.scratch/telegram-performance',{recursive:true});
   await fs.writeFile(path.join('.scratch/telegram-performance',`${label}.browser.json`),JSON.stringify(result,null,2));
   console.log('SUMMARY', JSON.stringify(summary));

@@ -355,12 +355,11 @@ async function handleCallback(query: TelegramCallbackQuery): Promise<void> {
   const fromUsername = query.from.username ?? null;
   const fromFirstName = query.from.first_name ?? null;
 
-  // 1) On acquitte le callback Telegram AVANT tout traitement long (lecture
-  //    du site, base, boutique inline) : le spinner du bouton s'arrête
-  //    immédiatement. answerCallbackQuery est indépendant de la réponse/edit
-  //    qui suit, et la route renvoie 200 quoi qu'il arrive.
-  // Start ACK first, but do not put its round trip ahead of independent reads.
-  // Await ALL before dispatch; no detached work, no early webhook 200.
+  // 1) Lance l’acquittement en premier, sans faire attendre les lectures
+  //    indépendantes derrière son round trip réseau. Le spinner s’arrête
+  //    à la réception de cet ACK par Telegram, pas à la fin du dispatch.
+  //    Attend toutes les opérations avant le dispatch ; pas de tâche
+  //    métier détachée ni de réponse webhook anticipée.
   const [, ctx, stored] = await Promise.all([
     measureTelegram("callback_ack", () => telegramAnswerCallback(query.id)),
     measureTelegram("site_context", () => botContext()),

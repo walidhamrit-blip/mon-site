@@ -58,7 +58,7 @@ for(let i=0;i<21;i++){
 assert.equal((await POST(new Request('http://localhost/api/telegram-webhook',{method:'POST',headers:{'x-telegram-bot-api-secret-token':'wrong'},body:'{}'}))).status,401);
 assert.equal((await POST(new Request('http://localhost/api/telegram-webhook',{method:'POST',headers:{'x-telegram-bot-api-secret-token':'test-secret'},body:'broken'}))).status,400);
 const ordered=samples.slice(1).map(s=>s.ms).sort((a,b)=>a-b);
-const result={label,ref:ref||'working-tree',scope:'Actual route handler, menu:orders; simulated I/O: secret 20ms, callback ACK 120ms, site 100ms, subscriber 80ms, edit 100ms. NO real Telegram/DB latency.',runs:ordered.length,medianMs:ordered[Math.floor(ordered.length/2)],p95Ms:ordered[Math.ceil(ordered.length*.95)-1],samples};
+const result={label,ref:ref||'working-tree',scope:'Actual route handler, menu:orders; simulated I/O: secret 20ms, callback ACK 120ms, site 100ms, subscriber 80ms, edit 100ms. NO real Telegram/DB latency.',runs:ordered.length,medianMs:(ordered[ordered.length/2-1]+ordered[ordered.length/2])/2,p95Ms:ordered[Math.ceil(ordered.length*.95)-1],samples};
 await fs.writeFile(path.join(dir,`${label}.webhook.json`),JSON.stringify(result,null,2));
 console.log(JSON.stringify(result,null,2));
 })().catch(e=>{console.error(e);process.exitCode=1});
