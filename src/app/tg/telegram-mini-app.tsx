@@ -2,7 +2,7 @@
 
 import Script from "next/script";
 import Image from "next/image";
-import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   buildMiniAppBrands,
   buildMiniAppRegionChips,
@@ -53,6 +53,11 @@ interface TelegramWebApp {
   HapticFeedback?: {
     impactOccurred(style: "light" | "medium" | "heavy" | "rigid" | "soft"): void;
     selectionChanged(): void;
+  };
+  /** Stockage persistant de la Mini App (préférence de thème, entre visites). */
+  CloudStorage?: {
+    getItem(key: string, callback: (error: string | null, value: string | null) => void): void;
+    setItem(key: string, value: string, callback: (error: string | null) => void): void;
   };
 }
 
@@ -125,15 +130,70 @@ const COPY = {
 
 const PAGE_SIZE = 24;
 
-/* Thème système (hors Telegram) : lu via useSyncExternalStore, sans effet. */
-const DARK_QUERY = "(prefers-color-scheme: dark)";
-function subscribeSystemDark(onChange: () => void) {
-  const media = window.matchMedia?.(DARK_QUERY);
-  media?.addEventListener?.("change", onChange);
-  return () => media?.removeEventListener?.("change", onChange);
+/* Icônes du sélecteur de thème (soleil / lune), en `currentColor`. */
+function SunIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <circle cx="12" cy="12" r="4" />
+      <path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" />
+    </svg>
+  );
 }
-const systemDarkSnapshot = () => window.matchMedia?.(DARK_QUERY).matches ?? false;
-const systemDarkServerSnapshot = () => false;
+
+function MoonIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z" />
+    </svg>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* Thème clair/sombre : préférence mémorisée du visiteur.               */
+/* Source autoritaire = CloudStorage de la Mini App Telegram (persiste  */
+/* entre les visites). Repli localStorage lorsque celui-ci est absent. */
+/* ------------------------------------------------------------------ */
+
+type AppTheme = "light" | "dark";
+const THEME_STORAGE_KEY = "nokhba-tg-theme";
+
+/** Cache local ; la restauration se fait après hydratation. */
+function readThemeCache(): AppTheme | null {
+  try {
+    const cached = typeof window !== "undefined" ? window.localStorage?.getItem(THEME_STORAGE_KEY) : null;
+    return cached === "light" || cached === "dark" ? cached : null;
+  } catch {
+    return null;
+  }
+}
+
+/** Source autoritaire : CloudStorage de la Mini App Telegram. */
+function loadStoredTheme(onLoad: (theme: AppTheme) => void): void {
+  const tg = telegramApp();
+  if (!tg?.CloudStorage) return;
+  try {
+    tg.CloudStorage.getItem(THEME_STORAGE_KEY, (error, value) => {
+      if (!error && (value === "light" || value === "dark")) onLoad(value);
+    });
+  } catch {
+    /* stockage indisponible : on garde la valeur par défaut */
+  }
+}
+
+/** Écrit la préférence (CloudStorage + localStorage) sans jamais bloquer. */
+function saveStoredTheme(theme: AppTheme): void {
+  try {
+    window.localStorage?.setItem(THEME_STORAGE_KEY, theme);
+  } catch {
+    /* localStorage indisponible : non bloquant */
+  }
+  const tg = telegramApp();
+  try {
+    tg?.CloudStorage?.setItem?.(THEME_STORAGE_KEY, theme, () => {});
+  } catch {
+    /* CloudStorage indisponible : non bloquant */
+  }
+}
 
 /* ------------------------------------------------------------------ */
 
@@ -165,10 +225,11 @@ export function TelegramMiniApp({
   const [region, setRegion] = useState<string | null>(null);
   const [query, setQuery] = useState("");
   const [limit, setLimit] = useState(PAGE_SIZE);
-  /** Thème imposé par Telegram (`null` hors Telegram → thème du système). */
-  const [telegramDark, setTelegramDark] = useState<boolean | null>(null);
-  const systemDark = useSyncExternalStore(subscribeSystemDark, systemDarkSnapshot, systemDarkServerSnapshot);
-  const dark = telegramDark ?? systemDark;
+  /* Thème : clair par défaut (exigence), choix mémorisé par le visiteur. */
+  const [theme, setTheme] = useState<AppTheme>("light");
+  const themeInteracted = useRef(false);
+  const cloudThemeRequested = useRef(false);
+  const dark = theme === "dark";
   const [user, setUser] = useState<{ name: string; photo: string | null } | null>(null);
   const [platform, setPlatform] = useState<string | null>(null);
   const listRef = useRef<HTMLDivElement>(null);
@@ -178,6 +239,30 @@ export function TelegramMiniApp({
   const ar = locale === "ar";
 
   /* ---------- Intégration Telegram ---------- */
+  /** Synchronise la couleur de la fenêtre Telegram avec le thème choisi. */
+  const applyTelegramChrome = useCallback((isDark: boolean) => {
+    const app = telegramApp();
+    if (!app) return;
+    const bg = isDark ? "#0b1020" : "#f3f4f8";
+    try {
+      app.setHeaderColor?.(bg);
+      app.setBackgroundColor?.(bg);
+    } catch {
+      /* non bloquant */
+    }
+  }, []);
+
+  const restoreCloudTheme = useCallback(() => {
+    if (!telegramApp()?.CloudStorage || cloudThemeRequested.current) return;
+    cloudThemeRequested.current = true;
+    loadStoredTheme((stored) => {
+      // Une réponse lente ne doit jamais annuler un choix fait entre-temps.
+      if (themeInteracted.current) return;
+      setTheme(stored);
+      try { window.localStorage?.setItem(THEME_STORAGE_KEY, stored); } catch { /* facultatif */ }
+    });
+  }, []);
+
   const initTelegram = useCallback(() => {
     const app = telegramApp();
     if (!app) return;
@@ -187,16 +272,32 @@ export function TelegramMiniApp({
     const tgUser = app.initDataUnsafe?.user;
     if (tgUser?.first_name) setUser({ name: tgUser.first_name, photo: tgUser.photo_url ?? null });
     setLocale(resolveMiniAppLocale(explicitLocale, tgUser?.language_code, defaultLocale));
-    const applyTheme = () => {
-      const isDark = app.colorScheme === "dark";
-      setTelegramDark(isDark);
-      const bg = isDark ? "#0e1219" : "#f3f4f8";
-      app.setHeaderColor?.(bg);
-      app.setBackgroundColor?.(bg);
-    };
-    applyTheme();
-    app.onEvent?.("themeChanged", applyTheme);
-  }, [defaultLocale, explicitLocale]);
+    applyTelegramChrome(theme === "dark");
+    restoreCloudTheme();
+  }, [defaultLocale, explicitLocale, theme, applyTelegramChrome, restoreCloudTheme]);
+
+  /* Même rendu initial côté serveur/client ; restaure ensuite le cache. */
+  useEffect(() => {
+    let active = true;
+    queueMicrotask(() => {
+      if (!active) return;
+      const cached = readThemeCache();
+      if (cached && !themeInteracted.current) setTheme(cached);
+      restoreCloudTheme();
+    });
+    return () => { active = false; };
+  }, [restoreCloudTheme]);
+
+  /* Garde la couleur de la fenêtre Telegram alignée sur le thème choisi. */
+  useEffect(() => {
+    applyTelegramChrome(dark);
+  }, [dark, applyTelegramChrome]);
+
+  const saveTheme = useCallback((next: AppTheme) => {
+    themeInteracted.current = true;
+    setTheme(next);
+    saveStoredTheme(next);
+  }, []);
 
   const haptic = useCallback((style: "light" | "medium" = "light") => {
     try {
@@ -362,6 +463,19 @@ export function TelegramMiniApp({
             <strong>{siteName}</strong>
           </div>
           <div className={styles.topActions}>
+            <button
+              type="button"
+              className={styles.themeToggle}
+              onClick={() => {
+                haptic();
+                saveTheme(dark ? "light" : "dark");
+              }}
+              aria-label={ar ? "تبديل المظهر" : "Toggle theme"}
+              aria-pressed={dark}
+              title={dark ? (ar ? "المظهر الفاتح" : "Light theme") : ar ? "المظهر الداكن" : "Dark theme"}
+            >
+              {dark ? <SunIcon /> : <MoonIcon />}
+            </button>
             <button
               type="button"
               className={styles.lang}
