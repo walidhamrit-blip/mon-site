@@ -6,7 +6,7 @@ import {
   isLocalizablePath,
   localeFromQuery,
 } from "@/lib/locale";
-import { isTelegramMiniAppPath } from "@/lib/telegram-mini-app-core";
+import { isTelegramMiniAppPath, TELEGRAM_SURFACE_HEADER } from "@/lib/telegram-mini-app-core";
 
 /**
  * Proxy de sécurité (convention Next.js 16, ex-« middleware ») : applique
@@ -58,6 +58,8 @@ export function proxy(request: NextRequest) {
   // On nettoie donc l'en-tête interne avant de le recalculer pour le layout.
   const requestHeaders = new Headers(request.headers);
   requestHeaders.delete(LOCALE_HEADER);
+  requestHeaders.delete(TELEGRAM_SURFACE_HEADER);
+  if (isTelegramMiniAppPath(pathname)) requestHeaders.set(TELEGRAM_SURFACE_HEADER, "telegram");
   const publicPage = isLocalizablePath(pathname);
   const rawLang = request.nextUrl.searchParams.getAll(LOCALE_QUERY_PARAM);
   const urlLocale = publicPage && rawLang.length === 1 ? localeFromQuery(rawLang[0]) : null;

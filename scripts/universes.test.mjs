@@ -85,7 +85,8 @@ test("public shell exposes data-universe and the agency JSON-LD moved out of the
   assert.doesNotMatch(root, /localBusinessJsonLd\(/);
   assert.doesNotMatch(root, /offerCatalogJsonLd\(/);
   assert.match(root, /organizationJsonLd\(config\), websiteJsonLd\(config\)/);
-  assert.match(root, /import "\.\/universes\.css"/);
+  assert.match(root, /website-provider-loader/);
+  assert.match(read("src/components/website-providers.tsx"), /import "@\/app\/universes\.css"/);
 });
 
 test("header and footer adapt to the universe and keep the endorsement visible", () => {

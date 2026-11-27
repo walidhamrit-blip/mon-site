@@ -195,9 +195,11 @@ async function handleMessage(message: TelegramMessage): Promise<void> {
   const text = (message.text ?? "").trim();
   if (!text) return;
 
-  const ctx = await measureTelegram("site_context", () => botContext());
   const { command, args } = parseTelegramCommand(text);
-  const stored = await measureTelegram("db_subscriber", () => getTelegramSubscriber(chatId));
+  const [ctx, stored] = await Promise.all([
+    measureTelegram("site_context", () => botContext()),
+    measureTelegram("db_subscriber", () => getTelegramSubscriber(chatId)),
+  ]);
   const isNew = !stored;
   const actor = {
     chatId,
@@ -357,10 +359,13 @@ async function handleCallback(query: TelegramCallbackQuery): Promise<void> {
   //    du site, base, boutique inline) : le spinner du bouton s'arrête
   //    immédiatement. answerCallbackQuery est indépendant de la réponse/edit
   //    qui suit, et la route renvoie 200 quoi qu'il arrive.
-  await measureTelegram("callback_ack", () => telegramAnswerCallback(query.id));
-
-  const ctx = await measureTelegram("site_context", () => botContext());
-  const stored = await measureTelegram("db_subscriber", () => getTelegramSubscriber(chatId));
+  // Start ACK first, but do not put its round trip ahead of independent reads.
+  // Await ALL before dispatch; no detached work, no early webhook 200.
+  const [, ctx, stored] = await Promise.all([
+    measureTelegram("callback_ack", () => telegramAnswerCallback(query.id)),
+    measureTelegram("site_context", () => botContext()),
+    measureTelegram("db_subscriber", () => getTelegramSubscriber(chatId)),
+  ]);
   const language: TelegramLocale = stored?.language ?? "ar";
   const copy = botCopy(language);
   // Navigation « au même endroit » : la boutique (et le menu) éditent le

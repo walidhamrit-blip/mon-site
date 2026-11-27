@@ -13,6 +13,7 @@
 
 # Scripts de test locaux
 .scratch/
+/.cache/
 
 # Rapports GEO générés par scripts/geo-citations.mjs (artefact CI)
 /reports

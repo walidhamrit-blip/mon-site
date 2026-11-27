@@ -556,7 +556,7 @@ export function buildSiteData(rows: { key: string; value: unknown }[]): SiteData
  */
 export async function getSiteData(): Promise<SiteData> {
   try {
-    await ensureSchema();
+    await measureTelegram("db_schema", () => ensureSchema());
     const rows = await measureTelegram("db_settings", () => db.select().from(settings));
     return buildSiteData(rows);
   } catch (error) {

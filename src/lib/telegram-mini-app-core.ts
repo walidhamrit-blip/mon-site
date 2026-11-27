@@ -26,6 +26,9 @@ import { BRAND_LABELS_AR, regionName, REGION_NOTES } from "./catalog-labels.ts";
 /** Chemin public de la Mini App (déclaré dans BotFather / `setChatMenuButton`). */
 export const TELEGRAM_MINI_APP_PATH = "/tg";
 
+/** Set and sanitized by proxy; never trust a browser-supplied value. */
+export const TELEGRAM_SURFACE_HEADER = "x-nokhba-surface";
+
 /** Origines autorisées à embarquer la Mini App (client Telegram Web). */
 export const TELEGRAM_MINI_APP_FRAME_ANCESTORS = [
   "https://web.telegram.org",

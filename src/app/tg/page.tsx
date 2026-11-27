@@ -1,3 +1,4 @@
+import "./telegram-base.css";
 import { measureTelegram, traceTelegram, telegramServerTiming } from "@/lib/telegram-performance";
 import type { Metadata, Viewport } from "next";
 import { getPublicCatalogCached, getSiteDataCachedShared } from "@/lib/catalog-cache";

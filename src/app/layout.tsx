@@ -1,13 +1,10 @@
+import { headers } from "next/headers";
+import { LOCALE_HEADER } from "@/lib/locale";
+import { TELEGRAM_SURFACE_HEADER } from "@/lib/telegram-mini-app-core";
 import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";
-import "./globals.css";
-import "./gaming.css";
-import "./universes.css";
-import { I18nProvider } from "@/lib/i18n";
-import { ThemeProvider, type ThemeMode } from "@/components/theme-provider";
-import { SiteProvider } from "@/components/site-provider";
-import { CurrencyProvider } from "@/components/currency-provider";
-import { MotionProvider } from "@/components/motion-provider";
+import WebsiteProviders from "@/components/website-provider-loader";
+import type { ThemeMode } from "@/components/theme-provider";
 import { getSiteDataCached } from "@/lib/store";
 import { siteConfig } from "@/lib/config";
 import { resolveThemeId, DEFAULT_THEME_ID, themeBootScript, themeCss } from "@/lib/themes";
@@ -36,6 +33,10 @@ import { requestLocale } from "@/lib/locale-server";
  * marché dans l'admin met donc à jour le SEO racine, sans redéploiement.
  */
 export async function generateMetadata(): Promise<Metadata> {
+  // /tg has its own identity and no need for the agency SEO/settings query.
+  if ((await headers()).get(TELEGRAM_SURFACE_HEADER) === "telegram") {
+    return { title: "Nokhba — Telegram Store", robots: { index: false, follow: false } };
+  }
   const { config } = await getSiteDataCached();
   const market = resolveMarket(config.market);
   const globalReach = Boolean(config.market?.globalReach) || market.id === "global";
@@ -131,6 +132,23 @@ export const viewport: Viewport = {
 };
 
 export default async function RootLayout({ children }: { children: ReactNode }) {
+  // Same /tg, lighter document: no agency content serialized into SiteProvider,
+  // no currency/theme/motion providers unused by this independent Mini App.
+  // Signal is overwritten by proxy for EVERY request, including RSC navigation.
+  const requestHeaders = await headers();
+  if (requestHeaders.get(TELEGRAM_SURFACE_HEADER) === "telegram") {
+    const locale = requestHeaders.get(LOCALE_HEADER) === "en" ? "en" : "ar";
+    return (
+      <html lang={locale} dir={locale === "ar" ? "rtl" : "ltr"} suppressHydrationWarning>
+        <head>
+          <link rel="preload" href="/fonts/cairo-arabic-var.woff2" as="font" type="font/woff2" crossOrigin="anonymous" />
+        </head>
+        <body className="antialiased" style={{ margin: 0, background: "#0b1020", fontFamily: "var(--font-cairo), var(--font-plex-ar), system-ui" }}>
+          {children}
+        </body>
+      </html>
+    );
+  }
   const { config, content } = await getSiteDataCached();
 
   // Apparence principale du site (choisie dans /admin → Réglages) :
@@ -199,18 +217,16 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
         className="antialiased"
         style={{ fontFamily: "var(--font-cairo), var(--font-plex-ar), system-ui" }}
       >
-        <ThemeProvider defaultMode={defaultMode} defaultPalette={defaultPalette}>
-          <I18nProvider defaultLocale={primaryLocale} urlLocale={urlLocale ?? (isPublic ? defaultLocale : null)}>
-            <SiteProvider config={config} content={content}>
-              <CurrencyProvider
-                rates={config.currency?.rates ?? siteConfig.currency.rates}
-                enabled={[...(config.currency?.enabled ?? siteConfig.currency.enabled)]}
-              >
-                <MotionProvider>{children}</MotionProvider>
-              </CurrencyProvider>
-            </SiteProvider>
-          </I18nProvider>
-        </ThemeProvider>
+        <WebsiteProviders
+          config={config}
+          content={content}
+          defaultMode={defaultMode}
+          defaultPalette={defaultPalette}
+          primaryLocale={primaryLocale}
+          urlLocale={urlLocale ?? (isPublic ? defaultLocale : null)}
+        >
+          {children}
+        </WebsiteProviders>
 
         <JsonLd data={structuredData} />
         {isPublic && (

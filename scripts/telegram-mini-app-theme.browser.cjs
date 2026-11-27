@@ -18,21 +18,21 @@ for(const width of [320,360,390]) {
  await page.goto(`${baseURL}/tg?lang=en`);
  const toggle=page.locator('button[aria-pressed]');
  await toggle.waitFor(); await page.waitForTimeout(150);
- assert.equal(await toggle.getAttribute('aria-pressed'),'false');
- await toggle.click(); await page.waitForTimeout(300);
  assert.equal(await toggle.getAttribute('aria-pressed'),'true');
- assert.equal(await page.locator('div[dir][lang="en"]').evaluate(el=>getComputedStyle(el).backgroundColor),'rgb(11, 16, 32)');
+ await toggle.click(); await page.waitForTimeout(300);
+ assert.equal(await toggle.getAttribute('aria-pressed'),'false');
+ assert.equal(await page.locator('div[dir][lang="en"]').evaluate(el=>getComputedStyle(el).backgroundColor),'rgb(243, 244, 248)');
  assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth <= innerWidth),true,`overflow ${width}`);
  await page.reload(); await page.waitForTimeout(300);
- assert.equal(await toggle.getAttribute('aria-pressed'),'true');
+ assert.equal(await toggle.getAttribute('aria-pressed'),'false');
  await page.getByRole('button',{name:'العربية',exact:true}).click();
  assert.equal(await page.locator('div[lang="ar"][dir="rtl"]').count(),1);
  assert.equal(await toggle.getAttribute('aria-label'),'تبديل المظهر');
  await page.getByRole('searchbox').fill('NO_SUCH_PRODUCT');
  await toggle.click(); await page.waitForTimeout(300);
- assert.equal(await toggle.getAttribute('aria-pressed'),'false');
+ assert.equal(await toggle.getAttribute('aria-pressed'),'true');
  assert.equal(errors.length,0,errors.join('\n'));
- console.log(`PASS Android Chromium emulation ${width}px: light default despite OS dark, toggle, persistence, RTL/LTR, search, no overflow/hydration errors`);
+ console.log(`PASS Android Chromium emulation ${width}px: navy default, light choice preserved, toggle, persistence, RTL/LTR, search, no overflow/hydration errors`);
  await context.close();
 }
 // Simulate SDK arriving AFTER the component mounts, like next/script.
@@ -46,10 +46,10 @@ for(const lateClick of [false,true]) {
  await page.waitForFunction(()=>window.__themeRead);
  const toggle=page.locator('button[aria-pressed]');
  if(lateClick) await toggle.click();
- await page.evaluate(v=>window.__cb(null,v),lateClick?'light':'dark');
+ await page.evaluate(v=>window.__cb(null,v),lateClick?'dark':'light');
  await page.waitForTimeout(100);
- assert.equal(await toggle.getAttribute('aria-pressed'),'true');
- if(lateClick) assert.equal(await page.evaluate(()=>window.__saved),'dark');
+ assert.equal(await toggle.getAttribute('aria-pressed'),'false');
+ if(lateClick) assert.equal(await page.evaluate(()=>window.__saved),'light');
  console.log(`PASS delayed Telegram CloudStorage ${lateClick?'cannot overwrite a fresh user choice':'restores theme after SDK is ready'}`);
  await context.close();
 }

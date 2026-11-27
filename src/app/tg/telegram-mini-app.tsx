@@ -226,8 +226,8 @@ export function TelegramMiniApp({
   const [region, setRegion] = useState<string | null>(null);
   const [query, setQuery] = useState("");
   const [limit, setLimit] = useState(PAGE_SIZE);
-  /* Thème : clair par défaut (exigence), choix mémorisé par le visiteur. */
-  const [theme, setTheme] = useState<AppTheme>("light");
+  /* Nouvelle identité bleu nuit par défaut ; tout choix explicite reste prioritaire. */
+  const [theme, setTheme] = useState<AppTheme>("dark");
   const themeInteracted = useRef(false);
   const cloudThemeRequested = useRef(false);
   const dark = theme === "dark";
@@ -431,9 +431,9 @@ export function TelegramMiniApp({
                 src={product.image}
                 alt=""
                 fill
-                sizes="(max-width: 479px) 33vw, 25vw"
+                sizes={shown.length === 1 ? "230px" : "(max-width: 419px) calc((100vw - 44px) / 2), (max-width: 559px) calc((100vw - 56px) / 3), 168px"}
                 quality={70}
-                priority={index < 6}
+                priority={kind !== null && index < 2}
                 className={product.fit === "contain" ? styles.contain : undefined}
               />
             ) : (
@@ -455,7 +455,7 @@ export function TelegramMiniApp({
   );
 
   return (
-    <div className={`${styles.app} ${dark ? styles.dark : ""}`} dir={ar ? "rtl" : "ltr"} lang={locale}>
+    <div className={`${styles.app} ${dark ? styles.dark : ""}`} data-tg-app="true" dir={ar ? "rtl" : "ltr"} lang={locale}>
       <Script src={TELEGRAM_WEB_APP_SCRIPT} strategy="afterInteractive" onReady={initTelegram} />
 
       <div className={styles.wrap}>
@@ -555,7 +555,7 @@ export function TelegramMiniApp({
                 <h2>{copy.categories}</h2>
               </div>
               <div className={styles.cats}>
-                {categories.map((category) => (
+                {categories.map((category, index) => (
                   <button
                     key={category.kind}
                     type="button"
@@ -563,7 +563,7 @@ export function TelegramMiniApp({
                     onClick={() => pickKind(category.kind)}
                   >
                     {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={category.image} alt="" width={400} height={400} />
+                    <img src={category.image} alt="" width={400} height={400} loading={index < 2 ? "eager" : "lazy"} fetchPriority={index === 0 ? "high" : "auto"} decoding="async" />
                     <span className={styles.catLabel}>
                       <strong>{ar ? category.ar : category.en}</strong>
                       <small>{copy.count(category.count)}</small>
