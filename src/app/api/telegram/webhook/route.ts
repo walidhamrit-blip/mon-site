@@ -1,3 +1,4 @@
+import { measureTelegram, traceTelegram, telegramServerTiming } from "@/lib/telegram-performance";
 import { createHash, timingSafeEqual } from "node:crypto";
 import { NextResponse } from "next/server";
 import { getSiteDataCached } from "@/lib/store";
@@ -132,6 +133,14 @@ export async function GET() {
 }
 
 export async function POST(req: Request) {
+  return traceTelegram("webhook", async (trace) => {
+    const response = await measureTelegram("webhook_total", () => processUpdate(req));
+    response.headers.set("Server-Timing", telegramServerTiming(trace));
+    return response;
+  });
+}
+
+async function processUpdate(req: Request) {
   if (!telegramConfigured()) {
     return NextResponse.json(
       { ok: false, error: "telegram_not_configured" },
@@ -139,7 +148,7 @@ export async function POST(req: Request) {
     );
   }
 
-  const secret = await resolveWebhookSecret();
+  const secret = await measureTelegram("auth_secret", () => resolveWebhookSecret());
   if (!secret) {
     return NextResponse.json(
       { ok: false, error: "webhook_secret_missing" },
@@ -161,9 +170,9 @@ export async function POST(req: Request) {
 
   try {
     if (update.callback_query) {
-      await handleCallback(update.callback_query);
+      await measureTelegram("callback_total", () => handleCallback(update.callback_query!));
     } else if (update.message?.text) {
-      await handleMessage(update.message);
+      await measureTelegram("message_total", () => handleMessage(update.message!));
     }
   } catch (error) {
     console.warn(
@@ -186,9 +195,9 @@ async function handleMessage(message: TelegramMessage): Promise<void> {
   const text = (message.text ?? "").trim();
   if (!text) return;
 
-  const ctx = await botContext();
+  const ctx = await measureTelegram("site_context", () => botContext());
   const { command, args } = parseTelegramCommand(text);
-  const stored = await getTelegramSubscriber(chatId);
+  const stored = await measureTelegram("db_subscriber", () => getTelegramSubscriber(chatId));
   const isNew = !stored;
   const actor = {
     chatId,
@@ -348,10 +357,10 @@ async function handleCallback(query: TelegramCallbackQuery): Promise<void> {
   //    du site, base, boutique inline) : le spinner du bouton s'arrête
   //    immédiatement. answerCallbackQuery est indépendant de la réponse/edit
   //    qui suit, et la route renvoie 200 quoi qu'il arrive.
-  await telegramAnswerCallback(query.id);
+  await measureTelegram("callback_ack", () => telegramAnswerCallback(query.id));
 
-  const ctx = await botContext();
-  const stored = await getTelegramSubscriber(chatId);
+  const ctx = await measureTelegram("site_context", () => botContext());
+  const stored = await measureTelegram("db_subscriber", () => getTelegramSubscriber(chatId));
   const language: TelegramLocale = stored?.language ?? "ar";
   const copy = botCopy(language);
   // Navigation « au même endroit » : la boutique (et le menu) éditent le

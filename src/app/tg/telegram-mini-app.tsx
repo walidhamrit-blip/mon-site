@@ -1,6 +1,7 @@
 "use client";
 
 import Script from "next/script";
+import { startMiniAppDiagnostics } from "./telegram-performance.client";
 import Image from "next/image";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
@@ -230,6 +231,7 @@ export function TelegramMiniApp({
   const themeInteracted = useRef(false);
   const cloudThemeRequested = useRef(false);
   const dark = theme === "dark";
+  useEffect(startMiniAppDiagnostics, []);
   const [user, setUser] = useState<{ name: string; photo: string | null } | null>(null);
   const [platform, setPlatform] = useState<string | null>(null);
   const listRef = useRef<HTMLDivElement>(null);
@@ -266,6 +268,7 @@ export function TelegramMiniApp({
   const initTelegram = useCallback(() => {
     const app = telegramApp();
     if (!app) return;
+    if (new URLSearchParams(window.location.search).get("perf") === "1") performance.mark("tg_sdk_ready");
     app.ready();
     app.expand();
     setPlatform(app.platform ?? null);
