@@ -55,6 +55,13 @@ export const SEO_AUTOPILOT_STATE: SeoAutopilotState = {
       "baselineCtr": 0,
       "baselineImpressions": 33,
       "note": "CTR Page 1 Pizza Forno Tripoli (PR #276)"
+    },
+    "/codes/fzr-giftcard-playstation-be": {
+      "lastOptimizedAt": "2026-11-26T00:00:00.000Z",
+      "baselinePosition": 18.4,
+      "baselineCtr": 0,
+      "baselineImpressions": 15,
+      "note": "Fiche PlayStation (BE) — 8 champs SEO/éditoriaux (correctif n°3)"
     }
   },
   "overrides": {}
