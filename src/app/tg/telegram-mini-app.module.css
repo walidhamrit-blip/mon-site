@@ -14,6 +14,8 @@
   --category-bg: #d9dbe2;
   --brand-start: #6d5ae6;
   --brand-end: #141a26;
+  --notice-ink: #b45309;
+  color-scheme: light;
   --shadow: 0 10px 28px rgba(20, 28, 43, 0.08);
   min-height: 100vh;
   min-height: 100dvh;
@@ -39,6 +41,7 @@
   --category-bg: var(--card);
   --brand-start: var(--accent);
   --brand-end: var(--navy);
+  --notice-ink: #fbbf24;
   color-scheme: dark;
   --shadow: 0 12px 30px rgba(0, 0, 0, 0.5);
 }
@@ -220,7 +223,7 @@
   padding: 10px 12px;
   border-radius: 12px;
   background: rgba(245, 158, 11, 0.12);
-  color: #b45309;
+  color: var(--notice-ink);
   font-size: 12.5px;
   font-weight: 700;
 }
@@ -726,6 +729,7 @@
 }
 
 /* Transition douce au basculement de thème (évite les sauts brusques). */
+.info span,
 .app,
 .hero,
 .top,
@@ -805,6 +809,7 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .info span,
   .product,
   .cat,
   .cat img,
