@@ -553,7 +553,10 @@ async function renderDenominationByIndex(
     return;
   }
   const minUsd = fazercardsMinOrderUsd();
-  const initial = shopInitialQuantity(denomination, minUsd);
+  const initial = shopInitialQuantity(
+    product.supplier === "fazercards" && product.kind === "game_topup"
+      ? { ...denomination, maxQuantity: 1 } : denomination, minUsd,
+  );
   const view = shopDenominationView(
     product,
     denomination,
@@ -591,10 +594,11 @@ async function shiftQuantity(
     await renderProduct(actor, messageId, product.slug, backPage, language, ctx, state);
     return;
   }
-  const maxQty = Math.max(
-    1,
-    Math.min(denomination.maxQuantity ?? SHOP_MAX_QUANTITY, SHOP_MAX_QUANTITY),
-  );
+  const maxQty = product.supplier === "fazercards" && product.kind === "game_topup"
+    ? 1 : Math.max(
+      1,
+      Math.min(denomination.maxQuantity ?? SHOP_MAX_QUANTITY, SHOP_MAX_QUANTITY),
+    );
   const next = Math.min(Math.max(1, stateQty(state) + delta), maxQty);
   const view = shopDenominationView(
     product,
@@ -1093,6 +1097,7 @@ function pendingFor(
   qty: number,
   language: ShopLocale,
 ): PendingCheckout {
+  qty = product.supplier === "fazercards" && product.kind === "game_topup" ? 1 : qty;
   const locale = language === "ar" ? "ar" : "en";
   const title = locale === "ar" ? product.titleAr : product.titleEn;
   const label = denominationLabel(

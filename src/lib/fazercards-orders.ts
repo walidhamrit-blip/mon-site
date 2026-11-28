@@ -1,3 +1,4 @@
+import { fazercardsMaxQuantity, requiresTopupQuantityReview } from "@/lib/fazercards-quantity";
 // Commandes digitales FazerCards — « vendre à la commande ».
 //
 // Flux complet :
@@ -445,15 +446,16 @@ export async function createFazercardsCheckout(
   }
 
   const quantity = Number(input.quantity ?? 1);
+  const maxQuantity = fazercardsMaxQuantity(product.kind, denomination.maxOrderQuantity);
   if (
     !Number.isInteger(quantity) ||
     quantity < 1 ||
-    quantity > denomination.maxOrderQuantity
+    quantity > maxQuantity
   ) {
     throw new FazercardsOrderError(
       "invalid_quantity",
       400,
-      `Quantité invalide (1 à ${denomination.maxOrderQuantity}).`,
+      `Quantité invalide (1 à ${maxQuantity}).`,
     );
   }
 
@@ -476,10 +478,12 @@ export async function createFazercardsCheckout(
     throw new FazercardsOrderError(
       "below_minimum",
       400,
-      `Montant minimum ${minOrderUsd.toFixed(2)} $ par commande — choisissez au moins ${Math.min(
-        minQuantity,
-        denomination.maxOrderQuantity,
-      )} × ${denomination.label}.`,
+      product.kind === "game_topup"
+        ? `Montant minimum ${minOrderUsd.toFixed(2)} $ : choisissez une offre plus élevée ou un autre moyen de paiement.`
+        : `Montant minimum ${minOrderUsd.toFixed(2)} $ par commande — choisissez au moins ${Math.min(
+            minQuantity,
+            maxQuantity,
+          )} × ${denomination.label}.`,
     );
   }
 
@@ -488,9 +492,13 @@ export async function createFazercardsCheckout(
     throw new FazercardsOrderError(
       "below_paygate_minimum",
       400,
-      locale === "ar"
-        ? `الحد الأدنى للدفع بالبطاقة البنكية هو ${payGateConfig.minOrderUsd.toFixed(2)} $ — اختر ${Math.min(minCardQty, denomination.maxOrderQuantity)} × ${denomination.label} على الأقل أو ادفع بالعملات الرقمية.`
-        : `Minimum card payment is $${payGateConfig.minOrderUsd.toFixed(2)} — select at least ${Math.min(minCardQty, denomination.maxOrderQuantity)} × ${denomination.label} or choose Crypto.`,
+      product.kind === "game_topup"
+        ? (locale === "ar"
+          ? `الحد الأدنى للدفع بالبطاقة ${payGateConfig.minOrderUsd.toFixed(2)} $ — اختر باقة أكبر أو وسيلة دفع أخرى.`
+          : `The card minimum is $${payGateConfig.minOrderUsd.toFixed(2)} — choose a larger offer or another payment method.`)
+        : locale === "ar"
+          ? `الحد الأدنى للدفع بالبطاقة البنكية هو ${payGateConfig.minOrderUsd.toFixed(2)} $ — اختر ${Math.min(minCardQty, maxQuantity)} × ${denomination.label} على الأقل أو ادفع بالعملات الرقمية.`
+          : `Minimum card payment is $${payGateConfig.minOrderUsd.toFixed(2)} — select at least ${Math.min(minCardQty, maxQuantity)} × ${denomination.label} or choose Crypto.`,
     );
   }
 
@@ -1037,6 +1045,12 @@ export async function deliverPaidFazercardsOrder(
     .limit(1);
   if (payment[0]?.status !== "paid") {
     return { outcome: "not_paid", ref: loaded.ref, message: "Paiement non confirmé." };
+  }
+
+  // Les anciennes commandes multiples exigent un rapprochement humain, même
+  // si un achat fournisseur existe déjà : ne pas le répéter ni marquer livré.
+  if (requiresTopupQuantityReview(loaded.kind, loaded.quantity)) {
+    return flagManual(loaded, "Recharge multiple historique : vérifier le paiement et les achats déjà effectués chez FazerCards avant toute livraison ou régularisation. Aucun nouvel achat automatique.");
   }
 
   const key = digitalCodesKey();

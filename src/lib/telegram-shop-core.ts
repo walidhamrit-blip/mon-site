@@ -1183,7 +1183,8 @@ export function shopDenominationView(
   options: ShopDenominationViewOptions = {},
 ): ShopView {
   const copy = shopCopy(locale);
-  const maxQty = Math.max(
+  const singleTopup = product.supplier === "fazercards" && product.kind === "game_topup";
+  const maxQty = singleTopup ? 1 : Math.max(
     1,
     Math.min(denomination.maxQuantity ?? SHOP_MAX_QUANTITY, SHOP_MAX_QUANTITY),
   );
@@ -1207,7 +1208,7 @@ export function shopDenominationView(
     `📦 <b>${escapeShopHtml(title)}</b>`,
     `💳 ${escapeShopHtml(label)} · ${formatShopUsd(denomination.priceUsd)}`,
     "",
-    `🔢 ${copy.quantity}: <b>${qty}</b>`,
+    ...(singleTopup ? [] : [`🔢 ${copy.quantity}: <b>${qty}</b>`]),
     `💵 ${copy.total}: <b>${formatShopUsd(total)}</b>`,
     ...(savedEmail && !needsFields
       ? [`✉️ ${copy.deliveryEmail}: <code>${escapeShopHtml(savedEmail)}</code>`]
@@ -1222,7 +1223,7 @@ export function shopDenominationView(
         ]
       : []),
     "",
-    copy.codeByEmail,
+    ...(singleTopup ? [] : [copy.codeByEmail]),
   ];
 
   const qtyRow: ShopButton[] = [
@@ -1231,7 +1232,7 @@ export function shopDenominationView(
     { text: "➕", callback_data: shopCallback({ view: "quantity", delta: 1 }) },
   ];
 
-  const rows: ShopKeyboard = [qtyRow];
+  const rows: ShopKeyboard = singleTopup ? [] : [qtyRow];
   if (needsFields) {
     // Identifiant joueur, serveur… : le formulaire web complet est obligatoire.
     rows.push([
@@ -1303,7 +1304,8 @@ export function shopBelowMinimumView(
   productPage = 1,
 ): ShopView {
   const copy = shopCopy(locale);
-  const maxQty = Math.max(
+  const singleTopup = product.supplier === "fazercards" && product.kind === "game_topup";
+  const maxQty = singleTopup ? 1 : Math.max(
     1,
     Math.min(denomination.maxQuantity ?? SHOP_MAX_QUANTITY, SHOP_MAX_QUANTITY),
   );
@@ -1317,13 +1319,15 @@ export function shopBelowMinimumView(
     `📦 <b>${escapeShopHtml(title)}</b>`,
     `💳 ${escapeShopHtml(label)}`,
     "",
-    fillShopTemplate(copy.belowMinimum, {
+    ...(singleTopup ? [locale === "ar"
+      ? `💵 الحد الأدنى للدفع بالعملات الرقمية ${formatShopUsd(minUsd)}. اختر باقة أكبر أو وسيلة دفع أخرى في صفحة المنتج.`
+      : `💵 The crypto minimum is ${formatShopUsd(minUsd)}. Choose a larger offer or another payment method on the product page.`] : [fillShopTemplate(copy.belowMinimum, {
       min: formatShopUsd(minUsd),
       qty: String(suggestedQty),
       label: escapeShopHtml(label),
       total: formatShopUsd(suggestedTotal),
     }),
-    ...(sellableAgain ? [] : ["", copy.belowMinimumUnreachable]),
+    ...(sellableAgain ? [] : ["", copy.belowMinimumUnreachable])]),
   ].join("\n");
 
   const keyboard: ShopKeyboard = [];

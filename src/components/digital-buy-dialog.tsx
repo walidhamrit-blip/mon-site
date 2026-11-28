@@ -159,12 +159,13 @@ export function DigitalBuyDialog({ product, denominationId, onClose }: Props) {
     : "";
   const phoneQuoteAccepted = Boolean(phoneQuoteKey) && acceptedPhoneQuoteKey === phoneQuoteKey;
   const requiredFields = selected?.fields ?? [];
-  const maxQuantity = Math.max(1, Math.min(MAX_QUANTITY, selected?.maxQuantity ?? MAX_QUANTITY));
   const isFazercards = product.supplier === "fazercards";
+  const singleTopup = isFazercards && product.kind === "game_topup";
+  const maxQuantity = singleTopup ? 1 : Math.max(1, Math.min(MAX_QUANTITY, selected?.maxQuantity ?? MAX_QUANTITY));
   // Facture crypto minimale : pour un article à 0,81 $, il faut au moins
   // deux unités — sinon la passerelle refuse la facture après le clic.
   const minQuantity =
-    isFazercards && selected && selected.priceUsd > 0
+    isFazercards && !singleTopup && selected && selected.priceUsd > 0
       ? Math.max(1, Math.ceil(MIN_CRYPTO_INVOICE_USD / selected.priceUsd))
       : 1;
   const minCardQuantity =
@@ -852,7 +853,7 @@ export function DigitalBuyDialog({ product, denominationId, onClose }: Props) {
                     // Pré-remplit la quantité minimale facturable.
                     const unit = item.priceUsd > 0 ? item.priceUsd : 0;
                     const needed =
-                      isFazercards && paymentMethod === "nowpayments" && unit > 0
+                      isFazercards && !singleTopup && paymentMethod === "nowpayments" && unit > 0
                         ? Math.max(1, Math.ceil(MIN_CRYPTO_INVOICE_USD / unit))
                         : 1;
                     setQuantity(Math.min(needed, MAX_QUANTITY));
@@ -882,13 +883,13 @@ export function DigitalBuyDialog({ product, denominationId, onClose }: Props) {
         <div className="mt-4 flex items-center justify-between rounded-xl border border-[var(--border)] bg-[var(--secondary)]/40 px-4 py-3">
           <div>
             <div className="text-[11px] font-black uppercase tracking-wide text-[var(--muted-foreground)]">
-              {ar ? "الكمية" : "Quantity"}
+              {singleTopup ? (ar ? "المجموع" : "Total") : (ar ? "الكمية" : "Quantity")}
             </div>
             <div className="text-[15px] font-black" dir="ltr">
               <Price usd={total} />
             </div>
           </div>
-          <div className="flex items-center gap-2">
+          {!singleTopup && <div className="flex items-center gap-2">
             <button
               type="button"
               onClick={() => setQuantity((value) => Math.max(effectiveMinQuantity, value - 1))}
@@ -908,7 +909,7 @@ export function DigitalBuyDialog({ product, denominationId, onClose }: Props) {
             >
               <Plus className="h-4 w-4" aria-hidden="true" />
             </button>
-          </div>
+          </div>}
         </div>
 
         {/* Moyen de paiement : la carte téléphonique reste une revue humaine,
@@ -1055,8 +1056,8 @@ export function DigitalBuyDialog({ product, denominationId, onClose }: Props) {
                     className="inline-flex min-h-11 items-center justify-center rounded-lg border border-amber-500/50 bg-white/80 dark:bg-black/25 px-3 py-2 text-[11.5px] font-bold text-amber-950 dark:text-amber-100 transition-colors hover:bg-white cursor-pointer"
                   >
                     {ar
-                      ? `الإبقاء على الكمية (${quantity}) والدفع بالعملات الرقمية`
-                      : `Keep qty (${quantity}) & pay with Crypto`}
+                      ? (singleTopup ? "الدفع بالعملات الرقمية" : `الإبقاء على الكمية (${quantity}) والدفع بالعملات الرقمية`)
+                      : (singleTopup ? "Pay with Crypto" : `Keep qty (${quantity}) & pay with Crypto`)}
                   </button>
                 </div>
               </div>
@@ -1423,17 +1424,21 @@ export function DigitalBuyDialog({ product, denominationId, onClose }: Props) {
 
         {belowMinimum && (
           <p className="mt-3 rounded-lg border border-amber-300/60 bg-amber-50 dark:bg-amber-950/40 px-3 py-2 text-[12.5px] leading-5 text-amber-800 dark:text-amber-200">
-            {ar
-              ? `الحد الأدنى للدفع ${MIN_CRYPTO_INVOICE_USD.toFixed(2)} $ — اختر ${minQuantity} وحدات على الأقل.`
-              : `Minimum order ${MIN_CRYPTO_INVOICE_USD.toFixed(2)} $ — choose at least ${minQuantity} units.`}
+            {singleTopup
+              ? (ar ? `الحد الأدنى للدفع بالعملات الرقمية ${MIN_CRYPTO_INVOICE_USD.toFixed(2)} $ — اختر باقة أكبر أو وسيلة دفع أخرى.` : `The crypto minimum is $${MIN_CRYPTO_INVOICE_USD.toFixed(2)} — choose a larger offer or another payment method.`)
+              : ar
+                ? `الحد الأدنى للدفع ${MIN_CRYPTO_INVOICE_USD.toFixed(2)} $ — اختر ${minQuantity} وحدات على الأقل.`
+                : `Minimum order ${MIN_CRYPTO_INVOICE_USD.toFixed(2)} $ — choose at least ${minQuantity} units.`}
           </p>
         )}
 
         {belowCardMinimum && cardGateway && (
           <p className="mt-3 rounded-lg border border-amber-300/60 bg-amber-50 dark:bg-amber-950/40 px-3 py-2 text-[12.5px] leading-5 text-amber-800 dark:text-amber-200">
-            {ar
-              ? `الحد الأدنى للدفع بالبطاقة البنكية هو ${cardGateway.minOrderUsd.toFixed(2)} $ — اختر ${minCardQuantity} وحدات على الأقل أو ادفع بالعملات الرقمية.`
-              : `Minimum card payment is $${cardGateway.minOrderUsd.toFixed(2)} — select at least ${minCardQuantity} units or switch to Crypto.`}
+            {singleTopup
+              ? (ar ? `الحد الأدنى للدفع بالبطاقة ${cardGateway.minOrderUsd.toFixed(2)} $ — اختر باقة أكبر أو وسيلة دفع أخرى.` : `The card minimum is $${cardGateway.minOrderUsd.toFixed(2)} — choose a larger offer or another payment method.`)
+              : ar
+                ? `الحد الأدنى للدفع بالبطاقة البنكية هو ${cardGateway.minOrderUsd.toFixed(2)} $ — اختر ${minCardQuantity} وحدات على الأقل أو ادفع بالعملات الرقمية.`
+                : `Minimum card payment is $${cardGateway.minOrderUsd.toFixed(2)} — select at least ${minCardQuantity} units or switch to Crypto.`}
           </p>
         )}
 

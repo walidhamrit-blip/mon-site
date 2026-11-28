@@ -869,3 +869,18 @@ test("/shop propose « parcourir avec photos » en tête des catégories", () =>
   const local = shopCategoriesView([], "en", { site: "http://localhost:3000", store: "" });
   assert.ok(local.keyboard.flat().every((button) => !button.web_app));
 });
+
+test("recharge FazerCards : une seule offre et aucun bouton de quantité, même avec un ancien maximum", () => {
+  const product = fakeProduct({ kind: "game_topup", supplier: "fazercards", denominations: [
+    { id: "topup", label: "1200 Coins", faceValue: "1200 Coins", priceUsd: 0.75, available: true, maxQuantity: 10 },
+  ] });
+  const denomination = product.denominations[0];
+  const view = shopDenominationView(product, denomination, 4, 1, "en", LINKS);
+  assert.equal(view.state.qty, 1);
+  assert.doesNotMatch(view.text, /Quantity:/);
+  assert.match(view.text, /\$0\.75/);
+  assert.ok(!view.keyboard.flat().some((b) => b.callback_data?.startsWith("shop:q:")));
+  const minimum = shopBelowMinimumView(product, denomination, 1.5, "en", LINKS);
+  assert.match(minimum.text, /larger offer or another payment method/);
+  assert.ok(!minimum.keyboard.flat().some((b) => b.callback_data?.startsWith("shop:bm:")));
+});

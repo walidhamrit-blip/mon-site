@@ -122,7 +122,8 @@ test("le panier revérifie le stock et le prix en base, en temps réel", () => {
   // + solde fournisseur suffisant, vérifiés à la caisse.
   const fc = code(fazercardsOrders);
   assert.match(fc, /if \(!denomination\.available\) \{/);
-  assert.match(fc, /quantity > denomination\.maxOrderQuantity/);
+  assert.match(fc, /fazercardsMaxQuantity\(product\.kind, denomination\.maxOrderQuantity\)/);
+  assert.match(fc, /quantity > maxQuantity/);
   assert.match(fc, /const balanceStatus = await getFazercardsBalanceStatus\(\);/);
 });
 
