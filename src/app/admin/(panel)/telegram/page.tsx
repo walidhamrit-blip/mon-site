@@ -19,6 +19,8 @@ import {
   SHOP_FAILURE_REASON_LABELS,
   type ShopCheckoutFailureReason,
 } from "@/lib/telegram-shop-core";
+import { listTelegramSupportRequests } from "@/lib/telegram-support";
+import { SupportInbox } from "./support-inbox";
 import { TelegramPanel } from "./telegram-panel";
 
 export const metadata: Metadata = {
@@ -50,6 +52,7 @@ export default async function AdminTelegramPage() {
     listTelegramShopCheckoutEvents(10).catch(() => DEFAULTS.shopEvents),
   ]);
 
+  const supportResult = await listTelegramSupportRequests().then((requests) => ({ requests, error: false })).catch(() => ({ requests: [], error: true }));
   const botUsername = cfg.botUsername || identity?.username || "";
   const configured = Boolean(cfg.token);
   const deepLink = botUsername ? telegramDeepLink(botUsername, "site") : "";
@@ -112,6 +115,12 @@ export default async function AdminTelegramPage() {
         audience={audience}
         deepLink={deepLink}
       />
+
+      <SupportInbox error={supportResult.error} requests={supportResult.requests.map((request) => ({
+        id: request.id, createdAt: request.createdAt.toISOString(), firstName: request.firstName,
+        username: request.username, message: request.message, reply: request.reply,
+        repliedAt: request.repliedAt?.toISOString() ?? null,
+      }))} />
 
       {/* Journal ------------------------------------------------------------- */}
       <section className="grid gap-4 lg:grid-cols-2">

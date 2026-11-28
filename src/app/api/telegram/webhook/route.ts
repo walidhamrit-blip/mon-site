@@ -30,6 +30,7 @@ import {
   openTelegramShopCategory,
   type ShopBotContext,
 } from "@/lib/telegram-shop";
+import { redactTrackingTokens, saveTelegramSupportRequest } from "@/lib/telegram-support";
 import { shopTargetFromStartPayload } from "@/lib/telegram-links";
 import { shopLocale, shopWhatsappUrl } from "@/lib/telegram-shop-core";
 
@@ -203,8 +204,9 @@ async function handleMessage(message: TelegramMessage): Promise<void> {
   // Lien « Continuer sur Telegram » du site (`/start shop-ar-gift_card`) :
   // la langue de la page visitée sert pour un nouvel arrivant.
   const shopTarget = command === "start" ? shopTargetFromStartPayload(args) : null;
+  const supportLocale = command === "start" && /^support-(ar|en)$/i.test(args) ? args.slice(-2).toLowerCase() as "ar" | "en" : null;
   const language =
-    stored?.language ?? shopTarget?.locale ?? detectTelegramLocale(command === "start" ? args : text, "ar");
+    stored?.language ?? shopTarget?.locale ?? supportLocale ?? detectTelegramLocale(command === "start" ? args : text, "ar");
 
   // Écriture abonné uniquement si nouveau chat, langue, pseudo ou prénom
   // changé (même optimisation que handleCallback, comparaison sur les champs
@@ -232,6 +234,10 @@ async function handleMessage(message: TelegramMessage): Promise<void> {
 
   switch (command) {
     case "start": {
+      if (/^support(?:-(?:ar|en))?$/i.test(args)) {
+        await reply(chatId, botCopy(language).supportPrompt, { keyboard: mainMenuKeyboard(language, links(ctx)) });
+        return;
+      }
       // `/start order-dgc-…` : le client arrive depuis la page de suivi
       // d'une commande. On l'abonne immédiatement (consentement explicite :
       // il a cliqué un bouton « recevoir sur Telegram ») et on lui répond
@@ -267,6 +273,9 @@ async function handleMessage(message: TelegramMessage): Promise<void> {
     case "notifications":
       // `/prevenir DGC-…` : même consentement, saisi à la main dans le chat.
       await watchFromMessage(chatId, args, language, ctx);
+      return;
+    case "support":
+      await reply(chatId, botCopy(language).supportPrompt, { keyboard: mainMenuKeyboard(language, links(ctx)) });
       return;
     case "aide":
     case "help":
@@ -312,23 +321,26 @@ async function handleMessage(message: TelegramMessage): Promise<void> {
   }
 
   // Texte libre : référence de commande, demande d'humain, ou question.
-  await recordTelegramMessage(chatId, text);
+  await recordTelegramMessage(chatId, redactTrackingTokens(text));
   const ref = orderRefFromText(text);
-  if (ref) {
+  if (ref && !wantsHuman(text)) {
     await sendOrderStatus(chatId, language, ref, ctx);
     return;
   }
 
   if (wantsHuman(text)) {
-    await reply(
-      chatId,
-      fillTemplate(botCopy(language).human, {
-        whatsapp: ctx.whatsapp,
-        email: ctx.email,
-      }),
-      { keyboard: mainMenuKeyboard(language, links(ctx)) },
-    );
-    await forwardToTeam(chatId, message, language);
+    let saved = false;
+    try {
+      await saveTelegramSupportRequest({ chatId, messageId: message.message_id, text, username: actor.username, firstName: actor.firstName, language });
+      saved = true;
+    } catch (error) {
+      console.error("[telegram][support] enregistrement impossible:", error instanceof Error ? error.message : error);
+    }
+    const forwarded = await forwardToTeam(chatId, message, language);
+    const notice = saved || forwarded
+      ? (language === "ar" ? "تم استلام طلب المساعدة. سيطلع عليه الفريق." : language === "fr" ? "Votre demande d’aide a été reçue par l’équipe." : "Your support request has been received by the team.")
+      : (language === "ar" ? "تعذر إرسال الرسالة للفريق. يرجى التواصل عبر واتساب أو صفحة الاتصال." : language === "fr" ? "La transmission a échoué. Contactez-nous sur WhatsApp ou via la page contact." : "Your message could not be forwarded. Please contact us on WhatsApp or via the contact page.");
+    await reply(chatId, notice, { keyboard: mainMenuKeyboard(language, links(ctx)) });
     return;
   }
 
@@ -394,6 +406,11 @@ async function handleCallback(query: TelegramCallbackQuery): Promise<void> {
     await replyOrEdit(chatId, messageId, copy.menuTitle, {
       keyboard: mainMenuKeyboard(language, links(ctx)),
     });
+    return;
+  }
+  if (data === "menu:support") {
+    await clearTelegramPendingCheckout(chatId);
+    await replyOrEdit(chatId, messageId, copy.supportPrompt, { keyboard: mainMenuKeyboard(language, links(ctx)) });
     return;
   }
   if (data === "menu:orders") {
@@ -576,19 +593,20 @@ async function forwardToTeam(
   chatId: string,
   message: TelegramMessage,
   language: TelegramLocale,
-): Promise<void> {
-  if (!telegramConfig().adminChatId) return;
-  await notifyTelegramAdmin(
+): Promise<boolean> {
+  if (!telegramConfig().adminChatId) return false;
+  const result = await notifyTelegramAdmin(
     formatCustomerRelay({
       chatId,
       username: message.from?.username ?? null,
       firstName: message.from?.first_name ?? null,
       language,
-      text: message.text ?? "",
+      text: redactTrackingTokens(message.text ?? ""),
     }),
     undefined,
     { parseMode: "HTML" },
   );
+  return result.ok;
 }
 
 /* --------------------------------- Outils --------------------------------- */

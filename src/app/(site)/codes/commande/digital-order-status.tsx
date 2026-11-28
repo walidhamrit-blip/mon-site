@@ -28,6 +28,7 @@ import {
   type DeliveryVariant,
   type StepState,
 } from "@/lib/delivery-progress-core";
+import { OrderSupport } from "@/components/order-support";
 import { regionLabel } from "@/lib/digital-types";
 
 interface DigitalCode {
@@ -895,6 +896,7 @@ export function DigitalOrderStatus({
         </section>
       )}
 
+      <div className="my-4"><OrderSupport reference={order?.ref ?? ref} /></div>
       <div className="flex flex-wrap items-center justify-center gap-3 text-[12.5px] font-bold">
         <Link href="/codes" className="text-[var(--accent)] hover:underline">
           {ar ? "كل الأكواد والبطاقات" : "All codes & cards"}

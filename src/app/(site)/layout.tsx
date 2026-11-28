@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
+import { OrderSupportProvider } from "@/components/order-support";
 import { Navbar } from "@/components/navbar";
 import { Footer } from "@/components/footer";
 import { FloatingWidgets } from "@/components/floating-widgets";
@@ -29,6 +30,7 @@ export default async function SiteLayout({ children }: { children: ReactNode }) 
 
   return (
     <>
+      <OrderSupportProvider bot={process.env.TELEGRAM_BOT_USERNAME}>
       <UniverseShell className="public-shell" agencySchema={agencySchema}>
       <SkipLink />
       <Navbar telegramBot={process.env.TELEGRAM_BOT_USERNAME} />
@@ -47,6 +49,7 @@ export default async function SiteLayout({ children }: { children: ReactNode }) 
       <Footer telegramBot={process.env.TELEGRAM_BOT_USERNAME} year={new Date().getFullYear()} />
       </UniverseShell>
       <FloatingWidgets />
+      </OrderSupportProvider>
       <Analytics />
       {/* Speed Insights : mesure des Core Web Vitals réels (LCP, INP, CLS…).
           Le script est servi depuis `/_vercel/speed-insights/script.js`
