@@ -631,7 +631,9 @@ test("10. cas limites contrat FazerCards : processing (attente), cancelled, code
 });
 
 test("11. garde-fous de périmètre : offre retirée, autre offre, qty > 1, commande synthétique et verrou production", async () => {
-  assert.equal(automaticDeliveryVerified(), false, "le verrou code reste strictement fermé");
+  assert.equal(automaticDeliveryVerified(), false, "fermé par défaut tant que les variables pilote ne sont pas armées");
+  assert.equal(automaticDeliveryVerified(PILOT_CANDIDATE_OFFER_ID, "1"), true, "ouvert uniquement pour le pilote unique armé");
+  assert.equal(automaticDeliveryVerified("G1795076410074VF", "1"), false, "toujours fermé pour l'offre retirée");
 
   const h = createHarness();
   for (const retired of RETIRED_G2G_OFFER_IDS) {

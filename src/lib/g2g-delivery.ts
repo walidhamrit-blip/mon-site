@@ -130,14 +130,16 @@ export async function attemptG2gDelivery(
     };
   }
 
-  let expiresAt: Date | null = null;
-  try {
-    expiresAt = await readDeliveryExpiresAt(delivery.id);
-  } catch {
-    return {
-      kind: "manual_review",
-      reason: "Lecture de l'échéance G2G impossible (migration non appliquée ou base indisponible).",
-    };
+  let expiresAt: Date | null = delivery.expiresAt instanceof Date ? delivery.expiresAt : null;
+  if (!expiresAt) {
+    try {
+      expiresAt = await readDeliveryExpiresAt(delivery.id);
+    } catch {
+      return {
+        kind: "manual_review",
+        reason: "Lecture de l'échéance G2G impossible (migration non appliquée ou base indisponible).",
+      };
+    }
   }
 
   return runPilotDeliveryAttempt(

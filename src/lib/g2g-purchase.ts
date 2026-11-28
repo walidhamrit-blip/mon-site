@@ -226,11 +226,10 @@ export async function purchaseG2gDelivery(
       .set({
         status: "purchased",
         supplierOrderRef: supplierOrderRef || null,
-        // ⚠️ La livraison automatique n'est PAS encore câblée (brique 2).
-        // On laisse donc une reprise programmée ET on alerte en aval.
-        nextAttemptAt: new Date(Date.now() + RETRY_DELAY_MS),
+        // Rend la commande immédiatement éligible au prochain passage du cron de livraison.
+        nextAttemptAt: new Date(),
         detail: supplierOrderRef
-          ? `Acheté (réf. ${supplierOrderRef}). Code à livrer — livraison automatique non encore câblée.`
+          ? `Acheté (réf. ${supplierOrderRef}). Prise en charge par la file de livraison G2G.`
           : "Acheté, mais le fournisseur n'a renvoyé aucune référence : à rapprocher manuellement.",
         updatedAt: new Date(),
       })

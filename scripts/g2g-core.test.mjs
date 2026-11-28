@@ -284,9 +284,9 @@ test("le webhook vérifie la signature AVANT de lire le corps", () => {
   assert.match(route, /tx\.insert\(webhookEvents\)/);
   assert.match(route, /tx\.insert\(g2gDeliveries\)/);
   assert.match(route, /provider: "g2g"/);
-  // Phase 1 : aucun achat fournisseur, aucune livraison G2G.
+  // Aucun appel direct hors purchaseG2gDelivery ni envoi direct dans le webhook.
   assert.doesNotMatch(route, /fazercardsGiftCardOrder|fazercardsGameKeyOrder|g2gDeliverCodes/);
-  assert.match(route, /dry_run: true/);
+  assert.match(route, /dry_run: !didPurchase/);
 });
 
 test("ouvrir l'URL du webhook dans un navigateur explique le 405 au lieu d'une page vide", () => {

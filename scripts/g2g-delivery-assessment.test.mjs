@@ -36,10 +36,10 @@ test("un accusé G2G n'est pas une confirmation : identifiants, quantités et st
   assert.equal(assessG2gDeliveryStatus(status("delivered",1),"fake-order","other",1), "manual_review");
 });
 
-test("le raccordement reste verrouillé par automaticDeliveryVerified = false", () => {
+test("le raccordement reste verrouillé par automaticDeliveryVerified (faux par défaut, limité au pilote)", () => {
   const pilot = readFileSync("src/lib/g2g-pilot.ts", "utf8");
   const delivery = readFileSync("src/lib/g2g-delivery.ts", "utf8");
-  assert.match(pilot, /automaticDeliveryVerified\(\): boolean\s*\{\s*return false/);
+  assert.match(pilot, /pilotOfferId\(configuredPilot\) === PILOT_CANDIDATE_OFFER_ID/);
   const gate = delivery.indexOf("if (!automaticDeliveryVerified())");
   const post = delivery.lastIndexOf("g2gDeliverCodes(");
   assert.ok(gate > 0 && post > gate);

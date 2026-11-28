@@ -2,9 +2,21 @@ import { NextResponse } from "next/server";
 import { eq } from "drizzle-orm";
 import { db, ensureSchema } from "@/db";
 import { g2gOfferMappings, type G2gOfferMapping } from "@/db/schema";
+import {
+  fazercardsBalance,
+  fazercardsConfigured,
+  fazercardsGiftCardCards,
+} from "@/lib/fazercards";
+import { g2gFeePercent, planG2gFulfilment } from "@/lib/g2g-fulfilment-core";
 import { automaticDeliveryVerified, pilotQuantityAllowed } from "@/lib/g2g-pilot";
 import { isAdminAuthenticated } from "@/lib/auth";
-import { g2gConfigured, g2gErrorMessage, g2gGetOffer, g2gPatchOffer } from "@/lib/g2g";
+import {
+  g2gConfigured,
+  g2gErrorMessage,
+  g2gGetOffer,
+  g2gPatchOffer,
+  type G2gOffer,
+} from "@/lib/g2g";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -114,11 +126,11 @@ export async function PATCH(req: Request) {
   }
 
   // Lire l'offre chez G2G pour vérifier qu'elle existe et que sa devise concorde avec le mapping.
-  let offer: { currency?: string; status?: string; unit_price?: number } | null = null;
+  let offer: G2gOffer | null = null;
   if (g2gConfigured()) {
     try {
       const response = await g2gGetOffer(offerId);
-      offer = (response.payload ?? null) as { currency?: string; status?: string; unit_price?: number } | null;
+      offer = response.payload ?? null;
     } catch (error) {
       return noStoreJson(
         {
@@ -169,6 +181,111 @@ export async function PATCH(req: Request) {
           ok: false,
           error: "invalid_conversion",
           message: `Paramètres de conversion invalides pour ${offerId}.`,
+        },
+        400,
+      );
+    }
+
+    const feePercent = g2gFeePercent(process.env.G2G_FEE_PERCENT);
+    if (feePercent === null) {
+      return noStoreJson(
+        {
+          ok: false,
+          error: "fee_not_configured",
+          message: "Activation refusée : configurez d'abord G2G_FEE_PERCENT côté serveur (ex. 9.98).",
+        },
+        400,
+      );
+    }
+    if (mapping.supplierKind !== "gift_card" || !mapping.categoryId || !mapping.supplierSkuId) {
+      return noStoreJson(
+        {
+          ok: false,
+          error: "invalid_supplier_sku",
+          message: "Activation refusée : le pilote exige une carte cadeau FazerCards (category_id + card_id).",
+        },
+        400,
+      );
+    }
+    if (!fazercardsConfigured()) {
+      return noStoreJson(
+        {
+          ok: false,
+          error: "fazercards_not_configured",
+          message: "Clé API FazerCards absente côté serveur.",
+        },
+        503,
+      );
+    }
+
+    let supplierCostUsd = 0;
+    try {
+      const [cards, balance] = await Promise.all([
+        fazercardsGiftCardCards(mapping.categoryId),
+        fazercardsBalance({ timeoutMs: 10_000 }),
+      ]);
+      const sku = cards.offers.find((item) => item.card_id === mapping.supplierSkuId);
+      if (!sku || sku.stock < 1 || 1 < sku.min_order_quantity || 1 > sku.max_order_quantity) {
+        return noStoreJson(
+          {
+            ok: false,
+            error: "supplier_out_of_stock",
+            message: `Stock FazerCards indisponible pour ${mapping.categoryId} / ${mapping.supplierSkuId}.`,
+          },
+          400,
+        );
+      }
+      supplierCostUsd = Number(sku.price_usd);
+      const balanceUsd = Number(balance.balance);
+      if (!Number.isFinite(supplierCostUsd) || supplierCostUsd <= 0) {
+        return noStoreJson(
+          { ok: false, error: "supplier_cost_invalid", message: "Prix FazerCards invalide." },
+          400,
+        );
+      }
+      if (!Number.isFinite(balanceUsd) || balanceUsd < supplierCostUsd) {
+        return noStoreJson(
+          {
+            ok: false,
+            error: "insufficient_supplier_balance",
+            message: `Solde FazerCards insuffisant (${balance.balance} USD) pour couvrir ${sku.price_usd} USD.`,
+          },
+          400,
+        );
+      }
+    } catch (error) {
+      return noStoreJson(
+        {
+          ok: false,
+          error: "supplier_check_failed",
+          message: `Vérification FazerCards impossible avant ouverture : ${error instanceof Error ? error.message : String(error)}`,
+        },
+        502,
+      );
+    }
+
+    const livePlan = planG2gFulfilment({
+      mappingEnabled: true,
+      autoDeliveryEnabled: true,
+      feePercent,
+      offerUnitPrice: offer.unit_price ?? null,
+      offerCurrency: offer.currency ?? "",
+      offerDeliveryType: offer.delivery_type ?? null,
+      offerCodeLabel: offer.code_label ?? null,
+      supplierCostUsd,
+      saleCurrency: mapping.saleCurrency,
+      conversionRateUsd: rate,
+      conversionCostUsd: convCost,
+      minMarginPercent: mapping.minMarginPercent,
+      maxCostUsd: Number(mapping.maxCostUsd ?? 0) || 0,
+      requestedQty: 1,
+    });
+    if (livePlan.decision !== "proceed") {
+      return noStoreJson(
+        {
+          ok: false,
+          error: `preflight_${livePlan.decision}`,
+          message: `Activation refusée (${livePlan.decision}) : ${livePlan.summary}`,
         },
         400,
       );

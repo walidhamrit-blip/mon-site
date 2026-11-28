@@ -33,5 +33,5 @@ test("brique isolée et garde de production maintenue", () => {
   const source=readFileSync("src/lib/g2g-delivery-request-prototype.ts","utf8");
   assert.doesNotMatch(source,/\bfetch\s*\(|g2gDeliverCodes\s*\(/);
   assert.doesNotMatch(readFileSync("src/lib/g2g-delivery.ts","utf8"),/g2g-delivery-request-prototype/);
-  assert.match(readFileSync("src/lib/g2g-pilot.ts","utf8"),/automaticDeliveryVerified\(\): boolean\s*\{\s*return false/);
+  assert.match(readFileSync("src/lib/g2g-pilot.ts","utf8"),/pilotOfferId\(configuredPilot\) === PILOT_CANDIDATE_OFFER_ID/);
 });

@@ -44,6 +44,15 @@ CREATE TABLE IF NOT EXISTS g2g_dispatch_intents (
 CREATE INDEX IF NOT EXISTS g2g_dispatch_intents_state_idx
   ON g2g_dispatch_intents (state, updated_at DESC);
 
--- Verrouillage des roles clients Supabase (meme modele que g2g-test).
+-- Verrouillage des roles clients Supabase lorsqu'ils existent (compatible
+-- Supabase et PostgreSQL standard / Neon / Vercel Postgres).
 ALTER TABLE g2g_dispatch_intents ENABLE ROW LEVEL SECURITY;
-REVOKE ALL ON TABLE g2g_dispatch_intents FROM anon, authenticated;
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'anon') THEN
+    REVOKE ALL ON TABLE g2g_dispatch_intents FROM anon;
+  END IF;
+  IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'authenticated') THEN
+    REVOKE ALL ON TABLE g2g_dispatch_intents FROM authenticated;
+  END IF;
+END $$;

@@ -111,12 +111,17 @@ Bloquants avant raccordement : l'échéance de l'événement n'est pas actuellem
    - `scripts/g2g-pilot-delivery-orchestrator.test.mjs` et `scripts/g2g-postgres-integration.mjs` (exécuté avec succès sur la base dédiée `g2g-test` : https://github.com/walidhamrit-blip/mon-site/actions/runs/45901134488) prouvent : application idempotente du brouillon SQL, activation RLS et révocation `anon`/`authenticated`, rejet SQL de `G1795076410074VF` (`23514`), exclusion mutuelle de deux connexions PostgreSQL concurrentes (`1 committed` / `1 not_reserved` -> `1 POST`), refus d'échéance expirée par `clock_timestamp()`, `ROLLBACK` propre avant commit, survie de l'intention après arrêt brutal (`process.exit(0)`) d'un worker post-`COMMIT` sans second `POST`, annulation entre `COMMIT` et `POST` (`aborted`, `0 POST`), timeout `POST` (`unknown`) suivi de réconciliation par `GET` sans réémission, et escalade immédiate sur `partial_delivered` ou réponse fournisseur non conforme.
    - Ces tests **ne prouvent pas** la réponse JSON réelle en production d'une commande FazerCards `google_play_tr` / `25_try` payée ni l'acceptation HTTP réelle par G2G d'un `POST /v2/orders/{order_id}/delivery` sur une vraie commande acheteur (aucun achat ni envoi réel n'ayant été déclenché).
 
-4. **Étape 4 : vérification économique de `G1795521210943KM` avant pilote réel** :
-   - Coût fournisseur déclaré : `0,49 USD` (`google_play_tr` / `25_try`), devise de l'offre : `USD` (`conversionRateUsd = 1`, `conversionCostUsd = 0` si règlement USD sans change).
-   - À `1,00 USD` de prix de vente ponctuel :
-     - la marge nette de `0,46 USD` (`48,42 %` du net) suppose exactement `5 %` de commission G2G (`0,95 USD` net) et `0,00 USD` de frais fixes/retrait ;
-     - à `9,99 %` de commission G2G sans frais fixe : net `0,9001 USD`, marge `0,4101 USD` (`45,56 %`) ;
-     - à `9,99 % + 0,10 USD` (ou `10 %` + frais fixe de retrait) : net `0,80 USD`, marge `0,31 USD` (`38,75 %`) ;
-     - au-delà de `51,0 %` de prélèvement total (commission + frais fixe par commande de `1 USD`), la vente devient déficitaire (`net <= 0,49 USD`).
-   - Il faut donc confirmer le barème exact G2G *Gift Cards* du compte vendeur (pourcentage + éventuel forfait fixe par ordre + frais de conversion/retrait) et paramétrer `G2G_FEE_PERCENT` + `conversionCostUsd` avant d'ouvrir `api_qty = 1`.
+4. **Étape 4 : vérification économique confirmée de `G1795521210943KM` avant pilote réel** :
+   - Coût fournisseur déclaré : `0,49 USD` (`google_play_tr` / `25_try`), devise de l'offre : `USD` (`conversionRateUsd = 1`).
+   - Frais G2G réels confirmés par l'exploitant : **`4,99 %` à la vente + `4,99 %` au retrait + `0,99 USD` fixes par retrait**.
+   - Prélèvement proportionnel cumulé : $1 - (1 - 0,0499)^2 = 9,731\,\%$ (`9,98 %` retenu par prudence dans `G2G_FEE_PERCENT`), laissant `0,9027 USD` par vente de `1,00 USD` avant le forfait de retrait de `0,99 USD` (`+0,4127 USD` au-dessus du coût FazerCards).
+   - Conséquence opérationnelle :
+     - un retrait isolé d'une seule vente à `1,00 USD` est déficitaire (`-0,5773 USD`, seuil à marge nulle `1,64 USD` pour un retrait unitaire) ;
+     - à `1,00 USD`, les retraits doivent être groupés (au moins 3 ventes par retrait pour être positif ; p.ex. à 20 ventes par retrait, `conversionCostUsd = 0,05 USD` donne `0,8532 USD` net et **`+0,3632 USD`** de marge nette par unité, soit `42,57 %`).
+
+5. **Étape 5 : migration automatique `ensureSchema()` et déverrouillage strictement borné au pilote** :
+   - Sur accord explicite de l'utilisateur, la migration idempotente (`g2g_deliveries.expires_at` + `g2g_dispatch_intents` + `RLS` + `REVOKE ALL` conditionné à l'existence des rôles `anon`/`authenticated`) est intégrée à `ensureSchema()` (`src/db/index.ts`), appliquée automatiquement via `DATABASE_URL` au déploiement.
+   - `automaticDeliveryVerified()` reste `false` par défaut et ne passe à `true` **que** si `G2G_AUTO_DELIVERY === "1"` **et** `G2G_PILOT_OFFER_ID === "G1795521210943KM"`. `pilotQuantityAllowed` bloque toute ouverture `api_qty > 0` sur une autre offre que `G1795521210943KM`.
+   - `PATCH /api/admin/g2g/offer-qty` vérifie en direct (avant d'autoriser `api_qty = 1`) la présence de `G2G_FEE_PERCENT`, le stock FazerCards `>= 1`, le solde FazerCards `>= price_usd` et le verdict `planG2gFulfilment === "proceed"`.
+
 
