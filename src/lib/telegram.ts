@@ -1,3 +1,4 @@
+import { measureTelegram } from "@/lib/telegram-performance";
 /**
  * Bot Telegram — accès réseau (API Bot) + persistance.
  *
@@ -83,6 +84,16 @@ export interface TelegramApiResult<T = unknown> {
  * avec le message Telegram (`description`) pour l'afficher dans l'admin.
  */
 export async function telegramApi<T = unknown>(
+  method: string,
+  payload: Record<string, unknown> = {},
+  timeoutMs = REQUEST_TIMEOUT_MS,
+): Promise<TelegramApiResult<T>> {
+  // Allowlisted method names only: never log the API URL (it contains the token).
+  const label = ["answerCallbackQuery", "editMessageText", "sendMessage"].includes(method) ? method : "other";
+  return measureTelegram(`network_${label}`, () => telegramApiRequest<T>(method, payload, timeoutMs));
+}
+
+async function telegramApiRequest<T = unknown>(
   method: string,
   payload: Record<string, unknown> = {},
   timeoutMs = REQUEST_TIMEOUT_MS,

@@ -1,0 +1,2110 @@
+{
+  "label": "baseline",
+  "date": "2026-11-27T22:06:59.999Z",
+  "environment": "Local Next production build; DATABASE_URL absent; fallback catalog; fixed SDK stub; no real Telegram/DB latency",
+  "conditions": {
+    "runs": 7,
+    "viewport": "360x740 DPR2",
+    "latencyMs": 100,
+    "downloadBytesPerSecond": 200000,
+    "cpuSlowdown": 4,
+    "browserCache": "disabled"
+  },
+  "summary": {
+    "ttfbMs": 103.1500000001397,
+    "hydratedMs": 3833.3000000000466,
+    "lcpMs": 834,
+    "htmlBytes": 115779,
+    "jsTransferBytes": 367890,
+    "errors": []
+  },
+  "samples": [
+    {
+      "run": 1,
+      "browserCache": "disabled",
+      "serverCache": "first-request",
+      "htmlBytes": 115780,
+      "jsBytes": 367890,
+      "overflow": false,
+      "errors": [],
+      "version": 1,
+      "navigation": {
+        "ttfbMs": 105.60000000009313,
+        "serverWaitMs": 100.10000000009313,
+        "dnsMs": 0.10000000009313226,
+        "connectMs": 0.20000000018626451,
+        "downloadMs": 167.89999999990687,
+        "domContentLoadedMs": 865.9000000003725,
+        "loadMs": 3507.5,
+        "transferBytes": 31486
+      },
+      "hydratedMs": 3824.600000000093,
+      "telegramReadyMs": 3827.100000000093,
+      "vitals": {
+        "first-paint": 792,
+        "first-contentful-paint": 792,
+        "lcpMs": 860,
+        "longTasksMs": 362
+      },
+      "serverTiming": "site_settings;dur=3.9, catalog_load;dur=2.9, page_data;dur=8.3",
+      "resources": [
+        {
+          "resource": "/fonts/cairo-arabic-var.woff2",
+          "kind": "link",
+          "durationMs": 506.6999999997206,
+          "startMs": 164.40000000037253,
+          "bytes": 31196,
+          "responseEndMs": 671.1000000000931
+        },
+        {
+          "resource": "/_next/static/chunks/2vzc2-1y1_qrr.css",
+          "kind": "link",
+          "durationMs": 513.6000000000931,
+          "startMs": 171.60000000009313,
+          "bytes": 32441,
+          "responseEndMs": 685.2000000001863
+        },
+        {
+          "resource": "/_next/static/chunks/3lbz8xvzvq_7i.css",
+          "kind": "link",
+          "durationMs": 251,
+          "startMs": 171.8000000002794,
+          "bytes": 5355,
+          "responseEndMs": 422.8000000002794
+        },
+        {
+          "resource": "/_next/static/chunks/3ek7vlw6zi3a2.css",
+          "kind": "link",
+          "durationMs": 229.1999999997206,
+          "startMs": 171.90000000037253,
+          "bytes": 3355,
+          "responseEndMs": 401.10000000009313
+        },
+        {
+          "resource": "/_next/static/chunks/1qatrf1rw7s-4.js",
+          "kind": "link",
+          "durationMs": 693.7000000001863,
+          "startMs": 172.20000000018626,
+          "bytes": 4974,
+          "responseEndMs": 865.9000000003725
+        },
+        {
+          "resource": "/_next/static/chunks/3516nv78vffqj.js",
+          "kind": "script",
+          "durationMs": 813.7000000001863,
+          "startMs": 172.20000000018626,
+          "bytes": 9057,
+          "responseEndMs": 985.9000000003725
+        },
+        {
+          "resource": "/_next/static/chunks/1pm-oh6q5_afh.js",
+          "kind": "script",
+          "durationMs": 1518.6000000000931,
+          "startMs": 172.3000000002794,
+          "bytes": 31531,
+          "responseEndMs": 1690.9000000003725
+        },
+        {
+          "resource": "/_next/static/chunks/2n8ftyl7qs4p_.js",
+          "kind": "script",
+          "durationMs": 2621.0999999996275,
+          "startMs": 172.40000000037253,
+          "bytes": 73764,
+          "responseEndMs": 2793.5
+        },
+        {
+          "resource": "/_next/static/chunks/turbopack-077hmtqrhcoji.js",
+          "kind": "script",
+          "durationMs": 851,
+          "startMs": 172.5,
+          "bytes": 4654,
+          "responseEndMs": 1023.5
+        },
+        {
+          "resource": "/_next/static/chunks/3oxivm6q_d7lv.js",
+          "kind": "script",
+          "durationMs": 978.1000000000931,
+          "startMs": 172.5,
+          "bytes": 11570,
+          "responseEndMs": 1150.6000000000931
+        },
+        {
+          "resource": "/_next/static/chunks/2s2e5ytqefmi7.js",
+          "kind": "script",
+          "durationMs": 1638.3000000002794,
+          "startMs": 172.5,
+          "bytes": 17792,
+          "responseEndMs": 1810.8000000002794
+        },
+        {
+          "resource": "/_next/static/chunks/2pzfi0asnb6tr.js",
+          "kind": "script",
+          "durationMs": 2155.2000000001863,
+          "startMs": 172.60000000009313,
+          "bytes": 16959,
+          "responseEndMs": 2327.8000000002794
+        },
+        {
+          "resource": "/_next/static/chunks/2eey9vxny0txj.js",
+          "kind": "script",
+          "durationMs": 2118.100000000093,
+          "startMs": 172.70000000018626,
+          "bytes": 10720,
+          "responseEndMs": 2290.8000000002794
+        },
+        {
+          "resource": "/_next/static/chunks/3_hzzufj6-xwt.js",
+          "kind": "script",
+          "durationMs": 2388.2999999998137,
+          "startMs": 172.70000000018626,
+          "bytes": 18561,
+          "responseEndMs": 2561
+        },
+        {
+          "resource": "/_next/static/chunks/26q-z6r2vlmhy.js",
+          "kind": "script",
+          "durationMs": 2553.1999999997206,
+          "startMs": 172.8000000002794,
+          "bytes": 12708,
+          "responseEndMs": 2726
+        },
+        {
+          "resource": "/_next/static/chunks/1r9b2j3ko6ek3.js",
+          "kind": "script",
+          "durationMs": 2508.1999999997206,
+          "startMs": 172.90000000037253,
+          "bytes": 4634,
+          "responseEndMs": 2681.100000000093
+        },
+        {
+          "resource": "/_next/static/chunks/2rmtxf62xs5in.js",
+          "kind": "script",
+          "durationMs": 2523.2999999998137,
+          "startMs": 172.90000000037253,
+          "bytes": 3620,
+          "responseEndMs": 2696.2000000001863
+        },
+        {
+          "resource": "/_next/static/chunks/376b6ir3dug1r.js",
+          "kind": "script",
+          "durationMs": 3295,
+          "startMs": 172.90000000037253,
+          "bytes": 136603,
+          "responseEndMs": 3467.9000000003725
+        },
+        {
+          "resource": "telegram.org",
+          "kind": "link",
+          "durationMs": 24.600000000093132,
+          "startMs": 173,
+          "bytes": 0,
+          "responseEndMs": 197.60000000009313
+        },
+        {
+          "resource": "/_next/static/chunks/0a-qi_fp6-tg_.js",
+          "kind": "script",
+          "durationMs": 2732.2000000001863,
+          "startMs": 173,
+          "bytes": 15717,
+          "responseEndMs": 2905.2000000001863
+        },
+        {
+          "resource": "/fonts/cairo-latin-var.woff2",
+          "kind": "css",
+          "durationMs": 1194.2000000001863,
+          "startMs": 744.2000000001863,
+          "bytes": 34120,
+          "responseEndMs": 1938.4000000003725
+        },
+        {
+          "resource": "/fonts/plex-ar-600.woff2",
+          "kind": "css",
+          "durationMs": 1636.3000000002794,
+          "startMs": 759,
+          "bytes": 45988,
+          "responseEndMs": 2395.3000000002794
+        },
+        {
+          "resource": "/fonts/plex-ar-700.woff2",
+          "kind": "css",
+          "durationMs": 1615.0999999996275,
+          "startMs": 822.4000000003725,
+          "bytes": 44580,
+          "responseEndMs": 2437.5
+        }
+      ],
+      "slowest": [
+        {
+          "resource": "/_next/static/chunks/376b6ir3dug1r.js",
+          "kind": "script",
+          "durationMs": 3295,
+          "startMs": 172.90000000037253,
+          "bytes": 136603,
+          "responseEndMs": 3467.9000000003725
+        },
+        {
+          "resource": "/_next/static/chunks/0a-qi_fp6-tg_.js",
+          "kind": "script",
+          "durationMs": 2732.2000000001863,
+          "startMs": 173,
+          "bytes": 15717,
+          "responseEndMs": 2905.2000000001863
+        },
+        {
+          "resource": "/_next/static/chunks/2n8ftyl7qs4p_.js",
+          "kind": "script",
+          "durationMs": 2621.0999999996275,
+          "startMs": 172.40000000037253,
+          "bytes": 73764,
+          "responseEndMs": 2793.5
+        },
+        {
+          "resource": "/_next/static/chunks/26q-z6r2vlmhy.js",
+          "kind": "script",
+          "durationMs": 2553.1999999997206,
+          "startMs": 172.8000000002794,
+          "bytes": 12708,
+          "responseEndMs": 2726
+        },
+        {
+          "resource": "/_next/static/chunks/2rmtxf62xs5in.js",
+          "kind": "script",
+          "durationMs": 2523.2999999998137,
+          "startMs": 172.90000000037253,
+          "bytes": 3620,
+          "responseEndMs": 2696.2000000001863
+        },
+        {
+          "resource": "/_next/static/chunks/1r9b2j3ko6ek3.js",
+          "kind": "script",
+          "durationMs": 2508.1999999997206,
+          "startMs": 172.90000000037253,
+          "bytes": 4634,
+          "responseEndMs": 2681.100000000093
+        },
+        {
+          "resource": "/_next/static/chunks/3_hzzufj6-xwt.js",
+          "kind": "script",
+          "durationMs": 2388.2999999998137,
+          "startMs": 172.70000000018626,
+          "bytes": 18561,
+          "responseEndMs": 2561
+        },
+        {
+          "resource": "/_next/static/chunks/2pzfi0asnb6tr.js",
+          "kind": "script",
+          "durationMs": 2155.2000000001863,
+          "startMs": 172.60000000009313,
+          "bytes": 16959,
+          "responseEndMs": 2327.8000000002794
+        },
+        {
+          "resource": "/_next/static/chunks/2eey9vxny0txj.js",
+          "kind": "script",
+          "durationMs": 2118.100000000093,
+          "startMs": 172.70000000018626,
+          "bytes": 10720,
+          "responseEndMs": 2290.8000000002794
+        },
+        {
+          "resource": "/_next/static/chunks/2s2e5ytqefmi7.js",
+          "kind": "script",
+          "durationMs": 1638.3000000002794,
+          "startMs": 172.5,
+          "bytes": 17792,
+          "responseEndMs": 1810.8000000002794
+        }
+      ],
+      "note": "Client clock only. Zero bytes does not prove a cache hit. Server stages may overlap."
+    },
+    {
+      "run": 2,
+      "browserCache": "disabled",
+      "serverCache": "warm",
+      "htmlBytes": 115778,
+      "jsBytes": 367890,
+      "overflow": false,
+      "errors": [],
+      "version": 1,
+      "navigation": {
+        "ttfbMs": 103,
+        "serverWaitMs": 100.10000000009313,
+        "dnsMs": 0.10000000009313226,
+        "connectMs": 0.10000000009313226,
+        "downloadMs": 172.60000000009313,
+        "domContentLoadedMs": 829.3000000002794,
+        "loadMs": 3535.8000000002794,
+        "transferBytes": 31486
+      },
+      "hydratedMs": 3912.8000000002794,
+      "telegramReadyMs": 3919.399999999907,
+      "vitals": {
+        "first-paint": 832,
+        "first-contentful-paint": 832,
+        "lcpMs": 832,
+        "longTasksMs": 388
+      },
+      "serverTiming": "site_settings;dur=6.3, catalog_load;dur=5.7, page_data;dur=11",
+      "resources": [
+        {
+          "resource": "/fonts/cairo-arabic-var.woff2",
+          "kind": "link",
+          "durationMs": 545.5,
+          "startMs": 157.3000000002794,
+          "bytes": 31196,
+          "responseEndMs": 702.8000000002794
+        },
+        {
+          "resource": "/_next/static/chunks/2vzc2-1y1_qrr.css",
+          "kind": "link",
+          "durationMs": 523.1000000000931,
+          "startMs": 188,
+          "bytes": 32441,
+          "responseEndMs": 711.1000000000931
+        },
+        {
+          "resource": "/_next/static/chunks/3lbz8xvzvq_7i.css",
+          "kind": "link",
+          "durationMs": 251.39999999990687,
+          "startMs": 189.3000000002794,
+          "bytes": 5355,
+          "responseEndMs": 440.70000000018626
+        },
+        {
+          "resource": "/_next/static/chunks/3ek7vlw6zi3a2.css",
+          "kind": "link",
+          "durationMs": 236.39999999990687,
+          "startMs": 189.8000000002794,
+          "bytes": 3355,
+          "responseEndMs": 426.20000000018626
+        },
+        {
+          "resource": "/_next/static/chunks/1qatrf1rw7s-4.js",
+          "kind": "link",
+          "durationMs": 699.6000000000931,
+          "startMs": 191.10000000009313,
+          "bytes": 4974,
+          "responseEndMs": 890.7000000001863
+        },
+        {
+          "resource": "/_next/static/chunks/3516nv78vffqj.js",
+          "kind": "script",
+          "durationMs": 857.1000000000931,
+          "startMs": 191.20000000018626,
+          "bytes": 9057,
+          "responseEndMs": 1048.3000000002794
+        },
+        {
+          "resource": "/_next/static/chunks/1pm-oh6q5_afh.js",
+          "kind": "script",
+          "durationMs": 1510,
+          "startMs": 191.3000000002794,
+          "bytes": 31531,
+          "responseEndMs": 1701.3000000002794
+        },
+        {
+          "resource": "/_next/static/chunks/2n8ftyl7qs4p_.js",
+          "kind": "script",
+          "durationMs": 2604.5,
+          "startMs": 191.3000000002794,
+          "bytes": 73764,
+          "responseEndMs": 2795.8000000002794
+        },
+        {
+          "resource": "/_next/static/chunks/3oxivm6q_d7lv.js",
+          "kind": "script",
+          "durationMs": 968.9000000003725,
+          "startMs": 192.39999999990687,
+          "bytes": 11570,
+          "responseEndMs": 1161.3000000002794
+        },
+        {
+          "resource": "/_next/static/chunks/turbopack-077hmtqrhcoji.js",
+          "kind": "script",
+          "durationMs": 848.1000000000931,
+          "startMs": 192.5,
+          "bytes": 4654,
+          "responseEndMs": 1040.6000000000931
+        },
+        {
+          "resource": "/_next/static/chunks/2s2e5ytqefmi7.js",
+          "kind": "script",
+          "durationMs": 1628.3999999999069,
+          "startMs": 192.60000000009313,
+          "bytes": 17792,
+          "responseEndMs": 1821
+        },
+        {
+          "resource": "/_next/static/chunks/2eey9vxny0txj.js",
+          "kind": "script",
+          "durationMs": 2115,
+          "startMs": 193.3000000002794,
+          "bytes": 10720,
+          "responseEndMs": 2308.3000000002794
+        },
+        {
+          "resource": "/_next/static/chunks/2pzfi0asnb6tr.js",
+          "kind": "script",
+          "durationMs": 2152.0999999996275,
+          "startMs": 193.3000000002794,
+          "bytes": 16959,
+          "responseEndMs": 2345.399999999907
+        },
+        {
+          "resource": "/_next/static/chunks/3_hzzufj6-xwt.js",
+          "kind": "script",
+          "durationMs": 2414.3000000002794,
+          "startMs": 193.39999999990687,
+          "bytes": 18561,
+          "responseEndMs": 2607.7000000001863
+        },
+        {
+          "resource": "/_next/static/chunks/26q-z6r2vlmhy.js",
+          "kind": "script",
+          "durationMs": 2564.6999999997206,
+          "startMs": 194.3000000002794,
+          "bytes": 12708,
+          "responseEndMs": 2759
+        },
+        {
+          "resource": "/_next/static/chunks/376b6ir3dug1r.js",
+          "kind": "script",
+          "durationMs": 3298.2999999998137,
+          "startMs": 194.70000000018626,
+          "bytes": 136603,
+          "responseEndMs": 3493
+        },
+        {
+          "resource": "/_next/static/chunks/1r9b2j3ko6ek3.js",
+          "kind": "script",
+          "durationMs": 2527,
+          "startMs": 195.20000000018626,
+          "bytes": 4634,
+          "responseEndMs": 2722.2000000001863
+        },
+        {
+          "resource": "/_next/static/chunks/2rmtxf62xs5in.js",
+          "kind": "script",
+          "durationMs": 2518,
+          "startMs": 195.5,
+          "bytes": 3620,
+          "responseEndMs": 2713.5
+        },
+        {
+          "resource": "/_next/static/chunks/0a-qi_fp6-tg_.js",
+          "kind": "script",
+          "durationMs": 2742.5999999996275,
+          "startMs": 195.8000000002794,
+          "bytes": 15717,
+          "responseEndMs": 2938.399999999907
+        },
+        {
+          "resource": "telegram.org",
+          "kind": "link",
+          "durationMs": 13.100000000093132,
+          "startMs": 196.5,
+          "bytes": 0,
+          "responseEndMs": 209.60000000009313
+        },
+        {
+          "resource": "/fonts/cairo-latin-var.woff2",
+          "kind": "css",
+          "durationMs": 1211.8999999999069,
+          "startMs": 759.3000000002794,
+          "bytes": 34120,
+          "responseEndMs": 1971.2000000001863
+        },
+        {
+          "resource": "/fonts/plex-ar-600.woff2",
+          "kind": "css",
+          "durationMs": 1678.7999999998137,
+          "startMs": 771.6000000000931,
+          "bytes": 45988,
+          "responseEndMs": 2450.399999999907
+        },
+        {
+          "resource": "/fonts/plex-ar-700.woff2",
+          "kind": "css",
+          "durationMs": 1631.0999999996275,
+          "startMs": 789.3000000002794,
+          "bytes": 44580,
+          "responseEndMs": 2420.399999999907
+        }
+      ],
+      "slowest": [
+        {
+          "resource": "/_next/static/chunks/376b6ir3dug1r.js",
+          "kind": "script",
+          "durationMs": 3298.2999999998137,
+          "startMs": 194.70000000018626,
+          "bytes": 136603,
+          "responseEndMs": 3493
+        },
+        {
+          "resource": "/_next/static/chunks/0a-qi_fp6-tg_.js",
+          "kind": "script",
+          "durationMs": 2742.5999999996275,
+          "startMs": 195.8000000002794,
+          "bytes": 15717,
+          "responseEndMs": 2938.399999999907
+        },
+        {
+          "resource": "/_next/static/chunks/2n8ftyl7qs4p_.js",
+          "kind": "script",
+          "durationMs": 2604.5,
+          "startMs": 191.3000000002794,
+          "bytes": 73764,
+          "responseEndMs": 2795.8000000002794
+        },
+        {
+          "resource": "/_next/static/chunks/26q-z6r2vlmhy.js",
+          "kind": "script",
+          "durationMs": 2564.6999999997206,
+          "startMs": 194.3000000002794,
+          "bytes": 12708,
+          "responseEndMs": 2759
+        },
+        {
+          "resource": "/_next/static/chunks/1r9b2j3ko6ek3.js",
+          "kind": "script",
+          "durationMs": 2527,
+          "startMs": 195.20000000018626,
+          "bytes": 4634,
+          "responseEndMs": 2722.2000000001863
+        },
+        {
+          "resource": "/_next/static/chunks/2rmtxf62xs5in.js",
+          "kind": "script",
+          "durationMs": 2518,
+          "startMs": 195.5,
+          "bytes": 3620,
+          "responseEndMs": 2713.5
+        },
+        {
+          "resource": "/_next/static/chunks/3_hzzufj6-xwt.js",
+          "kind": "script",
+          "durationMs": 2414.3000000002794,
+          "startMs": 193.39999999990687,
+          "bytes": 18561,
+          "responseEndMs": 2607.7000000001863
+        },
+        {
+          "resource": "/_next/static/chunks/2pzfi0asnb6tr.js",
+          "kind": "script",
+          "durationMs": 2152.0999999996275,
+          "startMs": 193.3000000002794,
+          "bytes": 16959,
+          "responseEndMs": 2345.399999999907
+        },
+        {
+          "resource": "/_next/static/chunks/2eey9vxny0txj.js",
+          "kind": "script",
+          "durationMs": 2115,
+          "startMs": 193.3000000002794,
+          "bytes": 10720,
+          "responseEndMs": 2308.3000000002794
+        },
+        {
+          "resource": "/fonts/plex-ar-600.woff2",
+          "kind": "css",
+          "durationMs": 1678.7999999998137,
+          "startMs": 771.6000000000931,
+          "bytes": 45988,
+          "responseEndMs": 2450.399999999907
+        }
+      ],
+      "note": "Client clock only. Zero bytes does not prove a cache hit. Server stages may overlap."
+    },
+    {
+      "run": 3,
+      "browserCache": "disabled",
+      "serverCache": "warm",
+      "htmlBytes": 115780,
+      "jsBytes": 367890,
+      "overflow": false,
+      "errors": [],
+      "version": 1,
+      "navigation": {
+        "ttfbMs": 103.20000000018626,
+        "serverWaitMs": 100,
+        "dnsMs": 0,
+        "connectMs": 0.19999999972060323,
+        "downloadMs": 172.39999999990687,
+        "domContentLoadedMs": 848.6000000000931,
+        "loadMs": 3493.8000000002794,
+        "transferBytes": 31483
+      },
+      "hydratedMs": 3806.5,
+      "telegramReadyMs": 3821.8000000002794,
+      "vitals": {
+        "first-paint": 856,
+        "first-contentful-paint": 856,
+        "lcpMs": 856,
+        "longTasksMs": 413
+      },
+      "serverTiming": "site_settings;dur=3.3, catalog_load;dur=3.2, page_data;dur=4.8",
+      "resources": [
+        {
+          "resource": "/fonts/cairo-arabic-var.woff2",
+          "kind": "link",
+          "durationMs": 493,
+          "startMs": 164.70000000018626,
+          "bytes": 31196,
+          "responseEndMs": 657.7000000001863
+        },
+        {
+          "resource": "/_next/static/chunks/2vzc2-1y1_qrr.css",
+          "kind": "link",
+          "durationMs": 509.70000000018626,
+          "startMs": 170.60000000009313,
+          "bytes": 32441,
+          "responseEndMs": 680.3000000002794
+        },
+        {
+          "resource": "/_next/static/chunks/3lbz8xvzvq_7i.css",
+          "kind": "link",
+          "durationMs": 255.60000000009313,
+          "startMs": 170.70000000018626,
+          "bytes": 5355,
+          "responseEndMs": 426.3000000002794
+        },
+        {
+          "resource": "/_next/static/chunks/3ek7vlw6zi3a2.css",
+          "kind": "link",
+          "durationMs": 232.89999999990687,
+          "startMs": 170.90000000037253,
+          "bytes": 3355,
+          "responseEndMs": 403.8000000002794
+        },
+        {
+          "resource": "/_next/static/chunks/1qatrf1rw7s-4.js",
+          "kind": "link",
+          "durationMs": 644.3000000002794,
+          "startMs": 171,
+          "bytes": 4974,
+          "responseEndMs": 815.3000000002794
+        },
+        {
+          "resource": "/_next/static/chunks/3516nv78vffqj.js",
+          "kind": "script",
+          "durationMs": 809.6000000000931,
+          "startMs": 171.10000000009313,
+          "bytes": 9057,
+          "responseEndMs": 980.7000000001863
+        },
+        {
+          "resource": "/_next/static/chunks/3oxivm6q_d7lv.js",
+          "kind": "script",
+          "durationMs": 959.3999999999069,
+          "startMs": 171.20000000018626,
+          "bytes": 11570,
+          "responseEndMs": 1130.6000000000931
+        },
+        {
+          "resource": "/_next/static/chunks/1pm-oh6q5_afh.js",
+          "kind": "script",
+          "durationMs": 1507.1000000000931,
+          "startMs": 171.20000000018626,
+          "bytes": 31531,
+          "responseEndMs": 1678.3000000002794
+        },
+        {
+          "resource": "/_next/static/chunks/2n8ftyl7qs4p_.js",
+          "kind": "script",
+          "durationMs": 2624.899999999907,
+          "startMs": 171.20000000018626,
+          "bytes": 73764,
+          "responseEndMs": 2796.100000000093
+        },
+        {
+          "resource": "/_next/static/chunks/turbopack-077hmtqrhcoji.js",
+          "kind": "script",
+          "durationMs": 846.6000000000931,
+          "startMs": 171.3000000002794,
+          "bytes": 4654,
+          "responseEndMs": 1017.9000000003725
+        },
+        {
+          "resource": "/_next/static/chunks/2s2e5ytqefmi7.js",
+          "kind": "script",
+          "durationMs": 1259.1000000000931,
+          "startMs": 171.3000000002794,
+          "bytes": 17792,
+          "responseEndMs": 1430.4000000003725
+        },
+        {
+          "resource": "/_next/static/chunks/2pzfi0asnb6tr.js",
+          "kind": "script",
+          "durationMs": 1927.0999999996275,
+          "startMs": 171.40000000037253,
+          "bytes": 16959,
+          "responseEndMs": 2098.5
+        },
+        {
+          "resource": "/_next/static/chunks/2eey9vxny0txj.js",
+          "kind": "script",
+          "durationMs": 1986.2999999998137,
+          "startMs": 171.40000000037253,
+          "bytes": 10720,
+          "responseEndMs": 2157.7000000001863
+        },
+        {
+          "resource": "/_next/static/chunks/26q-z6r2vlmhy.js",
+          "kind": "script",
+          "durationMs": 2422,
+          "startMs": 171.5,
+          "bytes": 12708,
+          "responseEndMs": 2593.5
+        },
+        {
+          "resource": "/_next/static/chunks/3_hzzufj6-xwt.js",
+          "kind": "script",
+          "durationMs": 2549.2000000001863,
+          "startMs": 171.5,
+          "bytes": 18561,
+          "responseEndMs": 2720.7000000001863
+        },
+        {
+          "resource": "/_next/static/chunks/1r9b2j3ko6ek3.js",
+          "kind": "script",
+          "durationMs": 2534.100000000093,
+          "startMs": 171.60000000009313,
+          "bytes": 4634,
+          "responseEndMs": 2705.7000000001863
+        },
+        {
+          "resource": "/_next/static/chunks/376b6ir3dug1r.js",
+          "kind": "script",
+          "durationMs": 3284,
+          "startMs": 171.60000000009313,
+          "bytes": 136603,
+          "responseEndMs": 3455.600000000093
+        },
+        {
+          "resource": "/_next/static/chunks/2rmtxf62xs5in.js",
+          "kind": "script",
+          "durationMs": 2578.600000000093,
+          "startMs": 171.70000000018626,
+          "bytes": 3620,
+          "responseEndMs": 2750.3000000002794
+        },
+        {
+          "resource": "/_next/static/chunks/0a-qi_fp6-tg_.js",
+          "kind": "script",
+          "durationMs": 2759.399999999907,
+          "startMs": 171.70000000018626,
+          "bytes": 15717,
+          "responseEndMs": 2931.100000000093
+        },
+        {
+          "resource": "telegram.org",
+          "kind": "link",
+          "durationMs": 13.600000000093132,
+          "startMs": 171.8000000002794,
+          "bytes": 0,
+          "responseEndMs": 185.40000000037253
+        },
+        {
+          "resource": "/fonts/cairo-latin-var.woff2",
+          "kind": "css",
+          "durationMs": 1317,
+          "startMs": 759.1000000000931,
+          "bytes": 34120,
+          "responseEndMs": 2076.100000000093
+        },
+        {
+          "resource": "/fonts/plex-ar-600.woff2",
+          "kind": "css",
+          "durationMs": 1638.3999999999069,
+          "startMs": 789.2000000001863,
+          "bytes": 45988,
+          "responseEndMs": 2427.600000000093
+        },
+        {
+          "resource": "/fonts/plex-ar-700.woff2",
+          "kind": "css",
+          "durationMs": 1697.6999999997206,
+          "startMs": 804.9000000003725,
+          "bytes": 44580,
+          "responseEndMs": 2502.600000000093
+        }
+      ],
+      "slowest": [
+        {
+          "resource": "/_next/static/chunks/376b6ir3dug1r.js",
+          "kind": "script",
+          "durationMs": 3284,
+          "startMs": 171.60000000009313,
+          "bytes": 136603,
+          "responseEndMs": 3455.600000000093
+        },
+        {
+          "resource": "/_next/static/chunks/0a-qi_fp6-tg_.js",
+          "kind": "script",
+          "durationMs": 2759.399999999907,
+          "startMs": 171.70000000018626,
+          "bytes": 15717,
+          "responseEndMs": 2931.100000000093
+        },
+        {
+          "resource": "/_next/static/chunks/2n8ftyl7qs4p_.js",
+          "kind": "script",
+          "durationMs": 2624.899999999907,
+          "startMs": 171.20000000018626,
+          "bytes": 73764,
+          "responseEndMs": 2796.100000000093
+        },
+        {
+          "resource": "/_next/static/chunks/2rmtxf62xs5in.js",
+          "kind": "script",
+          "durationMs": 2578.600000000093,
+          "startMs": 171.70000000018626,
+          "bytes": 3620,
+          "responseEndMs": 2750.3000000002794
+        },
+        {
+          "resource": "/_next/static/chunks/3_hzzufj6-xwt.js",
+          "kind": "script",
+          "durationMs": 2549.2000000001863,
+          "startMs": 171.5,
+          "bytes": 18561,
+          "responseEndMs": 2720.7000000001863
+        },
+        {
+          "resource": "/_next/static/chunks/1r9b2j3ko6ek3.js",
+          "kind": "script",
+          "durationMs": 2534.100000000093,
+          "startMs": 171.60000000009313,
+          "bytes": 4634,
+          "responseEndMs": 2705.7000000001863
+        },
+        {
+          "resource": "/_next/static/chunks/26q-z6r2vlmhy.js",
+          "kind": "script",
+          "durationMs": 2422,
+          "startMs": 171.5,
+          "bytes": 12708,
+          "responseEndMs": 2593.5
+        },
+        {
+          "resource": "/_next/static/chunks/2eey9vxny0txj.js",
+          "kind": "script",
+          "durationMs": 1986.2999999998137,
+          "startMs": 171.40000000037253,
+          "bytes": 10720,
+          "responseEndMs": 2157.7000000001863
+        },
+        {
+          "resource": "/_next/static/chunks/2pzfi0asnb6tr.js",
+          "kind": "script",
+          "durationMs": 1927.0999999996275,
+          "startMs": 171.40000000037253,
+          "bytes": 16959,
+          "responseEndMs": 2098.5
+        },
+        {
+          "resource": "/fonts/plex-ar-700.woff2",
+          "kind": "css",
+          "durationMs": 1697.6999999997206,
+          "startMs": 804.9000000003725,
+          "bytes": 44580,
+          "responseEndMs": 2502.600000000093
+        }
+      ],
+      "note": "Client clock only. Zero bytes does not prove a cache hit. Server stages may overlap."
+    },
+    {
+      "run": 4,
+      "browserCache": "disabled",
+      "serverCache": "warm",
+      "htmlBytes": 115780,
+      "jsBytes": 367890,
+      "overflow": false,
+      "errors": [],
+      "version": 1,
+      "navigation": {
+        "ttfbMs": 104.10000000009313,
+        "serverWaitMs": 100.10000000009313,
+        "dnsMs": 0,
+        "connectMs": 0.2999999998137355,
+        "downloadMs": 171.89999999990687,
+        "domContentLoadedMs": 823,
+        "loadMs": 3508.7000000001863,
+        "transferBytes": 31485
+      },
+      "hydratedMs": 3813.7999999998137,
+      "telegramReadyMs": 3827.2000000001863,
+      "vitals": {
+        "first-paint": 816,
+        "first-contentful-paint": 816,
+        "lcpMs": 816,
+        "longTasksMs": 375
+      },
+      "serverTiming": "site_settings;dur=5.2, catalog_load;dur=5.1, page_data;dur=8.5",
+      "resources": [
+        {
+          "resource": "/fonts/cairo-arabic-var.woff2",
+          "kind": "link",
+          "durationMs": 507.60000000009313,
+          "startMs": 158.60000000009313,
+          "bytes": 31196,
+          "responseEndMs": 666.2000000001863
+        },
+        {
+          "resource": "/_next/static/chunks/2vzc2-1y1_qrr.css",
+          "kind": "link",
+          "durationMs": 512.2999999998137,
+          "startMs": 168.20000000018626,
+          "bytes": 32441,
+          "responseEndMs": 680.5
+        },
+        {
+          "resource": "/_next/static/chunks/3ek7vlw6zi3a2.css",
+          "kind": "link",
+          "durationMs": 227.39999999990687,
+          "startMs": 168.5,
+          "bytes": 3355,
+          "responseEndMs": 395.89999999990687
+        },
+        {
+          "resource": "/_next/static/chunks/3lbz8xvzvq_7i.css",
+          "kind": "link",
+          "durationMs": 249.79999999981374,
+          "startMs": 168.5,
+          "bytes": 5355,
+          "responseEndMs": 418.29999999981374
+        },
+        {
+          "resource": "/_next/static/chunks/1qatrf1rw7s-4.js",
+          "kind": "link",
+          "durationMs": 722.2999999998137,
+          "startMs": 168.70000000018626,
+          "bytes": 4974,
+          "responseEndMs": 891
+        },
+        {
+          "resource": "/_next/static/chunks/3516nv78vffqj.js",
+          "kind": "script",
+          "durationMs": 841.7999999998137,
+          "startMs": 168.70000000018626,
+          "bytes": 9057,
+          "responseEndMs": 1010.5
+        },
+        {
+          "resource": "/_next/static/chunks/1pm-oh6q5_afh.js",
+          "kind": "script",
+          "durationMs": 1494.2999999998137,
+          "startMs": 168.70000000018626,
+          "bytes": 31531,
+          "responseEndMs": 1663
+        },
+        {
+          "resource": "/_next/static/chunks/2n8ftyl7qs4p_.js",
+          "kind": "script",
+          "durationMs": 2596.8000000002794,
+          "startMs": 168.79999999981374,
+          "bytes": 73764,
+          "responseEndMs": 2765.600000000093
+        },
+        {
+          "resource": "/_next/static/chunks/turbopack-077hmtqrhcoji.js",
+          "kind": "script",
+          "durationMs": 833.8000000002794,
+          "startMs": 168.89999999990687,
+          "bytes": 4654,
+          "responseEndMs": 1002.7000000001863
+        },
+        {
+          "resource": "/_next/static/chunks/3oxivm6q_d7lv.js",
+          "kind": "script",
+          "durationMs": 961.5,
+          "startMs": 168.89999999990687,
+          "bytes": 11570,
+          "responseEndMs": 1130.3999999999069
+        },
+        {
+          "resource": "/_next/static/chunks/2s2e5ytqefmi7.js",
+          "kind": "script",
+          "durationMs": 1621.6000000000931,
+          "startMs": 169,
+          "bytes": 17792,
+          "responseEndMs": 1790.6000000000931
+        },
+        {
+          "resource": "/_next/static/chunks/2eey9vxny0txj.js",
+          "kind": "script",
+          "durationMs": 2101.399999999907,
+          "startMs": 169,
+          "bytes": 10720,
+          "responseEndMs": 2270.399999999907
+        },
+        {
+          "resource": "/_next/static/chunks/2pzfi0asnb6tr.js",
+          "kind": "script",
+          "durationMs": 2138.7999999998137,
+          "startMs": 169,
+          "bytes": 16959,
+          "responseEndMs": 2307.7999999998137
+        },
+        {
+          "resource": "/_next/static/chunks/3_hzzufj6-xwt.js",
+          "kind": "script",
+          "durationMs": 2424.100000000093,
+          "startMs": 169.10000000009313,
+          "bytes": 18561,
+          "responseEndMs": 2593.2000000001863
+        },
+        {
+          "resource": "/_next/static/chunks/1r9b2j3ko6ek3.js",
+          "kind": "script",
+          "durationMs": 2513.899999999907,
+          "startMs": 169.20000000018626,
+          "bytes": 4634,
+          "responseEndMs": 2683.100000000093
+        },
+        {
+          "resource": "/_next/static/chunks/26q-z6r2vlmhy.js",
+          "kind": "script",
+          "durationMs": 2559.399999999907,
+          "startMs": 169.20000000018626,
+          "bytes": 12708,
+          "responseEndMs": 2728.600000000093
+        },
+        {
+          "resource": "/_next/static/chunks/376b6ir3dug1r.js",
+          "kind": "script",
+          "durationMs": 3293.899999999907,
+          "startMs": 169.20000000018626,
+          "bytes": 136603,
+          "responseEndMs": 3463.100000000093
+        },
+        {
+          "resource": "/_next/static/chunks/2rmtxf62xs5in.js",
+          "kind": "script",
+          "durationMs": 2506,
+          "startMs": 169.29999999981374,
+          "bytes": 3620,
+          "responseEndMs": 2675.2999999998137
+        },
+        {
+          "resource": "telegram.org",
+          "kind": "link",
+          "durationMs": 14.100000000093132,
+          "startMs": 169.39999999990687,
+          "bytes": 0,
+          "responseEndMs": 183.5
+        },
+        {
+          "resource": "/_next/static/chunks/0a-qi_fp6-tg_.js",
+          "kind": "script",
+          "durationMs": 2738.8000000002794,
+          "startMs": 169.39999999990687,
+          "bytes": 15717,
+          "responseEndMs": 2908.2000000001863
+        },
+        {
+          "resource": "/fonts/cairo-latin-var.woff2",
+          "kind": "css",
+          "durationMs": 1239.0999999996275,
+          "startMs": 731.7000000001863,
+          "bytes": 34120,
+          "responseEndMs": 1970.7999999998137
+        },
+        {
+          "resource": "/fonts/plex-ar-600.woff2",
+          "kind": "css",
+          "durationMs": 1668.8999999999069,
+          "startMs": 744.3999999999069,
+          "bytes": 45988,
+          "responseEndMs": 2413.2999999998137
+        },
+        {
+          "resource": "/fonts/plex-ar-700.woff2",
+          "kind": "css",
+          "durationMs": 1622.8999999999069,
+          "startMs": 760,
+          "bytes": 44580,
+          "responseEndMs": 2382.899999999907
+        }
+      ],
+      "slowest": [
+        {
+          "resource": "/_next/static/chunks/376b6ir3dug1r.js",
+          "kind": "script",
+          "durationMs": 3293.899999999907,
+          "startMs": 169.20000000018626,
+          "bytes": 136603,
+          "responseEndMs": 3463.100000000093
+        },
+        {
+          "resource": "/_next/static/chunks/0a-qi_fp6-tg_.js",
+          "kind": "script",
+          "durationMs": 2738.8000000002794,
+          "startMs": 169.39999999990687,
+          "bytes": 15717,
+          "responseEndMs": 2908.2000000001863
+        },
+        {
+          "resource": "/_next/static/chunks/2n8ftyl7qs4p_.js",
+          "kind": "script",
+          "durationMs": 2596.8000000002794,
+          "startMs": 168.79999999981374,
+          "bytes": 73764,
+          "responseEndMs": 2765.600000000093
+        },
+        {
+          "resource": "/_next/static/chunks/26q-z6r2vlmhy.js",
+          "kind": "script",
+          "durationMs": 2559.399999999907,
+          "startMs": 169.20000000018626,
+          "bytes": 12708,
+          "responseEndMs": 2728.600000000093
+        },
+        {
+          "resource": "/_next/static/chunks/1r9b2j3ko6ek3.js",
+          "kind": "script",
+          "durationMs": 2513.899999999907,
+          "startMs": 169.20000000018626,
+          "bytes": 4634,
+          "responseEndMs": 2683.100000000093
+        },
+        {
+          "resource": "/_next/static/chunks/2rmtxf62xs5in.js",
+          "kind": "script",
+          "durationMs": 2506,
+          "startMs": 169.29999999981374,
+          "bytes": 3620,
+          "responseEndMs": 2675.2999999998137
+        },
+        {
+          "resource": "/_next/static/chunks/3_hzzufj6-xwt.js",
+          "kind": "script",
+          "durationMs": 2424.100000000093,
+          "startMs": 169.10000000009313,
+          "bytes": 18561,
+          "responseEndMs": 2593.2000000001863
+        },
+        {
+          "resource": "/_next/static/chunks/2pzfi0asnb6tr.js",
+          "kind": "script",
+          "durationMs": 2138.7999999998137,
+          "startMs": 169,
+          "bytes": 16959,
+          "responseEndMs": 2307.7999999998137
+        },
+        {
+          "resource": "/_next/static/chunks/2eey9vxny0txj.js",
+          "kind": "script",
+          "durationMs": 2101.399999999907,
+          "startMs": 169,
+          "bytes": 10720,
+          "responseEndMs": 2270.399999999907
+        },
+        {
+          "resource": "/fonts/plex-ar-600.woff2",
+          "kind": "css",
+          "durationMs": 1668.8999999999069,
+          "startMs": 744.3999999999069,
+          "bytes": 45988,
+          "responseEndMs": 2413.2999999998137
+        }
+      ],
+      "note": "Client clock only. Zero bytes does not prove a cache hit. Server stages may overlap."
+    },
+    {
+      "run": 5,
+      "browserCache": "disabled",
+      "serverCache": "warm",
+      "htmlBytes": 115772,
+      "jsBytes": 367890,
+      "overflow": false,
+      "errors": [],
+      "version": 1,
+      "navigation": {
+        "ttfbMs": 103.10000000009313,
+        "serverWaitMs": 100.10000000009313,
+        "dnsMs": 0,
+        "connectMs": 0.09999999962747097,
+        "downloadMs": 173.20000000018626,
+        "domContentLoadedMs": 808.5,
+        "loadMs": 3517.8000000002794,
+        "transferBytes": 31477
+      },
+      "hydratedMs": 3852.8000000002794,
+      "telegramReadyMs": 3856.399999999907,
+      "vitals": {
+        "first-paint": 820,
+        "first-contentful-paint": 820,
+        "lcpMs": 820,
+        "longTasksMs": 371
+      },
+      "serverTiming": "site_settings;dur=2, catalog_load;dur=2, page_data;dur=3.3",
+      "resources": [
+        {
+          "resource": "/fonts/cairo-arabic-var.woff2",
+          "kind": "link",
+          "durationMs": 514.5,
+          "startMs": 159.70000000018626,
+          "bytes": 31196,
+          "responseEndMs": 674.2000000001863
+        },
+        {
+          "resource": "/_next/static/chunks/2vzc2-1y1_qrr.css",
+          "kind": "link",
+          "durationMs": 510.6999999997206,
+          "startMs": 186.3000000002794,
+          "bytes": 32441,
+          "responseEndMs": 697
+        },
+        {
+          "resource": "/_next/static/chunks/3lbz8xvzvq_7i.css",
+          "kind": "link",
+          "durationMs": 255.60000000009313,
+          "startMs": 186.39999999990687,
+          "bytes": 5355,
+          "responseEndMs": 442
+        },
+        {
+          "resource": "/_next/static/chunks/3ek7vlw6zi3a2.css",
+          "kind": "link",
+          "durationMs": 231.3000000002794,
+          "startMs": 187.5,
+          "bytes": 3355,
+          "responseEndMs": 418.8000000002794
+        },
+        {
+          "resource": "/_next/static/chunks/1qatrf1rw7s-4.js",
+          "kind": "link",
+          "durationMs": 642.8999999999069,
+          "startMs": 188.5,
+          "bytes": 4974,
+          "responseEndMs": 831.3999999999069
+        },
+        {
+          "resource": "/_next/static/chunks/3516nv78vffqj.js",
+          "kind": "script",
+          "durationMs": 837.5,
+          "startMs": 189.5,
+          "bytes": 9057,
+          "responseEndMs": 1027
+        },
+        {
+          "resource": "/_next/static/chunks/1pm-oh6q5_afh.js",
+          "kind": "script",
+          "durationMs": 1496.7000000001863,
+          "startMs": 189.60000000009313,
+          "bytes": 31531,
+          "responseEndMs": 1686.3000000002794
+        },
+        {
+          "resource": "/_next/static/chunks/2n8ftyl7qs4p_.js",
+          "kind": "script",
+          "durationMs": 2592.399999999907,
+          "startMs": 189.60000000009313,
+          "bytes": 73764,
+          "responseEndMs": 2782
+        },
+        {
+          "resource": "/_next/static/chunks/3oxivm6q_d7lv.js",
+          "kind": "script",
+          "durationMs": 956.5,
+          "startMs": 190.3000000002794,
+          "bytes": 11570,
+          "responseEndMs": 1146.8000000002794
+        },
+        {
+          "resource": "/_next/static/chunks/turbopack-077hmtqrhcoji.js",
+          "kind": "script",
+          "durationMs": 843.4000000003725,
+          "startMs": 190.39999999990687,
+          "bytes": 4654,
+          "responseEndMs": 1033.8000000002794
+        },
+        {
+          "resource": "/_next/static/chunks/2s2e5ytqefmi7.js",
+          "kind": "script",
+          "durationMs": 1616.1000000000931,
+          "startMs": 190.39999999990687,
+          "bytes": 17792,
+          "responseEndMs": 1806.5
+        },
+        {
+          "resource": "/_next/static/chunks/2pzfi0asnb6tr.js",
+          "kind": "script",
+          "durationMs": 2140.2999999998137,
+          "startMs": 191.20000000018626,
+          "bytes": 16959,
+          "responseEndMs": 2331.5
+        },
+        {
+          "resource": "/_next/static/chunks/2eey9vxny0txj.js",
+          "kind": "script",
+          "durationMs": 2102.5,
+          "startMs": 191.39999999990687,
+          "bytes": 10720,
+          "responseEndMs": 2293.899999999907
+        },
+        {
+          "resource": "/_next/static/chunks/3_hzzufj6-xwt.js",
+          "kind": "script",
+          "durationMs": 2356.899999999907,
+          "startMs": 191.8000000002794,
+          "bytes": 18561,
+          "responseEndMs": 2548.7000000001863
+        },
+        {
+          "resource": "/_next/static/chunks/26q-z6r2vlmhy.js",
+          "kind": "script",
+          "durationMs": 2552.3000000002794,
+          "startMs": 191.89999999990687,
+          "bytes": 12708,
+          "responseEndMs": 2744.2000000001863
+        },
+        {
+          "resource": "/_next/static/chunks/376b6ir3dug1r.js",
+          "kind": "script",
+          "durationMs": 3279.3000000002794,
+          "startMs": 191.89999999990687,
+          "bytes": 136603,
+          "responseEndMs": 3471.2000000001863
+        },
+        {
+          "resource": "/_next/static/chunks/2rmtxf62xs5in.js",
+          "kind": "script",
+          "durationMs": 2506.600000000093,
+          "startMs": 192.70000000018626,
+          "bytes": 3620,
+          "responseEndMs": 2699.3000000002794
+        },
+        {
+          "resource": "/_next/static/chunks/1r9b2j3ko6ek3.js",
+          "kind": "script",
+          "durationMs": 2514.1999999997206,
+          "startMs": 192.70000000018626,
+          "bytes": 4634,
+          "responseEndMs": 2706.899999999907
+        },
+        {
+          "resource": "/_next/static/chunks/0a-qi_fp6-tg_.js",
+          "kind": "script",
+          "durationMs": 2716.7999999998137,
+          "startMs": 192.8000000002794,
+          "bytes": 15717,
+          "responseEndMs": 2909.600000000093
+        },
+        {
+          "resource": "telegram.org",
+          "kind": "link",
+          "durationMs": 6.800000000279397,
+          "startMs": 192.89999999990687,
+          "bytes": 0,
+          "responseEndMs": 199.70000000018626
+        },
+        {
+          "resource": "/fonts/cairo-latin-var.woff2",
+          "kind": "css",
+          "durationMs": 1162.5,
+          "startMs": 749,
+          "bytes": 34120,
+          "responseEndMs": 1911.5
+        },
+        {
+          "resource": "/fonts/plex-ar-600.woff2",
+          "kind": "css",
+          "durationMs": 1673.3999999999069,
+          "startMs": 762.6000000000931,
+          "bytes": 45988,
+          "responseEndMs": 2436
+        },
+        {
+          "resource": "/fonts/plex-ar-700.woff2",
+          "kind": "css",
+          "durationMs": 1628.3000000002794,
+          "startMs": 777.8999999999069,
+          "bytes": 44580,
+          "responseEndMs": 2406.2000000001863
+        }
+      ],
+      "slowest": [
+        {
+          "resource": "/_next/static/chunks/376b6ir3dug1r.js",
+          "kind": "script",
+          "durationMs": 3279.3000000002794,
+          "startMs": 191.89999999990687,
+          "bytes": 136603,
+          "responseEndMs": 3471.2000000001863
+        },
+        {
+          "resource": "/_next/static/chunks/0a-qi_fp6-tg_.js",
+          "kind": "script",
+          "durationMs": 2716.7999999998137,
+          "startMs": 192.8000000002794,
+          "bytes": 15717,
+          "responseEndMs": 2909.600000000093
+        },
+        {
+          "resource": "/_next/static/chunks/2n8ftyl7qs4p_.js",
+          "kind": "script",
+          "durationMs": 2592.399999999907,
+          "startMs": 189.60000000009313,
+          "bytes": 73764,
+          "responseEndMs": 2782
+        },
+        {
+          "resource": "/_next/static/chunks/26q-z6r2vlmhy.js",
+          "kind": "script",
+          "durationMs": 2552.3000000002794,
+          "startMs": 191.89999999990687,
+          "bytes": 12708,
+          "responseEndMs": 2744.2000000001863
+        },
+        {
+          "resource": "/_next/static/chunks/1r9b2j3ko6ek3.js",
+          "kind": "script",
+          "durationMs": 2514.1999999997206,
+          "startMs": 192.70000000018626,
+          "bytes": 4634,
+          "responseEndMs": 2706.899999999907
+        },
+        {
+          "resource": "/_next/static/chunks/2rmtxf62xs5in.js",
+          "kind": "script",
+          "durationMs": 2506.600000000093,
+          "startMs": 192.70000000018626,
+          "bytes": 3620,
+          "responseEndMs": 2699.3000000002794
+        },
+        {
+          "resource": "/_next/static/chunks/3_hzzufj6-xwt.js",
+          "kind": "script",
+          "durationMs": 2356.899999999907,
+          "startMs": 191.8000000002794,
+          "bytes": 18561,
+          "responseEndMs": 2548.7000000001863
+        },
+        {
+          "resource": "/_next/static/chunks/2pzfi0asnb6tr.js",
+          "kind": "script",
+          "durationMs": 2140.2999999998137,
+          "startMs": 191.20000000018626,
+          "bytes": 16959,
+          "responseEndMs": 2331.5
+        },
+        {
+          "resource": "/_next/static/chunks/2eey9vxny0txj.js",
+          "kind": "script",
+          "durationMs": 2102.5,
+          "startMs": 191.39999999990687,
+          "bytes": 10720,
+          "responseEndMs": 2293.899999999907
+        },
+        {
+          "resource": "/fonts/plex-ar-600.woff2",
+          "kind": "css",
+          "durationMs": 1673.3999999999069,
+          "startMs": 762.6000000000931,
+          "bytes": 45988,
+          "responseEndMs": 2436
+        }
+      ],
+      "note": "Client clock only. Zero bytes does not prove a cache hit. Server stages may overlap."
+    },
+    {
+      "run": 6,
+      "browserCache": "disabled",
+      "serverCache": "warm",
+      "htmlBytes": 115776,
+      "jsBytes": 367890,
+      "overflow": false,
+      "errors": [],
+      "version": 1,
+      "navigation": {
+        "ttfbMs": 103.10000000009313,
+        "serverWaitMs": 100,
+        "dnsMs": 0.10000000009313226,
+        "connectMs": 0.19999999972060323,
+        "downloadMs": 173.79999999981374,
+        "domContentLoadedMs": 845,
+        "loadMs": 3549.899999999907,
+        "transferBytes": 31483
+      },
+      "hydratedMs": 3905.899999999907,
+      "telegramReadyMs": 3909.399999999907,
+      "vitals": {
+        "first-paint": 844,
+        "first-contentful-paint": 844,
+        "lcpMs": 844,
+        "longTasksMs": 367
+      },
+      "serverTiming": "site_settings;dur=2.1, catalog_load;dur=2, page_data;dur=3.4",
+      "resources": [
+        {
+          "resource": "/fonts/cairo-arabic-var.woff2",
+          "kind": "link",
+          "durationMs": 543.5,
+          "startMs": 168.39999999990687,
+          "bytes": 31196,
+          "responseEndMs": 711.8999999999069
+        },
+        {
+          "resource": "/_next/static/chunks/2vzc2-1y1_qrr.css",
+          "kind": "link",
+          "durationMs": 526.0999999996275,
+          "startMs": 195.3000000002794,
+          "bytes": 32441,
+          "responseEndMs": 721.3999999999069
+        },
+        {
+          "resource": "/_next/static/chunks/3lbz8xvzvq_7i.css",
+          "kind": "link",
+          "durationMs": 253.3000000002794,
+          "startMs": 195.39999999990687,
+          "bytes": 5355,
+          "responseEndMs": 448.70000000018626
+        },
+        {
+          "resource": "/_next/static/chunks/3ek7vlw6zi3a2.css",
+          "kind": "link",
+          "durationMs": 238.20000000018626,
+          "startMs": 195.5,
+          "bytes": 3355,
+          "responseEndMs": 433.70000000018626
+        },
+        {
+          "resource": "/_next/static/chunks/1qatrf1rw7s-4.js",
+          "kind": "link",
+          "durationMs": 710.7000000001863,
+          "startMs": 195.60000000009313,
+          "bytes": 4974,
+          "responseEndMs": 906.3000000002794
+        },
+        {
+          "resource": "/_next/static/chunks/3516nv78vffqj.js",
+          "kind": "script",
+          "durationMs": 830.8999999999069,
+          "startMs": 195.60000000009313,
+          "bytes": 9057,
+          "responseEndMs": 1026.5
+        },
+        {
+          "resource": "/_next/static/chunks/1pm-oh6q5_afh.js",
+          "kind": "script",
+          "durationMs": 1535.7999999998137,
+          "startMs": 195.70000000018626,
+          "bytes": 31531,
+          "responseEndMs": 1731.5
+        },
+        {
+          "resource": "/_next/static/chunks/turbopack-077hmtqrhcoji.js",
+          "kind": "script",
+          "durationMs": 868.5999999996275,
+          "startMs": 195.8000000002794,
+          "bytes": 4654,
+          "responseEndMs": 1064.3999999999069
+        },
+        {
+          "resource": "/_next/static/chunks/3oxivm6q_d7lv.js",
+          "kind": "script",
+          "durationMs": 995.3999999999069,
+          "startMs": 195.8000000002794,
+          "bytes": 11570,
+          "responseEndMs": 1191.2000000001863
+        },
+        {
+          "resource": "/_next/static/chunks/2s2e5ytqefmi7.js",
+          "kind": "script",
+          "durationMs": 1656,
+          "startMs": 195.8000000002794,
+          "bytes": 17792,
+          "responseEndMs": 1851.8000000002794
+        },
+        {
+          "resource": "/_next/static/chunks/2n8ftyl7qs4p_.js",
+          "kind": "script",
+          "durationMs": 2622.6999999997206,
+          "startMs": 195.8000000002794,
+          "bytes": 73764,
+          "responseEndMs": 2818.5
+        },
+        {
+          "resource": "/_next/static/chunks/2pzfi0asnb6tr.js",
+          "kind": "script",
+          "durationMs": 2172.7000000001863,
+          "startMs": 195.89999999990687,
+          "bytes": 16959,
+          "responseEndMs": 2368.600000000093
+        },
+        {
+          "resource": "/_next/static/chunks/2eey9vxny0txj.js",
+          "kind": "script",
+          "durationMs": 2133,
+          "startMs": 198.60000000009313,
+          "bytes": 10720,
+          "responseEndMs": 2331.600000000093
+        },
+        {
+          "resource": "/_next/static/chunks/3_hzzufj6-xwt.js",
+          "kind": "script",
+          "durationMs": 2409.899999999907,
+          "startMs": 199.5,
+          "bytes": 18561,
+          "responseEndMs": 2609.399999999907
+        },
+        {
+          "resource": "/_next/static/chunks/26q-z6r2vlmhy.js",
+          "kind": "script",
+          "durationMs": 2574.2000000001863,
+          "startMs": 199.89999999990687,
+          "bytes": 12708,
+          "responseEndMs": 2774.100000000093
+        },
+        {
+          "resource": "/_next/static/chunks/376b6ir3dug1r.js",
+          "kind": "script",
+          "durationMs": 3309.399999999907,
+          "startMs": 200.10000000009313,
+          "bytes": 136603,
+          "responseEndMs": 3509.5
+        },
+        {
+          "resource": "/_next/static/chunks/2rmtxf62xs5in.js",
+          "kind": "script",
+          "durationMs": 2512.2999999998137,
+          "startMs": 201.20000000018626,
+          "bytes": 3620,
+          "responseEndMs": 2713.5
+        },
+        {
+          "resource": "/_next/static/chunks/1r9b2j3ko6ek3.js",
+          "kind": "script",
+          "durationMs": 2527.600000000093,
+          "startMs": 201.20000000018626,
+          "bytes": 4634,
+          "responseEndMs": 2728.8000000002794
+        },
+        {
+          "resource": "/_next/static/chunks/0a-qi_fp6-tg_.js",
+          "kind": "script",
+          "durationMs": 2743.7000000001863,
+          "startMs": 202.39999999990687,
+          "bytes": 15717,
+          "responseEndMs": 2946.100000000093
+        },
+        {
+          "resource": "telegram.org",
+          "kind": "link",
+          "durationMs": 15.200000000186265,
+          "startMs": 202.5,
+          "bytes": 0,
+          "responseEndMs": 217.70000000018626
+        },
+        {
+          "resource": "/fonts/cairo-latin-var.woff2",
+          "kind": "css",
+          "durationMs": 1196.3999999999069,
+          "startMs": 783,
+          "bytes": 34120,
+          "responseEndMs": 1979.3999999999069
+        },
+        {
+          "resource": "/fonts/plex-ar-600.woff2",
+          "kind": "css",
+          "durationMs": 1639.5999999996275,
+          "startMs": 796.3000000002794,
+          "bytes": 45988,
+          "responseEndMs": 2435.899999999907
+        },
+        {
+          "resource": "/fonts/plex-ar-700.woff2",
+          "kind": "css",
+          "durationMs": 1640.1999999997206,
+          "startMs": 811.3000000002794,
+          "bytes": 44580,
+          "responseEndMs": 2451.5
+        }
+      ],
+      "slowest": [
+        {
+          "resource": "/_next/static/chunks/376b6ir3dug1r.js",
+          "kind": "script",
+          "durationMs": 3309.399999999907,
+          "startMs": 200.10000000009313,
+          "bytes": 136603,
+          "responseEndMs": 3509.5
+        },
+        {
+          "resource": "/_next/static/chunks/0a-qi_fp6-tg_.js",
+          "kind": "script",
+          "durationMs": 2743.7000000001863,
+          "startMs": 202.39999999990687,
+          "bytes": 15717,
+          "responseEndMs": 2946.100000000093
+        },
+        {
+          "resource": "/_next/static/chunks/2n8ftyl7qs4p_.js",
+          "kind": "script",
+          "durationMs": 2622.6999999997206,
+          "startMs": 195.8000000002794,
+          "bytes": 73764,
+          "responseEndMs": 2818.5
+        },
+        {
+          "resource": "/_next/static/chunks/26q-z6r2vlmhy.js",
+          "kind": "script",
+          "durationMs": 2574.2000000001863,
+          "startMs": 199.89999999990687,
+          "bytes": 12708,
+          "responseEndMs": 2774.100000000093
+        },
+        {
+          "resource": "/_next/static/chunks/1r9b2j3ko6ek3.js",
+          "kind": "script",
+          "durationMs": 2527.600000000093,
+          "startMs": 201.20000000018626,
+          "bytes": 4634,
+          "responseEndMs": 2728.8000000002794
+        },
+        {
+          "resource": "/_next/static/chunks/2rmtxf62xs5in.js",
+          "kind": "script",
+          "durationMs": 2512.2999999998137,
+          "startMs": 201.20000000018626,
+          "bytes": 3620,
+          "responseEndMs": 2713.5
+        },
+        {
+          "resource": "/_next/static/chunks/3_hzzufj6-xwt.js",
+          "kind": "script",
+          "durationMs": 2409.899999999907,
+          "startMs": 199.5,
+          "bytes": 18561,
+          "responseEndMs": 2609.399999999907
+        },
+        {
+          "resource": "/_next/static/chunks/2pzfi0asnb6tr.js",
+          "kind": "script",
+          "durationMs": 2172.7000000001863,
+          "startMs": 195.89999999990687,
+          "bytes": 16959,
+          "responseEndMs": 2368.600000000093
+        },
+        {
+          "resource": "/_next/static/chunks/2eey9vxny0txj.js",
+          "kind": "script",
+          "durationMs": 2133,
+          "startMs": 198.60000000009313,
+          "bytes": 10720,
+          "responseEndMs": 2331.600000000093
+        },
+        {
+          "resource": "/_next/static/chunks/2s2e5ytqefmi7.js",
+          "kind": "script",
+          "durationMs": 1656,
+          "startMs": 195.8000000002794,
+          "bytes": 17792,
+          "responseEndMs": 1851.8000000002794
+        }
+      ],
+      "note": "Client clock only. Zero bytes does not prove a cache hit. Server stages may overlap."
+    },
+    {
+      "run": 7,
+      "browserCache": "disabled",
+      "serverCache": "warm",
+      "htmlBytes": 115830,
+      "jsBytes": 367890,
+      "overflow": false,
+      "errors": [],
+      "version": 1,
+      "navigation": {
+        "ttfbMs": 103.29999999981374,
+        "serverWaitMs": 100,
+        "dnsMs": 0.10000000009313226,
+        "connectMs": 0.20000000018626451,
+        "downloadMs": 172.70000000018626,
+        "domContentLoadedMs": 829.2999999998137,
+        "loadMs": 3524.899999999907,
+        "transferBytes": 31510
+      },
+      "hydratedMs": 3791.5,
+      "telegramReadyMs": 3796.7000000001863,
+      "vitals": {
+        "first-paint": 836,
+        "first-contentful-paint": 836,
+        "lcpMs": 836,
+        "longTasksMs": 311
+      },
+      "serverTiming": "site_settings;dur=2.3, catalog_load;dur=2.6, page_data;dur=4.4, db_catalog_init;dur=1.9",
+      "resources": [
+        {
+          "resource": "/fonts/cairo-arabic-var.woff2",
+          "kind": "link",
+          "durationMs": 536.2000000001863,
+          "startMs": 160,
+          "bytes": 31196,
+          "responseEndMs": 696.2000000001863
+        },
+        {
+          "resource": "/_next/static/chunks/2vzc2-1y1_qrr.css",
+          "kind": "link",
+          "durationMs": 522.2000000001863,
+          "startMs": 189,
+          "bytes": 32441,
+          "responseEndMs": 711.2000000001863
+        },
+        {
+          "resource": "/_next/static/chunks/3lbz8xvzvq_7i.css",
+          "kind": "link",
+          "durationMs": 258.70000000018626,
+          "startMs": 189.79999999981374,
+          "bytes": 5355,
+          "responseEndMs": 448.5
+        },
+        {
+          "resource": "/_next/static/chunks/3ek7vlw6zi3a2.css",
+          "kind": "link",
+          "durationMs": 235.20000000018626,
+          "startMs": 191,
+          "bytes": 3355,
+          "responseEndMs": 426.20000000018626
+        },
+        {
+          "resource": "/_next/static/chunks/1qatrf1rw7s-4.js",
+          "kind": "link",
+          "durationMs": 698.7999999998137,
+          "startMs": 192.60000000009313,
+          "bytes": 4974,
+          "responseEndMs": 891.3999999999069
+        },
+        {
+          "resource": "/_next/static/chunks/3516nv78vffqj.js",
+          "kind": "script",
+          "durationMs": 825.6999999997206,
+          "startMs": 192.70000000018626,
+          "bytes": 9057,
+          "responseEndMs": 1018.3999999999069
+        },
+        {
+          "resource": "/_next/static/chunks/1pm-oh6q5_afh.js",
+          "kind": "script",
+          "durationMs": 1508.3999999999069,
+          "startMs": 193.10000000009313,
+          "bytes": 31531,
+          "responseEndMs": 1701.5
+        },
+        {
+          "resource": "/_next/static/chunks/2n8ftyl7qs4p_.js",
+          "kind": "script",
+          "durationMs": 2610.2999999998137,
+          "startMs": 193.20000000018626,
+          "bytes": 73764,
+          "responseEndMs": 2803.5
+        },
+        {
+          "resource": "/_next/static/chunks/3oxivm6q_d7lv.js",
+          "kind": "script",
+          "durationMs": 981.9000000003725,
+          "startMs": 193.79999999981374,
+          "bytes": 11570,
+          "responseEndMs": 1175.7000000001863
+        },
+        {
+          "resource": "/_next/static/chunks/turbopack-077hmtqrhcoji.js",
+          "kind": "script",
+          "durationMs": 854.6999999997206,
+          "startMs": 194.20000000018626,
+          "bytes": 4654,
+          "responseEndMs": 1048.8999999999069
+        },
+        {
+          "resource": "/_next/static/chunks/2s2e5ytqefmi7.js",
+          "kind": "script",
+          "durationMs": 1641.7000000001863,
+          "startMs": 194.29999999981374,
+          "bytes": 17792,
+          "responseEndMs": 1836
+        },
+        {
+          "resource": "/_next/static/chunks/2pzfi0asnb6tr.js",
+          "kind": "script",
+          "durationMs": 2151.600000000093,
+          "startMs": 194.29999999981374,
+          "bytes": 16959,
+          "responseEndMs": 2345.899999999907
+        },
+        {
+          "resource": "/_next/static/chunks/2eey9vxny0txj.js",
+          "kind": "script",
+          "durationMs": 2121.100000000093,
+          "startMs": 194.39999999990687,
+          "bytes": 10720,
+          "responseEndMs": 2315.5
+        },
+        {
+          "resource": "/_next/static/chunks/3_hzzufj6-xwt.js",
+          "kind": "script",
+          "durationMs": 2397.7000000001863,
+          "startMs": 195.29999999981374,
+          "bytes": 18561,
+          "responseEndMs": 2593
+        },
+        {
+          "resource": "/_next/static/chunks/26q-z6r2vlmhy.js",
+          "kind": "script",
+          "durationMs": 2577.5999999996275,
+          "startMs": 195.70000000018626,
+          "bytes": 12708,
+          "responseEndMs": 2773.2999999998137
+        },
+        {
+          "resource": "/_next/static/chunks/376b6ir3dug1r.js",
+          "kind": "script",
+          "durationMs": 3297.399999999907,
+          "startMs": 195.70000000018626,
+          "bytes": 136603,
+          "responseEndMs": 3493.100000000093
+        },
+        {
+          "resource": "/_next/static/chunks/2rmtxf62xs5in.js",
+          "kind": "script",
+          "durationMs": 2495.600000000093,
+          "startMs": 195.79999999981374,
+          "bytes": 3620,
+          "responseEndMs": 2691.399999999907
+        },
+        {
+          "resource": "/_next/static/chunks/1r9b2j3ko6ek3.js",
+          "kind": "script",
+          "durationMs": 2517.3000000002794,
+          "startMs": 195.79999999981374,
+          "bytes": 4634,
+          "responseEndMs": 2713.100000000093
+        },
+        {
+          "resource": "/_next/static/chunks/0a-qi_fp6-tg_.js",
+          "kind": "script",
+          "durationMs": 2735.399999999907,
+          "startMs": 195.89999999990687,
+          "bytes": 15717,
+          "responseEndMs": 2931.2999999998137
+        },
+        {
+          "resource": "telegram.org",
+          "kind": "link",
+          "durationMs": 9.5,
+          "startMs": 196.79999999981374,
+          "bytes": 0,
+          "responseEndMs": 206.29999999981374
+        },
+        {
+          "resource": "/fonts/cairo-latin-var.woff2",
+          "kind": "css",
+          "durationMs": 1206,
+          "startMs": 765,
+          "bytes": 34120,
+          "responseEndMs": 1971
+        },
+        {
+          "resource": "/fonts/plex-ar-600.woff2",
+          "kind": "css",
+          "durationMs": 1653.1000000000931,
+          "startMs": 775,
+          "bytes": 45988,
+          "responseEndMs": 2428.100000000093
+        },
+        {
+          "resource": "/fonts/plex-ar-700.woff2",
+          "kind": "css",
+          "durationMs": 1628.4000000003725,
+          "startMs": 792.2999999998137,
+          "bytes": 44580,
+          "responseEndMs": 2420.7000000001863
+        }
+      ],
+      "slowest": [
+        {
+          "resource": "/_next/static/chunks/376b6ir3dug1r.js",
+          "kind": "script",
+          "durationMs": 3297.399999999907,
+          "startMs": 195.70000000018626,
+          "bytes": 136603,
+          "responseEndMs": 3493.100000000093
+        },
+        {
+          "resource": "/_next/static/chunks/0a-qi_fp6-tg_.js",
+          "kind": "script",
+          "durationMs": 2735.399999999907,
+          "startMs": 195.89999999990687,
+          "bytes": 15717,
+          "responseEndMs": 2931.2999999998137
+        },
+        {
+          "resource": "/_next/static/chunks/2n8ftyl7qs4p_.js",
+          "kind": "script",
+          "durationMs": 2610.2999999998137,
+          "startMs": 193.20000000018626,
+          "bytes": 73764,
+          "responseEndMs": 2803.5
+        },
+        {
+          "resource": "/_next/static/chunks/26q-z6r2vlmhy.js",
+          "kind": "script",
+          "durationMs": 2577.5999999996275,
+          "startMs": 195.70000000018626,
+          "bytes": 12708,
+          "responseEndMs": 2773.2999999998137
+        },
+        {
+          "resource": "/_next/static/chunks/1r9b2j3ko6ek3.js",
+          "kind": "script",
+          "durationMs": 2517.3000000002794,
+          "startMs": 195.79999999981374,
+          "bytes": 4634,
+          "responseEndMs": 2713.100000000093
+        },
+        {
+          "resource": "/_next/static/chunks/2rmtxf62xs5in.js",
+          "kind": "script",
+          "durationMs": 2495.600000000093,
+          "startMs": 195.79999999981374,
+          "bytes": 3620,
+          "responseEndMs": 2691.399999999907
+        },
+        {
+          "resource": "/_next/static/chunks/3_hzzufj6-xwt.js",
+          "kind": "script",
+          "durationMs": 2397.7000000001863,
+          "startMs": 195.29999999981374,
+          "bytes": 18561,
+          "responseEndMs": 2593
+        },
+        {
+          "resource": "/_next/static/chunks/2pzfi0asnb6tr.js",
+          "kind": "script",
+          "durationMs": 2151.600000000093,
+          "startMs": 194.29999999981374,
+          "bytes": 16959,
+          "responseEndMs": 2345.899999999907
+        },
+        {
+          "resource": "/_next/static/chunks/2eey9vxny0txj.js",
+          "kind": "script",
+          "durationMs": 2121.100000000093,
+          "startMs": 194.39999999990687,
+          "bytes": 10720,
+          "responseEndMs": 2315.5
+        },
+        {
+          "resource": "/fonts/plex-ar-600.woff2",
+          "kind": "css",
+          "durationMs": 1653.1000000000931,
+          "startMs": 775,
+          "bytes": 45988,
+          "responseEndMs": 2428.100000000093
+        }
+      ],
+      "note": "Client clock only. Zero bytes does not prove a cache hit. Server stages may overlap."
+    }
+  ],
+  "statistic": "Median of samples excluding first run. For even counts: mean of the two central values."
+}

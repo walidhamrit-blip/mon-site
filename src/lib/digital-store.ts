@@ -1,3 +1,4 @@
+import { measureTelegram } from "@/lib/telegram-performance";
 import { applyGiftCardSalesPolicy } from "@/lib/digital-sales-policy";
 import { applyCompetitorPricing } from "@/lib/competitor-pricing";
 import { siteConfig } from "@/lib/config";
@@ -345,11 +346,11 @@ async function getStoredCatalog(
 ): Promise<DigitalProduct[]> {
   const { publicOnly = true } = options;
   try {
-    await ensureSeeded();
-    const rows = await db
+    await measureTelegram("db_catalog_init", () => ensureSeeded());
+    const rows = await measureTelegram("db_products", () => db
       .select()
       .from(digitalProducts)
-      .orderBy(asc(digitalProducts.sortOrder), asc(digitalProducts.id));
+      .orderBy(asc(digitalProducts.sortOrder), asc(digitalProducts.id)));
     // La base répond : la panne éventuelle est terminée.
     clearCatalogFailure();
 
@@ -366,11 +367,11 @@ async function getStoredCatalog(
     const ids = visible.map((row) => row.id);
     const denominationRows =
       ids.length > 0
-        ? await db
+        ? await measureTelegram("db_denominations", () => db
             .select()
             .from(digitalDenominations)
             .where(inArray(digitalDenominations.productId, ids))
-            .orderBy(asc(digitalDenominations.sortOrder), asc(digitalDenominations.id))
+            .orderBy(asc(digitalDenominations.sortOrder), asc(digitalDenominations.id)))
         : [];
 
     const byProduct = new Map<string, DigitalDenomination[]>();
@@ -437,6 +438,12 @@ async function getLiveCatalog(): Promise<DigitalProduct[] | null> {
  *   n'apparaissent jamais sur le site public.
  */
 export async function getDigitalCatalog(
+  options: { publicOnly?: boolean } = {},
+): Promise<DigitalProduct[]> {
+  return measureTelegram("catalog_resolve", () => readDigitalCatalog(options));
+}
+
+async function readDigitalCatalog(
   options: { publicOnly?: boolean } = {},
 ): Promise<DigitalProduct[]> {
   const { publicOnly = true } = options;

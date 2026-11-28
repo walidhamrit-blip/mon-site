@@ -1,0 +1,94 @@
+{
+  "label": "final",
+  "scope": "Actual route handler, menu:orders; simulated I/O: secret 20ms, callback ACK 120ms, site 100ms, subscriber 80ms, edit 100ms. NO real Telegram/DB latency.",
+  "runs": 20,
+  "medianMs": 241.6523525,
+  "p95Ms": 242.45590799999945,
+  "samples": [
+    {
+      "ms": 245.15444000000002,
+      "serverTiming": "auth_secret;dur=19.8, db_subscriber;dur=80.4, site_context;dur=100.1, network_answerCallbackQuery;dur=120.4, callback_ack;dur=120.5, network_editMessageText;dur=100.6, callback_total;dur=221.6, webhook_total;dur=244.4"
+    },
+    {
+      "ms": 242.03666799999996,
+      "serverTiming": "auth_secret;dur=20.3, db_subscriber;dur=80.4, site_context;dur=100.8, network_answerCallbackQuery;dur=120.1, callback_ack;dur=120.2, network_editMessageText;dur=100.5, callback_total;dur=220.7, webhook_total;dur=241.8"
+    },
+    {
+      "ms": 241.6017230000001,
+      "serverTiming": "auth_secret;dur=20.3, db_subscriber;dur=80.3, site_context;dur=100.6, network_answerCallbackQuery;dur=119.9, callback_ack;dur=119.9, network_editMessageText;dur=100.4, callback_total;dur=220.4, webhook_total;dur=241.5"
+    },
+    {
+      "ms": 240.59814699999993,
+      "serverTiming": "auth_secret;dur=20.2, db_subscriber;dur=80.3, site_context;dur=99.6, network_answerCallbackQuery;dur=119.8, callback_ack;dur=119.8, network_editMessageText;dur=99.6, callback_total;dur=219.6, webhook_total;dur=240.5"
+    },
+    {
+      "ms": 242.01135599999998,
+      "serverTiming": "auth_secret;dur=20.2, db_subscriber;dur=80.4, site_context;dur=100.7, network_answerCallbackQuery;dur=119.9, callback_ack;dur=120, network_editMessageText;dur=100.3, callback_total;dur=220.4, webhook_total;dur=241.9"
+    },
+    {
+      "ms": 241.40395200000012,
+      "serverTiming": "auth_secret;dur=20.2, db_subscriber;dur=80.3, site_context;dur=100.6, network_answerCallbackQuery;dur=119.9, callback_ack;dur=119.9, network_editMessageText;dur=100.3, callback_total;dur=220.4, webhook_total;dur=241.3"
+    },
+    {
+      "ms": 241.38713600000005,
+      "serverTiming": "auth_secret;dur=20.3, db_subscriber;dur=80.3, site_context;dur=100.7, network_answerCallbackQuery;dur=119.9, callback_ack;dur=119.9, network_editMessageText;dur=100.3, callback_total;dur=220.4, webhook_total;dur=241.3"
+    },
+    {
+      "ms": 241.67437500000005,
+      "serverTiming": "auth_secret;dur=20.3, db_subscriber;dur=80.3, site_context;dur=100.5, network_answerCallbackQuery;dur=120.7, callback_ack;dur=120.8, network_editMessageText;dur=99.8, callback_total;dur=220.7, webhook_total;dur=241.6"
+    },
+    {
+      "ms": 241.6197870000001,
+      "serverTiming": "auth_secret;dur=20.3, db_subscriber;dur=80.3, site_context;dur=100.7, network_answerCallbackQuery;dur=120, callback_ack;dur=120, network_editMessageText;dur=100.4, callback_total;dur=220.5, webhook_total;dur=241.5"
+    },
+    {
+      "ms": 242.59346300000016,
+      "serverTiming": "auth_secret;dur=20.7, db_subscriber;dur=80.3, site_context;dur=100.6, network_answerCallbackQuery;dur=120.8, callback_ack;dur=120.8, network_editMessageText;dur=100.3, callback_total;dur=221.2, webhook_total;dur=242.5"
+    },
+    {
+      "ms": 241.56555900000012,
+      "serverTiming": "auth_secret;dur=20.4, db_subscriber;dur=80.4, site_context;dur=99.7, network_answerCallbackQuery;dur=119.9, callback_ack;dur=120, network_editMessageText;dur=100.4, callback_total;dur=220.5, webhook_total;dur=241.4"
+    },
+    {
+      "ms": 241.35415599999988,
+      "serverTiming": "auth_secret;dur=20.2, db_subscriber;dur=80.4, site_context;dur=99.7, network_answerCallbackQuery;dur=120.1, callback_ack;dur=120.1, network_editMessageText;dur=100.3, callback_total;dur=220.5, webhook_total;dur=241.3"
+    },
+    {
+      "ms": 241.90365799999972,
+      "serverTiming": "auth_secret;dur=20.3, db_subscriber;dur=80.9, site_context;dur=100.2, network_answerCallbackQuery;dur=120.5, callback_ack;dur=120.5, network_editMessageText;dur=100.4, callback_total;dur=221, webhook_total;dur=241.8"
+    },
+    {
+      "ms": 242.13424900000018,
+      "serverTiming": "auth_secret;dur=20.4, db_subscriber;dur=79.4, site_context;dur=99.7, network_answerCallbackQuery;dur=120.1, callback_ack;dur=120.1, network_editMessageText;dur=100.4, callback_total;dur=221, webhook_total;dur=242"
+    },
+    {
+      "ms": 241.32240500000034,
+      "serverTiming": "auth_secret;dur=20.3, db_subscriber;dur=80.3, site_context;dur=100.8, network_answerCallbackQuery;dur=120, callback_ack;dur=120, network_editMessageText;dur=100.3, callback_total;dur=220.4, webhook_total;dur=241.2"
+    },
+    {
+      "ms": 240.96651900000006,
+      "serverTiming": "auth_secret;dur=20.3, db_subscriber;dur=80.3, site_context;dur=99.5, network_answerCallbackQuery;dur=119.7, callback_ack;dur=119.8, network_editMessageText;dur=100.3, callback_total;dur=220.2, webhook_total;dur=240.9"
+    },
+    {
+      "ms": 242.45590799999945,
+      "serverTiming": "auth_secret;dur=20.2, db_subscriber;dur=80.6, site_context;dur=100.9, network_answerCallbackQuery;dur=121.1, callback_ack;dur=121.2, network_editMessageText;dur=100.4, callback_total;dur=221.6, webhook_total;dur=242.4"
+    },
+    {
+      "ms": 242.32068700000036,
+      "serverTiming": "auth_secret;dur=20.3, db_subscriber;dur=80.3, site_context;dur=100.6, network_answerCallbackQuery;dur=121, callback_ack;dur=121, network_editMessageText;dur=100.3, callback_total;dur=221.4, webhook_total;dur=242.2"
+    },
+    {
+      "ms": 241.63032999999996,
+      "serverTiming": "auth_secret;dur=20.3, db_subscriber;dur=80.4, site_context;dur=99.8, network_answerCallbackQuery;dur=120.1, callback_ack;dur=120.1, network_editMessageText;dur=100.4, callback_total;dur=220.6, webhook_total;dur=241.5"
+    },
+    {
+      "ms": 241.95283999999992,
+      "serverTiming": "auth_secret;dur=20.4, db_subscriber;dur=80.3, site_context;dur=99.7, network_answerCallbackQuery;dur=120, callback_ack;dur=120, network_editMessageText;dur=100.5, callback_total;dur=220.7, webhook_total;dur=241.8"
+    },
+    {
+      "ms": 242.34276500000033,
+      "serverTiming": "auth_secret;dur=20.4, db_subscriber;dur=79.9, site_context;dur=100.3, network_answerCallbackQuery;dur=120.7, callback_ack;dur=120.7, network_editMessageText;dur=100.3, callback_total;dur=221.1, webhook_total;dur=242.2"
+    }
+  ],
+  "statistic": "Median of samples excluding first run. For even counts: mean of the two central values."
+}
