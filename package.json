@@ -50,7 +50,7 @@
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^4.0.84",
-    "@hookform/resolvers": "^5.9.1",
+    "@hookform/resolvers": "^7.0.7",
     "@sentry/nextjs": "^11.14.0",
     "@vercel/analytics": "^2.0.1",
     "@vercel/speed-insights": "^2.0.0",
