@@ -1,3 +1,4 @@
+import { recordCryptoPaymentSnapshot } from "@/lib/payment-overpayment";
 import { LEGACY_SUPPLIER_RETIRED, RETIRED_SUPPLIER_MESSAGE } from "@/lib/retired-supplier";
 // Commandes digitales — « vendre à la commande ».
 //
@@ -1089,6 +1090,10 @@ async function reconcileDigitalOrderOnPoll(order: DigitalOrder): Promise<Digital
             : { ok: true, reason: null as string | null };
         if (incomingStatus === "paid" && !amountValidation.ok) {
           resolvedStatus = "pending";
+        }
+
+        if (incomingStatus === "paid" && (amountValidation.ok || amountValidation.reason === "actually_paid_insufficient")) {
+          await recordCryptoPaymentSnapshot(payment, remote);
         }
 
         const refreshed = {

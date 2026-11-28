@@ -1,3 +1,4 @@
+import { recordCryptoPaymentSnapshot } from "@/lib/payment-overpayment";
 import { NextResponse } from "next/server";
 import { and, asc, eq } from "drizzle-orm";
 import { db, ensureSchema } from "@/db";
@@ -114,6 +115,10 @@ export async function GET(
           console.warn(
             `[payments] montant refusé pour ${order.ref} : ${amountValidation.reason}`,
           );
+        }
+
+        if (incomingStatus === "paid" && (amountValidation.ok || amountValidation.reason === "actually_paid_insufficient")) {
+          await recordCryptoPaymentSnapshot(order, remote);
         }
 
         const refreshed = {

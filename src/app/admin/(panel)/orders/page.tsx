@@ -130,6 +130,9 @@ export default async function AdminOrdersPage({ searchParams }: Props) {
     payAddress: o.payAddress,
     payCurrency: o.payCurrency,
     payAmount: o.payAmount,
+    actualPaid: o.actualPaid,
+    actualPaidExpected: o.actualPaidExpected,
+    actualPaidCurrency: o.actualPaidCurrency,
     paymentUrl: o.paymentUrl,
     // Trois canaux distincts : crypto, carte téléphonique, virement manuel
     // (Skrill / Neteller / Airtm / D17 / Volet / WebMoney / Kashy). Le détail exact reste en base.

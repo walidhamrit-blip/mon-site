@@ -3,6 +3,7 @@
 // : un échec de messagerie ne change jamais le statut de la
 // commande, déjà enregistré en base.
 
+import { compareCryptoAmounts, type CryptoPaymentSnapshot } from "@/lib/payment-amounts";
 import { sendEmail } from "@/lib/mailer";
 import { escapeHtml } from "@/lib/emails";
 import { ORDER_STATUS_LABELS } from "@/lib/nowpayments";
@@ -171,6 +172,32 @@ export async function sendPaymentConfirmedEmail(
       <p style="color:#999;font-size:12px;margin-top:20px">Statut : ${escapeHtml(ORDER_STATUS_LABELS[order.status as keyof typeof ORDER_STATUS_LABELS] ?? order.status)} — envoyé automatiquement par le site.</p>
     </div>`;
 
+  const result = await sendEmail({ to, subject, text, html });
+  return { ok: result.ok, provider: result.provider, error: result.error };
+}
+
+/** Alerte interne séparée : elle ne prouve pas la livraison ni un remboursement. */
+export async function sendPaymentAmountAlertEmail(
+  order: Order,
+  snapshot: CryptoPaymentSnapshot,
+  siteUrl: string,
+  siteEmail?: string,
+): Promise<PaymentEmailResult> {
+  const to = paymentNotificationRecipient(siteEmail);
+  if (!to) return { ok: false, provider: "none", error: "destinataire absent" };
+  const adminUrl = `${siteUrl.replace(/\/+$/, "")}/admin/orders`;
+  const overpaid = compareCryptoAmounts(snapshot.actual, snapshot.expected) === 1;
+  const label = overpaid ? "Trop-payé" : "Sous-paiement";
+  const subject = `⚠️ ${label} à vérifier — ${order.ref}`;
+  const text = [
+    `Un paiement NOWPayments terminé diffère du montant crypto demandé. ${overpaid ? "La quantité facturée peut être livrée ; le trop-payé doit être régularisé." : "La validation automatique est bloquée : vérifiez et régularisez le sous-paiement."}`,
+    `Commande : ${order.ref}`,
+    `Montant demandé : ${snapshot.expected} ${snapshot.currency}`,
+    `Montant payé par le client : ${snapshot.actual} ${snapshot.currency}`,
+    `Vérifiez la transaction, les frais, la livraison et toute demande de remboursement avant régularisation. Le versement net marchand peut différer.`,
+    `Admin : ${adminUrl}`,
+  ].join("\n");
+  const html = `<div style="font-family:system-ui,sans-serif"><h1>${label} à vérifier</h1><p>Commande : ${escapeHtml(order.ref)}</p><p>Demandé : ${escapeHtml(snapshot.expected)} ${escapeHtml(snapshot.currency)}<br>Payé par le client : ${escapeHtml(snapshot.actual)} ${escapeHtml(snapshot.currency)}</p><p>${overpaid ? "La quantité facturée peut être livrée ; le trop-payé doit être régularisé." : "La validation automatique est bloquée : vérifiez et régularisez le sous-paiement."}</p><p>Vérifiez la transaction, les frais, la livraison et toute demande de remboursement avant régularisation. Le versement net marchand peut différer.</p><p><a href="${escapeHtml(adminUrl)}">Voir la commande</a></p></div>`;
   const result = await sendEmail({ to, subject, text, html });
   return { ok: result.ok, provider: result.provider, error: result.error };
 }
