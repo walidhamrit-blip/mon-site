@@ -143,6 +143,10 @@ export function ensureSchema(): Promise<void> {
       await pool.query(
         "ALTER TABLE orders ADD COLUMN IF NOT EXISTS last_provider_sync_at timestamptz",
       );
+      // Instantané NOWPayments : montant reçu du client, distinct du versement net.
+      await pool.query("ALTER TABLE orders ADD COLUMN IF NOT EXISTS actual_paid text");
+      await pool.query("ALTER TABLE orders ADD COLUMN IF NOT EXISTS actual_paid_expected text");
+      await pool.query("ALTER TABLE orders ADD COLUMN IF NOT EXISTS actual_paid_currency text");
       // Abonnements (mensuel / annuel) : plans synchronisés avec NOWPayments
       // et abonnés. Un paiement d'abonnement reste une ligne `orders`,
       // rattachée à son abonné par `subscription_id`.

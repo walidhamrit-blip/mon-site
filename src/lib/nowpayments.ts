@@ -1,3 +1,4 @@
+import { compareCryptoAmounts } from "./payment-amounts.ts";
 // Client NOWPayments — côté serveur uniquement.
 // Documentation : https://nowpayments.io/documentation
 //
@@ -496,12 +497,14 @@ export function validatePaidAmount(
     return { ok: false, reason: "price_currency_mismatch" };
   }
 
-  // Quand les deux montants crypto sont fournis, le montant réellement
-  // reçu doit couvrir le montant demandé (1 % de tolérance d'arrondi).
+  // Si NOWPayments fournit les deux montants, la somme envoyée doit couvrir
+  // entièrement la somme demandée (aucune tolérance de sous-paiement).
+  // Les anciens payloads sans ces champs conservent leur comportement :
+  // le statut terminé ne suffit alors pas à vérifier les montants crypto.
   const payAmount = numericValue(payload.pay_amount);
   const actuallyPaid = numericValue(payload.actually_paid);
   if (payAmount !== null && payAmount > 0 && actuallyPaid !== null) {
-    if (actuallyPaid < payAmount * 0.99) {
+    if (actuallyPaid < 0 || compareCryptoAmounts(payload.actually_paid, payload.pay_amount) === -1) {
       return { ok: false, reason: "actually_paid_insufficient" };
     }
   }

@@ -1,4 +1,5 @@
 import { NextResponse, after } from "next/server";
+import { recordCryptoPaymentSnapshot } from "@/lib/payment-overpayment";
 import { isHighCostNetwork } from "@/lib/payment-networks";
 import { and, eq, inArray } from "drizzle-orm";
 import { db, ensureSchema } from "@/db";
@@ -105,6 +106,7 @@ export async function POST(req: Request) {
         console.info(
           `[ipn][abonnement] ${result.outcome} — ${result.order.ref} (${ipnStatus})`,
         );
+        await recordCryptoPaymentSnapshot(result.order, payload);
         if (result.firstActivation) {
           const { config } = await getSiteData();
           const outcome = await sendPaymentConfirmedEmail(
@@ -175,6 +177,7 @@ export async function POST(req: Request) {
               console.info(
                 `[ipn][abonnement] ${reconciled.outcome} par facture — ${reconciled.order.ref} (${ipnStatus})`,
               );
+              await recordCryptoPaymentSnapshot(reconciled.order, payload);
               if (reconciled.firstActivation) {
                 const { config } = await getSiteData();
                 const outcome = await sendPaymentConfirmedEmail(
@@ -258,6 +261,10 @@ export async function POST(req: Request) {
       console.warn(
         `[ipn] montant refusé pour ${order.ref} : ${amountValidation.reason}`,
       );
+    }
+
+    if (incomingStatus === "paid" && (amountValidation.ok || amountValidation.reason === "actually_paid_insufficient")) {
+      await recordCryptoPaymentSnapshot(order, payload);
     }
 
     // Déjà payée : une notification « terminé » incohérente ne doit pas

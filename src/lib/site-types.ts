@@ -630,6 +630,9 @@ export interface OrderRow {
   payAddress: string | null;
   payCurrency: string | null;
   payAmount: string | null;
+  actualPaid: string | null;
+  actualPaidExpected: string | null;
+  actualPaidCurrency: string | null;
   paymentUrl: string | null;
   paymentMethod: "nowpayments" | "paygate" | "phone_card" | "manual";
   status: OrderStatus;

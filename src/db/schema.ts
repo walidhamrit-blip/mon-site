@@ -122,6 +122,10 @@ export const orders = pgTable("orders", {
   payAddress: text("pay_address"),
   payCurrency: text("pay_currency"),
   payAmount: text("pay_amount"),
+  /** Instantané des montants du même paiement terminé, avant frais marchands. */
+  actualPaid: text("actual_paid"),
+  actualPaidExpected: text("actual_paid_expected"),
+  actualPaidCurrency: text("actual_paid_currency"),
   paymentUrl: text("payment_url"),
   /** pending | paid | failed | expired (statut interne). */
   status: text("status").notNull().default("pending"),

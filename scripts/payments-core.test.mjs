@@ -126,12 +126,13 @@ test("montant : facture incohérente refusée avant tout contrôle", () => {
   }
 });
 
-test("montant : sous-paiement crypto (< 99 % du montant demandé) refusé", () => {
+test("montant : tout sous-paiement crypto connu est refusé", () => {
   assert.equal(
     validatePaidAmount(expected, paid({ pay_amount: 50, actually_paid: 49.4 })).reason,
     "actually_paid_insufficient",
   );
-  assert.equal(validatePaidAmount(expected, paid({ pay_amount: 50, actually_paid: 49.6 })).ok, true);
+  assert.equal(validatePaidAmount(expected, paid({ pay_amount: 50, actually_paid: 49.6 })).reason, "actually_paid_insufficient");
+  assert.equal(validatePaidAmount(expected, paid({ pay_amount: 50, actually_paid: 50 })).ok, true);
   assert.equal(validatePaidAmount(expected, paid({ pay_amount: 50 })).ok, true);
 });
 

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { ChevronDown, ExternalLink, Mail, MessageCircle } from "lucide-react";
 import { ORDER_KIND_LABELS, type OrderRow } from "@/lib/site-types";
+import { compareCryptoAmounts, cryptoPaymentSnapshot, isCryptoOverpayment } from "@/lib/payment-amounts";
 import { isManualPaymentMethod } from "@/lib/manual-payment-core";
 import { OrderStatusBadge } from "../status-badge";
 import { TrackingLinkButton } from "../tracking-link-button";
@@ -28,6 +29,9 @@ export function OrdersTable({ rows }: { rows: OrderRow[] }) {
     <div className="rounded-2xl border border-stone-200/90 bg-white overflow-hidden divide-y divide-stone-100 shadow-2xs">
       {rows.map((order) => {
         const open = openId === order.id;
+        const snapshot = cryptoPaymentSnapshot({ pay_amount: order.actualPaidExpected, actually_paid: order.actualPaid, pay_currency: order.actualPaidCurrency });
+        const overpaid = isCryptoOverpayment(snapshot);
+        const underpaid = snapshot && compareCryptoAmounts(snapshot.actual, snapshot.expected) === -1;
         return (
           <div key={order.id} className={open ? "bg-[#FAF9F6]" : "bg-white"}>
             <div className="px-4 sm:px-5 py-3.5 flex flex-wrap items-center justify-between gap-3">
@@ -75,6 +79,7 @@ export function OrdersTable({ rows }: { rows: OrderRow[] }) {
                 <span className="hidden sm:inline text-xs text-stone-400 tabular-nums">
                   {order.dateFr}
                 </span>
+                {(overpaid || underpaid) && <span className="rounded-md bg-orange-100 px-2 py-1 text-xs font-bold text-orange-900">{overpaid ? "Trop-payé" : "Sous-paiement"} à vérifier</span>}
                 <OrderStatusBadge status={order.status} />
               </div>
             </div>
@@ -125,6 +130,7 @@ export function OrdersTable({ rows }: { rows: OrderRow[] }) {
                         : "—"
                     }
                   />
+                  {snapshot && <Detail label="Crypto réellement payée par le client" value={`${snapshot.actual} ${snapshot.currency}`} />}
                   <Detail label="Client" value={order.clientName || "—"} />
                   <Detail label="Téléphone" value={order.phone || "—"} />
                   <Detail label="Email" value={order.email || "—"} />
@@ -141,6 +147,11 @@ export function OrdersTable({ rows }: { rows: OrderRow[] }) {
                   {order.utm && <Detail label="Origine (UTM)" value={order.utm} />}
                 </dl>
 
+                {(overpaid || underpaid) && snapshot && (
+                  <div role="alert" className="rounded-xl border border-orange-300 bg-orange-50 p-3 text-orange-900">
+                    <strong>{overpaid ? "Trop-payé" : "Sous-paiement"} à régulariser :</strong> le client a envoyé {snapshot.actual} {snapshot.currency} pour {snapshot.expected} {snapshot.currency} demandés. Vérifiez le paiement et les frais chez NOWPayments, puis convenez d’une régularisation avec le client. Le versement net marchand peut être différent.
+                  </div>
+                )}
                 {order.payAddress && (
                   <div className="rounded-xl bg-white border border-stone-200 px-3 py-2">
                     <div className="text-[11px] font-medium text-stone-400">
