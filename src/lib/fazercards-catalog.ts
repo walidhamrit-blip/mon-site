@@ -1,3 +1,4 @@
+import { fazercardsMaxQuantity } from "@/lib/fazercards-quantity";
 // Adaptateur catalogue FazerCards → DigitalProduct.
 //
 // FazerCards expose des catégories avec des offres (offers / cards / keys) :
@@ -213,7 +214,7 @@ function mapTopupCategory(
       available: true,
       stock: null,
       minOrderQuantity: 1,
-      maxOrderQuantity: 10,
+      maxOrderQuantity: 1,
       supplierOfferId: offer.offer_id,
       supplierCostUsd: cost,
       fields,
@@ -756,11 +757,12 @@ export function quoteFazercardsOrder(
   }
 
   const quantity = Number(quantityInput ?? 1);
-  if (!Number.isInteger(quantity) || quantity < 1 || quantity > denomination.maxOrderQuantity) {
+  const maxQuantity = fazercardsMaxQuantity(product.kind, denomination.maxOrderQuantity);
+  if (!Number.isInteger(quantity) || quantity < 1 || quantity > maxQuantity) {
     return {
       ok: false,
       error: "invalid_quantity",
-      message: `Quantité invalide (1 à ${denomination.maxOrderQuantity}).`,
+      message: `Quantité invalide (1 à ${maxQuantity}).`,
     };
   }
 
@@ -1181,7 +1183,7 @@ export function fazercardsProductToDigital(
       supplierCostUsd: denomination.supplierCostUsd,
       supplierOfferId: denomination.supplierOfferId,
       fields: denomination.fields,
-      maxQuantity: denomination.maxOrderQuantity,
+      maxQuantity: fazercardsMaxQuantity(product.kind, denomination.maxOrderQuantity),
     }));
 
   return {
