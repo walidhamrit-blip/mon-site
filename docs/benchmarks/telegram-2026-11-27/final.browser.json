@@ -1,0 +1,1606 @@
+{
+  "label": "final",
+  "date": "2026-11-27T22:34:30.066Z",
+  "environment": "Local Next production build; DATABASE_URL absent; fallback catalog; fixed SDK stub; no real Telegram/DB latency",
+  "conditions": {
+    "runs": 7,
+    "viewport": "360x740 DPR2",
+    "latencyMs": 100,
+    "downloadBytesPerSecond": 200000,
+    "cpuSlowdown": 4,
+    "browserCache": "disabled"
+  },
+  "summary": {
+    "ttfbMs": 103.25,
+    "hydratedMs": 1896.0500000000466,
+    "lcpMs": 602,
+    "htmlBytes": 12789,
+    "jsTransferBytes": 159989,
+    "errors": []
+  },
+  "samples": [
+    {
+      "run": 1,
+      "browserCache": "disabled",
+      "serverCache": "first-request",
+      "htmlBytes": 12789,
+      "jsBytes": 159989,
+      "overflow": false,
+      "errors": [],
+      "version": 1,
+      "navigation": {
+        "ttfbMs": 105.89999999990687,
+        "serverWaitMs": 100.10000000009313,
+        "dnsMs": 0,
+        "connectMs": 0.20000000018626451,
+        "downloadMs": 32.89999999990687,
+        "domContentLoadedMs": 442,
+        "loadMs": 1737.7999999998137,
+        "transferBytes": 4803
+      },
+      "hydratedMs": 1896.7999999998137,
+      "telegramReadyMs": 1900.3999999999069,
+      "vitals": {
+        "first-paint": 596,
+        "first-contentful-paint": 596,
+        "lcpMs": 596,
+        "longTasksMs": 125
+      },
+      "serverTiming": "site_settings;dur=2.8, catalog_load;dur=1.9, page_data;dur=3.5",
+      "resources": [
+        {
+          "resource": "/fonts/cairo-arabic-var.woff2",
+          "kind": "link",
+          "durationMs": 949.6000000000931,
+          "startMs": 157.29999999981374,
+          "bytes": 31196,
+          "responseEndMs": 1106.8999999999069
+        },
+        {
+          "resource": "/_next/static/chunks/2gq0a4dl45lob.css",
+          "kind": "link",
+          "durationMs": 269.29999999981374,
+          "startMs": 162.10000000009313,
+          "bytes": 4100,
+          "responseEndMs": 431.39999999990687
+        },
+        {
+          "resource": "/_next/static/chunks/1qatrf1rw7s-4.js",
+          "kind": "link",
+          "durationMs": 314.5,
+          "startMs": 162.29999999981374,
+          "bytes": 4974,
+          "responseEndMs": 476.79999999981374
+        },
+        {
+          "resource": "/_next/static/chunks/3516nv78vffqj.js",
+          "kind": "script",
+          "durationMs": 389.5,
+          "startMs": 162.29999999981374,
+          "bytes": 9057,
+          "responseEndMs": 551.7999999998137
+        },
+        {
+          "resource": "/_next/static/chunks/turbopack-077hmtqrhcoji.js",
+          "kind": "script",
+          "durationMs": 711.1000000000931,
+          "startMs": 162.39999999990687,
+          "bytes": 4654,
+          "responseEndMs": 873.5
+        },
+        {
+          "resource": "/_next/static/chunks/3oxivm6q_d7lv.js",
+          "kind": "script",
+          "durationMs": 734.1000000000931,
+          "startMs": 162.39999999990687,
+          "bytes": 11570,
+          "responseEndMs": 896.5
+        },
+        {
+          "resource": "/_next/static/chunks/1pm-oh6q5_afh.js",
+          "kind": "script",
+          "durationMs": 996.3999999999069,
+          "startMs": 162.39999999990687,
+          "bytes": 31531,
+          "responseEndMs": 1158.7999999998137
+        },
+        {
+          "resource": "/_next/static/chunks/2n8ftyl7qs4p_.js",
+          "kind": "script",
+          "durationMs": 1431.8999999999069,
+          "startMs": 162.39999999990687,
+          "bytes": 73764,
+          "responseEndMs": 1594.2999999998137
+        },
+        {
+          "resource": "/_next/static/chunks/008l1hub38ggf.js",
+          "kind": "script",
+          "durationMs": 1019.1000000000931,
+          "startMs": 162.5,
+          "bytes": 5290,
+          "responseEndMs": 1181.6000000000931
+        },
+        {
+          "resource": "/_next/static/chunks/1r9b2j3ko6ek3.js",
+          "kind": "script",
+          "durationMs": 1034,
+          "startMs": 162.5,
+          "bytes": 4634,
+          "responseEndMs": 1196.5
+        },
+        {
+          "resource": "/_next/static/chunks/2rmtxf62xs5in.js",
+          "kind": "script",
+          "durationMs": 1138.7999999998137,
+          "startMs": 162.60000000009313,
+          "bytes": 3620,
+          "responseEndMs": 1301.3999999999069
+        },
+        {
+          "resource": "telegram.org",
+          "kind": "link",
+          "durationMs": 17.59999999962747,
+          "startMs": 162.70000000018626,
+          "bytes": 0,
+          "responseEndMs": 180.29999999981374
+        },
+        {
+          "resource": "/_next/static/chunks/2bhco0hoo70x1.js",
+          "kind": "script",
+          "durationMs": 1333.6999999997206,
+          "startMs": 162.70000000018626,
+          "bytes": 15869,
+          "responseEndMs": 1496.3999999999069
+        },
+        {
+          "resource": "/fonts/cairo-latin-var.woff2",
+          "kind": "css",
+          "durationMs": 944.0999999996275,
+          "startMs": 447.70000000018626,
+          "bytes": 34120,
+          "responseEndMs": 1391.7999999998137
+        }
+      ],
+      "slowest": [
+        {
+          "resource": "/_next/static/chunks/2n8ftyl7qs4p_.js",
+          "kind": "script",
+          "durationMs": 1431.8999999999069,
+          "startMs": 162.39999999990687,
+          "bytes": 73764,
+          "responseEndMs": 1594.2999999998137
+        },
+        {
+          "resource": "/_next/static/chunks/2bhco0hoo70x1.js",
+          "kind": "script",
+          "durationMs": 1333.6999999997206,
+          "startMs": 162.70000000018626,
+          "bytes": 15869,
+          "responseEndMs": 1496.3999999999069
+        },
+        {
+          "resource": "/_next/static/chunks/2rmtxf62xs5in.js",
+          "kind": "script",
+          "durationMs": 1138.7999999998137,
+          "startMs": 162.60000000009313,
+          "bytes": 3620,
+          "responseEndMs": 1301.3999999999069
+        },
+        {
+          "resource": "/_next/static/chunks/1r9b2j3ko6ek3.js",
+          "kind": "script",
+          "durationMs": 1034,
+          "startMs": 162.5,
+          "bytes": 4634,
+          "responseEndMs": 1196.5
+        },
+        {
+          "resource": "/_next/static/chunks/008l1hub38ggf.js",
+          "kind": "script",
+          "durationMs": 1019.1000000000931,
+          "startMs": 162.5,
+          "bytes": 5290,
+          "responseEndMs": 1181.6000000000931
+        },
+        {
+          "resource": "/_next/static/chunks/1pm-oh6q5_afh.js",
+          "kind": "script",
+          "durationMs": 996.3999999999069,
+          "startMs": 162.39999999990687,
+          "bytes": 31531,
+          "responseEndMs": 1158.7999999998137
+        },
+        {
+          "resource": "/fonts/cairo-arabic-var.woff2",
+          "kind": "link",
+          "durationMs": 949.6000000000931,
+          "startMs": 157.29999999981374,
+          "bytes": 31196,
+          "responseEndMs": 1106.8999999999069
+        },
+        {
+          "resource": "/fonts/cairo-latin-var.woff2",
+          "kind": "css",
+          "durationMs": 944.0999999996275,
+          "startMs": 447.70000000018626,
+          "bytes": 34120,
+          "responseEndMs": 1391.7999999998137
+        },
+        {
+          "resource": "/_next/static/chunks/3oxivm6q_d7lv.js",
+          "kind": "script",
+          "durationMs": 734.1000000000931,
+          "startMs": 162.39999999990687,
+          "bytes": 11570,
+          "responseEndMs": 896.5
+        },
+        {
+          "resource": "/_next/static/chunks/turbopack-077hmtqrhcoji.js",
+          "kind": "script",
+          "durationMs": 711.1000000000931,
+          "startMs": 162.39999999990687,
+          "bytes": 4654,
+          "responseEndMs": 873.5
+        }
+      ],
+      "note": "Client clock only. Zero bytes does not prove a cache hit. Server stages may overlap."
+    },
+    {
+      "run": 2,
+      "browserCache": "disabled",
+      "serverCache": "warm",
+      "htmlBytes": 12785,
+      "jsBytes": 159989,
+      "overflow": false,
+      "errors": [],
+      "version": 1,
+      "navigation": {
+        "ttfbMs": 102.70000000018626,
+        "serverWaitMs": 100,
+        "dnsMs": 0.09999999962747097,
+        "connectMs": 0.10000000009313226,
+        "downloadMs": 38.299999999813735,
+        "domContentLoadedMs": 458.40000000037253,
+        "loadMs": 1746.4000000003725,
+        "transferBytes": 4794
+      },
+      "hydratedMs": 1877.4000000003725,
+      "telegramReadyMs": 1882.5,
+      "vitals": {
+        "first-paint": 604,
+        "first-contentful-paint": 604,
+        "lcpMs": 604,
+        "longTasksMs": 127
+      },
+      "serverTiming": "site_settings;dur=2.1, catalog_load;dur=2, page_data;dur=2.5",
+      "resources": [
+        {
+          "resource": "/fonts/cairo-arabic-var.woff2",
+          "kind": "link",
+          "durationMs": 935.6999999997206,
+          "startMs": 157.90000000037253,
+          "bytes": 31196,
+          "responseEndMs": 1093.6000000000931
+        },
+        {
+          "resource": "/_next/static/chunks/2gq0a4dl45lob.css",
+          "kind": "link",
+          "durationMs": 267.3000000002794,
+          "startMs": 181.60000000009313,
+          "bytes": 4100,
+          "responseEndMs": 448.90000000037253
+        },
+        {
+          "resource": "/_next/static/chunks/1qatrf1rw7s-4.js",
+          "kind": "link",
+          "durationMs": 311.60000000009313,
+          "startMs": 182.5,
+          "bytes": 4974,
+          "responseEndMs": 494.10000000009313
+        },
+        {
+          "resource": "/_next/static/chunks/3516nv78vffqj.js",
+          "kind": "script",
+          "durationMs": 378.60000000009313,
+          "startMs": 183.20000000018626,
+          "bytes": 9057,
+          "responseEndMs": 561.8000000002794
+        },
+        {
+          "resource": "/_next/static/chunks/3oxivm6q_d7lv.js",
+          "kind": "script",
+          "durationMs": 730.6000000000931,
+          "startMs": 183.3000000002794,
+          "bytes": 11570,
+          "responseEndMs": 913.9000000003725
+        },
+        {
+          "resource": "/_next/static/chunks/1pm-oh6q5_afh.js",
+          "kind": "script",
+          "durationMs": 985.6999999997206,
+          "startMs": 183.3000000002794,
+          "bytes": 31531,
+          "responseEndMs": 1169
+        },
+        {
+          "resource": "/_next/static/chunks/2n8ftyl7qs4p_.js",
+          "kind": "script",
+          "durationMs": 1420.6000000000931,
+          "startMs": 183.3000000002794,
+          "bytes": 73764,
+          "responseEndMs": 1603.9000000003725
+        },
+        {
+          "resource": "/_next/static/chunks/turbopack-077hmtqrhcoji.js",
+          "kind": "script",
+          "durationMs": 700.3999999999069,
+          "startMs": 183.40000000037253,
+          "bytes": 4654,
+          "responseEndMs": 883.8000000002794
+        },
+        {
+          "resource": "/_next/static/chunks/008l1hub38ggf.js",
+          "kind": "script",
+          "durationMs": 999.5,
+          "startMs": 184.40000000037253,
+          "bytes": 5290,
+          "responseEndMs": 1183.9000000003725
+        },
+        {
+          "resource": "/_next/static/chunks/1r9b2j3ko6ek3.js",
+          "kind": "script",
+          "durationMs": 1021.5,
+          "startMs": 184.5,
+          "bytes": 4634,
+          "responseEndMs": 1206
+        },
+        {
+          "resource": "/_next/static/chunks/2rmtxf62xs5in.js",
+          "kind": "script",
+          "durationMs": 1104.3999999999069,
+          "startMs": 184.60000000009313,
+          "bytes": 3620,
+          "responseEndMs": 1289
+        },
+        {
+          "resource": "/_next/static/chunks/2bhco0hoo70x1.js",
+          "kind": "script",
+          "durationMs": 1314,
+          "startMs": 185.20000000018626,
+          "bytes": 15869,
+          "responseEndMs": 1499.2000000001863
+        },
+        {
+          "resource": "telegram.org",
+          "kind": "link",
+          "durationMs": 7,
+          "startMs": 185.40000000037253,
+          "bytes": 0,
+          "responseEndMs": 192.40000000037253
+        },
+        {
+          "resource": "/fonts/cairo-latin-var.woff2",
+          "kind": "css",
+          "durationMs": 938.3999999999069,
+          "startMs": 463.3000000002794,
+          "bytes": 34120,
+          "responseEndMs": 1401.7000000001863
+        }
+      ],
+      "slowest": [
+        {
+          "resource": "/_next/static/chunks/2n8ftyl7qs4p_.js",
+          "kind": "script",
+          "durationMs": 1420.6000000000931,
+          "startMs": 183.3000000002794,
+          "bytes": 73764,
+          "responseEndMs": 1603.9000000003725
+        },
+        {
+          "resource": "/_next/static/chunks/2bhco0hoo70x1.js",
+          "kind": "script",
+          "durationMs": 1314,
+          "startMs": 185.20000000018626,
+          "bytes": 15869,
+          "responseEndMs": 1499.2000000001863
+        },
+        {
+          "resource": "/_next/static/chunks/2rmtxf62xs5in.js",
+          "kind": "script",
+          "durationMs": 1104.3999999999069,
+          "startMs": 184.60000000009313,
+          "bytes": 3620,
+          "responseEndMs": 1289
+        },
+        {
+          "resource": "/_next/static/chunks/1r9b2j3ko6ek3.js",
+          "kind": "script",
+          "durationMs": 1021.5,
+          "startMs": 184.5,
+          "bytes": 4634,
+          "responseEndMs": 1206
+        },
+        {
+          "resource": "/_next/static/chunks/008l1hub38ggf.js",
+          "kind": "script",
+          "durationMs": 999.5,
+          "startMs": 184.40000000037253,
+          "bytes": 5290,
+          "responseEndMs": 1183.9000000003725
+        },
+        {
+          "resource": "/_next/static/chunks/1pm-oh6q5_afh.js",
+          "kind": "script",
+          "durationMs": 985.6999999997206,
+          "startMs": 183.3000000002794,
+          "bytes": 31531,
+          "responseEndMs": 1169
+        },
+        {
+          "resource": "/fonts/cairo-latin-var.woff2",
+          "kind": "css",
+          "durationMs": 938.3999999999069,
+          "startMs": 463.3000000002794,
+          "bytes": 34120,
+          "responseEndMs": 1401.7000000001863
+        },
+        {
+          "resource": "/fonts/cairo-arabic-var.woff2",
+          "kind": "link",
+          "durationMs": 935.6999999997206,
+          "startMs": 157.90000000037253,
+          "bytes": 31196,
+          "responseEndMs": 1093.6000000000931
+        },
+        {
+          "resource": "/_next/static/chunks/3oxivm6q_d7lv.js",
+          "kind": "script",
+          "durationMs": 730.6000000000931,
+          "startMs": 183.3000000002794,
+          "bytes": 11570,
+          "responseEndMs": 913.9000000003725
+        },
+        {
+          "resource": "/_next/static/chunks/turbopack-077hmtqrhcoji.js",
+          "kind": "script",
+          "durationMs": 700.3999999999069,
+          "startMs": 183.40000000037253,
+          "bytes": 4654,
+          "responseEndMs": 883.8000000002794
+        }
+      ],
+      "note": "Client clock only. Zero bytes does not prove a cache hit. Server stages may overlap."
+    },
+    {
+      "run": 3,
+      "browserCache": "disabled",
+      "serverCache": "warm",
+      "htmlBytes": 12789,
+      "jsBytes": 159989,
+      "overflow": false,
+      "errors": [],
+      "version": 1,
+      "navigation": {
+        "ttfbMs": 103.10000000009313,
+        "serverWaitMs": 100.10000000009313,
+        "dnsMs": 0.10000000009313226,
+        "connectMs": 0.09999999962747097,
+        "downloadMs": 38.5,
+        "domContentLoadedMs": 443.40000000037253,
+        "loadMs": 1775.8000000002794,
+        "transferBytes": 4801
+      },
+      "hydratedMs": 2000.4000000003725,
+      "telegramReadyMs": 2007.2000000001863,
+      "vitals": {
+        "first-paint": 600,
+        "first-contentful-paint": 600,
+        "lcpMs": 600,
+        "longTasksMs": 160
+      },
+      "serverTiming": "site_settings;dur=4.1, catalog_load;dur=3.6, page_data;dur=4.5",
+      "resources": [
+        {
+          "resource": "/fonts/cairo-arabic-var.woff2",
+          "kind": "link",
+          "durationMs": 933.1999999997206,
+          "startMs": 160.40000000037253,
+          "bytes": 31196,
+          "responseEndMs": 1093.6000000000931
+        },
+        {
+          "resource": "/_next/static/chunks/2gq0a4dl45lob.css",
+          "kind": "link",
+          "durationMs": 257.60000000009313,
+          "startMs": 176.3000000002794,
+          "bytes": 4100,
+          "responseEndMs": 433.90000000037253
+        },
+        {
+          "resource": "/_next/static/chunks/1qatrf1rw7s-4.js",
+          "kind": "link",
+          "durationMs": 309.5,
+          "startMs": 177.10000000009313,
+          "bytes": 4974,
+          "responseEndMs": 486.60000000009313
+        },
+        {
+          "resource": "/_next/static/chunks/3516nv78vffqj.js",
+          "kind": "script",
+          "durationMs": 376.70000000018626,
+          "startMs": 177.20000000018626,
+          "bytes": 9057,
+          "responseEndMs": 553.9000000003725
+        },
+        {
+          "resource": "/_next/static/chunks/2n8ftyl7qs4p_.js",
+          "kind": "script",
+          "durationMs": 1419.1000000000931,
+          "startMs": 177.20000000018626,
+          "bytes": 73764,
+          "responseEndMs": 1596.3000000002794
+        },
+        {
+          "resource": "/_next/static/chunks/1pm-oh6q5_afh.js",
+          "kind": "script",
+          "durationMs": 983.6999999997206,
+          "startMs": 177.3000000002794,
+          "bytes": 31531,
+          "responseEndMs": 1161
+        },
+        {
+          "resource": "/_next/static/chunks/turbopack-077hmtqrhcoji.js",
+          "kind": "script",
+          "durationMs": 698.7999999998137,
+          "startMs": 177.40000000037253,
+          "bytes": 4654,
+          "responseEndMs": 876.2000000001863
+        },
+        {
+          "resource": "/_next/static/chunks/3oxivm6q_d7lv.js",
+          "kind": "script",
+          "durationMs": 721.6999999997206,
+          "startMs": 177.40000000037253,
+          "bytes": 11570,
+          "responseEndMs": 899.1000000000931
+        },
+        {
+          "resource": "/_next/static/chunks/008l1hub38ggf.js",
+          "kind": "script",
+          "durationMs": 999.1000000000931,
+          "startMs": 177.60000000009313,
+          "bytes": 5290,
+          "responseEndMs": 1176.7000000001863
+        },
+        {
+          "resource": "/_next/static/chunks/1r9b2j3ko6ek3.js",
+          "kind": "script",
+          "durationMs": 1020.6000000000931,
+          "startMs": 177.60000000009313,
+          "bytes": 4634,
+          "responseEndMs": 1198.2000000001863
+        },
+        {
+          "resource": "/_next/static/chunks/2rmtxf62xs5in.js",
+          "kind": "script",
+          "durationMs": 1116.0999999996275,
+          "startMs": 179.90000000037253,
+          "bytes": 3620,
+          "responseEndMs": 1296
+        },
+        {
+          "resource": "/_next/static/chunks/2bhco0hoo70x1.js",
+          "kind": "script",
+          "durationMs": 1319,
+          "startMs": 179.90000000037253,
+          "bytes": 15869,
+          "responseEndMs": 1498.9000000003725
+        },
+        {
+          "resource": "telegram.org",
+          "kind": "link",
+          "durationMs": 9.900000000372529,
+          "startMs": 180,
+          "bytes": 0,
+          "responseEndMs": 189.90000000037253
+        },
+        {
+          "resource": "/fonts/cairo-latin-var.woff2",
+          "kind": "css",
+          "durationMs": 935.6000000000931,
+          "startMs": 458.3000000002794,
+          "bytes": 34120,
+          "responseEndMs": 1393.9000000003725
+        }
+      ],
+      "slowest": [
+        {
+          "resource": "/_next/static/chunks/2n8ftyl7qs4p_.js",
+          "kind": "script",
+          "durationMs": 1419.1000000000931,
+          "startMs": 177.20000000018626,
+          "bytes": 73764,
+          "responseEndMs": 1596.3000000002794
+        },
+        {
+          "resource": "/_next/static/chunks/2bhco0hoo70x1.js",
+          "kind": "script",
+          "durationMs": 1319,
+          "startMs": 179.90000000037253,
+          "bytes": 15869,
+          "responseEndMs": 1498.9000000003725
+        },
+        {
+          "resource": "/_next/static/chunks/2rmtxf62xs5in.js",
+          "kind": "script",
+          "durationMs": 1116.0999999996275,
+          "startMs": 179.90000000037253,
+          "bytes": 3620,
+          "responseEndMs": 1296
+        },
+        {
+          "resource": "/_next/static/chunks/1r9b2j3ko6ek3.js",
+          "kind": "script",
+          "durationMs": 1020.6000000000931,
+          "startMs": 177.60000000009313,
+          "bytes": 4634,
+          "responseEndMs": 1198.2000000001863
+        },
+        {
+          "resource": "/_next/static/chunks/008l1hub38ggf.js",
+          "kind": "script",
+          "durationMs": 999.1000000000931,
+          "startMs": 177.60000000009313,
+          "bytes": 5290,
+          "responseEndMs": 1176.7000000001863
+        },
+        {
+          "resource": "/_next/static/chunks/1pm-oh6q5_afh.js",
+          "kind": "script",
+          "durationMs": 983.6999999997206,
+          "startMs": 177.3000000002794,
+          "bytes": 31531,
+          "responseEndMs": 1161
+        },
+        {
+          "resource": "/fonts/cairo-latin-var.woff2",
+          "kind": "css",
+          "durationMs": 935.6000000000931,
+          "startMs": 458.3000000002794,
+          "bytes": 34120,
+          "responseEndMs": 1393.9000000003725
+        },
+        {
+          "resource": "/fonts/cairo-arabic-var.woff2",
+          "kind": "link",
+          "durationMs": 933.1999999997206,
+          "startMs": 160.40000000037253,
+          "bytes": 31196,
+          "responseEndMs": 1093.6000000000931
+        },
+        {
+          "resource": "/_next/static/chunks/3oxivm6q_d7lv.js",
+          "kind": "script",
+          "durationMs": 721.6999999997206,
+          "startMs": 177.40000000037253,
+          "bytes": 11570,
+          "responseEndMs": 899.1000000000931
+        },
+        {
+          "resource": "/_next/static/chunks/turbopack-077hmtqrhcoji.js",
+          "kind": "script",
+          "durationMs": 698.7999999998137,
+          "startMs": 177.40000000037253,
+          "bytes": 4654,
+          "responseEndMs": 876.2000000001863
+        }
+      ],
+      "note": "Client clock only. Zero bytes does not prove a cache hit. Server stages may overlap."
+    },
+    {
+      "run": 4,
+      "browserCache": "disabled",
+      "serverCache": "warm",
+      "htmlBytes": 12789,
+      "jsBytes": 159989,
+      "overflow": false,
+      "errors": [],
+      "version": 1,
+      "navigation": {
+        "ttfbMs": 105.5,
+        "serverWaitMs": 100,
+        "dnsMs": 0,
+        "connectMs": 0.09999999962747097,
+        "downloadMs": 33.89999999990687,
+        "domContentLoadedMs": 424.39999999990687,
+        "loadMs": 1791.1000000000931,
+        "transferBytes": 4793
+      },
+      "hydratedMs": 2007.3999999999069,
+      "telegramReadyMs": 2056.2000000001863,
+      "vitals": {
+        "first-paint": 608,
+        "first-contentful-paint": 608,
+        "lcpMs": 608,
+        "longTasksMs": 270
+      },
+      "serverTiming": "site_settings;dur=1.3, catalog_load;dur=1.3, page_data;dur=1.5",
+      "resources": [
+        {
+          "resource": "/fonts/cairo-arabic-var.woff2",
+          "kind": "link",
+          "durationMs": 915.3999999999069,
+          "startMs": 168.8000000002794,
+          "bytes": 31196,
+          "responseEndMs": 1084.2000000001863
+        },
+        {
+          "resource": "/_next/static/chunks/2gq0a4dl45lob.css",
+          "kind": "link",
+          "durationMs": 219.09999999962747,
+          "startMs": 198.3000000002794,
+          "bytes": 4100,
+          "responseEndMs": 417.39999999990687
+        },
+        {
+          "resource": "/_next/static/chunks/1qatrf1rw7s-4.js",
+          "kind": "link",
+          "durationMs": 308.5,
+          "startMs": 198.60000000009313,
+          "bytes": 4974,
+          "responseEndMs": 507.10000000009313
+        },
+        {
+          "resource": "/_next/static/chunks/3516nv78vffqj.js",
+          "kind": "script",
+          "durationMs": 383.60000000009313,
+          "startMs": 198.60000000009313,
+          "bytes": 9057,
+          "responseEndMs": 582.2000000001863
+        },
+        {
+          "resource": "/_next/static/chunks/3oxivm6q_d7lv.js",
+          "kind": "script",
+          "durationMs": 676.6999999997206,
+          "startMs": 198.70000000018626,
+          "bytes": 11570,
+          "responseEndMs": 875.3999999999069
+        },
+        {
+          "resource": "/_next/static/chunks/turbopack-077hmtqrhcoji.js",
+          "kind": "script",
+          "durationMs": 705.6000000000931,
+          "startMs": 198.70000000018626,
+          "bytes": 4654,
+          "responseEndMs": 904.3000000002794
+        },
+        {
+          "resource": "/_next/static/chunks/1pm-oh6q5_afh.js",
+          "kind": "script",
+          "durationMs": 991.6000000000931,
+          "startMs": 198.70000000018626,
+          "bytes": 31531,
+          "responseEndMs": 1190.3000000002794
+        },
+        {
+          "resource": "/_next/static/chunks/2n8ftyl7qs4p_.js",
+          "kind": "script",
+          "durationMs": 1411.3999999999069,
+          "startMs": 198.70000000018626,
+          "bytes": 73764,
+          "responseEndMs": 1610.1000000000931
+        },
+        {
+          "resource": "/_next/static/chunks/008l1hub38ggf.js",
+          "kind": "script",
+          "durationMs": 975.7999999998137,
+          "startMs": 198.8000000002794,
+          "bytes": 5290,
+          "responseEndMs": 1174.6000000000931
+        },
+        {
+          "resource": "/_next/static/chunks/1r9b2j3ko6ek3.js",
+          "kind": "script",
+          "durationMs": 1005.9000000003725,
+          "startMs": 198.89999999990687,
+          "bytes": 4634,
+          "responseEndMs": 1204.8000000002794
+        },
+        {
+          "resource": "/_next/static/chunks/2rmtxf62xs5in.js",
+          "kind": "script",
+          "durationMs": 1088,
+          "startMs": 198.89999999990687,
+          "bytes": 3620,
+          "responseEndMs": 1286.8999999999069
+        },
+        {
+          "resource": "/_next/static/chunks/2bhco0hoo70x1.js",
+          "kind": "script",
+          "durationMs": 1306.1000000000931,
+          "startMs": 198.89999999990687,
+          "bytes": 15869,
+          "responseEndMs": 1505
+        },
+        {
+          "resource": "telegram.org",
+          "kind": "link",
+          "durationMs": 7.600000000093132,
+          "startMs": 199.10000000009313,
+          "bytes": 0,
+          "responseEndMs": 206.70000000018626
+        },
+        {
+          "resource": "/fonts/cairo-latin-var.woff2",
+          "kind": "css",
+          "durationMs": 963.3999999999069,
+          "startMs": 443.60000000009313,
+          "bytes": 34120,
+          "responseEndMs": 1407
+        }
+      ],
+      "slowest": [
+        {
+          "resource": "/_next/static/chunks/2n8ftyl7qs4p_.js",
+          "kind": "script",
+          "durationMs": 1411.3999999999069,
+          "startMs": 198.70000000018626,
+          "bytes": 73764,
+          "responseEndMs": 1610.1000000000931
+        },
+        {
+          "resource": "/_next/static/chunks/2bhco0hoo70x1.js",
+          "kind": "script",
+          "durationMs": 1306.1000000000931,
+          "startMs": 198.89999999990687,
+          "bytes": 15869,
+          "responseEndMs": 1505
+        },
+        {
+          "resource": "/_next/static/chunks/2rmtxf62xs5in.js",
+          "kind": "script",
+          "durationMs": 1088,
+          "startMs": 198.89999999990687,
+          "bytes": 3620,
+          "responseEndMs": 1286.8999999999069
+        },
+        {
+          "resource": "/_next/static/chunks/1r9b2j3ko6ek3.js",
+          "kind": "script",
+          "durationMs": 1005.9000000003725,
+          "startMs": 198.89999999990687,
+          "bytes": 4634,
+          "responseEndMs": 1204.8000000002794
+        },
+        {
+          "resource": "/_next/static/chunks/1pm-oh6q5_afh.js",
+          "kind": "script",
+          "durationMs": 991.6000000000931,
+          "startMs": 198.70000000018626,
+          "bytes": 31531,
+          "responseEndMs": 1190.3000000002794
+        },
+        {
+          "resource": "/_next/static/chunks/008l1hub38ggf.js",
+          "kind": "script",
+          "durationMs": 975.7999999998137,
+          "startMs": 198.8000000002794,
+          "bytes": 5290,
+          "responseEndMs": 1174.6000000000931
+        },
+        {
+          "resource": "/fonts/cairo-latin-var.woff2",
+          "kind": "css",
+          "durationMs": 963.3999999999069,
+          "startMs": 443.60000000009313,
+          "bytes": 34120,
+          "responseEndMs": 1407
+        },
+        {
+          "resource": "/fonts/cairo-arabic-var.woff2",
+          "kind": "link",
+          "durationMs": 915.3999999999069,
+          "startMs": 168.8000000002794,
+          "bytes": 31196,
+          "responseEndMs": 1084.2000000001863
+        },
+        {
+          "resource": "/_next/static/chunks/turbopack-077hmtqrhcoji.js",
+          "kind": "script",
+          "durationMs": 705.6000000000931,
+          "startMs": 198.70000000018626,
+          "bytes": 4654,
+          "responseEndMs": 904.3000000002794
+        },
+        {
+          "resource": "/_next/static/chunks/3oxivm6q_d7lv.js",
+          "kind": "script",
+          "durationMs": 676.6999999997206,
+          "startMs": 198.70000000018626,
+          "bytes": 11570,
+          "responseEndMs": 875.3999999999069
+        }
+      ],
+      "note": "Client clock only. Zero bytes does not prove a cache hit. Server stages may overlap."
+    },
+    {
+      "run": 5,
+      "browserCache": "disabled",
+      "serverCache": "warm",
+      "htmlBytes": 12835,
+      "jsBytes": 159989,
+      "overflow": false,
+      "errors": [],
+      "version": 1,
+      "navigation": {
+        "ttfbMs": 103.89999999990687,
+        "serverWaitMs": 100.10000000009313,
+        "dnsMs": 0,
+        "connectMs": 0.20000000018626451,
+        "downloadMs": 36.10000000009313,
+        "domContentLoadedMs": 427.29999999981374,
+        "loadMs": 1739.6999999997206,
+        "transferBytes": 4819
+      },
+      "hydratedMs": 1883.5,
+      "telegramReadyMs": 1887.8999999999069,
+      "vitals": {
+        "first-paint": 588,
+        "first-contentful-paint": 588,
+        "lcpMs": 588,
+        "longTasksMs": 144
+      },
+      "serverTiming": "site_settings;dur=2, catalog_load;dur=2.2, page_data;dur=2.6, db_catalog_init;dur=0.4",
+      "resources": [
+        {
+          "resource": "/fonts/cairo-arabic-var.woff2",
+          "kind": "link",
+          "durationMs": 924.6000000000931,
+          "startMs": 153.29999999981374,
+          "bytes": 31196,
+          "responseEndMs": 1077.8999999999069
+        },
+        {
+          "resource": "/_next/static/chunks/2gq0a4dl45lob.css",
+          "kind": "link",
+          "durationMs": 258.6999999997206,
+          "startMs": 158.89999999990687,
+          "bytes": 4100,
+          "responseEndMs": 417.59999999962747
+        },
+        {
+          "resource": "/_next/static/chunks/1qatrf1rw7s-4.js",
+          "kind": "link",
+          "durationMs": 311.60000000009313,
+          "startMs": 159.09999999962747,
+          "bytes": 4974,
+          "responseEndMs": 470.6999999997206
+        },
+        {
+          "resource": "/_next/static/chunks/3516nv78vffqj.js",
+          "kind": "script",
+          "durationMs": 378.8000000002794,
+          "startMs": 159.09999999962747,
+          "bytes": 9057,
+          "responseEndMs": 537.8999999999069
+        },
+        {
+          "resource": "/_next/static/chunks/2n8ftyl7qs4p_.js",
+          "kind": "script",
+          "durationMs": 1421,
+          "startMs": 159.1999999997206,
+          "bytes": 73764,
+          "responseEndMs": 1580.1999999997206
+        },
+        {
+          "resource": "/_next/static/chunks/turbopack-077hmtqrhcoji.js",
+          "kind": "script",
+          "durationMs": 700.7000000001863,
+          "startMs": 159.29999999981374,
+          "bytes": 4654,
+          "responseEndMs": 860
+        },
+        {
+          "resource": "/_next/static/chunks/3oxivm6q_d7lv.js",
+          "kind": "script",
+          "durationMs": 723.6000000000931,
+          "startMs": 159.29999999981374,
+          "bytes": 11570,
+          "responseEndMs": 882.8999999999069
+        },
+        {
+          "resource": "/_next/static/chunks/1pm-oh6q5_afh.js",
+          "kind": "script",
+          "durationMs": 986.2000000001863,
+          "startMs": 159.29999999981374,
+          "bytes": 31531,
+          "responseEndMs": 1145.5
+        },
+        {
+          "resource": "/_next/static/chunks/008l1hub38ggf.js",
+          "kind": "script",
+          "durationMs": 1001,
+          "startMs": 159.5,
+          "bytes": 5290,
+          "responseEndMs": 1160.5
+        },
+        {
+          "resource": "/_next/static/chunks/1r9b2j3ko6ek3.js",
+          "kind": "script",
+          "durationMs": 1023.6999999997206,
+          "startMs": 159.5,
+          "bytes": 4634,
+          "responseEndMs": 1183.1999999997206
+        },
+        {
+          "resource": "/_next/static/chunks/2rmtxf62xs5in.js",
+          "kind": "script",
+          "durationMs": 1120.6999999997206,
+          "startMs": 159.5,
+          "bytes": 3620,
+          "responseEndMs": 1280.1999999997206
+        },
+        {
+          "resource": "/_next/static/chunks/2bhco0hoo70x1.js",
+          "kind": "script",
+          "durationMs": 1323,
+          "startMs": 159.5,
+          "bytes": 15869,
+          "responseEndMs": 1482.5
+        },
+        {
+          "resource": "telegram.org",
+          "kind": "link",
+          "durationMs": 13.600000000093132,
+          "startMs": 159.59999999962747,
+          "bytes": 0,
+          "responseEndMs": 173.1999999997206
+        },
+        {
+          "resource": "/fonts/cairo-latin-var.woff2",
+          "kind": "css",
+          "durationMs": 941.1000000000931,
+          "startMs": 436.89999999990687,
+          "bytes": 34120,
+          "responseEndMs": 1378
+        }
+      ],
+      "slowest": [
+        {
+          "resource": "/_next/static/chunks/2n8ftyl7qs4p_.js",
+          "kind": "script",
+          "durationMs": 1421,
+          "startMs": 159.1999999997206,
+          "bytes": 73764,
+          "responseEndMs": 1580.1999999997206
+        },
+        {
+          "resource": "/_next/static/chunks/2bhco0hoo70x1.js",
+          "kind": "script",
+          "durationMs": 1323,
+          "startMs": 159.5,
+          "bytes": 15869,
+          "responseEndMs": 1482.5
+        },
+        {
+          "resource": "/_next/static/chunks/2rmtxf62xs5in.js",
+          "kind": "script",
+          "durationMs": 1120.6999999997206,
+          "startMs": 159.5,
+          "bytes": 3620,
+          "responseEndMs": 1280.1999999997206
+        },
+        {
+          "resource": "/_next/static/chunks/1r9b2j3ko6ek3.js",
+          "kind": "script",
+          "durationMs": 1023.6999999997206,
+          "startMs": 159.5,
+          "bytes": 4634,
+          "responseEndMs": 1183.1999999997206
+        },
+        {
+          "resource": "/_next/static/chunks/008l1hub38ggf.js",
+          "kind": "script",
+          "durationMs": 1001,
+          "startMs": 159.5,
+          "bytes": 5290,
+          "responseEndMs": 1160.5
+        },
+        {
+          "resource": "/_next/static/chunks/1pm-oh6q5_afh.js",
+          "kind": "script",
+          "durationMs": 986.2000000001863,
+          "startMs": 159.29999999981374,
+          "bytes": 31531,
+          "responseEndMs": 1145.5
+        },
+        {
+          "resource": "/fonts/cairo-latin-var.woff2",
+          "kind": "css",
+          "durationMs": 941.1000000000931,
+          "startMs": 436.89999999990687,
+          "bytes": 34120,
+          "responseEndMs": 1378
+        },
+        {
+          "resource": "/fonts/cairo-arabic-var.woff2",
+          "kind": "link",
+          "durationMs": 924.6000000000931,
+          "startMs": 153.29999999981374,
+          "bytes": 31196,
+          "responseEndMs": 1077.8999999999069
+        },
+        {
+          "resource": "/_next/static/chunks/3oxivm6q_d7lv.js",
+          "kind": "script",
+          "durationMs": 723.6000000000931,
+          "startMs": 159.29999999981374,
+          "bytes": 11570,
+          "responseEndMs": 882.8999999999069
+        },
+        {
+          "resource": "/_next/static/chunks/turbopack-077hmtqrhcoji.js",
+          "kind": "script",
+          "durationMs": 700.7000000001863,
+          "startMs": 159.29999999981374,
+          "bytes": 4654,
+          "responseEndMs": 860
+        }
+      ],
+      "note": "Client clock only. Zero bytes does not prove a cache hit. Server stages may overlap."
+    },
+    {
+      "run": 6,
+      "browserCache": "disabled",
+      "serverCache": "warm",
+      "htmlBytes": 12785,
+      "jsBytes": 159989,
+      "overflow": false,
+      "errors": [],
+      "version": 1,
+      "navigation": {
+        "ttfbMs": 102.60000000009313,
+        "serverWaitMs": 100,
+        "dnsMs": 0.10000000009313226,
+        "connectMs": 0.19999999972060323,
+        "downloadMs": 38.89999999990687,
+        "domContentLoadedMs": 425.8000000002794,
+        "loadMs": 1744.4000000003725,
+        "transferBytes": 4798
+      },
+      "hydratedMs": 1908.6000000000931,
+      "telegramReadyMs": 1913.3000000002794,
+      "vitals": {
+        "first-paint": 588,
+        "first-contentful-paint": 588,
+        "lcpMs": 588,
+        "longTasksMs": 131
+      },
+      "serverTiming": "site_settings;dur=2, catalog_load;dur=1.8, page_data;dur=2.3",
+      "resources": [
+        {
+          "resource": "/fonts/cairo-arabic-var.woff2",
+          "kind": "link",
+          "durationMs": 913.2999999998137,
+          "startMs": 157.8000000002794,
+          "bytes": 31196,
+          "responseEndMs": 1071.1000000000931
+        },
+        {
+          "resource": "/_next/static/chunks/2gq0a4dl45lob.css",
+          "kind": "link",
+          "durationMs": 246.20000000018626,
+          "startMs": 172.60000000009313,
+          "bytes": 4100,
+          "responseEndMs": 418.8000000002794
+        },
+        {
+          "resource": "/_next/static/chunks/1qatrf1rw7s-4.js",
+          "kind": "link",
+          "durationMs": 320.70000000018626,
+          "startMs": 173.20000000018626,
+          "bytes": 4974,
+          "responseEndMs": 493.90000000037253
+        },
+        {
+          "resource": "/_next/static/chunks/3516nv78vffqj.js",
+          "kind": "script",
+          "durationMs": 395.6999999997206,
+          "startMs": 173.40000000037253,
+          "bytes": 9057,
+          "responseEndMs": 569.1000000000931
+        },
+        {
+          "resource": "/_next/static/chunks/3oxivm6q_d7lv.js",
+          "kind": "script",
+          "durationMs": 702.8999999999069,
+          "startMs": 173.60000000009313,
+          "bytes": 11570,
+          "responseEndMs": 876.5
+        },
+        {
+          "resource": "/_next/static/chunks/turbopack-077hmtqrhcoji.js",
+          "kind": "script",
+          "durationMs": 717.6000000000931,
+          "startMs": 173.60000000009313,
+          "bytes": 4654,
+          "responseEndMs": 891.2000000001863
+        },
+        {
+          "resource": "/_next/static/chunks/1pm-oh6q5_afh.js",
+          "kind": "script",
+          "durationMs": 995.6000000000931,
+          "startMs": 173.60000000009313,
+          "bytes": 31531,
+          "responseEndMs": 1169.2000000001863
+        },
+        {
+          "resource": "/_next/static/chunks/2n8ftyl7qs4p_.js",
+          "kind": "script",
+          "durationMs": 1422.6000000000931,
+          "startMs": 173.60000000009313,
+          "bytes": 73764,
+          "responseEndMs": 1596.2000000001863
+        },
+        {
+          "resource": "/_next/static/chunks/008l1hub38ggf.js",
+          "kind": "script",
+          "durationMs": 1002.2999999998137,
+          "startMs": 173.8000000002794,
+          "bytes": 5290,
+          "responseEndMs": 1176.1000000000931
+        },
+        {
+          "resource": "/_next/static/chunks/1r9b2j3ko6ek3.js",
+          "kind": "script",
+          "durationMs": 1015.7000000001863,
+          "startMs": 176.20000000018626,
+          "bytes": 4634,
+          "responseEndMs": 1191.9000000003725
+        },
+        {
+          "resource": "/_next/static/chunks/2rmtxf62xs5in.js",
+          "kind": "script",
+          "durationMs": 1097.7000000001863,
+          "startMs": 176.20000000018626,
+          "bytes": 3620,
+          "responseEndMs": 1273.9000000003725
+        },
+        {
+          "resource": "/_next/static/chunks/2bhco0hoo70x1.js",
+          "kind": "script",
+          "durationMs": 1322.5,
+          "startMs": 176.20000000018626,
+          "bytes": 15869,
+          "responseEndMs": 1498.7000000001863
+        },
+        {
+          "resource": "telegram.org",
+          "kind": "link",
+          "durationMs": 5.7999999998137355,
+          "startMs": 176.3000000002794,
+          "bytes": 0,
+          "responseEndMs": 182.10000000009313
+        },
+        {
+          "resource": "/fonts/cairo-latin-var.woff2",
+          "kind": "css",
+          "durationMs": 948.8999999999069,
+          "startMs": 445.3000000002794,
+          "bytes": 34120,
+          "responseEndMs": 1394.2000000001863
+        }
+      ],
+      "slowest": [
+        {
+          "resource": "/_next/static/chunks/2n8ftyl7qs4p_.js",
+          "kind": "script",
+          "durationMs": 1422.6000000000931,
+          "startMs": 173.60000000009313,
+          "bytes": 73764,
+          "responseEndMs": 1596.2000000001863
+        },
+        {
+          "resource": "/_next/static/chunks/2bhco0hoo70x1.js",
+          "kind": "script",
+          "durationMs": 1322.5,
+          "startMs": 176.20000000018626,
+          "bytes": 15869,
+          "responseEndMs": 1498.7000000001863
+        },
+        {
+          "resource": "/_next/static/chunks/2rmtxf62xs5in.js",
+          "kind": "script",
+          "durationMs": 1097.7000000001863,
+          "startMs": 176.20000000018626,
+          "bytes": 3620,
+          "responseEndMs": 1273.9000000003725
+        },
+        {
+          "resource": "/_next/static/chunks/1r9b2j3ko6ek3.js",
+          "kind": "script",
+          "durationMs": 1015.7000000001863,
+          "startMs": 176.20000000018626,
+          "bytes": 4634,
+          "responseEndMs": 1191.9000000003725
+        },
+        {
+          "resource": "/_next/static/chunks/008l1hub38ggf.js",
+          "kind": "script",
+          "durationMs": 1002.2999999998137,
+          "startMs": 173.8000000002794,
+          "bytes": 5290,
+          "responseEndMs": 1176.1000000000931
+        },
+        {
+          "resource": "/_next/static/chunks/1pm-oh6q5_afh.js",
+          "kind": "script",
+          "durationMs": 995.6000000000931,
+          "startMs": 173.60000000009313,
+          "bytes": 31531,
+          "responseEndMs": 1169.2000000001863
+        },
+        {
+          "resource": "/fonts/cairo-latin-var.woff2",
+          "kind": "css",
+          "durationMs": 948.8999999999069,
+          "startMs": 445.3000000002794,
+          "bytes": 34120,
+          "responseEndMs": 1394.2000000001863
+        },
+        {
+          "resource": "/fonts/cairo-arabic-var.woff2",
+          "kind": "link",
+          "durationMs": 913.2999999998137,
+          "startMs": 157.8000000002794,
+          "bytes": 31196,
+          "responseEndMs": 1071.1000000000931
+        },
+        {
+          "resource": "/_next/static/chunks/turbopack-077hmtqrhcoji.js",
+          "kind": "script",
+          "durationMs": 717.6000000000931,
+          "startMs": 173.60000000009313,
+          "bytes": 4654,
+          "responseEndMs": 891.2000000001863
+        },
+        {
+          "resource": "/_next/static/chunks/3oxivm6q_d7lv.js",
+          "kind": "script",
+          "durationMs": 702.8999999999069,
+          "startMs": 173.60000000009313,
+          "bytes": 11570,
+          "responseEndMs": 876.5
+        }
+      ],
+      "note": "Client clock only. Zero bytes does not prove a cache hit. Server stages may overlap."
+    },
+    {
+      "run": 7,
+      "browserCache": "disabled",
+      "serverCache": "warm",
+      "htmlBytes": 12789,
+      "jsBytes": 159989,
+      "overflow": false,
+      "errors": [],
+      "version": 1,
+      "navigation": {
+        "ttfbMs": 103.39999999990687,
+        "serverWaitMs": 100,
+        "dnsMs": 0.10000000009313226,
+        "connectMs": 0.20000000018626451,
+        "downloadMs": 37.799999999813735,
+        "domContentLoadedMs": 452,
+        "loadMs": 1753.3999999999069,
+        "transferBytes": 4797
+      },
+      "hydratedMs": 1861.3999999999069,
+      "telegramReadyMs": 1865,
+      "vitals": {
+        "first-paint": 608,
+        "first-contentful-paint": 608,
+        "lcpMs": 608,
+        "longTasksMs": 139
+      },
+      "serverTiming": "site_settings;dur=1.4, catalog_load;dur=1.3, page_data;dur=1.5",
+      "resources": [
+        {
+          "resource": "/fonts/cairo-arabic-var.woff2",
+          "kind": "link",
+          "durationMs": 928.8999999999069,
+          "startMs": 157.39999999990687,
+          "bytes": 31196,
+          "responseEndMs": 1086.2999999998137
+        },
+        {
+          "resource": "/_next/static/chunks/2gq0a4dl45lob.css",
+          "kind": "link",
+          "durationMs": 262.40000000037253,
+          "startMs": 179.09999999962747,
+          "bytes": 4100,
+          "responseEndMs": 441.5
+        },
+        {
+          "resource": "/_next/static/chunks/1qatrf1rw7s-4.js",
+          "kind": "link",
+          "durationMs": 307.5,
+          "startMs": 179.29999999981374,
+          "bytes": 4974,
+          "responseEndMs": 486.79999999981374
+        },
+        {
+          "resource": "/_next/static/chunks/3516nv78vffqj.js",
+          "kind": "script",
+          "durationMs": 374.20000000018626,
+          "startMs": 179.29999999981374,
+          "bytes": 9057,
+          "responseEndMs": 553.5
+        },
+        {
+          "resource": "/_next/static/chunks/2n8ftyl7qs4p_.js",
+          "kind": "script",
+          "durationMs": 1416.6000000000931,
+          "startMs": 179.29999999981374,
+          "bytes": 73764,
+          "responseEndMs": 1595.8999999999069
+        },
+        {
+          "resource": "/_next/static/chunks/turbopack-077hmtqrhcoji.js",
+          "kind": "script",
+          "durationMs": 697,
+          "startMs": 179.39999999990687,
+          "bytes": 4654,
+          "responseEndMs": 876.3999999999069
+        },
+        {
+          "resource": "/_next/static/chunks/3oxivm6q_d7lv.js",
+          "kind": "script",
+          "durationMs": 727.3999999999069,
+          "startMs": 179.39999999990687,
+          "bytes": 11570,
+          "responseEndMs": 906.7999999998137
+        },
+        {
+          "resource": "/_next/static/chunks/1pm-oh6q5_afh.js",
+          "kind": "script",
+          "durationMs": 982,
+          "startMs": 179.39999999990687,
+          "bytes": 31531,
+          "responseEndMs": 1161.3999999999069
+        },
+        {
+          "resource": "/_next/static/chunks/008l1hub38ggf.js",
+          "kind": "script",
+          "durationMs": 997,
+          "startMs": 179.5,
+          "bytes": 5290,
+          "responseEndMs": 1176.5
+        },
+        {
+          "resource": "/_next/static/chunks/1r9b2j3ko6ek3.js",
+          "kind": "script",
+          "durationMs": 1017.7000000001863,
+          "startMs": 181.29999999981374,
+          "bytes": 4634,
+          "responseEndMs": 1199
+        },
+        {
+          "resource": "/_next/static/chunks/2rmtxf62xs5in.js",
+          "kind": "script",
+          "durationMs": 1099.6000000000931,
+          "startMs": 181.39999999990687,
+          "bytes": 3620,
+          "responseEndMs": 1281
+        },
+        {
+          "resource": "telegram.org",
+          "kind": "link",
+          "durationMs": 11.899999999906868,
+          "startMs": 181.5,
+          "bytes": 0,
+          "responseEndMs": 193.39999999990687
+        },
+        {
+          "resource": "/_next/static/chunks/2bhco0hoo70x1.js",
+          "kind": "script",
+          "durationMs": 1309.8999999999069,
+          "startMs": 181.5,
+          "bytes": 15869,
+          "responseEndMs": 1491.3999999999069
+        },
+        {
+          "resource": "/fonts/cairo-latin-var.woff2",
+          "kind": "css",
+          "durationMs": 936.8999999999069,
+          "startMs": 456.89999999990687,
+          "bytes": 34120,
+          "responseEndMs": 1393.7999999998137
+        }
+      ],
+      "slowest": [
+        {
+          "resource": "/_next/static/chunks/2n8ftyl7qs4p_.js",
+          "kind": "script",
+          "durationMs": 1416.6000000000931,
+          "startMs": 179.29999999981374,
+          "bytes": 73764,
+          "responseEndMs": 1595.8999999999069
+        },
+        {
+          "resource": "/_next/static/chunks/2bhco0hoo70x1.js",
+          "kind": "script",
+          "durationMs": 1309.8999999999069,
+          "startMs": 181.5,
+          "bytes": 15869,
+          "responseEndMs": 1491.3999999999069
+        },
+        {
+          "resource": "/_next/static/chunks/2rmtxf62xs5in.js",
+          "kind": "script",
+          "durationMs": 1099.6000000000931,
+          "startMs": 181.39999999990687,
+          "bytes": 3620,
+          "responseEndMs": 1281
+        },
+        {
+          "resource": "/_next/static/chunks/1r9b2j3ko6ek3.js",
+          "kind": "script",
+          "durationMs": 1017.7000000001863,
+          "startMs": 181.29999999981374,
+          "bytes": 4634,
+          "responseEndMs": 1199
+        },
+        {
+          "resource": "/_next/static/chunks/008l1hub38ggf.js",
+          "kind": "script",
+          "durationMs": 997,
+          "startMs": 179.5,
+          "bytes": 5290,
+          "responseEndMs": 1176.5
+        },
+        {
+          "resource": "/_next/static/chunks/1pm-oh6q5_afh.js",
+          "kind": "script",
+          "durationMs": 982,
+          "startMs": 179.39999999990687,
+          "bytes": 31531,
+          "responseEndMs": 1161.3999999999069
+        },
+        {
+          "resource": "/fonts/cairo-latin-var.woff2",
+          "kind": "css",
+          "durationMs": 936.8999999999069,
+          "startMs": 456.89999999990687,
+          "bytes": 34120,
+          "responseEndMs": 1393.7999999998137
+        },
+        {
+          "resource": "/fonts/cairo-arabic-var.woff2",
+          "kind": "link",
+          "durationMs": 928.8999999999069,
+          "startMs": 157.39999999990687,
+          "bytes": 31196,
+          "responseEndMs": 1086.2999999998137
+        },
+        {
+          "resource": "/_next/static/chunks/3oxivm6q_d7lv.js",
+          "kind": "script",
+          "durationMs": 727.3999999999069,
+          "startMs": 179.39999999990687,
+          "bytes": 11570,
+          "responseEndMs": 906.7999999998137
+        },
+        {
+          "resource": "/_next/static/chunks/turbopack-077hmtqrhcoji.js",
+          "kind": "script",
+          "durationMs": 697,
+          "startMs": 179.39999999990687,
+          "bytes": 4654,
+          "responseEndMs": 876.3999999999069
+        }
+      ],
+      "note": "Client clock only. Zero bytes does not prove a cache hit. Server stages may overlap."
+    }
+  ],
+  "statistic": "Median of samples excluding first run. For even counts: mean of the two central values."
+}

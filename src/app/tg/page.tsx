@@ -1,3 +1,5 @@
+import "./telegram-base.css";
+import { measureTelegram, traceTelegram, telegramServerTiming } from "@/lib/telegram-performance";
 import type { Metadata, Viewport } from "next";
 import { getPublicCatalogCached, getSiteDataCachedShared } from "@/lib/catalog-cache";
 import { digitalCategories } from "@/lib/digital-categories";
@@ -31,6 +33,7 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 1,
   viewportFit: "cover",
+  themeColor: "#0b1020",
 };
 
 /** Même règle que `/codes` : jamais figée au build sur le catalogue de repli. */
@@ -38,10 +41,17 @@ export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 
 export default async function TelegramMiniAppPage({ searchParams }: LocalePageProps) {
+  return traceTelegram("mini_app", async (trace) => {
+    const page = await measureTelegram("page_data", () => renderMiniApp({ searchParams }));
+    return <><meta name="nokhba-tg-server-timing" content={telegramServerTiming(trace)} />{page}</>;
+  });
+}
+
+async function renderMiniApp({ searchParams }: LocalePageProps) {
   const [params, { config }, snapshot] = await Promise.all([
     searchParams,
-    getSiteDataCachedShared(),
-    getPublicCatalogCached(),
+    measureTelegram("site_settings", () => getSiteDataCachedShared()),
+    measureTelegram("catalog_load", () => getPublicCatalogCached()),
   ]);
   const defaultLocale = siteLocale(config);
   const rawLang = params.lang;

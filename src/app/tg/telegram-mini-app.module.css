@@ -22,20 +22,21 @@
   background: var(--bg);
   color: var(--ink);
   transition: background-color 0.25s ease, color 0.25s ease;
-  font-family: var(--font-cairo), var(--font-plex-ar), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-family: "Cairo", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   -webkit-tap-highlight-color: transparent;
   padding-bottom: calc(28px + env(safe-area-inset-bottom));
 }
 
 .dark {
   --bg: #0b1020;
-  --card: #161e2e;
-  --ink: #f2f4f8;
-  --muted: #9aa6b8;
-  --line: rgba(255, 255, 255, 0.09);
-  --navy: #0e1524;
-  --accent: #9370f0;
-  --accent-soft: rgba(147, 112, 240, 0.2);
+  --card: #151f36;
+  --raised: #1c2944;
+  --ink: #f3f5fc;
+  --muted: #b0bdd3;
+  --line: rgba(178, 154, 255, 0.2);
+  --navy: #111a30;
+  --accent: #b29aff;
+  --accent-soft: rgba(151, 116, 245, 0.16);
   --lime: #d8fc52;
   --price: var(--lime);
   --category-bg: var(--card);
@@ -43,8 +44,11 @@
   --brand-end: var(--navy);
   --notice-ink: #fbbf24;
   color-scheme: dark;
-  --shadow: 0 12px 30px rgba(0, 0, 0, 0.5);
+  --shadow: 0 8px 22px rgba(0, 0, 0, 0.22);
 }
+
+.app, .app * { box-sizing: border-box; }
+.app img { display: block; max-width: 100%; }
 
 .app button,
 .app input {
@@ -71,6 +75,10 @@
   margin: 2px 2px 14px;
 }
 
+.hello {
+  min-width: 0;
+}
+
 .hello small {
   display: block;
   font-size: 12px;
@@ -80,7 +88,8 @@
 }
 
 .hello strong {
-  font-size: 21px;
+  font-size: clamp(16px, 4.6vw, 21px);
+  overflow-wrap: anywhere;
   letter-spacing: -0.02em;
   font-weight: 800;
 }
@@ -88,7 +97,8 @@
 .topActions {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
+  flex: none;
 }
 
 .lang {
@@ -707,6 +717,7 @@
 
 .empty {
   grid-column: 1 / -1;
+  margin: 0;
   text-align: center;
   color: var(--muted);
   padding: 34px 0;
@@ -807,6 +818,78 @@
   font-size: 11.5px;
   line-height: 1.5;
 }
+
+/* ---------- Nokhba : identité bleu nuit sur TOUT le parcours ---------- */
+.dark {
+  background: radial-gradient(ellipse at 85% 0%, rgba(115, 73, 218, 0.14), transparent 440px), var(--bg);
+}
+
+.dark .top {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  padding: 12px;
+  margin-inline: 0;
+  gap: 8px;
+}
+
+.dark .hello small { color: var(--accent); }
+.dark .themeToggle, .dark .lang { background: var(--raised); }
+.dark .avatar { width: 36px; height: 36px; flex: none; }
+.dark .hero {
+  background: linear-gradient(120deg, #17213d, #281d4d);
+  border: 1px solid rgba(178, 154, 255, 0.3);
+}
+.dark .search { background: var(--raised); border-color: rgba(178, 154, 255, 0.35); }
+.dark .search svg { color: var(--accent); opacity: 1; }
+.dark .head h2 { color: var(--ink); }
+.dark .head::after { width: 40px; height: 3px; }
+.dark .head span {
+  color: var(--lime) !important;
+  background: rgba(216, 252, 82, 0.08);
+  border-radius: 8px;
+  padding: 3px 8px;
+}
+.dark .cat {
+  aspect-ratio: 1.06 / 1;
+  border: 1px solid var(--line);
+  background: var(--card);
+}
+.dark .cat img { height: 74%; }
+.dark .cat::after {
+  background: linear-gradient(180deg, rgba(11, 16, 32, 0.05) 20%, rgba(21, 31, 54, 0.3) 46%, #151f36 75%);
+}
+.dark .catLabel small { color: var(--muted); opacity: 1; }
+.dark .enter { color: var(--lime); background: rgba(11, 16, 32, 0.85); }
+.dark .brandCard { border-inline-start: 3px solid #8963e8; }
+.dark .brandCount {
+  color: var(--lime);
+  background: rgba(216, 252, 82, 0.08);
+  border-radius: 8px;
+  padding: 4px 6px;
+}
+.dark .legend { border: 1px solid var(--line); background: var(--card); }
+.dark .chip { background: var(--card); }
+.dark .chipActive { background: #6540b5; color: #fff !important; border-color: #b29aff; }
+.dark .product { background: linear-gradient(155deg, var(--raised), var(--card)); }
+.dark .more { background: var(--lime); color: #141c2b !important; border-color: var(--lime); }
+.dark .empty {
+  background: var(--card);
+  border: 1px dashed rgba(178, 154, 255, 0.45);
+  border-radius: 18px;
+  padding: 32px 16px;
+}
+.dark .empty::before {
+  content: "";
+  display: block;
+  width: 32px;
+  height: 3px;
+  border-radius: 3px;
+  margin: 0 auto 14px;
+  background: var(--accent);
+}
+.dark .support { background: var(--card); }
+.app button:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
 
 @media (prefers-reduced-motion: reduce) {
   .info span,

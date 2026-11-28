@@ -1,3 +1,4 @@
+import { measureTelegram } from "@/lib/telegram-performance";
 /**
  * Boutique inline du bot Telegram — orchestration serveur.
  *
@@ -1062,7 +1063,7 @@ async function watchLastOrder(
 async function loadShopContext(
   chatId: string,
 ): Promise<{ state: TelegramShopState; checkoutEmail: string | null }> {
-  const { shopState, checkoutEmail } = await getTelegramShopContext(chatId);
+  const { shopState, checkoutEmail } = await measureTelegram("db_shop_context", () => getTelegramShopContext(chatId));
   return {
     state: { ...EMPTY_SHOP_STATE, ...(shopState ?? {}) } as TelegramShopState,
     checkoutEmail,
@@ -1071,7 +1072,7 @@ async function loadShopContext(
 
 async function loadCatalog(): Promise<ShopProduct[]> {
   try {
-    return (await getDigitalCatalog()) as ShopProduct[];
+    return (await measureTelegram("catalog_load", () => getDigitalCatalog())) as ShopProduct[];
   } catch (error) {
     console.warn(
       "[telegram][shop] catalogue indisponible :",

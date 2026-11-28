@@ -140,7 +140,9 @@ test("truncating an emoji at the note limit cannot break the encoded contact lin
 test("locale provider keeps the site default separate from the URL language for contact/guide links", () => {
   const source = readFileSync("src/app/layout.tsx", "utf8");
   assert.match(source, /const primaryLocale = siteLocale\(config\)/);
-  assert.match(source, /<I18nProvider defaultLocale=\{primaryLocale\}/);
+  assert.match(source, /primaryLocale=\{primaryLocale\}/);
+  const providers = readFileSync("src/components/website-providers.tsx", "utf8");
+  assert.match(providers, /<I18nProvider defaultLocale=\{primaryLocale\}/);
 });
 
 test("SEO category backlink guard accepts the localized codes hub but not product links", () => {

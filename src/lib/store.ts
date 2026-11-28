@@ -1,3 +1,4 @@
+import { measureTelegram } from "@/lib/telegram-performance";
 import { normalizeLegacyWebsiteContent } from "@/lib/website-content-migration";
 import { cache } from "react";
 import { eq } from "drizzle-orm";
@@ -555,8 +556,8 @@ export function buildSiteData(rows: { key: string; value: unknown }[]): SiteData
  */
 export async function getSiteData(): Promise<SiteData> {
   try {
-    await ensureSchema();
-    const rows = await db.select().from(settings);
+    await measureTelegram("db_schema", () => ensureSchema());
+    const rows = await measureTelegram("db_settings", () => db.select().from(settings));
     return buildSiteData(rows);
   } catch (error) {
     console.error(

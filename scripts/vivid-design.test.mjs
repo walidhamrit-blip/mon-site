@@ -65,7 +65,7 @@ test("all day and night palettes have readable action and body color pairs", () 
 
 test("gaming system scopes public pages and includes day-aware footer and form styling", () => {
   const css = readFileSync("src/app/gaming.css", "utf8");
-  assert.match(readFileSync("src/app/layout.tsx", "utf8"), /import "\.\/gaming\.css"/);
+  assert.match(readFileSync("src/components/website-providers.tsx", "utf8"), /import "@\/app\/gaming\.css"/);
   assert.match(css, /\.public-shell \.public-footer\.gaming-footer/);
   assert.match(css, /input,textarea,select/);
   assert.match(css, /prefers-reduced-motion/);

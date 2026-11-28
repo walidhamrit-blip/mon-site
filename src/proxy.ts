@@ -6,7 +6,7 @@ import {
   isLocalizablePath,
   localeFromQuery,
 } from "@/lib/locale";
-import { isTelegramMiniAppPath } from "@/lib/telegram-mini-app-core";
+import { isTelegramMiniAppPath, TELEGRAM_SURFACE_HEADER } from "@/lib/telegram-mini-app-core";
 
 /**
  * Proxy de sécurité (convention Next.js 16, ex-« middleware ») : applique
@@ -58,6 +58,8 @@ export function proxy(request: NextRequest) {
   // On nettoie donc l'en-tête interne avant de le recalculer pour le layout.
   const requestHeaders = new Headers(request.headers);
   requestHeaders.delete(LOCALE_HEADER);
+  requestHeaders.delete(TELEGRAM_SURFACE_HEADER);
+  if (isTelegramMiniAppPath(pathname)) requestHeaders.set(TELEGRAM_SURFACE_HEADER, "telegram");
   const publicPage = isLocalizablePath(pathname);
   const rawLang = request.nextUrl.searchParams.getAll(LOCALE_QUERY_PARAM);
   const urlLocale = publicPage && rawLang.length === 1 ? localeFromQuery(rawLang[0]) : null;
@@ -84,11 +86,9 @@ export function proxy(request: NextRequest) {
   response.headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
   response.headers.set("Permissions-Policy", buildPermissionPolicy());
   response.headers.set("X-Security-Middleware", "nukhba");
-  // Mini App `/tg` : le HTML est identique pour tous (aucune donnée
-  // personnelle — le prénom Telegram est lu côté client par le SDK) et la
-  // page est ré-ouverte en boucle depuis le bot. Cache CDN court avec
-  // stale-while-revalidate : ré-affichage quasi instantané et une seule
-  // rendue serveur par minute (au lieu d'un SSR complet par ouverture).
+  // Cache hint for the public, non-personalized Mini App document. The
+  // force-dynamic renderer/hosting may override it: this is NOT evidence
+  // of an actual CDN hit. Verify final headers and real navigation timings.
   if (isTelegramMiniAppPath(pathname)) {
     response.headers.set(
       "Cache-Control",
