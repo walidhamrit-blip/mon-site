@@ -332,12 +332,11 @@ test("le webhook consigne la décision sans jamais acheter", () => {
   // …la décision est journalisée et tracée en base…
   assert.match(route, /g2gDeliveries/);
   assert.match(route, /onConflictDoNothing\(\{ target: g2gDeliveries\.deliveryId \}\)/);
-  // …et AUCUN achat n'est déclenché à ce stade.
+  // …et AUCUN appel direct hors purchaseG2gDelivery ni envoi direct dans le webhook.
   assert.doesNotMatch(route, /fazercardsGiftCardOrder|fazercardsTopupOrder/);
   assert.doesNotMatch(route, /g2gDeliverCodes\(/);
-  // La réponse reste explicitement en « dry run ».
-  assert.match(route, /dry_run: true/);
-  assert.match(route, /auto_delivery: false/);
+  assert.match(route, /dry_run: !didPurchase/);
+  assert.match(route, /auto_delivery: deliveryVerified && autoDeliveryEnabled/);
 });
 
 test("la répétition générale calcule « comme si », puis retient", () => {

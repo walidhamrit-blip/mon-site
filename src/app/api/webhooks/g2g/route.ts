@@ -441,17 +441,20 @@ export async function POST(req: Request) {
 
   await settleWebhookEvent(webhookKey, "ignored");
 
+  const deliveryVerified = automaticDeliveryVerified();
+  const didPurchase = purchase?.outcome === "purchased";
+
   return noStoreJson({
     ok: true,
-    dry_run: true,
-    /** Reflète le coupe-circuit, pas une capacité : rien n'est acheté. */
-    auto_delivery: false,
+    dry_run: !didPurchase,
+    /** Vrai uniquement lorsque le pilote est armé et vérifié. */
+    auto_delivery: deliveryVerified && autoDeliveryEnabled,
     auto_delivery_enabled: autoDeliveryEnabled,
     mapping: mappingFound ? (mappingEnabled ? "enabled" : "disabled") : "absent",
     decision,
     /** Ce qui se serait passé si le coupe-circuit était activé. */
     hypothetical_decision: plan?.decision ?? null,
-    delivery_verified: false,
+    delivery_verified: deliveryVerified,
     net_margin_percent: plan?.netMarginPercent ?? null,
     /**
      * Prix de vente relu chez G2G et commission appliquée — de quoi
@@ -461,8 +464,7 @@ export async function POST(req: Request) {
      */
     unit_price_usd: plan?.unitPrice ?? null,
     fee_percent: plan?.feePercent ?? null,
-    /** Toujours `false` tant que l'achat n'est pas effectivement câblé. */
-    purchased: purchase?.outcome === "purchased",
+    purchased: didPurchase,
     purchase_outcome: purchase?.outcome ?? null,
   });
 }

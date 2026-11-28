@@ -21,13 +21,25 @@ export function pilotQuantityAllowed(offerId: string, quantity: number, configur
   if (quantity === 0) return true;
   const normalizedOfferId = offerId?.trim().toUpperCase() ?? "";
   if (isRetiredG2gOffer(normalizedOfferId)) return false;
+  if (normalizedOfferId !== PILOT_CANDIDATE_OFFER_ID) return false;
   const pilot = pilotOfferId(configuredId);
-  return pilot !== null && normalizedOfferId === pilot;
+  return pilot === PILOT_CANDIDATE_OFFER_ID;
 }
 
-/** Bloqué en code jusqu'à validation du contrat de livraison de bout en bout. */
-export function automaticDeliveryVerified(): boolean {
-  return false;
+/**
+ * Autorise l'achat et la livraison automatiques UNIQUEMENT lorsque :
+ * 1. `G2G_AUTO_DELIVERY` vaut explicitement `"1"` ;
+ * 2. `G2G_PILOT_OFFER_ID` désigne exactement l'offre pilote `G1795521210943KM`.
+ * En l'absence de ces deux variables (comportement par défaut), retourne `false`.
+ */
+export function automaticDeliveryVerified(
+  configuredPilot: string | undefined = process.env.G2G_PILOT_OFFER_ID,
+  autoDelivery: string | undefined = process.env.G2G_AUTO_DELIVERY,
+): boolean {
+  return (
+    autoDelivery?.trim() === "1" &&
+    pilotOfferId(configuredPilot) === PILOT_CANDIDATE_OFFER_ID
+  );
 }
 
 /** Les événements du bouton de diagnostic ne doivent jamais acheter. */

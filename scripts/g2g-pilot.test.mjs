@@ -20,6 +20,7 @@ test("seule l'offre explicitement configurée peut être activée à une unité"
   assert.equal(pilotQuantityAllowed(id, 1, id), true);
   assert.equal(pilotQuantityAllowed(id, 1, undefined), false);
   assert.equal(pilotQuantityAllowed("G1793906316865GE", 1, id), false);
+  assert.equal(pilotQuantityAllowed("G1793906316865GE", 1, "G1793906316865GE"), false);
   assert.equal(pilotQuantityAllowed(id, 2, id), false);
   assert.equal(pilotQuantityAllowed(id, 0.5, id), false);
   assert.equal(pilotQuantityAllowed(id, -1, id), false);
@@ -36,10 +37,15 @@ test("l'ancienne offre retirée G1795076410074VF est définitivement bloquée à
   assert.equal(pilotQuantityAllowed(retiredId, 0, undefined), true);
 });
 
-test("la livraison reste bloquée même lorsque le pilote est configuré", () => {
+test("la livraison reste bloquée par défaut et n'ouvre que G1795521210943KM avec G2G_AUTO_DELIVERY=1", () => {
   assert.equal(automaticDeliveryVerified(), false);
-  assert.equal(pilotQuantityAllowed(id, 1, id), true);
-  assert.equal(pilotQuantityAllowed(id, 1, id) && automaticDeliveryVerified(), false);
+  assert.equal(automaticDeliveryVerified(id, ""), false);
+  assert.equal(automaticDeliveryVerified(id, "0"), false);
+  assert.equal(automaticDeliveryVerified("G1793906316865GE", "1"), false);
+  assert.equal(automaticDeliveryVerified(retiredId, "1"), false);
+  assert.equal(automaticDeliveryVerified(id, "1"), true);
+  assert.equal(pilotQuantityAllowed(id, 1, id) && automaticDeliveryVerified(id, ""), false);
+  assert.equal(pilotQuantityAllowed(id, 1, id) && automaticDeliveryVerified(id, "1"), true);
 });
 
 test("les identifiants des événements de diagnostic bloquent l'achat", () => {

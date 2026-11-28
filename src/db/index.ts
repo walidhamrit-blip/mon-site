@@ -815,6 +815,49 @@ export function ensureSchema(): Promise<void> {
       await pool.query(
         "ALTER TABLE g2g_deliveries ADD COLUMN IF NOT EXISTS delivery_claimed_at timestamptz",
       );
+      await pool.query(
+        "ALTER TABLE g2g_deliveries ADD COLUMN IF NOT EXISTS expires_at timestamptz",
+      );
+      // Intention d'envoi unique et permanente G2G (étape 5 pilote) :
+      // empêche tout double POST même après expiration du bail de 5 minutes.
+      // Aucun code cadeau ni secret n'y est jamais stocké.
+      await pool.query(`
+        CREATE TABLE IF NOT EXISTS g2g_dispatch_intents (
+          order_id text NOT NULL CHECK (length(btrim(order_id)) BETWEEN 1 AND 128),
+          delivery_id text NOT NULL UNIQUE CHECK (length(btrim(delivery_id)) BETWEEN 1 AND 128),
+          offer_id text NOT NULL CHECK (
+            length(btrim(offer_id)) BETWEEN 1 AND 64
+            AND upper(btrim(offer_id)) <> 'G1795076410074VF'
+          ),
+          supplier_order_id text NOT NULL CHECK (length(btrim(supplier_order_id)) BETWEEN 1 AND 128),
+          quantity integer NOT NULL CHECK (quantity BETWEEN 1 AND 100),
+          reference_id text NOT NULL UNIQUE CHECK (length(btrim(reference_id)) BETWEEN 16 AND 128),
+          expires_at timestamptz NOT NULL,
+          state text NOT NULL
+            CHECK (state IN ('dispatching', 'acknowledged', 'unknown', 'confirmed', 'aborted', 'manual_review')),
+          reserved_at timestamptz NOT NULL DEFAULT clock_timestamp(),
+          acknowledged_at timestamptz,
+          confirmed_at timestamptz,
+          updated_at timestamptz NOT NULL DEFAULT clock_timestamp(),
+          last_detail text CHECK (last_detail IS NULL OR length(last_detail) <= 500),
+          PRIMARY KEY (order_id, delivery_id)
+        )
+      `);
+      await pool.query(
+        "CREATE INDEX IF NOT EXISTS g2g_dispatch_intents_state_idx ON g2g_dispatch_intents (state, updated_at DESC)",
+      );
+      await pool.query("ALTER TABLE g2g_dispatch_intents ENABLE ROW LEVEL SECURITY");
+      await pool.query(`
+        DO $$
+        BEGIN
+          IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'anon') THEN
+            REVOKE ALL ON TABLE g2g_dispatch_intents FROM anon;
+          END IF;
+          IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'authenticated') THEN
+            REVOKE ALL ON TABLE g2g_dispatch_intents FROM authenticated;
+          END IF;
+        END $$
+      `);
     })().catch((error) => {
       schemaReady = null; // permet de réessayer au prochain accès
       throw error;

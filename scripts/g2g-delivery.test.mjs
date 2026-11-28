@@ -118,10 +118,14 @@ test("le cron a maxDuration = 30", () => {
 test("les tests synthétiques et la livraison non vérifiée ne peuvent pas acheter", () => {
   assert.match(WEBHOOK, /const isSyntheticTest =/);
   assert.match(WEBHOOK, /!isSyntheticTest && automaticDeliveryVerified\(\)/);
-  assert.match(read("src/lib/g2g-pilot.ts"), /function automaticDeliveryVerified\(\): boolean \{\s*return false;/);
+  const pilotSrc = read("src/lib/g2g-pilot.ts");
+  assert.match(pilotSrc, /autoDelivery\?\.trim\(\) === "1"/);
+  assert.match(pilotSrc, /pilotOfferId\(configuredPilot\) === PILOT_CANDIDATE_OFFER_ID/);
   const qty = read("src/app/api/admin/g2g/offer-qty/route.ts");
   assert.match(qty, /apiQty > 0 && !automaticDeliveryVerified\(\)/);
   assert.match(qty, /error: "delivery_not_verified"/);
+  assert.match(qty, /fazercardsBalance/);
+  assert.match(qty, /livePlan\.decision !== "proceed"/);
 });
 
 test("expiration des tentatives sans codes mène à une escalade", () => {

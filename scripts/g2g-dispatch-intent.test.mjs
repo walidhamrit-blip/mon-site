@@ -88,7 +88,7 @@ test("horaires vercel.json et règles de paiement manuel préservés", () => {
   assert.match(hours, /hour < 9/);
 });
 
-test("brouillon SQL durable : complet, sans code ni secret, et non exécuté en production", () => {
+test("migration SQL durable : complète, sans code ni secret, alignée avec ensureSchema()", () => {
   const sql = read("docs/sql/g2g-dispatch-intent-migration-draft.sql");
   const sqlNoComments = sql.replace(/--.*$/gm, "");
   assert.match(sqlNoComments, /ALTER TABLE g2g_deliveries\s+ADD COLUMN IF NOT EXISTS expires_at timestamptz/i);
@@ -97,12 +97,16 @@ test("brouillon SQL durable : complet, sans code ni secret, et non exécuté en 
   assert.match(sqlNoComments, /delivery_id text NOT NULL UNIQUE/i);
   assert.match(sqlNoComments, /reference_id text NOT NULL UNIQUE/i);
   assert.match(sqlNoComments, /ENABLE ROW LEVEL SECURITY/i);
-  assert.match(sqlNoComments, /REVOKE ALL ON TABLE g2g_dispatch_intents FROM anon, authenticated/i);
+  assert.match(sqlNoComments, /REVOKE ALL ON TABLE g2g_dispatch_intents FROM anon/i);
+  assert.match(sqlNoComments, /REVOKE ALL ON TABLE g2g_dispatch_intents FROM authenticated/i);
   assert.doesNotMatch(sqlNoComments, /\b(gift_code|codes_cipher|code_content|secret_key|api_key)\b/i);
 
-  // Non exécuté automatiquement en production sans accord explicite.
+  // Alignée dans ensureSchema() (idempotente et compatible hors Supabase grâce au contrôle pg_roles).
   const dbIndex = read("src/db/index.ts");
-  assert.doesNotMatch(dbIndex, /g2g_dispatch_intents/);
+  assert.match(dbIndex, /ALTER TABLE g2g_deliveries ADD COLUMN IF NOT EXISTS expires_at timestamptz/);
+  assert.match(dbIndex, /CREATE TABLE IF NOT EXISTS g2g_dispatch_intents/);
+  assert.match(dbIndex, /ENABLE ROW LEVEL SECURITY/);
+  assert.match(dbIndex, /pg_roles WHERE rolname = 'anon'/);
   const deliverySrc = read("src/lib/g2g-delivery.ts");
   const gateIdx = deliverySrc.indexOf("if (!automaticDeliveryVerified())");
   const readIdx = deliverySrc.indexOf("readDispatchIntent(");
