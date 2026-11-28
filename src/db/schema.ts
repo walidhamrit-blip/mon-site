@@ -77,6 +77,8 @@ export const orders = pgTable("orders", {
    * le quota est partagé par tout le site. Voir `decideReconcileThrottle`.
    */
   lastProviderSyncAt: timestamp("last_provider_sync_at", { withTimezone: true }),
+  pendingAlertClaimedAt: timestamp("pending_alert_claimed_at", { withTimezone: true }),
+  pendingAlertSentAt: timestamp("pending_alert_sent_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),
@@ -745,6 +747,20 @@ export const telegramSubscribers = pgTable("telegram_subscribers", {
    */
   shopState: jsonb("shop_state"),
 });
+
+/** Demandes de support adressées explicitement à l'équipe depuis le bot. */
+export const telegramSupportRequests = pgTable("telegram_support_requests", {
+  id: serial("id").primaryKey(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  chatId: text("chat_id").notNull(),
+  messageId: integer("message_id").notNull(),
+  username: text("username"),
+  firstName: text("first_name"),
+  language: text("language").notNull(),
+  message: text("message").notNull(),
+  reply: text("reply"),
+  repliedAt: timestamp("replied_at", { withTimezone: true }),
+}, (table) => [uniqueIndex("telegram_support_message_unique").on(table.chatId, table.messageId)]);
 
 export type TelegramSubscriber = typeof telegramSubscribers.$inferSelect;
 export type NewTelegramSubscriber = typeof telegramSubscribers.$inferInsert;

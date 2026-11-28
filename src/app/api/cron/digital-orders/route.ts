@@ -1,3 +1,4 @@
+import { alertPendingDigitalPayments } from "@/lib/pending-payment-alerts";
 import { NextResponse } from "next/server";
 import { resumeStaleDigitalOrders } from "@/lib/digital-resume";
 import { deliveryQueueStats, runDeliveryQueue } from "@/lib/delivery-queue";
@@ -68,8 +69,15 @@ export async function GET(req: Request) {
       console.info("[digital][reprise]", JSON.stringify(report));
     }
 
+    // Une panne d'alerte ne doit jamais empêcher la file de livraison.
+    const pendingAlerts = await alertPendingDigitalPayments({ dryRun }).catch((error) => {
+      console.warn("[payments] alertes en attente indisponibles :", error instanceof Error ? error.message : error);
+      return null;
+    });
+
     return NextResponse.json({
       ok: true,
+      pendingAlerts,
       dryRun,
       ...report,
       queue,

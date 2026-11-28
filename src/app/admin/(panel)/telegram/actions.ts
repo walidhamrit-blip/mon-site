@@ -168,3 +168,12 @@ export async function broadcastAction(
     blocked: outcome.blocked,
   };
 }
+
+/** Réponse explicite de l'équipe à une demande du bot. */
+export async function replySupportAction(id: number, text: string): Promise<TelegramActionResult> {
+  await requireAdmin();
+  const { replyToTelegramSupport } = await import("@/lib/telegram-support");
+  const result = await replyToTelegramSupport(id, text);
+  revalidatePath("/admin/telegram");
+  return result.ok ? { ok: true, message: result.warning ?? "Réponse envoyée au client sur Telegram." } : { ok: false, message: result.error ?? "Envoi impossible." };
+}

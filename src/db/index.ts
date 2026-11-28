@@ -143,6 +143,8 @@ export function ensureSchema(): Promise<void> {
       await pool.query(
         "ALTER TABLE orders ADD COLUMN IF NOT EXISTS last_provider_sync_at timestamptz",
       );
+      await pool.query("ALTER TABLE orders ADD COLUMN IF NOT EXISTS pending_alert_claimed_at timestamptz");
+      await pool.query("ALTER TABLE orders ADD COLUMN IF NOT EXISTS pending_alert_sent_at timestamptz");
       // Instantané NOWPayments : montant reçu du client, distinct du versement net.
       await pool.query("ALTER TABLE orders ADD COLUMN IF NOT EXISTS actual_paid text");
       await pool.query("ALTER TABLE orders ADD COLUMN IF NOT EXISTS actual_paid_expected text");
@@ -621,6 +623,21 @@ export function ensureSchema(): Promise<void> {
       );
       // Suivi de commande depuis le chat Telegram (consentement explicite,
       // notification de livraison idempotente). Voir src/lib/telegram-delivery.ts.
+      await pool.query(`
+        CREATE TABLE IF NOT EXISTS telegram_support_requests (
+          id serial PRIMARY KEY,
+          created_at timestamptz NOT NULL DEFAULT now(),
+          chat_id text NOT NULL,
+          message_id integer NOT NULL,
+          username text,
+          first_name text,
+          language text NOT NULL,
+          message text NOT NULL,
+          reply text,
+          replied_at timestamptz
+        )
+      `);
+      await pool.query("CREATE UNIQUE INDEX IF NOT EXISTS telegram_support_message_unique ON telegram_support_requests (chat_id, message_id)");
       await pool.query(`
         CREATE TABLE IF NOT EXISTS telegram_order_watches (
           id serial PRIMARY KEY,

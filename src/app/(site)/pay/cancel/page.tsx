@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { LocalizedLink as Link } from "@/components/localized-link";
 import { pageLocale } from "@/lib/locale-server";
 import type { LocalePageProps } from "@/lib/locale";
+import { OrderSupport } from "@/components/order-support";
 import { getSiteDataCached } from "@/lib/store";
 import { pageMetadata } from "@/lib/seo";
 
@@ -23,9 +24,16 @@ export async function generateMetadata({ searchParams }: LocalePageProps): Promi
 export default async function PayCancelPage({
   searchParams,
 }: {
-  searchParams: Promise<{ ref?: string }>;
+  searchParams: Promise<{ ref?: string; t?: string }>;
 } & LocalePageProps) {
-  const { ref } = await searchParams;
+  const { ref, t } = await searchParams;
+  const validRef = typeof ref === "string" && /^(?:DGC|NKH|RSV)-[A-Z0-9]{6,64}$/i.test(ref) ? ref : "";
+  const validToken = typeof t === "string" && /^[A-Za-z0-9_-]{1,128}$/.test(t) ? t : "";
+  const query = new URLSearchParams();
+  if (validRef) query.set("ref", validRef);
+  if (validToken) query.set("t", validToken);
+  const destination = validRef.toUpperCase().startsWith("DGC-") ? "/codes/commande" : "/pay/success";
+  const trackingHref = `${destination}${query.size ? `?${query}` : ""}`;
   const { config } = await getSiteDataCached();
   const ar = (await pageLocale(config, searchParams)) === "ar";
 
@@ -36,15 +44,15 @@ export default async function PayCancelPage({
           <h1 className="text-2xl font-black">{ar ? "الدفع غير مكتمل" : "Payment not completed"}</h1>
           <p className="mt-2 text-sm opacity-70 leading-relaxed">
             {ar
-              ? `غادرت صفحة الدفع قبل الإتمام${ref ? ` (الطلب ${ref})` : ""}. لم يتم خصم أي مبلغ.`
-              : `You left the payment page before completion${ref ? ` (order ${ref})` : ""}. No amount was charged.`}
+              ? `عُدت من صفحة الدفع${validRef ? ` (الطلب ${validRef})` : ""}. تحقّق من حالة الطلب قبل محاولة الدفع مرة أخرى؛ قد تكون المعاملة قيد المعالجة.`
+              : `You returned from the payment page${validRef ? ` (order ${validRef})` : ""}. Check the order status before paying again; a transaction may still be processing.`}
           </p>
           <div className="mt-6 flex gap-2 justify-center flex-wrap">
             <Link
-              href="/pricing"
+              href={trackingHref}
               className="h-11 px-6 rounded-full bg-[var(--accent)] text-[var(--accent-foreground)] font-bold text-sm inline-flex items-center hover:bg-[var(--accent-hover)] transition-colors"
             >
-              {ar ? "استئناف الطلب" : "Resume my order"}
+              {ar ? "تحقق من حالة الطلب" : "Check order status"}
             </Link>
             <Link
               href="/contact"
@@ -53,6 +61,7 @@ export default async function PayCancelPage({
               {ar ? "تواصل معنا" : "Contact us"}
             </Link>
           </div>
+          <div className="mt-5 text-start"><OrderSupport reference={validRef} /></div>
         </div>
       </div>
     </main>

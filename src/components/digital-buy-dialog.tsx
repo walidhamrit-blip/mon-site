@@ -30,6 +30,7 @@ import {
   type PublicPayGateOption,
 } from "@/lib/paygate-core";
 import { trackEvent } from "@/lib/analytics";
+import { OrderSupport } from "@/components/order-support";
 import { PaymentBrandLogos } from "@/components/payment-methods";
 
 const MAX_QUANTITY = 10;
@@ -762,6 +763,7 @@ export function DigitalBuyDialog({ product, denominationId, onClose }: Props) {
             </p>
           </div>
 
+          <div className="mt-4"><OrderSupport reference={cardReady.orderRef} /></div>
           <a
             href={cardReady.paymentUrl}
             target="_blank"
@@ -822,6 +824,8 @@ export function DigitalBuyDialog({ product, denominationId, onClose }: Props) {
             <X className="h-4 w-4" aria-hidden="true" />
           </button>
         </div>
+
+        <div className="mt-4"><OrderSupport /></div>
 
         {/* Carte régionale : dernier rappel AVANT le paiement — c'est ici
             qu'il compte, pas en haut de la fiche. Les régions viennent des

@@ -142,6 +142,7 @@ export interface TelegramCopy {
   human: string;
   forwarded: string;
   help: string;
+  supportPrompt: string;
   unsubscribed: string;
   fallback: string;
   langSaved: string;
@@ -154,6 +155,7 @@ export interface TelegramCopy {
     orders: string;
     offers: string;
     human: string;
+    support: string;
     language: string;
     menu: string;
     whatsapp: string;
@@ -196,6 +198,7 @@ const COPY: Record<TelegramLocale, TelegramCopy> = {
     forwarded: "Message transmis à l'équipe ✅ Nous revenons vers vous rapidement.",
     help:
       "Voici ce que je sais faire :\n\n/start — menu principal\n/shop — acheter dans la boutique\n/codes — catalogue et boutique\n/commande RÉFÉRENCE — statut d'une commande\n/prevenir RÉFÉRENCE — recevoir le code ici\n/offres — recevoir nos offres\n/stop — ne plus recevoir les offres\n/aide — cette aide\n\nUne question ? Écrivez-la simplement ici.",
+    supportPrompt: "Décrivez votre problème dans un message commençant par <b>support</b>, avec votre référence si vous en avez une. Ne partagez jamais vos mots de passe, codes de paiement ou liens de suivi privés.",
     unsubscribed: "Vous ne recevrez plus d'offres. Tapez /start pour rouvrir le menu.",
     fallback:
       "Je n'ai pas compris cette demande. Choisissez une option ci-dessous, ou écrivez « humain » pour joindre l'équipe.",
@@ -208,6 +211,7 @@ const COPY: Record<TelegramLocale, TelegramCopy> = {
       orders: "📦 Suivre une commande",
       offers: "🎁 Offres & promos",
       human: "💬 Parler à un humain",
+      support: "🆘 Aide commande",
       language: "🌍 Langue",
       menu: "⬅️ Menu",
       whatsapp: "WhatsApp",
@@ -258,6 +262,7 @@ const COPY: Record<TelegramLocale, TelegramCopy> = {
     forwarded: "تم تحويل رسالتك إلى الفريق ✅ سنعود إليك قريباً.",
     help:
       "هذه هي أوامري:\n\n/start — القائمة الرئيسية\n/shop — الشراء من المتجر\n/codes — الكتالوج والمتجر\n/commande رقم الطلب — حالة الطلب\n/prevenir رقم الطلب — استلام الكود هنا\n/offres — استلام العروض\n/stop — إلغاء اشتراك العروض\n/aide — المساعدة\n\nلديك سؤال؟ اكتبه هنا مباشرة.",
+    supportPrompt: "اكتب رسالة تبدأ بكلمة <b>support</b> ثم صف مشكلتك وأضف رقم الطلب إن وجد. لا ترسل كلمات المرور أو رموز الدفع أو رابط المتابعة الخاص.",
     unsubscribed: "لن تستلم عروضاً بعد الآن. اكتب /start لإعادة فتح القائمة.",
     fallback:
       "لم أفهم هذا الطلب. اختر أحد الخيارات أدناه، أو اكتب «humain» للتواصل مع الفريق.",
@@ -270,6 +275,7 @@ const COPY: Record<TelegramLocale, TelegramCopy> = {
       orders: "📦 متابعة طلب",
       offers: "🎁 العروض",
       human: "💬 التحدث مع فريق",
+      support: "🆘 مساعدة الطلب",
       language: "🌍 اللغة",
       menu: "⬅️ القائمة",
       whatsapp: "واتساب",
@@ -320,6 +326,7 @@ const COPY: Record<TelegramLocale, TelegramCopy> = {
     forwarded: "Message forwarded to the team ✅ We'll get back to you shortly.",
     help:
       "Here's what I can do:\n\n/start — main menu\n/shop — buy from the shop\n/codes — catalogue & store\n/commande REFERENCE — order status\n/prevenir REFERENCE — get the code here\n/offres — get our offers\n/stop — stop offers\n/aide — this help\n\nAny question? Just type it here.",
+    supportPrompt: "Send a message beginning with <b>support</b>, describe your problem and include your order reference if available. Never share passwords, payment codes or private tracking links.",
     unsubscribed: "You won't receive offers anymore. Type /start to reopen the menu.",
     fallback:
       "I didn't get that. Pick an option below, or type “human” to reach the team.",
@@ -332,6 +339,7 @@ const COPY: Record<TelegramLocale, TelegramCopy> = {
       orders: "📦 Track an order",
       offers: "🎁 Offers",
       human: "💬 Talk to a human",
+      support: "🆘 Order support",
       language: "🌍 Language",
       menu: "⬅️ Menu",
       whatsapp: "WhatsApp",
@@ -429,6 +437,7 @@ export function mainMenuKeyboard(
       { text: copy.buttons.orders, callback_data: "menu:orders" },
       { text: copy.buttons.offers, callback_data: "menu:offers" },
     ],
+    [{ text: copy.buttons.support, callback_data: "menu:support" }],
     [
       { text: copy.buttons.human, url: links.whatsapp },
       { text: copy.buttons.language, callback_data: "menu:lang" },
@@ -475,6 +484,7 @@ export function botCommandList(): { command: string; description: string }[] {
     },
     { command: "offres", description: "Recevoir les offres / استلام العروض" },
     { command: "stop", description: "Ne plus recevoir les offres" },
+    { command: "support", description: "Order help / دعم الطلب" },
     { command: "aide", description: "Aide / Help / مساعدة" },
   ];
 }
